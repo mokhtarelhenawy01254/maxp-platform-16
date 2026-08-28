@@ -27,6 +27,8 @@ import {
   Copy,
   Eye,
   Sparkles,
+  CheckSquare,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
@@ -34,6 +36,7 @@ import { tToast } from "../../utils/i18n-toast";
 import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -288,6 +291,9 @@ const WhatsAppMetaTemplates: React.FC<{
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
   const [sectionFilter, setSectionFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
   const [complianceResults, setComplianceResults] = useState<ComplianceResult[]>([]);
   const [showCompliance, setShowCompliance] = useState(false);
@@ -481,16 +487,76 @@ const WhatsAppMetaTemplates: React.FC<{
     [templates],
   );
 
+  // Per-group best status — reused by the search/status filter so we can
+  // filter at the group level (the user thinks in templates, not in language
+  // variants).
+  const groupBestStatus = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const t of filteredTemplates) {
+      const cur = map[t.name];
+      if (!cur) {
+        map[t.name] = t.status;
+        continue;
+      }
+      // PENDING > REJECTED > DISABLED > PAUSED > APPROVED priority
+      if (cur === "APPROVED" && t.status !== "APPROVED") map[t.name] = t.status;
+    }
+    return map;
+  }, [filteredTemplates]);
+
   const groupedTemplates = useMemo(() => {
     const groups: Record<string, MetaTemplate[]> = {};
+    const q = searchQuery.trim().toLowerCase();
     for (const t of filteredTemplates) {
       const section = resolveTemplateSection(t.name, t.category);
       if (sectionFilter !== "ALL" && section.id !== sectionFilter) continue;
+      if (statusFilter !== "ALL" && groupBestStatus[t.name] !== statusFilter) continue;
+      if (q && !t.name.toLowerCase().includes(q) && !t.id?.toLowerCase().includes(q)) continue;
       if (!groups[t.name]) groups[t.name] = [];
       groups[t.name]!.push(t);
     }
     return groups;
-  }, [filteredTemplates, sectionFilter]);
+  }, [filteredTemplates, sectionFilter, statusFilter, searchQuery, groupBestStatus]);
+
+  // Counts per status at the group level — used to label filter chips.
+  const statusFilterCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: 0, APPROVED: 0, PENDING: 0, REJECTED: 0, DISABLED: 0, PAUSED: 0 };
+    const seen = new Set<string>();
+    for (const t of filteredTemplates) {
+      counts.ALL += 1;
+      if (!seen.has(t.name)) {
+        seen.add(t.name);
+        const best = groupBestStatus[t.name] ?? t.status;
+        counts[best] = (counts[best] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [filteredTemplates, groupBestStatus]);
+
+  const allFilteredGroupNames = useMemo(() => Object.keys(groupedTemplates), [groupedTemplates]);
+  const allSelected = allFilteredGroupNames.length > 0 && allFilteredGroupNames.every((n) => selectedRows.has(n));
+  const someSelected = selectedRows.size > 0 && !allSelected;
+
+  const toggleRow = useCallback((name: string) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        for (const n of allFilteredGroupNames) next.delete(n);
+      } else {
+        for (const n of allFilteredGroupNames) next.add(n);
+      }
+      return next;
+    });
+  }, [allSelected, allFilteredGroupNames]);
 
   const sectionFilterOptions = useMemo(() => TEMPLATE_SECTIONS, []);
 
@@ -730,7 +796,17 @@ const WhatsAppMetaTemplates: React.FC<{
         title={statusCounts.total > 0 ? `${statusCounts.total} قالب` : "قوالب Meta API"}
         description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث بالاسم أو ID..."
+                aria-label="البحث في القوالب"
+                className="h-9 w-56 rounded-full bg-[color:var(--color-muted)] pe-9 ps-3 text-xs"
+              />
+            </div>
             <span id="section-filter-label" className="hidden text-xs text-[color:var(--color-muted-foreground)] sm:inline">القسم:</span>
             <Select value={sectionFilter} onValueChange={(v) => setSectionFilter(v ?? "ALL")}>
               <SelectTrigger
@@ -751,6 +827,66 @@ const WhatsAppMetaTemplates: React.FC<{
           </div>
         }
       >
+        {/* Status filter chips with counts — single-click to scope the list. */}
+        <div
+          role="tablist"
+          aria-label="تصفية حسب الحالة"
+          className="mb-3 flex flex-wrap items-center gap-1.5"
+        >
+          {[
+            { id: "ALL", label: "الكل", tone: "default" },
+            { id: "PENDING", label: "في الانتظار", tone: "amber" },
+            { id: "APPROVED", label: "معتمدة", tone: "emerald" },
+            { id: "REJECTED", label: "مرفوضة", tone: "red" },
+            { id: "DISABLED", label: "معطلة", tone: "slate" },
+            { id: "PAUSED", label: "متوقفة", tone: "blue" },
+          ].map((chip) => {
+            const active = statusFilter === chip.id;
+            const count = statusFilterCounts[chip.id] ?? 0;
+            const toneActive: Record<string, string> = {
+              default: "bg-[color:var(--color-primary)] text-white",
+              amber: "bg-amber-500 text-white",
+              emerald: "bg-emerald-500 text-white",
+              red: "bg-red-500 text-white",
+              slate: "bg-slate-500 text-white",
+              blue: "bg-blue-500 text-white",
+            };
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setStatusFilter(chip.id)}
+                disabled={count === 0 && chip.id !== "ALL"}
+                className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all duration-150 ${
+                  active
+                    ? `${toneActive[chip.tone]} shadow-sm`
+                    : "bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--color-muted)]/80 disabled:opacity-40"
+                }`}
+              >
+                {chip.label}
+                <span
+                  className={`inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                    active ? "bg-white/20" : "bg-[color:var(--color-card)]/60"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+          {(searchQuery || statusFilter !== "ALL" || sectionFilter !== "ALL") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); setSectionFilter("ALL"); }}
+              className="h-7 rounded-full px-2 text-xs text-[color:var(--color-muted-foreground)]"
+            >
+              <XCircle className="size-3" /> مسح الفلاتر
+            </Button>
+          )}
+        </div>
         {loading ? (
           <div className="space-y-4">
             <div className="space-y-2 rounded-xl border border-[color:var(--shell-control-border)] p-3">
@@ -802,18 +938,68 @@ const WhatsAppMetaTemplates: React.FC<{
             ) : null}
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8"></TableHead>
-                <TableHead>الاسم</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>التصنيف</TableHead>
-                <TableHead>القسم</TableHead>
-                <TableHead>اللغات</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
+          <>
+            {/* Bulk action toolbar — only shown when at least one row is selected. */}
+            {selectedRows.size > 0 ? (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--color-primary)]/30 bg-[color:var(--color-primary)]/[0.04] px-3 py-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="size-3.5 text-[color:var(--color-primary)]" />
+                  <span className="font-medium">
+                    تم تحديد {selectedRows.size} قالب
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedRows(new Set())}
+                    className="h-7 rounded-full px-2 text-xs"
+                  >
+                    إلغاء التحديد
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchTemplates}
+                    disabled={loading}
+                    className="h-7 rounded-full text-xs"
+                  >
+                    <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} /> تحديث المحدد
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 rounded-full text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+                    onClick={() => {
+                      const first = Array.from(selectedRows)[0];
+                      if (first) setDeleteConfirm(first);
+                    }}
+                  >
+                    <Trash2 className="size-3" /> حذف المحدد ({selectedRows.size})
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleAll}
+                      aria-label="تحديد كل القوالب الظاهرة"
+                      className="translate-y-[2px]"
+                    />
+                  </TableHead>
+                  <TableHead className="w-8"></TableHead>
+                  <TableHead>الاسم</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>التصنيف</TableHead>
+                  <TableHead>القسم</TableHead>
+                  <TableHead>اللغات</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {Object.entries(groupedTemplates).map(([groupName, groupTemplates]) => {
                 // Default to collapsed so the page doesn't drown in previews
@@ -825,13 +1011,22 @@ const WhatsAppMetaTemplates: React.FC<{
                 const StatusIcon = statusIcon[bestStatus] || AlertTriangle;
                 const _languages = groupTemplates.map(t => t.language).join(", ");
                 void _languages;
+                const isSelected = selectedRows.has(groupName);
                 return (
                   <React.Fragment key={groupName}>
                     <TableRow
-                      className="cursor-pointer transition-colors hover:bg-[var(--color-muted)]/70"
+                      className={`cursor-pointer transition-colors hover:bg-[var(--color-muted)]/70 ${isSelected ? "bg-[color:var(--color-primary)]/[0.04]" : ""}`}
                       onClick={() => toggleGroup(groupName)}
                       aria-expanded={expanded}
                     >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleRow(groupName)}
+                          aria-label={`تحديد قالب ${groupName}`}
+                          className="translate-y-[2px]"
+                        />
+                      </TableCell>
                       <TableCell>
                         {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                       </TableCell>
@@ -998,6 +1193,17 @@ const WhatsAppMetaTemplates: React.FC<{
                             {t.rejected_reason && (
                               <p className="mt-1 text-[10px] text-red-600 dark:text-red-400">{t.rejected_reason}</p>
                             )}
+                            {t.status === "REJECTED" && (
+                              <a
+                                href="https://business.facebook.com/latest/whatsapp_manager/manage_templates"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:underline dark:text-blue-400"
+                              >
+                                <ExternalLink className="size-3" /> افتح في Meta Business
+                              </a>
+                            )}
                           </TableCell>
                           <TableCell colSpan={3}>
                             {/* WhatsApp-style inline preview — replaces the old gray
@@ -1059,6 +1265,7 @@ const WhatsAppMetaTemplates: React.FC<{
               })}
             </TableBody>
           </Table>
+          </>
         )}
       </WhatsAppSurfaceCard>
 
