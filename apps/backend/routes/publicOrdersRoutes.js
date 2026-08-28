@@ -2503,18 +2503,20 @@ router.post('/', async (req, res) => {
         if (!dropshippingRoutingError) {
           console.log('✅ [ORDER-CREATE] Order created successfully:', createdOrder.id, createdOrder.orderNumber);
 
-          // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المتجر
-          try {
-            const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
-            await customerLoyaltyService.applyLoyaltyPointsForOrder({
-              orderId: createdOrder.id,
-              companyId: company.id,
-              changedBy: null
-            }).catch((loyaltyError) => {
-              console.error(`❌ [LOYALTY-AUTO] Failed to award points for storefront order ${createdOrder.orderNumber}:`, loyaltyError.message);
-            });
-          } catch (loyaltyError) {
-            console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+          // 🎁 الولاء: المنح فقط عند التسليم (DELIVERED) — لا تمنح نقاط عند إنشاء طلب المتجر (PENDING)
+          if (createdOrder.status === 'DELIVERED') {
+            try {
+              const customerLoyaltyService = require('../services/hr/customerLoyaltyService');
+              await customerLoyaltyService.applyLoyaltyPointsForOrder({
+                orderId: createdOrder.id,
+                companyId: company.id,
+                changedBy: null
+              }).catch((loyaltyError) => {
+                console.error(`❌ [LOYALTY-AUTO] Failed to award points for storefront order ${createdOrder.orderNumber}:`, loyaltyError.message);
+              });
+            } catch (loyaltyError) {
+              console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+            }
           }
 
           // تصدير Order إلى WooCommerce

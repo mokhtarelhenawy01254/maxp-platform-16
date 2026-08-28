@@ -202,25 +202,30 @@ async function processQualityChanges(companyId = null) {
  */
 async function ensureSchedules(companyId) {
   const prisma = getSharedPrismaClient();
-  const rows = [];
-  for (const [eventType, meta] of Object.entries(CUSTOMER_NOTIFICATION_EVENTS)) {
-    const row = await prisma.customerNotificationSchedule.upsert({
-      where: {
-        companyId_eventType: { companyId, eventType }
-      },
-      update: {},
-      create: {
-        companyId,
-        eventType,
-        enabled: true,
-        activeChannel: 'AUTO',
-        delayValue: meta.defaultDelay,
-        delayUnit: meta.defaultDelayUnit
-      }
+  // قراءة واحدة + createMany للناقص فقط — بدل 13 upsert متتالي على كل طلب
+  // (كانت بتشتغل على كل GET للجدول وكل PUT لصف واحد)
+  const existing = await prisma.customerNotificationSchedule.findMany({
+    where: { companyId },
+    select: { eventType: true }
+  });
+  const have = new Set(existing.map((r) => r.eventType));
+  const missing = Object.entries(CUSTOMER_NOTIFICATION_EVENTS)
+    .filter(([eventType]) => !have.has(eventType))
+    .map(([eventType, meta]) => ({
+      companyId,
+      eventType,
+      enabled: true,
+      activeChannel: 'AUTO',
+      delayValue: meta.defaultDelay,
+      delayUnit: meta.defaultDelayUnit
+    }));
+  if (missing.length > 0) {
+    // skipDuplicates يحمي من سباق طلبين متوازيين بيكتبوا نفس الصفوف (unique: companyId_eventType)
+    await prisma.customerNotificationSchedule.createMany({
+      data: missing,
+      skipDuplicates: true
     });
-    rows.push(row);
   }
-  return rows;
 }
 
 /**
@@ -230,35 +235,12 @@ async function getSchedules(companyId) {
   const prisma = getSharedPrismaClient();
   await ensureSchedules(companyId);
 
-  const [schedules, templates] = await Promise.all([
-    prisma.customerNotificationSchedule.findMany({
-      where: { companyId },
-      orderBy: { eventType: 'asc' }
-    }),
-    prisma.whatsAppNotificationTemplate.findMany({
-      where: {
-        companyId,
-        eventType: { in: Object.keys(CUSTOMER_NOTIFICATION_EVENTS) },
-        isActive: true
-      },
-      orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }]
-    })
-  ]);
-
-  const templatesByEvent = {};
-  for (const tpl of templates) {
-    if (!templatesByEvent[tpl.eventType]) templatesByEvent[tpl.eventType] = [];
-    templatesByEvent[tpl.eventType].push({
-      id: tpl.id,
-      name: tpl.name,
-      content: tpl.content,
-      channel: tpl.channel || 'AUTO',
-      isActive: tpl.isActive,
-      metaTemplateName: tpl.metaTemplateName,
-      metaTemplateId: tpl.metaTemplateId,
-      metaTemplateStatus: tpl.metaTemplateStatus
-    });
-  }
+  // القوالب المدمجة اتشالت: الفرونت بيجيبها أصلاً من /whatsapp-notifications/templates
+  // (محتاج OCCASION/PRODUCTS اللي مش ضمن أحداث الجدول) — فكانت query وpayload زيادة بلا قارئ
+  const schedules = await prisma.customerNotificationSchedule.findMany({
+    where: { companyId },
+    orderBy: { eventType: 'asc' }
+  });
 
   return schedules.map((row) => {
     const meta = CUSTOMER_NOTIFICATION_EVENTS[row.eventType] || {
@@ -274,8 +256,7 @@ async function getSchedules(companyId) {
       category: meta.category,
       trigger: meta.trigger,
       delayValue: row.delayValue,
-      delayUnit: row.delayUnit,
-      templates: templatesByEvent[row.eventType] || []
+      delayUnit: row.delayUnit
     };
   });
 }

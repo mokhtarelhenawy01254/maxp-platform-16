@@ -85,27 +85,28 @@ describe("customerScope", () => {
   test("loadEvents بيدمج schedule + templates في EventRow[] مع تطبيع المتغيرات", async () => {
     const rows = await customerScopeConfig.loadEvents(api as any);
 
-    expect(rows).toHaveLength(3);
+    // صفان من الجدولة — بدون صف placeholder (مناسبة جديدة بقت من الشريط العلوي)
+    expect(rows).toHaveLength(2);
     const loyalty = rows.find((r) => r.code === "LOYALTY_POINTS_AWARDED")!;
-    expect(loyalty.name).toBe("كسب نقاط");
+    // التسمية من EVENT_LABELS الأولاً (الـ backend بيرجّع نص مشوّه الترميز)
+    expect(loyalty.name).toBe("كسب نقاط ولاء");
     expect(loyalty.notifyCustomer).toBe(true);
     expect(loyalty.channel).toBe("BAILEYS");
     expect(loyalty.delayValue).toBe(24);
-    expect(loyalty.trigger).toBe("عند كسب نقاط");
-    // القالب العادي + الميتا مربوطين بالحدث الصحيح
-    expect(loyalty.template?.content).toBe("مرحباً {{customerName}} كسبت {{points}} نقطة");
-    expect(loyalty.metaTemplate?.content).toBe("مرحباً {{customerName}}");
+    // الـ trigger بيتعرّض من EVENT_TRIGGERS في الـ scope
+    expect(loyalty.trigger).toBe("عند تسليم الطلب");
+    // قوالب أحداث الجدولة بتتخزن بصيغة القوس المفرد (variableSyntax: single) —
+    // التطبيع للمزدوج بيحصل للعرض فقط (وللمناسبات/المنتجات عند التجميع)
+    expect(loyalty.template?.content).toBe("مرحباً {customerName} كسبت {points} نقطة");
+    expect(loyalty.metaTemplate?.content).toBe("مرحباً {customerName}");
     // القالب خارج النطاق مستبعد
     expect(loyalty.template?.name).toBe("عادي");
   });
 
-  test("loadEvents بيضيف صف إنشاء قالب مناسبة جديد (occasions)", async () => {
+  test("loadEvents مش بيرجّع صف مناسبة جديدة — الإنشاء من الشريط العلوي", async () => {
     const rows = await customerScopeConfig.loadEvents(api as any);
-    const newOccasion = rows.find((r) => r.id === "__new_occasion__")!;
-    expect(newOccasion).toBeDefined();
-    expect(newOccasion.category).toBe("OCCASION");
-    expect(newOccasion.hasTemplate).toBe(false);
-    expect(newOccasion.notifyCustomer).toBe(true);
+    expect(rows.some((r) => r.id === "__new_occasion__")).toBe(false);
+    expect(rows.some((r) => r.id === "__new_product__")).toBe(false);
   });
 
   test("loadEvents بيجمع قوالب OCCASION حسب eventType: عادي + واتساب بيزنس (ميتا)", async () => {
@@ -142,9 +143,8 @@ describe("customerScope", () => {
     expect(occasion.metaTemplate?.name).toBe("عيد الأم - بيزنس");
     expect(occasion.hasTemplate).toBe(true);
     expect(occasion.hasMetaTemplate).toBe(true);
-    // كل مناسبة = صف واحد بس (+ صف "مناسبة جديدة" الافتراضي)
-    expect(rows.filter((r) => r.category === "OCCASION").length).toBe(2);
-    expect(rows.filter((r) => r.category === "OCCASION" && r.id !== "__new_occasion__").length).toBe(1);
+    // كل مناسبة = صف واحد بس
+    expect(rows.filter((r) => r.category === "OCCASION").length).toBe(1);
   });
 
   test("toggleNotify في صف OCCASION بيفعّل/يوقف القالب نفسه بدل الـ schedule", async () => {
@@ -192,10 +192,25 @@ describe("customerScope", () => {
     expect(f.enableSchedule).toBe(true);
     expect(f.enableTestSender).toBe(true);
     expect(f.enableButtons).toBe(true);
-    expect(f.enableMetaSwitch).toBe(false);
+    expect(f.enableMetaSwitch).toBe(true);
     expect(f.enableReports).toBe(true);
     expect(f.categoryMode).toBe("manual");
-    expect(customerScopeConfig.tabs.map((t) => t.key)).toEqual(["schedule", "occasions", "loyalty", "cashback", "quality", "autoDiscount", "reports"]);
+    expect(customerScopeConfig.tabs.map((t) => t.key)).toEqual([
+      "schedule",
+      "occasions",
+      "products",
+      "loyalty",
+      "cashback",
+      "quality",
+      "autoDiscount",
+      "reports",
+    ]);
+  });
+
+  test("تسمية الكيان ومسار الإعدادات — لأن تبويب الإعدادات معطّل في النطاق", () => {
+    expect(customerScopeConfig.entityLabel).toEqual({ singular: "حدث", plural: "أحداث" });
+    expect(customerScopeConfig.settingsPath).toBe("/orders/status-templates");
+    expect(customerScopeConfig.features.enableSettings).toBe(false);
   });
 
   test("نطاق الخصم التلقائي يشمل الأحداث الثلاثة ومتغيراته", () => {

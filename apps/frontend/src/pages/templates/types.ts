@@ -209,6 +209,18 @@ export interface TemplateScopeConfig {
   /** لتحديد فئة القالب تلقائياً (وضع auto) */
   resolveCategory?: (row: EventRow) => string;
 
+  /**
+   * تسمية الكيان في نصوص الواجهة («حالة» للطلبات، «حدث» للعملاء).
+   * الافتراضي حالة/حالات — النطاقات غير الطلبية بتعيد تعريفه.
+   */
+  entityLabel?: { singular: string; plural: string };
+
+  /**
+   * مسار صفحة إعدادات الإشعارات — يُستخدم في رسالة «الإشعارات معطلة» لما
+   * النطاق نفسه مش شايل تبويب الإعدادات (enableSettings: false).
+   */
+  settingsPath?: string;
+
   /** فئات السجل اللي يعرضها تقرير الرسائل — لو فاضية نستخدم فئات الطلبات الافتراضية */
   reportCategories?: string[];
 

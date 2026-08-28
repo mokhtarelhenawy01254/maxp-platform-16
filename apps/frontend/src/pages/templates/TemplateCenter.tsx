@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -450,6 +451,9 @@ function buildVariableDescriptionsFrom(variables: { var: string; desc: string }[
 
 export default function TemplateCenter({ config }: { config: TemplateScopeConfig }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  // تسمية الكيان في نصوص الواجهة — «حالة» للطلبات، «حدث» للعملاء وغيرهم
+  const noun = config.entityLabel ?? { singular: "حالة", plural: "حالات" };
   const [activeTab, setActiveTab] = useState(() => config.tabs[0]?.key || "all");
 
   const variableDescriptions = useMemo(() => buildVariableDescriptionsFrom(config.variables), [config.variables]);
@@ -457,6 +461,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
   const [statuses, setStatuses] = useState<StatusWithTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusWithTemplate | null>(null);
@@ -535,9 +540,21 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         delayUnit: editingSchedule.delayUnit,
       });
       toast.success("تم حفظ الجدول بنجاح");
+      // تحديث موضعي للصف بقيم الحفظ — بدل إعادة جلب كل الأحداث والقوالب بعد كل حفظ
+      setStatuses((prev) =>
+        prev.map((s) =>
+          s.id === row.id
+            ? {
+                ...s,
+                notifyCustomer: editingSchedule.enabled,
+                channel: editingSchedule.activeChannel,
+                delayValue: editingSchedule.delayValue,
+                delayUnit: editingSchedule.delayUnit,
+              }
+            : s,
+        ),
+      );
       setEditingSchedule(null);
-      const fresh = await config.loadEvents(apiClient);
-      setStatuses(fresh as StatusWithTemplate[]);
     } catch (e: any) {
       toast.error(e?.response?.data?.error || "فشل الحفظ");
     } finally {
@@ -561,7 +578,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       });
       // زر «تراجع» يفتح نافذة قصيرة لعكس التبديل لو كان بالغلط
       toast.success(
-        next ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة") : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة"),
+        next ? t("orders.notifyEnabled", `تم تفعيل إشعار: ${row.name}`) : t("orders.notifyDisabled", `تم إيقاف إشعار: ${row.name}`),
         {
           action: {
             label: "تراجع",
@@ -597,7 +614,21 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       if (res?.success) toast.success("تم إرسال الإشعار التجريبي");
       else toast.error(res?.message || res?.error || "فشل الإرسال");
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "فشل الإرسال التجريبي");
+      // الإشعارات معطلة على مستوى الشركة — الرسالة الافتراضية من السيرفر بتوجه
+      // لتبويب إعدادات مش موجود في كل النطاقات، فنتوجه للمسار الصحيح
+      if (e?.response?.data?.error === "DISABLED") {
+        if (config.features.enableSettings) {
+          toast.error(e?.response?.data?.message || "الإشعارات معطلة — فعّلها من تبويب الإعدادات");
+        } else if (config.settingsPath) {
+          toast.error("الإشعارات معطّلة حالياً — بتتدار من صفحة قوالب إشعارات الطلبات", {
+            action: { label: "فتح الإعدادات", onClick: () => navigate(config.settingsPath!) },
+          });
+        } else {
+          toast.error("الإشعارات معطلة حالياً");
+        }
+      } else {
+        toast.error(e?.response?.data?.message || e?.response?.data?.error || "فشل الإرسال التجريبي");
+      }
     } finally {
       setTesting(false);
     }
@@ -608,7 +639,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     try {
       const rows = await config.loadEvents(apiClient);
       setStatuses(rows as StatusWithTemplate[]);
+      setLoadError(false);
     } catch (err) {
+      setLoadError(true);
       console.error("Failed to fetch statuses with templates", err);
       toast.error(t("orders.loadError", "حدث خطأ في تحميل البيانات"));
     } finally {
@@ -1035,8 +1068,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       await config.toggleNotify(apiClient, status as EventRow);
       toast.success(
         nextValue
-          ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة")
-          : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة")
+          ? t("orders.notifyEnabled", `تم تفعيل إشعار: ${status.name}`)
+          : t("orders.notifyDisabled", `تم إيقاف إشعار: ${status.name}`)
       );
     } catch (err: any) {
       // Rollback: نعيد الحالة الأصلية لو فشل الـ API
@@ -1556,6 +1589,23 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         })}
       </div>
 
+      {/* فشل التحميل — بانر ثابت بزرار إعادة محاولة بدل empty state بيضلل المستخدم */}
+      {!loading && loadError && (
+        <div
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300"
+          role="alert"
+        >
+          <span>فشل تحميل البيانات — القوالب والأحداث مش ظاهرة. اتأكد من الاتصال وحاول تاني.</span>
+          <button
+            onClick={() => fetchData()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700"
+          >
+            <ArrowPathIcon className="h-3.5 w-3.5" />
+            إعادة المحاولة
+          </button>
+        </div>
+      )}
+
       <div id={`panel-${activeTab}`} role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
       {activeTab === "reports" ? (
         <StatusReportTab statuses={statuses} config={config} />
@@ -1876,7 +1926,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
             <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
               <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
               <span>
-                {statusesWithoutTemplate.length} حالة بدون قالب واتساب
+                {statusesWithoutTemplate.length} {noun.plural} بدون قالب واتساب
                 {activeTab !== "all" ? " في هذا القسم" : ""}
               </span>
             </div>
@@ -1900,7 +1950,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث باسم الحالة أو الكود..."
+                placeholder="ابحث بالاسم أو الكود..."
                 className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pe-9 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
               <svg
@@ -2065,7 +2115,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 </button>
               </div>
               <span className="text-xs text-slate-400 dark:text-slate-500">
-                {visibleStatuses.length} حالة في هذا التبويب
+                {visibleStatuses.length} {noun.plural} في هذا التبويب
               </span>
             </div>
           )}
@@ -2091,15 +2141,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">
                 {searchQuery || activeChip !== "all"
-                  ? "لا توجد حالات مطابقة لبحثك"
-                  : "لا توجد حالات بعد"}
+                  ? `لا توجد ${noun.plural} مطابقة لبحثك`
+                  : `لا توجد ${noun.plural} بعد`}
               </p>
               <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
                 {searchQuery || activeChip !== "all"
-                  ? "جرّب تغيير كلمات البحث أو إلغاء الفلاتر لرؤية كل الحالات."
+                  ? "جرّب تغيير كلمات البحث أو إلغاء الفلاتر لرؤية كل النتائج."
                   : config.scope === "customers"
                     ? "قوالب إشعارات العملاء هتظهر هنا أول ما تتضاف."
-                    : "الحالات هتظهر هنا أول ما تتضاف."}
+                    : `ال${noun.plural} هتظهر هنا أول ما تتضاف.`}
               </p>
               {(searchQuery || activeChip !== "all") && (
                 <button
@@ -2183,7 +2233,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {metaDialogTitle}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              نموذج إنشاء وتعديل قالب رسالة واتساب للحالة
+              نموذج إنشاء وتعديل قالب رسالة واتساب لل{noun.singular}
             </DialogDescription>
           </DialogHeader>
           {dialogOpen && selectedStatus && dialogMode === "switch" && (
@@ -2205,7 +2255,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 <p className="-mt-0.5 mb-2 text-[10px] text-slate-400 dark:text-slate-500">
                   {isMetaBound
                     ? `الربط الحالي: ${originalMetaTemplateName} — اختار قالب تاني عشان تغيّره (مش بيغيّر محتوى الرسالة).`
-                    : "اختار قالب معتمد وربطه بالحالة — الرسالة اللي هتتبعت هي نص قالب ميتا نفسه."}
+                    : `اختار قالب معتمد وربطه بال${noun.singular} — الرسالة اللي هتتبعت هي نص قالب ميتا نفسه.`}
                 </p>
                 <MetaTemplateSelect
                   metaSessions={metaSessions}
@@ -2359,7 +2409,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     if (!selectedMt || otherBoundEvents.length === 0) return null;
                     return (
                       <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                        ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة لحالة، اعمل قالب ميتا جديد.
+                        ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة ل{noun.singular}، اعمل قالب ميتا جديد.
                       </div>
                     );
                   })()}
@@ -2586,6 +2636,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
                     ℹ️ القالب مربوط بقالب ميتا معتمد — الأزرار الجديدة (زي «صفحة العميل») لازم تتنشر/تراجع على ميتا تاني عشان تبقى في القالب المعتمد.
                   </p>
+                ) : config.features.quickReplyActions ? (
+                  <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                    لما العميل يضغط على الزر هيتم تنفيذ الإجراء المحدد أدناه
+                  </p>
                 ) : (
                   <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
                     لما العميل يضغط على الزر، حالة الطلب هتتغير تلقائيًا للحالة المحددة أدناه
@@ -2612,7 +2666,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                             }}
                             className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           >
-                            <option value="QUICK_REPLY">تغيير الحالة</option>
+                            <option value="QUICK_REPLY">{config.features.quickReplyActions ? "إجراء سريع" : "تغيير الحالة"}</option>
                             <option value="LINK">صفحة العميل</option>
                           </select>
                         </div>
@@ -3474,6 +3528,8 @@ function escapeCsvCell(value: unknown): string {
 
 function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[]; config: TemplateScopeConfig }) {
   const { t } = useTranslation();
+  // تسمية موحّدة مع باقي الصفحة — «حالة» للطلبات و«حدث» لباقي النطاقات
+  const noun = config.entityLabel ?? { singular: "حالة", plural: "حالات" };
   const [range, setRange] = useState<ReportRange>("today");
   const [startDate, setStartDate] = useState(() => localDateStr(new Date()));
   const [endDate, setEndDate] = useState(() => localDateStr(new Date()));
@@ -3740,9 +3796,9 @@ function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[];
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
               <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <span className="font-semibold">حالات مفعّلة بدون إرسالات في هذه الفترة:</span>{" "}
+                <span className="font-semibold">{noun.plural} مفعّلة بدون إرسالات في هذه الفترة:</span>{" "}
                 {enabledWithoutSends.map((s) => s.name).join("، ")}
-                <span className="block text-xs opacity-80">لو الحالة دي كان المفروض تتبعت فيها رسايل، راجع قالبها من تبويب «الكل».</span>
+                <span className="block text-xs opacity-80">لو كان مفروض تتبعت رسايل منها، راجع قوالبها من تبويبات القوالب.</span>
               </div>
             </div>
           )}

@@ -161,6 +161,10 @@ export const customerScopeConfig: TemplateScopeConfig = {
   documentTitle: "إشعارات العملاء",
   title: "إشعارات العملاء",
   description: "إدارة إشعارات الولاء والكاش باك والخصم التلقائي وتقسيم العملاء — القوالب ومواعيد الإرسال",
+  // الصفحة أحداث ولاء/كاش باك مش حالات طلبات — التسمية بتظهر في البحث والعدادات والتحذيرات
+  entityLabel: { singular: "حدث", plural: "أحداث" },
+  // تبويب الإعدادات معطّل في النطاق ده — الإعدادات شركة-عامة بتتدار من صفحة قوالب الطلبات
+  settingsPath: "/orders/status-templates",
   variableSyntax: "single",
   variables: CUSTOMER_VARIABLES,
   sampleVariables: {
