@@ -23,10 +23,15 @@ import {
   ChevronRight,
   Shield,
   Search,
+  MoreHorizontal,
+  Copy,
+  Eye,
+  Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +42,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -56,6 +68,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
 import {
@@ -476,6 +494,23 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const sectionFilterOptions = useMemo(() => TEMPLATE_SECTIONS, []);
 
+  // Aggregated counts for the status health banner. We collapse variants of
+  // the same template (different languages) into the template-group level so
+  // a single failing variant does not double-count the overall health.
+  const statusCounts = useMemo(() => {
+    const counts = { approved: 0, pending: 0, rejected: 0, disabled: 0, paused: 0, total: 0 };
+    for (const group of Object.values(groupedTemplates)) {
+      counts.total += 1;
+      const statuses = new Set(group.map((t) => t.status));
+      if (statuses.has("REJECTED")) counts.rejected += 1;
+      else if (statuses.has("PENDING")) counts.pending += 1;
+      else if (statuses.has("DISABLED")) counts.disabled += 1;
+      else if (statuses.has("PAUSED")) counts.paused += 1;
+      else if (statuses.has("APPROVED")) counts.approved += 1;
+    }
+    return counts;
+  }, [groupedTemplates]);
+
   const toggleGroup = (name: string) => {
     setExpandedGroups(p => ({ ...p, [name]: !p[name] }));
   };
@@ -558,53 +593,127 @@ const WhatsAppMetaTemplates: React.FC<{
     : "قوالب Meta API";
 
   return (
-    <WhatsAppPageShell
-      title={pageTitle}
-      description="إدارة قوالب واتساب بزنس المسجلة في Meta Cloud API"
-      icon={Globe}
-      backHref="/whatsapp"
-      backLabel={t("common.back") as string}
-      eyebrow={superAdminMode ? `Company: ${companyName}` : "WhatsApp Workspace"}
-      actions={
-        <div className="flex gap-2">
-          <Select value={selectedSessionId} onValueChange={(v) => setSelectedSessionId(v ?? '')}>
-            <SelectTrigger className="h-10 w-56 rounded-full bg-[color:var(--color-muted)]">
-              <SelectValue placeholder="اختر جلسة">
-                {(value: string | null) => {
-                  if (!value) return null;
-                  const s = sessions.find((x) => x.id === value);
-                  if (!s) return value;
+    <TooltipProvider delayDuration={300}>
+      <WhatsAppPageShell
+        title={pageTitle}
+        description="إدارة قوالب واتساب بزنس المسجلة في Meta Cloud API"
+        icon={Globe}
+        backHref="/whatsapp"
+        backLabel={t("common.back") as string}
+        eyebrow={superAdminMode ? `Company: ${companyName}` : "WhatsApp Workspace"}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={selectedSessionId} onValueChange={(v) => setSelectedSessionId(v ?? '')}>
+              <SelectTrigger className="h-10 w-56 rounded-full bg-[color:var(--color-muted)]">
+                <SelectValue placeholder="اختر جلسة">
+                  {(value: string | null) => {
+                    if (!value) return null;
+                    const s = sessions.find((x) => x.id === value);
+                    if (!s) return value;
+                    const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
+                    return s.name && !isCuid ? s.name : s.phoneNumber || s.id;
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {sessions.map((s) => {
                   const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
-                  return s.name && !isCuid ? s.name : s.phoneNumber || s.id;
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {sessions.map((s) => {
-                const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
-                const displayName = (s.name && !isCuid) ? s.name : s.phoneNumber || s.id;
-                return (
-                  <SelectItem key={s.id} value={s.id}>{displayName}</SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={fetchTemplates} disabled={loading} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          <Button variant="outline" onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
-            <History className="size-4" /> السجل
-          </Button>
-          <Button variant="outline" onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
-            <Library className="size-4" /> قوالب جاهزة
-          </Button>
-          <Button onClick={() => { setCreateStep(1); setCreateOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
-            <Plus className="size-4" /> قالب جديد
-          </Button>
-        </div>
-      }
-    >
+                  const displayName = (s.name && !isCuid) ? s.name : s.phoneNumber || s.id;
+                  return (
+                    <SelectItem key={s.id} value={s.id}>{displayName}</SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={fetchTemplates}
+                  disabled={loading}
+                  aria-label="تحديث القوالب"
+                  className="size-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">تحديث القوالب</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }}
+                  aria-label="فتح سجل العمليات"
+                  className="h-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  <History className="size-4" /> السجل
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">سجل آخر عمليات على القوالب</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }}
+                  aria-label="فتح مكتبة القوالب الجاهزة"
+                  className="h-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  <Library className="size-4" /> قوالب جاهزة
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">قوالب معتمدة جاهزة للنسخ</TooltipContent>
+            </Tooltip>
+            <Button
+              onClick={() => { setCreateStep(1); setCreateOpen(true); }}
+              aria-label="إنشاء قالب جديد"
+              className="h-11 rounded-full px-5 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md"
+            >
+              <Plus className="size-4" /> قالب جديد
+            </Button>
+          </div>
+        }
+      >
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+      {/* Health banner — surfaces template-approval state so the user does
+          not have to read every badge. Hidden when there is nothing to act on. */}
+      {!loading && statusCounts.total > 0 && (statusCounts.rejected > 0 || statusCounts.pending > 0) ? (
+        <Alert
+          className={
+            statusCounts.rejected > 0
+              ? "border-red-300/70 bg-red-500/[0.06] text-red-800 dark:border-red-500/30 dark:bg-red-500/[0.06] dark:text-red-200"
+              : "border-amber-300/70 bg-amber-500/[0.06] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/[0.06] dark:text-amber-200"
+          }
+        >
+          {statusCounts.rejected > 0 ? (
+            <XCircle className="size-4" aria-hidden="true" />
+          ) : (
+            <Clock className="size-4" aria-hidden="true" />
+          )}
+          <AlertTitle className="text-sm font-semibold">
+            {statusCounts.rejected > 0
+              ? `${statusCounts.rejected} قالب${statusCounts.rejected === 1 ? "" : "ات"} مرفوض${statusCounts.rejected === 1 ? "" : "ة"} من Meta — يحتاج تعديل`
+              : `${statusCounts.pending} قالب${statusCounts.pending === 1 ? "" : "ات"} في انتظار موافقة Meta`}
+          </AlertTitle>
+          <AlertDescription className="text-xs leading-relaxed">
+            {statusCounts.rejected > 0
+              ? "افتح القالب لقراءة سبب الرفض، عدّل المحتوى، ثم أعد إرساله للمراجعة."
+              : "عادةً تتم الموافقة خلال بضع دقائق إلى 24 ساعة. اضغط تحديث للتحقق من الحالة."}
+            {statusCounts.approved > 0 ? (
+              <>
+                {" · "}
+                <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                  {statusCounts.approved} معتمدة
+                </span>
+              </>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <WhatsAppSurfaceCard
         title="قوالب Meta API"
         description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم"
@@ -696,38 +805,115 @@ const WhatsAppMetaTemplates: React.FC<{
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon-sm" onClick={() => {
-                            const tmpl = groupTemplates[0];
-                            if (tmpl) setViewTemplate(tmpl);
-                          }}>
-                            <FileText className="size-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon-sm" onClick={() => {
-                            const tmpl = groupTemplates[0]!;
-                            const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
-                            const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
-                            const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
-                            const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
-                            setEditForm({
-                              name: tmpl.name,
-                              language: tmpl.language,
-                              category: tmpl.category,
-                              headerFormat: headerComponent?.format || "TEXT",
-                              headerText: headerComponent?.text || "",
-                              headerMediaHandle: headerComponent?.example?.header_handle?.[0] || "",
-                              headerMediaName: headerComponent?.example?.header_handle?.[0] || "",
-                              bodyText: bodyComponent?.text || "",
-                              footerText: footerComponent?.text || "",
-                              buttonText: buttonsComponent?.buttons?.[0]?.text || "",
-                              buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
-                            });
-                            setEditOpen(true);
-                          }}>
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon-sm" className="text-red-500 dark:text-red-400" onClick={() => setDeleteConfirm(groupName)}>
-                            <Trash2 className="size-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="معاينة سريعة"
+                                onClick={() => {
+                                  const tmpl = groupTemplates[0];
+                                  if (tmpl) setViewTemplate(tmpl);
+                                }}
+                              >
+                                <Eye className="size-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">معاينة سريعة</TooltipContent>
+                          </Tooltip>
+                          <DropdownMenu>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label="المزيد من الإجراءات"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreHorizontal className="size-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">المزيد من الإجراءات</TooltipContent>
+                            </Tooltip>
+                            <DropdownMenuContent align="end" sideOffset={4} onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const tmpl = groupTemplates[0]!;
+                                  const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
+                                  const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
+                                  const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
+                                  const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
+                                  setEditForm({
+                                    name: tmpl.name,
+                                    language: tmpl.language,
+                                    category: tmpl.category,
+                                    headerFormat: headerComponent?.format || "TEXT",
+                                    headerText: headerComponent?.text || "",
+                                    headerMediaHandle: headerComponent?.example?.header_handle?.[0] || "",
+                                    headerMediaName: headerComponent?.example?.header_handle?.[0] || "",
+                                    bodyText: bodyComponent?.text || "",
+                                    footerText: footerComponent?.text || "",
+                                    buttonText: buttonsComponent?.buttons?.[0]?.text || "",
+                                    buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
+                                  });
+                                  setEditOpen(true);
+                                }}
+                              >
+                                <Pencil className="ml-2 size-4" />
+                                تعديل القالب
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const tmpl = groupTemplates[0];
+                                  if (tmpl) setViewTemplate(tmpl);
+                                }}
+                              >
+                                <FileText className="ml-2 size-4" />
+                                عرض التفاصيل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  // Open a fresh "create" form pre-filled with this template's content.
+                                  // Uses the same wiring as `applyLibraryTemplate` so the user can clone
+                                  // and tweak instead of editing in place — safer for approved templates
+                                  // (Meta disallows edits to APPROVED templates, only deletion + recreate).
+                                  const tmpl = groupTemplates[0]!;
+                                  const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
+                                  const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
+                                  const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
+                                  const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
+                                  setForm({
+                                    name: `${tmpl.name}_copy`,
+                                    language: tmpl.language,
+                                    category: tmpl.category,
+                                    headerFormat: headerComponent?.format || "TEXT",
+                                    headerText: headerComponent?.text || "",
+                                    headerMediaHandle: "",
+                                    headerMediaName: "",
+                                    bodyText: bodyComponent?.text || "",
+                                    footerText: footerComponent?.text || "",
+                                    buttonText: buttonsComponent?.buttons?.[0]?.text || "",
+                                    buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
+                                  });
+                                  setCreateStep(2);
+                                  setCreateOpen(true);
+                                }}
+                              >
+                                <Copy className="ml-2 size-4" />
+                                تكرار القالب
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeleteConfirm(groupName)}
+                                className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                              >
+                                <Trash2 className="ml-2 size-4" />
+                                حذف القالب
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -1425,6 +1611,7 @@ const WhatsAppMetaTemplates: React.FC<{
         </DialogContent>
       </Dialog>
     </WhatsAppPageShell>
+    </TooltipProvider>
   );
 };
 

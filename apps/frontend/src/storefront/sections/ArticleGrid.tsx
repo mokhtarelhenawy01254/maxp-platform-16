@@ -1,5 +1,6 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation } from "react-router-dom";
+import { getStorefrontScope } from "../../utils/storefrontApi";
 
 interface Article {
   title: string;
@@ -24,52 +25,76 @@ const demoArticles: Article[] = [
     title: "How To Choose The Right Electric Beard Trimmers",
     excerpt: "Let's be honest: most guys treat their beard trimmer like a blunt instrument. You grab whatever is in the drawer, crank it to the highest setting, and hope for the best.",
     image: "https://images.unsplash.com/photo-1621605815971-fbc98d665033?auto=format&fit=crop&q=80&w=800",
-    href: "/shop",
+    href: "#articles",
     badge: "Editor's Pick",
   },
   {
     title: "Winter To Spring Mens Grooming Transition Guide",
     excerpt: "As spring approaches, you'll need to adjust your grooming routine for warmer weather and increasing humidity.",
     image: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=800",
-    href: "/shop",
+    href: "#articles",
     badge: "Guide",
   },
   {
     title: "Winter Lip Care For Men",
     excerpt: "Your lips need extra protection during winter since men's skin is naturally thinner with fewer oil glands.",
     image: "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&q=80&w=800",
-    href: "/shop",
+    href: "#articles",
     badge: "Guide",
   },
   {
     title: "Winter Hand Cracking Skincare Fix",
     excerpt: "Your hands are especially vulnerable to winter's harsh assault, losing up to 25% of moisture in cold weather.",
     image: "https://images.unsplash.com/photo-1571781926291-c477ebfd024b?auto=format&fit=crop&q=80&w=800",
-    href: "/shop",
+    href: "#articles",
   },
   {
     title: "Winter Beard Care Guide Top Picks For Men",
     excerpt: "Winter skin and beard respond to oils that mimic natural sebum. Look for base oils like jojoba, argan, and squalane.",
     image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?auto=format&fit=crop&q=80&w=800",
-    href: "/shop",
+    href: "#articles",
   },
   {
     title: "Why Your Beard Feels Brittle In Cold Weather",
     excerpt: "Your beard feels brittle in cold weather because winter conditions reduce your skin's natural oil production.",
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=800",
-    href: "/shop",
+    href: "#articles",
   },
 ];
 
 const ArticleGrid: React.FC<Props> = ({ settings }) => {
   const limit = Number(settings?.limit) || 6;
-  const articles = demoArticles.slice(0, limit);
+  const location = useLocation();
+  const [liveArticles, setLiveArticles] = useState<Article[] | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const companyId = params.get("companyId") || getStorefrontScope();
+    if (!companyId || companyId === "server" || companyId.includes("localhost")) return;
+    fetch(`/api/v1/public/articles?companyId=${encodeURIComponent(companyId)}&limit=${limit}`, { credentials: "include" })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j?.success && Array.isArray(j.data?.items) && j.data.items.length > 0) {
+          const mapped: Article[] = j.data.items.map((a: any, idx: number) => ({
+            title: a.title,
+            excerpt: a.excerpt || "",
+            image: a.heroImage || demoArticles[idx % demoArticles.length].image,
+            href: `/store/articles/${a.slug}?companyId=${encodeURIComponent(companyId)}`,
+            badge: idx === 0 ? "Editor's Pick" : a.category || "Guide",
+            date: a.publishedAt,
+          }));
+          setLiveArticles(mapped);
+        }
+      })
+      .catch(() => {});
+  }, [limit, location.search]);
+
+  const articles = (liveArticles && liveArticles.length > 0 ? liveArticles : demoArticles).slice(0, limit);
 
   return (
     <section className="w-full bg-background py-8" id="articles">
       <div className="container px-4 md:px-6">
         <div className="mx-auto max-w-[1100px]">
-          {/* First featured large card matching original Editor's Pick */}
           {articles[0] ? (
             <Link
               to={articles[0].href}
@@ -92,7 +117,7 @@ const ArticleGrid: React.FC<Props> = ({ settings }) => {
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {articles.slice(1).map((a, i) => (
               <Link
-                key={i}
+                key={`${a.title}-${i}`}
                 to={a.href}
                 className="group overflow-hidden rounded-lg border border-[#e8e8e8] bg-white transition hover:-translate-y-1 hover:shadow-[0_8px_30px_rgba(0,0,0,0.1)]"
               >
@@ -107,20 +132,6 @@ const ArticleGrid: React.FC<Props> = ({ settings }) => {
                 </div>
               </Link>
             ))}
-          </div>
-
-          <div className="mt-8 flex justify-center gap-2">
-            <span className="rounded border border-[#19212B] bg-[#19212B] px-3 py-1.5 text-sm font-bold text-white">1</span>
-            <Link to="/shop" className="rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-sm text-[#19212B] hover:bg-[#f8f8f8]">
-              2
-            </Link>
-            <Link to="/shop" className="rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-sm text-[#19212B] hover:bg-[#f8f8f8]">
-              3
-            </Link>
-            <span className="px-2 py-1.5 text-sm text-[#888]">…</span>
-            <Link to="/shop" className="rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-sm text-[#19212B] hover:bg-[#f8f8f8]">
-              Next →
-            </Link>
           </div>
         </div>
       </div>

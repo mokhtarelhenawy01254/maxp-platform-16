@@ -79,6 +79,20 @@ const renderHeroAction = (
   className: string,
 ) => {
   if (!href || !label?.trim()) return null;
+  if (href.startsWith("#")) {
+    return (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault();
+          document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
+        }}
+        className={className}
+      >
+        {label}
+      </a>
+    );
+  }
   return isExternalHref(href) ? (
     <a href={href} target="_blank" rel="noreferrer" className={className}>
       {label}

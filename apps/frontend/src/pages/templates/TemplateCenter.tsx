@@ -521,6 +521,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const [testPhone, setTestPhone] = useState("");
   const [testEvent, setTestEvent] = useState("");
   const [testing, setTesting] = useState(false);
+  // ── شريط الإنشاء الموحد فوق كل تبويب (عربي) ──
+  const [topCreateEvent, setTopCreateEvent] = useState("");
 
   const saveScheduleRow = async (row: EventRow) => {
     if (!editingSchedule || !config.saveSchedule) return;
@@ -1276,9 +1278,29 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   };
 
   const activeTabDef = config.tabs.find((tb) => tb.key === activeTab);
-  const filteredStatuses = activeTabDef?.kind === "list" && activeTabDef.filter
-    ? statuses.filter((s) => activeTabDef.filter!(s as EventRow))
-    : statuses;
+  const filteredStatuses = useMemo(() => {
+    if (activeTabDef?.kind === "list" && activeTabDef.filter) {
+      return statuses.filter((s) => activeTabDef.filter!(s as EventRow));
+    }
+    return statuses;
+  }, [statuses, activeTab, config.tabs]);
+
+  // مزامنة اختيار نوع الحدث في شريط الإنشاء العلوي مع التبويب الحالي
+  useEffect(() => {
+    if (config.scope !== "customers" || activeTabDef?.kind !== "list") return;
+    // حالة فارغة: occasions/products بدون صفوف — اضبط اختيار افتراضي لزر الإنشاء الأول
+    if (filteredStatuses.length === 0) {
+      if (activeTab === "occasions" && topCreateEvent !== "__new_occasion__") setTopCreateEvent("__new_occasion__");
+      else if (activeTab === "products" && topCreateEvent !== "__new_product__") setTopCreateEvent("__new_product__");
+      return;
+    }
+    if (!topCreateEvent && filteredStatuses.length > 0) {
+      setTopCreateEvent(filteredStatuses[0].code);
+    }
+    if (topCreateEvent && !filteredStatuses.some((s) => s.code === topCreateEvent) && topCreateEvent !== "__new_occasion__" && topCreateEvent !== "__new_product__") {
+      setTopCreateEvent(filteredStatuses[0]?.code || "");
+    }
+  }, [activeTab, filteredStatuses, topCreateEvent, activeTabDef?.kind, config.scope]);
 
   const visibleStatuses = useMemo(
     () => filteredStatuses.filter((s) => showInternal || !s.isNonNotifiable),
@@ -1944,14 +1966,108 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
             )}
           </div>
 
-          {activeTab === "occasions" && (
-            <button
-              onClick={openNewOccasion}
-              className="mb-4 flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
-            >
-              <PlusIcon className="h-4 w-4" />
-              إضافة مناسبة جديدة
-            </button>
+          {/* ── شريط الإنشاء الموحد — فوق كل تبويب قائمة (عربي) — للعملاء فقط ── */}
+          {config.scope === "customers" && activeTabDef?.kind === "list" && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/50">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* اختيار نوع الحدث بالعربي — ظاهر دائماً قبل زر الإنشاء */}
+                {filteredStatuses.length > 0 ? (
+                  <select
+                    value={topCreateEvent || filteredStatuses[0]?.code || ""}
+                    onChange={(e) => setTopCreateEvent(e.target.value)}
+                    aria-label="نوع الحدث"
+                    className="min-w-[200px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    {filteredStatuses.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name} {s.hasTemplate || s.hasMetaTemplate ? "— به قالب" : "— بدون قالب"}
+                      </option>
+                    ))}
+                    {activeTab === "occasions" && (
+                      <option value="__new_occasion__">＋ مناسبة جديدة…</option>
+                    )}
+                    {activeTab === "products" && (
+                      <option value="__new_product__">＋ قالب منتج جديد…</option>
+                    )}
+                  </select>
+                ) : (
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    {activeTab === "occasions" ? "لا توجد مناسبات بعد — أنشئ أول مناسبة" : activeTab === "products" ? "لا توجد قوالب منتجات بعد" : "لا توجد أحداث في هذا التبويب"}
+                  </span>
+                )}
+                <button
+                  disabled={filteredStatuses.length > 0 && !topCreateEvent && !filteredStatuses[0]?.code}
+                  onClick={() => {
+                    // حالة فارغة: لا صفوف — إنشاء مباشر
+                    if (filteredStatuses.length === 0) {
+                      if (activeTab === "occasions") { openNewOccasion(); return; }
+                      if (activeTab === "products") {
+                        const newStatus: StatusWithTemplate = {
+                          id: "__new_product__",
+                          code: `NEW_PRODUCT_${Date.now().toString(36).toUpperCase()}`,
+                          name: "قالب منتج جديد",
+                          color: "#0EA5E9",
+                          sortOrder: 200000,
+                          statusType: "products",
+                          notifyCustomer: true,
+                          isSystemStatus: false,
+                          template: null,
+                          metaTemplate: null,
+                          hasTemplate: false,
+                          hasMetaTemplate: false,
+                          isNonNotifiable: false,
+                          category: "PRODUCTS",
+                        };
+                        openCreateDialog(newStatus, "regular");
+                        return;
+                      }
+                      toast.error("لا توجد أحداث في هذا التبويب");
+                      return;
+                    }
+                    const code = topCreateEvent || filteredStatuses[0]?.code || "";
+                    if (code === "__new_occasion__") {
+                      openNewOccasion();
+                      return;
+                    }
+                    if (code === "__new_product__") {
+                      // إنشاء قالب منتج جديد — نفس آلية المناسبة لكن بفئة PRODUCTS
+                      const newStatus: StatusWithTemplate = {
+                        id: "__new_product__",
+                        code: `NEW_PRODUCT_${Date.now().toString(36).toUpperCase()}`,
+                        name: "قالب منتج جديد",
+                        color: "#0EA5E9",
+                        sortOrder: 200000,
+                        statusType: "products",
+                        notifyCustomer: true,
+                        isSystemStatus: false,
+                        template: null,
+                        metaTemplate: null,
+                        hasTemplate: false,
+                        hasMetaTemplate: false,
+                        isNonNotifiable: false,
+                        category: "PRODUCTS",
+                      };
+                      openCreateDialog(newStatus, "regular");
+                      return;
+                    }
+                    if (!code) {
+                      toast.error("اختر نوع الحدث أولاً");
+                      return;
+                    }
+                    const status = filteredStatuses.find((s) => s.code === code) || filteredStatuses[0];
+                    if (status) openCreateDialog(status, "regular");
+                    else toast.error("نوع الحدث غير موجود");
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  إنشاء قالب جديد
+                </button>
+              </div>
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                {visibleStatuses.length} حالة في هذا التبويب
+              </span>
+            </div>
           )}
 
           {loading ? (
@@ -2135,12 +2251,38 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
             <div className="space-y-3">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
-                <input
-                  type="text"
-                  value={selectedStatus.code}
-                  disabled
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                />
+                {dialogMode === "create" ? (
+                  <select
+                    value={selectedStatus.code}
+                    onChange={(e) => {
+                      const next = statuses.find((s) => s.code === e.target.value);
+                      if (next) {
+                        setSelectedStatus(next);
+                      } else if (e.target.value.startsWith("CUSTOMER_OCCASION") || e.target.value.startsWith("NEW_PRODUCT")) {
+                        // حالة جديدة (من الشريط العلوي) — حدث الاسم والكود معاً
+                        setSelectedStatus((prev) => prev ? { ...prev, code: e.target.value } : prev);
+                      }
+                    }}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    {statuses
+                      .filter((s) => {
+                        const def = config.tabs.find((tb) => tb.key === activeTab);
+                        if (def?.kind === "list" && def.filter) return def.filter(s as EventRow);
+                        return true;
+                      })
+                      .map((s) => (
+                        <option key={s.code} value={s.code}>{s.name} — {s.code}</option>
+                      ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={`${selectedStatus.name} — ${selectedStatus.code}`}
+                    disabled
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                  />
+                )}
               </div>
 
               <div>
@@ -2175,29 +2317,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 </div>
               )}
 
-              {/* Slot indicator + contextual explainer */}
-              <div className={`rounded-lg p-2.5 text-[11px] leading-relaxed ${
-                dialogSlot === "meta"
-                  ? "bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                  : "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
-              }`}>
-                {dialogSlot === "meta" ? (
-                  isMetaBound && metaBindingChanged ? (
-                    <>🔄 <strong>تبديل قالب ميتا</strong> — هتغير الربط من <code>{originalMetaTemplateName}</code> لقالب جديد. اضغط «حفظ وربط بقالب ميتا» عشان التبديل يتسجّل.</>
-                  ) : isMetaBound ? (
-                    <>☁️ <strong>قالب ميتا مربوط حالياً</strong> — عدّل محتوى الرسالة هنا، بعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.</>
-                  ) : (
-                    <>☁️ <strong>اختار قالب ميتا معتمد</strong> — اختار القالب من القائمة وبعدين اضغط «حفظ وربط بقالب ميتا». بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
-                  )
-                ) : (
-                  <>📱 <strong>النص اللي بتكتبه هنا هو اللي بيتابعت للعميل مباشرة</strong> عبر الواتساب (Baileys). لو عملت كمان قالب ميتا لنفس الحالة، ميتا له الأسبقية لما الجلسة الأساسية تكون Meta Cloud.</>
-                )}
-              </div>
-
-              {dialogSlot === "meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
-                  ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
-                  القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
+              {/* مؤشر القناة المبسط — للعادي فقط (ميتا اتشال حسب الطلب) */}
+              {dialogSlot === "regular" && (
+                <div className="rounded-lg bg-emerald-50 p-2.5 text-[11px] leading-relaxed text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
+                  📱 <strong>النص هنا هو اللي بيوصل للعميل مباشرة</strong> عبر واتساب العادي. لو هتربط قالب ميتا بعد كده، الميتا له الأسبقية لما الجلسة تكون Meta Cloud.
                 </div>
               )}
 
@@ -2220,8 +2343,6 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     loadingMetaTemplates={loadingMetaTemplates}
                     selectedMetaTemplateName={templateForm.metaTemplateName}
                     onSelectTemplate={handleMetaTemplateSelect}
-                    onCreateTemplate={createMetaTemplate}
-                    createDisabled={!!publishingId || saving}
                     enableMultiBind={config.features.enableMetaMultiBind}
                     excludeOtherBound={!config.features.enableMetaMultiBind}
                     selectedTemplateId={selectedTemplate?.id}
@@ -2600,8 +2721,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {!(dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged) && (
               <button
                 onClick={dialogSlot === "meta" && !templateForm.metaTemplateName ? createMetaTemplate : handleSave}
-                disabled={saving || resubmittingMeta || !!bindingId || !!publishingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim())}
-                title={metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
+                disabled={saving || resubmittingMeta || !!bindingId || !!publishingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim()) || (dialogSlot === "meta" && metaSessions.length === 0)}
+                title={metaSessions.length === 0 ? "لا توجد جلسة ميتا متصلة" : metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
                   dialogSlot === "meta" && (metaBindingChanged || !templateForm.metaTemplateName)
                     ? "bg-blue-600 hover:bg-blue-700"
@@ -2851,7 +2972,7 @@ function MetaTemplateSelect({
         </>
       ) : (
         <p className="text-xs text-slate-400">
-          لا توجد قوالب ميتا معتمدة — اضغط «إنشاء قالب ميتا جديد» عشان تنشر قالب جديد على ميتا للمراجعة.
+          لا توجد قوالب ميتا معتمدة — اكتب المحتوى أعلاه ثم استخدم الزر السفلي «إنشاء قالب ميتا جديد» لنشره للمراجعة.
         </p>
       )}
     </>
@@ -3104,7 +3225,7 @@ function StatusTemplateSlot({
           </>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {isMeta ? "لا يوجد قالب ميتا لهذه الحالة" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
+            {isMeta ? "لا يوجد قالب ميتا — أنشئ قالب من الشريط العلوي ثم اختر قالب ميتا معتمد" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
           </p>
         )}
       </div>
@@ -3153,21 +3274,6 @@ function StatusTemplateSlot({
             إنشاء
           </button>
         ) : null}
-        {isMeta && (
-          <button
-            onClick={onCreate}
-            disabled={!status.notifyCustomer}
-            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
-            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
-              status.notifyCustomer
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-            }`}
-          >
-            <PlusIcon className="h-3 w-3" />
-            إنشاء قالب
-          </button>
-        )}
         {isMeta && bound && onUnbind && (
           <button
             onClick={onUnbind}
