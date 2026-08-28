@@ -1970,6 +1970,82 @@ class CustomerLoyaltyService {
       return customers;
     }
   }
+
+  /**
+   * 💡 Cashback preview for storefront product pages.
+   * Reads the company's CASHBACK program + rules and estimates the cashback
+   * for a given purchase amount. Never throws: returns isDynamic=false when
+   * cashback is disabled/zero so the storefront hides the badge cleanly.
+   */
+  async calculateDynamicCashback({ companyId, productId, categoryId, baseAmount }) {
+    const prisma = getSharedPrismaClient();
+    const safeAmount = Number.isFinite(baseAmount) ? Math.max(0, Number(baseAmount)) : 0;
+
+    const fallback = {
+      cashback: 0,
+      rate: 0,
+      isDynamic: false,
+      currency: 'EGP'
+    };
+
+    if (!companyId) return fallback;
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, currency: true }
+    });
+    if (!company) return fallback;
+
+    const currency = company.currency || 'EGP';
+
+    const program = await prisma.customerLoyaltyProgram.findFirst({
+      where: { companyId, type: 'CASHBACK' },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, status: true, rules: true }
+    });
+
+    // Cashback disabled or not configured -> hide badge (isDynamic=false).
+    if (!program || program.status !== 'ACTIVE') {
+      return { ...fallback, currency };
+    }
+
+    const rules = parseJsonMaybe(program.rules, {});
+    let percent = Number(rules.cashbackPercent ?? rules.percent ?? 0);
+    if (!Number.isFinite(percent) || percent <= 0) {
+      return { ...fallback, currency };
+    }
+
+    // Per-product / per-category dynamic overrides (optional).
+    const productOverrides = rules.productOverrides || {};
+    const categoryOverrides = rules.categoryOverrides || {};
+    if (productId && productOverrides[String(productId)] !== undefined) {
+      const override = Number(productOverrides[String(productId)]);
+      if (Number.isFinite(override) && override >= 0) percent = override;
+    } else if (categoryId && categoryOverrides[String(categoryId)] !== undefined) {
+      const override = Number(categoryOverrides[String(categoryId)]);
+      if (Number.isFinite(override) && override >= 0) percent = override;
+    }
+
+    if (percent <= 0) {
+      return { ...fallback, currency };
+    }
+
+    let cashback = (safeAmount * percent) / 100;
+
+    const maxPerOrder = Number(rules.maxPerOrder || 0);
+    if (maxPerOrder > 0 && cashback > maxPerOrder) {
+      cashback = maxPerOrder;
+    }
+
+    cashback = Math.max(0, Math.round(cashback * 100) / 100);
+
+    return {
+      cashback,
+      rate: percent,
+      isDynamic: true,
+      currency
+    };
+  }
 }
 
 module.exports = new CustomerLoyaltyService();
