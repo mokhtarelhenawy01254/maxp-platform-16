@@ -1654,5 +1654,28 @@ module.exports = {
       console.error('❌ Error backfilling vouchers:', error);
       res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إصدار الكوبونات الناقصة' });
     }
+  },
+  getRetentionCadenceSettings: async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const retentionCadenceService = require('../services/hr/retentionCadenceService');
+      const config = await retentionCadenceService.getConfig(companyId);
+      res.json({ success: true, data: config });
+    } catch (error) {
+      console.error('❌ Error getting retention cadence settings:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب إعدادات الرسائل الدورية' });
+    }
+  },
+  updateRetentionCadenceSettings: async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const retentionCadenceService = require('../services/hr/retentionCadenceService');
+      const config = await retentionCadenceService.updateConfig(companyId, req.body || {});
+      res.json({ success: true, data: config, message: 'تم حفظ إعدادات الرسائل الدورية بنجاح' });
+    } catch (error) {
+      console.error('❌ Error updating retention cadence settings:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث إعدادات الرسائل الدورية' });
+    }
   }
+
 };

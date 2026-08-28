@@ -1243,6 +1243,15 @@ try {
 } catch (error) {
   console.error("❌ [JOURNEY-CRON] Failed to start WhatsApp Journey scheduler:", error);
 }
+// Start Retention Cadence scheduler — الرسائل الدورية (منتج كل 10 أيام / رصيد كل 15 / إحالة كل 30 / مستوى كل 30)
+try {
+  const { startRetentionCadenceScheduler } = require("./cron/retentionCadenceCron");
+  startRetentionCadenceScheduler();
+  console.log("✅ [CADENCE-CRON] Retention cadence scheduler started (every 6 hours)");
+} catch (error) {
+  console.error("❌ [CADENCE-CRON] Failed to start retention cadence scheduler:", error);
+}
+
 
 // Start Birthday notifications scheduler
 try {

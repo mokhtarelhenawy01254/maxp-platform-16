@@ -127,6 +127,7 @@ class WhatsAppJourneyService {
             // 1. جلب الرحلة المفعلة لهذه الشركة
             const flow = await this.prisma.whatsAppFollowUpFlow.findFirst({
                 where: { companyId, isEnabled: true },
+                orderBy: [{ isGeneral: 'desc' }, { createdAt: 'asc' }],
                 include: {
                     steps: {
                         orderBy: { stepOrder: 'asc' }
@@ -156,10 +157,14 @@ class WhatsAppJourneyService {
                 return;
             }
 
-            // 3. تحديد موعد أول خطوة
+            // 3. تحديد موعد أول خطوة (يدعم التأخير بالساعات — فحص مقاس Day0+4س)
             const firstStep = flow.steps[0];
             const nextSendAt = new Date();
-            nextSendAt.setDate(nextSendAt.getDate() + firstStep.delayDays);
+            if (firstStep.delayUnit === 'HOURS' && firstStep.delayHours != null && firstStep.delayHours > 0) {
+                nextSendAt.setHours(nextSendAt.getHours() + Math.min(firstStep.delayHours, 720));
+            } else {
+                nextSendAt.setDate(nextSendAt.getDate() + (firstStep.delayDays || 0));
+            }
 
             // 4. إنشاء السجل
             const created = await this.prisma.customerJourney.create({

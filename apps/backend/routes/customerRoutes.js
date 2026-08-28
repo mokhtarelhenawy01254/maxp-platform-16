@@ -35,7 +35,7 @@ router.post('/whatsapp-notify/birthday-automation/settings', verifyToken.authent
 router.get('/whatsapp-notify/birthday-automation/today', verifyToken.authenticateToken, customerWhatsAppController.getTodayBirthdayTrack);
 router.get('/whatsapp-notify/birthday-automation/upcoming', verifyToken.authenticateToken, customerWhatsAppController.getUpcomingBirthdaysTrack);
 router.get('/whatsapp-notify/birthday-automation/missing', verifyToken.authenticateToken, customerWhatsAppController.getMissingBirthdaysTrack);
-router.get('/whatsapp-notify/occasions', verifyToken.authenticateToken, (req, res) => res.json({ success: true, occasions: [] }));
+// (محذوف: stub مكرر كان بيرجع occasions:[] دايمًا ويمنع الوصول للـ controller الحقيقي)
 router.post('/whatsapp-notify/birthday-automation/send-test', verifyToken.authenticateToken, customerWhatsAppController.sendTestBirthdayMessage);
 
 
