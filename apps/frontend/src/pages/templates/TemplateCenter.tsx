@@ -2710,19 +2710,18 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged && (
                 <button
                   onClick={handleResubmitMeta}
-                  disabled={saving || resubmittingMeta || !!bindingId}
-                  title="تحديث المحتوى على ميتا ويرجع للمراجعة تاني"
+                  disabled={saving || resubmittingMeta || !!bindingId || metaSessions.length === 0}
+                  title={metaSessions.length === 0 ? "لا توجد جلسة ميتا متصلة" : "تحديث المحتوى على ميتا ويرجع للمراجعة تاني"}
                   className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
                 >
                   {resubmittingMeta ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <ArrowPathIcon className="h-4 w-4" />}
                   إرسال للمراجعة من جديد
                 </button>
               )}
-              {!(dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged) && (
               <button
                 onClick={dialogSlot === "meta" && !templateForm.metaTemplateName ? createMetaTemplate : handleSave}
-                disabled={saving || resubmittingMeta || !!bindingId || !!publishingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim()) || (dialogSlot === "meta" && metaSessions.length === 0)}
-                title={metaSessions.length === 0 ? "لا توجد جلسة ميتا متصلة" : metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
+                disabled={saving || resubmittingMeta || !!bindingId || !!publishingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim()) || (dialogSlot === "meta" && metaSessions.length === 0 && !isMetaBound)}
+                title={metaSessions.length === 0 && dialogSlot === "meta" && !isMetaBound ? "لا توجد جلسة ميتا متصلة — أنشئ جلسة Meta Cloud أولاً" : metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
                   dialogSlot === "meta" && (metaBindingChanged || !templateForm.metaTemplateName)
                     ? "bg-blue-600 hover:bg-blue-700"
@@ -2740,7 +2739,6 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         : "إنشاء قالب ميتا جديد"
                   : "حفظ"}
               </button>
-              )}
             </div>
 
             {metaVariableMismatch && (
@@ -2854,7 +2852,20 @@ function MetaTemplateSelect({
   const metaBody = (selected?.components || []).find((c) => c.type === "BODY")?.text || "";
 
   if (metaSessions.length === 0) {
-    return <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>;
+    return (
+      <div className="space-y-2">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+          ⚠️ لا توجد جلسة <strong>Meta Cloud API</strong> متصلة — أنشئ جلسة ميتا من <strong>الإعدادات &gt; واتساب &gt; الجلسات</strong> عشان الربط والنشر يشتغل.
+        </div>
+        <select
+          disabled
+          aria-label="جلسة ميتا للربط"
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+        >
+          <option>لا توجد جلسات متاحة</option>
+        </select>
+      </div>
+    );
   }
 
   return (
