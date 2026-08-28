@@ -719,9 +719,12 @@ const WhatsAppMetaTemplates: React.FC<{
         description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم"
         action={
           <div className="flex items-center gap-2">
-            <span className="hidden text-xs text-[color:var(--color-muted-foreground)] sm:inline">القسم:</span>
+            <span id="section-filter-label" className="hidden text-xs text-[color:var(--color-muted-foreground)] sm:inline">القسم:</span>
             <Select value={sectionFilter} onValueChange={(v) => setSectionFilter(v ?? "ALL")}>
-              <SelectTrigger className="h-9 w-44 rounded-full bg-[color:var(--color-muted)] text-xs">
+              <SelectTrigger
+                aria-labelledby="section-filter-label"
+                className="h-9 w-44 rounded-full bg-[color:var(--color-muted)] text-xs"
+              >
                 <SelectValue placeholder="كل الأقسام" />
               </SelectTrigger>
               <SelectContent>
@@ -737,18 +740,54 @@ const WhatsAppMetaTemplates: React.FC<{
         }
       >
         {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+          <div className="space-y-4">
+            <div className="space-y-2 rounded-xl border border-[color:var(--shell-control-border)] p-3">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-[color:var(--shell-control-border)] p-3">
+                <Skeleton className="size-9 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-1/3" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
             ))}
           </div>
         ) : Object.keys(groupedTemplates).length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-16 text-center text-[color:var(--color-muted-foreground)]">
-            <div className="flex size-16 items-center justify-center rounded-full bg-[var(--color-muted)]">
-              <FileText className="size-8 text-[color:var(--color-muted-foreground)]" />
+          <div className="flex flex-col items-center gap-5 py-16 text-center">
+            <div className="flex size-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 shadow-inner dark:from-emerald-950/40 dark:to-emerald-900/20">
+              <FileText className="size-10 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <p className="text-sm font-medium">{selectedSessionId ? "لا توجد قوالب بعد" : "اختر جلسة أولاً"}</p>
-            <p className="text-xs">{selectedSessionId ? "أنشئ أول قالب لإرسال رسائل واتساب بزنس." : "اختر جلسة واتساب من القائمة أعلاه لعرض القوالب."}</p>
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-[color:var(--color-foreground)]">
+                {selectedSessionId ? "لا توجد قوالب بعد" : "اختر جلسة أولاً"}
+              </p>
+              <p className="mx-auto max-w-sm text-xs leading-relaxed text-[color:var(--color-muted-foreground)]">
+                {selectedSessionId
+                  ? "القوالب هي رسائل معتمدة من Meta تقدر تبعت بيها حملات واتساب. ابدأ بإنشاء أول قالب أو اختار من المكتبة الجاهزة."
+                  : "اختر جلسة واتساب من القائمة أعلاه لعرض القوالب المسجلة في Meta Cloud API."}
+              </p>
+            </div>
+            {selectedSessionId ? (
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <Button
+                  onClick={() => { setCreateStep(1); setCreateOpen(true); }}
+                  className="h-10 rounded-full px-5 text-sm font-semibold shadow-sm hover:shadow-md"
+                >
+                  <Plus className="size-4" /> أنشئ أول قالب
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }}
+                  className="h-10 rounded-full"
+                >
+                  <Library className="size-4" /> تصفّح المكتبة الجاهزة
+                </Button>
+              </div>
+            ) : null}
           </div>
         ) : (
           <Table>
@@ -765,6 +804,9 @@ const WhatsAppMetaTemplates: React.FC<{
             </TableHeader>
             <TableBody>
               {Object.entries(groupedTemplates).map(([groupName, groupTemplates]) => {
+                // Default to expanded (matches previous behaviour) so the new
+                // WhatsApp-style preview is visible immediately. The user can
+                // collapse to reduce noise on screens with many templates.
                 const expanded = expandedGroups[groupName] !== false;
                 const uniqueStatuses = [...new Set(groupTemplates.map(t => t.status))];
                 const bestStatus = uniqueStatuses.includes("APPROVED") ? "APPROVED" : (uniqueStatuses[0] ?? "PENDING");
@@ -773,7 +815,11 @@ const WhatsAppMetaTemplates: React.FC<{
                 void _languages;
                 return (
                   <React.Fragment key={groupName}>
-                    <TableRow className="cursor-pointer hover:bg-[var(--color-muted)]" onClick={() => toggleGroup(groupName)}>
+                    <TableRow
+                      className="cursor-pointer transition-colors hover:bg-[var(--color-muted)]/70"
+                      onClick={() => toggleGroup(groupName)}
+                      aria-expanded={expanded}
+                    >
                       <TableCell>
                         {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                       </TableCell>
@@ -917,39 +963,74 @@ const WhatsAppMetaTemplates: React.FC<{
                         </div>
                       </TableCell>
                     </TableRow>
-                    {expanded && groupTemplates.map(t => (
-                      <TableRow key={t.name + t.language} className="bg-[var(--color-muted)]">
-                        <TableCell></TableCell>
-                        <TableCell className="text-sm text-[color:var(--color-muted-foreground)]">
-                          <Languages className="ml-1 size-3.5 inline" />
-                          {t.language} · ID: {t.id || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={statusBadge[t.status] || ""}>
-                            <StatusIcon className="ml-1 size-3.5 inline" />
-                            {t.status}
-                          </Badge>
-                          {t.rejected_reason && (
-                            <p className="mt-1 text-[10px] text-red-500">{t.rejected_reason}</p>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {(() => {
-                            const sec = resolveTemplateSection(t.name, t.category);
-                            return (
-                              <Badge variant="outline" className={`text-[10px] ${sec.badge}`} title={sec.description}>
-                                {sec.icon} {sec.label}
-                              </Badge>
-                            );
-                          })()}
-                        </TableCell>
-                        <TableCell colSpan={2}>
-                          <div className="text-xs text-[color:var(--color-muted-foreground)]">
-                            {t.components?.filter(c => c.type === "BODY" || c.type === "HEADER").map(c => c.text).filter(Boolean).join(" · ") || "-"}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {expanded && groupTemplates.map(t => {
+                      const headerComp = t.components?.find(c => c.type === "HEADER");
+                      const bodyComp = t.components?.find(c => c.type === "BODY");
+                      const footerComp = t.components?.find(c => c.type === "FOOTER");
+                      const buttonsComp = t.components?.find(c => c.type === "BUTTONS");
+                      return (
+                        <TableRow key={t.name + t.language} className="bg-[var(--color-muted)]/50 hover:bg-[var(--color-muted)]">
+                          <TableCell></TableCell>
+                          <TableCell className="text-sm">
+                            <div className="flex items-center gap-2">
+                              <Languages className="size-3.5 text-[color:var(--color-muted-foreground)]" />
+                              <span className="font-medium">{t.language}</span>
+                              <span className="text-[10px] text-[color:var(--color-muted-foreground)]">ID: {t.id || "-"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={statusBadge[t.status] || ""}>
+                              <StatusIcon className="ml-1 size-3.5 inline" />
+                              {t.status}
+                            </Badge>
+                            {t.rejected_reason && (
+                              <p className="mt-1 text-[10px] text-red-600 dark:text-red-400">{t.rejected_reason}</p>
+                            )}
+                          </TableCell>
+                          <TableCell colSpan={3}>
+                            {/* WhatsApp-style inline preview — replaces the old gray
+                                text dump. Renders the template as it would appear
+                                inside the WhatsApp chat bubble. */}
+                            <div
+                              className="rounded-lg border border-emerald-200/60 bg-white px-3 py-2 shadow-sm dark:border-emerald-900/40 dark:bg-[#0b141a]"
+                              dir={t.language === "ar" || t.language === "ur" ? "rtl" : "ltr"}
+                            >
+                              {headerComp?.text ? (
+                                <p className="text-sm font-semibold text-[#111b21] dark:text-white">
+                                  {headerComp.text}
+                                </p>
+                              ) : headerComp?.format && headerComp.format !== "TEXT" ? (
+                                <div className="mb-2 flex h-20 items-center justify-center rounded bg-emerald-50 text-[10px] uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                  {headerComp.format} media
+                                </div>
+                              ) : null}
+                              {bodyComp?.text ? (
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#111b21] dark:text-white">
+                                  {bodyComp.text}
+                                </p>
+                              ) : null}
+                              {footerComp?.text ? (
+                                <p className="mt-1 text-[11px] text-[#667781] dark:text-[#aebac1]">
+                                  {footerComp.text}
+                                </p>
+                              ) : null}
+                              {buttonsComp?.buttons?.length ? (
+                                <div className="mt-2 flex flex-col gap-1 border-t border-[#e9edef] pt-1 dark:border-[#222d34]">
+                                  {buttonsComp.buttons.map((b, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="text-center text-xs font-medium text-[#00a884] dark:text-[#00d294]"
+                                    >
+                                      {b.text || `زر ${idx + 1}`}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </React.Fragment>
                 );
               })}
