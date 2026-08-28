@@ -295,6 +295,13 @@ const WhatsAppMetaTemplates: React.FC<{
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
 
+  // Variable substitution playground: lets the user type sample values for
+  // {{1}}, {{2}}, ... and see the rendered WhatsApp message live. State is
+  // keyed by `<templateName>::<language>` so each variant has its own
+  // values when expanded.
+  const [varPreviewOpen, setVarPreviewOpen] = useState<Record<string, boolean>>({});
+  const [varPreviewValues, setVarPreviewValues] = useState<Record<string, string>>({});
+
   const [complianceResults, setComplianceResults] = useState<ComplianceResult[]>([]);
   const [showCompliance, setShowCompliance] = useState(false);
 
@@ -557,6 +564,20 @@ const WhatsAppMetaTemplates: React.FC<{
       return next;
     });
   }, [allSelected, allFilteredGroupNames]);
+
+  // Substitute {{N}} placeholders in a string with the per-row preview values.
+  // When a variable has no value, leave the placeholder visible so the user
+  // can still see what needs filling in.
+  const substituteVars = useCallback(
+    (text: string, key: string) => {
+      if (!text) return text;
+      return text.replace(/\{\{(\d+)\}\}/g, (match, n) => {
+        const v = varPreviewValues[`${key}::${n}`];
+        return v && v.length > 0 ? v : match;
+      });
+    },
+    [varPreviewValues],
+  );
 
   const sectionFilterOptions = useMemo(() => TEMPLATE_SECTIONS, []);
 
@@ -1175,6 +1196,10 @@ const WhatsAppMetaTemplates: React.FC<{
                       const bodyComp = t.components?.find(c => c.type === "BODY");
                       const footerComp = t.components?.find(c => c.type === "FOOTER");
                       const buttonsComp = t.components?.find(c => c.type === "BUTTONS");
+                      const variantKey = `${groupName}::${t.language}`;
+                      const allText = [headerComp?.text, bodyComp?.text, footerComp?.text, buttonsComp?.buttons?.[0]?.url].filter(Boolean).join(" ");
+                      const varNumbers = extractVariableNumbers(allText);
+                      const isPreviewOpen = varPreviewOpen[variantKey] === true;
                       return (
                         <TableRow key={t.name + t.language} className="bg-[var(--color-muted)]/50 hover:bg-[var(--color-muted)]">
                           <TableCell></TableCell>
@@ -1208,14 +1233,17 @@ const WhatsAppMetaTemplates: React.FC<{
                           <TableCell colSpan={3}>
                             {/* WhatsApp-style inline preview — replaces the old gray
                                 text dump. Renders the template as it would appear
-                                inside the WhatsApp chat bubble. */}
+                                inside the WhatsApp chat bubble. Variables in the
+                                body are shown as amber chips; the var-preview
+                                playground below the bubble lets the user fill in
+                                sample values and see the live rendered message. */}
                             <div
                               className="rounded-lg border border-emerald-200/60 bg-white px-3 py-2 shadow-sm dark:border-emerald-900/40 dark:bg-[#0b141a]"
                               dir={t.language === "ar" || t.language === "ur" ? "rtl" : "ltr"}
                             >
                               {headerComp?.text ? (
                                 <p className="text-sm font-semibold text-[#111b21] dark:text-white">
-                                  {headerComp.text}
+                                  {substituteVars(headerComp.text, variantKey)}
                                 </p>
                               ) : headerComp?.format && headerComp.format !== "TEXT" ? (
                                 <div className="mb-2 flex h-20 items-center justify-center rounded bg-emerald-50 text-[10px] uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
@@ -1224,23 +1252,25 @@ const WhatsAppMetaTemplates: React.FC<{
                               ) : null}
                               {bodyComp?.text ? (
                                 <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#111b21] dark:text-white">
-                                  {bodyComp.text.split(/(\{\{\d+\}\})/g).map((part, idx) =>
-                                    /^\{\{\d+\}\}$/.test(part) ? (
-                                      <span
-                                        key={idx}
-                                        className="mx-0.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
-                                      >
-                                        {part}
-                                      </span>
-                                    ) : (
-                                      <span key={idx}>{part}</span>
-                                    ),
-                                  )}
+                                  {substituteVars(bodyComp.text, variantKey)
+                                    .split(/(\{\{\d+\}\})/g)
+                                    .map((part, idx) =>
+                                      /^\{\{\d+\}\}$/.test(part) ? (
+                                        <span
+                                          key={idx}
+                                          className="mx-0.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                                        >
+                                          {part}
+                                        </span>
+                                      ) : (
+                                        <span key={idx}>{part}</span>
+                                      ),
+                                    )}
                                 </p>
                               ) : null}
                               {footerComp?.text ? (
                                 <p className="mt-1 text-[11px] text-[#667781] dark:text-[#aebac1]">
-                                  {footerComp.text}
+                                  {substituteVars(footerComp.text, variantKey)}
                                 </p>
                               ) : null}
                               {buttonsComp?.buttons?.length ? (
@@ -1256,6 +1286,57 @@ const WhatsAppMetaTemplates: React.FC<{
                                 </div>
                               ) : null}
                             </div>
+
+                            {/* Variable substitution playground — only shown when
+                                the template actually has {{N}} placeholders. */}
+                            {varNumbers.length > 0 ? (
+                              <div className="mt-2 rounded-lg border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/40 p-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setVarPreviewOpen((prev) => ({ ...prev, [variantKey]: !prev[variantKey] }))
+                                  }
+                                  aria-expanded={isPreviewOpen}
+                                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
+                                >
+                                  {isPreviewOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                                  <span>تجربة المتغيرات</span>
+                                  <span className="rounded-full bg-[color:var(--color-card)]/60 px-1.5 text-[10px] font-bold">
+                                    {varNumbers.length}
+                                  </span>
+                                </button>
+                                {isPreviewOpen ? (
+                                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    {varNumbers.map((v) => {
+                                      const n = v.replace(/\D/g, "");
+                                      const previewKey = `${variantKey}::${n}`;
+                                      return (
+                                        <label
+                                          key={n}
+                                          className="flex items-center gap-2 rounded-md bg-[color:var(--color-card)] px-2 py-1.5 text-xs"
+                                        >
+                                          <span className="min-w-[28px] rounded bg-amber-100 px-1.5 py-0.5 text-center font-mono text-[10px] font-bold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                                            {`{{${n}}}`}
+                                          </span>
+                                          <Input
+                                            value={varPreviewValues[previewKey] ?? ""}
+                                            onChange={(e) =>
+                                              setVarPreviewValues((prev) => ({
+                                                ...prev,
+                                                [previewKey]: e.target.value,
+                                              }))
+                                            }
+                                            placeholder={`قيمة ${n}`}
+                                            aria-label={`قيمة المتغير ${n}`}
+                                            className="h-7 flex-1 text-xs"
+                                          />
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
                           </TableCell>
                         </TableRow>
                       );
