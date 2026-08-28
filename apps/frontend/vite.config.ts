@@ -67,6 +67,34 @@ const APP_UI_PRIMITIVES_MODULE_PATTERN =
 const APP_BOOTSTRAP_CORE_MODULE_PATTERN =
   /\/src\/(?:bootstrap\/requestTarget|utils\/(?:chunkLoadRecovery|swCacheFlush))\.ts$/;
 
+// i18n ships ~1.8MB of translation JSON. Default Rollup placement merged it
+// into the route-storefront chunk (StorefrontShell imports it), so any
+// platform page importing i18n dragged the whole storefront chunk in, and the
+// admin bootstrap loaded 500KB+ of storefront code just to get i18n. Keep it
+// in its own chunk so both apps share the module without sharing a route
+// chunk (2026-08-29 storefront first-load fix).
+const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
+
+// Shared HTTP layer + tiny cross-app utilities used by EVERY app page and by
+// the storefront. Default Rollup placement merged them into route chunks
+// (route-storefront, route-dashboard — their heaviest importers), which made
+// those route chunks static dependencies of nearly every page chunk: any page
+// importing useAuth/buildApiUrl pulled the whole 414KB route-dashboard chunk!
+// Keep them in tiny neutral chunks instead.
+// NOTE: STOREFRONT_DEFERRED_PRELOAD_CHUNKS already references /apiClient-/,
+// /tokenManager-/, /vendor-toast-/ and /vendor-icons-/ names, expecting these
+// to be standalone chunks.
+const APP_SHARED_CORE_MODULE_PATTERN =
+  /\/src\/(?:services\/apiClient|hooks\/useAuthSimple|utils\/(?:tokenManager|i18n-toast|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+
+// Shared business-page shell components (BusinessPageShell, BusinessSurface,
+// BusinessFilters, BusinessMetrics). Default placement merged them into the
+// route-admin chunk; every page importing them then became a static dependent
+// of a route chunk — the last edge that kept Rollup hosting those pages'
+// lazy-import facades in the entry (see check-entry-chunks.cjs). Neutral
+// chunk instead.
+const APP_BUSINESS_SHELL_MODULE_PATTERN = /\/src\/components\/business\//;
+
 const shouldFilterStorefrontPreloads = (
   filename: string,
   deps: string[] = [],
@@ -205,6 +233,12 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
   // Isolate icon sets
   if (packageName === 'lucide-react' || packageName === '@heroicons/react' || packageName === 'react-icons') {
     return 'vendor-icons';
+  }
+
+  // Toast library — used by both apps; must not merge into a route chunk
+  // (STOREFRONT_DEFERRED_PRELOAD_CHUNKS expects a /vendor-toast-/ chunk).
+  if (packageName === 'sonner') {
+    return 'vendor-toast';
   }
 
   // Keep tiny class-name helpers independent from MUI. Storefront sections use
@@ -590,12 +624,35 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             const normalizedId = id.replace(/\\/g, '/');
 
+            // The vite preload helper (__vitePreload) must live in a neutral
+            // chunk. Default placement merged it into route-storefront, which
+            // forced a static entry → route-storefront import; that made every
+            // page chunk touching route-storefront statically reachable from
+            // the entry, and Rollup answered their lazy imports with facades
+            // hosted IN the entry — which then statically imported those route
+            // chunks (caught by scripts/check-entry-chunks.cjs).
+            if (normalizedId.includes('vite/preload-helper')) {
+              return 'app-bootstrap-core';
+            }
+
             if (APP_UI_PRIMITIVES_MODULE_PATTERN.test(normalizedId)) {
               return 'app-ui-primitives';
             }
 
             if (APP_BOOTSTRAP_CORE_MODULE_PATTERN.test(normalizedId)) {
               return 'app-bootstrap-core';
+            }
+
+            if (APP_I18N_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-i18n';
+            }
+
+            if (APP_SHARED_CORE_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-shared-core';
+            }
+
+            if (APP_BUSINESS_SHELL_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-business-shell';
             }
 
             if (normalizedId.includes('@cornerstonejs') || normalizedId.includes(NODE_MODULES_SEGMENT + 'dicom-parser/')) return 'cornerstone';
@@ -609,6 +666,12 @@ export default defineConfig(({ mode }) => {
               if (normalizedId.includes('/src/pages/hr/')) return 'route-hr';
               if (normalizedId.includes('/src/pages/orders/')) return 'route-orders';
               if (normalizedId.includes('/src/pages/products/')) return 'route-products';
+              // TemplateCenter + النطاقات (طلبات/عملاء/أسنان) chunk مشترك بدل ما يسقط
+              // في route-pages-other (1.5MB) — يتسمّى مرة ويُخزَّن للصفحات الثلاثة
+              if (normalizedId.includes('/src/pages/templates/')) return 'route-templates';
+              // غلاف /customers/customer-notifications صفحة قوالب (7 أسطر) — بدون
+              // القاعدة دي كانت تنزّل route-customers كامل (509KB) معها
+              if (normalizedId.includes('/src/pages/customers/CustomerNotifications')) return 'route-customer-notifications';
               if (normalizedId.includes('/src/pages/customers/')) return 'route-customers';
               if (normalizedId.includes('/src/pages/advertising/')) return 'route-advertising';
               if (normalizedId.includes('/src/pages/affiliates/')) return 'route-affiliates';
@@ -664,8 +727,24 @@ if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manage
               if (normalizedId.includes('/src/pages/owner/')) return 'route-owner';
               if (normalizedId.includes('/src/pages/my-custody/')) return 'route-my-custody';
               if (normalizedId.endsWith('/src/pages/LandingPage.tsx') || normalizedId.endsWith('/src/pages/PlatformLandingPage.tsx')) return 'route-landing';
-              // Catch-all for any remaining src/pages/ .tsx/.ts files
-              if (normalizedId.includes('/src/pages/')) return 'route-pages-other';
+              // Catch-all for any remaining src/pages/ .tsx/.ts files.
+              //
+              // 2026-08-29 storefront first-load fix: DO NOT assign unmatched
+              // pages to a manual chunk (neither a shared `route-pages-other`
+              // pot nor per-page chunks) — with manual chunking, Rollup answers
+              // some pages' React.lazy imports with re-export facades hosted
+              // IN THE ENTRY chunk, bridging static imports from the entry
+              // into route chunks and dragging the whole platform graph
+              // (~2.5MB) into every storefront visitor's first load (caught
+              // by scripts/check-entry-chunks.cjs). Default Rollup chunking
+              // gives dynamic entries standalone chunks with direct imports.
+              // Shared modules were moved OUT of route chunks into neutral
+              // app-* chunks (i18n, apiClient/tokenManager, imageUrl/
+              // i18n-toast, sonner, components/business) so pages stop
+              // depending on route chunks statically.
+              if (normalizedId.includes('/src/pages/')) {
+                return undefined;
+              }
             }
 
             return getVendorChunkName(normalizedId);

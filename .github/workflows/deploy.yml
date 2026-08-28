@@ -253,6 +253,14 @@ jobs:
         run: node scripts/validate-i18n.js
         continue-on-error: false
 
+      # 🛡️ يمنع الـ entry chunk من استيراد أي route chunk استيرادًا ساكنًا — الحادثة
+      # دي زوّدت تحميل المتجر الأول ~2.5MB (كود المنصة كله نزل مع كل زائر متجر)
+      - name: Check Entry Chunk Purity
+        if: steps.fe-check.outputs.fe-needed == 'true'
+        working-directory: ./apps/frontend
+        run: node scripts/check-entry-chunks.cjs
+        continue-on-error: false
+
       - name: Check i18n Consistency (AR vs EN)
         run: node scripts/i18n-check.js
         continue-on-error: false
