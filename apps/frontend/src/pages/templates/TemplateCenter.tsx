@@ -1547,12 +1547,12 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                    <th className="py-3 px-2 text-right font-medium">الحدث</th>
-                    <th className="py-3 px-2 text-right font-medium">يتبعت امتي</th>
-                    <th className="py-3 px-2 text-right font-medium">بعد قد ايه</th>
-                    <th className="py-3 px-2 text-right font-medium">القناة النشطة</th>
-                    <th className="py-3 px-2 text-right font-medium">مفعّل</th>
-                    <th className="py-3 px-2" />
+                    <th scope="col" className="py-3 px-2 text-right font-medium">الحدث</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">يتبعت امتي</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">بعد قد ايه</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">القناة النشطة</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">مفعّل</th>
+                    <th scope="col" className="py-3 px-2" aria-hidden="true"><span className="sr-only">إجراءات</span></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1616,6 +1616,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         <td className="py-3 px-2">
                           <Switch
                             checked={isEditing ? editingSchedule!.enabled : row.notifyCustomer}
+                            aria-label={`تفعيل إشعار ${row.name}`}
                             onCheckedChange={(v) => {
                               if (isEditing) {
                                 setEditingSchedule((d) => d ? { ...d, enabled: v } : d);
@@ -2033,6 +2034,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     onOpenSwitch={openSwitchDialog}
                     onUnbindMeta={requestUnbindMeta}
                     sampleVariables={sampleVariables}
+                    enableMetaSwitch={config.features.enableMetaSwitch}
                   />
                 ));
               })}
@@ -2684,6 +2686,7 @@ interface StatusRowProps {
   onOpenSwitch: (status: StatusWithTemplate) => void;
   onUnbindMeta: (status: StatusWithTemplate) => void;
   sampleVariables?: Record<string, string>;
+  enableMetaSwitch?: boolean;
 }
 
 /**
@@ -2869,6 +2872,7 @@ function StatusRow({
   onOpenSwitch,
   onUnbindMeta,
   sampleVariables,
+  enableMetaSwitch = true,
 }: StatusRowProps) {
   const { t } = useTranslation();
   const regular = status.template;
@@ -2966,7 +2970,7 @@ function StatusRow({
           onCreate={() => onOpenCreate(status, "regular")}
           sampleVariables={sampleVariables}
         />
-        {config.features.enableMetaSwitch && (
+        {enableMetaSwitch && (
           <StatusTemplateSlot
             slot="meta"
             template={meta}
