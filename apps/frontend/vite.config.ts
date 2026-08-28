@@ -626,12 +626,15 @@ if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manage
               if (normalizedId.includes('/src/pages/procurement/')) return 'route-procurement';
               if (normalizedId.includes('/src/pages/shipments/')) return 'route-shipments';
               if (normalizedId.includes('/src/storefront/variants/')) return 'storefront-variants';
-              if (normalizedId.includes('/src/storefront/sections/')) return 'storefront-sections';
+              // 2026-08 perf patch 3: sections must NOT be forced into route-storefront.
+              // Each section is React.lazy()'d; letting Rollup split them keeps a visitor
+              // from downloading all 48 sections (was 1.25MB single chunk) to render one.
+              if (normalizedId.includes('/src/storefront/sections/')) return undefined;
               if (normalizedId.includes('/src/storefront/themes/')) return 'storefront-themes';
               if (normalizedId.includes('/src/storefront/blueprints/')) return 'storefront-blueprints';
               if (normalizedId.includes('/src/storefront/engine/')) return 'storefront-engine';
               if (normalizedId.includes('/src/storefront/components/')) return 'storefront-components';
-              if (normalizedId.includes('/src/storefront/')) return 'route-storefront';
+              if (normalizedId.includes('/src/storefront/') && !normalizedId.includes('/src/storefront/sections/')) return 'route-storefront';
               if (normalizedId.includes('/src/pages/profile/')) return 'route-profile';
               if (normalizedId.includes('/src/pages/dashboard/')) return 'route-dashboard';
               if (normalizedId.includes('/src/pages/auth/')) return 'route-auth';
