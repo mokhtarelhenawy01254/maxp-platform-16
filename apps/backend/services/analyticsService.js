@@ -238,17 +238,43 @@ class AnalyticsService {
     }
 
     // Verify order exists before adding it to avoid foreign key constraint errors
+    // The storefront passes the order NUMBER, so resolve by id OR orderNumber.
     let validOrderId = null;
+    let resolvedOrder = null;
     if (orderId) {
-      const order = await getSharedPrismaClient().order.findFirst({
-        where: { id: orderId, companyId }
+      resolvedOrder = await getSharedPrismaClient().order.findFirst({
+        where: {
+          companyId,
+          OR: [{ id: orderId }, { orderNumber: orderId }],
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+        },
       });
 
-      if (order) {
-        validOrderId = orderId;
+      if (resolvedOrder) {
+        validOrderId = resolvedOrder.id;
       } else {
         console.warn(`Order ${orderId} not found for company ${companyId}, tracking without orderId`);
       }
+    }
+
+    // Enrich metadata with the resolved order reference so downstream analytics can link the event.
+    let persistedMetadata = metadata;
+    if (resolvedOrder) {
+      let base = persistedMetadata;
+      if (typeof base === 'string') {
+        try {
+          base = JSON.parse(base);
+        } catch {
+          base = {};
+        }
+      }
+      base = (base && typeof base === 'object') ? { ...base } : {};
+      base.orderId = resolvedOrder.id;
+      base.orderNumber = resolvedOrder.orderNumber;
+      persistedMetadata = base;
     }
 
     return await getSharedPrismaClient().conversionEvent.create({
@@ -259,7 +285,7 @@ class AnalyticsService {
         productId,
         orderId: validOrderId,
         value: value ? parseFloat(value) : null,
-        metadata: metadata ? JSON.stringify(metadata) : null
+        metadata: persistedMetadata ? JSON.stringify(persistedMetadata) : null
       }
     });
   }
@@ -664,24 +690,90 @@ class AnalyticsService {
       throw new Error('companyId is required');
     }
 
-    const [visits, orderSummary] = await Promise.all([
-      getSharedPrismaClient().storeVisit.count({
-        where: {
-          companyId,
-          visitedAt: { gte: startDate, lte: endDate }
-        }
-      }),
-      this.getOrderSummary(companyId, startDate, endDate)
-    ]);
+    const prisma = getSharedPrismaClient();
 
-    const purchases = orderSummary.count;
+    const [visits, addToCarts, checkouts, orderSnapshots, visitDayRows] =
+      await Promise.all([
+        prisma.storeVisit.count({
+          where: {
+            companyId,
+            visitedAt: { gte: startDate, lte: endDate }
+          }
+        }),
+        prisma.conversionEvent.count({
+          where: {
+            companyId,
+            eventType: 'add_to_cart',
+            createdAt: { gte: startDate, lte: endDate }
+          }
+        }),
+        prisma.conversionEvent.count({
+          where: {
+            companyId,
+            eventType: 'checkout',
+            createdAt: { gte: startDate, lte: endDate }
+          }
+        }),
+        this.getAnalyticsOrderSnapshots(companyId, startDate, endDate),
+        prisma.$queryRaw`
+          SELECT DATE("visitedAt") AS day, COUNT(*)::int AS count
+          FROM "store_visits"
+          WHERE "companyId" = ${companyId}
+            AND "visitedAt" >= ${startDate}
+            AND "visitedAt" <= ${endDate}
+          GROUP BY DATE("visitedAt")
+        `,
+      ]);
 
-    const conversionRate = visits > 0 ? (purchases / visits * 100).toFixed(2) : 0;
+    const allOrders = [
+      ...orderSnapshots.regularOrders,
+      ...orderSnapshots.supplementalGuestOrders,
+    ];
+    const purchases = allOrders.length;
+
+    const ordersByDay = {};
+    for (const order of allOrders) {
+      const day = formatDayKey(order.createdAt);
+      ordersByDay[day] = (ordersByDay[day] || 0) + 1;
+    }
+
+    const toDayKey = (value) => {
+      if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        return value;
+      }
+      return formatDayKey(value);
+    };
+
+    const visitsByDay = {};
+    for (const row of visitDayRows) {
+      const day = toDayKey(row.day);
+      visitsByDay[day] = parseNumericValue(row.count);
+    }
+
+    const dailyTrends = Object.keys(visitsByDay)
+      .sort()
+      .map((day) => {
+        const dayVisits = visitsByDay[day];
+        const dayPurchases = ordersByDay[day] || 0;
+        return {
+          date: day,
+          rate: dayVisits > 0
+            ? parseFloat(((dayPurchases / dayVisits) * 100).toFixed(2))
+            : 0,
+        };
+      });
+
+    const conversionRate = visits > 0 ? (purchases / visits) * 100 : 0;
 
     return {
       visits,
       purchases,
-      conversionRate: parseFloat(conversionRate)
+      conversionRate: parseFloat(conversionRate.toFixed(2)),
+      overallRate: parseFloat(conversionRate.toFixed(2)),
+      visitorToCart: visits > 0 ? parseFloat(((addToCarts / visits) * 100).toFixed(2)) : 0,
+      cartToCheckout: addToCarts > 0 ? parseFloat(((checkouts / addToCarts) * 100).toFixed(2)) : 0,
+      checkoutToOrder: checkouts > 0 ? parseFloat(((purchases / checkouts) * 100).toFixed(2)) : 0,
+      dailyTrends,
     };
   }
 

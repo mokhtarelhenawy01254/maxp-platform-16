@@ -691,31 +691,11 @@ const getConversionRate = async (req, res) => {
 
     // Smart date handling - support both days count and actual dates
     try {
-      if (startDate && endDate) {
-        // Check if startDate is a number (days ago)
-        const daysAgo = parseInt(startDate);
-        if (!isNaN(daysAgo) && daysAgo > 0) {
-          start = new Date(end.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-        } else {
-          // Treat as actual dates
-          start = new Date(startDate);
-          end = new Date(endDate);
-        }
-      } else if (period === 'yesterday') {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
-        start = yesterday;
-        end = new Date(yesterday);
-        end.setHours(23, 59, 59, 999);
-      } else {
-        const days = parseInt(period);
-        start = new Date(end.getTime() - (days * 24 * 60 * 60 * 1000));
-      }
+      ({ start, end } = parseAnalyticsDateRange({ startDate, endDate, period }));
     } catch (dateErr) {
       console.error('Date parsing error:', dateErr);
       // Fallback to 30 days
-      start = new Date(end.getTime() - (30 * 24 * 60 * 60 * 1000));
+      start = new Date(end.getTime() - (30 * ANALYTICS_DAY_MS));
     }
 
     const conversionData = await analyticsService.getStoreConversionRate(companyId, start, end);
