@@ -63,6 +63,7 @@ import {
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
 import { templateLibrary } from "../../data/metaTemplateLibrary";
+import { TEMPLATE_SECTIONS, resolveTemplateSection } from "../../data/templateSectionRegistry";
 
 interface MetaComponent {
   type: string;
@@ -268,6 +269,8 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
+  const [sectionFilter, setSectionFilter] = useState<string>("ALL");
+
   const [complianceResults, setComplianceResults] = useState<ComplianceResult[]>([]);
   const [showCompliance, setShowCompliance] = useState(false);
 
@@ -463,11 +466,15 @@ const WhatsAppMetaTemplates: React.FC<{
   const groupedTemplates = useMemo(() => {
     const groups: Record<string, MetaTemplate[]> = {};
     for (const t of filteredTemplates) {
+      const section = resolveTemplateSection(t.name, t.category);
+      if (sectionFilter !== "ALL" && section.id !== sectionFilter) continue;
       if (!groups[t.name]) groups[t.name] = [];
       groups[t.name]!.push(t);
     }
     return groups;
-  }, [filteredTemplates]);
+  }, [filteredTemplates, sectionFilter]);
+
+  const sectionFilterOptions = useMemo(() => TEMPLATE_SECTIONS, []);
 
   const toggleGroup = (name: string) => {
     setExpandedGroups(p => ({ ...p, [name]: !p[name] }));
@@ -598,7 +605,28 @@ const WhatsAppMetaTemplates: React.FC<{
       }
     >
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <WhatsAppSurfaceCard title="قوالب Meta API" description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم">
+      <WhatsAppSurfaceCard
+        title="قوالب Meta API"
+        description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم"
+        action={
+          <div className="flex items-center gap-2">
+            <span className="hidden text-xs text-[color:var(--color-muted-foreground)] sm:inline">القسم:</span>
+            <Select value={sectionFilter} onValueChange={(v) => setSectionFilter(v ?? "ALL")}>
+              <SelectTrigger className="h-9 w-44 rounded-full bg-[color:var(--color-muted)] text-xs">
+                <SelectValue placeholder="كل الأقسام" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">كل الأقسام</SelectItem>
+                {sectionFilterOptions.map((sec) => (
+                  <SelectItem key={sec.id} value={sec.id}>
+                    {sec.icon} {sec.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      >
         {loading ? (
           <div className="space-y-3">
             {Array.from({ length: 5 }).map((_, i) => (
@@ -621,6 +649,7 @@ const WhatsAppMetaTemplates: React.FC<{
                 <TableHead>الاسم</TableHead>
                 <TableHead>الحالة</TableHead>
                 <TableHead>التصنيف</TableHead>
+                <TableHead>القسم</TableHead>
                 <TableHead>اللغات</TableHead>
                 <TableHead></TableHead>
               </TableRow>
@@ -647,6 +676,17 @@ const WhatsAppMetaTemplates: React.FC<{
                         </Badge>
                       </TableCell>
                       <TableCell>{groupTemplates[0]?.category}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const sec = resolveTemplateSection(groupName, groupTemplates[0]?.category);
+                          return (
+                            <Badge variant="outline" className={`text-[11px] ${sec.badge}`} title={sec.description || sec.label}>
+                              <span className="ml-1">{sec.icon}</span>
+                              {sec.label}
+                            </Badge>
+                          );
+                        })()}
+                      </TableCell>
                       <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {[...new Set(groupTemplates.map(t => t.language))].map(lang => (
@@ -707,7 +747,17 @@ const WhatsAppMetaTemplates: React.FC<{
                             <p className="mt-1 text-[10px] text-red-500">{t.rejected_reason}</p>
                           )}
                         </TableCell>
-                        <TableCell colSpan={3}>
+                        <TableCell>
+                          {(() => {
+                            const sec = resolveTemplateSection(t.name, t.category);
+                            return (
+                              <Badge variant="outline" className={`text-[10px] ${sec.badge}`} title={sec.description}>
+                                {sec.icon} {sec.label}
+                              </Badge>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell colSpan={2}>
                           <div className="text-xs text-[color:var(--color-muted-foreground)]">
                             {t.components?.filter(c => c.type === "BODY" || c.type === "HEADER").map(c => c.text).filter(Boolean).join(" · ") || "-"}
                           </div>
@@ -976,7 +1026,7 @@ const WhatsAppMetaTemplates: React.FC<{
             const StatusIcon = statusIcon[viewTemplate.status] || AlertTriangle;
             return (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div>
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">الحالة</p>
                     <Badge variant="outline" className={statusBadge[viewTemplate.status] || ""}>
@@ -987,6 +1037,17 @@ const WhatsAppMetaTemplates: React.FC<{
                   <div>
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">التصنيف</p>
                     <p className="font-medium">{viewTemplate.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[color:var(--color-muted-foreground)]">القسم</p>
+                    {(() => {
+                      const sec = resolveTemplateSection(viewTemplate.name, viewTemplate.category);
+                      return (
+                        <Badge variant="outline" className={sec.badge} title={sec.description}>
+                          {sec.icon} {sec.label}
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <div>
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">اللغة</p>
