@@ -605,6 +605,14 @@ const WhatsAppCustomerJourney: React.FC = () => {
             <Button
               variant="outline"
               size="sm"
+              onClick={() => setTimelineOpen(true)}
+            >
+              <MessageSquareText className="size-4" />
+              رسايل عميل
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => copilot.setOpen(true)}
               title={t("whatsappJourney.copilot.open") + " (⌘K)"}
             >
@@ -1497,6 +1505,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
         }
         title="📚 قوالب ميتا للسلاسل"
       />
+      <CustomerMessageTimeline open={timelineOpen} onClose={() => setTimelineOpen(false)} />
     </section>
   );
 };
