@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { apiClient } from '../../services/apiClient';
 import MetaTemplatesModal from './components/MetaTemplatesModal';
 import TemplateStatsPanel from './components/TemplateStatsPanel';
@@ -101,10 +102,11 @@ const BirthdayWhatsAppNotify: React.FC = () => {
     setSendingTest(true);
     try {
       await apiClient.post('/customers/whatsapp-notify/birthday-automation/send-test', { testPhone: testPhone.trim(), messageTemplate: settings.messageTemplate, couponCode: settings.couponCode });
+      toast.success('التجربة اتبعتت على رقمك');
       setTestPhone('');
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال التجريبي';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSendingTest(false);
     }

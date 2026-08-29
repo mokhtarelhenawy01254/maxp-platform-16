@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { apiClient } from '../../services/apiClient';
 import MetaTemplatesModal from './components/MetaTemplatesModal';
 import TemplateStatsPanel from './components/TemplateStatsPanel';
@@ -157,12 +159,12 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
         occasionName: form.name.trim() || 'مناسبة خاصة',
         eventType: 'PROMOTIONAL',
       });
-      alert('الحملة الفورية اتبعتت — بتعمل في الخلفية دلوقتي');
+      toast.success('الحملة الفورية اتبعتت وبتشتغل في الخلفية');
       setFormOpen(false);
       loadOccasions();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال الفوري';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSendingNow(false);
     }
@@ -187,11 +189,12 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
       } else {
         await apiClient.post('/customers/whatsapp-notify/occasions', payload);
       }
+      toast.success(form.id ? 'اتحفظت التعديلات' : 'المناسبة اتجدولت');
       setFormOpen(false);
       loadOccasions();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الحفظ';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -462,7 +465,9 @@ const ChannelStatus: React.FC<{
             {hasBaileys ? 'جلسة واتساب متصلة — الإرسال الفوري جاهز' : 'مفيش جلسة واتساب متصلة'}
           </p>
           <p className="text-xs text-[color:var(--color-muted-foreground)]">
-            {hasBaileys ? 'المناسبات المجدولة بتتبعت أوتوماتيك من السيرفر حتى لو القناة مقفولة' : 'اربطي جلسة واتساب من صفحة إشعارات واتساب للإرسال الفوري'}
+            {hasBaileys
+              ? 'المناسبات المجدولة بتتبعت أوتوماتيك من السيرفر حتى لو القناة مقفولة'
+              : <>مفيش جلسة متصلة —{' '}<Link to="/customers/whatsapp-notify" className="font-medium text-[color:var(--color-primary)] underline-offset-2 hover:underline">اربطيها من إشعارات واتساب</Link>{' '}للإرسال الفوري</>}
           </p>
         </div>
       </div>

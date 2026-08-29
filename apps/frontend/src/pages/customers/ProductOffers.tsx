@@ -161,10 +161,10 @@ const ProductOffersRedesign: React.FC = () => {
         customerListIds: audience === 'list' ? selectedListIds : undefined,
       };
       await apiClient.post('/customers/whatsapp-notify/smart-send', payload);
-      alert('الحملة اتبعتت للخلفية وبتشتغل — تابعيها من سجل الحملات');
+      toast.success('الحملة اتبعتت للخلفية وبتشتغل دلوقتي');
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSending(false);
     }

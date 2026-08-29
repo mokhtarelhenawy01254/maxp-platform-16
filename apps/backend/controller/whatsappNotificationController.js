@@ -723,8 +723,22 @@ async function getTemplateStats(req, res) {
     }));
     const interactMap = interacted.reduce((m, g) => { m[g.templateId] = g._count?._all || 0; return m; }, {});
 
+    // eventHint: أكثر eventType متكرر لكل templateId — عرض بديل لما القالب يكون اتمسح من القوالب
+    const byEvent = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+      by: ['templateId', 'eventType'],
+      where: { companyId, createdAt: createdAtFilter, templateId: { not: null } },
+      _count: { _all: true }
+    }));
+    const eventHintMap = new Map();
+    for (const g of byEvent) {
+      const cur = eventHintMap.get(g.templateId);
+      const count = g._count?._all || 0;
+      if (!cur || count > cur.count) eventHintMap.set(g.templateId, { eventType: g.eventType, count });
+    }
+
     const stats = Array.from(acc.values()).map((item) => ({
       ...item,
+      eventHint: eventHintMap.get(item.templateId)?.eventType || null,
       clicked: interactMap[item.templateId] || 0,
       responded: interactMap[item.templateId] || 0,
       deliveryRate: item.total > 0 ? ((item.delivered / item.total) * 100).toFixed(1) : '0.0',
