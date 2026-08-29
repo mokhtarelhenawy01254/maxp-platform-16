@@ -47,7 +47,7 @@ const WhatsAppBubblePreview: React.FC<Props> = ({
             out = out.split(`{{${key}}}`).join(val);
         }
         // أي متغير مش متوفر نعرضه بشكل واضح
-        out = out.replace(/\{\{?(\w+)\}?\}/g, '…');
+        out = out.replace(/\{\{?([^{}]+)\}?\}/g, '…');
         return out;
     }, [content, variables]);
 

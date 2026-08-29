@@ -536,7 +536,11 @@ async function buildAudienceWhere(companyId, audience, newDays = 7, rawListIds =
                 where: { companyId, id: { in: ids } },
                 select: { id: true, criteria: true }
             });
-            if (lists.length === 0) break;
+            if (lists.length === 0) {
+                // القوائم المطلوبة مش موجودة في DB (default/محذوفة) — امنع الإرسال بدل الفلترة للكل
+                where.id = { in: [] };
+                break;
+            }
             const combined = [];
             for (const l of lists) {
                 combined.push(await buildWhereFromListCriteriaSafe(prisma, companyId, l.criteria));
@@ -740,7 +744,7 @@ exports.getCustomerMessageTimeline = async (req, res) => {
         let directMessages = [];
         if (customer.phone) {
             directMessages = await safeQuery(() => prisma.whatsAppMessage.findMany({
-                where: { fromMe: true, remoteJid: { contains: customer.phone.replace(/[^d]/g, '') } },
+                where: { fromMe: true, remoteJid: { contains: customer.phone.replace(/[^\d]/g, '') } },
                 orderBy: { timestamp: 'desc' },
                 take: 30,
                 select: { id: true, content: true, status: true, timestamp: true, messageType: true }

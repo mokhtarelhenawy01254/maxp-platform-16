@@ -100,7 +100,7 @@ const BirthdayWhatsAppNotify: React.FC = () => {
     if (!testPhone.trim()) return;
     setSendingTest(true);
     try {
-      await apiClient.post('/customers/whatsapp-notify/birthday-automation/send-test', { testPhone: testPhone.trim() });
+      await apiClient.post('/customers/whatsapp-notify/birthday-automation/send-test', { testPhone: testPhone.trim(), messageTemplate: settings.messageTemplate, couponCode: settings.couponCode });
       setTestPhone('');
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال التجريبي';

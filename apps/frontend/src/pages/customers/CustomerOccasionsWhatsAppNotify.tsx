@@ -84,6 +84,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
   const [form, setForm] = useState(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sendingNow, setSendingNow] = useState(false);
 
   const [viewOccasion, setViewOccasion] = useState<Occasion | null>(null);
   const [metaModalOpen, setMetaModalOpen] = useState(false);
@@ -141,6 +142,30 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
       templateId: o.templateId || '',
     });
     setFormOpen(true);
+  };
+
+  const sendNow = async () => {
+    if (!form.message.trim()) return;
+    setSendingNow(true);
+    try {
+      await apiClient.post('/customers/whatsapp-notify/smart-send', {
+        audience,
+        message: form.message.trim(),
+        mediaUrl: form.mediaUrl.trim() || undefined,
+        sessionId: selectedSession || undefined,
+        delayMs: 1500,
+        occasionName: form.name.trim() || 'مناسبة خاصة',
+        eventType: 'PROMOTIONAL',
+      });
+      alert('الحملة الفورية اتبعتت — بتعمل في الخلفية دلوقتي');
+      setFormOpen(false);
+      loadOccasions();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال الفوري';
+      alert(msg);
+    } finally {
+      setSendingNow(false);
+    }
   };
 
   const save = async () => {
@@ -341,6 +366,16 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
 
             <div className="flex justify-end gap-2 border-t pt-4">
               <Button variant="ghost" onClick={() => setFormOpen(false)} className="rounded-full">إلغاء</Button>
+              <Button
+                variant="outline"
+                onClick={sendNow}
+                disabled={sendingNow || !hasBaileys || !form.message.trim()}
+                className="rounded-full"
+                title={hasBaileys ? 'إرسال فوري دلوقتي عبر واتساب متصل' : 'محتاجة جلسة واتساب متصلة'}
+              >
+                {sendingNow ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                إرسال فوري
+              </Button>
               <Button onClick={save} disabled={saving || !form.name.trim() || !form.message.trim() || !form.scheduledAt} className="rounded-full">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {form.id ? 'حفظ التعديلات' : 'جدولة المناسبة'}

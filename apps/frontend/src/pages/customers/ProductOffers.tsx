@@ -90,7 +90,8 @@ const ProductOffersRedesign: React.FC = () => {
   const loadLists = useCallback(async () => {
     try {
       const res = await apiClient.get('/broadcast/customer-lists');
-      setLists(res.data?.data?.lists || res.data?.lists || res.data?.data || []);
+      const all = res.data?.data?.lists || res.data?.lists || res.data?.data || [];
+      setLists(all.filter((l: { isDefault?: boolean }) => !l.isDefault));
     } catch { /* ignore */ }
   }, []);
 
