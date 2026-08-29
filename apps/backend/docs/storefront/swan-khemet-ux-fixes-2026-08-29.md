@@ -41,6 +41,11 @@ content, fix social icons, declutter the cart, and tighten the shop grid.
   `container` that centered and wasted horizontal whitespace).
 - Khemet `boutique-shelf` shop grid now uses `grid-cols-2 ... xl:grid-cols-3
   2xl:grid-cols-4` so cards are wider and more prominent.
+- `apps/frontend/src/storefront/engine/PageComposer.tsx`
+- The shop `sidebar-left`/`sidebar-right` composer wrapper no longer re-applies
+  the Tailwind `container` (max-width + auto-centering) that left large empty
+  margins on wide screens. It now uses `w-full` (with the grid cells using
+  `minmax(0,1fr)` for the main column) so catalog pages fill the viewport.
 
 ### 5. PDP — remove duplicated product description
 - `apps/frontend/src/storefront/sections/ProductInfo.tsx`
