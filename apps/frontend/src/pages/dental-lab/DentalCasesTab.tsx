@@ -2,17 +2,18 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  ArrowRightCircle, CreditCard, Eye, Loader2, Pencil, Plus, RefreshCw, ScanLine, Search, Upload, UserPlus, X as XMarkIcon,
+  ArrowRightCircle, CreditCard, Eye, Loader2, Pencil, Plus, RefreshCw, ScanLine, Search, Stethoscope, Upload, UserPlus, X as XMarkIcon,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG,
   DentalLabCase, DentalLabDoctor, DentalTechnician, DentalWorkType, DentalCasePriority,
   fetchCases, fetchDoctors, fetchWorkTypes, fetchTechnicians,
-  createCase, updateCase, advanceCase, assignCase, uploadCaseAttachment, parseScan,
+  createCase, updateCase, advanceCase, assignCase, uploadCaseAttachment, uploadCaseAttachments, parseScan,
   createInvoice, addInvoicePayment,
   fmtMoney, fmtDate, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
+import QuickOrderModal from "./QuickOrderModal";
 
 const FALLBACK_BADGE = { label: "", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" };
 
@@ -183,7 +184,7 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
           </div>
           <div>
             <label className={labelCls}>{t("dentalLab.cases.teeth")}</label>
-            <input className={inputCls} value={teeth} onChange={e => setTeeth(e.target.value)} placeholder="مثال: 11, 21" />
+            <input className={inputCls} value={teeth} onChange={e => setTeeth(e.target.value)} placeholder="مثال: 11، 21" />
           </div>
           <div>
             <label className={labelCls}>{t("dentalLab.cases.shade")}</label>
@@ -479,14 +480,17 @@ export default function DentalCasesTab() {
   const [advanceCaseData, setAdvanceCaseData] = useState<DentalLabCase | null>(null);
   const [assignCaseData, setAssignCaseData] = useState<DentalLabCase | null>(null);
   const [invoiceCase, setInvoiceCase] = useState<DentalLabCase | null>(null);
+  const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
   const loadRefs = useCallback(async () => {
     try {
-      const [docs, wts, techs] = await Promise.all([fetchDoctors(), fetchWorkTypes(), fetchTechnicians()]);
-      setDoctors(docs);
-      setWorkTypes(wts);
-      setTechnicians(techs);
+      const [docs, wts, techsRes] = await Promise.all([fetchDoctors(), fetchWorkTypes(), fetchTechnicians()]);
+      setDoctors(Array.isArray(docs) ? docs : []);
+      setWorkTypes(Array.isArray(wts) ? wts : []);
+      // fetchTechnicians returns { items, wageDefaults } — unwrap defensively.
+      const techList = Array.isArray(techsRes) ? techsRes : Array.isArray(techsRes?.items) ? techsRes.items : [];
+      setTechnicians(techList);
     } catch {
       setDoctors([]);
       setWorkTypes([]);
@@ -528,13 +532,17 @@ export default function DentalCasesTab() {
   };
 
   const handleUpload = async (c: DentalLabCase, e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const fileList = e.target.files;
     e.target.value = "";
-    if (!file || uploadingId === c.id) return;
+    if (!fileList || fileList.length === 0 || uploadingId === c.id) return;
     setUploadingId(c.id);
     try {
-      await uploadCaseAttachment(c.id, file);
-      toast.success(t("dentalLab.cases.uploaded"));
+      if (fileList.length === 1) {
+        await uploadCaseAttachment(c.id, fileList[0]);
+      } else {
+        await uploadCaseAttachments(c.id, Array.from(fileList));
+      }
+      toast.success(t("dentalLab.cases.filesUploaded", { count: fileList.length }));
     } catch (err) {
       toast.error(err instanceof Error ? err.message : t("dentalLab.common.noData"));
     } finally {
@@ -553,7 +561,13 @@ export default function DentalCasesTab() {
           <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
-          <button onClick={() => { setEditingCase(null); setCreateOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+          <button
+            onClick={() => setQuickOrderOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-l from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 text-sm font-medium shadow-sm"
+          >
+            <Stethoscope className="w-4 h-4" />{t("dentalLab.cases.quickOrder")}
+          </button>
+          <button onClick={() => { setEditingCase(null); setCreateOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
             <Plus className="w-4 h-4" />{t("dentalLab.cases.newCase")}
           </button>
         </div>
@@ -623,9 +637,9 @@ export default function DentalCasesTab() {
                           <button onClick={() => setAssignCaseData(c)} className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded" title={t("dentalLab.cases.assign")}>
                             <UserPlus className="w-4 h-4" />
                           </button>
-                          <label className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded cursor-pointer" title={t("dentalLab.cases.upload")}>
+                          <label className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded cursor-pointer" title={t("dentalLab.cases.uploadMulti")}>
                             {uploadingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                            <input type="file" className="hidden" onChange={e => handleUpload(c, e)} />
+                            <input type="file" multiple className="hidden" onChange={e => handleUpload(c, e)} />
                           </label>
                           <button onClick={() => setInvoiceCase(c)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title={t("dentalLab.cases.createInvoice")}>
                             <CreditCard className="w-4 h-4" />
@@ -663,6 +677,12 @@ export default function DentalCasesTab() {
 
       {createOpen && (
         <CreateCaseModal initial={editingCase} doctors={doctors} workTypes={workTypes} onClose={() => { setCreateOpen(false); setEditingCase(null); }} onSaved={handleSaved} />
+      )}
+      {quickOrderOpen && (
+        <QuickOrderModal
+          onClose={() => setQuickOrderOpen(false)}
+          onSaved={() => { setQuickOrderOpen(false); refresh({ silent: true }); }}
+        />
       )}
       {advanceCaseData && (
         <AdvanceModal caseData={advanceCaseData} technicians={technicians} onClose={() => setAdvanceCaseData(null)} onSaved={() => { setAdvanceCaseData(null); refresh({ silent: true }); }} />

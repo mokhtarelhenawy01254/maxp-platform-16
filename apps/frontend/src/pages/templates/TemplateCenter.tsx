@@ -38,10 +38,24 @@ import type { TemplateScopeConfig, EventRow } from "./types";
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
 
+/** ⓘ تلميح مكتبي مختصر — tooltip عند الـ hover بدل فقرة شرح تاخد مساحة (نمط 2026: micro-hints) */
+function FieldHint({ text }: { text: string }) {
+  return (
+    <span
+      role="note"
+      aria-label={text}
+      title={text}
+      tabIndex={0}
+      className="inline-flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full bg-slate-200 align-middle text-[9px] font-bold leading-none text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+    >
+      i
+    </span>
+  );
+}
+
 // يختار لون نص مقروء (أسود/أبيض) حسب سطوع خلفية الشارة — يضمن تباين WCAG AA
 // يدعم #RGB و #RRGGBB و #RRGGBBAA (يتجاهل alpha)
-function readableTextColor(hex: string): string {
-  let c = (hex || "#6B7280").replace("#", "").trim();
+function readableTextColor(hex: string): string {  let c = (hex || "#6B7280").replace("#", "").trim();
   if (c.length === 3) c = c.split("").map((ch) => ch + ch).join("");
   if (c.length === 4) c = c.slice(0, 3).split("").map((ch) => ch + ch).join("");
   if (c.length === 8) c = c.slice(0, 6);
@@ -2339,6 +2353,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
           {dialogOpen && selectedStatus && dialogMode !== "switch" && (
             <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
                 {dialogMode === "create" ? (
@@ -2376,7 +2391,12 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">اسم القالب</label>
+                <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                  اسم القالب
+                  {dialogSlot === "meta" && (
+                    <FieldHint text="اسم محلي للعرض داخل المنصة فقط — ميتا بتولّد اسمًا تقنيًا (مثل price_drop_mtabc12) يظهر على الكارت بعد النشر" />
+                  )}
+                </label>
                 <input
                   type="text"
                   value={templateForm.name}
@@ -2384,71 +2404,55 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                   placeholder={config.scope === "customers" ? "مثال: قالب نقاط الولاء" : "مثال: قالب تأكيد الطلب"}
                 />
-                {dialogSlot === "meta" && (
-                  <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                    الاسم للعرض داخل المنصة فقط — ميتا بتولّد اسمًا تقنيًا للقالب (مثل price_drop_mtabc12) وهو اللي هيظهر على الكارت بعد النشر.
-                  </p>
-                )}
-              </div>
-
-              {/* فئة القالب المحلية بتتفرد تلقائيًا من نوع الحدث (تصنيف التبويبات) —
-                  واختيار فئة ميتا الحقيقية داخل قسم الميتا في وضع التأليف فقط */}
-
-              {/* مؤشر القناة المبسط — للعادي فقط (ميتا اتشال حسب الطلب) */}
-              {dialogSlot === "regular" && (
-                <div className="rounded-lg bg-emerald-50 p-2.5 text-[11px] leading-relaxed text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300">
-                  📱 <strong>النص هنا هو اللي بيوصل للعميل مباشرة</strong> عبر واتساب العادي. لو هتربط قالب ميتا بعد كده، الميتا له الأسبقية لما الجلسة تكون Meta Cloud.
                 </div>
-              )}
+              </div>
 
               {/* ===== META SLOT CONTENT ===== */}
               {dialogSlot === "meta" && (
                 <div className="space-y-3 rounded-lg border border-blue-200 p-3 dark:border-blue-800/40">
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    {dialogMode === "create" ? "حساب النشر على ميتا" : "اختر قالب ميتا المعتمد"}
-                  </label>
-                  <p className="-mt-2 text-[10px] text-slate-400 dark:text-slate-500">
-                    {dialogMode === "create"
-                      ? "هيتم تأليف القالب من النص أدناه ونشره على الحساب المختار لميتا للمراجعة. الربط بقالب معتمد موجود متاح من زرار «تغيير القالب» على الكارت."
-                      : isMetaBound
-                        ? "اختار قالب مختلف عشان تغيّر الربط — التغيير يتسجّل لما تضغط حفظ."
-                        : "اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده."}
-                  </p>
-                  <MetaTemplateSelect
-                    metaSessions={metaSessions}
-                    selectedMetaSession={selectedMetaSession}
-                    onSessionChange={(v) => setSelectedMetaSession(v)}
-                    availableMetaTemplates={availableMetaTemplates}
-                    loadingMetaTemplates={loadingMetaTemplates}
-                    selectedMetaTemplateName={templateForm.metaTemplateName}
-                    onSelectTemplate={handleMetaTemplateSelect}
-                    showTemplates={dialogMode !== "create"}
-                    enableMultiBind={config.features.enableMetaMultiBind}
-                    excludeOtherBound={!config.features.enableMetaMultiBind}
-                    selectedTemplateId={selectedTemplate?.id}
-                    showMapping
-                    localContent={templateForm.content}
-                    sampleVariables={sampleVariables}
-                    variableDescriptions={variableDescriptions}
-                  />
-
-                  {/* فئة ميتا الحقيقية (3 فئات) — وضع التأليف فقط؛ في وضع الربط الفئة جاية من القالب المعتمد */}
-                  {!templateForm.metaTemplateName && (
+                  <div className="grid gap-3 sm:grid-cols-2">
                     <div>
                       <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
-                        فئة القالب على ميتا
+                        {dialogMode === "create" ? "حساب النشر على ميتا" : "اختر قالب ميتا المعتمد"}
                       </label>
-                      <select
-                        value={templateForm.metaCategory || "UTILITY"}
-                        onChange={(e) => setTemplateForm((p) => ({ ...p, metaCategory: e.target.value }))}
-                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                      >
-                        <option value="UTILITY">UTILITY — معاملات وتحديثات (موافقة أسرع — موصى به)</option>
-                        <option value="MARKETING">MARKETING — عروض وتسويق (محتاج opt-in من العميل)</option>
-                        <option value="AUTHENTICATION">AUTHENTICATION — أكواد تحقق (OTP)</option>
-                      </select>
+                      <MetaTemplateSelect
+                        metaSessions={metaSessions}
+                        selectedMetaSession={selectedMetaSession}
+                        onSessionChange={(v) => setSelectedMetaSession(v)}
+                        availableMetaTemplates={availableMetaTemplates}
+                        loadingMetaTemplates={loadingMetaTemplates}
+                        selectedMetaTemplateName={templateForm.metaTemplateName}
+                        onSelectTemplate={handleMetaTemplateSelect}
+                        showTemplates={dialogMode !== "create"}
+                        enableMultiBind={config.features.enableMetaMultiBind}
+                        excludeOtherBound={!config.features.enableMetaMultiBind}
+                        selectedTemplateId={selectedTemplate?.id}
+                        showMapping
+                        localContent={templateForm.content}
+                        sampleVariables={sampleVariables}
+                        variableDescriptions={variableDescriptions}
+                      />
                     </div>
-                  )}
+
+                    {/* فئة ميتا الحقيقية (3 فئات) — وضع التأليف فقط؛ في وضع الربط الفئة جاية من القالب المعتمد */}
+                    {!templateForm.metaTemplateName && (
+                      <div>
+                        <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                          فئة القالب على ميتا
+                          <FieldHint text="UTILITY = معاملات (موافقة أسرع، موصى به) · MARKETING = عروض (محتاج opt-in) · AUTHENTICATION = أكواد تحقق" />
+                        </label>
+                        <select
+                          value={templateForm.metaCategory || "UTILITY"}
+                          onChange={(e) => setTemplateForm((p) => ({ ...p, metaCategory: e.target.value }))}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        >
+                          <option value="UTILITY">UTILITY — معاملات وتحديثات</option>
+                          <option value="MARKETING">MARKETING — عروض وتسويق</option>
+                          <option value="AUTHENTICATION">AUTHENTICATION — أكواد تحقق</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
 
                   {(() => {
                     const selectedMt = availableMetaTemplates.find((mt) => mt.name === templateForm.metaTemplateName);
@@ -2485,8 +2489,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               <div className={dialogSlot === "meta" ? "rounded-lg border border-slate-200 p-3 dark:border-slate-700" : ""}>
                 {dialogSlot === "meta" && (
                   <div className="mb-3 space-y-1">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                      صورة الرأس (HEADER) — اختياري
+                    <label className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      صورة الرأس (HEADER)
+                      <FieldHint text="اختياري — بتترفع لميتا كـ IMAGE header وتُستخدم عيّنة للموافقة" />
                     </label>
                     <div className="flex items-center gap-2">
                       {templateForm.headerMediaHandle ? (
@@ -2523,12 +2528,12 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      عند اختيار صورة، يُرفع القالب على ميتا بهيدر IMAGE بصورة الرأس (تُستخدم كعيّنة للموافقة).
-                    </p>
                     {config.features.enableHeaderProductImage && (
                     <>
-                    <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+                    <label
+                      className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700"
+                      title="كل رسالة هتتبعت بصورة أول منتج في الطلب (متغيرة لكل طلب)"
+                    >
                       <input
                         type="checkbox"
                         checked={templateForm.headerUsesOrderProduct}
@@ -2539,9 +2544,6 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         استخدم صورة المنتج من الطلب وقت الإرسال
                       </span>
                     </label>
-                    <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      لو مفعّل، كل رسالة للعميل هتتبعت بيها صورة أول منتج طلبه (متغيرة لكل طلب). لو بدون تحديد صورة ثابتة، القالب هيحتاج صورة عيّنة للموافقة.
-                    </p>
                     </>
                     )}
                   </div>
@@ -2555,21 +2557,26 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     >
                       <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                         <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showLocalRef ? "rotate-180" : ""}`} />
-                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : (dialogSlot === "meta" ? "محتوى الرسالة (هي اللي هتتبعت)" : "محتوى الرسالة")}
+                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : "محتوى الرسالة (هي اللي هتتبعت)"} <span className="text-red-500">*</span>
                       </span>
-                      <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
-                        {showLocalRef ? "إخفاء" : "عرض"}
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-medium tabular-nums ${
+                            templateForm.content.length > META_BODY_CHAR_LIMIT
+                              ? "text-red-600 dark:text-red-400"
+                              : templateForm.content.length > META_BODY_CHAR_LIMIT * 0.9
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-slate-400 dark:text-slate-500"
+                          }`}
+                          aria-live="polite"
+                        >
+                          {templateForm.content.length} / {META_BODY_CHAR_LIMIT}
+                        </span>
+                        <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
+                          {showLocalRef ? "إخفاء" : "عرض"}
+                        </span>
                       </span>
                     </button>
-                    {selectedTemplate?.metaTemplateName ? (
-                      <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        النص ده هو محتوى الرسالة اللي هتتبعت للعميل عبر قالب ميتا — عدّل عليه وبعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        النص ده هو الرسالة اللي هتُنشر على ميتا وتتبعت للعميل — عدّل عليه وبعدين اضغط «إنشاء قالب ميتا جديد».
-                      </p>
-                    )}
                   </div>
                 ) : (
                   <div className="mb-1 flex items-center justify-between">
@@ -2671,8 +2678,11 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {config.features.enableButtons && (
               <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                     الأزرار التفاعلية
+                    {dialogSlot === "meta" && templateForm.metaTemplateName && (
+                      <FieldHint text="الأزرار الحالية معتمدة على ميتا — أي تعديل محتاج «إرسال للمراجعة من جديد» عشان يتبنى" />
+                    )}
                   </label>
                   <Switch
                     checked={templateForm.hasButtons}
@@ -2682,17 +2692,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 </div>
                 {dialogSlot === "meta" && templateForm.metaTemplateName ? (
                   <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
-                    ℹ️ القالب مربوط بقالب ميتا معتمد — الأزرار الجديدة (زي «صفحة العميل») لازم تتنشر/تراجع على ميتا تاني عشان تبقى في القالب المعتمد.
+                    ℹ️ الأزرار الجديدة محتاجة مراجعة ميتا تاني عشان تتبنى في القالب المعتمد.
                   </p>
-                ) : config.features.quickReplyActions ? (
-                  <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                    لما العميل يضغط على الزر هيتم تنفيذ الإجراء المحدد أدناه
-                  </p>
-                ) : (
-                  <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                    لما العميل يضغط على الزر، حالة الطلب هتتغير تلقائيًا للحالة المحددة أدناه
-                  </p>
-                )}
+                ) : config.features.quickReplyActions ? null : null}
 
                 {templateForm.hasButtons && (
                   <div className="mt-3 space-y-2">
@@ -2730,8 +2732,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         </div>
                         {btn.type === "LINK" ? (
                           <div className="flex-1 pb-1">
-                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400">
-                              بيفتح صفحة العميل على متجركم حسب رقم الواتساب — من غير ما يكتب الرقم.
+                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400" title="يفتح صفحة العميل على متجركم حسب رقم الواتساب تلقائيًا">
+                              🔗 رابط صفحة العميل
                             </p>
                           </div>
                         ) : (
@@ -2766,6 +2768,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         <button
                           type="button"
                           onClick={addButton}
+                          title="الحد الأقصى 3 أزرار لكل رسالة"
                           className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
                         >
                           <PlusIcon className="h-3.5 w-3.5" />
@@ -2776,6 +2779,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         <button
                           type="button"
                           onClick={addLinkButton}
+                          title="الحد الأقصى 3 أزرار لكل رسالة"
                           className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
                         >
                           <GlobeAltIcon className="h-3.5 w-3.5" />
@@ -2783,13 +2787,17 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         </button>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{t("orders.buttonsMaxHint", "الحد الأقصى 3 أزرار لكل رسالة")}</p>
                   </div>
                 )}
               </div>
               )}
 
-              <div className="flex items-center gap-2">
+            <div className="sticky bottom-0 z-10 -mx-1 mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/70 bg-white/95 px-1 pt-3 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
+              <label
+                htmlFor="template-active"
+                className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                title="القوالب غير النشطة بتتحفظ بس مش بتتبعت"
+              >
                 <input
                   type="checkbox"
                   id="template-active"
@@ -2797,12 +2805,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   onChange={(e) => setTemplateForm((p) => ({ ...p, isActive: e.target.checked }))}
                   className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <label htmlFor="template-active" className="text-sm text-slate-700 dark:text-slate-300">
-                  قالب نشط
-                </label>
-              </div>
-
-            <div className="sticky bottom-0 z-10 -mx-1 mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200/70 bg-white/95 px-1 pt-3 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
+                قالب نشط
+              </label>
+              <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 onClick={() => setDialogOpen(false)}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -2841,25 +2846,12 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         : "إنشاء قالب ميتا جديد"
                   : "حفظ"}
               </button>
+              </div>
             </div>
 
             {metaVariableMismatch && (
               <p className="mt-2 rounded-lg border border-red-200 bg-red-50 p-2 text-[11px] leading-relaxed text-red-700 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300" role="alert">
                 ⚠️ قالب ميتا محتاج <strong>{metaVariableMismatch.metaCount} متغيرات</strong>، لكن المحتوى المحلي فيه <strong>{metaVariableMismatch.localCount} فقط</strong> — أضف <strong>{metaVariableMismatch.missing}</strong> متغيرات ({config.variables.slice(0, 4).map((v) => v.var).join("، ")}) عشان تقدر تحفظ وتربط.
-              </p>
-            )}
-
-            {dialogSlot === "meta" && !metaVariableMismatch && (
-              <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
-                {metaBindingChanged ? (
-                  <>هتغير الربط من «{originalMetaTemplateName}» لقالب جديد — التغيير يتسجّل لما تضغط حفظ.</>
-                ) : isMetaBound && metaContentChanged ? (
-                  <>عدّلت محتوى الرسالة — اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة (الرسايل هتتوقف لحد الموافقة).</>
-                ) : isMetaBound ? (
-                  <>أي تعديل على المحتوى أو الأزرار وبعدين «إرسال للمراجعة من جديد» هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.</>
-                ) : (
-                  <>اضغط «إنشاء قالب ميتا جديد» لتنشر القالب على ميتا — مش هيتبعت للعملاء غير بعد اعتماد ميتا للمراجعة.</>
-                )}
               </p>
             )}
             </div>
@@ -3004,11 +2996,7 @@ function MetaTemplateSelect({
           </option>
         ))}
       </select>
-      {!showTemplates ? (
-        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
-          هيتم تأليف القالب من النص أدناه ونشره على الحساب المختار لميتا للمراجعة — والاسم التقني على ميتا يتولّد تلقائيًا.
-        </p>
-      ) : loadingMetaTemplates ? (
+      {showTemplates && (loadingMetaTemplates ? (
         <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
       ) : availableMetaTemplates.length > 0 ? (
         <>
@@ -3096,7 +3084,7 @@ function MetaTemplateSelect({
         <p className="text-xs text-slate-400">
           لا توجد قوالب ميتا معتمدة — اكتب المحتوى أعلاه ثم استخدم الزر السفلي «إنشاء قالب ميتا جديد» لنشره للمراجعة.
         </p>
-      )}
+      ))}
     </>
   );
 }

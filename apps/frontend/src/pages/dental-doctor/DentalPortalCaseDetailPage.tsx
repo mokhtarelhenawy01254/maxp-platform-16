@@ -305,7 +305,7 @@ const DentalPortalCaseDetailPage: React.FC = () => {
     try {
       const note = approved
         ? ""
-        : window.prompt(t("dentalPortal.caseDetail.changesPrompt") || "اكتب ملاحظات التعديل") || "";
+        : window.prompt(t("dentalPortal.caseDetail.changesPrompt") || "اكتب ملاحظات التعديل المطلوبة") || "";
       await submitDesignApproval(id, approved, note || undefined);
       setApprovalMsg(
         approved

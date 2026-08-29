@@ -1151,16 +1151,20 @@ const uploadCaseAttachment = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const existing = await prisma.dentalLabCase.findFirst({ where: { id, companyId }, select: { id: true } });
     if (!existing) {
-      if (req.file && req.file.path) fs.unlink(req.file.path, () => {});
+      const leftovers = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+      for (const f of leftovers) { if (f && f.path) fs.unlink(f.path, () => {}); }
       return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
     }
-    if (!req.file) return res.status(400).json({ success: false, error: 'لم يتم رفع أي ملف' });
 
-let kind = 'SCAN';
+    // يقبل رفع ملف واحد (req.file) أو متعدد (req.files)
+    const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+    if (files.length === 0) return res.status(400).json({ success: false, error: 'لم يتم رفع أي ملف' });
+
+    let kind = 'SCAN';
     if (req.body && req.body.kind) {
       const requested = String(req.body.kind).toUpperCase();
       if (!ATTACHMENT_KINDS.has(requested)) {
-        if (req.file && req.file.path) fs.unlink(req.file.path, () => {});
+        for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
         return res.status(400).json({ success: false, error: 'نوع المرفق غير صحيح' });
       }
       kind = requested;
@@ -1171,39 +1175,54 @@ let kind = 'SCAN';
       const teamRoles = await require('../services/dentalRoles').loadTeamRoles(companyId);
       const role = resolveDentalRole(req.user, teamRoles);
       if (!['OWNER', 'MANAGER'].includes(role)) {
-        fs.unlink(req.file.path, () => {});
+        for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
         return res.status(403).json({ success: false, error: 'غير مصرح برفع مراجعة التصميم' });
       }
     }
 
-    // ملفات HTML (مثل عارض exocad ثلاثي الأبعاد) مسموحة فقط لنوع مراجعة التصميم
-    const fileExt = path.extname(req.file.originalname || req.file.filename || '').toLowerCase();
-    const fileMime = String(req.file.mimetype || '').toLowerCase();
-    const isHtml = fileExt === '.html' || fileMime === 'text/html';
-    if (isHtml && kind !== 'DESIGN_REVIEW') {
-      fs.unlink(req.file.path, () => {});
-      return res.status(400).json({ success: false, error: 'ملفات HTML مسموحة فقط لمراجعة التصميم (DESIGN_REVIEW)' });
-    }
-    if (!isHtml && kind === 'DESIGN_REVIEW') {
-      fs.unlink(req.file.path, () => {});
+    // رفع مراجعة التصميم يجب أن يكون ملف HTML واحد على الأقل، والملفات غير HTML مسموحة فقط للأنواع الأخرى.
+    const isHtmlFile = (f) => {
+      const ext = path.extname(f.originalname || f.filename || '').toLowerCase();
+      const mime = String(f.mimetype || '').toLowerCase();
+      return ext === '.html' || mime === 'text/html';
+    };
+    if (kind === 'DESIGN_REVIEW' && !files.some(isHtmlFile)) {
+      for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
       return res.status(400).json({ success: false, error: 'مراجعة التصميم يجب أن تكون ملف HTML من exocad' });
     }
+    const htmlOffenders = files.filter((f) => isHtmlFile(f) && kind !== 'DESIGN_REVIEW');
+    if (htmlOffenders.length > 0) {
+      for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
+      return res.status(400).json({ success: false, error: 'ملفات HTML مسموحة فقط لمراجعة التصميم (DESIGN_REVIEW)' });
+    }
 
-    const attachment = await prisma.dentalCaseAttachment.create({
-      data: {
-        companyId,
-        caseId: id,
-        uploadedBy: req.user?.id || req.user?.email || null,
-        kind,
-        fileName: req.file.originalname || req.file.filename,
-        storedPath: req.file.filename,
-        mimeType: req.file.mimetype || null,
-        size: req.file.size || 0,
-      },
+    const uploader = req.user?.id || req.user?.email || null;
+    const created = [];
+    for (const f of files) {
+      const att = await prisma.dentalCaseAttachment.create({
+        data: {
+          companyId,
+          caseId: id,
+          uploadedBy: uploader,
+          kind,
+          fileName: f.originalname || f.filename,
+          storedPath: f.filename,
+          mimeType: f.mimetype || null,
+          size: f.size || 0,
+        },
+      });
+      created.push(att);
+    }
+
+    res.json({
+      success: true,
+      data: created.length === 1 ? created[0] : created,
+      meta: { count: created.length, kind },
     });
-    res.json({ success: true, data: attachment });
   } catch (error) {
     console.error('Error uploading dental attachment:', error);
+    const leftovers = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+    for (const f of leftovers) { if (f && f.path) fs.unlink(f.path, () => {}); }
     res.status(500).json({ success: false, error: 'حدث خطأ في رفع المرفق' });
   }
 };
@@ -1780,7 +1799,85 @@ const getWorkOrderPdf = async (req, res) => {
   }
 };
 
-// ==================== SCAN PARSING (AI OCR) ====================
+// ==================== SCAN PARSING (AI OCR + JSON profile) ====================
+
+/**
+ * يحول JSON profile (مثل 3Shape/Exocad) إلى نتيجة ScanParseResult بدون أي مفتاح AI.
+ * مفيد عندما لا يتوفر Gemini أو يريد المستخدم نتيجة فورية وموثوقة من ملف JSON.
+ */
+function extractFromProfileJson(rawText) {
+  let data;
+  try { data = JSON.parse(rawText); } catch { return null; }
+  if (!data || typeof data !== 'object') return null;
+
+  const patientInfo = data.patientInfo && typeof data.patientInfo === 'object' ? data.patientInfo : null;
+  const caseInfo = data.patientTreatCaseInfo && typeof data.patientTreatCaseInfo === 'object' ? data.patientTreatCaseInfo : null;
+  const toothList = Array.isArray(data.toothCaseInfo) ? data.toothCaseInfo : [];
+
+  // اسم المريض
+  const patientName = (patientInfo && (patientInfo.Name || patientInfo.name)) || null;
+
+  // الأسنان: من toothCaseInfo.ToothNumber (قد يكون array) + Comments
+  const toothNumbers = Array.isArray(toothList)
+    ? toothList.map((t) => (t && (t.ToothNumber ?? t.toothNumber))).filter((n) => n !== null && n !== undefined)
+    : [];
+  const teeth = toothNumbers.length > 0 ? String(toothNumbers.join(',')) : null;
+
+  // اللون/الخامة: أول سن في القائمة (تطبيقات المعمل تتعامل مع سن واحد غالباً)
+  const firstTooth = toothList[0] || null;
+  const shade = (firstTooth && (firstTooth.ColorType || firstTooth.colorType)) || null;
+  const materialCode = (firstTooth && (firstTooth.MaterialTypeCode || firstTooth.materialTypeCode)) || null;
+  const preparationCode = (firstTooth && (firstTooth.PreparationTypeCode || firstTooth.preparationTypeCode)) || null;
+
+  // اسم الخامة مفهوم للفني (تعريب مبسط للقيم الشائعة)
+  const MATERIAL_LABELS = {
+    ZIRCONIA: 'زيركون',
+    EMAX: 'إيماكس',
+    PFM: 'بورسلين على معدن',
+    PMMA: 'أكريليك مؤقت',
+    METAL: 'معدن',
+    WAX: 'شمع',
+    PEEK: 'بيك',
+    COMPOSITE: 'كومبوزيت',
+    LITHIUM_DISILICATE: 'ليثيوم ديسيليكات',
+  };
+  const material = materialCode
+    ? (MATERIAL_LABELS[String(materialCode).toUpperCase()] || String(materialCode).toLowerCase())
+    : null;
+
+  // نوع الشغل: تخمين من PreparationTypeCode
+  const PREPARATION_LABELS = {
+    CROWN_ANATOMIC: 'تاج',
+    CROWN_COPY: 'تاج',
+    BRIDGE_ANATOMIC: 'جسر',
+    INLAY: 'حشو مصبوب',
+    ONLAY: 'حشو مصبوب',
+    VENEER: 'قشور',
+    POST: 'دعامة',
+    IMPLANT_CROWN: 'تاج على زرعة',
+    IMPLANT_BRIDGE: 'جسر على زرعات',
+  };
+  const workTypeHint = preparationCode
+    ? (PREPARATION_LABELS[String(preparationCode).toUpperCase()] || String(preparationCode).toLowerCase())
+    : null;
+
+  // تاريخ/الطبيب
+  const doctorEmail = (caseInfo && (caseInfo.CloudOrderSystemUserName || caseInfo.Doctor)) || null;
+  const requestedDeliveryUTC = caseInfo && Number(caseInfo.RequestedDeliveryDateUTC);
+  let dueDate = null;
+  if (requestedDeliveryUTC && requestedDeliveryUTC > 0) {
+    const d = new Date(requestedDeliveryUTC * 1000);
+    if (!Number.isNaN(d.getTime())) dueDate = d.toISOString();
+  }
+
+  // ملاحظات: اسم الطبيب + المادة الخام
+  const notesParts = [];
+  if (doctorEmail) notesParts.push(`الطبيب: ${doctorEmail}`);
+  if (materialCode) notesParts.push(`(Material: ${materialCode})`);
+  const notes = notesParts.length > 0 ? notesParts.join(' | ') : null;
+
+  return { patientName, teeth, shade, material, workTypeHint, notes, dueDate };
+}
 
 const parseScan = async (req, res) => {
   try {
@@ -1788,15 +1885,30 @@ const parseScan = async (req, res) => {
     if (!companyId) return;
 if (!req.file) return res.status(400).json({ success: false, error: 'لم يتم رفع أي ملف' });
 
-    const base64 = Buffer.isBuffer(req.file.buffer)
-      ? req.file.buffer.toString('base64')
-      : fs.readFileSync(req.file.path).toString('base64');
-    const mimeType = req.file.mimetype || 'image/jpeg';
+    const filePath = req.file.path;
+    const rawBuffer = Buffer.isBuffer(req.file.buffer)
+      ? req.file.buffer
+      : fs.readFileSync(filePath);
+    const mimeType = (req.file.mimetype || '').toLowerCase();
+    const originalName = String(req.file.originalname || '').toLowerCase();
+    const isJson = mimeType === 'application/json' || originalName.endsWith('.json') || mimeType === 'text/plain';
 
-const result = await parseScanImage({ base64, mimeType, companyId });
-    if (req.file && req.file.path) {
-      fs.unlink(req.file.path, () => {});
+    // 1) JSON profile → استخراج هيكلي موثوق (3Shape/Exocad-style)
+    if (isJson) {
+      try {
+        const text = rawBuffer.toString('utf8');
+        const extracted = extractFromProfileJson(text);
+        if (extracted) {
+          if (filePath) fs.unlink(filePath, () => {});
+          return res.json({ success: true, data: extracted, source: 'profile-json' });
+        }
+      } catch (_) { /* ابقِ على المسار الطبيعي */ }
     }
+
+    // 2) صور/PDF → AI (Gemini) — يفشل بـ AI_NOT_CONFIGURED عند غياب المفتاح
+    const base64 = rawBuffer.toString('base64');
+    const result = await parseScanImage({ base64, mimeType: req.file.mimetype || 'image/jpeg', companyId });
+    if (filePath) fs.unlink(filePath, () => {});
     res.json(result);
   } catch (error) {
     if (req.file && req.file.path) fs.unlink(req.file.path, () => {});

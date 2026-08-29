@@ -459,8 +459,8 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
   "soft-graceful": createThemeCategoryMeta(
     "fashion",
     "أزياء",
-    "luxury-fashion",
-    "أزياء فاخرة",
+    "curated-fashion",
+    "أزياء منسقة ومواسم",
   ),
   "allure": createThemeCategoryMeta(
     "fashion",
@@ -478,7 +478,7 @@ const getStorefrontThemeCategoryMeta = (
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
   "soft-graceful":
-    "قالب Graceful المنسّق للسوق العربي: اكتشاف تفاعلي بنقاط Hotspot، تشكيلات موسمية وموجهة بالمناسبة، سلة منزلقة وquick view وبحث وتصفية ذكية.",
+    "Soft Graceful — قالب أزياء تحريري للعلامات العصرية بلمسة MaxP: مجموعات منسّقة، لوكات موسمية، اكتشاف ذكي بالـ Hotspot، سلّة منزلقة وQuick View، بألوان الرصيف الأصلي وأدوات Graceful.",
   "allure":
     "نسخة من ثيم Allure (Shopify): أناقة تلتقي بالبساطة، عرض بصري قوي وعلامة تجارية فاخرة. يدعم mega menu، تصفية بالألوان (swatch filters)، quick buy، سلة منزلقة، دليل مقاسات، lookbook، عدّاد نقص المخزون، عدّ تنازلي، تنبيهات عودة المخزون، cross-sell/بُعِد-معًا، ومراجعات العملاء.",
   "modern-minimal":

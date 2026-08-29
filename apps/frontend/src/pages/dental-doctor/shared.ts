@@ -266,10 +266,10 @@ export const SHADE_OPTIONS = [
   "5M1",
   "5M2",
   "5M3",
-  "أخرى",
+  "تاني",
 ];
 
-export const MATERIAL_OPTIONS = ["زيركون", "إيماكس", "برسلين", "معدن", "أخرى"];
+export const MATERIAL_OPTIONS = ["زيركون", "إيماكس", "برسلين", "معدن", "تاني"];
 
 const PORTAL_BASE = `${getApiUrl()}/dental-lab/portal`;
 
@@ -310,7 +310,7 @@ async function portalFetch<T>(
     const data = json as Record<string, unknown>;
     const msg = data["message"] ?? data["error"];
     throw new Error(
-      typeof msg === "string" && msg ? msg : "حدث خطأ في الاتصال",
+      typeof msg === "string" && msg ? msg : "حصل خطأ في الاتصال",
     );
   }
   return unwrapEnvelope<T>(json);
@@ -332,7 +332,7 @@ export async function dentalLogin(
   if (!res.ok || typeof token !== "string") {
     const msg = payload?.["message"] ?? payload?.["error"];
     throw new Error(
-      typeof msg === "string" && msg ? msg : "بيانات الدخول غير صحيحة",
+      typeof msg === "string" && msg ? msg : "بيانات الدخول غلط",
     );
   }
   return {
@@ -499,7 +499,7 @@ export async function fetchWorkOrderPdfPortal(caseId: string): Promise<Blob> {
     const data = json as Record<string, unknown>;
     const msg = data["message"] ?? data["error"];
     throw new Error(
-      typeof msg === "string" && msg ? msg : "تعذر تحميل ورقة العمل",
+      typeof msg === "string" && msg ? msg : "قدرش يحمل ورقة الشغل",
     );
   }
   return res.blob();
@@ -511,19 +511,19 @@ export interface StatusVisual {
 }
 
 export const CASE_STATUS_CONFIG: Record<DentalCaseStatus, StatusVisual> = {
-  RECEIVED: { label: "استلمت", pill: "bg-sky-100 text-sky-800" },
+  RECEIVED: { label: "وصل", pill: "bg-sky-100 text-sky-800" },
   DESIGN: { label: "تصميم", pill: "bg-violet-100 text-violet-800" },
   MANUFACTURING: { label: "تصنيع", pill: "bg-amber-100 text-amber-800" },
-  QC: { label: "مراجعة جودة", pill: "bg-cyan-100 text-cyan-800" },
-  READY: { label: "جاهزة", pill: "bg-green-100 text-green-800" },
-  DELIVERED: { label: "سُلّمت", pill: "bg-blue-100 text-blue-800" },
-  CLOSED: { label: "مغلقة", pill: "bg-gray-100 text-gray-700" },
+  QC: { label: "فحص جودة", pill: "bg-cyan-100 text-cyan-800" },
+  READY: { label: "جاهزة للتسليم", pill: "bg-green-100 text-green-800" },
+  DELIVERED: { label: "اتسلمت", pill: "bg-blue-100 text-blue-800" },
+  CLOSED: { label: "مقفولة", pill: "bg-gray-100 text-gray-700" },
 };
 
 export const PRIORITY_CONFIG: Record<DentalCasePriority, StatusVisual> = {
   NORMAL: { label: "عادي", pill: "bg-gray-100 text-gray-600" },
-  URGENT: { label: "عاجل", pill: "bg-orange-100 text-orange-800" },
-  STAT: { label: "استعجالي", pill: "bg-red-100 text-red-800" },
+  URGENT: { label: "مستعجل", pill: "bg-orange-100 text-orange-800" },
+  STAT: { label: "استعجالي جداً", pill: "bg-red-100 text-red-800" },
 };
 
 export function statusVisual(status: string): StatusVisual {

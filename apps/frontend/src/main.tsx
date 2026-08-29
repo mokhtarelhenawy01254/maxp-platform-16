@@ -35,7 +35,7 @@ const OPTIONAL_GOOGLE_FONTS_HREF =
   "https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Montserrat:wght@300;400;500;600&family=Cinzel:wght@400;700&display=swap";
 const ADMIN_CRITICAL_GOOGLE_FONTS_ID = "admin-critical-google-fonts";
 const ADMIN_CRITICAL_GOOGLE_FONTS_HREF =
-  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap";
+  "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap";
 
 let adminShellAssetsPromise: Promise<void> | null = null;
 

@@ -11129,6 +11129,19 @@ declare module 'react-i18next' {
           paymentNotConfigured: string;
         };
         settings: {
+          sections: {
+            general: string;
+            stages: string;
+            whatsapp: string;
+            fields: string;
+            wages: string;
+            dunning: string;
+            billing: string;
+            team: string;
+          };
+          unsavedChanges: string;
+          savedInstantly: string;
+          discardConfirm: string;
           workOrderHeader: string;
           labName: string;
           address: string;

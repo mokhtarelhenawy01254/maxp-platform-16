@@ -95,7 +95,7 @@ router.get('/cases/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER'
 router.put('/cases/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.updateCase);
 router.post('/cases/:id/advance', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.advanceCaseStatus);
 router.post('/cases/:id/assign', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.assignTechnician);
-router.post('/cases/:id/attachments', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), upload.single('file'), controller.uploadCaseAttachment);
+router.post('/cases/:id/attachments', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), upload.array('files', 20), controller.uploadCaseAttachment);
 router.delete('/cases/:id/attachments/:attachmentId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.deleteCaseAttachment);
 router.get('/cases/:id/work-order', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.getWorkOrderPdf);
 router.post('/cases/:id/quality-check', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.recordQualityCheck);

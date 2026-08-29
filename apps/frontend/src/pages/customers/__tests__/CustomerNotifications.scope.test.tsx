@@ -203,6 +203,10 @@ describe("customerScope", () => {
       "cashback",
       "quality",
       "autoDiscount",
+      "delivery",
+      "birthday",
+      "review",
+      "cadence",
       "reports",
     ]);
   });

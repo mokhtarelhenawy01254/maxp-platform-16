@@ -368,13 +368,13 @@ export interface CasesListResult {
 }
 
 export const CASE_STATUSES: { id: DentalCaseStatus; label: string; color: string; barColor: string; dotColor: string }[] = [
-  { id: "RECEIVED", label: "مستلم", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", barColor: "#9ca3af", dotColor: "bg-gray-400" },
+  { id: "RECEIVED", label: "وصل", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300", barColor: "#9ca3af", dotColor: "bg-gray-400" },
   { id: "DESIGN", label: "تصميم", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300", barColor: "#3b82f6", dotColor: "bg-blue-500" },
   { id: "MANUFACTURING", label: "تصنيع", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300", barColor: "#6366f1", dotColor: "bg-indigo-500" },
-  { id: "QC", label: "مراقبة الجودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", barColor: "#eab308", dotColor: "bg-yellow-500" },
+  { id: "QC", label: "فحص جودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300", barColor: "#eab308", dotColor: "bg-yellow-500" },
   { id: "READY", label: "جاهز للتسليم", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300", barColor: "#22c55e", dotColor: "bg-green-500" },
-  { id: "DELIVERED", label: "تم التسليم", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300", barColor: "#14b8a6", dotColor: "bg-teal-500" },
-  { id: "CLOSED", label: "مغلق", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300", barColor: "#6b7280", dotColor: "bg-gray-500" },
+  { id: "DELIVERED", label: "اتسلم", color: "bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300", barColor: "#14b8a6", dotColor: "bg-teal-500" },
+  { id: "CLOSED", label: "مقفول", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300", barColor: "#6b7280", dotColor: "bg-gray-500" },
 ];
 
 export const CASE_STATUS_MAP: Record<string, { label: string; color: string }> = CASE_STATUSES.reduce(
@@ -392,35 +392,35 @@ export const nextStatusOf = (status: string): DentalCaseStatus | null => {
 
 export const PRIORITY_CONFIG: Record<DentalCasePriority, { label: string; color: string }> = {
   NORMAL: { label: "عادي", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
-  URGENT: { label: "عاجل", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  STAT: { label: "استعجالي", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  URGENT: { label: "مستعجل", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
+  STAT: { label: "استعجالي جداً", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
 };
 
 export const ROLE_CONFIG: Record<DentalTechnicianRole, { label: string; color: string }> = {
   RECEPTION: { label: "استقبال", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
   CAD: { label: "تصميم CAD", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
   TECHNICIAN: { label: "فني", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
-  QC: { label: "مراقبة جودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+  QC: { label: "فحص جودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
 };
 
 export const PAYMENT_STATUS_MAP: Record<DentalPaymentStatus, { label: string; color: string }> = {
-  UNPAID: { label: "غير مدفوعة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  UNPAID: { label: "مش مدفوعة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   PARTIAL: { label: "مدفوعة جزئياً", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
   PAID: { label: "مدفوعة", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
 };
 
 export const INVOICE_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  OPEN: { label: "غير مدفوعة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
+  OPEN: { label: "مش مدفوعة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
   PARTIAL: { label: "جزئية", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
   PAID: { label: "مدفوعة", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
-  VOID: { label: "ملغاة", color: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
+  VOID: { label: "ملغية", color: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
 };
 
 export const STAGE_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  PENDING: { label: "بانتظار", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
-  IN_PROGRESS: { label: "جارٍ العمل", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  COMPLETED: { label: "مكتمل", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
-  SKIPPED: { label: "مُتجاوز", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
+  PENDING: { label: "مستنى", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
+  IN_PROGRESS: { label: "بيشتغل", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
+  COMPLETED: { label: "خلصت", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
+  SKIPPED: { label: "تخطيت", color: "bg-gray-200 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
 };
 
 export const WORK_TYPE_CATEGORIES = ["CROWN", "BRIDGE", "REMOVABLE", "ORTHODONTICS", "IMPLANT", "VENEERS", "OTHER"];
@@ -433,7 +433,7 @@ const unwrapEnvelope = <T>(res: AxiosResponse): T => {
     if (body.success === false) {
       const err = body.error;
       const msg = typeof err === "string" ? err : err && typeof err === "object" ? (err as { message?: string }).message : undefined;
-      throw new Error(msg || body.message || "فشل العملية");
+      throw new Error(msg || body.message || "فشلت العملية");
     }
     if ("data" in body) return body.data as T;
   }
@@ -457,7 +457,18 @@ const unwrapListEnvelope = <T>(res: AxiosResponse): T[] => {
   return [] as T[];
 };
 
-export const fetchDoctors = async (): Promise<DentalLabDoctor[]> => unwrapListEnvelope<DentalLabDoctor>(await apiClient.get("/dental-lab/doctors"));
+export const fetchDoctors = async (search?: string): Promise<DentalLabDoctor[]> => {
+  const res = await apiClient.get("/dental-lab/doctors", { params: search ? { search } : {} });
+  // /dental-lab/doctors بيرجع { items, total, page, limit } (وليس array مباشرة)
+  const body = asRecord(res.data) ?? {};
+  const data = body["data"];
+  if (Array.isArray(data)) return data as DentalLabDoctor[];
+  if (data && typeof data === "object") {
+    const inner = data as Record<string, unknown>;
+    if (Array.isArray(inner["items"])) return inner["items"] as DentalLabDoctor[];
+  }
+  return unwrapListEnvelope<DentalLabDoctor>(res);
+};
 export const createDoctor = async (body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.post("/dental-lab/doctors", body));
 export const updateDoctor = async (id: string, body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.put(`/dental-lab/doctors/${id}`, body));
 export const deleteDoctor = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/doctors/${id}`); };
@@ -521,9 +532,18 @@ export const assignCase = async (id: string, body: { technicianId: string; role:
 
 export const uploadCaseAttachment = async (caseId: string, file: File, kind?: string): Promise<DentalCaseAttachment> => {
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("files", file);
   if (kind) formData.append("kind", kind);
-  return unwrapEnvelope<DentalCaseAttachment>(await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
+  const result = await uploadCaseAttachments(caseId, [file], kind);
+  return Array.isArray(result) ? result[0] : result;
+};
+
+export const uploadCaseAttachments = async (caseId: string, files: File[], kind?: string): Promise<DentalCaseAttachment | DentalCaseAttachment[]> => {
+  if (!files || files.length === 0) throw new Error("مفيش ملفات للرفع");
+  const formData = new FormData();
+  for (const f of files) formData.append("files", f);
+  if (kind) formData.append("kind", kind);
+  return unwrapEnvelope<DentalCaseAttachment | DentalCaseAttachment[]>(await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
   }));
 };
@@ -539,6 +559,7 @@ export interface ScanParseResult {
   material?: string | null;
   workTypeHint?: string | null;
   notes?: string | null;
+  dueDate?: string | null;
 }
 
 export const parseScan = async (file: File): Promise<ScanParseResult> => {
@@ -547,15 +568,16 @@ export const parseScan = async (file: File): Promise<ScanParseResult> => {
   const res = await apiClient.post("/dental-lab/scan-parse", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
-  const body = res.data as { success?: boolean; data?: ScanParseResult; error?: string; message?: string };
-  if (body?.success === false) {
-    const msg = typeof body.error === "string" ? body.error : body.message || "فشل تحليل الصورة";
+  const body = asRecord(res.data) ?? {};
+  if (body["success"] === false) {
+    const err = body["error"];
+    const msg = typeof err === "string" ? err : (err && typeof err === "object" ? (err as { message?: string }).message : undefined) || (body["message"] as string) || "فشل تحليل الصورة";
     if (msg === "AI_NOT_CONFIGURED") {
-      throw new Error("مفتاح الذكاء الاصطناعي غير مضبوط في قاعدة البيانات");
+      throw new Error("مفتاح الذكاء الاصطناعي مش مضبوط في قاعدة البيانات");
     }
     throw new Error(msg);
   }
-  return (body?.data ?? {}) as ScanParseResult;
+  return (body["data"] ?? {}) as ScanParseResult;
 };
 
 export const fetchInvoices = async (): Promise<DentalInvoice[]> => unwrapListEnvelope<DentalInvoice>(await apiClient.get("/dental-lab/invoices"));
@@ -645,7 +667,7 @@ export const caseFileUrl = (storedName?: string): string => {
 };
 
 export const fetchCaseFileBlob = async (storedName?: string): Promise<Blob> => {
-  if (!storedName) throw new Error("لا يوجد ملف");
+  if (!storedName) throw new Error("مفيش ملف");
   const res = await apiClient.get(`/dental-lab/files/${encodeURIComponent(storedName)}`, { responseType: "blob" });
   return res.data as Blob;
 };

@@ -55,7 +55,7 @@ function dentalLabFileFilter(_req, file, cb) {
 const upload = multer({
   storage,
   fileFilter: dentalLabFileFilter,
-  limits: { fileSize: 25 * 1024 * 1024, files: 1 },
+  limits: { fileSize: 50 * 1024 * 1024, files: 20 },
 });
 
 module.exports = { upload, dentalLabDir, dentalLabFileFilter };

@@ -346,7 +346,13 @@ export default function DentalCaseDetailPage() {
 
   useEffect(() => {
     refresh();
-    fetchTechnicians().then(setTechnicians).catch(() => setTechnicians([]));
+    fetchTechnicians()
+      .then((res) => {
+        // fetchTechnicians returns { items, wageDefaults }; unwrap defensively.
+        const list = Array.isArray(res) ? res : Array.isArray(res?.items) ? res.items : [];
+        setTechnicians(list);
+      })
+      .catch(() => setTechnicians([]));
   }, [refresh]);
 
   const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {

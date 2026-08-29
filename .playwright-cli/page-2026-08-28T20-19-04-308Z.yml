@@ -1,0 +1,52 @@
+- generic [ref=f4e7]:
+  - generic [ref=f4e65]:
+    - banner [ref=f4e66]:
+      - generic [ref=f4e67]:
+        - link "بوابة معمل الأسنان" [ref=f4e68] [cursor=pointer]:
+          - /url: /dental-portal/dashboard
+        - navigation [ref=f4e74]:
+          - link "الرئيسية" [ref=f4e75] [cursor=pointer]:
+            - /url: /dental-portal/dashboard
+          - link "الطلب من المتجر" [ref=f4e81] [cursor=pointer]:
+            - /url: /dental-portal/catalog
+          - link "السلة" [ref=f4e85] [cursor=pointer]:
+            - /url: /dental-portal/cart
+          - link "حالاتي" [ref=f4e90] [cursor=pointer]:
+            - /url: /dental-portal/cases
+          - link "فواتيري" [ref=f4e94] [cursor=pointer]:
+            - /url: /dental-portal/invoices
+        - generic [ref=f4e99]:
+          - generic [ref=f4e100]: د. أحمد مصطفى
+          - button "تسجيل خروج" [ref=f4e105]
+    - main [ref=f4e110]:
+      - generic [ref=f4e111]:
+        - generic [ref=f4e112]:
+          - heading "أهلاً, د. أحمد مصطفى 👋" [level=1] [ref=f4e113]
+          - paragraph [ref=f4e114]: تابع حالاتك وطلباتك من مكان واحد
+        - generic [ref=f4e115]:
+          - generic [ref=f4e118]:
+            - paragraph [ref=f4e119]: حالاتي النشطة
+            - paragraph [ref=f4e120]: "1"
+          - generic [ref=f4e127]:
+            - paragraph [ref=f4e128]: جاهزة للاستلام
+            - paragraph [ref=f4e129]: "0"
+          - generic [ref=f4e138]:
+            - paragraph [ref=f4e139]: متأخرة
+            - paragraph [ref=f4e140]: "0"
+          - generic [ref=f4e146]:
+            - paragraph [ref=f4e147]: مستحقاتي
+            - paragraph [ref=f4e148]: ٠ ج.م
+        - heading "إجراءات سريعة" [level=2] [ref=f4e154]
+        - generic [ref=f4e155]:
+          - link [ref=f4e156] [cursor=pointer]:
+            - /url: /dental-portal/catalog
+            - generic [ref=f4e161]:
+              - paragraph [ref=f4e162]: طلب جديد
+              - paragraph [ref=f4e163]: تصفح متجر الأعمال وقدّم طلبك
+          - link [ref=f4e164] [cursor=pointer]:
+            - /url: /dental-portal/cases
+            - generic [ref=f4e169]:
+              - paragraph [ref=f4e170]: حالاتي
+              - paragraph [ref=f4e171]: تابع مراحل إنتاج حالاتك
+    - contentinfo [ref=f4e172]: بوابة معمل الأسنان — تابع حالاتك وطلباتك بسهولة
+  - region "Notifications alt+T"
