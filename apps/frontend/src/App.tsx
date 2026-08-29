@@ -2023,6 +2023,7 @@ const AppContent = () => {
             <Route path="/store/articles/:slug" element={<StorefrontArticlePage />} />
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
+            <Route path="/shop" element={<StorefrontShell />} />
             {isAuthenticated && (
               <>
             <Route
