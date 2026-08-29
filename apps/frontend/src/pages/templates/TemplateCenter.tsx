@@ -162,6 +162,8 @@ interface TemplateFormState {
   headerMediaName: string;
   headerUsesOrderProduct: boolean;
   category: string;
+  /** فئة ميتا الصريحة عند النشر — UTILITY/MARKETING/AUTHENTICATION */
+  metaCategory: string;
 }
 
 interface SettingsForm {
@@ -192,6 +194,7 @@ const emptyTemplateForm = (): TemplateFormState => ({
   headerMediaName: "",
   headerUsesOrderProduct: false,
   category: "CUSTOMER",
+  metaCategory: "UTILITY",
 });
 
 const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
@@ -787,6 +790,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       category: config.features.categoryMode === "manual"
         ? (status.category || config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER")
         : "CUSTOMER",
+      metaCategory: String(status.category || "").toUpperCase() === "MARKETING" ? "MARKETING" : "UTILITY",
     };
     setTemplateForm(form);
     initialFormRef.current = JSON.stringify(form);
@@ -821,6 +825,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       category: config.features.categoryMode === "manual"
         ? (status.category || config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER")
         : "CUSTOMER",
+      metaCategory: String(status.category || "").toUpperCase() === "MARKETING" ? "MARKETING" : "UTILITY",
     };
     setTemplateForm(form);
     initialFormRef.current = JSON.stringify(form);
@@ -856,6 +861,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       headerMediaName: current?.headerMediaHandle || "",
       headerUsesOrderProduct: config.features.enableHeaderProductImage ? (current?.headerUsesOrderProduct ?? true) : false,
       category: config.features.categoryMode === "manual" ? (config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER") : "CUSTOMER",
+      metaCategory: "UTILITY",
     };
     setTemplateForm(form);
     initialFormRef.current = JSON.stringify(form);
@@ -1134,7 +1140,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
     setPublishingId(templateId);
     try {
-      await apiClient.post(`${config.metaOpsBase}/${templateId}/publish`, { sessionId: selectedMetaSession });
+      await apiClient.post(`${config.metaOpsBase}/${templateId}/publish`, {
+        sessionId: selectedMetaSession,
+        metaCategory: templateForm.metaCategory || undefined,
+      });
       toast.success(t("orders.publishedToMeta", "تم إرسال القالب لميتا للمراجعة"));
       // نغلق الديالوج ونعيد الجلب — بدل بادج «محفوظ (بدون ربط)» المضلل
       // ولمنع ضغطة تانية تنشئ قالب ميتا مكرر بنفس الاسم المتولد
@@ -2373,30 +2382,17 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   value={templateForm.name}
                   onChange={(e) => setTemplateForm((p) => ({ ...p, name: e.target.value }))}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder="مثال: قالب تأكيد الطلب"
+                  placeholder={config.scope === "customers" ? "مثال: قالب نقاط الولاء" : "مثال: قالب تأكيد الطلب"}
                 />
+                {dialogSlot === "meta" && (
+                  <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
+                    الاسم للعرض داخل المنصة فقط — ميتا بتولّد اسمًا تقنيًا للقالب (مثل price_drop_mtabc12) وهو اللي هيظهر على الكارت بعد النشر.
+                  </p>
+                )}
               </div>
 
-              {config.features.categoryMode === "manual" && config.features.dialogCategoryOptions && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    نوع/فئة الرسالة — بتحدد تصنيف قالب ميتا عند النشر
-                  </label>
-                  <select
-                    value={templateForm.category}
-                    onChange={(e) => setTemplateForm((p) => ({ ...p, category: e.target.value }))}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  >
-                    {config.features.dialogCategoryOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-                    <strong>UTILITY</strong> يترجم لـ UTILITY على ميتا = موافقة أسرع.
-                    <strong> MARKETING</strong> محتاج opt-in من العميل ومراجعة أشد.
-                  </p>
-                </div>
-              )}
+              {/* فئة القالب المحلية بتتفرد تلقائيًا من نوع الحدث (تصنيف التبويبات) —
+                  واختيار فئة ميتا الحقيقية داخل قسم الميتا في وضع التأليف فقط */}
 
               {/* مؤشر القناة المبسط — للعادي فقط (ميتا اتشال حسب الطلب) */}
               {dialogSlot === "regular" && (
@@ -2409,12 +2405,14 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {dialogSlot === "meta" && (
                 <div className="space-y-3 rounded-lg border border-blue-200 p-3 dark:border-blue-800/40">
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    اختر قالب ميتا المعتمد
+                    {dialogMode === "create" ? "حساب النشر على ميتا" : "اختر قالب ميتا المعتمد"}
                   </label>
                   <p className="-mt-2 text-[10px] text-slate-400 dark:text-slate-500">
-                    {isMetaBound
-                      ? "اختار قالب مختلف عشان تغيّر الربط — التغيير يتسجّل لما تضغط حفظ."
-                      : "اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده."}
+                    {dialogMode === "create"
+                      ? "هيتم تأليف القالب من النص أدناه ونشره على الحساب المختار لميتا للمراجعة. الربط بقالب معتمد موجود متاح من زرار «تغيير القالب» على الكارت."
+                      : isMetaBound
+                        ? "اختار قالب مختلف عشان تغيّر الربط — التغيير يتسجّل لما تضغط حفظ."
+                        : "اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده."}
                   </p>
                   <MetaTemplateSelect
                     metaSessions={metaSessions}
@@ -2424,6 +2422,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     loadingMetaTemplates={loadingMetaTemplates}
                     selectedMetaTemplateName={templateForm.metaTemplateName}
                     onSelectTemplate={handleMetaTemplateSelect}
+                    showTemplates={dialogMode !== "create"}
                     enableMultiBind={config.features.enableMetaMultiBind}
                     excludeOtherBound={!config.features.enableMetaMultiBind}
                     selectedTemplateId={selectedTemplate?.id}
@@ -2432,6 +2431,24 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     sampleVariables={sampleVariables}
                     variableDescriptions={variableDescriptions}
                   />
+
+                  {/* فئة ميتا الحقيقية (3 فئات) — وضع التأليف فقط؛ في وضع الربط الفئة جاية من القالب المعتمد */}
+                  {!templateForm.metaTemplateName && (
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
+                        فئة القالب على ميتا
+                      </label>
+                      <select
+                        value={templateForm.metaCategory || "UTILITY"}
+                        onChange={(e) => setTemplateForm((p) => ({ ...p, metaCategory: e.target.value }))}
+                        className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                      >
+                        <option value="UTILITY">UTILITY — معاملات وتحديثات (موافقة أسرع — موصى به)</option>
+                        <option value="MARKETING">MARKETING — عروض وتسويق (محتاج opt-in من العميل)</option>
+                        <option value="AUTHENTICATION">AUTHENTICATION — أكواد تحقق (OTP)</option>
+                      </select>
+                    </div>
+                  )}
 
                   {(() => {
                     const selectedMt = availableMetaTemplates.find((mt) => mt.name === templateForm.metaTemplateName);
@@ -2838,8 +2855,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   <>هتغير الربط من «{originalMetaTemplateName}» لقالب جديد — التغيير يتسجّل لما تضغط حفظ.</>
                 ) : isMetaBound && metaContentChanged ? (
                   <>عدّلت محتوى الرسالة — اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة (الرسايل هتتوقف لحد الموافقة).</>
-                ) : (
+                ) : isMetaBound ? (
                   <>أي تعديل على المحتوى أو الأزرار وبعدين «إرسال للمراجعة من جديد» هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.</>
+                ) : (
+                  <>اضغط «إنشاء قالب ميتا جديد» لتنشر القالب على ميتا — مش هيتبعت للعملاء غير بعد اعتماد ميتا للمراجعة.</>
                 )}
               </p>
             )}
@@ -2907,6 +2926,7 @@ function MetaTemplateSelect({
   onSelectTemplate,
   onCreateTemplate,
   createDisabled,
+  showTemplates = true,
   enableMultiBind,
   excludeOtherBound,
   selectedTemplateId,
@@ -2924,6 +2944,8 @@ function MetaTemplateSelect({
   onSelectTemplate: (name: string) => void;
   onCreateTemplate?: () => void;
   createDisabled?: boolean;
+  /** إخفاء قائمة القوالب المعتمدة — وضع التأليف (الجلسة فقط يكفي) */
+  showTemplates?: boolean;
   enableMultiBind?: boolean;
   /** يخفي القوالب المربوطة بقوالب محلية تانية (وضع تعديل ميتا) — switch بيعرض الكل */
   excludeOtherBound?: boolean;
@@ -2944,7 +2966,7 @@ function MetaTemplateSelect({
         </div>
         <select
           disabled
-          aria-label="جلسة ميتا للربط"
+          aria-label="حساب النشر على ميتا"
           className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
         >
           <option>لا توجد جلسات متاحة</option>
@@ -2973,7 +2995,7 @@ function MetaTemplateSelect({
       <select
         value={selectedMetaSession}
         onChange={(e) => onSessionChange(e.target.value)}
-        aria-label="جلسة ميتا للربط"
+        aria-label="حساب النشر على ميتا"
         className="mb-2 mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
         {metaSessions.map((s) => (
@@ -2982,7 +3004,11 @@ function MetaTemplateSelect({
           </option>
         ))}
       </select>
-      {loadingMetaTemplates ? (
+      {!showTemplates ? (
+        <p className="text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+          هيتم تأليف القالب من النص أدناه ونشره على الحساب المختار لميتا للمراجعة — والاسم التقني على ميتا يتولّد تلقائيًا.
+        </p>
+      ) : loadingMetaTemplates ? (
         <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
       ) : availableMetaTemplates.length > 0 ? (
         <>

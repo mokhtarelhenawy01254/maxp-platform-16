@@ -1108,7 +1108,7 @@ function getErrorMessage(reason, retryable = false) {
  *
  * Returns { result, metaName, built, metaCategory, metaPadding }
  */
-async function createMetaTemplateFromLocal(sessionId, localTemplate) {
+async function createMetaTemplateFromLocal(sessionId, localTemplate, categoryOverride = null) {
   // الشركة مطلوبة لبناء رابط صفحة العميل (الساب دومين) في زرار URL
   const company = await getSharedPrismaClient().company.findUnique({
     where: { id: localTemplate.companyId },
@@ -1116,7 +1116,7 @@ async function createMetaTemplateFromLocal(sessionId, localTemplate) {
   }).catch(() => null);
 
   const built = buildMetaTemplatePayload(localTemplate, company);
-  const metaCategory = built.metaCategory;
+  const metaCategory = categoryOverride || built.metaCategory;
   const bodyText = built.bodyText;
   const buttonsComponent = built.buttonsComponent;
   const headerComponent = built.headerComponent;
@@ -1196,6 +1196,12 @@ async function publishTemplateToMeta(req, res) {
     const templateId = req.params.id || req.body.templateId;
     const { sessionId } = req.body;
 
+    // فئة ميتا الصريحة من الواجهة (3 فئات حقيقية) — بتتغلب على الاشتقاق من الفئة المحلية
+    const META_CATEGORIES = ['UTILITY', 'MARKETING', 'AUTHENTICATION'];
+    const categoryOverride = META_CATEGORIES.includes(String(req.body.metaCategory || '').toUpperCase())
+      ? String(req.body.metaCategory).toUpperCase()
+      : null;
+
     if (!templateId || !sessionId) {
       return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
     }
@@ -1219,7 +1225,7 @@ async function publishTemplateToMeta(req, res) {
     // 3. تحويل القالب المحلي لصيغة ميتا وإنشاؤه في ميتا مع محاولات بديلة
     // الترتيب: الأغنى أولاً ثم تبسيط تدريجي، وكل محاولة باسم فريد لتفادي تعارض الأسماء
     const { result, metaName: createdName, metaCategory: cat, built } =
-      await createMetaTemplateFromLocal(sessionId, localTemplate);
+      await createMetaTemplateFromLocal(sessionId, localTemplate, categoryOverride);
 
     metaName = createdName;
     metaCategory = cat;
@@ -1300,6 +1306,12 @@ async function resubmitMetaTemplate(req, res) {
     const { id } = req.params;
     const { sessionId } = req.body;
 
+    // فئة ميتا الصريحة — بتتطبق في مسار إنشاء نسخة جديدة (PENDING) فقط
+    const META_CATEGORIES = ['UTILITY', 'MARKETING', 'AUTHENTICATION'];
+    const categoryOverride = META_CATEGORIES.includes(String(req.body.metaCategory || '').toUpperCase())
+      ? String(req.body.metaCategory).toUpperCase()
+      : null;
+
     if (!id || !sessionId) {
       return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
     }
@@ -1363,7 +1375,7 @@ async function resubmitMetaTemplate(req, res) {
       console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → Meta id=${metaTemplateId} edited (was ${boundStatus})`);
     } else {
       // 2b) القالب PENDING (أو حالة أخرى غير قابلة للتعديل) → ننشئ قالباً جديداً باسم فريد
-      const created = await createMetaTemplateFromLocal(sessionId, localTemplate);
+      const created = await createMetaTemplateFromLocal(sessionId, localTemplate, categoryOverride);
       result = created.result;
       finalName = created.metaName;
       finalMetaTemplateId = created.result?.id || metaTemplateId;
