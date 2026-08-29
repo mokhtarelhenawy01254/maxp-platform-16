@@ -56,6 +56,20 @@ const StorefrontArticlePage: React.FC = () => {
 
   return (
     <div className="w-full bg-white" dir="ltr">
+      {/* Dark navy header matching mensgroomingpro.com */}
+      <header className="sticky top-0 z-50 w-full bg-[#19212B] text-white shadow-[0_2px_8px_rgba(0,0,0,.2)]">
+        <div className="mx-auto flex h-[60px] max-w-[1100px] items-center justify-between px-4 md:px-6">
+          <Link to={`/store?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-[19px] font-bold tracking-[-0.5px] text-white">
+            Mens Grooming Pro
+          </Link>
+          <nav className="hidden items-center gap-6 md:flex">
+            <Link to={`/store?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-[14px] font-medium text-white/85 hover:text-white">Home</Link>
+            <a href={`/store/about?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-[14px] font-medium text-white/85 hover:text-white">About</a>
+            <a href={`/store/contact?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-[14px] font-medium text-white/85 hover:text-white">Contact</a>
+            <a href={`/store/affiliate-disclaimer?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-[14px] font-medium text-white/85 hover:text-white">Disclosure</a>
+          </nav>
+        </div>
+      </header>
       {/* Breadcrumbs */}
       <div className="container px-4 md:px-6 py-3">
         <div className="mx-auto max-w-[1100px] text-[13px] text-[#888]">
@@ -177,6 +191,32 @@ const StorefrontArticlePage: React.FC = () => {
           })}} />
         </div>
       </div>
+
+      {/* Footer matching mensgroomingpro.com */}
+      <footer className="mt-12 border-t border-[#e8e8e8] bg-white py-8">
+        <div className="mx-auto flex max-w-[1100px] flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
+          <p className="text-sm text-[#666]">© 2026 Mens Grooming Pro</p>
+          <nav className="flex flex-wrap items-center justify-center gap-5">
+            <Link to={`/store?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-sm text-[#19212B] hover:underline">About</Link>
+            <a href={`/store/contact?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-sm text-[#19212B] hover:underline">Contact</a>
+            <a href={`/store/privacy?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-sm text-[#19212B] hover:underline">Privacy Policy</a>
+            <a href={`/store/terms?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-sm text-[#19212B] hover:underline">Terms of Use</a>
+            <a href={`/store/affiliate-disclaimer?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-sm text-[#19212B] hover:underline">Affiliate Disclaimer</a>
+          </nav>
+          <div className="flex items-center gap-3">
+            {[
+              { label: 'Facebook', d: 'M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8v-6.93H7.9V12H10V9.8c0-2.07 1.23-3.22 3.12-3.22.9 0 1.85.16 1.85.16v2.03h-1.04c-1.03 0-1.35.64-1.35 1.29V12h2.3l-.37 2.87h-1.93v6.93c4.56-.93 8-4.96 8-9.8Z', href: 'https://facebook.com/mensgroomingpro' },
+              { label: 'Instagram', d: 'M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.72 3.72 0 0 1-1.38-.9 3.72 3.72 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07Zm0 4.5a5.34 5.34 0 1 0 0 10.68 5.34 5.34 0 0 0 0-10.68Zm0 8.8a3.46 3.46 0 1 1 0-6.92 3.46 3.46 0 0 1 0 6.92Zm6.8-9.2a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z', href: 'https://instagram.com/mensgroomingpro' },
+              { label: 'Twitter', d: 'M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.21-6.82-5.97 6.82H1.67l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23Zm-1.16 17.52h1.83L7.08 4.13H5.12l11.96 15.64Z', href: 'https://twitter.com/mensgroomingpro' },
+              { label: 'YouTube', d: 'M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.81ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z', href: 'https://youtube.com/@mensgroomingpro' },
+            ].map((s) => (
+              <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" aria-label={s.label} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f1f1] text-[#19212B] transition-colors hover:bg-[#19212B] hover:text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d={s.d} /></svg>
+              </a>
+            ))}
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

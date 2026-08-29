@@ -26,7 +26,7 @@ const AffiliateQuiz: React.FC<Props> = ({ settings }) => {
 
   if (!started) {
     return (
-      <section className="w-full bg-[#f8f8f8] py-10">
+      <section id="quiz" className="w-full bg-[#f8f8f8] py-10">
         <div className="container px-4 md:px-6">
           <div className="mx-auto max-w-[1100px] rounded-xl border border-[#e8e8e8] bg-white p-6 text-center md:p-10">
             <div className="mx-auto max-w-2xl">

@@ -66,30 +66,72 @@ const ArticleGrid: React.FC<Props> = ({ settings }) => {
   const limit = Number(settings?.limit) || 6;
   const location = useLocation();
   const [liveArticles, setLiveArticles] = useState<Article[] | null>(null);
+  const [totalPages, setTotalPages] = useState(0);
+  const params = new URLSearchParams(location.search);
+  const currentPage = Math.max(1, Number(params.get("page")) || 1);
+  const companyId = params.get("companyId") || getStorefrontScope();
+
+  const formatDate = (value: string | undefined): string => {
+    if (!value) return "";
+    try {
+      const d = new Date(value);
+      if (Number.isNaN(d.getTime())) return "";
+      return d.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "2-digit" });
+    } catch {
+      return "";
+    }
+  };
+
+  const pageUrl = (page: number) => {
+    const sp = new URLSearchParams(location.search);
+    sp.set("page", String(page));
+    return `/store?${sp.toString()}`;
+  };
 
   useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const companyId = params.get("companyId") || getStorefrontScope();
     if (!companyId || companyId === "server" || companyId.includes("localhost")) return;
-    fetch(`/api/v1/public/articles?companyId=${encodeURIComponent(companyId)}&limit=${limit}`, { credentials: "include" })
+    fetch(`/api/v1/public/articles?companyId=${encodeURIComponent(companyId)}&limit=${limit}&page=${currentPage}`, { credentials: "include" })
       .then((r) => r.json())
       .then((j) => {
-        if (j?.success && Array.isArray(j.data?.items) && j.data.items.length > 0) {
+        if (j?.success && Array.isArray(j.data?.items)) {
           const mapped: Article[] = j.data.items.map((a: any, idx: number) => ({
             title: a.title,
             excerpt: a.excerpt || "",
             image: a.heroImage || demoArticles[idx % demoArticles.length].image,
             href: `/store/articles/${a.slug}?companyId=${encodeURIComponent(companyId)}`,
             badge: idx === 0 ? "Editor's Pick" : a.category || "Guide",
-            date: a.publishedAt,
+            date: a.publishedAt || a.createdAt,
           }));
           setLiveArticles(mapped);
+          setTotalPages(j.data.pages || 0);
+        } else {
+          setLiveArticles([]);
         }
       })
       .catch(() => {});
-  }, [limit, location.search]);
+  }, [limit, currentPage, companyId, location.search]);
 
   const articles = (liveArticles && liveArticles.length > 0 ? liveArticles : demoArticles).slice(0, limit);
+
+  const renderPagination = () => {
+    if (totalPages <= 1) return null;
+    const pages: React.ReactNode[] = [];
+    const windowStart = Math.max(1, currentPage - 2);
+    const windowEnd = Math.min(totalPages, currentPage + 2);
+    if (windowStart > 1) pages.push(<span key="dots1" className="px-2 py-1.5 text-sm text-[#888]">…</span>);
+    for (let p = windowStart; p <= windowEnd; p++) {
+      pages.push(
+        p === currentPage ? (
+          <span key={p} className="rounded border border-[#19212B] bg-[#19212B] px-3 py-1.5 text-sm font-bold text-white">{p}</span>
+        ) : (
+          <Link key={p} to={pageUrl(p)} className="rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-sm text-[#19212B] hover:bg-[#f8f8f8]">{p}</Link>
+        ),
+      );
+    }
+    if (windowEnd < totalPages) pages.push(<span key="dots2" className="px-2 py-1.5 text-sm text-[#888]">…</span>);
+    if (currentPage < totalPages) pages.push(<Link key="next" to={pageUrl(currentPage + 1)} className="rounded border border-[#e8e8e8] bg-white px-3 py-1.5 text-sm text-[#19212B] hover:bg-[#f8f8f8]">Next →</Link>);
+    return <div className="mt-8 flex justify-center gap-2">{pages}</div>;
+  };
 
   return (
     <section className="w-full bg-background py-8" id="articles">
@@ -123,6 +165,9 @@ const ArticleGrid: React.FC<Props> = ({ settings }) => {
               >
                 <img src={a.image} alt={a.title} className="h-[200px] w-full object-cover" loading="lazy" />
                 <div className="p-5">
+                  {a.date ? (
+                    <span className="mb-1.5 block text-xs font-medium text-[#888]">{formatDate(a.date)}</span>
+                  ) : null}
                   {a.badge ? (
                     <span className="mb-2 inline-flex text-xs font-bold uppercase tracking-wide text-[#19212B]">{a.badge}</span>
                   ) : null}
@@ -133,6 +178,8 @@ const ArticleGrid: React.FC<Props> = ({ settings }) => {
               </Link>
             ))}
           </div>
+
+          {renderPagination()}
         </div>
       </div>
     </section>

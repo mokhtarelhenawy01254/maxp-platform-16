@@ -17275,6 +17275,9 @@ declare module 'react-i18next' {
         customerStatements: string;
         debtTracking: string;
         homepageTemplates: string;
+        blogSection: string;
+        articles: string;
+        newArticle: string;
         orderAutomation: string;
         codDeposit: string;
         orderStatusTemplates: string;

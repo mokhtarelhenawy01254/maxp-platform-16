@@ -246,6 +246,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "elessi-plant-slider", label: "Elessi Plant Slider" },
       { value: "playful-split", label: "تقسيم مرح (أطفال)" },
       { value: "layered-parallax-sky", label: "سماء تفاعلية (أطفال)" },
+      { value: "grooming-hero", label: "Hero مدونة Grooming (داكن)" },
     ],
     fields: [
       {

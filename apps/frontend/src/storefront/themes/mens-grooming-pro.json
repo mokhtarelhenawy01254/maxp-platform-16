@@ -60,7 +60,12 @@
   "footer": {
     "description": "Expert product reviews and guides for men's grooming.",
     "copyrightText": "© 2026 Mens Grooming Pro. All rights reserved.",
-    "socialLinks": {},
+    "socialLinks": {
+      "facebook": "https://facebook.com/mensgroomingpro",
+      "instagram": "https://instagram.com/mensgroomingpro",
+      "twitter": "https://twitter.com/mensgroomingpro",
+      "youtube": "https://youtube.com/@mensgroomingpro"
+    },
     "navigation": [
       {
         "title": "Explore",
@@ -90,7 +95,7 @@
       "sections": [
         {
           "type": "hero-banner",
-          "variant": "centered",
+          "variant": "grooming-hero",
           "settings": {
             "eyebrow": "Expert Reviews • Guides • Quiz Tools",
             "title": "Mens Grooming Pro",

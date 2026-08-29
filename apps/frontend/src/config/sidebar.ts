@@ -647,6 +647,19 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
+        // 4️⃣.0 المدونة والـ SEO (Blog & Affiliate) — mens-grooming-pro compatible
+        {
+            id: 'blog',
+            title: t('sidebar.blogSection'),
+            icon: FileText,
+            items: [
+                { to: '/articles', icon: FileText, label: t('sidebar.articles') },
+                { to: '/articles/new', icon: SquarePen, label: t('sidebar.newArticle') },
+                { to: '/shop', icon: Store, label: t('sidebar.visitStore'), external: true },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('blog-pro')
+        },
+
         // 4️⃣.1 تصميم وتنسيق المتجر (Storefront Design)
         {
             id: 'storefront-design',

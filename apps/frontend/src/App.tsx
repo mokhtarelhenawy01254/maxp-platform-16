@@ -164,6 +164,9 @@ const ProductsTrash = React.lazy(
 const ProductNewFinal = React.lazy(
   () => import("./pages/products/ProductNewFinal"),
 );
+const ArticlesList = React.lazy(() => import("./pages/articles/ArticlesList"));
+const ArticleEditor = React.lazy(() => import("./pages/articles/ArticleEditor"));
+const StorefrontArticlePage = React.lazy(() => import("./storefront/pages/StorefrontArticlePage"));
 const AffiliateSystemSettings = React.lazy(
   () => import("./pages/affiliates/AffiliateSystemSettings"),
 );
@@ -2017,6 +2020,7 @@ const AppContent = () => {
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}
             />
+            <Route path="/store/articles/:slug" element={<StorefrontArticlePage />} />
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
             {isAuthenticated && (
@@ -3953,6 +3957,36 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['products.view']}>
                       <Layout>
                         <WooCommerceImport />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/articles"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ArticlesList />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/articles/new"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['products.create']}>
+                      <Layout>
+                        <ArticleEditor />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/articles/:id"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ArticleEditor />
                       </Layout>
                     </PermissionProtectedRoute>
                   }

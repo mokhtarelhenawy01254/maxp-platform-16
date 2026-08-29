@@ -858,6 +858,8 @@ app.use("/api/v1/membership", membershipRoutes);
 
 // Store Management & Catalog
 app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/articles", require("./routes/articleRoutes"));
+app.use("/api/v1/public/articles", require("./routes/publicArticleRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));
 app.use("/api/v1/inventory", inventoryRoutes);
 app.use("/api/v1/procurement", procurementRoutes);
