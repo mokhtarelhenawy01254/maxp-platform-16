@@ -646,7 +646,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
           ? 'grid grid-cols-1 gap-6'
           : isZenOrganic && isShopPage
             ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-y-12 gap-x-8'
-            : resolveDefaultGridClass(variant);
+            : isKhemetLuxe && variant === 'boutique-shelf' && isShopPage
+              ? 'grid grid-cols-2 gap-5 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4'
+              : resolveDefaultGridClass(variant);
   const resolvedGridClass = viewMode === 'list' && isKhemetLuxe && isShopPage ? 'flex flex-col gap-5' : gridClass;
   const carouselCardClass =
     variant === 'compact'
@@ -747,7 +749,9 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
   const containerClassName =
     isBiteRush || isAnyElessiBagGrid || isAnyElessiOrganicGrid || isButcherCutGrid || isButcherAtelierGrid || isElessiPlantFavorites || isElessiPlantNurseryGrid || variant === 'boutique-rail'
       ? 'container px-4 md:px-6'
-      : 'container px-0';
+      : isShopPage || isSalePage
+        ? 'w-full px-0'
+        : 'container px-0';
   const gridFrameClassName =
     isWomenCuratedRack || isWomenFitCatalog || isWomenDealEdit
       ? ''

@@ -255,8 +255,14 @@ const BirthdayWhatsAppNotify: React.FC = () => {
 
 function resToList(data: unknown): BirthdayCustomer[] {
   const d = data as { customers?: unknown[]; today?: unknown[]; upcoming?: unknown[]; data?: unknown[] };
-  const raw = d?.customers || d?.today || d?.upcoming || d?.data || [];
-  return (raw as BirthdayCustomer[]) || [];
+  const raw = (d?.customers || d?.today || d?.upcoming || d?.data || []) as Array<Record<string, unknown>>;
+  return raw.map((c) => ({
+    id: String(c.id || ''),
+    name: String(c.name || [c.firstName, c.lastName].filter(Boolean).join(' ') || 'عميلة'),
+    phone: (c.phone as string) || null,
+    birthDate: (c.birthdayDate as string) || (c.birthDate as string) || null,
+    daysUntil: Number(c.daysRemaining ?? c.daysUntil ?? 0),
+  }));
 }
 
 const BirthdaySection: React.FC<{

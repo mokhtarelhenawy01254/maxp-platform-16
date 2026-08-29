@@ -68,29 +68,30 @@
     "description": "أحذية حريمي مصنوعة بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلي القرار أسرع.",
     "copyrightText": "© 2026 KHEMET LUXE. CRAFTED IN EGYPT.",
     "contactRows": [
-      { "label": "واتساب", "value": "+20 100 000 0000", "href": "https://wa.me/201000000000" },
-      { "label": "البريد", "value": "hello@khemetluxe.com", "href": "mailto:hello@khemetluxe.com" }
+      { "label": "واتساب", "value": "01123087745", "href": "https://wa.me/201123087745" },
+      { "label": "البريد", "value": "swan@h2m.com", "href": "mailto:swan@h2m.com" }
     ],
     "socialLinks": {
       "instagram": "https://instagram.com",
       "facebook": "https://facebook.com",
-      "whatsapp": "https://wa.me/201000000000"
+      "whatsapp": "https://wa.me/201123087745"
     },
     "navigation": [
-      {
-        "title": "الدار",
-        "links": [
-          { "label": "قصة الصناعة", "to": "/collections" },
-          { "label": "الشحن والتوصيل", "to": "/shipping" },
-          { "label": "دليل المقاسات", "to": "/size-guide" }
-        ]
-      },
       {
         "title": "التسوق",
         "links": [
           { "label": "كل الأحذية", "to": "/shop" },
-          { "label": "العروض الحصرية", "to": "/sale" },
-          { "label": "المجموعات", "to": "/collections" }
+          { "label": "الكوتشيات", "to": "/shop?category=sneakers" },
+          { "label": "الفلات", "to": "/shop?category=flats" },
+          { "label": "العروض الحصرية", "to": "/sale" }
+        ]
+      },
+      {
+        "title": "الدار",
+        "links": [
+          { "label": "المجموعات", "to": "/collections" },
+          { "label": "الشحن والتوصيل", "to": "/shipping" },
+          { "label": "دليل المقاسات", "to": "/size-guide" }
         ]
       }
     ],
@@ -425,7 +426,9 @@
           "settings": {
             "title": "سلة KHEMET LUXE",
             "emptyText": "سلتك فارغة حالياً.",
-            "continueShoppingText": "متابعة التسوق"
+            "continueShoppingText": "متابعة التسوق",
+            "showUpsell": false,
+            "headerBadge": ""
           }
         },
         {

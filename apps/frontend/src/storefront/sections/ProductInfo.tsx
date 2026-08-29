@@ -2072,8 +2072,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     isVelaFashionDirectBuybox &&
     Boolean(shortDescription) &&
     plainDescription === shortDescription;
+  const isKhemetCareDescriptionDuplicate =
+    isElessiCareBuybox &&
+    isKhemetLuxeTheme &&
+    Boolean(shortDescription) &&
+    plainDescription === shortDescription;
   const shouldHideDuplicateDescriptionSection =
-    isStyleStoreDescriptionDuplicate || isVelaFashionDescriptionDuplicate;
+    isStyleStoreDescriptionDuplicate ||
+    isVelaFashionDescriptionDuplicate ||
+    isKhemetCareDescriptionDuplicate;
   const rawProductTags = product['tags'];
   const productTagValues = (
     Array.isArray(rawProductTags)
@@ -7209,7 +7216,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         </details>
       ) : null;
     const hasElessiLowerDetails =
-      Boolean(safeDescription) ||
+      (Boolean(safeDescription) && !shouldHideDuplicateDescriptionSection) ||
       featureHighlights.length > 0 ||
       safeCheckoutItems.length > 0 ||
       elessiExtendedSupportCards.length > 0 ||
@@ -7264,16 +7271,18 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               {brandSubtitle ? (
                 <p className="text-sm leading-6 text-[#8f5c44]">{brandSubtitle}</p>
               ) : null}
-              <button
-                type="button"
-                onClick={() => {
-                  setElessiLowerSection('details');
-                  queueQuickScroll(STOREFRONT_PRODUCT_DESCRIPTION_ID, 'start');
-                }}
-                className="inline-flex items-center gap-2 text-sm font-black text-[#8f5c44] transition-colors hover:text-[#2d211e]"
-              >
-                {readMoreText}
-              </button>
+              {shouldHideDuplicateDescriptionSection ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setElessiLowerSection('details');
+                    queueQuickScroll(STOREFRONT_PRODUCT_DESCRIPTION_ID, 'start');
+                  }}
+                  className="inline-flex items-center gap-2 text-sm font-black text-[#8f5c44] transition-colors hover:text-[#2d211e]"
+                >
+                  {readMoreText}
+                </button>
+              )}
               {elessiSaleCountdown && !isKhemetInlineQuickOrderBuybox ? (
                 <div className="border-t border-[#efe0d4] pt-3 sm:pt-4">
                   <div className="flex items-center justify-end gap-2 text-[16px] font-black text-[#2d211e]">
@@ -7374,10 +7383,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
               {elessiLowerSection === 'details' ? (
                 <div id={STOREFRONT_PRODUCT_DESCRIPTION_ID} className="space-y-4 border-b border-[#ead8ca] pb-5">
-                  <ProductDescription
-                    safeDescription={safeDescription}
-                    emptyText={descriptionPreviewText}
-                  />
+                  {shouldHideDuplicateDescriptionSection ? null : (
+                    <ProductDescription
+                      safeDescription={safeDescription}
+                      emptyText={descriptionPreviewText}
+                    />
+                  )}
                   {featureHighlights.length ? (
                     <div className="grid gap-4 md:grid-cols-3">
                       {featureHighlights.slice(0, 3).map((item) => (
