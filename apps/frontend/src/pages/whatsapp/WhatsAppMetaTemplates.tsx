@@ -691,7 +691,7 @@ const WhatsAppMetaTemplates: React.FC<{
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <Select value={selectedSessionId} onValueChange={(v) => setSelectedSessionId(v ?? '')}>
-              <SelectTrigger className="h-10 w-56 rounded-full bg-[color:var(--color-muted)]">
+              <SelectTrigger className="h-10 w-full min-w-0 max-w-[200px] rounded-full bg-[color:var(--color-muted)] sm:w-56">
                 <SelectValue placeholder="اختر جلسة">
                   {(value: string | null) => {
                     if (!value) return null;
@@ -727,15 +727,18 @@ const WhatsAppMetaTemplates: React.FC<{
               </TooltipTrigger>
               <TooltipContent side="bottom">تحديث القوالب</TooltipContent>
             </Tooltip>
+            {/* On mobile, hide the text labels of secondary actions to leave
+                room for the primary "Create" CTA and the session picker. */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
+                  size="icon"
                   onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }}
                   aria-label="فتح سجل العمليات"
-                  className="h-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                  className="size-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
                 >
-                  <History className="size-4" /> السجل
+                  <History className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">سجل آخر عمليات على القوالب</TooltipContent>
@@ -744,11 +747,12 @@ const WhatsAppMetaTemplates: React.FC<{
               <TooltipTrigger asChild>
                 <Button
                   variant="outline"
+                  size="icon"
                   onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }}
                   aria-label="فتح مكتبة القوالب الجاهزة"
-                  className="h-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                  className="size-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
                 >
-                  <Library className="size-4" /> قوالب جاهزة
+                  <Library className="size-4" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="bottom">قوالب معتمدة جاهزة للنسخ</TooltipContent>
@@ -758,7 +762,7 @@ const WhatsAppMetaTemplates: React.FC<{
               aria-label="إنشاء قالب جديد"
               className="h-11 rounded-full bg-gradient-to-l from-[color:var(--color-primary)] to-[color:var(--color-primary)]/85 px-5 text-sm font-semibold text-white shadow-md shadow-[color:var(--color-primary)]/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95"
             >
-              <Plus className="size-4" /> قالب جديد
+              <Plus className="size-4" /> <span className="hidden sm:inline">قالب جديد</span>
             </Button>
           </div>
         }
@@ -848,11 +852,13 @@ const WhatsAppMetaTemplates: React.FC<{
           </div>
         }
       >
-        {/* Status filter chips with counts — single-click to scope the list. */}
+        {/* Status filter chips with counts — single-click to scope the list.
+            On mobile the row scrolls horizontally so all chips stay reachable
+            without the row forcing the table into multiple lines. */}
         <div
           role="tablist"
           aria-label="تصفية حسب الحالة"
-          className="mb-3 flex flex-wrap items-center gap-1.5"
+          className="mb-3 -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0"
         >
           {[
             { id: "ALL", label: "الكل", tone: "default" },
@@ -1001,6 +1007,256 @@ const WhatsAppMetaTemplates: React.FC<{
                 </div>
               </div>
             ) : null}
+            {/* Mobile card view — visible below md, hidden on tablets/desktop
+                where the table takes over. Same data, different layout
+                optimized for narrow screens and one-handed use. */}
+            <div className="space-y-2 md:hidden">
+              {Object.entries(groupedTemplates).map(([groupName, groupTemplates]) => {
+                const expanded = expandedGroups[groupName] === true;
+                const uniqueStatuses = [...new Set(groupTemplates.map(t => t.status))];
+                const bestStatus = uniqueStatuses.includes("APPROVED") ? "APPROVED" : (uniqueStatuses[0] ?? "PENDING");
+                const StatusIcon = statusIcon[bestStatus] || AlertTriangle;
+                const isSelected = selectedRows.has(groupName);
+                const section = resolveTemplateSection(groupName, groupTemplates[0]?.category);
+                return (
+                  <div
+                    key={groupName}
+                    className={`rounded-xl border bg-[color:var(--color-card)] p-3 transition-all ${
+                      isSelected
+                        ? "border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/[0.04] shadow-sm"
+                        : "border-[color:var(--shell-control-border)]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleRow(groupName)}
+                        aria-label={`تحديد قالب ${groupName}`}
+                        className="mt-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(groupName)}
+                        className="min-w-0 flex-1 text-start"
+                        aria-expanded={expanded}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold" dir="ltr">{groupName}</p>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <Badge variant="outline" className={statusBadge[bestStatus] || ""}>
+                                <StatusIcon className="ml-1 size-3.5 inline" />
+                                {bestStatus}
+                              </Badge>
+                              <span className="rounded-full bg-[color:var(--color-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-muted-foreground)]">
+                                {groupTemplates[0]?.category}
+                              </span>
+                              <span className="rounded-full bg-[color:var(--color-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-muted-foreground)]">
+                                {section.icon} {section.label}
+                              </span>
+                            </div>
+                          </div>
+                          {expanded ? <ChevronDown className="size-4 shrink-0 text-[color:var(--color-muted-foreground)]" /> : <ChevronRight className="size-4 shrink-0 text-[color:var(--color-muted-foreground)]" />}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          {[...new Set(groupTemplates.map(t => t.language))].map((lang) => (
+                            <span
+                              key={lang}
+                              className="rounded bg-[color:var(--color-muted)] px-1.5 py-0.5 text-[10px] font-mono text-[color:var(--color-muted-foreground)]"
+                            >
+                              {lang}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    </div>
+                    {expanded ? (
+                      <div className="mt-3 space-y-3 border-t border-[color:var(--shell-control-border)] pt-3">
+                        {groupTemplates.map((t) => {
+                          const headerComp = t.components?.find(c => c.type === "HEADER");
+                          const bodyComp = t.components?.find(c => c.type === "BODY");
+                          const footerComp = t.components?.find(c => c.type === "FOOTER");
+                          const buttonsComp = t.components?.find(c => c.type === "BUTTONS");
+                          const variantKey = `${groupName}::${t.language}`;
+                          const allText = [headerComp?.text, bodyComp?.text, footerComp?.text, buttonsComp?.buttons?.[0]?.url].filter(Boolean).join(" ");
+                          const varNumbers = extractVariableNumbers(allText);
+                          const isPreviewOpen = varPreviewOpen[variantKey] === true;
+                          return (
+                            <div key={t.id ?? t.language} className="space-y-2">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-medium text-[color:var(--color-muted-foreground)]">{t.language} · ID: {t.id?.slice(-8) ?? "-"}</span>
+                                <Badge variant="outline" className={`text-[10px] ${statusBadge[t.status] || ""}`}>
+                                  {t.status}
+                                </Badge>
+                              </div>
+                              {/* WhatsApp-style inline preview */}
+                              <div
+                                className="rounded-lg border border-emerald-200/60 bg-white px-3 py-2 text-sm shadow-sm dark:border-emerald-900/40 dark:bg-[#0b141a]"
+                                dir={t.language === "ar" || t.language === "ur" ? "rtl" : "ltr"}
+                              >
+                                {headerComp?.text ? (
+                                  <p className="font-semibold text-[#111b21] dark:text-white">{substituteVars(headerComp.text, variantKey)}</p>
+                                ) : null}
+                                {bodyComp?.text ? (
+                                  <p className="mt-1 whitespace-pre-wrap leading-relaxed text-[#111b21] dark:text-white">
+                                    {substituteVars(bodyComp.text, variantKey)
+                                      .split(/(\{\{\d+\}\})/g)
+                                      .map((part, idx) =>
+                                        /^\{\{\d+\}\}$/.test(part) ? (
+                                          <span
+                                            key={idx}
+                                            className="mx-0.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                                          >
+                                            {part}
+                                          </span>
+                                        ) : (
+                                          <span key={idx}>{part}</span>
+                                        ),
+                                      )}
+                                  </p>
+                                ) : null}
+                                {footerComp?.text ? (
+                                  <p className="mt-1 text-[11px] text-[#667781] dark:text-[#aebac1]">
+                                    {substituteVars(footerComp.text, variantKey)}
+                                  </p>
+                                ) : null}
+                                {buttonsComp?.buttons?.length ? (
+                                  <div className="mt-2 flex flex-col gap-1 border-t border-[#e9edef] pt-1 dark:border-[#222d34]">
+                                    {buttonsComp.buttons.map((b, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="text-center text-xs font-medium text-[#00a884] dark:text-[#00d294]"
+                                      >
+                                        {b.text || `زر ${idx + 1}`}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
+                              {t.rejected_reason && (
+                                <p className="text-[11px] text-red-600 dark:text-red-400">{t.rejected_reason}</p>
+                              )}
+                              {t.status === "REJECTED" && (
+                                <a
+                                  href="https://business.facebook.com/latest/whatsapp_manager/manage_templates"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:underline dark:text-blue-400"
+                                >
+                                  <ExternalLink className="size-3" /> افتح في Meta Business
+                                </a>
+                              )}
+                              {/* Variable playground — single column on mobile. */}
+                              {varNumbers.length > 0 ? (
+                                <div className="rounded-lg border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/40 p-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setVarPreviewOpen((prev) => ({ ...prev, [variantKey]: !prev[variantKey] }))
+                                    }
+                                    aria-expanded={isPreviewOpen}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
+                                  >
+                                    {isPreviewOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                                    <span>تجربة المتغيرات</span>
+                                    <span className="rounded-full bg-[color:var(--color-card)]/60 px-1.5 text-[10px] font-bold">
+                                      {varNumbers.length}
+                                    </span>
+                                  </button>
+                                  {isPreviewOpen ? (
+                                    <div className="mt-2 flex flex-col gap-1.5">
+                                      {varNumbers.map((v) => {
+                                        const n = v.replace(/\D/g, "");
+                                        const previewKey = `${variantKey}::${n}`;
+                                        return (
+                                          <label
+                                            key={n}
+                                            className="flex items-center gap-2 rounded-md bg-[color:var(--color-card)] px-2 py-1.5 text-xs"
+                                          >
+                                            <span className="min-w-[28px] rounded bg-amber-100 px-1.5 py-0.5 text-center font-mono text-[10px] font-bold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                                              {`{{${n}}}`}
+                                            </span>
+                                            <Input
+                                              value={varPreviewValues[previewKey] ?? ""}
+                                              onChange={(e) =>
+                                                setVarPreviewValues((prev) => ({
+                                                  ...prev,
+                                                  [previewKey]: e.target.value,
+                                                }))
+                                              }
+                                              placeholder={`قيمة ${n}`}
+                                              aria-label={`قيمة المتغير ${n}`}
+                                              className="h-9 flex-1 text-sm"
+                                            />
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const tmpl = groupTemplates[0];
+                              if (tmpl) setViewTemplate(tmpl);
+                            }}
+                            className="h-9 flex-1 rounded-full text-xs"
+                          >
+                            <Eye className="size-3.5" /> عرض
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const tmpl = groupTemplates[0]!;
+                              const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
+                              const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
+                              const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
+                              const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
+                              setEditForm({
+                                name: tmpl.name,
+                                language: tmpl.language,
+                                category: tmpl.category,
+                                headerFormat: headerComponent?.format || "TEXT",
+                                headerText: headerComponent?.text || "",
+                                headerMediaHandle: headerComponent?.example?.header_handle?.[0] || "",
+                                headerMediaName: headerComponent?.example?.header_handle?.[0] || "",
+                                bodyText: bodyComponent?.text || "",
+                                footerText: footerComponent?.text || "",
+                                buttonText: buttonsComponent?.buttons?.[0]?.text || "",
+                                buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
+                              });
+                              setEditOpen(true);
+                            }}
+                            className="h-9 flex-1 rounded-full text-xs"
+                          >
+                            <Pencil className="size-3.5" /> تعديل
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setDeleteConfirm(groupName)}
+                            aria-label="حذف القالب"
+                            className="size-9 rounded-full text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table — hidden on mobile, visible from md up. */}
+            <div className="hidden md:block">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -1346,9 +1602,63 @@ const WhatsAppMetaTemplates: React.FC<{
               })}
             </TableBody>
           </Table>
+            </div>
           </>
         )}
       </WhatsAppSurfaceCard>
+
+      {/* Mobile-only bottom action bar — sticks to the bottom edge when at
+          least one row is selected. Mirrors the bulk toolbar above the
+          table on desktop. Hidden when nothing is selected. */}
+      {selectedRows.size > 0 ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/95 px-3 py-2 shadow-2xl backdrop-blur-md md:hidden"
+          role="region"
+          aria-label="إجراءات مجمعة"
+        >
+          <div className="mx-auto flex max-w-md items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedRows(new Set())}
+              className="h-10 flex-1 rounded-full text-xs"
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchTemplates}
+              disabled={loading}
+              className="h-10 flex-1 rounded-full text-xs"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> تحديث
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                const first = Array.from(selectedRows)[0];
+                if (first) setDeleteConfirm(first);
+              }}
+              className="h-10 flex-1 rounded-full text-xs"
+            >
+              <Trash2 className="size-3.5" /> حذف
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Mobile-only Floating Action Button — primary "Create" action
+          on phone-sized screens where the top action bar is too cramped
+          to hold a primary CTA. */}
+      <Button
+        onClick={() => { setCreateStep(1); setCreateOpen(true); }}
+        aria-label="إنشاء قالب جديد"
+        className="fixed bottom-4 left-1/2 z-20 h-14 w-14 -translate-x-1/2 rounded-full bg-gradient-to-br from-[color:var(--color-primary)] to-[color:var(--color-primary)]/70 p-0 text-white shadow-lg shadow-[color:var(--color-primary)]/30 transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95 md:hidden"
+      >
+        <Plus className="size-6" />
+      </Button>
 
       <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) { setCreateStep(1); setShowCompliance(false); setComplianceResults([]); } }}>
         <DialogContent className="max-w-xl sm:rounded-3xl">
