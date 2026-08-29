@@ -42,14 +42,17 @@ function stageVisual(
   status: string,
   t: (key: string) => string,
 ): { label: string; icon: React.ReactNode; className: string } {
-  switch (status) {
-    case "done":
+  const s = String(status || "").toUpperCase();
+  switch (s) {
+    case "DONE":
+    case "COMPLETED":
       return {
         label: t("dentalPortal.caseDetail.stageDone"),
         icon: <CheckCircle2 size={18} />,
         className: "text-green-600",
       };
-    case "in_progress":
+    case "IN_PROGRESS":
+    case "SKIPPED":
       return {
         label: t("dentalPortal.caseDetail.stageInProgress"),
         icon: <Loader2 size={18} className="animate-spin" />,
