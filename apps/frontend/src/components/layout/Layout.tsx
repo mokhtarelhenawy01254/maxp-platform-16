@@ -486,7 +486,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
           <div className="business-shell-utility-row">
             {hasStore && (
               <Link
-                to="/store"
+to="/shop"
                 className="business-icon-button"
                 title={t("header.visitStore", "المتجر")}
                 aria-label={t("header.visitStore", "المتجر")}
