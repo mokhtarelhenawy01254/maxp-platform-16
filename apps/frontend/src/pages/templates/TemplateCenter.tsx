@@ -716,7 +716,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   }, [dialogOpen, fetchDeliveryPreview]);
 
   // فتح شاشة إنشاء مناسبة جديدة — بديل عن "الكارت الثابت" اللي كان ظاهر في تبويب المناسبات
-  const openNewOccasion = () => {
+  const openNewOccasion = (slot: TemplateSlot = "regular") => {
     const newStatus: StatusWithTemplate = {
       id: "__new_occasion__",
       code: `CUSTOMER_OCCASION_${Date.now().toString(36)}`,
@@ -733,7 +733,28 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       isNonNotifiable: false,
       category: "OCCASION",
     };
-    openCreateDialog(newStatus, "regular");
+    openCreateDialog(newStatus, slot);
+  };
+
+  // إنشاء قالب منتج جديد — نفس آلية المناسبة لكن بفئة PRODUCTS
+  const openNewProduct = (slot: TemplateSlot = "regular") => {
+    const newStatus: StatusWithTemplate = {
+      id: "__new_product__",
+      code: `NEW_PRODUCT_${Date.now().toString(36).toUpperCase()}`,
+      name: "قالب منتج جديد",
+      color: "#0EA5E9",
+      sortOrder: 200000,
+      statusType: "products",
+      notifyCustomer: true,
+      isSystemStatus: false,
+      template: null,
+      metaTemplate: null,
+      hasTemplate: false,
+      hasMetaTemplate: false,
+      isNonNotifiable: false,
+      category: "PRODUCTS",
+    };
+    openCreateDialog(newStatus, slot);
   };
 
   const openCreateDialog = (status: StatusWithTemplate, slot: TemplateSlot) => {
@@ -1525,6 +1546,26 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   ).length;
   // هل فيه أي قالب مربوط بميتا في كل التبويبات؟ — لإظهار زرار مزامنة حالات ميتا في الهيدر
   const anyBoundMeta = statuses.some((s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate));
+
+  // الزراران العلويان في شريط الإنشاء — مدخل سريع من أول الصفحة (الميتا أساسي + العادي)
+  const handleTopCreate = (slot: TemplateSlot) => {
+    if (filteredStatuses.length === 0) {
+      if (activeTab === "occasions") { openNewOccasion(slot); return; }
+      if (activeTab === "products") { openNewProduct(slot); return; }
+      toast.error("لا توجد أحداث في هذا التبويب");
+      return;
+    }
+    const code = topCreateEvent || filteredStatuses[0]?.code || "";
+    if (code === "__new_occasion__") { openNewOccasion(slot); return; }
+    if (code === "__new_product__") { openNewProduct(slot); return; }
+    if (!code) {
+      toast.error("اختر نوع الحدث أولاً");
+      return;
+    }
+    const status = filteredStatuses.find((s) => s.code === code) || filteredStatuses[0];
+    if (status) openCreateDialog(status, slot);
+    else toast.error("نوع الحدث غير موجود");
+  };
   const defaultSession = settingsSessions.find((s) => s.id === settings?.defaultSessionId);
   const defaultSessionIsMeta = defaultSession?.provider === "META_CLOUD" || !!metaSessions.find((s) => s.id === settings?.defaultSessionId);
 
@@ -2088,71 +2129,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 )}
                 <button
                   disabled={filteredStatuses.length > 0 && !topCreateEvent && !filteredStatuses[0]?.code}
-                  onClick={() => {
-                    // حالة فارغة: لا صفوف — إنشاء مباشر
-                    if (filteredStatuses.length === 0) {
-                      if (activeTab === "occasions") { openNewOccasion(); return; }
-                      if (activeTab === "products") {
-                        const newStatus: StatusWithTemplate = {
-                          id: "__new_product__",
-                          code: `NEW_PRODUCT_${Date.now().toString(36).toUpperCase()}`,
-                          name: "قالب منتج جديد",
-                          color: "#0EA5E9",
-                          sortOrder: 200000,
-                          statusType: "products",
-                          notifyCustomer: true,
-                          isSystemStatus: false,
-                          template: null,
-                          metaTemplate: null,
-                          hasTemplate: false,
-                          hasMetaTemplate: false,
-                          isNonNotifiable: false,
-                          category: "PRODUCTS",
-                        };
-                        openCreateDialog(newStatus, "regular");
-                        return;
-                      }
-                      toast.error("لا توجد أحداث في هذا التبويب");
-                      return;
-                    }
-                    const code = topCreateEvent || filteredStatuses[0]?.code || "";
-                    if (code === "__new_occasion__") {
-                      openNewOccasion();
-                      return;
-                    }
-                    if (code === "__new_product__") {
-                      // إنشاء قالب منتج جديد — نفس آلية المناسبة لكن بفئة PRODUCTS
-                      const newStatus: StatusWithTemplate = {
-                        id: "__new_product__",
-                        code: `NEW_PRODUCT_${Date.now().toString(36).toUpperCase()}`,
-                        name: "قالب منتج جديد",
-                        color: "#0EA5E9",
-                        sortOrder: 200000,
-                        statusType: "products",
-                        notifyCustomer: true,
-                        isSystemStatus: false,
-                        template: null,
-                        metaTemplate: null,
-                        hasTemplate: false,
-                        hasMetaTemplate: false,
-                        isNonNotifiable: false,
-                        category: "PRODUCTS",
-                      };
-                      openCreateDialog(newStatus, "regular");
-                      return;
-                    }
-                    if (!code) {
-                      toast.error("اختر نوع الحدث أولاً");
-                      return;
-                    }
-                    const status = filteredStatuses.find((s) => s.code === code) || filteredStatuses[0];
-                    if (status) openCreateDialog(status, "regular");
-                    else toast.error("نوع الحدث غير موجود");
-                  }}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  onClick={() => handleTopCreate("meta")}
+                  title="تأليف قالب وإرساله لميتا للمراجعة والاعتماد"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <PlusIcon className="h-4 w-4" />
-                  إنشاء قالب جديد
+                  إنشاء قالب ميتا
+                </button>
+                <button
+                  disabled={filteredStatuses.length > 0 && !topCreateEvent && !filteredStatuses[0]?.code}
+                  onClick={() => handleTopCreate("regular")}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-indigo-800/40 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  إنشاء قالب عادي
                 </button>
               </div>
               <span className="text-xs text-slate-400 dark:text-slate-500">
