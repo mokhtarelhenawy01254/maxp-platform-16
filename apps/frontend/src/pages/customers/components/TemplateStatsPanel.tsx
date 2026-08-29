@@ -136,7 +136,7 @@ const TemplateStatsPanel: React.FC<Props> = ({ templates, title, description, co
                             <TableBody>
                                 {stats.slice(0, 12).map((s) => {
                                     const name = nameById.get(s.templateId) || 'قالب محذوف';
-                                    const interacted = s.clicked + s.responded;
+                                    const interacted = Math.max(s.clicked, s.responded);
                                     return (
                                         <TableRow key={s.templateId}>
                                             <TableCell className="max-w-[220px] truncate font-medium" title={name}>{name}</TableCell>

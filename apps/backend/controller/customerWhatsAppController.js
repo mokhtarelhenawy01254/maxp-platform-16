@@ -686,7 +686,11 @@ exports.getCustomerMessageTimeline = async (req, res) => {
 
         // 1) إشعارات النظام (سلاسل + دورية + ولاء + مناسبات) من لوج الإشعارات
         const logs = await safeQuery(() => prisma.whatsAppNotificationLog.findMany({
-            where: { companyId, OR: [{ customerId }, ...(customer.phone ? [{ recipientPhone: customer.phone }] : [])] },
+            where: { companyId, OR: [
+                { customerId },
+                ...(customer.phone ? [{ recipientPhone: customer.phone }] : []),
+                ...(customer.phone ? [{ recipientPhone: '+' + customer.phone.replace(/[^\\d]/g, '') }] : [])
+            ] },
             orderBy: { createdAt: 'desc' },
             take: limit,
             select: {
@@ -724,8 +728,20 @@ exports.getCustomerMessageTimeline = async (req, res) => {
             }
         }));
         const journeyItems = journeys.map(j => {
-            let logsParsed = [];
-            try { logsParsed = j.logs ? JSON.parse(j.logs) : []; } catch (_) { logsParsed = []; }
+            // logs نص تراكمي ("Sent step N at ...") مش JSON — نحوله لأحداث بالسطر
+            const logLines = String(j.logs || '').split('\n').map(s => s.trim()).filter(Boolean);
+            const stepEvents = logLines.map((line, idx) => {
+                const m = line.match(/Sent step (\d+) at (.+)$/);
+                if (m) {
+                    const ts = new Date(m[2]);
+                    return {
+                        step: parseInt(m[1], 10),
+                        at: isNaN(ts.getTime()) ? j.lastSentAt : ts.toISOString(),
+                        text: line
+                    };
+                }
+                return { step: idx + 1, at: null, text: line };
+            });
             return {
                 journeyId: j.id,
                 flowName: j.flow?.name || 'سلسلة',
@@ -736,7 +752,7 @@ exports.getCustomerMessageTimeline = async (req, res) => {
                 nextSendAt: j.nextSendAt,
                 lastSentAt: j.lastSentAt,
                 orderNumber: j.order?.orderNumber || null,
-                stepEvents: Array.isArray(logsParsed) ? logsParsed.slice(-20) : []
+                stepEvents: stepEvents.slice(-20)
             };
         });
 
@@ -790,7 +806,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
             productId,
             mediaUrl: reqMediaUrl,
             mediaCaption,
-            delayMs = 1500,
+            delayMs: rawDelayMs = 1500,
             occasionName,
             sendAt,
             eventType: reqEventType,
@@ -808,6 +824,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
         const MAX_MESSAGE_LENGTH = 3000;
         const MAX_OCCASION_NAME_LENGTH = 80;
         const safeNewDays = Math.max(1, Math.min(365, parseInt(newDays, 10) || 7));
+        const delayMs = Math.max(800, Math.min(60000, parseInt(rawDelayMs, 10) || 1500));
 
         // 1. Get connected session (only from THIS company's sessions - security fix)
         const connectedSessions = await getConnectedSessions(companyId);

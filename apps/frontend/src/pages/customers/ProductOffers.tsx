@@ -153,6 +153,7 @@ const ProductOffersRedesign: React.FC = () => {
       const payload: Record<string, unknown> = {
         audience: audience === 'list' ? 'list' : audience,
         customMessage: message,
+        sessionId: selectedSession || undefined,
         productId: selectedProduct.id,
         mediaUrl: mediaUrl || undefined,
         delayMs,

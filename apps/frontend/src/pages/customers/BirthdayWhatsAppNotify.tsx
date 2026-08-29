@@ -260,7 +260,7 @@ function resToList(data: unknown): BirthdayCustomer[] {
     id: String(c.id || ''),
     name: String(c.name || [c.firstName, c.lastName].filter(Boolean).join(' ') || 'عميلة'),
     phone: (c.phone as string) || null,
-    birthDate: (c.birthdayDate as string) || (c.birthDate as string) || null,
+    birthDate: (c.birthdayDate as string) || (c.birthday as string) || (c.birthDate as string) || null,
     daysUntil: Number(c.daysRemaining ?? c.daysUntil ?? 0),
   }));
 }
