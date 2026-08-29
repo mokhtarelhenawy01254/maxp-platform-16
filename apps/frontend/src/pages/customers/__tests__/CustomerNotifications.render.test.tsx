@@ -104,6 +104,18 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
     expect(screen.getByText("24 ساعة")).toBeInTheDocument();
   });
 
+  test("خانة قالب ميتا الفاضية فيها زرار إنشاء قالب ميتا (مدخل النشر لميتا)", async () => {
+    renderPage();
+    const user = userEvent.setup();
+    // كروت القوالب بتظهر في تابات القوائم مش جدول الجدولة
+    await user.click(await screen.findByRole("tab", { name: /قوالب الولاء/ }));
+    // القوالب في الـ mock كلها BAILEYS — خانات الميتا فاضية وزرار الإنشاء لازم يظهر
+    await screen.findAllByText(/كسب نقاط ولاء/);
+    expect(screen.getAllByRole("button", { name: /إنشاء قالب ميتا/ }).length).toBeGreaterThan(0);
+    // ولا النص الإرشادي القديم المضلل
+    expect(screen.queryByText(/أنشئ قالب من الشريط العلوي/)).not.toBeInTheDocument();
+  });
+
   test("مفتاح التبديل في الجدولة بيكتب للـ schedule عند الحفظ", async () => {
     renderPage();
     const user = userEvent.setup();

@@ -699,6 +699,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
   useEffect(() => {
     document.title = `${config.documentTitle} | MaxP`;
+    // جلسات الميتا عند الدخول — المزامنة التلقائية وتحذيرات الربط محتاجاها بدون فتح دايلوج
+    fetchMetaSessions();
     // ⚡ Promise.allSettled: نجمع الطلبات المستقلة لتجنب waterfall وإخفاء الـ loading خاطئ
     Promise.allSettled([fetchData(), fetchSettings(), fetchDeliveryPreview()]);
   }, [fetchData, fetchSettings, fetchDeliveryPreview, config]);
@@ -1005,6 +1007,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
     const saved = await persistLocalTemplate();
     if (!saved) return;
+    if (templateForm.content.length > META_BODY_CHAR_LIMIT) {
+      toast.error(t("orders.metaBodyTooLong", `النص أطول من حد ميتا (${META_BODY_CHAR_LIMIT} حرف) — قلّل النص قبل النشر`));
+      return;
+    }
     setResubmittingMeta(true);
     try {
       const res = await apiClient.post(`${config.metaOpsBase}/${selectedTemplate.id}/resubmit-meta`, {
@@ -1109,7 +1115,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     try {
       await apiClient.post(`${config.metaOpsBase}/${templateId}/publish`, { sessionId: selectedMetaSession });
       toast.success(t("orders.publishedToMeta", "تم إرسال القالب لميتا للمراجعة"));
-      fetchAvailableMetaTemplates();
+      // نغلق الديالوج ونعيد الجلب — بدل بادج «محفوظ (بدون ربط)» المضلل
+      // ولمنع ضغطة تانية تنشئ قالب ميتا مكرر بنفس الاسم المتولد
+      setDialogOpen(false);
+      fetchData();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || t("orders.publishFailed", "فشل النشر على ميتا"));
     } finally {
@@ -1124,6 +1133,11 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
     if (!templateForm.content.trim()) {
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
+      return;
+    }
+    // حد ميتا الصارم لطول الـ body — النشر بعده مضمون الرفض
+    if (templateForm.content.length > META_BODY_CHAR_LIMIT) {
+      toast.error(t("orders.metaBodyTooLong", `النص أطول من حد ميتا (${META_BODY_CHAR_LIMIT} حرف) — قلّل النص قبل النشر`));
       return;
     }
     const templateId = await persistLocalTemplate();
@@ -1200,20 +1214,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
   }, [dialogOpen, selectedMetaSession, fetchAvailableMetaTemplates]);
 
-  const syncMetaStatuses = async () => {
+  const syncMetaStatuses = async (silent = false) => {
     const metaSessionId = selectedMetaSession || metaSessions[0]?.id;
     if (!metaSessionId) {
-      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
+      if (!silent) toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
       return;
     }
-    setSyncingStatus(true);
+    if (!silent) setSyncingStatus(true);
     try {
       const res = await apiClient.post(`${config.metaOpsBase}/sync-status`, { sessionId: metaSessionId });
       const data = res.data as { success?: boolean; synced?: number };
       if (data?.success) {
         const synced = data.synced ?? 0;
         if (synced === 0) {
-          toast.success(t("orders.metaSyncUpToDate", "كل القوالب محدّثة — مفيش حاجة اتغيرت"));
+          if (!silent) toast.success(t("orders.metaSyncUpToDate", "كل القوالب محدّثة — مفيش حاجة اتغيرت"));
         } else {
           toast.success(t("orders.metaSyncDone", `تمت مزامنة ${synced} قالب`));
           const rejectedCount = Object.values(deliveryPreview).filter((p) => p.metaTemplateStatus === "REJECTED").length;
@@ -1225,11 +1239,25 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         fetchDeliveryPreview();
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.metaSyncFailed", "فشلت المزامنة من ميتا"));
+      // فشل المزامنة التلقائية غير حرج — نسجله فقط بدون إزعاج المستخدم
+      if (silent) console.warn("[META-SYNC] auto-sync failed:", err?.message);
+      else toast.error(err?.response?.data?.error || t("orders.metaSyncFailed", "فشلت المزامنة من ميتا"));
     } finally {
-      setSyncingStatus(false);
+      if (!silent) setSyncingStatus(false);
     }
   };
+
+  // 🔄 مزامنة تلقائية واحدة عند الدخول لو فيه قوالب مربوطة بميتا — عشان بادج
+  // PENDING/APPROVED/REJECTED يظهر محدّث من ميتا بدون ما المستخدم يدور على زرار مزامنة
+  const autoSyncDoneRef = useRef(false);
+  useEffect(() => {
+    if (autoSyncDoneRef.current) return;
+    if (loading || statuses.length === 0 || metaSessions.length === 0) return;
+    autoSyncDoneRef.current = true;
+    const hasBoundMeta = statuses.some((s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate));
+    if (hasBoundMeta) syncMetaStatuses(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, statuses, metaSessions]);
 
   const handleSaveSettings = async () => {
     if (!settings) return;
@@ -1495,6 +1523,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const boundMetaCount = visibleStatuses.filter(
     (s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate)
   ).length;
+  // هل فيه أي قالب مربوط بميتا في كل التبويبات؟ — لإظهار زرار مزامنة حالات ميتا في الهيدر
+  const anyBoundMeta = statuses.some((s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate));
   const defaultSession = settingsSessions.find((s) => s.id === settings?.defaultSessionId);
   const defaultSessionIsMeta = defaultSession?.provider === "META_CLOUD" || !!metaSessions.find((s) => s.id === settings?.defaultSessionId);
 
@@ -1511,6 +1541,17 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {config.description}
             </p>
           </div>
+          {anyBoundMeta && metaSessions.length > 0 && (
+            <button
+              onClick={() => syncMetaStatuses(false)}
+              disabled={syncingStatus}
+              title="تحديث حالة قوالب ميتا (معتمد/مرفوض/قيد المراجعة) من ميتا مباشرة"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <ArrowPathIcon className={`h-3.5 w-3.5 ${syncingStatus ? "animate-spin" : ""}`} />
+              مزامنة حالات ميتا
+            </button>
+          )}
         </div>
       </div>
 
@@ -1818,7 +1859,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 )}
                 {defaultSessionInfo?.provider === "META_CLOUD" && (
                   <button
-                    onClick={syncMetaStatuses}
+                    onClick={() => syncMetaStatuses(false)}
                     disabled={syncingStatus}
                     className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                   >
@@ -3290,7 +3331,9 @@ function StatusTemplateSlot({
           </>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {isMeta ? "لا يوجد قالب ميتا — أنشئ قالب من الشريط العلوي ثم اختر قالب ميتا معتمد" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
+            {isMeta
+              ? "لا يوجد قالب ميتا — اضغط «إنشاء قالب ميتا» لتأليف رسالة وإرسالها لميتا للمراجعة، أو «اختيار قالب معتمد» لربط قالب معتمد موجود"
+              : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
           </p>
         )}
       </div>
@@ -3324,19 +3367,17 @@ function StatusTemplateSlot({
             <PencilSquareIcon className="h-3 w-3" />
             {isMeta ? "تعديل المحتوى" : "تعديل"}
           </button>
-        ) : !isMeta ? (
+        ) : onCreate ? (
           <button
             onClick={onCreate}
             disabled={!status.notifyCustomer}
             title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
-            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
-              status.notifyCustomer
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-white transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 ${
+              isMeta ? "bg-blue-600 hover:bg-blue-700" : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
             <PlusIcon className="h-3 w-3" />
-            إنشاء
+            {isMeta ? "إنشاء قالب ميتا" : "إنشاء"}
           </button>
         ) : null}
         {isMeta && bound && onUnbind && (
