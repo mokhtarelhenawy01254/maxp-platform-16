@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { SearchableSelect } from '@/components/ui/SearchableSelect';
 import {
   MessageSquareText, Clock, CheckCircle2, XCircle, RefreshCw, User, Workflow, ArrowLeft,
 } from 'lucide-react';
