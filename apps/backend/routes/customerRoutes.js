@@ -103,6 +103,7 @@ router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('c
 router.get('/:customerId/orders', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerOrders);
 
 // سجل نشاطات العميل
+router.get('/:customerId/message-timeline', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCustomerMessageTimeline);
 router.get('/:customerId/activity', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerActivity);
 
 // 📝 ملاحظات العميل

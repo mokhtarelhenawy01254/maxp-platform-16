@@ -56,7 +56,7 @@ const CustomerWhatsAppNotify = React.lazy(
 );
 const ProductOffers = React.lazy(() => import("./pages/customers/ProductOffers"));
 const CustomerBirthdayWhatsAppNotify = React.lazy(
-  () => import("./pages/customers/CustomerBirthdayWhatsAppNotify"),
+  () => import("./pages/customers/BirthdayWhatsAppNotify"),
 );
 
 const CustomerOccasionsWhatsAppNotify = React.lazy(

@@ -675,6 +675,59 @@ async function getStatusReport(req, res) {
   }
 }
 
+// 📊 إحصائيات لكل قالب — تجميع من اللوجات حسب templateId (لتحليل كل قالب على حدة)
+async function getTemplateStats(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { days = 30, startDate, endDate } = req.query;
+
+    const createdAtFilter = {};
+    if (startDate) { createdAtFilter.gte = new Date(startDate); } else {
+      const d = new Date(); d.setDate(d.getDate() - parseInt(days, 10) || 30); createdAtFilter.gte = d;
+    }
+    if (endDate) { createdAtFilter.lte = new Date(endDate); }
+
+    const prisma = getSharedPrismaClient();
+    const grouped = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+      by: ['templateId'],
+      where: { companyId, createdAt: createdAtFilter, templateId: { not: null } },
+      _count: { _all: true, delivered: true, read: true, clicked: true, responded: true },
+      _sum: { cost: true }
+    }));
+
+    const failedByTemplate = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+      by: ['templateId'],
+      where: { companyId, createdAt: createdAtFilter, templateId: { not: null }, status: 'FAILED' },
+      _count: { _all: true }
+    }));
+
+    const failMap = failedByTemplate.reduce((acc, g) => { acc[g.templateId] = g._count._all; return acc; }, {});
+
+    const stats = grouped.map((g) => {
+      const total = g._count._all;
+      const delivered = g._count.delivered || 0;
+      const read = g._count.read || 0;
+      return {
+        templateId: g.templateId,
+        total,
+        delivered,
+        read,
+        clicked: g._count.clicked || 0,
+        responded: g._count.responded || 0,
+        failed: failMap[g.templateId] || 0,
+        cost: Number(g._sum.cost || 0),
+        deliveryRate: total > 0 ? ((delivered / total) * 100).toFixed(1) : '0.0',
+        readRate: delivered > 0 ? ((read / delivered) * 100).toFixed(1) : '0.0'
+      };
+    }).sort((a, b) => b.total - a.total);
+
+    res.json({ success: true, stats });
+  } catch (error) {
+    console.error('❌ Error getting template stats:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء جلب إحصائيات القوالب' });
+  }
+}
+
 async function getNotificationStats(req, res) {
   try {
     const { companyId } = req.user;
@@ -1760,6 +1813,7 @@ module.exports = {
   getNotificationLogs,
   getStatusReport,
   getNotificationStats,
+  getTemplateStats,
   getNotificationQueueStats,
   sendManualNotification,
   sendTestNotification,

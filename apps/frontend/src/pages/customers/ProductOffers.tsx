@@ -1,665 +1,410 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { apiClient } from '../../services/apiClient';
+import MetaTemplatesModal from './components/MetaTemplatesModal';
+import TemplateStatsPanel from './components/TemplateStatsPanel';
+import WhatsAppBubblePreview from './components/WhatsAppBubblePreview';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-  Send, Megaphone, Settings2, List, Users, Plus, CheckCircle, XCircle, Image as ImageIcon, Clock, Trash2, RefreshCw, Search, Layers,
-} from "lucide-react";
-import { toast } from "sonner";
+  ShoppingBag, Send, LayoutTemplate, ListChecks, RefreshCw, Loader2, CheckCircle2,
+  Eye, ImageIcon, Users, BarChart3, Clock, Plus, Search,
+} from 'lucide-react';
 
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { apiClient } from "../../services/apiClient";
-import { broadcastService } from "../../services/broadcastService";
-import MetaTemplatesModal from "./components/MetaTemplatesModal";
+type Audience = 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers' | 'list';
+
+interface Product {
+  id: string;
+  name: string;
+  price?: number | string;
+  imageUrl?: string | null;
+  trackInventory?: boolean;
+  stockQuantity?: number | null;
+}
+
+interface CustomerList {
+  id: string;
+  name: string;
+  count: number;
+}
 
 interface Session {
   sessionId: string;
-  phoneNumber?: string;
-  isConnected?: boolean;
-  status?: string;
+  phoneNumber: string;
+  isConnected: boolean;
 }
 
-interface OfferProduct {
-  id: string;
-  name: string;
-  price: number | string;
-  images?: string | string[] | null;
-  description?: string;
-}
+const DEFAULT_MESSAGE =
+  'أهلاً {customerName} 💙\nوصلنا للتو {productName} بسعر {price}\n\nالكمية محدودة — اطلبيه دلوقتي: {customer_link}';
 
-interface Campaign {
-  id: string;
-  name: string;
-  channel: string;
-  status: string;
-  recipientCount: number;
-  sentCount: number;
-  failedCount: number;
-  message: string;
-  targetAudience?: string;
-  createdAt: string;
-  sentAt?: string;
-}
+const ProductOffersRedesign: React.FC = () => {
+  /* بيانات */
+  const [products, setProducts] = useState<Product[]>([]);
+  const [productSearch, setProductSearch] = useState('');
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [productsLoading, setProductsLoading] = useState(true);
 
-interface AutoSendSettings {
-  newProductAutoSend: boolean;
-  newProductAudience: string;
-  newProductNewDays: number;
-  newProductMessage: string;
-}
-
-interface SendResult {
-  campaignId?: string;
-  total?: number;
-  status?: string;
-  scheduledAt?: string;
-}
-
-const AUDIENCE_OPTIONS = [
-  { value: "all", label: "كل العملاء", icon: "👥" },
-  { value: "withOrders", label: "أصحاب الطلبات", icon: "🛒" },
-  { value: "newCustomers", label: "العملاء الجدد", icon: "🆕" },
-  { value: "activeCustomers", label: "النشطون", icon: "🔥" },
-];
-
-const DEFAULT_MESSAGE = `عزيزي {اسم العميل} ✨
-
-نبشرك بمنتجننا الجديد! 🎉
-
-✨ {productName}
-💰 السعر: {price} جنيه
-
-اطلبه الآن من متجرنا 🛍️`;
-
-function parseProductImages(raw?: string | string[] | null): string[] {
-  if (!raw) return [];
-  if (Array.isArray(raw)) return raw.filter(Boolean);
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(Boolean) : [];
-  } catch {
-    return [];
-  }
-}
-
-const ProductOffers: React.FC = () => {
-  const { t } = useTranslation();
-
-  // ── Sessions ──
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [selectedSession, setSelectedSession] = useState("");
-
-  // ── Product picker ──
-  const [products, setProducts] = useState<OfferProduct[]>([]);
-  const [productSearch, setProductSearch] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState<OfferProduct | null>(null);
-
-  // ── Audience ──
-  const [audience, setAudience] = useState("all");
-  const [newDays, setNewDays] = useState(7);
+  const [lists, setLists] = useState<CustomerList[]>([]);
+  const [audience, setAudience] = useState<Audience>('withOrders');
+  const [selectedListIds, setSelectedListIds] = useState<string[]>([]);
   const [audienceCount, setAudienceCount] = useState<number | null>(null);
 
-  // ── Message ──
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedSession, setSelectedSession] = useState('');
+
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
+  const [mediaUrl, setMediaUrl] = useState('');
+  const [delayMs, setDelayMs] = useState(1500);
+
   const [metaModalOpen, setMetaModalOpen] = useState(false);
-
-  // ── Schedule ──
-  const [scheduleAt, setScheduleAt] = useState("");
-
-  // ── Sending ──
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<SendResult | null>(null);
+  const [autoSend, setAutoSend] = useState(false);
+  const [autoSendLoading, setAutoSendLoading] = useState(false);
 
-  // ── Campaigns history ──
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [loadingCampaigns, setLoadingCampaigns] = useState(false);
+  /* تحميل */
+  const loadProducts = useCallback(async (q = '') => {
+    setProductsLoading(true);
+    try {
+      const res = await apiClient.get('/customers/whatsapp-notify/products', { params: q ? { search: q } : {} });
+      setProducts(res.data?.products || res.data?.data || []);
+    } catch { /* ignore */ } finally {
+      setProductsLoading(false);
+    }
+  }, []);
 
-  // ── Auto-send settings ──
-  const [settings, setSettings] = useState<AutoSendSettings | null>(null);
-  const [settingsLoading, setSettingsLoading] = useState(false);
-  const [savingSettings, setSavingSettings] = useState(false);
+  const loadLists = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/broadcast/customer-lists');
+      setLists(res.data?.data?.lists || res.data?.lists || res.data?.data || []);
+    } catch { /* ignore */ }
+  }, []);
 
   const loadSessions = useCallback(async () => {
     try {
       const res = await apiClient.get(`/customers/whatsapp-notify/sessions?t=${Date.now()}`);
       const list: Session[] = res.data?.sessions || [];
       setSessions(list);
-      const active = list.find((s) => s.isConnected);
-      if (active) setSelectedSession(active.sessionId);
-      else if (list.length > 0) setSelectedSession(list[0].sessionId);
-    } catch {
-      setSessions([]);
-    }
+      const connected = list.filter((s) => s.isConnected);
+      setSelectedSession((prev) => (prev && connected.some((s) => s.sessionId === prev) ? prev : connected[0]?.sessionId || ''));
+    } catch { /* ignore */ }
   }, []);
 
-  const loadProducts = useCallback(async () => {
-    try {
-      const res = await apiClient.get(`/customers/whatsapp-notify/products?limit=1000`);
-      setProducts((res.data?.data || []).filter((p: OfferProduct) => p && p.id));
-    } catch {
-      setProducts([]);
-    }
-  }, []);
+  useEffect(() => { loadProducts(); loadLists(); loadSessions(); }, [loadProducts, loadLists, loadSessions]);
 
-  const loadCampaigns = useCallback(async () => {
-    try {
-      setLoadingCampaigns(true);
-      const res = await broadcastService.getCampaigns();
-      const list = Array.isArray(res) ? res : res?.campaigns || [];
-      setCampaigns(list.filter((c: Campaign) => c.channel === "whatsapp" || !c.channel));
-    } catch {
-      setCampaigns([]);
-    } finally {
-      setLoadingCampaigns(false);
-    }
-  }, []);
-
-  const loadSettings = useCallback(async () => {
-    try {
-      setSettingsLoading(true);
-      const res = await apiClient.get(`/customers/whatsapp-notify/auto-send-settings`);
-      setSettings(res.data?.data || null);
-    } catch {
-      setSettings(null);
-    } finally {
-      setSettingsLoading(false);
-    }
-  }, []);
-
+  // عداد الجمهور
   useEffect(() => {
-    loadSessions();
-    loadProducts();
-    loadCampaigns();
-    loadSettings();
-  }, [loadSessions, loadProducts, loadCampaigns, loadSettings]);
-
-  const filteredProducts = useMemo(() => {
-    const q = productSearch.trim().toLowerCase();
-    if (!q) return products;
-    return products.filter((p) => p.name.toLowerCase().includes(q));
-  }, [products, productSearch]);
-
-  const previewAudience = useCallback(async () => {
-    try {
-      setAudienceCount(null);
-      const res = await apiClient.get(`/customers/whatsapp-notify/preview-audience`, {
-        params: { audience, newDays },
-      });
-      setAudienceCount(res.data?.count ?? null);
-    } catch {
-      setAudienceCount(null);
-      toast.error("تعذر حساب عدد الجمهور");
+    let alive = true;
+    if (audience === 'list') {
+      // عدد القوائم المختارة
+      const sum = lists.filter((l) => selectedListIds.includes(l.id)).reduce((s, l) => s + (l.count || 0), 0);
+      setAudienceCount(selectedListIds.length > 0 ? sum : null);
+      return;
     }
-  }, [audience, newDays]);
+    apiClient
+      .get('/customers/whatsapp-notify/preview-audience', { params: { audience, newDays: 7 } })
+      .then((res) => { if (alive) setAudienceCount(res.data?.count ?? null); })
+      .catch(() => { if (alive) setAudienceCount(null); });
+    return () => { alive = false; };
+  }, [audience, selectedListIds, lists]);
 
-  const selectProduct = useCallback((p: OfferProduct) => {
-    setSelectedProduct(p);
-    const image = parseProductImages(p.images)[0];
-    setMessage(DEFAULT_MESSAGE.replace(/\{productName\}/g, p.name).replace(/\{price\}/g, String(p.price ?? "")));
-    if (image) {
-      // لا شيء — الصورة تتبعت تلقائياً من الباكند (أول صورة للمنتج)
-    }
+  // الإرسال التلقائي للمنتج الجديد — الحالة الحالية
+  useEffect(() => {
+    apiClient
+      .get('/customers/whatsapp-notify/auto-send-settings')
+      .then((res) => {
+        const s = res.data?.settings || res.data;
+        if (s && typeof s.isEnabled === 'boolean') setAutoSend(s.isEnabled);
+      })
+      .catch(() => { /* ignore */ });
   }, []);
 
-  const handleSend = useCallback(async () => {
-    if (!selectedProduct) {
-      toast.error("اختر منتج أولاً");
-      return;
-    }
-    if (!message.trim()) {
-      toast.error("اكتب الرسالة");
-      return;
-    }
-    if (!selectedSession) {
-      toast.error("لا توجد جلسة واتساب متصلة");
-      return;
-    }
-    setSending(true);
-    setResult(null);
+  const toggleAutoSend = async (v: boolean) => {
+    setAutoSend(v);
+    setAutoSendLoading(true);
     try {
-      const payload: Record<string, unknown> = {
-        audience,
-        message: message.trim(),
-        sessionId: selectedSession,
-        productId: selectedProduct.id,
-        eventType: "PROMOTIONAL",
-      };
-      if (audience === "newCustomers") payload.newDays = newDays;
-      if (scheduleAt) payload.sendAt = new Date(scheduleAt).toISOString();
-
-      const res = await apiClient.post("/customers/whatsapp-notify/smart-send", payload);
-      if (res.data?.success) {
-        setResult({
-          campaignId: res.data.campaignId,
-          total: res.data.total,
-          status: res.data.status,
-          scheduledAt: res.data.scheduledAt,
-        });
-        toast.success(
-          res.data.status === "scheduled"
-            ? `تمت جدولة إرسال ${res.data.total} رسالة`
-            : `بدأ إرسال ${res.data.total} رسالة في الخلفية`
-        );
-        setTimeout(() => loadCampaigns(), 2000);
-      } else {
-        toast.error(res.data?.message || "فشل الإرسال");
-      }
-    } catch (err) {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message || e?.message || "فشل الإرسال");
+      await apiClient.put('/customers/whatsapp-notify/auto-send-settings', { isEnabled: v });
+    } catch {
+      setAutoSend(!v);
     } finally {
-      setSending(false);
-    }
-  }, [selectedProduct, message, selectedSession, audience, newDays, scheduleAt, loadCampaigns]);
-
-  const handleSaveSettings = useCallback(async () => {
-    if (!settings) return;
-    setSavingSettings(true);
-    try {
-      const res = await apiClient.put(`/customers/whatsapp-notify/auto-send-settings`, {
-        newProductAutoSend: settings.newProductAutoSend,
-        newProductAudience: settings.newProductAudience,
-        newProductNewDays: settings.newProductNewDays,
-        newProductMessage: settings.newProductMessage,
-      });
-      setSettings(res.data?.data || settings);
-      toast.success("تم حفظ الإعدادات");
-    } catch (err) {
-      const e = err as { response?: { data?: { message?: string } }; message?: string };
-      toast.error(e?.response?.data?.message || "فشل حفظ الإعدادات");
-    } finally {
-      setSavingSettings(false);
-    }
-  }, [settings]);
-
-  const campaignStatusBadge = (c: Campaign) => {
-    switch (c.status) {
-      case "completed":
-      case "sent":
-        return <Badge className="bg-emerald-500/15 text-emerald-700 border border-emerald-200/60">تم</Badge>;
-      case "running":
-        return <Badge className="bg-blue-500/15 text-blue-700 border border-blue-200/60">جاري</Badge>;
-      case "scheduled":
-        return <Badge className="bg-amber-500/15 text-amber-700 border border-amber-200/60">مجدولة</Badge>;
-      case "cancelled":
-        return <Badge className="bg-red-500/15 text-red-700 border border-red-200/60">ملغاة</Badge>;
-      default:
-        return <Badge variant="secondary">{c.status}</Badge>;
+      setAutoSendLoading(false);
     }
   };
 
+  const send = async () => {
+    if (!selectedProduct || !message.trim()) return;
+    setSending(true);
+    try {
+      const payload: Record<string, unknown> = {
+        audience: audience === 'list' ? 'list' : audience,
+        customMessage: message,
+        productId: selectedProduct.id,
+        mediaUrl: mediaUrl || undefined,
+        delayMs,
+        eventType: 'PROMOTIONAL',
+        customerListIds: audience === 'list' ? selectedListIds : undefined,
+      };
+      await apiClient.post('/customers/whatsapp-notify/smart-send', payload);
+      alert('الحملة اتبعتت للخلفية وبتشتغل — تابعيها من سجل الحملات');
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال';
+      alert(msg);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim();
+    if (!q) return products;
+    return products.filter((p) => (p.name || '').includes(q));
+  }, [products, productSearch]);
+
+  const estimatedMinutes = useMemo(() => {
+    if (!audienceCount) return null;
+    const mins = Math.ceil((audienceCount * delayMs) / 60000);
+    return mins < 1 ? 'أقل من دقيقة' : mins < 60 ? `~${mins} دقيقة` : `~${Math.ceil(mins / 60)} ساعة`;
+  }, [audienceCount, delayMs]);
+
+  const connectedSessions = sessions.filter((s) => s.isConnected);
+
+  /* ═══════════ UI ═══════════ */
   return (
-    <div className="mx-auto w-full max-w-5xl space-y-6 p-4 sm:p-6">
-      <div className="flex items-center gap-3">
-        <div className="flex size-12 items-center justify-center rounded-2xl bg-[color:color-mix(in_srgb,var(--color-primary)_10%,var(--color-card))] text-[color:var(--color-primary)]">
-          <Megaphone className="size-6" />
-        </div>
+    <div className="mx-auto w-full max-w-6xl space-y-6 p-4 md:p-6">
+      <header className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-2xl font-extrabold text-[color:var(--color-foreground)]">عروض المنتجات</h1>
-          <p className="text-sm text-[color:var(--color-muted-foreground)]">
-            إرسال عروض ومنتجات جديدة لعملائك عبر الواتساب — مع الإرسال التلقائي لكل منتج جديد
+          <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight text-[color:var(--color-foreground)]">
+            <ShoppingBag className="h-6 w-6 text-[color:var(--color-primary)]" />
+            عروض المنتجات
+          </h1>
+          <p className="mt-1 text-sm text-[color:var(--color-muted-foreground)]">
+            اختاري منتج، اكتبي العرض، حددي مين يستلمه — واتساب مباشر أو قالب ميتا معتمد
           </p>
         </div>
-      </div>
+        <div className="flex items-center gap-3 rounded-full border border-[color:var(--color-border)] px-4 py-2">
+          <Switch checked={autoSend} onCheckedChange={toggleAutoSend} disabled={autoSendLoading} aria-label="إرسال تلقائي للمنتج الجديد" />
+          <span className="text-sm font-medium">إرسال تلقائي للمنتج الجديد</span>
+        </div>
+      </header>
 
-      <Tabs defaultValue="create" className="w-full">
-        <TabsList className="mb-6">
-          <TabsTrigger value="create"><Send className="size-4 ml-2" />إنشاء عرض</TabsTrigger>
-          <TabsTrigger value="history"><List className="size-4 ml-2" />العروض السابقة</TabsTrigger>
-          <TabsTrigger value="settings"><Settings2 className="size-4 ml-2" />الإعدادات</TabsTrigger>
+      <Tabs defaultValue="compose" className="space-y-5">
+        <TabsList className="rounded-full p-1">
+          <TabsTrigger value="compose" className="rounded-full">
+            <Send className="ml-1 h-4 w-4" />
+            إنشاء عرض
+          </TabsTrigger>
+          <TabsTrigger value="stats" className="rounded-full">
+            <BarChart3 className="ml-1 h-4 w-4" />
+            التقارير
+          </TabsTrigger>
         </TabsList>
 
-        {/* ══════════ CREATE OFFER ══════════ */}
-        <TabsContent value="create" className="space-y-6">
-          <Card className="rounded-3xl border-[color:var(--shell-control-border)]">
-            <CardHeader>
-              <CardTitle className="text-lg">تفاصيل العرض</CardTitle>
-              <CardDescription>اختر المنتج والجمهور ورسالة العرض</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              <div className="space-y-2">
-                <Label>المنتج</Label>
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
-                    <Input
-                      value={productSearch}
-                      onChange={(e) => setProductSearch(e.target.value)}
-                      placeholder="ابحث عن منتج..."
-                      className="h-11 rounded-full pr-9"
-                    />
+        <TabsContent value="compose">
+          <div className="grid gap-5 lg:grid-cols-[1fr_380px]">
+            {/* ─── العمود الأيمن: الخطوات ─── */}
+            <div className="space-y-5">
+              {/* 1) المنتج */}
+              <Card className="border-[color:var(--color-border)]">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-primary)]/10 text-xs font-bold text-[color:var(--color-primary)]">1</span>
+                    اختاري المنتج
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+                    <Input value={productSearch} onChange={(e) => { setProductSearch(e.target.value); loadProducts(e.target.value); }} placeholder="ابحثي بالاسم…" className="rounded-xl pr-9" />
                   </div>
-                </div>
-                <div className="max-h-52 space-y-1.5 overflow-y-auto rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/40 p-2">
-                  {filteredProducts.length === 0 && (
-                    <p className="py-6 text-center text-sm text-[color:var(--color-muted-foreground)]">لا توجد منتجات</p>
+                  {productsLoading ? (
+                    <div className="space-y-2">{[...Array(3)].map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}</div>
+                  ) : filteredProducts.length === 0 ? (
+                    <p className="py-6 text-center text-sm text-[color:var(--color-muted-foreground)]">مفيش منتجات مطابقة</p>
+                  ) : (
+                    <div className="max-h-64 space-y-1.5 overflow-y-auto pr-1">
+                      {filteredProducts.slice(0, 30).map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => { setSelectedProduct(p); if (!mediaUrl && p.imageUrl) setMediaUrl(p.imageUrl); }}
+                          className={`flex w-full items-center gap-3 rounded-xl border p-2.5 text-right transition ${
+                            selectedProduct?.id === p.id
+                              ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/5'
+                              : 'border-[color:var(--color-border)] hover:bg-[color:var(--color-accent)]'
+                          }`}
+                        >
+                          {p.imageUrl ? (
+                            <img src={p.imageUrl} alt="" className="h-11 w-11 rounded-lg object-cover" />
+                          ) : (
+                            <span className="flex h-11 w-11 items-center justify-center rounded-lg bg-[color:var(--color-muted)]">
+                              <ImageIcon className="h-4 w-4 text-[color:var(--color-muted-foreground)]" />
+                            </span>
+                          )}
+                          <span className="min-w-0 flex-1">
+                            <span className="block truncate text-sm font-medium">{p.name}</span>
+                            {p.price != null && <span className="text-xs text-[color:var(--color-muted-foreground)]">{Number(p.price).toLocaleString('ar-EG')} ج.م</span>}
+                          </span>
+                          {selectedProduct?.id === p.id && <CheckCircle2 className="h-4 w-4 shrink-0 text-[color:var(--color-primary)]" />}
+                        </button>
+                      ))}
+                    </div>
                   )}
-                  {filteredProducts.map((p) => {
-                    const img = parseProductImages(p.images)[0];
-                    return (
+                </CardContent>
+              </Card>
+
+              {/* 2) الرسالة */}
+              <Card className="border-[color:var(--color-border)]">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-primary)]/10 text-xs font-bold text-[color:var(--color-primary)]">2</span>
+                    رسالة العرض
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex justify-end">
+                    <Button type="button" variant="outline" size="sm" onClick={() => setMetaModalOpen(true)} className="rounded-full border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300">
+                      <LayoutTemplate className="h-3.5 w-3.5" />
+                      اختيار قالب ميتا
+                    </Button>
+                  </div>
+                  <Textarea rows={5} value={message} onChange={(e) => setMessage(e.target.value)} className="rounded-xl" maxLength={3000} />
+                  <p className="text-xs text-[color:var(--color-muted-foreground)]">متغيرات: {'{customerName}'} · {'{productName}'} · {'{price}'} · {'{customer_link}'}</p>
+                  <div className="space-y-1.5">
+                    <Label className="flex items-center gap-1.5 text-xs"><ImageIcon className="h-3.5 w-3.5" /> رابط صورة (اختياري)</Label>
+                    <Input value={mediaUrl} onChange={(e) => setMediaUrl(e.target.value)} placeholder="https://…" dir="ltr" className="rounded-xl" />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 3) الجمهور */}
+              <Card className="border-[color:var(--color-border)]">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[color:var(--color-primary)]/10 text-xs font-bold text-[color:var(--color-primary)]">3</span>
+                    مين يستلم العرض؟
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                    {([
+                      { v: 'withOrders', label: 'عملاء بطلبات' },
+                      { v: 'all', label: 'كل العملاء' },
+                      { v: 'newCustomers', label: 'عملاء جدد' },
+                      { v: 'list', label: 'قائمة محددة' },
+                    ] as Array<{ v: Audience; label: string }>).map((a) => (
                       <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => selectProduct(p)}
-                        className={`flex w-full items-center gap-3 rounded-xl border-2 px-3 py-2 text-right transition-all ${
-                          selectedProduct?.id === p.id
-                            ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-card))]"
-                            : "border-transparent hover:border-[color:var(--shell-control-border)]"
+                        key={a.v}
+                        onClick={() => setAudience(a.v)}
+                        className={`rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+                          audience === a.v
+                            ? 'border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/5 text-[color:var(--color-primary)]'
+                            : 'border-[color:var(--color-border)] hover:bg-[color:var(--color-accent)]'
                         }`}
                       >
-                        {img ? (
-                          <img src={img} alt="" className="size-10 shrink-0 rounded-lg object-cover" />
-                        ) : (
-                          <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-[color:var(--color-muted)]">
-                            <ImageIcon className="size-5 text-[color:var(--color-muted-foreground)]" />
-                          </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-semibold">{p.name}</p>
-                          <p className="text-xs text-[color:var(--color-muted-foreground)]">{p.price} جنيه</p>
-                        </div>
-                        {selectedProduct?.id === p.id && (
-                          <CheckCircle className="size-5 text-[color:var(--color-primary)]" />
-                        )}
+                        {a.label}
                       </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>لمن تريد الإرسال؟</Label>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  {AUDIENCE_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setAudience(opt.value)}
-                      className={`flex flex-col items-center gap-1.5 rounded-xl border-2 p-3 transition-all ${
-                        audience === opt.value
-                          ? "border-[color:var(--color-primary)] bg-[color:color-mix(in_srgb,var(--color-primary)_8%,var(--color-card))]"
-                          : "border-[color:var(--shell-control-border)] hover:border-[color:var(--color-primary)]/40"
-                      }`}
-                    >
-                      <span className="text-xl">{opt.icon}</span>
-                      <span className="text-xs font-bold">{opt.label}</span>
-                    </button>
-                  ))}
-                </div>
-                {audience === "newCustomers" && (
-                  <div className="flex items-center gap-3">
-                    <Label className="text-sm">جدد خلال آخر</Label>
-                    <Input
-                      type="number"
-                      min={1}
-                      max={365}
-                      value={newDays}
-                      onChange={(e) => setNewDays(parseInt(e.target.value) || 7)}
-                      className="h-9 w-24"
-                    />
-                    <Label className="text-sm">يوم</Label>
+                    ))}
                   </div>
-                )}
-                <Button variant="outline" size="sm" className="rounded-full" onClick={previewAudience}>
-                  <Users className="size-4" />
-                  معاينة عدد الجمهور
-                  {audienceCount !== null && <span className="font-bold">: {audienceCount} عميل</span>}
-                </Button>
-              </div>
 
-              <div className="space-y-2">
-                <Label>رسالة العرض</Label>
-                <Textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  className="min-h-[140px] rounded-2xl"
-                />
-                <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                  متغيرات: {"{اسم العميل}"} / {"{customerName}"} / {"{productName}"} / {"{price}"}
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setMetaModalOpen(true)}
-                  className="rounded-full border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300"
-                >
-                  📚 قوالب ميتا معتمدة
-                </Button>
-              </div>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label>جلسة الواتساب</Label>
-                  <Select value={selectedSession} onValueChange={(v) => setSelectedSession(v ?? "")}>
-                    <SelectTrigger className="h-11 rounded-full">
-                      <SelectValue placeholder="اختر جلسة" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {sessions.map((s) => (
-                        <SelectItem key={s.sessionId} value={s.sessionId}>
-                          {s.phoneNumber || s.sessionId} {s.isConnected ? "✓ متصلة" : "(غير متصلة)"}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>جدولة الإرسال (اختياري)</Label>
-                  <Input
-                    type="datetime-local"
-                    value={scheduleAt}
-                    onChange={(e) => setScheduleAt(e.target.value)}
-                    className="h-11 rounded-full"
-                  />
-                </div>
-              </div>
-
-              <Separator />
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                  {selectedProduct
-                    ? `سيتم إرسال صورة "${selectedProduct.name}" + الرسالة مع تخصيص اسم كل عميل`
-                    : "اختر منتجاً لبدء العرض"}
-                </p>
-                <Button
-                  onClick={handleSend}
-                  disabled={sending || !selectedProduct || !message.trim() || !selectedSession}
-                  className="rounded-full"
-                >
-                  {sending ? (
-                    <span className="flex items-center gap-2">
-                      <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                      جاري الإرسال...
-                    </span>
-                  ) : (
-                    <span className="flex items-center gap-2">
-                      <Send className="size-4" />
-                      إرسال العرض
-                    </span>
-                  )}
-                </Button>
-              </div>
-
-              {result && (
-                <div className="flex items-center gap-3 rounded-2xl border border-emerald-200/80 bg-emerald-500/10 p-4">
-                  {result.status === "scheduled" ? <Clock className="size-8 text-amber-600" /> : <CheckCircle className="size-8 text-emerald-600" />}
-                  <div>
-                    <p className="font-bold text-emerald-800">
-                      {result.status === "scheduled" ? `مجدولة — ${new Date(result.scheduledAt).toLocaleString("ar-EG")}` : `تم بدء الإرسال: ${result.total} عميل`}
-                    </p>
-                    <p className="text-xs text-emerald-700">ستجد التفاصيل في «العروض السابقة» وتقارير الإشعارات</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* ══════════ CAMPAIGNS HISTORY ══════════ */}
-        <TabsContent value="history" className="space-y-6">
-          <Card className="rounded-3xl border-[color:var(--shell-control-border)]">
-            <CardHeader className="flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg">العروض السابقة</CardTitle>
-                <CardDescription>كل حملات عروض المنتجات عبر الواتساب</CardDescription>
-              </div>
-              <Button variant="outline" size="sm" className="rounded-full" onClick={loadCampaigns}>
-                <RefreshCw className="size-4" /> تحديث
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {loadingCampaigns ? (
-                <div className="flex justify-center py-10">
-                  <span className="size-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                </div>
-              ) : campaigns.length === 0 ? (
-                <div className="flex flex-col items-center gap-3 py-12 text-center">
-                  <Layers className="size-12 opacity-40" />
-                  <p className="text-[color:var(--color-muted-foreground)]">لا توجد عروض بعد — أنشئ أول عرض لك</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {campaigns.map((c) => (
-                    <div key={c.id} className="rounded-2xl border border-[color:var(--shell-control-border)] p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="font-semibold">{c.name || "عرض واتساب"}</p>
-                          <p className="mt-1 line-clamp-2 text-sm text-[color:var(--color-muted-foreground)]">
-                            {c.message}
-                          </p>
+                  {audience === 'list' && (
+                    <div className="space-y-1.5 rounded-xl border border-dashed border-[color:var(--color-border)] p-3">
+                      {lists.length === 0 ? (
+                        <p className="text-center text-xs text-[color:var(--color-muted-foreground)]">مفيش قوائم محفوظة — اعملي قائمة من مركز التقسيم الأول</p>
+                      ) : (
+                        <div className="max-h-40 space-y-1.5 overflow-y-auto">
+                          {lists.map((l) => (
+                            <label key={l.id} className="flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition hover:bg-[color:var(--color-accent)]">
+                              <input
+                                type="checkbox"
+                                checked={selectedListIds.includes(l.id)}
+                                onChange={(e) => setSelectedListIds((prev) => (e.target.checked ? [...prev, l.id] : prev.filter((x) => x !== l.id)))}
+                                className="h-4 w-4 rounded"
+                              />
+                              <span className="flex-1">{l.name}</span>
+                              <span className="text-xs text-[color:var(--color-muted-foreground)]">{(l.count || 0).toLocaleString('ar-EG')}</span>
+                            </label>
+                          ))}
                         </div>
-                        {campaignStatusBadge(c)}
-                      </div>
-                      <div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-[color:var(--color-muted-foreground)]">
-                        <Badge variant="secondary">{c.recipientCount || 0} مستلم</Badge>
-                        <Badge variant="secondary" className="text-emerald-600">{c.sentCount || 0} مرسل</Badge>
-                        <Badge variant="secondary" className="text-red-500">{c.failedCount || 0} فشل</Badge>
-                        <span>
-                          {c.sentAt ? new Date(c.sentAt).toLocaleString("ar-EG") : new Date(c.createdAt).toLocaleString("ar-EG")}
-                        </span>
-                      </div>
+                      )}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+                  )}
 
-        {/* ══════════ AUTO-SEND SETTINGS ══════════ */}
-        <TabsContent value="settings" className="space-y-6">
-          <Card className="rounded-3xl border-[color:var(--shell-control-border)]">
-            <CardHeader>
-              <CardTitle className="text-lg">الإرسال التلقائي للمنتج الجديد</CardTitle>
-              <CardDescription>
-                كل منتج جديد هيتنبعت تلقائياً لعملائك عبر الواتساب فور إضافته — الرسالة بتظهر في تقارير الإشعارات
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-5">
-              {settingsLoading ? (
-                <div className="flex justify-center py-8">
-                  <span className="size-8 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                </div>
-              ) : settings ? (
-                <>
-                  <div className="flex items-center justify-between rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/40 p-4">
-                    <div>
-                      <p className="font-bold">تفعيل الإرسال التلقائي</p>
-                      <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                        يتم إرسال صورة المنتج + رسالة تلقائياً لكل منتج جديد فور حفظه
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setSettings({ ...settings, newProductAutoSend: !settings.newProductAutoSend })}
-                      className={`relative h-7 w-12 rounded-full transition-colors ${settings.newProductAutoSend ? "bg-emerald-500" : "bg-gray-300 dark:bg-gray-600"}`}
-                    >
-                      <span
-                        className={`absolute top-0.5 size-6 rounded-full bg-white shadow transition-all ${settings.newProductAutoSend ? "left-[22px]" : "left-0.5"}`}
-                      />
-                    </button>
+                  <div className="flex items-center justify-between rounded-xl bg-[color:var(--color-muted)] px-4 py-2.5 text-sm">
+                    <span className="flex items-center gap-1.5 text-[color:var(--color-muted-foreground)]">
+                      <Users className="h-4 w-4" /> المستهدفون
+                    </span>
+                    <span className="font-bold">{audienceCount != null ? `${audienceCount.toLocaleString('ar-EG')} عميل` : '—'}</span>
                   </div>
-
-                  <div className="space-y-2">
-                    <Label>الجمهور الافتراضي</Label>
-                    <Select
-                      value={settings.newProductAudience}
-                      onValueChange={(v) => setSettings({ ...settings, newProductAudience: v ?? "all" })}
-                    >
-                      <SelectTrigger className="h-11 rounded-full">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {AUDIENCE_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value}>
-                            {opt.icon} {opt.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {settings.newProductAudience === "newCustomers" && (
-                      <div className="flex items-center gap-3">
-                        <Label className="text-sm">جدد خلال آخر</Label>
-                        <Input
-                          type="number"
-                          min={1}
-                          max={365}
-                          value={settings.newProductNewDays}
-                          onChange={(e) => setSettings({ ...settings, newProductNewDays: parseInt(e.target.value) || 7 })}
-                          className="h-9 w-24"
-                        />
-                        <Label className="text-sm">يوم</Label>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>الرسالة الافتراضية</Label>
-                    <Textarea
-                      value={settings.newProductMessage}
-                      onChange={(e) => setSettings({ ...settings, newProductMessage: e.target.value })}
-                      placeholder={DEFAULT_MESSAGE}
-                      className="min-h-[140px] rounded-2xl"
-                    />
-                    <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                      متغيرات: {"{اسم العميل}"} / {"{customerName}"} / {"{productName}"} / {"{price}"}
+                  {estimatedMinutes && (
+                    <p className="flex items-center gap-1.5 text-xs text-[color:var(--color-muted-foreground)]">
+                      <Clock className="h-3.5 w-3.5" /> الوقت التقريبي للإرسال: {estimatedMinutes}
                     </p>
-                  </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
 
-                  <Button onClick={handleSaveSettings} disabled={savingSettings} className="rounded-full">
-                    {savingSettings ? (
-                      <span className="flex items-center gap-2">
-                        <span className="size-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                        جاري الحفظ...
-                      </span>
+            {/* ─── العمود الأيسر: المعاينة والإرسال ─── */}
+            <div className="space-y-5 lg:sticky lg:top-6 lg:self-start">
+              <WhatsAppBubblePreview
+                content={message}
+                variables={{ productName: selectedProduct?.name, price: selectedProduct?.price ? `${Number(selectedProduct.price).toLocaleString('ar-EG')} ج.م` : undefined }}
+                headerLabel="سوان"
+                mediaUrl={mediaUrl || selectedProduct?.imageUrl || undefined}
+              />
+
+              <Card className="border-[color:var(--color-border)]">
+                <CardContent className="space-y-3 p-4">
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">جلسة واتساب (للإرسال المباشر)</Label>
+                    {connectedSessions.length > 0 ? (
+                      <Select value={selectedSession} onValueChange={setSelectedSession}>
+                        <SelectTrigger className="rounded-xl"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {connectedSessions.map((s) => (
+                            <SelectItem key={s.sessionId} value={s.sessionId}>{s.phoneNumber || s.sessionId.slice(0, 12)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
-                      "حفظ الإعدادات"
+                      <p className="rounded-xl bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                        مفيش جلسة متصلة — الإرسال هيشتغل بقناة Meta لو متاحة
+                      </p>
                     )}
+                  </div>
+                  <Button onClick={send} disabled={sending || !selectedProduct || !message.trim()} className="w-full rounded-full">
+                    {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                    إرسال العرض {audienceCount ? `لـ ${audienceCount.toLocaleString('ar-EG')} عميل` : ''}
                   </Button>
-                </>
-              ) : (
-                <p className="py-6 text-center text-sm text-[color:var(--color-muted-foreground)]">
-                  تعذر تحميل الإعدادات — أعد المحاولة
-                </p>
-              )}
-            </CardContent>
-          </Card>
+                  {selectedProduct && (
+                    <p className="text-center text-xs text-[color:var(--color-muted-foreground)]">
+                      المنتج المختار: <span className="font-medium text-[color:var(--color-foreground)]">{selectedProduct.name}</span>
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </TabsContent>
+
+        <TabsContent value="stats">
+          <TemplateStatsPanel title="تقارير العروض والقوالب" description="أداء كل قالب عرض خلال آخر 90 يوم — الوصول والقراءة والتفاعل والتكلفة" />
+        </TabsContent>
+      </Tabs>
+
       <MetaTemplatesModal
         open={metaModalOpen}
         onClose={() => setMetaModalOpen(false)}
-        onPick={(content) => setMessage((prev) => content || prev)}
-        title="📚 قوالب ميتا للعروض"
+        onPick={(content) => { setMessage((prev) => content || prev); setMetaModalOpen(false); }}
+        title="اختيار قالب ميتا للعرض"
       />
-      </Tabs>
     </div>
   );
 };
 
-export default ProductOffers;
+export default ProductOffersRedesign;

@@ -57,6 +57,7 @@ router.get('/logs', verifyToken.authenticateToken, whatsappNotificationControlle
 router.get('/status-report', verifyToken.authenticateToken, whatsappNotificationController.getStatusReport);
 
 // جلب إحصائيات الإشعارات
+router.get('/template-stats', verifyToken.authenticateToken, whatsappNotificationController.getTemplateStats);
 router.get('/stats', verifyToken.authenticateToken, whatsappNotificationController.getNotificationStats);
 
 // 🚨 PRODUCTION-FIX (notifications-fix-plan §5.3): إحصائيات طابور الإشعارات

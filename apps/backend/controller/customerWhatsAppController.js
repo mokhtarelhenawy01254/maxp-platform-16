@@ -7,6 +7,7 @@ const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase
 const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
 const WhatsAppMessageHandler = require('../services/whatsapp/WhatsAppMessageHandler');
 const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+const { buildEffectiveCustomerListWhere } = require('../utils/customerListCriteria');
 
 console.log('ðŸ“¢ [CWA] Customer WhatsApp Notifications Controller Loaded');
 
@@ -507,7 +508,7 @@ exports.refreshSessions = async (req, res) => {
  * audience: 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers'
  * newDays: Ø¹Ø¯Ø¯ Ø§Ù„Ø£ÙŠØ§Ù… Ù„Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„Ø¬Ø¯Ø¯ (default 7)
  */
-async function buildAudienceWhere(companyId, audience, newDays = 7) {
+async function buildAudienceWhere(companyId, audience, newDays = 7, rawListIds = null, prisma = null) {
     const where = { companyId, phone: { not: null } };
 
     switch (audience) {
@@ -527,6 +528,22 @@ async function buildAudienceWhere(companyId, audience, newDays = 7) {
             // alias 'active' — صفحة المنتج كانت بتبعتها، بنطابقها مع activeCustomers
             where.status = 'ACTIVE';
             break;
+        case 'list': {
+            // قائمة عملاء محفوظة (أو أكثر) — تطبيق criteria القائمة
+            const ids = (Array.isArray(rawListIds) ? rawListIds : []).map(String).filter(Boolean);
+            if (ids.length === 0) break;
+            const lists = await prisma.customerList.findMany({
+                where: { companyId, id: { in: ids } },
+                select: { id: true, criteria: true }
+            });
+            if (lists.length === 0) break;
+            const combined = [];
+            for (const l of lists) {
+                combined.push(await buildWhereFromListCriteriaSafe(prisma, companyId, l.criteria));
+            }
+            where.AND = [...(where.AND || []), ...combined];
+            break;
+        }
         case 'all':
         default:
             // no extra filter
@@ -536,16 +553,28 @@ async function buildAudienceWhere(companyId, audience, newDays = 7) {
     return where;
 }
 
+/** تطبيق criteria قائمة عملاء واحدة — returns Prisma where fragment */
+async function buildWhereFromListCriteriaSafe(prismaClient, compId, criteria) {
+    try {
+        const effective = await buildEffectiveCustomerListWhere(prismaClient, compId, criteria);
+        return effective.where;
+    } catch (e) {
+        console.error('[CWA] buildWhereFromListCriteria error:', e.message);
+        return { id: { in: [] } };
+    }
+}
+
 /**
  * Ù…Ø¹Ø§ÙŠÙ†Ø© Ø¹Ø¯Ø¯ Ø§Ù„Ø¹Ù…Ù„Ø§Ø¡ Ø§Ù„Ù…Ø³ØªÙ‡Ø¯ÙÙŠÙ† (Ø¨Ø¯ÙˆÙ† Ø¥Ø±Ø³Ø§Ù„)
  */
 exports.previewAudience = async (req, res) => {
     try {
         const { companyId } = req.user;
-        const { audience = 'all', newDays = 7 } = req.query;
+        const { audience = 'all', newDays = 7, listIds } = req.query;
+        const listIdsArr = listIds ? String(listIds).split(',').filter(Boolean) : null;
 
         const prisma = getSharedPrismaClient();
-        const where = await buildAudienceWhere(companyId, audience, newDays);
+        const where = await buildAudienceWhere(companyId, audience, newDays, listIdsArr, prisma);
 
         const count = await safeQuery(() => prisma.customer.count({ where }));
 
@@ -630,6 +659,121 @@ async function createNotificationLogEntry(entry) {
  *   occasionName: string (optional, supports {Ø§Ø³Ù… Ø§Ù„Ù…Ù†Ø§Ø³Ø¨Ø©}/{occasionName})
  *   sendAt: ISO datetime string (optional, schedule send)
  */
+/**
+ * 🕐 الخط الزمني لرسائل عميل معيّن — كل الرسايل اللي اتبعتت له (سلاسل + إشعارات + حملات)
+ * GET /customers/whatsapp-notify/:customerId/message-timeline?limit=100
+ */
+exports.getCustomerMessageTimeline = async (req, res) => {
+    try {
+        const { companyId } = req.user;
+        const { customerId } = req.params;
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 100));
+        const prisma = getSharedPrismaClient();
+
+        const customer = await safeQuery(() => prisma.customer.findFirst({
+            where: { id: customerId, companyId },
+            select: { id: true, firstName: true, lastName: true, phone: true }
+        }));
+        if (!customer) {
+            return res.status(404).json({ success: false, message: 'العميل غير موجود' });
+        }
+
+        const events = [];
+
+        // 1) إشعارات النظام (سلاسل + دورية + ولاء + مناسبات) من لوج الإشعارات
+        const logs = await safeQuery(() => prisma.whatsAppNotificationLog.findMany({
+            where: { companyId, OR: [{ customerId }, ...(customer.phone ? [{ recipientPhone: customer.phone }] : [])] },
+            orderBy: { createdAt: 'desc' },
+            take: limit,
+            select: {
+                id: true, eventType: true, rawEventType: true, category: true, content: true,
+                status: true, sentAt: true, deliveredAt: true, readAt: true, failedAt: true,
+                failureReason: true, createdAt: true,
+                whatsapp_notification_templates: { select: { name: true, metaTemplateName: true } }
+            }
+        }));
+        for (const l of logs) {
+            events.push({
+                source: 'notification',
+                title: l.whatsapp_notification_templates?.name || l.rawEventType || l.eventType,
+                eventType: l.rawEventType || l.eventType,
+                category: l.category,
+                content: l.content,
+                status: l.status,
+                failureReason: l.failureReason || null,
+                at: l.sentAt || l.createdAt,
+                meta: {
+                    delivered: !!l.deliveredAt, read: !!l.readAt, failed: l.status === 'FAILED',
+                    templateName: l.whatsapp_notification_templates?.name || null
+                }
+            });
+        }
+
+        // 2) رحلات السلاسل (CustomerJourney) — وضع الرحلة الحالي
+        const journeys = await safeQuery(() => prisma.customerJourney.findMany({
+            where: { companyId, customerId },
+            orderBy: { createdAt: 'desc' },
+            take: 20,
+            include: {
+                flow: { select: { name: true } },
+                order: { select: { id: true, orderNumber: true } }
+            }
+        }));
+        const journeyItems = journeys.map(j => {
+            let logsParsed = [];
+            try { logsParsed = j.logs ? JSON.parse(j.logs) : []; } catch (_) { logsParsed = []; }
+            return {
+                journeyId: j.id,
+                flowName: j.flow?.name || 'سلسلة',
+                flowId: j.flowId,
+                status: j.status,
+                currentStep: j.currentStep,
+                startedAt: j.createdAt,
+                nextSendAt: j.nextSendAt,
+                lastSentAt: j.lastSentAt,
+                orderNumber: j.order?.orderNumber || null,
+                stepEvents: Array.isArray(logsParsed) ? logsParsed.slice(-20) : []
+            };
+        });
+
+        // 3) الرسايل المباشرة (حملات Baileys) من رسائل واتساب لو فيه جلسة — عبر الجيد المطابق للرقم
+        let directMessages = [];
+        if (customer.phone) {
+            directMessages = await safeQuery(() => prisma.whatsAppMessage.findMany({
+                where: { fromMe: true, remoteJid: { contains: customer.phone.replace(/[^d]/g, '') } },
+                orderBy: { timestamp: 'desc' },
+                take: 30,
+                select: { id: true, content: true, status: true, timestamp: true, messageType: true }
+            }));
+        }
+        for (const m of directMessages) {
+            events.push({
+                source: 'direct',
+                title: 'رسالة مباشرة',
+                eventType: 'DIRECT_MESSAGE',
+                category: 'DIRECT',
+                content: m.content,
+                status: m.status,
+                failureReason: null,
+                at: m.timestamp,
+                meta: { messageType: m.messageType }
+            });
+        }
+
+        events.sort((a, b) => new Date(b.at) - new Date(a.at));
+
+        return res.json({
+            success: true,
+            customer: { id: customer.id, name: `${customer.firstName || ''} ${customer.lastName || ''}`.trim(), phone: customer.phone },
+            journeys: journeyItems,
+            events: events.slice(0, limit)
+        });
+    } catch (error) {
+        console.error('[CWA] getCustomerMessageTimeline error:', error);
+        return res.status(500).json({ success: false, message: 'خطأ في جلب الخط الزمني للعميل' });
+    }
+};
+
 exports.sendSmartBulkNotification = async (req, res) => {
     try {
         const { companyId } = req.user;
@@ -646,6 +790,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
             occasionName,
             sendAt,
             eventType: reqEventType,
+            customerListIds,
         } = req.body;
 
         // ⚠️ توافق مع صفحة المنتج: بتبعث customMessage مش message — نقبل الاتنين.
@@ -700,7 +845,7 @@ exports.sendSmartBulkNotification = async (req, res) => {
 
         // 2. Build audience
         const prisma = getSharedPrismaClient();
-        const where = await buildAudienceWhere(companyId, audience, safeNewDays);
+        const where = await buildAudienceWhere(companyId, audience, safeNewDays, customerListIds, prisma);
         const customers = await safeQuery(() =>
             prisma.customer.findMany({
                 where,

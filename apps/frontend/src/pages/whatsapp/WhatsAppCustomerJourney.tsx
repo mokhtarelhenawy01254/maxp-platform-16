@@ -54,6 +54,7 @@ import { FlowCanvas, type FlowStep } from "./components/journey/FlowCanvas";
 import ButtonsEditor from "../automation/components/ButtonsEditor";
 import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
 import MetaTemplatesModal from "../customers/components/MetaTemplatesModal";
+import CustomerMessageTimeline from "./components/CustomerMessageTimeline";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
@@ -274,6 +275,7 @@ const WhatsAppCustomerJourney: React.FC = () => {
 
   const [flows, setFlows] = useState<Flow[]>([]);
   const [metaModalOpen, setMetaModalOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [journeys, setJourneys] = useState<Journey[]>([]);
