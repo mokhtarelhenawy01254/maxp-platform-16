@@ -73,7 +73,15 @@ const ProductOffersRedesign: React.FC = () => {
     setProductsLoading(true);
     try {
       const res = await apiClient.get('/customers/whatsapp-notify/products', { params: q ? { search: q } : {} });
-      setProducts(res.data?.products || res.data?.data || []);
+      const raw = (res.data?.products || res.data?.data || []) as Array<Record<string, unknown>>;
+      setProducts(raw.map((p) => {
+        let img: string | null = null;
+        const imgs = p.images;
+        if (typeof imgs === 'string') { try { const arr = JSON.parse(imgs); img = Array.isArray(arr) ? arr[0] : imgs; } catch { img = imgs; } }
+        else if (Array.isArray(imgs) && imgs.length > 0) img = String(imgs[0]);
+        else if (typeof imgs === 'string' && imgs.startsWith('http')) img = imgs;
+        return { id: String(p.id), name: String(p.name || ''), price: p.price as number | undefined, imageUrl: img };
+      }));
     } catch { /* ignore */ } finally {
       setProductsLoading(false);
     }
