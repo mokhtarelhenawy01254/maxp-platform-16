@@ -28,6 +28,9 @@ router.post('/apply', couponsController.applyCoupon);
 // ✅ الحصول على كوبون واحد (يتطلب coupons-pro)
 router.get('/:id', checkAppAccess('coupons-pro'), couponsController.getCoupon);
 
+// ✅ إنشاء كوبونات جماعية فريدة (Win-back)
+router.post('/bulk/generate', checkAppAccess('coupons-pro'), couponsController.bulkGenerateCoupons);
+
 // ✅ إنشاء كوبون جديد (يتطلب coupons-pro)
 router.post('/', checkAppAccess('coupons-pro'), couponsController.createCoupon);
 

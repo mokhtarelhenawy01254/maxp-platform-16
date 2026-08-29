@@ -521,18 +521,20 @@ class OrderService {
         console.error('❌ [ORDER-SERVICE] Error in auto-distribution:', distError.message);
       }
 
-      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المحادثة
-      try {
-        const customerLoyaltyService = require('./hr/customerLoyaltyService');
-        await customerLoyaltyService.applyLoyaltyPointsForOrder({
-          orderId: order.id,
-          companyId,
-          changedBy: data.createdBy
-        }).catch((loyaltyError) => {
-          console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
-        });
-      } catch (loyaltyError) {
-        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+      // 🎁 الولاء: المنح فقط عند التسليم (DELIVERED) — لا تمنح نقاط عند إنشاء طلب المحادثة (PENDING)
+      if (order.status === 'DELIVERED') {
+        try {
+          const customerLoyaltyService = require('./hr/customerLoyaltyService');
+          await customerLoyaltyService.applyLoyaltyPointsForOrder({
+            orderId: order.id,
+            companyId,
+            changedBy: data.createdBy
+          }).catch((loyaltyError) => {
+            console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
+          });
+        } catch (loyaltyError) {
+          console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+        }
       }
 
       //console.log('✅ Order created successfully:', order.orderNumber);
@@ -1440,6 +1442,14 @@ class OrderService {
             await loyaltyService.applyLoyaltyPointsForOrder({ orderId: order.id, companyId: order.companyId, changedBy: userId }).catch(error => {
               console.error(`❌ [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);
             });
+
+            // 🎁 Milestone / Gift Engine: هدية الطلب 2 + Milestone 3 + Anniversary
+            try {
+              const milestoneService = require('./milestoneService');
+              await milestoneService.handleOrderMilestones({ orderId: order.id, companyId: order.companyId, customerId: order.customerId }).catch(err => {
+                console.warn(`⚠️ [MILESTONE] Failed for ${orderNumber}:`, err.message);
+              });
+            } catch (mErr) { console.warn('Milestone require failed', mErr.message); }
 
             // 🚀 تسجيل العميل في سلسلة ما بعد الاستلام (بعد أسبوع/أسبوعين/تالت...) عند التسليم الفعلي
             try {

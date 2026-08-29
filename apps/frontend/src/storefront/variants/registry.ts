@@ -135,6 +135,17 @@ export const storefrontVariantRegistry = {
       status: 'implemented-now',
     },
     {
+      id: 'grooming-hero',
+      section: 'HeroBanner',
+      purpose: 'Dark photo-overlay hero matching mensgroomingpro.com — white H1 over gradient overlay for affiliate/blog storefronts',
+      bestPages: ['home'],
+      bestArchetypes: ['affiliate-blog', 'mens-grooming', 'editorial-reviews'],
+      rtlSuitability: 'high',
+      density: 'low',
+      tone: 'dark-editorial',
+      status: 'implemented-now',
+    },
+    {
       id: 'neon-dark',
       section: 'HeroBanner',
       purpose: 'Angular dark background with neon glow accents for fitness, tech, and dark-mode themes',

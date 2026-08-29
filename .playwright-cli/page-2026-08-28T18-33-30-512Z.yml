@@ -1,0 +1,66 @@
+- generic [ref=f10e7]:
+  - generic [ref=f10e9]:
+    - banner [ref=f10e10]:
+      - generic [ref=f10e11]:
+        - link "بوابة معمل الأسنان" [ref=f10e12] [cursor=pointer]:
+          - /url: /dental-portal/dashboard
+        - navigation [ref=f10e18]:
+          - link "الرئيسية" [ref=f10e19] [cursor=pointer]:
+            - /url: /dental-portal/dashboard
+          - link "الطلب من المتجر" [ref=f10e25] [cursor=pointer]:
+            - /url: /dental-portal/catalog
+          - link "السلة 1" [ref=f10e149] [cursor=pointer]:
+            - /url: /dental-portal/cart
+            - text: السلة
+            - generic [ref=f10e150]: "1"
+          - link "حالاتي" [ref=f10e34] [cursor=pointer]:
+            - /url: /dental-portal/cases
+          - link "فواتيري" [ref=f10e38] [cursor=pointer]:
+            - /url: /dental-portal/invoices
+        - generic [ref=f10e43]:
+          - generic [ref=f10e44]: د. أحمد مصطفى
+          - button "تسجيل خروج" [ref=f10e49]
+    - main [ref=f10e54]:
+      - generic [ref=f10e55]:
+        - status [ref=f10e151]:
+          - generic [ref=f10e152]: تمت الإضافة إلى السلة
+          - link "اذهب إلى السلة" [ref=f10e153] [cursor=pointer]:
+            - /url: /dental-portal/cart
+        - generic [ref=f10e56]:
+          - heading "متجر الأعمال" [level=1] [ref=f10e57]
+          - paragraph [ref=f10e58]: اختر نوع العمل لبدء طلب جديد
+        - generic [ref=f10e59]:
+          - generic [ref=f10e60]:
+            - heading "تلبيسة إيماكس" [level=3] [ref=f10e62]
+            - generic [ref=f10e63]:
+              - generic [ref=f10e64]: ٠ ج.م
+              - generic [ref=f10e69]: 7 يوم — مدة التنفيذ
+            - generic [ref=f10e74]:
+              - button "اطلب" [ref=f10e75]
+              - button "أضف للسلة" [active] [ref=f10e76]
+          - generic [ref=f10e82]:
+            - heading "تلبيسة زيركون" [level=3] [ref=f10e84]
+            - generic [ref=f10e85]:
+              - generic [ref=f10e86]: ٠ ج.م
+              - generic [ref=f10e91]: 5 يوم — مدة التنفيذ
+            - generic [ref=f10e96]:
+              - button "اطلب" [ref=f10e97]
+              - button "أضف للسلة" [ref=f10e98]
+          - generic [ref=f10e104]:
+            - heading "جسر 3 أسنان" [level=3] [ref=f10e106]
+            - generic [ref=f10e107]:
+              - generic [ref=f10e108]: ٠ ج.م
+              - generic [ref=f10e113]: 10 يوم — مدة التنفيذ
+            - generic [ref=f10e118]:
+              - button "اطلب" [ref=f10e119]
+              - button "أضف للسلة" [ref=f10e120]
+          - generic [ref=f10e126]:
+            - heading "طقم كامل" [level=3] [ref=f10e128]
+            - generic [ref=f10e129]:
+              - generic [ref=f10e130]: ٠ ج.م
+              - generic [ref=f10e135]: 14 يوم — مدة التنفيذ
+            - generic [ref=f10e140]:
+              - button "اطلب" [ref=f10e141]
+              - button "أضف للسلة" [ref=f10e142]
+    - contentinfo [ref=f10e148]: بوابة معمل الأسنان — تابع حالاتك وطلباتك بسهولة
+  - region "Notifications alt+T"

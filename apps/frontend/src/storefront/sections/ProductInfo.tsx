@@ -2072,8 +2072,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     isVelaFashionDirectBuybox &&
     Boolean(shortDescription) &&
     plainDescription === shortDescription;
+  const isKhemetCareDescriptionDuplicate =
+    isElessiCareBuybox &&
+    isKhemetLuxeTheme &&
+    Boolean(shortDescription) &&
+    plainDescription === shortDescription;
   const shouldHideDuplicateDescriptionSection =
-    isStyleStoreDescriptionDuplicate || isVelaFashionDescriptionDuplicate;
+    isStyleStoreDescriptionDuplicate ||
+    isVelaFashionDescriptionDuplicate ||
+    isKhemetCareDescriptionDuplicate;
   const rawProductTags = product['tags'];
   const productTagValues = (
     Array.isArray(rawProductTags)
@@ -3433,6 +3440,49 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     );
   };
 
+  // Amazon Affiliate buy CTA — renders when the PDP product is a source='amazon' product
+  // (exposed by the backend as isAmazonProduct + amazonBuyUrl). Pure render, no hooks.
+  const renderAmazonBuyCta = (layout: 'inline' | 'card' = 'card') => {
+    const amazonRecord = (product ?? {}) as unknown as Record<string, unknown>;
+    const isAmazonProduct = amazonRecord['isAmazonProduct'] === true;
+    const amazonBuyUrl = typeof amazonRecord['amazonBuyUrl'] === 'string' ? String(amazonRecord['amazonBuyUrl']) : null;
+    if (!isAmazonProduct || !amazonBuyUrl) return null;
+
+    const label = prefersArabicCopy ? 'اشتري من أمازون' : 'Buy on Amazon';
+    const disclosure = prefersArabicCopy
+      ? 'يتم الدفع والشحن والضمان عن طريق أمازون مباشرة.'
+      : 'Checkout, shipping and support are handled directly by Amazon.';
+
+    if (layout === 'inline') {
+      return (
+        <a
+          href={amazonBuyUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-primary hover:underline"
+        >
+          <span>{label}</span>
+          <ExternalLink size={16} />
+        </a>
+      );
+    }
+
+    return (
+      <div className="flex flex-col gap-2 rounded-[1.2rem] border border-border bg-secondary/35 p-4">
+        <a
+          href={amazonBuyUrl}
+          target="_blank"
+          rel="noreferrer noopener"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary px-5 py-3 text-sm font-black uppercase tracking-widest text-primary-foreground transition hover:opacity-90 active:scale-[0.98]"
+        >
+          <span>{label}</span>
+          <ExternalLink size={16} />
+        </a>
+        <p className="text-center text-[11px] leading-4 text-muted-foreground">{disclosure}</p>
+      </div>
+    );
+  };
+
   const shippingTriggerButton = (
     <button
       type="button"
@@ -4088,6 +4138,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         </div>
       ) : shouldRenderPrimaryBuyBox ? (
         <div className="flex flex-col gap-3">
+          {renderAmazonBuyCta('card')}
           <div className="flex items-center gap-3">
             <QuantitySelector value={quantity} onChange={setQuantity} />
             <button
@@ -4235,6 +4286,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     </div>
   ) : shouldRenderPrimaryBuyBox ? (
     <div ref={buyActionsRef} className="flex flex-col gap-3">
+      {renderAmazonBuyCta('card')}
       <div className="flex items-center gap-3">
         <QuantitySelector value={quantity} onChange={setQuantity} />
         <button
@@ -7164,7 +7216,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         </details>
       ) : null;
     const hasElessiLowerDetails =
-      Boolean(safeDescription) ||
+      (Boolean(safeDescription) && !shouldHideDuplicateDescriptionSection) ||
       featureHighlights.length > 0 ||
       safeCheckoutItems.length > 0 ||
       elessiExtendedSupportCards.length > 0 ||
@@ -7213,22 +7265,28 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                 </StaticMotionDiv>
               ) : null}
               {!isKhemetInlineQuickOrderBuybox ? elessiLowStockNotice : null}
-              <p className="text-sm leading-7 text-[#6f5a54]">
-                {shortDescription || descriptionPreviewText}
-              </p>
+              {!safeDescription ||
+              !isKhemetLuxeTheme ||
+              shouldHideDuplicateDescriptionSection ? (
+                <p className="text-sm leading-7 text-[#6f5a54]">
+                  {shortDescription || descriptionPreviewText}
+                </p>
+              ) : null}
               {brandSubtitle ? (
                 <p className="text-sm leading-6 text-[#8f5c44]">{brandSubtitle}</p>
               ) : null}
-              <button
-                type="button"
-                onClick={() => {
-                  setElessiLowerSection('details');
-                  queueQuickScroll(STOREFRONT_PRODUCT_DESCRIPTION_ID, 'start');
-                }}
-                className="inline-flex items-center gap-2 text-sm font-black text-[#8f5c44] transition-colors hover:text-[#2d211e]"
-              >
-                {readMoreText}
-              </button>
+              {shouldHideDuplicateDescriptionSection ? null : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setElessiLowerSection('details');
+                    queueQuickScroll(STOREFRONT_PRODUCT_DESCRIPTION_ID, 'start');
+                  }}
+                  className="inline-flex items-center gap-2 text-sm font-black text-[#8f5c44] transition-colors hover:text-[#2d211e]"
+                >
+                  {readMoreText}
+                </button>
+              )}
               {elessiSaleCountdown && !isKhemetInlineQuickOrderBuybox ? (
                 <div className="border-t border-[#efe0d4] pt-3 sm:pt-4">
                   <div className="flex items-center justify-end gap-2 text-[16px] font-black text-[#2d211e]">
@@ -7329,10 +7387,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
               {elessiLowerSection === 'details' ? (
                 <div id={STOREFRONT_PRODUCT_DESCRIPTION_ID} className="space-y-4 border-b border-[#ead8ca] pb-5">
-                  <ProductDescription
-                    safeDescription={safeDescription}
-                    emptyText={descriptionPreviewText}
-                  />
+                  {shouldHideDuplicateDescriptionSection ? null : (
+                    <ProductDescription
+                      safeDescription={safeDescription}
+                      emptyText={descriptionPreviewText}
+                    />
+                  )}
                   {featureHighlights.length ? (
                     <div className="grid gap-4 md:grid-cols-3">
                       {featureHighlights.slice(0, 3).map((item) => (

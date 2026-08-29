@@ -358,9 +358,10 @@ model Company {
    wholesaleCustomers               WholesaleCustomer[]
    wholesaleTransactions            WholesaleTransaction[]
    wholesaleStatements              WholesaleStatement[]
-    wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
+     wholesaleCustomerPriceLists      WholesaleCustomerPriceList[]
    overlayCampaigns                  OverlayCampaign[]
     orderStatusAutoChangeRules        OrderStatusAutoChangeRule[]
+   articles                         Article[]
 
    @@index([businessSpecialtyId])
   @@map("companies")

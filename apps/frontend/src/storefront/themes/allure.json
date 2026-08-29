@@ -1,0 +1,142 @@
+{
+  "id": "allure",
+  "name": "Allure",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "24 9% 8%",
+      "primaryForeground": "40 33% 98%",
+      "secondary": "36 30% 94%",
+      "secondaryForeground": "24 12% 18%",
+      "accent": "22 42% 38%",
+      "accentForeground": "40 33% 98%",
+      "background": "0 0% 100%",
+      "foreground": "24 9% 8%",
+      "muted": "36 16% 92%",
+      "mutedForeground": "24 8% 40%",
+      "border": "36 14% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "24 9% 8%",
+      "ring": "22 42% 38%"
+    },
+    "typography": {
+      "headingFont": "\"Playfair Display\", \"Cinzel\", serif",
+      "bodyFont": "\"Inter\", \"IBM Plex Sans Arabic\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "4px",
+      "buttonRadius": "0px"
+    },
+    "productCard": {
+      "borderRadius": "4px",
+      "boxShadow": "none",
+      "hoverShadow": "0 18px 40px -28px rgba(24, 22, 20, 0.22)",
+      "badgeRadius": "0px",
+      "buttonRadius": "0px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "center"
+    }
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "ALLURE",
+    "tagline": "Step Into Style",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "عملاء جدد وفّروا ١٠٪ — شحن مجاني للطلبات فوق ٥٠٠ ج.م",
+    "announcementLinkText": "تسوّقي الآن",
+    "announcementLinkTo": "/shop?sort=newest",
+    "navigation": [
+      {"label": "الرئيسية", "to": "/"},
+      {"label": "المجموعات", "to": "/shop"},
+      {"label": "الإطلالات", "to": "/lookbook"},
+      {"label": "المدونة", "to": "/journal"},
+      {"label": "دليل المقاسات", "to": "/size-guide"}
+    ],
+    "actions": [
+      {"label": "حسابي", "to": "/account", "style": "link"},
+      {"label": "سلة التسوق", "to": "/cart", "style": "primary"}
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "Allure — ثيم أزياء عصري يجمع بين الرقي والبساطة: عرض بصري قوي بخطوط Serif فخمة، واجهة نظيفة، وتجربة شراء تزيد المبيعات.",
+    "copyrightText": "© 2026 Allure. جميع الحقوق محفوظة.",
+    "socialLinks": {"instagram": "https://instagram.com/", "facebook": "https://facebook.com/", "tiktok": "https://tiktok.com/", "youtube": "https://youtube.com/"},
+    "navigation": [
+      {"title": "التسوّق", "links": [{"label": "كل المنتجات", "to": "/shop"}, {"label": "الوصل حديثًا", "to": "/shop?sort=newest"}, {"label": "الأكثر مبيعًا", "to": "/shop?sort=best_selling"}]},
+      {"title": "الدعم", "links": [{"label": "دليل المقاسات", "to": "/size-guide"}, {"label": "الأسئلة الشائعة", "to": "/faq"}, {"label": "سياسات الشحن", "to": "/shipping"}]},
+      {"title": "الشركة", "links": [{"label": "من نحن", "to": "/about"}, {"label": "المدونة", "to": "/journal"}, {"label": "تواصل معنا", "to": "/contact"}]}
+    ]
+  },
+  "seo": {"titleTemplate": "%s | ALLURE", "description": "Allure — ثيم أزياء عصري وفاخر بخطوط Serif فخمة وواجهة نظيفة، مصمم لزيادة المبيعات.", "defaultOgImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600"},
+  "preview": {"imageUrl": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600", "colors": ["24 9% 8%", "22 42% 38%", "0 0% 100%"]},
+  "pages": {
+    "home": {"layoutHint": "stack", "pageGoal": "conversion", "sections": [
+      {"type": "hero-banner", "variant": "full-bleed", "settings": {"title": "Step Into Style", "subtitle": "اكتشفي القطعة المثالية لإطلالتك — أنيقة، مصقولة، وجاهزة دائمًا.", "ctaText": "تسوّقي الآن", "ctaLink": "/shop", "secondaryCtaText": "شاهدي الإطلالات", "secondaryCtaLink": "/lookbook", "backgroundImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600"}},
+      {"type": "features-bar", "variant": "minimal", "settings": {"title": "لماذا Allure", "items": "شحن سريع|تجهيز طلباتك في أقرب وقت.\nدفع آمن|كل المعاملات مشفّرة من البداية للنهاية.\nإرجاع مرن|استبدال أو استرجاع بسهولة خلال ١٤ يومًا.\nدعم حي|فريق يجاوبك على طول اليوم."}},
+      {"type": "featured-collections", "variant": "editorial", "settings": {"title": "تصفّحي حسب التشكيلة", "subtitle": "مجموعات منسّقة تجمع اللوك الكامل في مكان واحد.", "limit": 6}},
+      {"type": "product-grid", "variant": "carousel", "settings": {"title": "الأكثر مبيعًا — حتى ٧٠٪ خصم", "subtitle": "قطع تتحرك بسرعة ويلاقيها عملاؤك أول ما تفتح الصفحة.", "limit": 10, "enableQuickBuy": true, "enableSwatchFilters": true, "enableImageRollover": true}},
+      {"type": "combined-listing", "variant": "default", "settings": {"title": "إطلالة مدمجة", "subtitle": "القطعة الرئيسية مع الأجزاء المكملة في عرض واحد.", "mainImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600", "mainTitle": "معطف كاميل", "mainPrice": "٥٩٩ ج.م", "mainLink": "/shop", "parts": "حزام جلد|١٢٩ ج.م|https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=crop&q=80&w=600|/shop\nحقيبة لامعة|٣٤٩ ج.م|https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=600|/shop"}},
+      {"type": "lookbook-showcase", "variant": "masonry", "settings": {"title": "NEW LOOK", "subtitle": "صفّحي اللوكات المكتملة وأضيفي القطعة بضغطة.", "limit": 8}},
+      {"type": "promo-strip", "variant": "split", "settings": {"badge": "عرض الموسم", "title": "خصم ترحيبي ١٥٪", "subtitle": "على أول طلبية لك من تشكيلة الخريف.", "ctaText": "اطلبي الآن", "ctaLink": "/shop?promo=welcome15"}},
+      {"type": "story-parallax", "variant": "editorial", "settings": {"title": "صُنع للعلامات المتخصصة في الأزياء", "subtitle": "هوية بصرية فاخرة تبرز الخامات والتفاصيل.", "backgroundImage": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1600"}},
+      {"type": "offer-bento", "variant": "grid", "settings": {"title": "عروض مختارة", "subtitle": "بلوكات عروض مرنة تنقلك لكل قسم بسرعة.", "limit": 4}},
+      {"type": "journal-strip", "variant": "carousel", "settings": {"title": "من المدونة", "subtitle": "نصائح إطلالة وقصص علامة تجارية.", "limit": 3}},
+      {"type": "shop-promo-rail", "variant": "side", "settings": {"badge": "إشارة الموسم", "title": "أبقِ الزخم ظاهرًا", "subtitle": "شريط جانبي يلخص العروض والثقة أثناء التصفح.", "spotlightTitle": "إصدارات محدودة هذا الأسبوع", "spotlightText": "ركّزي على القطع الأحدث.", "ctaText": "شاهدي الجديد", "ctaLink": "/shop?sort=newest", "trustItems": "تجهيز أسرع|طلباتك تتحضر بسرعة.\nثقة أكثر|آراء حقيقية من عميلاتنا.\nعرض أقوى|كتالوج منظم بإيقاع بصري أوضح.", "highlights": "وصل جديد|متاح الآن\nشراء أسرع|نية أعلى\nعرض المتجر|أكثر رقيًا"}},
+      {"type": "trusted-badges", "variant": "row", "settings": {"title": "ثقة عميلاتنا", "items": "شحن مجاني|للطلبات فوق ٥٠٠ ج.م\nدفع آمن|مشفّر بالكامل\nضمان الجودة|خامات مستوردة\nإرجاع خلال ١٤ يومًا"}},
+      {"type": "newsletter", "variant": "split-panel", "settings": {"title": "خليكِ داخل الموجة", "subtitle": "اشتركي لتصلك الإصدارات الجديدة والعروض الخاطفة قبل ما تختفي.", "buttonText": "اشتركي الآن", "placeholder": "اكتبي بريدك الإلكتروني"}}
+    ]},
+    "shop": {"layoutHint": "commerce-3col", "pageGoal": "discovery", "sections": [
+      {"type": "hero-banner", "variant": "centered", "settings": {"title": "اكتشفي كل القطع", "subtitle": "تصفّح، رتّبي، وانتقلي بين التشكيلات بفلاتر أوضح.", "ctaText": "ابدئي التصفح", "ctaLink": "/shop", "secondaryCtaText": "وصل حديثًا", "secondaryCtaLink": "/shop?sort=newest"}},
+      {"type": "shop-command-bar", "settings": {"title": "أدوات التصفح", "subtitle": "ابحثي، رتّبي، وتنقّلي بين التصنيفات بأسرع ما يمكن.", "searchPlaceholder": "ابحثي عن منتج أو تصنيف", "resultsLabel": "قطعة متاحة", "clearButtonText": "مسح الفلاتر", "stickyLabel": "أدوات التصفح", "chipLimit": 6, "enableMegaMenu": true}},
+      "filters-sidebar",
+      {"type": "product-grid", "variant": "editorial-card", "settings": {"title": "كل المنتجات", "limit": 24, "enableQuickBuy": true, "enableInfiniteScroll": true, "enableSwatchFilters": true, "enableImageRollover": true}},
+      {"type": "shop-promo-rail", "settings": {"badge": "عرض الموسم", "title": "أبقِ الزخم ظاهرًا", "subtitle": "شريط جانبي يلخص العروض والثقة أثناء التصفح.", "spotlightTitle": "إصدارات محدودة", "spotlightText": "ركّزي على القطع الأحدث.", "ctaText": "شاهدي الجديد", "ctaLink": "/shop?sort=newest", "trustItems": "تجهيز أسرع|طلباتك تتحضر بسرعة.\nحسم أوضح|بطاقات منتج ورسائل شراء أوضح.\nعرض أقوى|كتالوج منظم.", "highlights": "وصل جديد|متاح الآن\nشراء أسرع|نية أعلى"}},
+      {"type": "promo-strip", "variant": "banner", "settings": {"badge": "عرض", "title": "خصم ١٠٪ على التشكيلة الكاملة", "subtitle": "لفترة محدودة.", "ctaText": "تسوّقي", "ctaLink": "/shop"}}
+    ]},
+    "pdp": {"layoutHint": "product-detail", "pageGoal": "conversion", "sections": [
+      {"type": "product-gallery", "variant": "grid", "settings": {"enableZoom": true, "enableVideo": true, "enableImageRollover": true, "enableThumbnails": true}},
+      {"type": "product-info", "variant": "accordion", "settings": {"enableSwatches": true, "enableOptions": true, "enableTabs": true, "enableCartNotes": true, "enableGiftWrap": true}},
+      {"type": "image-hotspot", "variant": "default", "settings": {"title": "استكشفي التفاصيل", "subtitle": "مرّي فوق النقاط لاكتشاف خامات وتفاصيل القطعة.", "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600", "hotspots": "30|40|القماش|قطن مستورد عالي الجودة.|/shop\n62|55|التطريز|تطريز يدوي بخيوط لامعة.|/shop\n80|70|الإغلاق|سحاب مخفي مريح.|/shop"}},
+      {"type": "before-after", "variant": "default", "settings": {"title": "قبل وبعد", "subtitle": "اسحبي المقبض لمقارنة التفاصيل واللون.", "beforeImage": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=1600", "afterImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600", "beforeLabel": "اللون الأصلي", "afterLabel": "اللون الجديد"}},
+      {"type": "size-guide", "variant": "table", "settings": {"title": "دليل المقاسات", "subtitle": "وفّرنا لك مقاسات دقيقة لكل قطعة.", "units": "cm"}},
+      {"type": "conversion-stack", "variant": "editorial", "settings": {"countdownStyle": "split", "lowStockStyle": "meter", "estimatedDeliveryStyle": "timeline", "fakeVisitorStyle": "pulse", "soldCounterStyle": "spotlight", "purchaseFomoStyle": "timeline", "backInStockStyle": "accent", "preOrderStyle": "badge"}},
+      {"type": "bought-together", "variant": "editorial", "settings": {"title": "كمّلي الإطلالة", "subtitle": "قطع يضيفها العميلات معًا للوك أكثر اكتمالًا.", "limit": 3}},
+      {"type": "quantity-offers", "variant": "tiers", "settings": {"title": "خصم الكمية", "subtitle": "كل ما زادت الكمية، زاد الخصم.", "tiers": "2|خصم ٥٪\n3|خصم ١٠٪\n5|خصم ١٥٪"}},
+      {"type": "bulk-savings", "variant": "inline", "settings": {"title": "وفّري أكثر", "subtitle": "عروض شراء بالجملة للكميات الكبيرة."}},
+      {"type": "related-products", "variant": "overlay-card", "settings": {"title": "نسّقيها مع", "subtitle": "اختيارات تكمّل الإطلالة.", "limit": 4}},
+      {"type": "reviews", "variant": "editorial", "settings": {"mediaTitle": "إطلالات من العميلات", "mediaDescription": "صور حقيقية من طلبات حديثة.", "listTitle": "ماذا تقول العميلات؟", "galleryStyle": "carousel", "cardStyle": "editorial", "reviewLimit": 6}},
+      {"type": "delivery-proof", "variant": "timeline", "settings": {"title": "مواعيد التوصيل", "subtitle": "نجهّز ونشحن بأقرب وقت."}},
+      {"type": "info-content", "variant": "faq", "settings": {"title": "الأسئلة الشائعة", "subtitle": "أبرز ما يهمك قبل الطلب.", "items": "كيف أعرف مقاسي؟|راجعي دليل المقاسات أعلى الصفحة.\nهل الشحن مجاني؟|مجاني للطلبات فوق ٥٠٠ ج.م.\nما سياسة الإرجاع؟|إرجاع أو استبدال خلال ١٤ يومًا."}}
+    ]},
+    "cart": {"layoutHint": "sidebar-right", "sections": [
+      {"type": "cart-items", "variant": "editorial", "settings": {"title": "راجعي الإطلالة", "subtitle": "عرض أوضح للسلة يحافظ على إحساس الثيم.", "slideOut": true, "sticky": true}},
+      {"type": "order-summary", "variant": "highlighted", "settings": {"subtitle": "ملخص يدعم كوبون الخصم ورسائل الثقة.", "secureCheckoutText": "دفع محمي", "returnsText": "استبدال مرن", "enableCartNotes": true, "enableGiftWrap": true}}
+    ]},
+    "checkout": {"sections": [
+      {"type": "checkout-form", "variant": "split", "settings": {"contactDescription": "قسّمنا الدفع لبطاقات أوضح.", "shippingDescription": "حقول الشحن مرتبة لتسريع الإدخال.", "notesDescription": "أضيفي ملاحظات التغليف أو التوصيل.", "enableInStorePickup": true}},
+      {"type": "payment", "variant": "cards", "settings": {"subtitle": "بطاقات دفع أوضح مع ملخص حي.", "summaryDescription": "الإجمالي والشحن في بلوك واحد.", "securityText": "الدفع مشفّر ومحمي"}}
+    ]},
+    "thank-you": {"sections": [{"type": "order-confirmation", "settings": {"title": "تم تأكيد الطلب", "description": "شكرًا لتسوقك من Allure. نجهّز طلبك الآن.", "continueShoppingText": "مواصلة التسوق", "orderNumberPrefix": "رقم الطلب:", "supportText": "تحتاجين مساعدة؟ تواصل معنا عبر"}}]},
+    "lookbook": {"pageGoal": "discovery", "sections": [
+      {"type": "hero-banner", "variant": "centered", "settings": {"title": "دليل الإطلالات", "subtitle": "لوكات مكتملة مستوحاة من تشكيلاتنا.", "ctaText": "تسوّقي اللوك", "ctaLink": "/shop"}},
+      {"type": "lookbook-showcase", "variant": "masonry", "settings": {"title": "كل الإطلالات", "subtitle": "صفّحي وأضيفي القطعة بضغطة.", "limit": 12}}
+    ]},
+    "size-guide": {"sections": [
+      {"type": "hero-banner", "variant": "centered", "settings": {"title": "دليل المقاسات", "subtitle": "وفّرنا مقاسات دقيقة لكل قطعة.", "ctaText": "ابدئي التسوّق", "ctaLink": "/shop"}},
+      {"type": "size-guide", "variant": "table", "settings": {"title": "المقاسات", "units": "cm", "showConverter": true}},
+      {"type": "info-content", "variant": "usage", "settings": {"title": "نصائح القياس", "items": "الصدر|قيسي حول أوسع جزء من الصدر.\nالخصر|قيسي عند أضيق نقطة.\nالورك|قيسي حول أوسع جزء."}}
+    ]},
+    "journal": {"pageGoal": "discovery", "sections": [
+      {"type": "hero-banner", "variant": "centered", "settings": {"title": "المدونة", "subtitle": "نصائح إطلالة وقصص العلامة.", "ctaText": "اقرئي المزيد", "ctaLink": "/journal"}},
+      {"type": "journal-strip", "variant": "grid", "settings": {"title": "أحدث المقالات", "subtitle": "إطلالات وخلفيات وراء كل تشكيلة.", "limit": 9}}
+    ]},
+    "registration": {"sections": ["member-registration"]}
+  }
+}

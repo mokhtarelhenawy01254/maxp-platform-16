@@ -1,0 +1,462 @@
+const { getSharedPrismaClient } = require('./sharedDatabase');
+const { parseSettingValue } = require('../utils/dentalLabHelpers');
+
+const DENTAL_NOTIFICATION_EVENTS = {
+  CASE_RECEIVED: 'DENTAL_CASE_RECEIVED',
+  CASE_READY: 'DENTAL_CASE_READY',
+  CASE_DELIVERED: 'DENTAL_CASE_DELIVERED',
+  CASE_OVERDUE: 'DENTAL_CASE_OVERDUE',
+};
+
+const DEFAULT_TEMPLATES = {
+  [DENTAL_NOTIFICATION_EVENTS.CASE_RECEIVED]: `أهلاً {doctorName} 👋
+
+تم استلام حالتكم الجديدة بنجاح ✅
+
+📋 رقم الحالة: {caseNumber}
+🦷 المريض: {patientName}
+🔬 نوع الشغل: {workType}
+🎨 اللون: {shade}
+🦷 الأسنان: {teeth}
+🧱 الخامة: {material}
+📅 تاريخ الاستحقاق: {dueDate}
+
+💰 الإجمالي: {totalAmount} ج.م
+💵 المدفوع: {paidAmount} ج.م
+🧾 المتبقي: {remainingAmount} ج.م
+
+سنبدأ العمل على الحالة فوراً وسنخطركم فور تجهيزها 🌟`,
+
+  [DENTAL_NOTIFICATION_EVENTS.CASE_READY]: `أهلاً {doctorName} 👋
+
+حالتك جاهزة للتسليم ✅
+
+📋 رقم الحالة: {caseNumber}
+🦷 المريض: {patientName}
+🔬 نوع الشغل: {workType}
+🎨 اللون: {shade}
+🦷 الأسنان: {teeth}
+🧱 الخامة: {material}
+
+📞 يرجى التفضل باستلام الحالة من المعمل في أقرب وقت.
+
+💰 الإجمالي: {totalAmount} ج.م
+💵 المدفوع: {paidAmount} ج.م
+🧾 المتبقي: {remainingAmount} ج.م
+
+نشكرك لثقتك في معملنا 🌟`,
+
+  [DENTAL_NOTIFICATION_EVENTS.CASE_DELIVERED]: `تم تسليم الحالة ✅
+
+أهلاً {doctorName}، تم تسليم الحالة رقم {caseNumber} للمريض {patientName}.
+
+🔬 نوع الشغل: {workType}
+🎨 اللون: {shade}
+🦷 الأسنان: {teeth}
+🧱 الخامة: {material}
+
+💰 الإجمالي: {totalAmount} ج.م
+💵 المدفوع: {paidAmount} ج.م
+🧾 المتبقي: {remainingAmount} ج.م
+
+نتشرف بخدمتكم دائماً 🌟`,
+
+  [DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE]: `تأخير الحالة ⏰
+
+أهلاً {doctorName}، نود إعلامكم بأن الحالة رقم {caseNumber} للمريض {patientName} قد تأخرت عن موعد الاستحقاق المحدد يوم {dueDate}.
+
+🔬 نوع الشغل: {workType}
+🦷 الأسنان: {teeth}
+
+جاري العمل عليها بأقصى سرعة لإنجازها في أقرب وقت. نعتذر عن أي تأخير ونشكرك على تفهمك 🌟`,
+};
+
+const SCHEDULE_KEY = 'notificationSchedule';
+
+const DEFAULT_SCHEDULE = [
+  { eventType: DENTAL_NOTIFICATION_EVENTS.CASE_RECEIVED, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'استلام الحالة', trigger: 'case_received' },
+  { eventType: DENTAL_NOTIFICATION_EVENTS.CASE_READY, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'الحالة جاهزة', trigger: 'case_ready' },
+  { eventType: DENTAL_NOTIFICATION_EVENTS.CASE_DELIVERED, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'تم التسليم', trigger: 'case_delivered' },
+  { eventType: DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'تأخير الحالة', trigger: 'case_overdue' },
+];
+
+const TEMPLATE_NAMES = {
+  [DENTAL_NOTIFICATION_EVENTS.CASE_RECEIVED]: 'استلام الحالة',
+  [DENTAL_NOTIFICATION_EVENTS.CASE_READY]: 'الحالة جاهزة',
+  [DENTAL_NOTIFICATION_EVENTS.CASE_DELIVERED]: 'تم تسليم الحالة',
+  [DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE]: 'تأخير الحالة',
+};
+
+function replaceVariables(template, vars) {
+  let text = template || '';
+  for (const [key, val] of Object.entries(vars || {})) {
+    text = text.replace(new RegExp(`\\{${key}\\}`, 'g'), String(val ?? ''));
+  }
+  return text;
+}
+
+function buildVars(caseRow) {
+  const c = caseRow || {};
+  const formatDate = (value) => {
+    if (!value) return '';
+    return value instanceof Date ? value.toISOString().split('T')[0] : String(value).split('T')[0];
+  };
+  const money = (value) => String(Math.round(Number(value) || 0));
+  return {
+    doctorName: c.doctorName || (c.doctor && c.doctor.name) || '',
+    caseNumber: c.caseNumber || '',
+    patientName: c.patientName || '',
+    workType: c.workTypeName || '',
+    shade: c.shade || '',
+    teeth: c.teeth || '',
+    material: c.material || '',
+    dueDate: formatDate(c.dueDate),
+    totalAmount: money(c.total),
+    paidAmount: money(c.paid),
+    remainingAmount: money(c.remaining),
+  };
+}
+
+function mergeSchedule(stored) {
+  return DEFAULT_SCHEDULE.map((def) => {
+    const existing = (Array.isArray(stored) ? stored : []).find((s) => s && s.eventType === def.eventType);
+    return existing ? { ...def, ...existing } : { ...def };
+  });
+}
+
+async function ensureDefaultTemplates(companyId) {
+  try {
+    if (!companyId) return;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.whatsAppNotificationTemplate.findMany({
+      where: { companyId, category: 'DENTAL_LAB' },
+      select: { eventType: true },
+    });
+    const existingEvents = new Set((existing || []).map((t) => t.eventType));
+    for (const eventType of Object.values(DENTAL_NOTIFICATION_EVENTS)) {
+      if (existingEvents.has(eventType)) continue;
+      await prisma.whatsAppNotificationTemplate.create({
+        data: {
+          companyId,
+          name: TEMPLATE_NAMES[eventType] || eventType,
+          category: 'DENTAL_LAB',
+          eventType,
+          content: DEFAULT_TEMPLATES[eventType] || '',
+          channel: 'AUTO',
+          isActive: true,
+          isDefault: false,
+        },
+      });
+    }
+  } catch (error) {
+    console.error(`[DentalNotification] ensureDefaultTemplates error:`, error.message);
+  }
+}
+
+async function getNotificationSchedule(companyId) {
+  try {
+    if (!companyId) return [];
+    await ensureDefaultTemplates(companyId);
+    const prisma = getSharedPrismaClient();
+    let row = await prisma.dentalSetting.findFirst({ where: { companyId, key: SCHEDULE_KEY } });
+    if (!row) {
+      row = await prisma.dentalSetting.upsert({
+        where: { companyId_key: { companyId, key: SCHEDULE_KEY } },
+        update: { value: DEFAULT_SCHEDULE },
+        create: { companyId, key: SCHEDULE_KEY, value: DEFAULT_SCHEDULE },
+      });
+    }
+    const stored = parseSettingValue(row);
+    return mergeSchedule(stored);
+  } catch (error) {
+    console.error(`[DentalNotification] getNotificationSchedule error:`, error.message);
+    return mergeSchedule([]);
+  }
+}
+
+async function saveNotificationSchedule(companyId, patch) {
+  try {
+    if (!companyId || !patch || !patch.eventType) return mergeSchedule([]);
+    const prisma = getSharedPrismaClient();
+    const row = await prisma.dentalSetting.findFirst({ where: { companyId, key: SCHEDULE_KEY } });
+    const stored = row ? parseSettingValue(row) : null;
+    let schedule = Array.isArray(stored) ? stored.map((s) => ({ ...s })) : DEFAULT_SCHEDULE.map((s) => ({ ...s }));
+
+    const index = schedule.findIndex((s) => s && s.eventType === patch.eventType);
+    const mergedPatch = {
+      eventType: patch.eventType,
+      enabled: patch.enabled !== undefined && patch.enabled !== null ? patch.enabled : true,
+      activeChannel: patch.activeChannel || 'AUTO',
+      delayValue: Number.isFinite(Number(patch.delayValue)) ? Number(patch.delayValue) : 0,
+      delayUnit: patch.delayUnit || 'HOURS',
+    };
+    if (index === -1) {
+      const def = DEFAULT_SCHEDULE.find((s) => s.eventType === patch.eventType) || {};
+      schedule.push({ ...def, ...mergedPatch });
+    } else {
+      schedule[index] = { ...schedule[index], ...mergedPatch };
+    }
+
+    schedule = mergeSchedule(schedule);
+    await prisma.dentalSetting.upsert({
+      where: { companyId_key: { companyId, key: SCHEDULE_KEY } },
+      update: { value: schedule },
+      create: { companyId, key: SCHEDULE_KEY, value: schedule },
+    });
+    return schedule;
+  } catch (error) {
+    console.error(`[DentalNotification] saveNotificationSchedule error:`, error.message);
+    return mergeSchedule([]);
+  }
+}
+
+async function sendDentalNotification({ companyId, eventType, caseRow, doctor }) {
+  try {
+    const schedule = await getNotificationSchedule(companyId);
+    const event = (Array.isArray(schedule) ? schedule : []).find((s) => s && s.eventType === eventType);
+    if (!event || event.enabled === false) return { success: false, reason: 'disabled' };
+
+    const phone = (doctor && doctor.phone) || (caseRow && caseRow.doctor && caseRow.doctor.phone);
+    if (!phone) return { success: false, reason: 'no_phone' };
+
+    const vars = buildVars(caseRow);
+    const prisma = getSharedPrismaClient();
+    let stored = null;
+    if (prisma && prisma.whatsappNotificationTemplate && typeof prisma.whatsappNotificationTemplate.findFirst === 'function') {
+      try {
+        stored = await prisma.whatsappNotificationTemplate.findFirst({
+          where: { companyId, eventType, category: 'DENTAL_LAB', isActive: true },
+          select: { id: true, content: true },
+        });
+      } catch (error) {
+        stored = null;
+      }
+    }
+
+    const { sendNotification } = require('./whatsapp/WhatsAppNotificationService');
+    const sendOptions = {
+      companyId,
+      recipientPhone: phone,
+      recipientName: (doctor && doctor.name) || 'الدكتور العزيز',
+      recipientType: 'CUSTOMER',
+      category: 'CUSTOMER',
+      eventType,
+      priority: 4,
+    };
+    if (stored && stored.content) {
+      // استخدم القالب المخزن الفعلي (قابل للتعديل من الإعدادات/TemplateCenter)
+      sendOptions.variables = vars;
+    } else {
+      // لا يوجد قالب مخزن — احتياطي من القوالب الافتراضية
+      sendOptions.variables = { ...vars, contentOverride: replaceVariables(DEFAULT_TEMPLATES[eventType] || '', vars) };
+    }
+    return await sendNotification(sendOptions);
+  } catch (error) {
+    console.error(`[DentalNotification] sendDentalNotification error (${eventType}):`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+async function loadCaseForNotification(caseId) {
+  const prisma = getSharedPrismaClient();
+  const dentalCase = await prisma.dentalLabCase.findUnique({
+    where: { id: caseId },
+    include: { doctor: { select: { id: true, name: true, phone: true } } },
+  });
+  if (!dentalCase) return null;
+  return { caseRow: dentalCase, doctor: dentalCase.doctor || null };
+}
+
+async function notifyCaseEvent(caseId, eventType) {
+  try {
+    const ctx = await loadCaseForNotification(caseId);
+    if (!ctx) return { success: false, reason: 'not_found' };
+    return sendDentalNotification({
+      companyId: ctx.caseRow.companyId,
+      eventType,
+      caseRow: ctx.caseRow,
+      doctor: ctx.doctor,
+    });
+  } catch (error) {
+    console.error(`[DentalNotification] notifyCaseEvent error (${eventType}):`, error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+async function notifyCaseReceived(caseId) {
+  return notifyCaseEvent(caseId, DENTAL_NOTIFICATION_EVENTS.CASE_RECEIVED);
+}
+
+async function notifyCaseReady(caseId) {
+  return notifyCaseEvent(caseId, DENTAL_NOTIFICATION_EVENTS.CASE_READY);
+}
+
+async function notifyCaseDelivered(caseId) {
+  return notifyCaseEvent(caseId, DENTAL_NOTIFICATION_EVENTS.CASE_DELIVERED);
+}
+
+async function notifyCaseOverdue(caseId) {
+  return notifyCaseEvent(caseId, DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE);
+}
+
+async function scanOverdueCases(companyId = null) {
+  const prisma = getSharedPrismaClient();
+  const where = {
+    dueDate: { lt: new Date() },
+    status: { notIn: ['DELIVERED', 'CLOSED'] },
+  };
+  if (companyId) where.companyId = companyId;
+
+  let cases = [];
+  try {
+    cases = await prisma.dentalLabCase.findMany({
+      where,
+      include: { doctor: { select: { id: true, name: true, phone: true } } },
+    });
+  } catch (error) {
+    console.error(`[DentalNotification] scanOverdueCases query error:`, error.message);
+    return { scanned: 0, sent: 0, failed: 0, skipped: 0, error: error.message };
+  }
+
+  let sent = 0;
+  let failed = 0;
+  let skipped = 0;
+  for (const dentalCase of cases || []) {
+    try {
+      const already = await prisma.dentalCaseStatusHistory.findFirst({
+        where: {
+          companyId: dentalCase.companyId,
+          caseId: dentalCase.id,
+          dimension: 'NOTIFICATION',
+          status: 'OVERDUE_NOTIFIED',
+        },
+        select: { id: true },
+      });
+      if (already) {
+        skipped++;
+        continue;
+      }
+      const result = await notifyCaseOverdue(dentalCase.id);
+      if (result && result.success) {
+        await prisma.dentalCaseStatusHistory.create({
+          data: {
+            companyId: dentalCase.companyId,
+            caseId: dentalCase.id,
+            dimension: 'NOTIFICATION',
+            status: 'OVERDUE_NOTIFIED',
+            reason: 'تجاوز تاريخ الاستحقاق',
+          },
+        });
+        sent++;
+      } else {
+        failed++;
+      }
+    } catch (error) {
+      failed++;
+      console.error(`[DentalNotification] scanOverdueCases case ${dentalCase.id}:`, error.message);
+    }
+  }
+
+  return { scanned: (cases || []).length, sent, failed, skipped };
+}
+
+/**
+ * تذكير تحصيل تلقائي (Dunning): يرسل للطبيب رسالة على الفواتير المتبقي عليها مستحقات
+ * تجاوزت عدد الأيام المحدد. يعمل مرة واحدة لكل فاتورة (يتتبع المُرسَل في settings).
+ */
+async function runDunningCheck(companyId) {
+  const prisma = getSharedPrismaClient();
+  try {
+    const settingRows = await prisma.dentalSetting.findMany({ where: { companyId } });
+    const merged = {};
+    for (const row of settingRows || []) {
+      if (row && row.key) merged[row.key] = parseSettingValue(row);
+    }
+    const cfg = (merged.notifications && typeof merged.notifications === 'object' ? merged.notifications : {});
+    const enabled = cfg.dunningEnabled === true;
+    if (!enabled) return { enabled: false, scanned: 0, sent: 0, skipped: 0 };
+    const agingDays = Number(cfg.dunningAgingDays) || 15;
+
+    const cutoff = new Date(Date.now() - agingDays * 86400000);
+    const invoices = await prisma.dentalInvoice.findMany({
+      where: {
+        companyId,
+        status: { in: ['OPEN', 'PARTIAL'] },
+        doctorId: { not: null },
+      },
+      include: {
+        doctor: { select: { id: true, name: true, phone: true } },
+        case: { select: { id: true, caseNumber: true, patientName: true, workTypeName: true } },
+      },
+    });
+
+    const sentState = (merged.dunningSent && typeof merged.dunningSent === 'object' ? merged.dunningSent : {});
+    const sentIds = Array.isArray(sentState.ids) ? sentState.ids : [];
+    const sentSet = new Set(sentIds);
+
+    let sent = 0;
+    let skipped = 0;
+    const newlySent = [];
+    for (const inv of invoices || []) {
+      const remaining = Number(inv.remaining) || 0;
+      const overdue = inv.dueDate && new Date(inv.dueDate) < cutoff;
+      if (remaining <= 0 || !overdue) { skipped++; continue; }
+      if (sentSet.has(inv.id)) { skipped++; continue; }
+      const phone = inv.doctor && inv.doctor.phone;
+      if (!phone) { skipped++; continue; }
+
+      const vars = {
+        doctorName: (inv.doctor && inv.doctor.name) || 'الدكتور العزيز',
+        caseNumber: inv.caseNumber || (inv.case && inv.case.caseNumber) || '—',
+        patientName: (inv.case && inv.case.patientName) || '—',
+        workType: (inv.case && inv.case.workTypeName) || '—',
+        totalAmount: inv.total,
+        paidAmount: inv.paid,
+        remainingAmount: remaining,
+      };
+      const { sendNotification } = require('./whatsapp/WhatsAppNotificationService');
+      const result = await sendNotification({
+        companyId,
+        recipientPhone: phone,
+        recipientName: vars.doctorName,
+        recipientType: 'CUSTOMER',
+        category: 'CUSTOMER',
+        eventType: DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE,
+        priority: 4,
+        variables: vars,
+      });
+      if (result && result.success) {
+        sent++;
+        newlySent.push(inv.id);
+      }
+    }
+    if (newlySent.length > 0) {
+      const next = { ids: [...sentSet, ...newlySent] };
+      await prisma.dentalSetting.upsert({
+        where: { companyId_key: { companyId, key: 'dunningSent' } },
+        update: { value: next },
+        create: { companyId, key: 'dunningSent', value: next },
+      });
+    }
+    return { enabled: true, scanned: (invoices || []).length, sent, skipped };
+  } catch (error) {
+    console.error('[DentalNotification] runDunningCheck error:', error.message);
+    return { enabled: true, error: error.message };
+  }
+}
+
+module.exports = {
+  DENTAL_NOTIFICATION_EVENTS,
+  DEFAULT_TEMPLATES,
+  buildVars,
+  getNotificationSchedule,
+  saveNotificationSchedule,
+  ensureDefaultTemplates,
+  sendDentalNotification,
+  notifyCaseReceived,
+  notifyCaseReady,
+  notifyCaseDelivered,
+  notifyCaseOverdue,
+  scanOverdueCases,
+  runDunningCheck,
+};

@@ -23,12 +23,20 @@ import {
   ChevronRight,
   Shield,
   Search,
+  MoreHorizontal,
+  Copy,
+  Eye,
+  Sparkles,
+  CheckSquare,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 
+import { Alert, AlertAction, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +45,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -56,6 +71,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 import { apiClient, type ApiRequestConfig } from "../../services/apiClient";
 import {
@@ -63,6 +84,7 @@ import {
   WhatsAppSurfaceCard,
 } from "./components/WhatsAppPageShell";
 import { templateLibrary } from "../../data/metaTemplateLibrary";
+import { TEMPLATE_SECTIONS, resolveTemplateSection } from "../../data/templateSectionRegistry";
 
 interface MetaComponent {
   type: string;
@@ -268,6 +290,18 @@ const WhatsAppMetaTemplates: React.FC<{
 
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
+  const [sectionFilter, setSectionFilter] = useState<string>("ALL");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+
+  // Variable substitution playground: lets the user type sample values for
+  // {{1}}, {{2}}, ... and see the rendered WhatsApp message live. State is
+  // keyed by `<templateName>::<language>` so each variant has its own
+  // values when expanded.
+  const [varPreviewOpen, setVarPreviewOpen] = useState<Record<string, boolean>>({});
+  const [varPreviewValues, setVarPreviewValues] = useState<Record<string, string>>({});
+
   const [complianceResults, setComplianceResults] = useState<ComplianceResult[]>([]);
   const [showCompliance, setShowCompliance] = useState(false);
 
@@ -460,14 +494,109 @@ const WhatsAppMetaTemplates: React.FC<{
     [templates],
   );
 
+  // Per-group best status — reused by the search/status filter so we can
+  // filter at the group level (the user thinks in templates, not in language
+  // variants).
+  const groupBestStatus = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const t of filteredTemplates) {
+      const cur = map[t.name];
+      if (!cur) {
+        map[t.name] = t.status;
+        continue;
+      }
+      // PENDING > REJECTED > DISABLED > PAUSED > APPROVED priority
+      if (cur === "APPROVED" && t.status !== "APPROVED") map[t.name] = t.status;
+    }
+    return map;
+  }, [filteredTemplates]);
+
   const groupedTemplates = useMemo(() => {
     const groups: Record<string, MetaTemplate[]> = {};
+    const q = searchQuery.trim().toLowerCase();
     for (const t of filteredTemplates) {
+      const section = resolveTemplateSection(t.name, t.category);
+      if (sectionFilter !== "ALL" && section.id !== sectionFilter) continue;
+      if (statusFilter !== "ALL" && groupBestStatus[t.name] !== statusFilter) continue;
+      if (q && !t.name.toLowerCase().includes(q) && !t.id?.toLowerCase().includes(q)) continue;
       if (!groups[t.name]) groups[t.name] = [];
       groups[t.name]!.push(t);
     }
     return groups;
-  }, [filteredTemplates]);
+  }, [filteredTemplates, sectionFilter, statusFilter, searchQuery, groupBestStatus]);
+
+  // Counts per status at the group level — used to label filter chips.
+  const statusFilterCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: 0, APPROVED: 0, PENDING: 0, REJECTED: 0, DISABLED: 0, PAUSED: 0 };
+    const seen = new Set<string>();
+    for (const t of filteredTemplates) {
+      counts.ALL += 1;
+      if (!seen.has(t.name)) {
+        seen.add(t.name);
+        const best = groupBestStatus[t.name] ?? t.status;
+        counts[best] = (counts[best] || 0) + 1;
+      }
+    }
+    return counts;
+  }, [filteredTemplates, groupBestStatus]);
+
+  const allFilteredGroupNames = useMemo(() => Object.keys(groupedTemplates), [groupedTemplates]);
+  const allSelected = allFilteredGroupNames.length > 0 && allFilteredGroupNames.every((n) => selectedRows.has(n));
+  const someSelected = selectedRows.size > 0 && !allSelected;
+
+  const toggleRow = useCallback((name: string) => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  }, []);
+
+  const toggleAll = useCallback(() => {
+    setSelectedRows((prev) => {
+      const next = new Set(prev);
+      if (allSelected) {
+        for (const n of allFilteredGroupNames) next.delete(n);
+      } else {
+        for (const n of allFilteredGroupNames) next.add(n);
+      }
+      return next;
+    });
+  }, [allSelected, allFilteredGroupNames]);
+
+  // Substitute {{N}} placeholders in a string with the per-row preview values.
+  // When a variable has no value, leave the placeholder visible so the user
+  // can still see what needs filling in.
+  const substituteVars = useCallback(
+    (text: string, key: string) => {
+      if (!text) return text;
+      return text.replace(/\{\{(\d+)\}\}/g, (match, n) => {
+        const v = varPreviewValues[`${key}::${n}`];
+        return v && v.length > 0 ? v : match;
+      });
+    },
+    [varPreviewValues],
+  );
+
+  const sectionFilterOptions = useMemo(() => TEMPLATE_SECTIONS, []);
+
+  // Aggregated counts for the status health banner. We collapse variants of
+  // the same template (different languages) into the template-group level so
+  // a single failing variant does not double-count the overall health.
+  const statusCounts = useMemo(() => {
+    const counts = { approved: 0, pending: 0, rejected: 0, disabled: 0, paused: 0, total: 0 };
+    for (const group of Object.values(groupedTemplates)) {
+      counts.total += 1;
+      const statuses = new Set(group.map((t) => t.status));
+      if (statuses.has("REJECTED")) counts.rejected += 1;
+      else if (statuses.has("PENDING")) counts.pending += 1;
+      else if (statuses.has("DISABLED")) counts.disabled += 1;
+      else if (statuses.has("PAUSED")) counts.paused += 1;
+      else if (statuses.has("APPROVED")) counts.approved += 1;
+    }
+    return counts;
+  }, [groupedTemplates]);
 
   const toggleGroup = (name: string) => {
     setExpandedGroups(p => ({ ...p, [name]: !p[name] }));
@@ -551,91 +680,630 @@ const WhatsAppMetaTemplates: React.FC<{
     : "قوالب Meta API";
 
   return (
-    <WhatsAppPageShell
-      title={pageTitle}
-      description="إدارة قوالب واتساب بزنس المسجلة في Meta Cloud API"
-      icon={Globe}
-      backHref="/whatsapp"
-      backLabel={t("common.back") as string}
-      eyebrow={superAdminMode ? `Company: ${companyName}` : "WhatsApp Workspace"}
-      actions={
-        <div className="flex gap-2">
-          <Select value={selectedSessionId} onValueChange={(v) => setSelectedSessionId(v ?? '')}>
-            <SelectTrigger className="h-10 w-56 rounded-full bg-[color:var(--color-muted)]">
-              <SelectValue placeholder="اختر جلسة">
-                {(value: string | null) => {
-                  if (!value) return null;
-                  const s = sessions.find((x) => x.id === value);
-                  if (!s) return value;
+    <TooltipProvider delayDuration={300}>
+      <WhatsAppPageShell
+        title={pageTitle}
+        description="إدارة قوالب واتساب بزنس المسجلة في Meta Cloud API"
+        icon={Globe}
+        backHref="/whatsapp"
+        backLabel={t("common.back") as string}
+        eyebrow={superAdminMode ? `Company: ${companyName}` : "WhatsApp Workspace"}
+        actions={
+          <div className="flex flex-wrap items-center gap-2">
+            <Select value={selectedSessionId} onValueChange={(v) => setSelectedSessionId(v ?? '')}>
+              <SelectTrigger className="h-10 w-full min-w-0 max-w-[200px] rounded-full bg-[color:var(--color-muted)] sm:w-56">
+                <SelectValue placeholder="اختر جلسة">
+                  {(value: string | null) => {
+                    if (!value) return null;
+                    const s = sessions.find((x) => x.id === value);
+                    if (!s) return value;
+                    const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
+                    return s.name && !isCuid ? s.name : s.phoneNumber || s.id;
+                  }}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {sessions.map((s) => {
                   const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
-                  return s.name && !isCuid ? s.name : s.phoneNumber || s.id;
-                }}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {sessions.map((s) => {
-                const isCuid = s.name && s.name.length === 25 && /^[a-z]/.test(s.name);
-                const displayName = (s.name && !isCuid) ? s.name : s.phoneNumber || s.id;
-                return (
-                  <SelectItem key={s.id} value={s.id}>{displayName}</SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={fetchTemplates} disabled={loading} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-          <Button variant="outline" onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
-            <History className="size-4" /> السجل
-          </Button>
-          <Button variant="outline" onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95">
-            <Library className="size-4" /> قوالب جاهزة
-          </Button>
-          <Button onClick={() => { setCreateStep(1); setCreateOpen(true); }} className="rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm hover:shadow-md">
-            <Plus className="size-4" /> قالب جديد
-          </Button>
-        </div>
-      }
-    >
+                  const displayName = (s.name && !isCuid) ? s.name : s.phoneNumber || s.id;
+                  return (
+                    <SelectItem key={s.id} value={s.id}>{displayName}</SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={fetchTemplates}
+                  disabled={loading}
+                  aria-label="تحديث القوالب"
+                  className="size-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">تحديث القوالب</TooltipContent>
+            </Tooltip>
+            {/* On mobile, hide the text labels of secondary actions to leave
+                room for the primary "Create" CTA and the session picker. */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => { setTemplateHistory(loadHistory()); setHistoryOpen(true); }}
+                  aria-label="فتح سجل العمليات"
+                  className="size-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  <History className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">سجل آخر عمليات على القوالب</TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }}
+                  aria-label="فتح مكتبة القوالب الجاهزة"
+                  className="size-10 rounded-full transition-all duration-200 hover:scale-[1.02] active:scale-95"
+                >
+                  <Library className="size-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">قوالب معتمدة جاهزة للنسخ</TooltipContent>
+            </Tooltip>
+            <Button
+              onClick={() => { setCreateStep(1); setCreateOpen(true); }}
+              aria-label="إنشاء قالب جديد"
+              className="h-11 rounded-full bg-gradient-to-l from-[color:var(--color-primary)] to-[color:var(--color-primary)]/85 px-5 text-sm font-semibold text-white shadow-md shadow-[color:var(--color-primary)]/25 transition-all duration-200 hover:scale-[1.02] hover:shadow-lg active:scale-95"
+            >
+              <Plus className="size-4" /> <span className="hidden sm:inline">قالب جديد</span>
+            </Button>
+          </div>
+        }
+      >
       <style>{`@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}`}</style>
-      <WhatsAppSurfaceCard title="قوالب Meta API" description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم">
+
+      {/* Health banner — surfaces template-approval state so the user does
+          not have to read every badge. Hidden when there is nothing to act on. */}
+      {!loading && statusCounts.total > 0 && (statusCounts.rejected > 0 || statusCounts.pending > 0) ? (
+        <Alert
+          className={
+            statusCounts.rejected > 0
+              ? "border-red-300/70 bg-red-500/[0.06] text-red-800 dark:border-red-500/30 dark:bg-red-500/[0.06] dark:text-red-200"
+              : "border-amber-300/70 bg-amber-500/[0.06] text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/[0.06] dark:text-amber-200"
+          }
+        >
+          {statusCounts.rejected > 0 ? (
+            <XCircle className="size-4" aria-hidden="true" />
+          ) : (
+            <Clock className="size-4" aria-hidden="true" />
+          )}
+          <AlertTitle className="text-sm font-semibold">
+            {statusCounts.rejected > 0
+              ? `${statusCounts.rejected} قالب${statusCounts.rejected === 1 ? "" : "ات"} مرفوض${statusCounts.rejected === 1 ? "" : "ة"} من Meta — يحتاج تعديل`
+              : `${statusCounts.pending} قالب${statusCounts.pending === 1 ? "" : "ات"} في انتظار موافقة Meta`}
+          </AlertTitle>
+          <AlertDescription className="text-xs leading-relaxed">
+            {statusCounts.rejected > 0
+              ? "افتح القالب لقراءة سبب الرفض، عدّل المحتوى، ثم أعد إرساله للمراجعة."
+              : "عادةً تتم الموافقة خلال بضع دقائق إلى 24 ساعة."}
+            {statusCounts.approved > 0 ? (
+              <>
+                {" · "}
+                <span className="font-medium text-emerald-700 dark:text-emerald-300">
+                  {statusCounts.approved} معتمدة
+                </span>
+              </>
+            ) : null}
+          </AlertDescription>
+          <AlertAction>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchTemplates}
+              disabled={loading}
+              className="h-8 rounded-full"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+              تحقق الآن
+            </Button>
+          </AlertAction>
+        </Alert>
+      ) : null}
+
+      <WhatsAppSurfaceCard
+        title={statusCounts.total > 0 ? `${statusCounts.total} قالب` : "قوالب Meta API"}
+        description="القوالب المسجلة لدى واتساب بزنس — مجمعة حسب الاسم"
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-[color:var(--color-muted-foreground)]" />
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث بالاسم أو ID..."
+                aria-label="البحث في القوالب"
+                className="h-9 w-56 rounded-full bg-[color:var(--color-muted)] pe-9 ps-3 text-xs"
+              />
+            </div>
+            <span id="section-filter-label" className="hidden text-xs text-[color:var(--color-muted-foreground)] sm:inline">القسم:</span>
+            <Select value={sectionFilter} onValueChange={(v) => setSectionFilter(v ?? "ALL")}>
+              <SelectTrigger
+                aria-labelledby="section-filter-label"
+                className="h-9 w-44 rounded-full bg-[color:var(--color-muted)] text-xs"
+              >
+                <SelectValue placeholder="كل الأقسام" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">كل الأقسام</SelectItem>
+                {sectionFilterOptions.map((sec) => (
+                  <SelectItem key={sec.id} value={sec.id}>
+                    {sec.icon} {sec.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        }
+      >
+        {/* Status filter chips with counts — single-click to scope the list.
+            On mobile the row scrolls horizontally so all chips stay reachable
+            without the row forcing the table into multiple lines. */}
+        <div
+          role="tablist"
+          aria-label="تصفية حسب الحالة"
+          className="mb-3 -mx-1 flex items-center gap-1.5 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:flex-wrap sm:overflow-visible sm:pb-0"
+        >
+          {[
+            { id: "ALL", label: "الكل", tone: "default" },
+            { id: "PENDING", label: "في الانتظار", tone: "amber" },
+            { id: "APPROVED", label: "معتمدة", tone: "emerald" },
+            { id: "REJECTED", label: "مرفوضة", tone: "red" },
+            { id: "DISABLED", label: "معطلة", tone: "slate" },
+            { id: "PAUSED", label: "متوقفة", tone: "blue" },
+          ].map((chip) => {
+            const active = statusFilter === chip.id;
+            const count = statusFilterCounts[chip.id] ?? 0;
+            const toneActive: Record<string, string> = {
+              default: "bg-[color:var(--color-primary)] text-white",
+              amber: "bg-amber-500 text-white",
+              emerald: "bg-emerald-500 text-white",
+              red: "bg-red-500 text-white",
+              slate: "bg-slate-500 text-white",
+              blue: "bg-blue-500 text-white",
+            };
+            return (
+              <button
+                key={chip.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setStatusFilter(chip.id)}
+                disabled={count === 0 && chip.id !== "ALL"}
+                className={`inline-flex h-7 items-center gap-1.5 rounded-full px-3 text-xs font-medium transition-all duration-150 ${
+                  active
+                    ? `${toneActive[chip.tone]} shadow-sm`
+                    : "bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)] hover:bg-[var(--color-muted)]/80 disabled:opacity-40"
+                }`}
+              >
+                {chip.label}
+                <span
+                  className={`inline-flex min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                    active ? "bg-white/20" : "bg-[color:var(--color-card)]/60"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+          {(searchQuery || statusFilter !== "ALL" || sectionFilter !== "ALL") && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setSearchQuery(""); setStatusFilter("ALL"); setSectionFilter("ALL"); }}
+              className="h-7 rounded-full px-2 text-xs text-[color:var(--color-muted-foreground)]"
+            >
+              <XCircle className="size-3" /> مسح الفلاتر
+            </Button>
+          )}
+        </div>
         {loading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-2xl" />
+          <div className="space-y-4">
+            <div className="space-y-2 rounded-xl border border-[color:var(--shell-control-border)] p-3">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-3 w-1/2" />
+            </div>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-3 rounded-xl border border-[color:var(--shell-control-border)] p-3">
+                <Skeleton className="size-9 rounded-lg" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-3.5 w-1/3" />
+                  <Skeleton className="h-3 w-1/4" />
+                </div>
+                <Skeleton className="h-6 w-20 rounded-full" />
+              </div>
             ))}
           </div>
         ) : Object.keys(groupedTemplates).length === 0 ? (
-          <div className="flex flex-col items-center gap-4 py-16 text-center text-[color:var(--color-muted-foreground)]">
-            <div className="flex size-16 items-center justify-center rounded-full bg-[var(--color-muted)]">
-              <FileText className="size-8 text-[color:var(--color-muted-foreground)]" />
+          <div className="flex flex-col items-center gap-5 py-16 text-center">
+            <div className="flex size-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 shadow-inner dark:from-emerald-950/40 dark:to-emerald-900/20">
+              <FileText className="size-10 text-emerald-600 dark:text-emerald-400" />
             </div>
-            <p className="text-sm font-medium">{selectedSessionId ? "لا توجد قوالب بعد" : "اختر جلسة أولاً"}</p>
-            <p className="text-xs">{selectedSessionId ? "أنشئ أول قالب لإرسال رسائل واتساب بزنس." : "اختر جلسة واتساب من القائمة أعلاه لعرض القوالب."}</p>
+            <div className="space-y-1">
+              <p className="text-base font-semibold text-[color:var(--color-foreground)]">
+                {selectedSessionId ? "لا توجد قوالب بعد" : "اختر جلسة أولاً"}
+              </p>
+              <p className="mx-auto max-w-sm text-xs leading-relaxed text-[color:var(--color-muted-foreground)]">
+                {selectedSessionId
+                  ? "القوالب هي رسائل معتمدة من Meta تقدر تبعت بيها حملات واتساب. ابدأ بإنشاء أول قالب أو اختار من المكتبة الجاهزة."
+                  : "اختر جلسة واتساب من القائمة أعلاه لعرض القوالب المسجلة في Meta Cloud API."}
+              </p>
+            </div>
+            {selectedSessionId ? (
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-2">
+                <Button
+                  onClick={() => { setCreateStep(1); setCreateOpen(true); }}
+                  className="h-10 rounded-full px-5 text-sm font-semibold shadow-sm hover:shadow-md"
+                >
+                  <Plus className="size-4" /> أنشئ أول قالب
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => { setLibrarySearch(""); setLibraryOpen(true); }}
+                  className="h-10 rounded-full"
+                >
+                  <Library className="size-4" /> تصفّح المكتبة الجاهزة
+                </Button>
+              </div>
+            ) : null}
           </div>
         ) : (
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-8"></TableHead>
-                <TableHead>الاسم</TableHead>
-                <TableHead>الحالة</TableHead>
-                <TableHead>التصنيف</TableHead>
-                <TableHead>اللغات</TableHead>
-                <TableHead></TableHead>
-              </TableRow>
-            </TableHeader>
+          <>
+            {/* Bulk action toolbar — only shown when at least one row is selected. */}
+            {selectedRows.size > 0 ? (
+              <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[color:var(--color-primary)]/30 bg-[color:var(--color-primary)]/[0.04] px-3 py-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <CheckSquare className="size-3.5 text-[color:var(--color-primary)]" />
+                  <span className="font-medium">
+                    تم تحديد {selectedRows.size} قالب
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedRows(new Set())}
+                    className="h-7 rounded-full px-2 text-xs"
+                  >
+                    إلغاء التحديد
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={fetchTemplates}
+                    disabled={loading}
+                    className="h-7 rounded-full text-xs"
+                  >
+                    <RefreshCw className={`size-3 ${loading ? "animate-spin" : ""}`} /> تحديث المحدد
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 rounded-full text-xs text-red-600 hover:text-red-700 dark:text-red-400"
+                    onClick={() => {
+                      const first = Array.from(selectedRows)[0];
+                      if (first) setDeleteConfirm(first);
+                    }}
+                  >
+                    <Trash2 className="size-3" /> حذف المحدد ({selectedRows.size})
+                  </Button>
+                </div>
+              </div>
+            ) : null}
+            {/* Mobile card view — visible below md, hidden on tablets/desktop
+                where the table takes over. Same data, different layout
+                optimized for narrow screens and one-handed use. */}
+            <div className="space-y-2 md:hidden">
+              {Object.entries(groupedTemplates).map(([groupName, groupTemplates]) => {
+                const expanded = expandedGroups[groupName] === true;
+                const uniqueStatuses = [...new Set(groupTemplates.map(t => t.status))];
+                const bestStatus = uniqueStatuses.includes("APPROVED") ? "APPROVED" : (uniqueStatuses[0] ?? "PENDING");
+                const StatusIcon = statusIcon[bestStatus] || AlertTriangle;
+                const isSelected = selectedRows.has(groupName);
+                const section = resolveTemplateSection(groupName, groupTemplates[0]?.category);
+                return (
+                  <div
+                    key={groupName}
+                    className={`rounded-xl border bg-[color:var(--color-card)] p-3 transition-all ${
+                      isSelected
+                        ? "border-[color:var(--color-primary)] bg-[color:var(--color-primary)]/[0.04] shadow-sm"
+                        : "border-[color:var(--shell-control-border)]"
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleRow(groupName)}
+                        aria-label={`تحديد قالب ${groupName}`}
+                        className="mt-1"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(groupName)}
+                        className="min-w-0 flex-1 text-start"
+                        aria-expanded={expanded}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-semibold" dir="ltr">{groupName}</p>
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <Badge variant="outline" className={statusBadge[bestStatus] || ""}>
+                                <StatusIcon className="ml-1 size-3.5 inline" />
+                                {bestStatus}
+                              </Badge>
+                              <span className="rounded-full bg-[color:var(--color-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-muted-foreground)]">
+                                {groupTemplates[0]?.category}
+                              </span>
+                              <span className="rounded-full bg-[color:var(--color-muted)] px-2 py-0.5 text-[10px] font-medium text-[color:var(--color-muted-foreground)]">
+                                {section.icon} {section.label}
+                              </span>
+                            </div>
+                          </div>
+                          {expanded ? <ChevronDown className="size-4 shrink-0 text-[color:var(--color-muted-foreground)]" /> : <ChevronRight className="size-4 shrink-0 text-[color:var(--color-muted-foreground)]" />}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-1.5">
+                          {[...new Set(groupTemplates.map(t => t.language))].map((lang) => (
+                            <span
+                              key={lang}
+                              className="rounded bg-[color:var(--color-muted)] px-1.5 py-0.5 text-[10px] font-mono text-[color:var(--color-muted-foreground)]"
+                            >
+                              {lang}
+                            </span>
+                          ))}
+                        </div>
+                      </button>
+                    </div>
+                    {expanded ? (
+                      <div className="mt-3 space-y-3 border-t border-[color:var(--shell-control-border)] pt-3">
+                        {groupTemplates.map((t) => {
+                          const headerComp = t.components?.find(c => c.type === "HEADER");
+                          const bodyComp = t.components?.find(c => c.type === "BODY");
+                          const footerComp = t.components?.find(c => c.type === "FOOTER");
+                          const buttonsComp = t.components?.find(c => c.type === "BUTTONS");
+                          const variantKey = `${groupName}::${t.language}`;
+                          const allText = [headerComp?.text, bodyComp?.text, footerComp?.text, buttonsComp?.buttons?.[0]?.url].filter(Boolean).join(" ");
+                          const varNumbers = extractVariableNumbers(allText);
+                          const isPreviewOpen = varPreviewOpen[variantKey] === true;
+                          return (
+                            <div key={t.id ?? t.language} className="space-y-2">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-medium text-[color:var(--color-muted-foreground)]">{t.language} · ID: {t.id?.slice(-8) ?? "-"}</span>
+                                <Badge variant="outline" className={`text-[10px] ${statusBadge[t.status] || ""}`}>
+                                  {t.status}
+                                </Badge>
+                              </div>
+                              {/* WhatsApp-style inline preview */}
+                              <div
+                                className="rounded-lg border border-emerald-200/60 bg-white px-3 py-2 text-sm shadow-sm dark:border-emerald-900/40 dark:bg-[#0b141a]"
+                                dir={t.language === "ar" || t.language === "ur" ? "rtl" : "ltr"}
+                              >
+                                {headerComp?.text ? (
+                                  <p className="font-semibold text-[#111b21] dark:text-white">{substituteVars(headerComp.text, variantKey)}</p>
+                                ) : null}
+                                {bodyComp?.text ? (
+                                  <p className="mt-1 whitespace-pre-wrap leading-relaxed text-[#111b21] dark:text-white">
+                                    {substituteVars(bodyComp.text, variantKey)
+                                      .split(/(\{\{\d+\}\})/g)
+                                      .map((part, idx) =>
+                                        /^\{\{\d+\}\}$/.test(part) ? (
+                                          <span
+                                            key={idx}
+                                            className="mx-0.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                                          >
+                                            {part}
+                                          </span>
+                                        ) : (
+                                          <span key={idx}>{part}</span>
+                                        ),
+                                      )}
+                                  </p>
+                                ) : null}
+                                {footerComp?.text ? (
+                                  <p className="mt-1 text-[11px] text-[#667781] dark:text-[#aebac1]">
+                                    {substituteVars(footerComp.text, variantKey)}
+                                  </p>
+                                ) : null}
+                                {buttonsComp?.buttons?.length ? (
+                                  <div className="mt-2 flex flex-col gap-1 border-t border-[#e9edef] pt-1 dark:border-[#222d34]">
+                                    {buttonsComp.buttons.map((b, idx) => (
+                                      <div
+                                        key={idx}
+                                        className="text-center text-xs font-medium text-[#00a884] dark:text-[#00d294]"
+                                      >
+                                        {b.text || `زر ${idx + 1}`}
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : null}
+                              </div>
+                              {t.rejected_reason && (
+                                <p className="text-[11px] text-red-600 dark:text-red-400">{t.rejected_reason}</p>
+                              )}
+                              {t.status === "REJECTED" && (
+                                <a
+                                  href="https://business.facebook.com/latest/whatsapp_manager/manage_templates"
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] font-medium text-blue-600 hover:underline dark:text-blue-400"
+                                >
+                                  <ExternalLink className="size-3" /> افتح في Meta Business
+                                </a>
+                              )}
+                              {/* Variable playground — single column on mobile. */}
+                              {varNumbers.length > 0 ? (
+                                <div className="rounded-lg border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/40 p-2">
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setVarPreviewOpen((prev) => ({ ...prev, [variantKey]: !prev[variantKey] }))
+                                    }
+                                    aria-expanded={isPreviewOpen}
+                                    className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
+                                  >
+                                    {isPreviewOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                                    <span>تجربة المتغيرات</span>
+                                    <span className="rounded-full bg-[color:var(--color-card)]/60 px-1.5 text-[10px] font-bold">
+                                      {varNumbers.length}
+                                    </span>
+                                  </button>
+                                  {isPreviewOpen ? (
+                                    <div className="mt-2 flex flex-col gap-1.5">
+                                      {varNumbers.map((v) => {
+                                        const n = v.replace(/\D/g, "");
+                                        const previewKey = `${variantKey}::${n}`;
+                                        return (
+                                          <label
+                                            key={n}
+                                            className="flex items-center gap-2 rounded-md bg-[color:var(--color-card)] px-2 py-1.5 text-xs"
+                                          >
+                                            <span className="min-w-[28px] rounded bg-amber-100 px-1.5 py-0.5 text-center font-mono text-[10px] font-bold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                                              {`{{${n}}}`}
+                                            </span>
+                                            <Input
+                                              value={varPreviewValues[previewKey] ?? ""}
+                                              onChange={(e) =>
+                                                setVarPreviewValues((prev) => ({
+                                                  ...prev,
+                                                  [previewKey]: e.target.value,
+                                                }))
+                                              }
+                                              placeholder={`قيمة ${n}`}
+                                              aria-label={`قيمة المتغير ${n}`}
+                                              className="h-9 flex-1 text-sm"
+                                            />
+                                          </label>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : null}
+                            </div>
+                          );
+                        })}
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const tmpl = groupTemplates[0];
+                              if (tmpl) setViewTemplate(tmpl);
+                            }}
+                            className="h-9 flex-1 rounded-full text-xs"
+                          >
+                            <Eye className="size-3.5" /> عرض
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const tmpl = groupTemplates[0]!;
+                              const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
+                              const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
+                              const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
+                              const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
+                              setEditForm({
+                                name: tmpl.name,
+                                language: tmpl.language,
+                                category: tmpl.category,
+                                headerFormat: headerComponent?.format || "TEXT",
+                                headerText: headerComponent?.text || "",
+                                headerMediaHandle: headerComponent?.example?.header_handle?.[0] || "",
+                                headerMediaName: headerComponent?.example?.header_handle?.[0] || "",
+                                bodyText: bodyComponent?.text || "",
+                                footerText: footerComponent?.text || "",
+                                buttonText: buttonsComponent?.buttons?.[0]?.text || "",
+                                buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
+                              });
+                              setEditOpen(true);
+                            }}
+                            className="h-9 flex-1 rounded-full text-xs"
+                          >
+                            <Pencil className="size-3.5" /> تعديل
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            onClick={() => setDeleteConfirm(groupName)}
+                            aria-label="حذف القالب"
+                            className="size-9 rounded-full text-red-600 dark:text-red-400"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop table — hidden on mobile, visible from md up. */}
+            <div className="hidden md:block">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allSelected ? true : someSelected ? "indeterminate" : false}
+                      onCheckedChange={toggleAll}
+                      aria-label="تحديد كل القوالب الظاهرة"
+                      className="translate-y-[2px]"
+                    />
+                  </TableHead>
+                  <TableHead className="w-8"></TableHead>
+                  <TableHead>الاسم</TableHead>
+                  <TableHead>الحالة</TableHead>
+                  <TableHead>التصنيف</TableHead>
+                  <TableHead>القسم</TableHead>
+                  <TableHead>اللغات</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
             <TableBody>
               {Object.entries(groupedTemplates).map(([groupName, groupTemplates]) => {
-                const expanded = expandedGroups[groupName] !== false;
+                // Default to collapsed so the page doesn't drown in previews
+                // when there are many templates. The user can expand a row
+                // to inspect the WhatsApp-bubble preview.
+                const expanded = expandedGroups[groupName] === true;
                 const uniqueStatuses = [...new Set(groupTemplates.map(t => t.status))];
                 const bestStatus = uniqueStatuses.includes("APPROVED") ? "APPROVED" : (uniqueStatuses[0] ?? "PENDING");
                 const StatusIcon = statusIcon[bestStatus] || AlertTriangle;
                 const _languages = groupTemplates.map(t => t.language).join(", ");
                 void _languages;
+                const isSelected = selectedRows.has(groupName);
                 return (
                   <React.Fragment key={groupName}>
-                    <TableRow className="cursor-pointer hover:bg-[var(--color-muted)]" onClick={() => toggleGroup(groupName)}>
+                    <TableRow
+                      className={`cursor-pointer transition-colors hover:bg-[var(--color-muted)]/70 ${isSelected ? "bg-[color:var(--color-primary)]/[0.04]" : ""}`}
+                      onClick={() => toggleGroup(groupName)}
+                      aria-expanded={expanded}
+                    >
+                      <TableCell onClick={(e) => e.stopPropagation()}>
+                        <Checkbox
+                          checked={isSelected}
+                          onCheckedChange={() => toggleRow(groupName)}
+                          aria-label={`تحديد قالب ${groupName}`}
+                          className="translate-y-[2px]"
+                        />
+                      </TableCell>
                       <TableCell>
                         {expanded ? <ChevronDown className="size-4" /> : <ChevronRight className="size-4" />}
                       </TableCell>
@@ -648,6 +1316,17 @@ const WhatsAppMetaTemplates: React.FC<{
                       </TableCell>
                       <TableCell>{groupTemplates[0]?.category}</TableCell>
                       <TableCell>
+                        {(() => {
+                          const sec = resolveTemplateSection(groupName, groupTemplates[0]?.category);
+                          return (
+                            <Badge variant="outline" className={`text-[11px] ${sec.badge}`} title={sec.description || sec.label}>
+                              <span className="ml-1">{sec.icon}</span>
+                              {sec.label}
+                            </Badge>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell>
                         <div className="flex flex-wrap gap-1">
                           {[...new Set(groupTemplates.map(t => t.language))].map(lang => (
                             <Badge key={lang} variant="secondary" className="text-[10px]">{lang}</Badge>
@@ -656,71 +1335,330 @@ const WhatsAppMetaTemplates: React.FC<{
                       </TableCell>
                       <TableCell>
                         <div className="flex justify-end gap-1" onClick={(e) => e.stopPropagation()}>
-                          <Button variant="ghost" size="icon-sm" onClick={() => {
-                            const tmpl = groupTemplates[0];
-                            if (tmpl) setViewTemplate(tmpl);
-                          }}>
-                            <FileText className="size-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon-sm" onClick={() => {
-                            const tmpl = groupTemplates[0]!;
-                            const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
-                            const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
-                            const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
-                            const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
-                            setEditForm({
-                              name: tmpl.name,
-                              language: tmpl.language,
-                              category: tmpl.category,
-                              headerFormat: headerComponent?.format || "TEXT",
-                              headerText: headerComponent?.text || "",
-                              headerMediaHandle: headerComponent?.example?.header_handle?.[0] || "",
-                              headerMediaName: headerComponent?.example?.header_handle?.[0] || "",
-                              bodyText: bodyComponent?.text || "",
-                              footerText: footerComponent?.text || "",
-                              buttonText: buttonsComponent?.buttons?.[0]?.text || "",
-                              buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
-                            });
-                            setEditOpen(true);
-                          }}>
-                            <Pencil className="size-4" />
-                          </Button>
-                          <Button variant="ghost" size="icon-sm" className="text-red-500 dark:text-red-400" onClick={() => setDeleteConfirm(groupName)}>
-                            <Trash2 className="size-4" />
-                          </Button>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                aria-label="معاينة سريعة"
+                                onClick={() => {
+                                  const tmpl = groupTemplates[0];
+                                  if (tmpl) setViewTemplate(tmpl);
+                                }}
+                              >
+                                <Eye className="size-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent side="top">معاينة سريعة</TooltipContent>
+                          </Tooltip>
+                          <DropdownMenu>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    aria-label="المزيد من الإجراءات"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    <MoreHorizontal className="size-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">المزيد من الإجراءات</TooltipContent>
+                            </Tooltip>
+                            <DropdownMenuContent align="end" sideOffset={4} onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const tmpl = groupTemplates[0]!;
+                                  const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
+                                  const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
+                                  const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
+                                  const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
+                                  setEditForm({
+                                    name: tmpl.name,
+                                    language: tmpl.language,
+                                    category: tmpl.category,
+                                    headerFormat: headerComponent?.format || "TEXT",
+                                    headerText: headerComponent?.text || "",
+                                    headerMediaHandle: headerComponent?.example?.header_handle?.[0] || "",
+                                    headerMediaName: headerComponent?.example?.header_handle?.[0] || "",
+                                    bodyText: bodyComponent?.text || "",
+                                    footerText: footerComponent?.text || "",
+                                    buttonText: buttonsComponent?.buttons?.[0]?.text || "",
+                                    buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
+                                  });
+                                  setEditOpen(true);
+                                }}
+                              >
+                                <Pencil className="ml-2 size-4" />
+                                تعديل القالب
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  const tmpl = groupTemplates[0];
+                                  if (tmpl) setViewTemplate(tmpl);
+                                }}
+                              >
+                                <FileText className="ml-2 size-4" />
+                                عرض التفاصيل
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  // Open a fresh "create" form pre-filled with this template's content.
+                                  // Uses the same wiring as `applyLibraryTemplate` so the user can clone
+                                  // and tweak instead of editing in place — safer for approved templates
+                                  // (Meta disallows edits to APPROVED templates, only deletion + recreate).
+                                  const tmpl = groupTemplates[0]!;
+                                  const headerComponent = tmpl.components?.find((c) => c.type === "HEADER");
+                                  const bodyComponent = tmpl.components?.find((c) => c.type === "BODY");
+                                  const footerComponent = tmpl.components?.find((c) => c.type === "FOOTER");
+                                  const buttonsComponent = tmpl.components?.find((c) => c.type === "BUTTONS");
+                                  setForm({
+                                    name: `${tmpl.name}_copy`,
+                                    language: tmpl.language,
+                                    category: tmpl.category,
+                                    headerFormat: headerComponent?.format || "TEXT",
+                                    headerText: headerComponent?.text || "",
+                                    headerMediaHandle: "",
+                                    headerMediaName: "",
+                                    bodyText: bodyComponent?.text || "",
+                                    footerText: footerComponent?.text || "",
+                                    buttonText: buttonsComponent?.buttons?.[0]?.text || "",
+                                    buttonUrl: buttonsComponent?.buttons?.[0]?.url || "",
+                                  });
+                                  setCreateStep(2);
+                                  setCreateOpen(true);
+                                }}
+                              >
+                                <Copy className="ml-2 size-4" />
+                                تكرار القالب
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => setDeleteConfirm(groupName)}
+                                className="text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+                              >
+                                <Trash2 className="ml-2 size-4" />
+                                حذف القالب
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </TableCell>
                     </TableRow>
-                    {expanded && groupTemplates.map(t => (
-                      <TableRow key={t.name + t.language} className="bg-[var(--color-muted)]">
-                        <TableCell></TableCell>
-                        <TableCell className="text-sm text-[color:var(--color-muted-foreground)]">
-                          <Languages className="ml-1 size-3.5 inline" />
-                          {t.language} · ID: {t.id || "-"}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={statusBadge[t.status] || ""}>
-                            <StatusIcon className="ml-1 size-3.5 inline" />
-                            {t.status}
-                          </Badge>
-                          {t.rejected_reason && (
-                            <p className="mt-1 text-[10px] text-red-500">{t.rejected_reason}</p>
-                          )}
-                        </TableCell>
-                        <TableCell colSpan={3}>
-                          <div className="text-xs text-[color:var(--color-muted-foreground)]">
-                            {t.components?.filter(c => c.type === "BODY" || c.type === "HEADER").map(c => c.text).filter(Boolean).join(" · ") || "-"}
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {expanded && groupTemplates.map(t => {
+                      const headerComp = t.components?.find(c => c.type === "HEADER");
+                      const bodyComp = t.components?.find(c => c.type === "BODY");
+                      const footerComp = t.components?.find(c => c.type === "FOOTER");
+                      const buttonsComp = t.components?.find(c => c.type === "BUTTONS");
+                      const variantKey = `${groupName}::${t.language}`;
+                      const allText = [headerComp?.text, bodyComp?.text, footerComp?.text, buttonsComp?.buttons?.[0]?.url].filter(Boolean).join(" ");
+                      const varNumbers = extractVariableNumbers(allText);
+                      const isPreviewOpen = varPreviewOpen[variantKey] === true;
+                      return (
+                        <TableRow key={t.name + t.language} className="bg-[var(--color-muted)]/50 hover:bg-[var(--color-muted)]">
+                          <TableCell></TableCell>
+                          <TableCell className="text-sm">
+                            <div className="flex items-center gap-2">
+                              <Languages className="size-3.5 text-[color:var(--color-muted-foreground)]" />
+                              <span className="font-medium">{t.language}</span>
+                              <span className="text-[10px] text-[color:var(--color-muted-foreground)]">ID: {t.id || "-"}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className={statusBadge[t.status] || ""}>
+                              <StatusIcon className="ml-1 size-3.5 inline" />
+                              {t.status}
+                            </Badge>
+                            {t.rejected_reason && (
+                              <p className="mt-1 text-[10px] text-red-600 dark:text-red-400">{t.rejected_reason}</p>
+                            )}
+                            {t.status === "REJECTED" && (
+                              <a
+                                href="https://business.facebook.com/latest/whatsapp_manager/manage_templates"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-blue-600 hover:underline dark:text-blue-400"
+                              >
+                                <ExternalLink className="size-3" /> افتح في Meta Business
+                              </a>
+                            )}
+                          </TableCell>
+                          <TableCell colSpan={3}>
+                            {/* WhatsApp-style inline preview — replaces the old gray
+                                text dump. Renders the template as it would appear
+                                inside the WhatsApp chat bubble. Variables in the
+                                body are shown as amber chips; the var-preview
+                                playground below the bubble lets the user fill in
+                                sample values and see the live rendered message. */}
+                            <div
+                              className="rounded-lg border border-emerald-200/60 bg-white px-3 py-2 shadow-sm dark:border-emerald-900/40 dark:bg-[#0b141a]"
+                              dir={t.language === "ar" || t.language === "ur" ? "rtl" : "ltr"}
+                            >
+                              {headerComp?.text ? (
+                                <p className="text-sm font-semibold text-[#111b21] dark:text-white">
+                                  {substituteVars(headerComp.text, variantKey)}
+                                </p>
+                              ) : headerComp?.format && headerComp.format !== "TEXT" ? (
+                                <div className="mb-2 flex h-20 items-center justify-center rounded bg-emerald-50 text-[10px] uppercase tracking-wide text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                                  {headerComp.format} media
+                                </div>
+                              ) : null}
+                              {bodyComp?.text ? (
+                                <p className="whitespace-pre-wrap text-sm leading-relaxed text-[#111b21] dark:text-white">
+                                  {substituteVars(bodyComp.text, variantKey)
+                                    .split(/(\{\{\d+\}\})/g)
+                                    .map((part, idx) =>
+                                      /^\{\{\d+\}\}$/.test(part) ? (
+                                        <span
+                                          key={idx}
+                                          className="mx-0.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200"
+                                        >
+                                          {part}
+                                        </span>
+                                      ) : (
+                                        <span key={idx}>{part}</span>
+                                      ),
+                                    )}
+                                </p>
+                              ) : null}
+                              {footerComp?.text ? (
+                                <p className="mt-1 text-[11px] text-[#667781] dark:text-[#aebac1]">
+                                  {substituteVars(footerComp.text, variantKey)}
+                                </p>
+                              ) : null}
+                              {buttonsComp?.buttons?.length ? (
+                                <div className="mt-2 flex flex-col gap-1 border-t border-[#e9edef] pt-1 dark:border-[#222d34]">
+                                  {buttonsComp.buttons.map((b, idx) => (
+                                    <div
+                                      key={idx}
+                                      className="text-center text-xs font-medium text-[#00a884] dark:text-[#00d294]"
+                                    >
+                                      {b.text || `زر ${idx + 1}`}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : null}
+                            </div>
+
+                            {/* Variable substitution playground — only shown when
+                                the template actually has {{N}} placeholders. */}
+                            {varNumbers.length > 0 ? (
+                              <div className="mt-2 rounded-lg border border-dashed border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)]/40 p-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setVarPreviewOpen((prev) => ({ ...prev, [variantKey]: !prev[variantKey] }))
+                                  }
+                                  aria-expanded={isPreviewOpen}
+                                  className="inline-flex items-center gap-1.5 text-[11px] font-medium text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)]"
+                                >
+                                  {isPreviewOpen ? <ChevronDown className="size-3" /> : <ChevronRight className="size-3" />}
+                                  <span>تجربة المتغيرات</span>
+                                  <span className="rounded-full bg-[color:var(--color-card)]/60 px-1.5 text-[10px] font-bold">
+                                    {varNumbers.length}
+                                  </span>
+                                </button>
+                                {isPreviewOpen ? (
+                                  <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+                                    {varNumbers.map((v) => {
+                                      const n = v.replace(/\D/g, "");
+                                      const previewKey = `${variantKey}::${n}`;
+                                      return (
+                                        <label
+                                          key={n}
+                                          className="flex items-center gap-2 rounded-md bg-[color:var(--color-card)] px-2 py-1.5 text-xs"
+                                        >
+                                          <span className="min-w-[28px] rounded bg-amber-100 px-1.5 py-0.5 text-center font-mono text-[10px] font-bold text-amber-800 dark:bg-amber-500/20 dark:text-amber-200">
+                                            {`{{${n}}}`}
+                                          </span>
+                                          <Input
+                                            value={varPreviewValues[previewKey] ?? ""}
+                                            onChange={(e) =>
+                                              setVarPreviewValues((prev) => ({
+                                                ...prev,
+                                                [previewKey]: e.target.value,
+                                              }))
+                                            }
+                                            placeholder={`قيمة ${n}`}
+                                            aria-label={`قيمة المتغير ${n}`}
+                                            className="h-7 flex-1 text-xs"
+                                          />
+                                        </label>
+                                      );
+                                    })}
+                                  </div>
+                                ) : null}
+                              </div>
+                            ) : null}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </React.Fragment>
                 );
               })}
             </TableBody>
           </Table>
+            </div>
+          </>
         )}
       </WhatsAppSurfaceCard>
+
+      {/* Mobile-only bottom action bar — sticks to the bottom edge when at
+          least one row is selected. Mirrors the bulk toolbar above the
+          table on desktop. Hidden when nothing is selected. */}
+      {selectedRows.size > 0 ? (
+        <div
+          className="fixed inset-x-0 bottom-0 z-30 border-t border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]/95 px-3 py-2 shadow-2xl backdrop-blur-md md:hidden"
+          role="region"
+          aria-label="إجراءات مجمعة"
+        >
+          <div className="mx-auto flex max-w-md items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedRows(new Set())}
+              className="h-10 flex-1 rounded-full text-xs"
+            >
+              إلغاء
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchTemplates}
+              disabled={loading}
+              className="h-10 flex-1 rounded-full text-xs"
+            >
+              <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} /> تحديث
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => {
+                const first = Array.from(selectedRows)[0];
+                if (first) setDeleteConfirm(first);
+              }}
+              className="h-10 flex-1 rounded-full text-xs"
+            >
+              <Trash2 className="size-3.5" /> حذف
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Mobile-only Floating Action Button — primary "Create" action
+          on phone-sized screens where the top action bar is too cramped
+          to hold a primary CTA. */}
+      <Button
+        onClick={() => { setCreateStep(1); setCreateOpen(true); }}
+        aria-label="إنشاء قالب جديد"
+        className="fixed bottom-4 left-1/2 z-20 h-14 w-14 -translate-x-1/2 rounded-full bg-gradient-to-br from-[color:var(--color-primary)] to-[color:var(--color-primary)]/70 p-0 text-white shadow-lg shadow-[color:var(--color-primary)]/30 transition-all duration-200 hover:scale-105 hover:shadow-xl active:scale-95 md:hidden"
+      >
+        <Plus className="size-6" />
+      </Button>
 
       <Dialog open={createOpen} onOpenChange={(open) => { setCreateOpen(open); if (!open) { setCreateStep(1); setShowCompliance(false); setComplianceResults([]); } }}>
         <DialogContent className="max-w-xl sm:rounded-3xl">
@@ -976,7 +1914,7 @@ const WhatsAppMetaTemplates: React.FC<{
             const StatusIcon = statusIcon[viewTemplate.status] || AlertTriangle;
             return (
               <div className="space-y-4">
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-4 gap-4">
                   <div>
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">الحالة</p>
                     <Badge variant="outline" className={statusBadge[viewTemplate.status] || ""}>
@@ -987,6 +1925,17 @@ const WhatsAppMetaTemplates: React.FC<{
                   <div>
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">التصنيف</p>
                     <p className="font-medium">{viewTemplate.category}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-[color:var(--color-muted-foreground)]">القسم</p>
+                    {(() => {
+                      const sec = resolveTemplateSection(viewTemplate.name, viewTemplate.category);
+                      return (
+                        <Badge variant="outline" className={sec.badge} title={sec.description}>
+                          {sec.icon} {sec.label}
+                        </Badge>
+                      );
+                    })()}
                   </div>
                   <div>
                     <p className="text-sm text-[color:var(--color-muted-foreground)]">اللغة</p>
@@ -1364,6 +2313,7 @@ const WhatsAppMetaTemplates: React.FC<{
         </DialogContent>
       </Dialog>
     </WhatsAppPageShell>
+    </TooltipProvider>
   );
 };
 

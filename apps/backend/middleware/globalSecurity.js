@@ -504,6 +504,9 @@ const PUBLIC_ROUTES = [
   // Booking Patient Portal (public login endpoint)
   'POST /api/v1/booking/patient-portal/login',
 
+  // Dental Lab Doctor Portal (public login endpoint)
+  'POST /api/v1/dental-lab/portal/login',
+
   // Public Support
   'GET /api/v1/support/faq',
 

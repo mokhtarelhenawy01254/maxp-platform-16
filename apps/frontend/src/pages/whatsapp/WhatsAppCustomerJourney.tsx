@@ -8,6 +8,7 @@ import {
   Edit,
   GitBranch,
   MessageSquare,
+  MessageSquareText,
   Plus,
   RefreshCw,
   Search,
@@ -53,6 +54,8 @@ import { WhatsAppSurfaceCard } from "./components/WhatsAppPageShell";
 import { FlowCanvas, type FlowStep } from "./components/journey/FlowCanvas";
 import ButtonsEditor from "../automation/components/ButtonsEditor";
 import { CopilotDrawer, useCopilotShortcut } from "./components/journey/CopilotDrawer";
+import MetaTemplatesModal from "../customers/components/MetaTemplatesModal";
+import CustomerMessageTimeline from "./components/CustomerMessageTimeline";
 
 const adminRoles = new Set(["SUPER_ADMIN", "OWNER", "COMPANY_ADMIN"]);
 
@@ -272,6 +275,8 @@ const WhatsAppCustomerJourney: React.FC = () => {
   const copilot = useCopilotShortcut();
 
   const [flows, setFlows] = useState<Flow[]>([]);
+  const [metaModalOpen, setMetaModalOpen] = useState(false);
+  const [timelineOpen, setTimelineOpen] = useState(false);
   const [selectedFlow, setSelectedFlow] = useState<Flow | null>(null);
   const [steps, setSteps] = useState<Step[]>([]);
   const [journeys, setJourneys] = useState<Journey[]>([]);
@@ -597,6 +602,14 @@ const WhatsAppCustomerJourney: React.FC = () => {
             >
               <RefreshCw className={cn("size-4", refreshing && "animate-spin")} />
               {t("common.refresh")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setTimelineOpen(true)}
+            >
+              <MessageSquareText className="size-4" />
+              رسايل عميل
             </Button>
             <Button
               variant="outline"
@@ -1363,9 +1376,18 @@ const WhatsAppCustomerJourney: React.FC = () => {
 
             <div className="space-y-5">
               <div className="space-y-2">
-                <Label htmlFor="step-content">
-                  {t("whatsappJourney.steps.content")}
-                </Label>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="step-content">
+                    {t("whatsappJourney.steps.content")}
+                  </Label>
+                  <button
+                    type="button"
+                    onClick={() => setMetaModalOpen(true)}
+                    className="rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                  >
+                    📚 قوالب ميتا
+                  </button>
+                </div>
                 <Textarea
                   id="step-content"
                   value={currentStep.content ?? ""}
@@ -1476,6 +1498,15 @@ const WhatsAppCustomerJourney: React.FC = () => {
           }
         }}
       />
+      <MetaTemplatesModal
+        open={metaModalOpen}
+        onClose={() => setMetaModalOpen(false)}
+        onPick={(content) =>
+          setCurrentStep((previous) => (previous ? { ...previous, content: content || previous.content } : previous))
+        }
+        title="📚 قوالب ميتا للسلاسل"
+      />
+      <CustomerMessageTimeline open={timelineOpen} onClose={() => setTimelineOpen(false)} />
     </section>
   );
 };

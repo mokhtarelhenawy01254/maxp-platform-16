@@ -86,26 +86,40 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
     // شريط الإرسال التجريبي (خاص بالعملاء)
     expect(screen.getByPlaceholderText("01000000000")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /إرسال تجريبي/ })).toBeInTheDocument();
-    // التبويبات
-    expect(screen.getByRole("button", { name: /جدول الإشعارات/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /قوالب مناسبات العملاء/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /قوالب الولاء/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /قوالب الكاش باك/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /قوالب التقسيم/ })).toBeInTheDocument();
+    // التبويبات — التابات ليها role=tab (شريط tablist)
+    expect(screen.getByRole("tab", { name: /جدول الإشعارات/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /قوالب مناسبات العملاء/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /قوالب الولاء/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /قوالب الكاش باك/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /قوالب التقسيم/ })).toBeInTheDocument();
   });
 
   test("تبويب الجدولة يعرض أحداث العملاء بقيمها من الـ schedule", async () => {
     renderPage();
-    expect((await screen.findAllByText("كسب نقاط")).length).toBeGreaterThan(0);
-    expect(screen.getAllByText("كاش باك").length).toBeGreaterThan(0);
-    expect(screen.getByText("عند كسب نقاط")).toBeInTheDocument();
+    // التسميات من EVENT_LABELS في الـ scope (بتغلب label الـ backend)
+    expect((await screen.findAllByText(/كسب نقاط ولاء/)).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/إيداع كاش باك/).length).toBeGreaterThan(0);
+    // الـ trigger بيتعرّض من EVENT_TRIGGERS في الـ scope
+    expect(screen.getByText("عند تسليم الطلب")).toBeInTheDocument();
     expect(screen.getByText("24 ساعة")).toBeInTheDocument();
+  });
+
+  test("خانة قالب ميتا الفاضية فيها زرار إنشاء قالب ميتا (مدخل النشر لميتا)", async () => {
+    renderPage();
+    const user = userEvent.setup();
+    // كروت القوالب بتظهر في تابات القوائم مش جدول الجدولة
+    await user.click(await screen.findByRole("tab", { name: /قوالب الولاء/ }));
+    // القوالب في الـ mock كلها BAILEYS — خانات الميتا فاضية وزرار الإنشاء لازم يظهر
+    await screen.findAllByText(/كسب نقاط ولاء/);
+    expect(screen.getAllByRole("button", { name: /إنشاء قالب ميتا/ }).length).toBeGreaterThan(0);
+    // ولا النص الإرشادي القديم المضلل
+    expect(screen.queryByText(/أنشئ قالب من الشريط العلوي/)).not.toBeInTheDocument();
   });
 
   test("مفتاح التبديل في الجدولة بيكتب للـ schedule عند الحفظ", async () => {
     renderPage();
     const user = userEvent.setup();
-    await screen.findAllByText("كسب نقاط");
+    await screen.findAllByText(/كسب نقاط ولاء/);
 
     await user.click(screen.getAllByRole("button", { name: /تعديل/ })[0]);
     await user.click(screen.getByRole("button", { name: /حفظ/ }));
@@ -118,12 +132,12 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
 
   test("يعرض تبويب تقارير الرسائل الخاص بالعملاء بدون تبويبات الأوردرز (تقارير الحالات/الإعدادات)", async () => {
     renderPage();
-    await screen.findAllByText("كسب نقاط");
+    await screen.findAllByText(/كسب نقاط ولاء/);
     // تبويب التقرير الخاص بالعملاء (MARKETING) موجود
-    expect(screen.getByRole("button", { name: /تقارير الرسائل/ })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /تقارير الرسائل/ })).toBeInTheDocument();
     // تبويبات الأوردرز (تقارير الحالات/الإعدادات) مش موجودة في نطاق العملاء
-    expect(screen.queryByRole("button", { name: /تقارير الحالات/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^الإعدادات$/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /تقارير الحالات/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: /^الإعدادات$/ })).not.toBeInTheDocument();
   });
 
   test("المعاينة في نطاق العملاء تحل متغيراتهم بقيم نموذجية (points/customerName)", async () => {
@@ -170,7 +184,7 @@ describe("CustomerNotifications عبر TemplateCenter", () => {
     });
     renderPage();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: /قوالب الولاء/ }));
+    await user.click(await screen.findByRole("tab", { name: /قوالب الولاء/ }));
     await user.click(await screen.findByRole("button", { name: /^معاينة/ }));
     expect(screen.getAllByText(/50 نقطة/).length).toBeGreaterThan(0);
     expect(screen.queryByText(/\[points\]/)).not.toBeInTheDocument();

@@ -109,6 +109,21 @@ const Products: React.FC = () => {
     }
   };
 
+  const onBulkTrackInventory = async (enabled: boolean) => {
+    try {
+      const { apiClient } = await import("../../services/apiClient");
+      const ids = Array.from(selectedProducts);
+      if (ids.length === 0) return;
+      const r = await apiClient.patch("products/bulk/track-inventory", { productIds: ids, trackInventory: enabled, includeVariants: true });
+      const cnt = r?.data?.data?.productsUpdated || ids.length;
+      toast.success(`تم ${enabled ? 'تفعيل' : 'إيقاف'} تتبع المخزون لـ ${cnt} منتج`);
+      clearSelection();
+      await loadProducts();
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "فشل تحديث تتبع المخزون");
+    }
+  };
+
   const onBulkDelete = async () => {
     try {
       const count = await handleBulkDelete();
@@ -297,6 +312,8 @@ const Products: React.FC = () => {
           onHide={() => onBulkVisibility(true)}
           onUnhide={() => onBulkVisibility(false)}
           onConvertToPresentations={() => setShowBulkConvertModal(true)}
+          onEnableTrack={() => onBulkTrackInventory(true)}
+          onDisableTrack={() => onBulkTrackInventory(false)}
         />
       )}
 

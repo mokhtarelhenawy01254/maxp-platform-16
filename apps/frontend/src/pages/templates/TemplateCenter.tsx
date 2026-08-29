@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo, useRef, Fragment } from "react";
+import { useNavigate } from "react-router-dom";
 import { apiClient } from "../../services/apiClient";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -36,6 +37,37 @@ import type { TemplateScopeConfig, EventRow } from "./types";
 
 // حد Meta Cloud API لطول نص الرسالة (body) — تجاوزه يسبب رفض القالب
 const META_BODY_CHAR_LIMIT = 1024;
+
+/** ⓘ تلميح مكتبي مختصر — tooltip عند الـ hover بدل فقرة شرح تاخد مساحة (نمط 2026: micro-hints) */
+function FieldHint({ text }: { text: string }) {
+  return (
+    <span
+      role="note"
+      aria-label={text}
+      title={text}
+      tabIndex={0}
+      className="inline-flex size-3.5 shrink-0 cursor-help items-center justify-center rounded-full bg-slate-200 align-middle text-[9px] font-bold leading-none text-slate-500 dark:bg-slate-700 dark:text-slate-400"
+    >
+      i
+    </span>
+  );
+}
+
+// يختار لون نص مقروء (أسود/أبيض) حسب سطوع خلفية الشارة — يضمن تباين WCAG AA
+// يدعم #RGB و #RRGGBB و #RRGGBBAA (يتجاهل alpha)
+function readableTextColor(hex: string): string {  let c = (hex || "#6B7280").replace("#", "").trim();
+  if (c.length === 3) c = c.split("").map((ch) => ch + ch).join("");
+  if (c.length === 4) c = c.slice(0, 3).split("").map((ch) => ch + ch).join("");
+  if (c.length === 8) c = c.slice(0, 6);
+  if (c.length !== 6) return "#ffffff";
+  const r = parseInt(c.slice(0, 2), 16) / 255;
+  const g = parseInt(c.slice(2, 4), 16) / 255;
+  const b = parseInt(c.slice(4, 6), 16) / 255;
+  if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return "#ffffff";
+  const lin = (v: number) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const L = 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+  return L > 0.179 ? "#0f172a" : "#ffffff";
+}
 
 // ── قنوات الإرسال (تبويب الجدولة — خاص بالعملاء) ──
 const CHANNEL_LABELS: Record<string, string> = {
@@ -144,6 +176,8 @@ interface TemplateFormState {
   headerMediaName: string;
   headerUsesOrderProduct: boolean;
   category: string;
+  /** فئة ميتا الصريحة عند النشر — UTILITY/MARKETING/AUTHENTICATION */
+  metaCategory: string;
 }
 
 interface SettingsForm {
@@ -174,6 +208,7 @@ const emptyTemplateForm = (): TemplateFormState => ({
   headerMediaName: "",
   headerUsesOrderProduct: false,
   category: "CUSTOMER",
+  metaCategory: "UTILITY",
 });
 
 const DEFAULT_BUTTON_ACTIONS: { value: string; label: string }[] = [
@@ -203,7 +238,11 @@ const SAMPLE_VARIABLES: Record<string, string> = {
 
 function resolveVariablesForPreview(content: string, sample: Record<string, string> = SAMPLE_VARIABLES): string {
   if (!content) return "";
-  return content.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (_, name) => {
+  // تطبيع صيغة القوس الواحد {var} (نطاق العملاء) إلى المزدوج {{var}} قبل الحل،
+  // حتى تعمل المعاينة حتى لو كان المحتوى مخزَّنًا بصيغة القوس الواحد.
+  // يدعم { var } بمسافات داخل الأقواس
+  const normalized = content.replace(/\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}(?![}])/g, "{{$1}}");
+  return normalized.replace(/\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}/g, (_, name) => {
     return sample[name] || `[${name}]`;
   });
 }
@@ -283,23 +322,23 @@ export function WhatsAppBubblePreview({ content, buttons, hasButtons, sampleVari
   return (
     <div
       data-testid="whatsapp-preview"
-      className="relative ml-auto w-[88%] max-w-[340px] rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
+      className="relative ms-auto w-[88%] max-w-[340px] rounded-xl rounded-ee-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
       dir="auto"
     >
-      <div className="absolute bottom-1.5 left-1.5 flex items-center gap-0.5 text-[#34b7f1] dark:text-sky-300">
+      <div className="absolute bottom-1.5 end-1.5 flex items-center gap-0.5 text-[#34b7f1] dark:text-sky-300">
         <svg width="16" height="11" viewBox="0 0 16 11" fill="none">
           <path d="M11.071.653a.5.5 0 0 1 .076.704l-6 7.5a.5.5 0 0 1-.762.026L2.146 6.16a.5.5 0 1 1 .708-.706l1.864 1.864 5.65-7.06a.5.5 0 0 1 .703-.075z" fill="currentColor"/>
           <path d="M15.071.653a.5.5 0 0 1 .076.704l-6 7.5a.5.5 0 0 1-.762.026l-.5-.5.707-.707.13.13 5.65-7.06a.5.5 0 0 1 .7-.075z" fill="currentColor"/>
         </svg>
       </div>
 
-      <p className="whitespace-pre-wrap break-words pr-5 font-[system-ui]">
+      <p className="whitespace-pre-wrap break-words ps-5 font-[system-ui]">
         {formatWhatsAppText(resolved) || (
           <span className="text-slate-400 dark:text-slate-500">معاينة الرسالة ستظهر هنا...</span>
         )}
       </p>
 
-      <p className="mt-1 pl-5 text-right text-[10px] text-slate-500 dark:text-slate-400">{time}</p>
+      <p className="mt-1 pe-5 text-end text-[10px] text-slate-500 dark:text-slate-400">{time}</p>
 
       {visibleButtons.length > 0 && (
         <div className="mt-2 space-y-1 border-t border-black/5 pt-1.5 dark:border-white/10">
@@ -429,6 +468,9 @@ function buildVariableDescriptionsFrom(variables: { var: string; desc: string }[
 
 export default function TemplateCenter({ config }: { config: TemplateScopeConfig }) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  // تسمية الكيان في نصوص الواجهة — «حالة» للطلبات، «حدث» للعملاء وغيرهم
+  const noun = config.entityLabel ?? { singular: "حالة", plural: "حالات" };
   const [activeTab, setActiveTab] = useState(() => config.tabs[0]?.key || "all");
 
   const variableDescriptions = useMemo(() => buildVariableDescriptionsFrom(config.variables), [config.variables]);
@@ -436,6 +478,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
   const [statuses, setStatuses] = useState<StatusWithTemplate[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [saving, setSaving] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [selectedStatus, setSelectedStatus] = useState<StatusWithTemplate | null>(null);
@@ -447,6 +490,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const [showLocalRef, setShowLocalRef] = useState(false);
   const [templateForm, setTemplateForm] = useState<TemplateFormState>(emptyTemplateForm());
   const [headerUploading, setHeaderUploading] = useState(false);
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
 
   const [metaSessions, setMetaSessions] = useState<{ id: string; name: string; metaDisplayPhoneNumber?: string }[]>([]);
   const [selectedMetaSession, setSelectedMetaSession] = useState("");
@@ -463,6 +507,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const metaSessionsCacheRef = useRef<{ data: typeof metaSessions; at: number } | null>(null);
   // ⚡ نعيد جلب الـ preview بعد إغلاق الديالوج فقط لو حصل تعديل فعلي
   const dialogDirtyRef = useRef(false);
+  // ⚡ snapshot لحالة النموذج عند فتح الديالوج — عشان نمنع إغلاقه وضياع التعديلات بصمت
+  const initialFormRef = useRef<string | null>(null);
+  const isFormDirty = () =>
+    initialFormRef.current !== null && initialFormRef.current !== JSON.stringify(templateForm);
 
   const [settings, setSettings] = useState<SettingsForm | null>(null);
   const [settingsSessions, setSettingsSessions] = useState<{ id: string; name: string; phoneNumber?: string; status: string; provider?: string }[]>([]);
@@ -495,6 +543,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const [testPhone, setTestPhone] = useState("");
   const [testEvent, setTestEvent] = useState("");
   const [testing, setTesting] = useState(false);
+  // ── شريط الإنشاء الموحد فوق كل تبويب (عربي) ──
+  const [topCreateEvent, setTopCreateEvent] = useState("");
 
   const saveScheduleRow = async (row: EventRow) => {
     if (!editingSchedule || !config.saveSchedule) return;
@@ -507,9 +557,21 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         delayUnit: editingSchedule.delayUnit,
       });
       toast.success("تم حفظ الجدول بنجاح");
+      // تحديث موضعي للصف بقيم الحفظ — بدل إعادة جلب كل الأحداث والقوالب بعد كل حفظ
+      setStatuses((prev) =>
+        prev.map((s) =>
+          s.id === row.id
+            ? {
+                ...s,
+                notifyCustomer: editingSchedule.enabled,
+                channel: editingSchedule.activeChannel,
+                delayValue: editingSchedule.delayValue,
+                delayUnit: editingSchedule.delayUnit,
+              }
+            : s,
+        ),
+      );
       setEditingSchedule(null);
-      const fresh = await config.loadEvents(apiClient);
-      setStatuses(fresh as StatusWithTemplate[]);
     } catch (e: any) {
       toast.error(e?.response?.data?.error || "فشل الحفظ");
     } finally {
@@ -533,7 +595,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       });
       // زر «تراجع» يفتح نافذة قصيرة لعكس التبديل لو كان بالغلط
       toast.success(
-        next ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة") : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة"),
+        next ? t("orders.notifyEnabled", `تم تفعيل إشعار: ${row.name}`) : t("orders.notifyDisabled", `تم إيقاف إشعار: ${row.name}`),
         {
           action: {
             label: "تراجع",
@@ -569,7 +631,21 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       if (res?.success) toast.success("تم إرسال الإشعار التجريبي");
       else toast.error(res?.message || res?.error || "فشل الإرسال");
     } catch (e: any) {
-      toast.error(e?.response?.data?.message || e?.response?.data?.error || "فشل الإرسال التجريبي");
+      // الإشعارات معطلة على مستوى الشركة — الرسالة الافتراضية من السيرفر بتوجه
+      // لتبويب إعدادات مش موجود في كل النطاقات، فنتوجه للمسار الصحيح
+      if (e?.response?.data?.error === "DISABLED") {
+        if (config.features.enableSettings) {
+          toast.error(e?.response?.data?.message || "الإشعارات معطلة — فعّلها من تبويب الإعدادات");
+        } else if (config.settingsPath) {
+          toast.error("الإشعارات معطّلة حالياً — بتتدار من صفحة قوالب إشعارات الطلبات", {
+            action: { label: "فتح الإعدادات", onClick: () => navigate(config.settingsPath!) },
+          });
+        } else {
+          toast.error("الإشعارات معطلة حالياً");
+        }
+      } else {
+        toast.error(e?.response?.data?.message || e?.response?.data?.error || "فشل الإرسال التجريبي");
+      }
     } finally {
       setTesting(false);
     }
@@ -580,7 +656,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     try {
       const rows = await config.loadEvents(apiClient);
       setStatuses(rows as StatusWithTemplate[]);
+      setLoadError(false);
     } catch (err) {
+      setLoadError(true);
       console.error("Failed to fetch statuses with templates", err);
       toast.error(t("orders.loadError", "حدث خطأ في تحميل البيانات"));
     } finally {
@@ -638,6 +716,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
   useEffect(() => {
     document.title = `${config.documentTitle} | MaxP`;
+    // جلسات الميتا عند الدخول — المزامنة التلقائية وتحذيرات الربط محتاجاها بدون فتح دايلوج
+    fetchMetaSessions();
     // ⚡ Promise.allSettled: نجمع الطلبات المستقلة لتجنب waterfall وإخفاء الـ loading خاطئ
     Promise.allSettled([fetchData(), fetchSettings(), fetchDeliveryPreview()]);
   }, [fetchData, fetchSettings, fetchDeliveryPreview, config]);
@@ -653,7 +733,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   }, [dialogOpen, fetchDeliveryPreview]);
 
   // فتح شاشة إنشاء مناسبة جديدة — بديل عن "الكارت الثابت" اللي كان ظاهر في تبويب المناسبات
-  const openNewOccasion = () => {
+  const openNewOccasion = (slot: TemplateSlot = "regular") => {
     const newStatus: StatusWithTemplate = {
       id: "__new_occasion__",
       code: `CUSTOMER_OCCASION_${Date.now().toString(36)}`,
@@ -670,7 +750,28 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       isNonNotifiable: false,
       category: "OCCASION",
     };
-    openCreateDialog(newStatus, "regular");
+    openCreateDialog(newStatus, slot);
+  };
+
+  // إنشاء قالب منتج جديد — نفس آلية المناسبة لكن بفئة PRODUCTS
+  const openNewProduct = (slot: TemplateSlot = "regular") => {
+    const newStatus: StatusWithTemplate = {
+      id: "__new_product__",
+      code: `NEW_PRODUCT_${Date.now().toString(36).toUpperCase()}`,
+      name: "قالب منتج جديد",
+      color: "#0EA5E9",
+      sortOrder: 200000,
+      statusType: "products",
+      notifyCustomer: true,
+      isSystemStatus: false,
+      template: null,
+      metaTemplate: null,
+      hasTemplate: false,
+      hasMetaTemplate: false,
+      isNonNotifiable: false,
+      category: "PRODUCTS",
+    };
+    openCreateDialog(newStatus, slot);
   };
 
   const openCreateDialog = (status: StatusWithTemplate, slot: TemplateSlot) => {
@@ -680,7 +781,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     setDialogMode("create");
     setOriginalMetaTemplateName("");
     setMetaAutoFilled(false);
-    setTemplateForm({
+    const form: TemplateFormState = {
       name: slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`,
       content: slot === "meta" && status.template?.content ? status.template.content : config.defaultContent,
       isActive: true,
@@ -703,7 +804,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       category: config.features.categoryMode === "manual"
         ? (status.category || config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER")
         : "CUSTOMER",
-    });
+      metaCategory: String(status.category || "").toUpperCase() === "MARKETING" ? "MARKETING" : "UTILITY",
+    };
+    setTemplateForm(form);
+    initialFormRef.current = JSON.stringify(form);
     setShowLocalRef(false);
     setDialogOpen(true);
     fetchMetaSessions();
@@ -719,7 +823,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     setOriginalMetaTemplateName(metaName);
     setMetaAutoFilled(false);
     setShowLocalRef(slot === "meta" && !!metaName);
-    setTemplateForm({
+    const form: TemplateFormState = {
       name: target?.name || (slot === "meta" ? `قالب ميتا ${status.name}` : `قالب ${status.name}`),
       content: target?.content || config.defaultContent,
       isActive: target?.isActive ?? true,
@@ -735,7 +839,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       category: config.features.categoryMode === "manual"
         ? (status.category || config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER")
         : "CUSTOMER",
-    });
+      metaCategory: String(status.category || "").toUpperCase() === "MARKETING" ? "MARKETING" : "UTILITY",
+    };
+    setTemplateForm(form);
+    initialFormRef.current = JSON.stringify(form);
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -754,7 +861,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     setOriginalMetaTemplateName(metaName);
     setMetaAutoFilled(false);
     setShowLocalRef(false);
-    setTemplateForm({
+    const form: TemplateFormState = {
       name: current?.name || `قالب ميتا ${status.name}`,
       content: current?.content || config.defaultContent,
       isActive: current?.isActive ?? true,
@@ -768,7 +875,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       headerMediaName: current?.headerMediaHandle || "",
       headerUsesOrderProduct: config.features.enableHeaderProductImage ? (current?.headerUsesOrderProduct ?? true) : false,
       category: config.features.categoryMode === "manual" ? (config.features.dialogCategoryOptions?.[0]?.value || "CUSTOMER") : "CUSTOMER",
-    });
+      metaCategory: "UTILITY",
+    };
+    setTemplateForm(form);
+    initialFormRef.current = JSON.stringify(form);
     setDialogOpen(true);
     fetchMetaSessions();
   };
@@ -938,6 +1048,10 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
     const saved = await persistLocalTemplate();
     if (!saved) return;
+    if (templateForm.content.length > META_BODY_CHAR_LIMIT) {
+      toast.error(t("orders.metaBodyTooLong", `النص أطول من حد ميتا (${META_BODY_CHAR_LIMIT} حرف) — قلّل النص قبل النشر`));
+      return;
+    }
     setResubmittingMeta(true);
     try {
       const res = await apiClient.post(`${config.metaOpsBase}/${selectedTemplate.id}/resubmit-meta`, {
@@ -986,14 +1100,23 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     // Optimistic update + rollback على الفشل
     const prevStatuses = statuses;
     setStatuses((prev) =>
-      prev.map((s) => (s.id === status.id ? { ...s, notifyCustomer: nextValue } : s))
+      prev.map((s) => {
+        if (s.id !== status.id) return s;
+        const updated = { ...s, notifyCustomer: nextValue };
+        // لمناسبات/منتجات العملاء، تفعيل الإشعار يقلب isActive في القالب نفسه — نوائمه في الحالة المحلية
+        if (s.category === "OCCASION" || s.category === "PRODUCTS") {
+          if (updated.template) updated.template = { ...updated.template, isActive: nextValue };
+          if (updated.metaTemplate) updated.metaTemplate = { ...updated.metaTemplate, isActive: nextValue };
+        }
+        return updated;
+      })
     );
     try {
       await config.toggleNotify(apiClient, status as EventRow);
       toast.success(
         nextValue
-          ? t("orders.notifyEnabled", "تم تفعيل الإشعار لهذه الحالة")
-          : t("orders.notifyDisabled", "تم إيقاف الإشعار لهذه الحالة")
+          ? t("orders.notifyEnabled", `تم تفعيل إشعار: ${status.name}`)
+          : t("orders.notifyDisabled", `تم إيقاف إشعار: ${status.name}`)
       );
     } catch (err: any) {
       // Rollback: نعيد الحالة الأصلية لو فشل الـ API
@@ -1031,9 +1154,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
     setPublishingId(templateId);
     try {
-      await apiClient.post(`${config.metaOpsBase}/${templateId}/publish`, { sessionId: selectedMetaSession });
+      await apiClient.post(`${config.metaOpsBase}/${templateId}/publish`, {
+        sessionId: selectedMetaSession,
+        metaCategory: templateForm.metaCategory || undefined,
+      });
       toast.success(t("orders.publishedToMeta", "تم إرسال القالب لميتا للمراجعة"));
-      fetchAvailableMetaTemplates();
+      // نغلق الديالوج ونعيد الجلب — بدل بادج «محفوظ (بدون ربط)» المضلل
+      // ولمنع ضغطة تانية تنشئ قالب ميتا مكرر بنفس الاسم المتولد
+      setDialogOpen(false);
+      fetchData();
     } catch (err: any) {
       toast.error(err?.response?.data?.error || t("orders.publishFailed", "فشل النشر على ميتا"));
     } finally {
@@ -1048,6 +1177,11 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
     if (!templateForm.content.trim()) {
       toast.error(t("orders.templateContentRequired", "محتوى الرسالة مطلوب"));
+      return;
+    }
+    // حد ميتا الصارم لطول الـ body — النشر بعده مضمون الرفض
+    if (templateForm.content.length > META_BODY_CHAR_LIMIT) {
+      toast.error(t("orders.metaBodyTooLong", `النص أطول من حد ميتا (${META_BODY_CHAR_LIMIT} حرف) — قلّل النص قبل النشر`));
       return;
     }
     const templateId = await persistLocalTemplate();
@@ -1124,20 +1258,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
     }
   }, [dialogOpen, selectedMetaSession, fetchAvailableMetaTemplates]);
 
-  const syncMetaStatuses = async () => {
+  const syncMetaStatuses = async (silent = false) => {
     const metaSessionId = selectedMetaSession || metaSessions[0]?.id;
     if (!metaSessionId) {
-      toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
+      if (!silent) toast.error(t("orders.selectMetaSession", "اختر جلسة ميتا أولاً"));
       return;
     }
-    setSyncingStatus(true);
+    if (!silent) setSyncingStatus(true);
     try {
       const res = await apiClient.post(`${config.metaOpsBase}/sync-status`, { sessionId: metaSessionId });
       const data = res.data as { success?: boolean; synced?: number };
       if (data?.success) {
         const synced = data.synced ?? 0;
         if (synced === 0) {
-          toast.success(t("orders.metaSyncUpToDate", "كل القوالب محدّثة — مفيش حاجة اتغيرت"));
+          if (!silent) toast.success(t("orders.metaSyncUpToDate", "كل القوالب محدّثة — مفيش حاجة اتغيرت"));
         } else {
           toast.success(t("orders.metaSyncDone", `تمت مزامنة ${synced} قالب`));
           const rejectedCount = Object.values(deliveryPreview).filter((p) => p.metaTemplateStatus === "REJECTED").length;
@@ -1149,11 +1283,25 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         fetchDeliveryPreview();
       }
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || t("orders.metaSyncFailed", "فشلت المزامنة من ميتا"));
+      // فشل المزامنة التلقائية غير حرج — نسجله فقط بدون إزعاج المستخدم
+      if (silent) console.warn("[META-SYNC] auto-sync failed:", err?.message);
+      else toast.error(err?.response?.data?.error || t("orders.metaSyncFailed", "فشلت المزامنة من ميتا"));
     } finally {
-      setSyncingStatus(false);
+      if (!silent) setSyncingStatus(false);
     }
   };
+
+  // 🔄 مزامنة تلقائية واحدة عند الدخول لو فيه قوالب مربوطة بميتا — عشان بادج
+  // PENDING/APPROVED/REJECTED يظهر محدّث من ميتا بدون ما المستخدم يدور على زرار مزامنة
+  const autoSyncDoneRef = useRef(false);
+  useEffect(() => {
+    if (autoSyncDoneRef.current) return;
+    if (loading || statuses.length === 0 || metaSessions.length === 0) return;
+    autoSyncDoneRef.current = true;
+    const hasBoundMeta = statuses.some((s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate));
+    if (hasBoundMeta) syncMetaStatuses(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, statuses, metaSessions]);
 
   const handleSaveSettings = async () => {
     if (!settings) return;
@@ -1193,12 +1341,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
   const statusOptions = useMemo(() => {
     const map = new Map<string, string>();
-    for (const a of DEFAULT_BUTTON_ACTIONS) map.set(a.value, a.label);
+    // أزرار سريعة مناسبة للنطاق — النطاقات غير الطلبية (العملاء) محتاجة إجراءات
+    // غير انتقال الحالة (فتح المتجر/عرض النقاط) مش تأكيد/إلغاء الطلب.
+    const actions = config.features.quickReplyActions ?? DEFAULT_BUTTON_ACTIONS;
+    for (const a of actions) map.set(a.value, a.label);
     for (const s of statuses) {
       if (s.code && !map.has(s.code)) map.set(s.code, s.name);
     }
     return Array.from(map.entries()).map(([value, label]) => ({ value, label }));
-  }, [statuses]);
+  }, [statuses, config.features.quickReplyActions]);
 
   const updateButton = (idx: number, patch: Partial<TemplateButton>) => {
     setTemplateForm((p) => ({
@@ -1232,9 +1383,29 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   };
 
   const activeTabDef = config.tabs.find((tb) => tb.key === activeTab);
-  const filteredStatuses = activeTabDef?.kind === "list" && activeTabDef.filter
-    ? statuses.filter((s) => activeTabDef.filter!(s as EventRow))
-    : statuses;
+  const filteredStatuses = useMemo(() => {
+    if (activeTabDef?.kind === "list" && activeTabDef.filter) {
+      return statuses.filter((s) => activeTabDef.filter!(s as EventRow));
+    }
+    return statuses;
+  }, [statuses, activeTab, config.tabs]);
+
+  // مزامنة اختيار نوع الحدث في شريط الإنشاء العلوي مع التبويب الحالي
+  useEffect(() => {
+    if (config.scope !== "customers" || activeTabDef?.kind !== "list") return;
+    // حالة فارغة: occasions/products بدون صفوف — اضبط اختيار افتراضي لزر الإنشاء الأول
+    if (filteredStatuses.length === 0) {
+      if (activeTab === "occasions" && topCreateEvent !== "__new_occasion__") setTopCreateEvent("__new_occasion__");
+      else if (activeTab === "products" && topCreateEvent !== "__new_product__") setTopCreateEvent("__new_product__");
+      return;
+    }
+    if (!topCreateEvent && filteredStatuses.length > 0) {
+      setTopCreateEvent(filteredStatuses[0].code);
+    }
+    if (topCreateEvent && !filteredStatuses.some((s) => s.code === topCreateEvent) && topCreateEvent !== "__new_occasion__" && topCreateEvent !== "__new_product__") {
+      setTopCreateEvent(filteredStatuses[0]?.code || "");
+    }
+  }, [activeTab, filteredStatuses, topCreateEvent, activeTabDef?.kind, config.scope]);
 
   const visibleStatuses = useMemo(
     () => filteredStatuses.filter((s) => showInternal || !s.isNonNotifiable),
@@ -1242,6 +1413,17 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   );
 
   const internalCount = filteredStatuses.filter((s) => s.isNonNotifiable).length;
+
+  const scheduleCountLabel = useMemo(() => {
+    const sched = statuses.filter((s) => {
+      const st = String(s.statusType || "").toLowerCase();
+      const cat = String(s.category || "").toUpperCase();
+      // يستبعد المناسبات/المنتجات سواء جاءت كـ statusType صغير أو category كبير — يطابق فلتر الجدول
+      return st !== "occasion" && st !== "products" && cat !== "OCCASION" && cat !== "PRODUCTS";
+    });
+    const on = sched.filter((s) => s.notifyCustomer).length;
+    return `${on}/${sched.length}`;
+  }, [statuses]);
   const notifiableCount = useMemo(
     () => statuses.filter((s) => !s.isNonNotifiable).length,
     [statuses]
@@ -1385,6 +1567,28 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const boundMetaCount = visibleStatuses.filter(
     (s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate)
   ).length;
+  // هل فيه أي قالب مربوط بميتا في كل التبويبات؟ — لإظهار زرار مزامنة حالات ميتا في الهيدر
+  const anyBoundMeta = statuses.some((s) => isMetaTemplateBound(s.template) || isMetaTemplateBound(s.metaTemplate));
+
+  // الزراران العلويان في شريط الإنشاء — مدخل سريع من أول الصفحة (الميتا أساسي + العادي)
+  const handleTopCreate = (slot: TemplateSlot) => {
+    if (filteredStatuses.length === 0) {
+      if (activeTab === "occasions") { openNewOccasion(slot); return; }
+      if (activeTab === "products") { openNewProduct(slot); return; }
+      toast.error("لا توجد أحداث في هذا التبويب");
+      return;
+    }
+    const code = topCreateEvent || filteredStatuses[0]?.code || "";
+    if (code === "__new_occasion__") { openNewOccasion(slot); return; }
+    if (code === "__new_product__") { openNewProduct(slot); return; }
+    if (!code) {
+      toast.error("اختر نوع الحدث أولاً");
+      return;
+    }
+    const status = filteredStatuses.find((s) => s.code === code) || filteredStatuses[0];
+    if (status) openCreateDialog(status, slot);
+    else toast.error("نوع الحدث غير موجود");
+  };
   const defaultSession = settingsSessions.find((s) => s.id === settings?.defaultSessionId);
   const defaultSessionIsMeta = defaultSession?.provider === "META_CLOUD" || !!metaSessions.find((s) => s.id === settings?.defaultSessionId);
 
@@ -1401,6 +1605,17 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {config.description}
             </p>
           </div>
+          {anyBoundMeta && metaSessions.length > 0 && (
+            <button
+              onClick={() => syncMetaStatuses(false)}
+              disabled={syncingStatus}
+              title="تحديث حالة قوالب ميتا (معتمد/مرفوض/قيد المراجعة) من ميتا مباشرة"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            >
+              <ArrowPathIcon className={`h-3.5 w-3.5 ${syncingStatus ? "animate-spin" : ""}`} />
+              مزامنة حالات ميتا
+            </button>
+          )}
         </div>
       </div>
 
@@ -1409,8 +1624,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         <div className="mb-4 rounded-xl border border-slate-200/70 bg-white p-4 dark:border-white/10 dark:bg-slate-900/50">
           <div className="grid gap-3 md:grid-cols-[1fr_1fr_auto_auto] items-end">
             <div>
-              <Label className="text-xs text-slate-500">إرسال تجريبي (رقم الهاتف)</Label>
+              <Label htmlFor="test-phone" className="text-xs text-slate-500">إرسال تجريبي (رقم الهاتف)</Label>
               <input
+                id="test-phone"
                 dir="ltr"
                 value={testPhone}
                 onChange={(e) => setTestPhone(e.target.value)}
@@ -1419,8 +1635,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               />
             </div>
             <div>
-              <Label className="text-xs text-slate-500">الحدث</Label>
+              <Label htmlFor="test-event" className="text-xs text-slate-500">الحدث</Label>
               <select
+                id="test-event"
                 value={testEvent}
                 onChange={(e) => setTestEvent(e.target.value)}
                 className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
@@ -1444,15 +1661,19 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       )}
 
       {/* Tabs */}
-      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
+      <div role="tablist" className="mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-700">
         {config.tabs.map((tab) => {
           const isReports = tab.kind === "reports";
           const isSettings = tab.kind === "settings";
           const isSchedule = tab.kind === "schedule";
-          const count = isReports || isSettings || isSchedule ? 0 : tab.count ? tab.count(statuses as EventRow[]) : notifiableCount;
+          const count = isSchedule ? scheduleCountLabel : (isReports || isSettings ? 0 : tab.count ? tab.count(statuses as EventRow[]) : notifiableCount);
           return (
             <button
               key={tab.key}
+              role="tab"
+              id={`tab-${tab.key}`}
+              aria-selected={activeTab === tab.key}
+              tabIndex={activeTab === tab.key ? 0 : -1}
               onClick={() => setActiveTab(tab.key)}
               className={`whitespace-nowrap px-4 py-2.5 text-sm font-medium transition border-b-2 -mb-px ${
                 activeTab === tab.key
@@ -1460,11 +1681,11 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
               }`}
             >
-              {isReports ? <DocumentTextIcon className="ml-1.5 inline h-4 w-4" /> : null}
-              {isSettings ? <Cog6ToothIcon className="ml-1.5 inline h-4 w-4" /> : null}
+              {isReports ? <DocumentTextIcon className="me-1.5 inline h-4 w-4" /> : null}
+              {isSettings ? <Cog6ToothIcon className="me-1.5 inline h-4 w-4" /> : null}
               {tab.label}
-              {!isReports && !isSettings && !isSchedule && (
-                <span className="mr-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] dark:bg-slate-800">
+              {!isReports && !isSettings && (
+                <span className="ms-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] dark:bg-slate-800">
                   {count}
                 </span>
               )}
@@ -1473,6 +1694,24 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         })}
       </div>
 
+      {/* فشل التحميل — بانر ثابت بزرار إعادة محاولة بدل empty state بيضلل المستخدم */}
+      {!loading && loadError && (
+        <div
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800/40 dark:bg-red-900/20 dark:text-red-300"
+          role="alert"
+        >
+          <span>فشل تحميل البيانات — القوالب والأحداث مش ظاهرة. اتأكد من الاتصال وحاول تاني.</span>
+          <button
+            onClick={() => fetchData()}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-700"
+          >
+            <ArrowPathIcon className="h-3.5 w-3.5" />
+            إعادة المحاولة
+          </button>
+        </div>
+      )}
+
+      <div id={`panel-${activeTab}`} role="tabpanel" aria-labelledby={`tab-${activeTab}`}>
       {activeTab === "reports" ? (
         <StatusReportTab statuses={statuses} config={config} />
       ) : activeTab === "schedule" && config.features.enableSchedule ? (
@@ -1485,16 +1724,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400">
-                    <th className="py-3 px-2 text-right font-medium">الحدث</th>
-                    <th className="py-3 px-2 text-right font-medium">يتبعت امتي</th>
-                    <th className="py-3 px-2 text-right font-medium">بعد قد ايه</th>
-                    <th className="py-3 px-2 text-right font-medium">القناة النشطة</th>
-                    <th className="py-3 px-2 text-right font-medium">مفعّل</th>
-                    <th className="py-3 px-2" />
+                    <th scope="col" className="py-3 px-2 text-right font-medium">الحدث</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">يتبعت امتي</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">بعد قد ايه</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">القناة النشطة</th>
+                    <th scope="col" className="py-3 px-2 text-right font-medium">مفعّل</th>
+                    <th scope="col" className="py-3 px-2" aria-hidden="true"><span className="sr-only">إجراءات</span></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {statuses.filter((row) => row.category !== "OCCASION").map((row) => {
+                  {statuses.filter((row) => {
+                    const st = String((row as any).statusType || "").toLowerCase();
+                    const cat = String(row.category || "").toUpperCase();
+                    return st !== "occasion" && st !== "products" && cat !== "OCCASION" && cat !== "PRODUCTS";
+                  }).map((row) => {
                     const isEditing = editingSchedule?.row.code === row.code;
                     return (
                       <tr key={row.code} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40">
@@ -1506,16 +1749,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         <td className="py-3 px-2">
                           {isEditing ? (
                             <div className="flex items-center gap-1">
-                              <input
-                                type="number"
-                                min={0}
-                                value={editingSchedule!.delayValue}
-                                onChange={(e) => setEditingSchedule((d) => d ? { ...d, delayValue: Number(e.target.value) || 0 } : d)}
-                                className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                              />
-                              <select
-                                value={editingSchedule!.delayUnit}
-                                onChange={(e) => setEditingSchedule((d) => d ? { ...d, delayUnit: e.target.value as "HOURS" | "DAYS" } : d)}
+                               <input
+                                 id="schedule-delay"
+                                 type="number"
+                                 min={0}
+                                 aria-label="مدة التأخير"
+                                 value={editingSchedule!.delayValue}
+                                 onChange={(e) => setEditingSchedule((d) => d ? { ...d, delayValue: Number(e.target.value) || 0 } : d)}
+                                 className="w-20 rounded-lg border border-slate-200 px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                               />
+                               <select
+                                 id="schedule-delay-unit"
+                                 aria-label="وحدة التأخير"
+                                 value={editingSchedule!.delayUnit}
+                                 onChange={(e) => setEditingSchedule((d) => d ? { ...d, delayUnit: e.target.value as "HOURS" | "DAYS" } : d)}
                                 className="w-24 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                               >
                                 <option value="HOURS">ساعة</option>
@@ -1546,6 +1793,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         <td className="py-3 px-2">
                           <Switch
                             checked={isEditing ? editingSchedule!.enabled : row.notifyCustomer}
+                            aria-label={`تفعيل إشعار ${row.name}`}
                             onCheckedChange={(v) => {
                               if (isEditing) {
                                 setEditingSchedule((d) => d ? { ...d, enabled: v } : d);
@@ -1597,7 +1845,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
       ) : activeTab === "settings" ? (
         <div data-testid="settings-panel" className="rounded-xl border border-slate-200/70 bg-white p-5 dark:border-white/10 dark:bg-slate-900/50">
           <h2 className="mb-4 text-base font-bold text-slate-900 dark:text-white">
-            <Cog6ToothIcon className="ml-1.5 inline h-5 w-5" />
+            <Cog6ToothIcon className="ms-1.5 inline h-5 w-5" />
             إعدادات إشعارات واتساب للطلبات
           </h2>
 
@@ -1675,7 +1923,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 )}
                 {defaultSessionInfo?.provider === "META_CLOUD" && (
                   <button
-                    onClick={syncMetaStatuses}
+                    onClick={() => syncMetaStatuses(false)}
                     disabled={syncingStatus}
                     className="mt-2 inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                   >
@@ -1707,7 +1955,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-slate-900 dark:text-white">
-                      <ClockIcon className="ml-1 inline h-4 w-4" />
+                      <ClockIcon className="me-1 inline h-4 w-4" />
                       ساعات الهدوء
                     </p>
                     <p className="text-xs text-slate-500">ما ترسلش رسايل في الوقت ده</p>
@@ -1748,7 +1996,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {/* Rate limit */}
               <div>
                 <label className="mb-1 block text-sm font-medium text-slate-900 dark:text-white">
-                  <BoltIcon className="ml-1 inline h-4 w-4" />
+                  <BoltIcon className="me-1 inline h-4 w-4" />
                   حد الإرسال (رسالة/دقيقة)
                 </label>
                 <input
@@ -1783,14 +2031,14 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
             <div className="mb-4 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
               <ExclamationTriangleIcon className="h-5 w-5 shrink-0" />
               <span>
-                {statusesWithoutTemplate.length} حالة بدون قالب واتساب
+                {statusesWithoutTemplate.length} {noun.plural} بدون قالب واتساب
                 {activeTab !== "all" ? " في هذا القسم" : ""}
               </span>
             </div>
           )}
 
-          {/* Meta session warning */}
-          {boundMetaCount > 0 && !defaultSessionIsMeta && (
+          {/* Meta session warning — يظهر فقط لو الصفحة قادرة فعلاً على تقييم الجلسة الأساسية */}
+          {!!config.endpoints?.deliveryPreview && boundMetaCount > 0 && !defaultSessionIsMeta && (
             <div className="mb-4 flex items-start gap-2 rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm text-sky-800 dark:border-sky-800/30 dark:bg-sky-900/20 dark:text-sky-300">
               <GlobeAltIcon className="mt-0.5 h-5 w-5 shrink-0" />
               <span>
@@ -1807,11 +2055,11 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث باسم الحالة أو الكود..."
-                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pr-9 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                placeholder="ابحث بالاسم أو الكود..."
+                className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 pe-9 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
               />
               <svg
-                className="absolute right-3 top-2.5 h-4 w-4 text-slate-400"
+                className="absolute end-3 top-2.5 h-4 w-4 text-slate-400"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
@@ -1873,14 +2121,57 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
             )}
           </div>
 
-          {activeTab === "occasions" && (
-            <button
-              onClick={openNewOccasion}
-              className="mb-4 flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-indigo-700"
-            >
-              <PlusIcon className="h-4 w-4" />
-              إضافة مناسبة جديدة
-            </button>
+          {/* ── شريط الإنشاء الموحد — فوق كل تبويب قائمة (عربي) — للعملاء فقط ── */}
+          {config.scope === "customers" && activeTabDef?.kind === "list" && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900/50">
+              <div className="flex flex-wrap items-center gap-2">
+                {/* اختيار نوع الحدث بالعربي — ظاهر دائماً قبل زر الإنشاء */}
+                {filteredStatuses.length > 0 ? (
+                  <select
+                    value={topCreateEvent || filteredStatuses[0]?.code || ""}
+                    onChange={(e) => setTopCreateEvent(e.target.value)}
+                    aria-label="نوع الحدث"
+                    className="min-w-[200px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    {filteredStatuses.map((s) => (
+                      <option key={s.code} value={s.code}>
+                        {s.name} {s.hasTemplate || s.hasMetaTemplate ? "— به قالب" : "— بدون قالب"}
+                      </option>
+                    ))}
+                    {activeTab === "occasions" && (
+                      <option value="__new_occasion__">＋ مناسبة جديدة…</option>
+                    )}
+                    {activeTab === "products" && (
+                      <option value="__new_product__">＋ قالب منتج جديد…</option>
+                    )}
+                  </select>
+                ) : (
+                  <span className="text-sm text-slate-500 dark:text-slate-400">
+                    {activeTab === "occasions" ? "لا توجد مناسبات بعد — أنشئ أول مناسبة" : activeTab === "products" ? "لا توجد قوالب منتجات بعد" : "لا توجد أحداث في هذا التبويب"}
+                  </span>
+                )}
+                <button
+                  disabled={filteredStatuses.length > 0 && !topCreateEvent && !filteredStatuses[0]?.code}
+                  onClick={() => handleTopCreate("meta")}
+                  title="تأليف قالب وإرساله لميتا للمراجعة والاعتماد"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  إنشاء قالب ميتا
+                </button>
+                <button
+                  disabled={filteredStatuses.length > 0 && !topCreateEvent && !filteredStatuses[0]?.code}
+                  onClick={() => handleTopCreate("regular")}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 transition hover:bg-indigo-100 disabled:opacity-50 disabled:cursor-not-allowed dark:border-indigo-800/40 dark:bg-indigo-900/20 dark:text-indigo-300 dark:hover:bg-indigo-900/40"
+                >
+                  <PlusIcon className="h-4 w-4" />
+                  إنشاء قالب عادي
+                </button>
+              </div>
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                {visibleStatuses.length} {noun.plural} في هذا التبويب
+              </span>
+            </div>
           )}
 
           {loading ? (
@@ -1904,13 +2195,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               <DocumentTextIcon className="mb-3 h-10 w-10 text-slate-300 dark:text-slate-600" />
               <p className="text-sm font-semibold text-slate-800 dark:text-slate-300">
                 {searchQuery || activeChip !== "all"
-                  ? "لا توجد حالات مطابقة لبحثك"
-                  : "لا توجد حالات بعد"}
+                  ? `لا توجد ${noun.plural} مطابقة لبحثك`
+                  : `لا توجد ${noun.plural} بعد`}
               </p>
               <p className="mt-1 max-w-xs text-xs text-slate-500 dark:text-slate-400">
                 {searchQuery || activeChip !== "all"
-                  ? "جرّب تغيير كلمات البحث أو إلغاء الفلاتر لرؤية كل الحالات."
-                  : "الحالات الخاصة بالطلبات هتظهر هنا أول ما تتضاف."}
+                  ? "جرّب تغيير كلمات البحث أو إلغاء الفلاتر لرؤية كل النتائج."
+                  : config.scope === "customers"
+                    ? "قوالب إشعارات العملاء هتظهر هنا أول ما تتضاف."
+                    : `ال${noun.plural} هتظهر هنا أول ما تتضاف.`}
               </p>
               {(searchQuery || activeChip !== "all") && (
                 <button
@@ -1961,6 +2254,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     onOpenSwitch={openSwitchDialog}
                     onUnbindMeta={requestUnbindMeta}
                     sampleVariables={sampleVariables}
+                    enableMetaSwitch={config.features.enableMetaSwitch}
                   />
                 ));
               })}
@@ -1968,9 +2262,20 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
           )}
         </>
       )}
+      </div>
 
       {/* Template dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => setDialogOpen(open)}>
+      <Dialog
+        open={dialogOpen}
+        onOpenChange={(open) => {
+          // لو المستخدم بيقفل وفيه تعديلات مش محفوظة — نأكّد قبل ما نضيّعهم
+          if (!open && isFormDirty()) {
+            setConfirmCloseOpen(true);
+          } else {
+            setDialogOpen(open);
+          }
+        }}
+      >
         <DialogContent
           data-testid="template-dialog"
           showCloseButton
@@ -1982,7 +2287,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {metaDialogTitle}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              نموذج إنشاء وتعديل قالب رسالة واتساب للحالة
+              نموذج إنشاء وتعديل قالب رسالة واتساب لل{noun.singular}
             </DialogDescription>
           </DialogHeader>
           {dialogOpen && selectedStatus && dialogMode === "switch" && (
@@ -2004,7 +2309,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 <p className="-mt-0.5 mb-2 text-[10px] text-slate-400 dark:text-slate-500">
                   {isMetaBound
                     ? `الربط الحالي: ${originalMetaTemplateName} — اختار قالب تاني عشان تغيّره (مش بيغيّر محتوى الرسالة).`
-                    : "اختار قالب معتمد وربطه بالحالة — الرسالة اللي هتتبعت هي نص قالب ميتا نفسه."}
+                    : `اختار قالب معتمد وربطه بال${noun.singular} — الرسالة اللي هتتبعت هي نص قالب ميتا نفسه.`}
                 </p>
                 <MetaTemplateSelect
                   metaSessions={metaSessions}
@@ -2048,103 +2353,106 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
 
           {dialogOpen && selectedStatus && dialogMode !== "switch" && (
             <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">نوع الحدث</label>
-                <input
-                  type="text"
-                  value={selectedStatus.code}
-                  disabled
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
-                />
+                {dialogMode === "create" ? (
+                  <select
+                    value={selectedStatus.code}
+                    onChange={(e) => {
+                      const next = statuses.find((s) => s.code === e.target.value);
+                      if (next) {
+                        setSelectedStatus(next);
+                      } else if (e.target.value.startsWith("CUSTOMER_OCCASION") || e.target.value.startsWith("NEW_PRODUCT")) {
+                        // حالة جديدة (من الشريط العلوي) — حدث الاسم والكود معاً
+                        setSelectedStatus((prev) => prev ? { ...prev, code: e.target.value } : prev);
+                      }
+                    }}
+                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                  >
+                    {statuses
+                      .filter((s) => {
+                        const def = config.tabs.find((tb) => tb.key === activeTab);
+                        if (def?.kind === "list" && def.filter) return def.filter(s as EventRow);
+                        return true;
+                      })
+                      .map((s) => (
+                        <option key={s.code} value={s.code}>{s.name} — {s.code}</option>
+                      ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={`${selectedStatus.name} — ${selectedStatus.code}`}
+                    disabled
+                    className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                  />
+                )}
               </div>
 
               <div>
-                <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">اسم القالب</label>
+                <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                  اسم القالب
+                  {dialogSlot === "meta" && (
+                    <FieldHint text="اسم محلي للعرض داخل المنصة فقط — ميتا بتولّد اسمًا تقنيًا (مثل price_drop_mtabc12) يظهر على الكارت بعد النشر" />
+                  )}
+                </label>
                 <input
                   type="text"
                   value={templateForm.name}
                   onChange={(e) => setTemplateForm((p) => ({ ...p, name: e.target.value }))}
                   className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  placeholder="مثال: قالب تأكيد الطلب"
+                  placeholder={config.scope === "customers" ? "مثال: قالب نقاط الولاء" : "مثال: قالب تأكيد الطلب"}
                 />
-              </div>
-
-              {config.features.categoryMode === "manual" && config.features.dialogCategoryOptions && (
-                <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    نوع/فئة الرسالة — بتحدد تصنيف قالب ميتا عند النشر
-                  </label>
-                  <select
-                    value={templateForm.category}
-                    onChange={(e) => setTemplateForm((p) => ({ ...p, category: e.target.value }))}
-                    className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-800 dark:text-white"
-                  >
-                    {config.features.dialogCategoryOptions.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                  <p className="mt-1 text-[11px] leading-relaxed text-slate-400">
-                    <strong>UTILITY</strong> يترجم لـ UTILITY على ميتا = موافقة أسرع.
-                    <strong> MARKETING</strong> محتاج opt-in من العميل ومراجعة أشد.
-                  </p>
                 </div>
-              )}
-
-              {/* Slot indicator + contextual explainer */}
-              <div className={`rounded-lg p-2.5 text-[11px] leading-relaxed ${
-                dialogSlot === "meta"
-                  ? "bg-blue-50 text-blue-800 dark:bg-blue-900/20 dark:text-blue-300"
-                  : "bg-emerald-50 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-300"
-              }`}>
-                {dialogSlot === "meta" ? (
-                  isMetaBound && metaBindingChanged ? (
-                    <>🔄 <strong>تبديل قالب ميتا</strong> — هتغير الربط من <code>{originalMetaTemplateName}</code> لقالب جديد. اضغط «حفظ وربط بقالب ميتا» عشان التبديل يتسجّل.</>
-                  ) : isMetaBound ? (
-                    <>☁️ <strong>قالب ميتا مربوط حالياً</strong> — عدّل محتوى الرسالة هنا، بعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.</>
-                  ) : (
-                    <>☁️ <strong>اختار قالب ميتا معتمد</strong> — اختار القالب من القائمة وبعدين اضغط «حفظ وربط بقالب ميتا». بيشتغل بس مع جلسة <code>Meta Cloud API</code>.</>
-                  )
-                ) : (
-                  <>📱 <strong>النص اللي بتكتبه هنا هو اللي بيتابعت للعميل مباشرة</strong> عبر الواتساب (Baileys). لو عملت كمان قالب ميتا لنفس الحالة، ميتا له الأسبقية لما الجلسة الأساسية تكون Meta Cloud.</>
-                )}
               </div>
-
-              {dialogSlot === "meta" && defaultSessionInfo?.provider !== "META_CLOUD" && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
-                  ⚠️ الجلسة الافتراضية الحالية {defaultSessionInfo?.provider === "BAILEYS" ? "Baileys" : "غير ميتا"} —
-                  القوالب المربوطة بميتا مش هتتبعت إلا لو غيّرت الجلسة الافتراضية من الإعدادات.
-                </div>
-              )}
 
               {/* ===== META SLOT CONTENT ===== */}
               {dialogSlot === "meta" && (
                 <div className="space-y-3 rounded-lg border border-blue-200 p-3 dark:border-blue-800/40">
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    اختر قالب ميتا المعتمد
-                  </label>
-                  <p className="-mt-2 text-[10px] text-slate-400 dark:text-slate-500">
-                    {isMetaBound
-                      ? "اختار قالب مختلف عشان تغيّر الربط — التغيير يتسجّل لما تضغط حفظ."
-                      : "اختار القالب وبعدين اضغط «حفظ وربط بقالب ميتا» تحت — اختيارك مش بيتحفظ لوحده."}
-                  </p>
-                  <MetaTemplateSelect
-                    metaSessions={metaSessions}
-                    selectedMetaSession={selectedMetaSession}
-                    onSessionChange={(v) => setSelectedMetaSession(v)}
-                    availableMetaTemplates={availableMetaTemplates}
-                    loadingMetaTemplates={loadingMetaTemplates}
-                    selectedMetaTemplateName={templateForm.metaTemplateName}
-                    onSelectTemplate={handleMetaTemplateSelect}
-                    onCreateTemplate={createMetaTemplate}
-                    createDisabled={!!publishingId || saving}
-                    enableMultiBind={config.features.enableMetaMultiBind}
-                    excludeOtherBound={!config.features.enableMetaMultiBind}
-                    selectedTemplateId={selectedTemplate?.id}
-                    showMapping
-                    localContent={templateForm.content}
-                    sampleVariables={sampleVariables}
-                    variableDescriptions={variableDescriptions}
-                  />
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-xs font-medium text-slate-700 dark:text-slate-300">
+                        {dialogMode === "create" ? "حساب النشر على ميتا" : "اختر قالب ميتا المعتمد"}
+                      </label>
+                      <MetaTemplateSelect
+                        metaSessions={metaSessions}
+                        selectedMetaSession={selectedMetaSession}
+                        onSessionChange={(v) => setSelectedMetaSession(v)}
+                        availableMetaTemplates={availableMetaTemplates}
+                        loadingMetaTemplates={loadingMetaTemplates}
+                        selectedMetaTemplateName={templateForm.metaTemplateName}
+                        onSelectTemplate={handleMetaTemplateSelect}
+                        showTemplates={dialogMode !== "create"}
+                        enableMultiBind={config.features.enableMetaMultiBind}
+                        excludeOtherBound={!config.features.enableMetaMultiBind}
+                        selectedTemplateId={selectedTemplate?.id}
+                        showMapping
+                        localContent={templateForm.content}
+                        sampleVariables={sampleVariables}
+                        variableDescriptions={variableDescriptions}
+                      />
+                    </div>
+
+                    {/* فئة ميتا الحقيقية (3 فئات) — وضع التأليف فقط؛ في وضع الربط الفئة جاية من القالب المعتمد */}
+                    {!templateForm.metaTemplateName && (
+                      <div>
+                        <label className="mb-1 flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                          فئة القالب على ميتا
+                          <FieldHint text="UTILITY = معاملات (موافقة أسرع، موصى به) · MARKETING = عروض (محتاج opt-in) · AUTHENTICATION = أكواد تحقق" />
+                        </label>
+                        <select
+                          value={templateForm.metaCategory || "UTILITY"}
+                          onChange={(e) => setTemplateForm((p) => ({ ...p, metaCategory: e.target.value }))}
+                          className="w-full rounded-lg border border-slate-200 bg-white px-2 py-2 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                        >
+                          <option value="UTILITY">UTILITY — معاملات وتحديثات</option>
+                          <option value="MARKETING">MARKETING — عروض وتسويق</option>
+                          <option value="AUTHENTICATION">AUTHENTICATION — أكواد تحقق</option>
+                        </select>
+                      </div>
+                    )}
+                  </div>
 
                   {(() => {
                     const selectedMt = availableMetaTemplates.find((mt) => mt.name === templateForm.metaTemplateName);
@@ -2153,7 +2461,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     if (!selectedMt || otherBoundEvents.length === 0) return null;
                     return (
                       <div className="mt-2 rounded-lg border border-sky-200 bg-sky-50 p-2 text-[11px] text-sky-700 dark:border-sky-800/40 dark:bg-sky-900/20 dark:text-sky-300">
-                        ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة لحالة، اعمل قالب ميتا جديد.
+                        ℹ️ القالب ده مربوط حالياً بكمان: {otherBoundEvents.join("، ")} — نفس الرسالة هتتبعت ليهم. لو عايز رسالة مختلفة ل{noun.singular}، اعمل قالب ميتا جديد.
                       </div>
                     );
                   })()}
@@ -2181,8 +2489,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               <div className={dialogSlot === "meta" ? "rounded-lg border border-slate-200 p-3 dark:border-slate-700" : ""}>
                 {dialogSlot === "meta" && (
                   <div className="mb-3 space-y-1">
-                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                      صورة الرأس (HEADER) — اختياري
+                    <label className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
+                      صورة الرأس (HEADER)
+                      <FieldHint text="اختياري — بتترفع لميتا كـ IMAGE header وتُستخدم عيّنة للموافقة" />
                     </label>
                     <div className="flex items-center gap-2">
                       {templateForm.headerMediaHandle ? (
@@ -2219,12 +2528,12 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      عند اختيار صورة، يُرفع القالب على ميتا بهيدر IMAGE بصورة الرأس (تُستخدم كعيّنة للموافقة).
-                    </p>
                     {config.features.enableHeaderProductImage && (
                     <>
-                    <label className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700">
+                    <label
+                      className="mt-2 flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 dark:border-slate-700"
+                      title="كل رسالة هتتبعت بصورة أول منتج في الطلب (متغيرة لكل طلب)"
+                    >
                       <input
                         type="checkbox"
                         checked={templateForm.headerUsesOrderProduct}
@@ -2235,9 +2544,6 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         استخدم صورة المنتج من الطلب وقت الإرسال
                       </span>
                     </label>
-                    <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                      لو مفعّل، كل رسالة للعميل هتتبعت بيها صورة أول منتج طلبه (متغيرة لكل طلب). لو بدون تحديد صورة ثابتة، القالب هيحتاج صورة عيّنة للموافقة.
-                    </p>
                     </>
                     )}
                   </div>
@@ -2251,21 +2557,26 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     >
                       <span className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                         <ChevronDownIcon className={`h-3.5 w-3.5 transition ${showLocalRef ? "rotate-180" : ""}`} />
-                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : (dialogSlot === "meta" ? "محتوى الرسالة (هي اللي هتتبعت)" : "محتوى الرسالة")}
+                        {selectedTemplate?.metaTemplateName ? "محتوى الرسالة" : "محتوى الرسالة (هي اللي هتتبعت)"} <span className="text-red-500">*</span>
                       </span>
-                      <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
-                        {showLocalRef ? "إخفاء" : "عرض"}
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`text-[10px] font-medium tabular-nums ${
+                            templateForm.content.length > META_BODY_CHAR_LIMIT
+                              ? "text-red-600 dark:text-red-400"
+                              : templateForm.content.length > META_BODY_CHAR_LIMIT * 0.9
+                                ? "text-amber-600 dark:text-amber-400"
+                                : "text-slate-400 dark:text-slate-500"
+                          }`}
+                          aria-live="polite"
+                        >
+                          {templateForm.content.length} / {META_BODY_CHAR_LIMIT}
+                        </span>
+                        <span className="text-[11px] text-indigo-600 dark:text-indigo-400">
+                          {showLocalRef ? "إخفاء" : "عرض"}
+                        </span>
                       </span>
                     </button>
-                    {selectedTemplate?.metaTemplateName ? (
-                      <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        النص ده هو محتوى الرسالة اللي هتتبعت للعميل عبر قالب ميتا — عدّل عليه وبعدين اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة.
-                      </p>
-                    ) : (
-                      <p className="mt-1 text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">
-                        النص ده هو الرسالة اللي هتُنشر على ميتا وتتبعت للعميل — عدّل عليه وبعدين اضغط «إنشاء قالب ميتا جديد».
-                      </p>
-                    )}
                   </div>
                 ) : (
                   <div className="mb-1 flex items-center justify-between">
@@ -2274,15 +2585,15 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                     </label>
                     <span
                       className={`text-[10px] font-medium tabular-nums ${
-                        templateForm.content.length > META_BODY_CHAR_LIMIT
+                        dialogSlot === "meta" && templateForm.content.length > META_BODY_CHAR_LIMIT
                           ? "text-red-600 dark:text-red-400"
-                          : templateForm.content.length > META_BODY_CHAR_LIMIT * 0.9
+                          : dialogSlot === "meta" && templateForm.content.length > META_BODY_CHAR_LIMIT * 0.9
                             ? "text-amber-600 dark:text-amber-400"
                             : "text-slate-400 dark:text-slate-500"
                       }`}
                       aria-live="polite"
                     >
-                      {templateForm.content.length} / {META_BODY_CHAR_LIMIT}
+                      {dialogSlot === "meta" ? `${templateForm.content.length} / ${META_BODY_CHAR_LIMIT}` : `${templateForm.content.length} حرف`}
                     </span>
                   </div>
                 )}
@@ -2292,11 +2603,11 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 <div className={dialogSlot === "meta" ? "mt-3 grid gap-3 lg:grid-cols-2" : "grid gap-3 lg:grid-cols-2"}>
                   <textarea
                     value={templateForm.content}
-                    onChange={(e) => setTemplateForm((p) => ({ ...p, content: e.target.value.slice(0, META_BODY_CHAR_LIMIT + 200) }))}
+                    onChange={(e) => setTemplateForm((p) => ({ ...p, content: dialogSlot === "meta" ? e.target.value.slice(0, META_BODY_CHAR_LIMIT + 200) : e.target.value }))}
                     rows={7}
                     aria-label={dialogSlot === "meta" ? "محتوى القالب المحلي" : "محتوى الرسالة"}
                     className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white ${
-                      templateForm.content.length > META_BODY_CHAR_LIMIT
+                      dialogSlot === "meta" && templateForm.content.length > META_BODY_CHAR_LIMIT
                         ? "border-red-400 dark:border-red-500"
                         : "border-slate-200"
                     }`}
@@ -2317,7 +2628,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   </div>
                 </div>
 
-                {templateForm.content.length > META_BODY_CHAR_LIMIT && (
+                {dialogSlot === "meta" && templateForm.content.length > META_BODY_CHAR_LIMIT && (
                   <p className="mt-1 text-[11px] text-red-600 dark:text-red-400" role="alert">
                     ⚠️ النص أطول من حد ميتا ({META_BODY_CHAR_LIMIT} حرف) — القالب هيترفض عند النشر على Meta Cloud API.
                   </p>
@@ -2367,8 +2678,11 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {config.features.enableButtons && (
               <div className="rounded-lg border border-slate-200 p-3 dark:border-slate-700">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-slate-700 dark:text-slate-300">
+                  <label className="flex items-center gap-1 text-xs font-medium text-slate-700 dark:text-slate-300">
                     الأزرار التفاعلية
+                    {dialogSlot === "meta" && templateForm.metaTemplateName && (
+                      <FieldHint text="الأزرار الحالية معتمدة على ميتا — أي تعديل محتاج «إرسال للمراجعة من جديد» عشان يتبنى" />
+                    )}
                   </label>
                   <Switch
                     checked={templateForm.hasButtons}
@@ -2378,13 +2692,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 </div>
                 {dialogSlot === "meta" && templateForm.metaTemplateName ? (
                   <p className="mt-0.5 text-[11px] text-amber-600 dark:text-amber-400">
-                    ℹ️ القالب مربوط بقالب ميتا معتمد — الأزرار الجديدة (زي «صفحة العميل») لازم تتنشر/تراجع على ميتا تاني عشان تبقى في القالب المعتمد.
+                    ℹ️ الأزرار الجديدة محتاجة مراجعة ميتا تاني عشان تتبنى في القالب المعتمد.
                   </p>
-                ) : (
-                  <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-                    لما العميل يضغط على الزر، حالة الطلب هتتغير تلقائيًا للحالة المحددة أدناه
-                  </p>
-                )}
+                ) : config.features.quickReplyActions ? null : null}
 
                 {templateForm.hasButtons && (
                   <div className="mt-3 space-y-2">
@@ -2406,7 +2716,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                             }}
                             className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
                           >
-                            <option value="QUICK_REPLY">تغيير الحالة</option>
+                            <option value="QUICK_REPLY">{config.features.quickReplyActions ? "إجراء سريع" : "تغيير الحالة"}</option>
                             <option value="LINK">صفحة العميل</option>
                           </select>
                         </div>
@@ -2422,8 +2732,8 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         </div>
                         {btn.type === "LINK" ? (
                           <div className="flex-1 pb-1">
-                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400">
-                              بيفتح صفحة العميل على متجركم حسب رقم الواتساب — من غير ما يكتب الرقم.
+                            <p className="text-[11px] text-indigo-600 dark:text-indigo-400" title="يفتح صفحة العميل على متجركم حسب رقم الواتساب تلقائيًا">
+                              🔗 رابط صفحة العميل
                             </p>
                           </div>
                         ) : (
@@ -2458,6 +2768,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         <button
                           type="button"
                           onClick={addButton}
+                          title="الحد الأقصى 3 أزرار لكل رسالة"
                           className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
                         >
                           <PlusIcon className="h-3.5 w-3.5" />
@@ -2468,6 +2779,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         <button
                           type="button"
                           onClick={addLinkButton}
+                          title="الحد الأقصى 3 أزرار لكل رسالة"
                           className="flex flex-1 items-center justify-center gap-1 rounded-lg border border-dashed border-slate-300 py-2 text-xs font-medium text-indigo-600 transition hover:bg-indigo-50 dark:border-slate-700 dark:text-indigo-400 dark:hover:bg-indigo-900/20"
                         >
                           <GlobeAltIcon className="h-3.5 w-3.5" />
@@ -2475,13 +2787,17 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         </button>
                       )}
                     </div>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{t("orders.buttonsMaxHint", "الحد الأقصى 3 أزرار لكل رسالة")}</p>
                   </div>
                 )}
               </div>
               )}
 
-              <div className="flex items-center gap-2">
+            <div className="sticky bottom-0 z-10 -mx-1 mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200/70 bg-white/95 px-1 pt-3 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
+              <label
+                htmlFor="template-active"
+                className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300"
+                title="القوالب غير النشطة بتتحفظ بس مش بتتبعت"
+              >
                 <input
                   type="checkbox"
                   id="template-active"
@@ -2489,12 +2805,9 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                   onChange={(e) => setTemplateForm((p) => ({ ...p, isActive: e.target.checked }))}
                   className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
                 />
-                <label htmlFor="template-active" className="text-sm text-slate-700 dark:text-slate-300">
-                  قالب نشط
-                </label>
-              </div>
-
-            <div className="sticky bottom-0 z-10 -mx-1 mt-4 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200/70 bg-white/95 px-1 pt-3 backdrop-blur dark:border-white/10 dark:bg-slate-900/95">
+                قالب نشط
+              </label>
+              <div className="flex flex-wrap items-center justify-end gap-2">
               <button
                 onClick={() => setDialogOpen(false)}
                 className="rounded-lg border border-slate-200 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -2504,19 +2817,18 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               {dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged && (
                 <button
                   onClick={handleResubmitMeta}
-                  disabled={saving || resubmittingMeta || !!bindingId}
-                  title="تحديث المحتوى على ميتا ويرجع للمراجعة تاني"
+                  disabled={saving || resubmittingMeta || !!bindingId || metaSessions.length === 0}
+                  title={metaSessions.length === 0 ? "لا توجد جلسة ميتا متصلة" : "تحديث المحتوى على ميتا ويرجع للمراجعة تاني"}
                   className="flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-700 transition hover:bg-amber-100 disabled:opacity-50 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300 dark:hover:bg-amber-900/40"
                 >
                   {resubmittingMeta ? <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" /> : <ArrowPathIcon className="h-4 w-4" />}
                   إرسال للمراجعة من جديد
                 </button>
               )}
-              {!(dialogSlot === "meta" && isMetaBound && metaContentChanged && !metaBindingChanged) && (
               <button
                 onClick={dialogSlot === "meta" && !templateForm.metaTemplateName ? createMetaTemplate : handleSave}
-                disabled={saving || resubmittingMeta || !!bindingId || !!publishingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim())}
-                title={metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
+                disabled={saving || resubmittingMeta || !!bindingId || !!publishingId || !!metaVariableMismatch || (dialogSlot === "regular" && !templateForm.content.trim()) || (dialogSlot === "meta" && metaSessions.length === 0 && !isMetaBound)}
+                title={metaSessions.length === 0 && dialogSlot === "meta" && !isMetaBound ? "لا توجد جلسة ميتا متصلة — أنشئ جلسة Meta Cloud أولاً" : metaVariableMismatch ? `القالب المحلي محتاج ${metaVariableMismatch.missing} متغيرات إضافية` : undefined}
                 className={`flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-white transition disabled:opacity-50 ${
                   dialogSlot === "meta" && (metaBindingChanged || !templateForm.metaTemplateName)
                     ? "bg-blue-600 hover:bg-blue-700"
@@ -2534,7 +2846,7 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                         : "إنشاء قالب ميتا جديد"
                   : "حفظ"}
               </button>
-              )}
+              </div>
             </div>
 
             {metaVariableMismatch && (
@@ -2542,22 +2854,24 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
                 ⚠️ قالب ميتا محتاج <strong>{metaVariableMismatch.metaCount} متغيرات</strong>، لكن المحتوى المحلي فيه <strong>{metaVariableMismatch.localCount} فقط</strong> — أضف <strong>{metaVariableMismatch.missing}</strong> متغيرات ({config.variables.slice(0, 4).map((v) => v.var).join("، ")}) عشان تقدر تحفظ وتربط.
               </p>
             )}
-
-            {dialogSlot === "meta" && !metaVariableMismatch && (
-              <p className="mt-2 text-[11px] text-slate-400 dark:text-slate-500">
-                {metaBindingChanged ? (
-                  <>هتغير الربط من «{originalMetaTemplateName}» لقالب جديد — التغيير يتسجّل لما تضغط حفظ.</>
-                ) : isMetaBound && metaContentChanged ? (
-                  <>عدّلت محتوى الرسالة — اضغط «إرسال للمراجعة من جديد» عشان ميتا تراجع الرسالة الجديدة (الرسايل هتتوقف لحد الموافقة).</>
-                ) : (
-                  <>أي تعديل على المحتوى أو الأزرار وبعدين «إرسال للمراجعة من جديد» هيبعت القالب لميتا للمراجعة — هيتوقف عن الإرسال لحد ما يوافقوا تاني.</>
-                )}
-              </p>
-            )}
             </div>
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={confirmCloseOpen}
+        title={t("orders.discardChanges", "تجاهل التغييرات؟")}
+        content={t("orders.discardChangesHint", "في تعديلات على القالب مش محفوظة. تحب تقفل النافذة من غير ما تحفظ؟")}
+        confirmLabel={t("orders.closeWithoutSave", "إغلاق بدون حفظ")}
+        cancelLabel={t("orders.back", "رجوع")}
+        confirmColor="warning"
+        onConfirm={() => {
+          setDialogOpen(false);
+          setConfirmCloseOpen(false);
+        }}
+        onCancel={() => setConfirmCloseOpen(false)}
+      />
 
       <ConfirmDialog
         open={!!unbindTarget}
@@ -2587,6 +2901,7 @@ interface StatusRowProps {
   onOpenSwitch: (status: StatusWithTemplate) => void;
   onUnbindMeta: (status: StatusWithTemplate) => void;
   sampleVariables?: Record<string, string>;
+  enableMetaSwitch?: boolean;
 }
 
 /**
@@ -2603,6 +2918,7 @@ function MetaTemplateSelect({
   onSelectTemplate,
   onCreateTemplate,
   createDisabled,
+  showTemplates = true,
   enableMultiBind,
   excludeOtherBound,
   selectedTemplateId,
@@ -2620,6 +2936,8 @@ function MetaTemplateSelect({
   onSelectTemplate: (name: string) => void;
   onCreateTemplate?: () => void;
   createDisabled?: boolean;
+  /** إخفاء قائمة القوالب المعتمدة — وضع التأليف (الجلسة فقط يكفي) */
+  showTemplates?: boolean;
   enableMultiBind?: boolean;
   /** يخفي القوالب المربوطة بقوالب محلية تانية (وضع تعديل ميتا) — switch بيعرض الكل */
   excludeOtherBound?: boolean;
@@ -2633,7 +2951,20 @@ function MetaTemplateSelect({
   const metaBody = (selected?.components || []).find((c) => c.type === "BODY")?.text || "";
 
   if (metaSessions.length === 0) {
-    return <p className="text-xs text-slate-400">لا توجد جلسة ميتا متصلة لربط القوالب</p>;
+    return (
+      <div className="space-y-2">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 text-xs leading-relaxed text-amber-700 dark:border-amber-800/40 dark:bg-amber-900/20 dark:text-amber-300">
+          ⚠️ لا توجد جلسة <strong>Meta Cloud API</strong> متصلة — أنشئ جلسة ميتا من <strong>الإعدادات &gt; واتساب &gt; الجلسات</strong> عشان الربط والنشر يشتغل.
+        </div>
+        <select
+          disabled
+          aria-label="حساب النشر على ميتا"
+          className="w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-xs text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500"
+        >
+          <option>لا توجد جلسات متاحة</option>
+        </select>
+      </div>
+    );
   }
 
   return (
@@ -2656,7 +2987,7 @@ function MetaTemplateSelect({
       <select
         value={selectedMetaSession}
         onChange={(e) => onSessionChange(e.target.value)}
-        aria-label="جلسة ميتا للربط"
+        aria-label="حساب النشر على ميتا"
         className="mb-2 mt-2 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-xs dark:border-slate-700 dark:bg-slate-800 dark:text-white"
       >
         {metaSessions.map((s) => (
@@ -2665,7 +2996,7 @@ function MetaTemplateSelect({
           </option>
         ))}
       </select>
-      {loadingMetaTemplates ? (
+      {showTemplates && (loadingMetaTemplates ? (
         <p className="text-xs text-slate-400">جار تحميل قوالب ميتا...</p>
       ) : availableMetaTemplates.length > 0 ? (
         <>
@@ -2702,7 +3033,7 @@ function MetaTemplateSelect({
               </p>
               <div
                 dir="auto"
-                className="rounded-xl rounded-bl-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
+                className="rounded-xl rounded-ee-sm bg-[#dcf8c6] p-2.5 text-[13px] leading-relaxed text-slate-800 shadow-sm dark:bg-[#005c4b] dark:text-slate-100"
               >
                 <p className="whitespace-pre-wrap break-words">
                   {resolveMetaBodyPreview(metaBody, localContent, sampleVariables)}
@@ -2751,9 +3082,9 @@ function MetaTemplateSelect({
         </>
       ) : (
         <p className="text-xs text-slate-400">
-          لا توجد قوالب ميتا معتمدة — اضغط «إنشاء قالب ميتا جديد» عشان تنشر قالب جديد على ميتا للمراجعة.
+          لا توجد قوالب ميتا معتمدة — اكتب المحتوى أعلاه ثم استخدم الزر السفلي «إنشاء قالب ميتا جديد» لنشره للمراجعة.
         </p>
-      )}
+      ))}
     </>
   );
 }
@@ -2772,6 +3103,7 @@ function StatusRow({
   onOpenSwitch,
   onUnbindMeta,
   sampleVariables,
+  enableMetaSwitch = true,
 }: StatusRowProps) {
   const { t } = useTranslation();
   const regular = status.template;
@@ -2793,10 +3125,11 @@ function StatusRow({
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <span
-            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[11px] font-bold text-white"
-            style={{ backgroundColor: status.color || "#6B7280" }}
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-[11px] font-bold"
+            style={{ backgroundColor: status.color || "#6B7280", color: readableTextColor(status.color || "#6B7280") }}
+            title={status.name}
           >
-            {status.sortOrder}
+            {status.name.trim().slice(0, 2)}
           </span>
           <div className="min-w-0">
             <div className="flex items-center gap-1.5">
@@ -2868,19 +3201,21 @@ function StatusRow({
           onCreate={() => onOpenCreate(status, "regular")}
           sampleVariables={sampleVariables}
         />
-        <StatusTemplateSlot
-          slot="meta"
-          template={meta}
-          status={status}
-          isLegacy={metaSlotIsLegacy(status)}
-          isPreviewExpanded={isMetaPreviewExpanded}
-          onTogglePreview={() => onTogglePreview("meta")}
-          onEdit={() => onOpenEdit(status, "meta")}
-          onCreate={() => onOpenCreate(status, "meta")}
-          onSwitch={() => onOpenSwitch(status)}
-          onUnbind={meta ? () => onUnbindMeta(status) : undefined}
-          sampleVariables={sampleVariables}
-        />
+        {enableMetaSwitch && (
+          <StatusTemplateSlot
+            slot="meta"
+            template={meta}
+            status={status}
+            isLegacy={metaSlotIsLegacy(status)}
+            isPreviewExpanded={isMetaPreviewExpanded}
+            onTogglePreview={() => onTogglePreview("meta")}
+            onEdit={() => onOpenEdit(status, "meta")}
+            onCreate={() => onOpenCreate(status, "meta")}
+            onSwitch={() => onOpenSwitch(status)}
+            onUnbind={meta ? () => onUnbindMeta(status) : undefined}
+            sampleVariables={sampleVariables}
+          />
+        )}
       </div>
     </div>
   );
@@ -3000,7 +3335,9 @@ function StatusTemplateSlot({
           </>
         ) : (
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {isMeta ? "لا يوجد قالب ميتا لهذه الحالة" : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
+            {isMeta
+              ? "لا يوجد قالب ميتا — اضغط «إنشاء قالب ميتا» لتأليف رسالة وإرسالها لميتا للمراجعة، أو «اختيار قالب معتمد» لربط قالب معتمد موجود"
+              : "لا يوجد قالب واتساب عادي — استخدم زر الإنشاء"}
           </p>
         )}
       </div>
@@ -3034,36 +3371,19 @@ function StatusTemplateSlot({
             <PencilSquareIcon className="h-3 w-3" />
             {isMeta ? "تعديل المحتوى" : "تعديل"}
           </button>
-        ) : !isMeta ? (
+        ) : onCreate ? (
           <button
             onClick={onCreate}
             disabled={!status.notifyCustomer}
             title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
-            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
-              status.notifyCustomer
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
+            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-white transition disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 ${
+              isMeta ? "bg-blue-600 hover:bg-blue-700" : "bg-indigo-600 hover:bg-indigo-700"
             }`}
           >
             <PlusIcon className="h-3 w-3" />
-            إنشاء
+            {isMeta ? "إنشاء قالب ميتا" : "إنشاء"}
           </button>
         ) : null}
-        {isMeta && (
-          <button
-            onClick={onCreate}
-            disabled={!status.notifyCustomer}
-            title={!status.notifyCustomer ? "فعّل الإشعار أولاً" : ""}
-            className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[11px] font-medium transition ${
-              status.notifyCustomer
-                ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                : "cursor-not-allowed bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500"
-            }`}
-          >
-            <PlusIcon className="h-3 w-3" />
-            إنشاء قالب
-          </button>
-        )}
         {isMeta && bound && onUnbind && (
           <button
             onClick={onUnbind}
@@ -3253,6 +3573,8 @@ function escapeCsvCell(value: unknown): string {
 
 function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[]; config: TemplateScopeConfig }) {
   const { t } = useTranslation();
+  // تسمية موحّدة مع باقي الصفحة — «حالة» للطلبات و«حدث» لباقي النطاقات
+  const noun = config.entityLabel ?? { singular: "حالة", plural: "حالات" };
   const [range, setRange] = useState<ReportRange>("today");
   const [startDate, setStartDate] = useState(() => localDateStr(new Date()));
   const [endDate, setEndDate] = useState(() => localDateStr(new Date()));
@@ -3387,7 +3709,7 @@ function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[];
   const enabledWithoutSends = useMemo(() => {
     if (!data) return [];
     const reported = new Set(data.byStatus.map((r) => r.eventType));
-    return statuses.filter((s) => s.category !== "OCCASION" && s.notifyCustomer && !s.isNonNotifiable && !reported.has(persistedEventTypeForCode(s.code)));
+    return statuses.filter((s) => s.category !== "OCCASION" && s.category !== "PRODUCTS" && s.notifyCustomer && !s.isNonNotifiable && !reported.has(persistedEventTypeForCode(s.code)));
   }, [data, statuses]);
 
   const summary = data?.summary;
@@ -3519,9 +3841,9 @@ function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[];
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800/30 dark:bg-amber-900/20 dark:text-amber-300">
               <ExclamationTriangleIcon className="mt-0.5 h-5 w-5 shrink-0" />
               <div>
-                <span className="font-semibold">حالات مفعّلة بدون إرسالات في هذه الفترة:</span>{" "}
+                <span className="font-semibold">{noun.plural} مفعّلة بدون إرسالات في هذه الفترة:</span>{" "}
                 {enabledWithoutSends.map((s) => s.name).join("، ")}
-                <span className="block text-xs opacity-80">لو الحالة دي كان المفروض تتبعت فيها رسايل، راجع قالبها من تبويب «الكل».</span>
+                <span className="block text-xs opacity-80">لو كان مفروض تتبعت رسايل منها، راجع قوالبها من تبويبات القوالب.</span>
               </div>
             </div>
           )}
@@ -3563,7 +3885,7 @@ function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[];
                               {statusNameMap.get(row.eventType) || humanizeEventType(row.eventType)}
                             </span>
                             {!statusNameMap.has(row.eventType) && (
-                              <span className="mr-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              <span className="ms-1.5 rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[10px] text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                                 {row.eventType}
                               </span>
                             )}

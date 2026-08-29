@@ -401,7 +401,7 @@ export const ProductNewFinal: React.FC = () => {
   // WhatsApp State
   const [whatsappNotify, setWhatsappNotify] = useState({
     enabled: false,
-    audience: "all" as "all" | "withOrders" | "new" | "active",
+    audience: "all" as "all" | "withOrders" | "newCustomers" | "activeCustomers",
     templateName: "NEW_PRODUCT",
     customMessage: "",
   });

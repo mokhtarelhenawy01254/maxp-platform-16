@@ -4,6 +4,7 @@ export { cairoStrideBlueprint } from "./presets/cairoStride";
 export { nileBistroBlueprint } from "./presets/nileBistro";
 export { novaMobileBlueprint } from "./presets/novaMobile";
 export { kidsPlayBlueprint } from "./presets/kidsPlay";
+export { softGracefulBlueprint } from "./presets/softGraceful";
 export type {
   CompiledStorefrontBlueprint,
   StorefrontBlueprintPageConfig,

@@ -39,6 +39,27 @@ const InfoContentSection = React.lazy(() => import('../sections/InfoContentSecti
 const JournalStrip = React.lazy(() => import('../sections/JournalStrip'));
 const ShoeFitFinder = React.lazy(() => import('../sections/ShoeFitFinder'));
 const TikTokFeedSection = React.lazy(() => import('../sections/TikTokFeedSection'));
+const AffiliateDisclosure = React.lazy(() => import('../sections/AffiliateDisclosure'));
+const AffiliateTopPicks = React.lazy(() => import('../sections/AffiliateTopPicks'));
+const ArticleGrid = React.lazy(() => import('../sections/ArticleGrid'));
+const AffiliateQuiz = React.lazy(() => import('../sections/AffiliateQuiz'));
+const AffiliateFaq = React.lazy(() => import('../sections/AffiliateFaq'));
+const AffiliateToc = React.lazy(() => import('../sections/AffiliateToc'));
+const AffiliateProTip = React.lazy(() => import('../sections/AffiliateProTip'));
+const AffiliateSources = React.lazy(() => import('../sections/AffiliateSources'));
+const AffiliateBreadcrumbs = React.lazy(() => import('../sections/AffiliateBreadcrumbs'));
+const AffiliateArticleSeo = React.lazy(() => import('../sections/AffiliateArticleSeo'));
+const ImageHotspot = React.lazy(() => import('../sections/ImageHotspot'));
+const BeforeAfterSlider = React.lazy(() => import('../sections/BeforeAfterSlider'));
+const CombinedListing = React.lazy(() => import('../sections/CombinedListing'));
+const HoverCards = React.lazy(() => import('../sections/HoverCards'));
+const CountdownSection = React.lazy(() => import('../sections/Countdown'));
+const CollectionTab = React.lazy(() => import('../sections/CollectionTab'));
+const BackgroundVideo = React.lazy(() => import('../sections/BackgroundVideo'));
+const ScrollingCards = React.lazy(() => import('../sections/ScrollingCards'));
+const SocialGallery = React.lazy(() => import('../sections/SocialGallery'));
+const RichText = React.lazy(() => import('../sections/RichText'));
+const FeaturedProduct = React.lazy(() => import('../sections/FeaturedProduct'));
 
 const baseComponentRegistry: Record<
   string,
@@ -80,6 +101,27 @@ const baseComponentRegistry: Record<
   'info-content': InfoContentSection,
   'member-registration': MemberRegistration,
   'tiktok-feed': TikTokFeedSection,
+  'affiliate-disclosure': AffiliateDisclosure,
+  'affiliate-top-picks': AffiliateTopPicks,
+  'article-grid': ArticleGrid,
+  'affiliate-quiz': AffiliateQuiz,
+  'affiliate-faq': AffiliateFaq,
+  'affiliate-toc': AffiliateToc,
+  'affiliate-pro-tip': AffiliateProTip,
+  'affiliate-sources': AffiliateSources,
+  'affiliate-breadcrumbs': AffiliateBreadcrumbs,
+  'affiliate-article-seo': AffiliateArticleSeo,
+  'image-hotspot': ImageHotspot,
+  'before-after': BeforeAfterSlider,
+  'combined-listing': CombinedListing,
+  'hover-cards': HoverCards,
+  countdown: CountdownSection,
+  'collection-tab': CollectionTab,
+  'background-video': BackgroundVideo,
+  'scrolling-cards': ScrollingCards,
+  'social-gallery': SocialGallery,
+  richtext: RichText,
+  'featured-product': FeaturedProduct,
 };
 
 /**

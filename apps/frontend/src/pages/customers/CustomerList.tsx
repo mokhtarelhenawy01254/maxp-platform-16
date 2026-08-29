@@ -413,6 +413,19 @@ const CustomerList: React.FC = () => {
                 ))}
               </select>
             )}
+
+            {/* ⭐ NPS Filter (promoter 9-10 / passive 7-8 / detractor 0-6) */}
+            <select
+              value={selectedTag.startsWith('nps_') ? selectedTag : ''}
+              onChange={(e) => handleTagFilter(e.target.value)}
+              className="px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500"
+              title="فلترة حسب NPS المخزن كـ tag"
+            >
+              <option value="">كل NPS</option>
+              <option value="nps_promoter">⭐ 9-10 مروّج</option>
+              <option value="nps_passive">😐 7-8 محايد</option>
+              <option value="nps_detractor">⚠️ 0-6 منتقد</option>
+            </select>
           </div>
         </div>
 

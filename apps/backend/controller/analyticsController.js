@@ -691,31 +691,11 @@ const getConversionRate = async (req, res) => {
 
     // Smart date handling - support both days count and actual dates
     try {
-      if (startDate && endDate) {
-        // Check if startDate is a number (days ago)
-        const daysAgo = parseInt(startDate);
-        if (!isNaN(daysAgo) && daysAgo > 0) {
-          start = new Date(end.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-        } else {
-          // Treat as actual dates
-          start = new Date(startDate);
-          end = new Date(endDate);
-        }
-      } else if (period === 'yesterday') {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
-        start = yesterday;
-        end = new Date(yesterday);
-        end.setHours(23, 59, 59, 999);
-      } else {
-        const days = parseInt(period);
-        start = new Date(end.getTime() - (days * 24 * 60 * 60 * 1000));
-      }
+      ({ start, end } = parseAnalyticsDateRange({ startDate, endDate, period }));
     } catch (dateErr) {
       console.error('Date parsing error:', dateErr);
       // Fallback to 30 days
-      start = new Date(end.getTime() - (30 * 24 * 60 * 60 * 1000));
+      start = new Date(end.getTime() - (30 * ANALYTICS_DAY_MS));
     }
 
     const conversionData = await analyticsService.getStoreConversionRate(companyId, start, end);
@@ -899,6 +879,94 @@ const trackProductView = async (req, res) => {
       message: 'خطأ في تسجيل الزيارة',
       error: error.message
     });
+  }
+};
+
+// 📈 [WebVitals] Real-user monitoring (LCP/CLS/INP/TTFB) — zero-schema:
+// beacons land in a per-company in-memory ring buffer + one structured log
+// line each. Enough to read p75 from the summary endpoint without a DB
+// migration. Buffer resets on process restart by design.
+const WEB_VITALS_BUFFER_LIMIT = 500;
+const webVitalsBuffer = new Map();
+
+const trackWebVitals = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    const { path: pagePath, metrics } = req.body || {};
+
+    if (!companyId || !Array.isArray(metrics) || metrics.length === 0) {
+      return res.status(400).json({ success: false, message: 'بيانات ناقصة - companyId, metrics مطلوبة' });
+    }
+
+    const cleanMetrics = metrics
+      .filter((m) => m && typeof m.name === 'string' && Number.isFinite(Number(m.value)))
+      .slice(0, 8)
+      .map((m) => ({
+        name: String(m.name).slice(0, 12),
+        value: Math.round(Number(m.value)),
+        rating: String(m.rating || '').slice(0, 10),
+        id: String(m.id || '').slice(0, 40),
+      }));
+
+    if (cleanMetrics.length === 0) {
+      return res.status(400).json({ success: false, message: 'لا توجد مقاييس صالحة' });
+    }
+
+    const entry = {
+      at: Date.now(),
+      path: String(pagePath || '/').slice(0, 120),
+      userAgent: String(req.headers['user-agent'] || '').slice(0, 140),
+      metrics: cleanMetrics,
+    };
+
+    const buffer = webVitalsBuffer.get(companyId) || [];
+    buffer.push(entry);
+    while (buffer.length > WEB_VITALS_BUFFER_LIMIT) buffer.shift();
+    webVitalsBuffer.set(companyId, buffer);
+
+    console.log(
+      `📈 [WebVitals] ${companyId} ${entry.path} :: ${cleanMetrics
+        .map((m) => `${m.name}=${m.value}${m.rating ? `(${m.rating})` : ''}`)
+        .join(' ')}`,
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error in trackWebVitals:', error);
+    res.status(500).json({ success: false, message: 'خطأ في تسجيل مقاييس الأداء' });
+  }
+};
+
+const getWebVitalsSummary = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'companyId مطلوب' });
+    }
+
+    const windowMs = 60 * 60 * 1000;
+    const since = Date.now() - windowMs;
+    const recent = (webVitalsBuffer.get(companyId) || []).filter((e) => e.at >= since);
+
+    const valuesByName = {};
+    for (const entry of recent) {
+      for (const metric of entry.metrics) {
+        (valuesByName[metric.name] = valuesByName[metric.name] || []).push(metric.value);
+      }
+    }
+
+    const summary = Object.fromEntries(
+      Object.entries(valuesByName).map(([name, values]) => {
+        values.sort((a, b) => a - b);
+        const p75Index = Math.max(0, Math.ceil(values.length * 0.75) - 1);
+        return [name, { p75: values[p75Index], count: values.length }];
+      }),
+    );
+
+    res.json({ success: true, windowMinutes: 60, samples: recent.length, summary });
+  } catch (error) {
+    console.error('Error in getWebVitalsSummary:', error);
+    res.status(500).json({ success: false, message: 'خطأ في قراءة مقاييس الأداء' });
   }
 };
 
@@ -4909,6 +4977,8 @@ module.exports = {
   getProductConversionRate,
   getTopProducts,
   trackProductView,
+  trackWebVitals,
+  getWebVitalsSummary,
   trackStoreVisit,
   trackConversion,
   getDailyAnalytics,

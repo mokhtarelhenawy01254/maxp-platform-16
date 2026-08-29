@@ -101,9 +101,18 @@ const createDefaultForm = (): BusinessSpecialtyFormPayload => ({
   icon: "Briefcase",
   appSlugs: [],
   autoInstallOnSignup: true,
+  themeId: null,
   sortOrder: 0,
   isActive: true,
 });
+
+const STORE_THEME_OPTIONS = [
+  { value: "mens-grooming-pro", label: "Mens Grooming Pro (مدونة أفليت + SEO)" },
+  { value: "modern-minimal", label: "Modern Minimal (افتراضي)" },
+  { value: "khemet-luxe-eg", label: "Khemet Luxe" },
+  { value: "ink-paper", label: "Ink & Paper" },
+  { value: "crafted", label: "Crafted" },
+];
 
 const slugify = (value: string) =>
   value
@@ -254,6 +263,7 @@ const SpecialtyEditScreen = ({
             icon: specialty.icon || "Briefcase",
             appSlugs: specialty.appSlugs,
             autoInstallOnSignup: specialty.autoInstallOnSignup,
+            themeId: specialty.themeId || null,
             sortOrder: specialty.sortOrder,
             isActive: specialty.isActive,
           }
@@ -496,6 +506,31 @@ const SpecialtyEditScreen = ({
                   }
                   placeholder="10"
                 />
+              </div>
+            </div>
+            <div className="col-span-12 md:col-span-4">
+              <div className="space-y-1">
+                <Label htmlFor="specialty-theme">ثيم المتجر التلقائي</Label>
+                <Select
+                  value={formState.themeId || ""}
+                  onValueChange={(value) =>
+                    setFieldValue("themeId", value || null)
+                  }
+                >
+                  <SelectTrigger id="specialty-theme">
+                    <SelectValue placeholder="افتراضي (Elegance V1)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STORE_THEME_OPTIONS.map((theme) => (
+                      <SelectItem key={theme.value} value={theme.value}>
+                        {theme.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  يُفعَّل تلقائيًا عند إنشاء شركة جديدة بهذا النشاط التجاري.
+                </p>
               </div>
             </div>
             <div className="col-span-12">

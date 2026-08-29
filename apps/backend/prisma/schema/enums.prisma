@@ -593,6 +593,7 @@ enum WhatsAppNotificationTemplatesCategory {
   GENERAL
   ORDER_NOTIFICATION
   OCCASION
+  DENTAL_LAB
 
   @@map("whatsapp_notification_templates_category")
 }

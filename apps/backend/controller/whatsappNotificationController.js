@@ -675,6 +675,59 @@ async function getStatusReport(req, res) {
   }
 }
 
+// 📊 إحصائيات لكل قالب — تجميع من اللوجات حسب templateId (لتحليل كل قالب على حدة)
+async function getTemplateStats(req, res) {
+  try {
+    const { companyId } = req.user;
+    const { days = 30, startDate, endDate } = req.query;
+
+    const createdAtFilter = {};
+    if (startDate) { createdAtFilter.gte = new Date(startDate); } else {
+      const d = new Date(); d.setDate(d.getDate() - parseInt(days, 10) || 30); createdAtFilter.gte = d;
+    }
+    if (endDate) { createdAtFilter.lte = new Date(endDate); }
+
+    const prisma = getSharedPrismaClient();
+    const grouped = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+      by: ['templateId'],
+      where: { companyId, createdAt: createdAtFilter, templateId: { not: null } },
+      _count: { _all: true, delivered: true, read: true, clicked: true, responded: true },
+      _sum: { cost: true }
+    }));
+
+    const failedByTemplate = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+      by: ['templateId'],
+      where: { companyId, createdAt: createdAtFilter, templateId: { not: null }, status: 'FAILED' },
+      _count: { _all: true }
+    }));
+
+    const failMap = failedByTemplate.reduce((acc, g) => { acc[g.templateId] = g._count._all; return acc; }, {});
+
+    const stats = grouped.map((g) => {
+      const total = g._count._all;
+      const delivered = g._count.delivered || 0;
+      const read = g._count.read || 0;
+      return {
+        templateId: g.templateId,
+        total,
+        delivered,
+        read,
+        clicked: g._count.clicked || 0,
+        responded: g._count.responded || 0,
+        failed: failMap[g.templateId] || 0,
+        cost: Number(g._sum.cost || 0),
+        deliveryRate: total > 0 ? ((delivered / total) * 100).toFixed(1) : '0.0',
+        readRate: delivered > 0 ? ((read / delivered) * 100).toFixed(1) : '0.0'
+      };
+    }).sort((a, b) => b.total - a.total);
+
+    res.json({ success: true, stats });
+  } catch (error) {
+    console.error('❌ Error getting template stats:', error);
+    res.status(500).json({ error: 'حدث خطأ أثناء جلب إحصائيات القوالب' });
+  }
+}
+
 async function getNotificationStats(req, res) {
   try {
     const { companyId } = req.user;
@@ -1108,7 +1161,7 @@ function getErrorMessage(reason, retryable = false) {
  *
  * Returns { result, metaName, built, metaCategory, metaPadding }
  */
-async function createMetaTemplateFromLocal(sessionId, localTemplate) {
+async function createMetaTemplateFromLocal(sessionId, localTemplate, categoryOverride = null) {
   // الشركة مطلوبة لبناء رابط صفحة العميل (الساب دومين) في زرار URL
   const company = await getSharedPrismaClient().company.findUnique({
     where: { id: localTemplate.companyId },
@@ -1116,7 +1169,7 @@ async function createMetaTemplateFromLocal(sessionId, localTemplate) {
   }).catch(() => null);
 
   const built = buildMetaTemplatePayload(localTemplate, company);
-  const metaCategory = built.metaCategory;
+  const metaCategory = categoryOverride || built.metaCategory;
   const bodyText = built.bodyText;
   const buttonsComponent = built.buttonsComponent;
   const headerComponent = built.headerComponent;
@@ -1196,6 +1249,12 @@ async function publishTemplateToMeta(req, res) {
     const templateId = req.params.id || req.body.templateId;
     const { sessionId } = req.body;
 
+    // فئة ميتا الصريحة من الواجهة (3 فئات حقيقية) — بتتغلب على الاشتقاق من الفئة المحلية
+    const META_CATEGORIES = ['UTILITY', 'MARKETING', 'AUTHENTICATION'];
+    const categoryOverride = META_CATEGORIES.includes(String(req.body.metaCategory || '').toUpperCase())
+      ? String(req.body.metaCategory).toUpperCase()
+      : null;
+
     if (!templateId || !sessionId) {
       return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
     }
@@ -1219,7 +1278,7 @@ async function publishTemplateToMeta(req, res) {
     // 3. تحويل القالب المحلي لصيغة ميتا وإنشاؤه في ميتا مع محاولات بديلة
     // الترتيب: الأغنى أولاً ثم تبسيط تدريجي، وكل محاولة باسم فريد لتفادي تعارض الأسماء
     const { result, metaName: createdName, metaCategory: cat, built } =
-      await createMetaTemplateFromLocal(sessionId, localTemplate);
+      await createMetaTemplateFromLocal(sessionId, localTemplate, categoryOverride);
 
     metaName = createdName;
     metaCategory = cat;
@@ -1300,6 +1359,12 @@ async function resubmitMetaTemplate(req, res) {
     const { id } = req.params;
     const { sessionId } = req.body;
 
+    // فئة ميتا الصريحة — بتتطبق في مسار إنشاء نسخة جديدة (PENDING) فقط
+    const META_CATEGORIES = ['UTILITY', 'MARKETING', 'AUTHENTICATION'];
+    const categoryOverride = META_CATEGORIES.includes(String(req.body.metaCategory || '').toUpperCase())
+      ? String(req.body.metaCategory).toUpperCase()
+      : null;
+
     if (!id || !sessionId) {
       return res.status(400).json({ error: 'templateId و sessionId مطلوبان' });
     }
@@ -1363,7 +1428,7 @@ async function resubmitMetaTemplate(req, res) {
       console.log(`☁️ [RESUBMIT-META] Template "${localTemplate.name}" → Meta id=${metaTemplateId} edited (was ${boundStatus})`);
     } else {
       // 2b) القالب PENDING (أو حالة أخرى غير قابلة للتعديل) → ننشئ قالباً جديداً باسم فريد
-      const created = await createMetaTemplateFromLocal(sessionId, localTemplate);
+      const created = await createMetaTemplateFromLocal(sessionId, localTemplate, categoryOverride);
       result = created.result;
       finalName = created.metaName;
       finalMetaTemplateId = created.result?.id || metaTemplateId;
@@ -1748,6 +1813,7 @@ module.exports = {
   getNotificationLogs,
   getStatusReport,
   getNotificationStats,
+  getTemplateStats,
   getNotificationQueueStats,
   sendManualNotification,
   sendTestNotification,

@@ -35,7 +35,7 @@ router.post('/whatsapp-notify/birthday-automation/settings', verifyToken.authent
 router.get('/whatsapp-notify/birthday-automation/today', verifyToken.authenticateToken, customerWhatsAppController.getTodayBirthdayTrack);
 router.get('/whatsapp-notify/birthday-automation/upcoming', verifyToken.authenticateToken, customerWhatsAppController.getUpcomingBirthdaysTrack);
 router.get('/whatsapp-notify/birthday-automation/missing', verifyToken.authenticateToken, customerWhatsAppController.getMissingBirthdaysTrack);
-router.get('/whatsapp-notify/occasions', verifyToken.authenticateToken, (req, res) => res.json({ success: true, occasions: [] }));
+// (محذوف: stub مكرر كان بيرجع occasions:[] دايمًا ويمنع الوصول للـ controller الحقيقي)
 router.post('/whatsapp-notify/birthday-automation/send-test', verifyToken.authenticateToken, customerWhatsAppController.sendTestBirthdayMessage);
 
 
@@ -47,6 +47,10 @@ router.delete('/whatsapp-notify/campaign/:campaignId', verifyToken.authenticateT
 
 // Campaign history (from DB)
 router.get('/whatsapp-notify/campaigns/history', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCampaignHistory);
+
+// 🚀 إعدادات الإرسال التلقائي للمنتج الجديد (عروض المنتجات — واتساب فقط)
+router.get('/whatsapp-notify/auto-send-settings', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getProductAutoSendSettings);
+router.put('/whatsapp-notify/auto-send-settings', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.saveProductAutoSendSettings);
 
 // 🎉 جدولة حملات المناسبات (أوتوماتيك)
 router.post('/whatsapp-notify/occasions/schedule', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.scheduleOccasionCampaign);
@@ -99,6 +103,7 @@ router.get('/:customerId', verifyToken.authenticateToken, requireDbPermission('c
 router.get('/:customerId/orders', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerOrders);
 
 // سجل نشاطات العميل
+router.get('/:customerId/message-timeline', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerWhatsAppController.getCustomerMessageTimeline);
 router.get('/:customerId/activity', verifyToken.authenticateToken, requireDbPermission('customers.view'), customerController.getCustomerActivity);
 
 // 📝 ملاحظات العميل

@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, PackageCheck, Percent, Plus, Printer, Radio, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, Printer, Radio, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -647,6 +647,19 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
+        // 4️⃣.0 المدونة والـ SEO (Blog & Affiliate) — mens-grooming-pro compatible
+        {
+            id: 'blog',
+            title: t('sidebar.blogSection'),
+            icon: FileText,
+            items: [
+                { to: '/articles', icon: FileText, label: t('sidebar.articles') },
+                { to: '/articles/new', icon: SquarePen, label: t('sidebar.newArticle') },
+                { to: '/shop', icon: Store, label: t('sidebar.visitStore'), external: true },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('blog-pro')
+        },
+
         // 4️⃣.1 تصميم وتنسيق المتجر (Storefront Design)
         {
             id: 'storefront-design',
@@ -725,6 +738,7 @@ export const getSidebarConfig = (
                 { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') },
                 { to: '/customers/lists', icon: ListChecks, label: t('sidebar.customerLists') },
                 { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') },
+                { to: '/customers/product-offers', icon: BadgePercent, label: t('sidebar.productOffers') },
                 { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل
@@ -787,7 +801,20 @@ export const getSidebarConfig = (
             ]
         },
 
-        // 4️⃣.6 برنامج شركاء المنصة (Platform Partner Program)
+        // 4️⃣.6 أمازون أفليت (Amazon Associates)
+        {
+            id: 'amazon-affiliate',
+            title: t('sidebar.amazonAffiliateSection'),
+            icon: Globe,
+            hidden: !isAppActive('amazon-affiliate-pro'),
+            items: [
+                { to: '/amazon-affiliate/settings', icon: Cog, label: t('sidebar.amazonAffiliateSettings') },
+                { to: '/amazon-affiliate/import', icon: Download, label: t('sidebar.amazonAffiliateImport') },
+                { to: '/amazon-affiliate/products', icon: Package, label: t('sidebar.amazonAffiliateProducts') },
+            ]
+        },
+
+        // 4️⃣.7 برنامج شركاء المنصة (Platform Partner Program)
         {
             id: 'platform-partner',
             title: t('sidebar.partnerProgram'),
@@ -1007,6 +1034,25 @@ export const getSidebarConfig = (
                 { to: '/lab/reports', icon: BarChart3, label: t('sidebar.labReports') },
                 { to: '/lab/home-visits', icon: Home, label: t('sidebar.labHomeVisits') },
                 { to: '/lab/settings', icon: Settings, label: t('sidebar.labSettings') },
+            ]
+        },
+
+        // 7️⃣.6️⃣.6️⃣ نظام معمل الأسنان
+        {
+            id: 'dental-lab',
+            title: t('sidebar.dentalLabModule'),
+            icon: Stethoscope,
+            hidden: !isAppActive('dental-lab-app'),
+            items: [
+                { to: '/dental-lab/dashboard', icon: BarChart3, label: t('sidebar.dentalLabDashboard') },
+                { to: '/dental-lab/cases', icon: ListChecks, label: t('sidebar.dentalLabCases') },
+                { to: '/dental-lab/doctors', icon: Users, label: t('sidebar.dentalLabDoctors') },
+                { to: '/dental-lab/work-types', icon: Tag, label: t('sidebar.dentalLabWorkTypes') },
+                { to: '/dental-lab/technicians', icon: Users, label: t('sidebar.dentalLabTechnicians') },
+                { to: '/dental-lab/invoices', icon: CreditCard, label: t('sidebar.dentalLabInvoices') },
+                { to: '/dental-lab/settings', icon: Settings, label: t('sidebar.dentalLabSettings') },
+                { to: '/dental-lab/notifications', icon: BellRing, label: t('sidebar.dentalLabNotifications') },
+                { to: '/dental-lab/reports', icon: BarChart3, label: t('sidebar.dentalLabReports') },
             ]
         },
 

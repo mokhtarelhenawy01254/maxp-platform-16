@@ -17,6 +17,7 @@ import {
     DollarSign as DollarIcon
 } from 'lucide-react';
 import { apiClient } from '../../services/apiClient';
+import MetaTemplatesModal from './components/MetaTemplatesModal';
 
 interface TodayBirthdayCustomer {
     id: string;
@@ -107,6 +108,7 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
     const [savingSettings, setSavingSettings] = useState<boolean>(false);
     const [testPhone, setTestPhone] = useState<string>('');
     const [sendingTest, setSendingTest] = useState<boolean>(false);
+    const [metaModalOpen, setMetaModalOpen] = useState(false);
     const [actionMessage, setActionMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Edit Modal State for updating missing birthday
@@ -675,6 +677,12 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
                                         <button onClick={() => insertVariable('customer_link')} className="text-[10px] bg-blue-100 hover:bg-blue-200 text-blue-800 px-2 py-0.5 rounded font-bold">
                                             🔗 {`{customer_link}`}
                                         </button>
+                                        <button
+                                            onClick={() => setMetaModalOpen(true)}
+                                            className="text-[10px] bg-emerald-100 hover:bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded font-bold"
+                                        >
+                                            📚 قوالب ميتا معتمدة
+                                        </button>
                                     </div>
 
                                 </div>
@@ -903,6 +911,13 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
                     )}
                 </div>
             )}
+
+            <MetaTemplatesModal
+                open={metaModalOpen}
+                onClose={() => setMetaModalOpen(false)}
+                onPick={(content) => setSettings((prev) => ({ ...prev, messageTemplate: content || prev.messageTemplate }))}
+                title="📚 قوالب ميتا لأعياد الميلاد"
+            />
         </div>
     );
 };

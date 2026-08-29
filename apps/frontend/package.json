@@ -139,6 +139,7 @@
     "vitest": "^4.1.0"
   },
   "allowScripts": {
-    "tesseract.js@7.0.0": true
+    "tesseract.js@7.0.0": true,
+    "esbuild": true
   }
 }

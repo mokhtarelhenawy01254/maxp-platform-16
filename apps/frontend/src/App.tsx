@@ -54,8 +54,9 @@ const CustomerPortalView = React.lazy(() => import("./pages/customers/CustomerPo
 const CustomerWhatsAppNotify = React.lazy(
   () => import("./pages/customers/CustomerWhatsAppNotify"),
 );
+const ProductOffers = React.lazy(() => import("./pages/customers/ProductOffers"));
 const CustomerBirthdayWhatsAppNotify = React.lazy(
-  () => import("./pages/customers/CustomerBirthdayWhatsAppNotify"),
+  () => import("./pages/customers/BirthdayWhatsAppNotify"),
 );
 
 const CustomerOccasionsWhatsAppNotify = React.lazy(
@@ -163,8 +164,20 @@ const ProductsTrash = React.lazy(
 const ProductNewFinal = React.lazy(
   () => import("./pages/products/ProductNewFinal"),
 );
+const ArticlesList = React.lazy(() => import("./pages/articles/ArticlesList"));
+const ArticleEditor = React.lazy(() => import("./pages/articles/ArticleEditor"));
+const StorefrontArticlePage = React.lazy(() => import("./storefront/pages/StorefrontArticlePage"));
 const AffiliateSystemSettings = React.lazy(
   () => import("./pages/affiliates/AffiliateSystemSettings"),
+);
+const AmazonAffiliateSettings = React.lazy(
+  () => import("./pages/amazon-affiliate/AmazonAffiliateSettings"),
+);
+const AmazonAffiliateImport = React.lazy(
+  () => import("./pages/amazon-affiliate/AmazonImport"),
+);
+const AmazonAffiliateProducts = React.lazy(
+  () => import("./pages/amazon-affiliate/AmazonProducts"),
 );
 const AffiliatesManagement = React.lazy(
   () => import("./pages/affiliates/AffiliatesManagement"),
@@ -997,6 +1010,15 @@ const LabManagementPage = React.lazy(
 const RadiologyManagementPage = React.lazy(
   () => import("./pages/radiology/RadiologyManagementPage"),
 );
+const DentalLabManagementPage = React.lazy(
+  () => import("./pages/dental-lab/DentalLabManagementPage"),
+);
+const DentalCaseDetailPage = React.lazy(
+  () => import("./pages/dental-lab/DentalCaseDetailPage"),
+);
+const DentalPortalRoutes = React.lazy(
+  () => import("./pages/dental-doctor/dentalPortalRoutes"),
+);
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
 );
@@ -1584,6 +1606,7 @@ if (typeof window !== "undefined") {
   p["/customers/settings"] = () => import("./pages/customers/CustomerLoyaltySettings");
   p["/customers/lists"] = () => import("./pages/customers/CustomerLists");
   p["/customers/customer-notifications"] = () => import("./pages/customers/CustomerNotifications");
+  p["/customers/product-offers"] = () => import("./pages/customers/ProductOffers");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
@@ -1693,6 +1716,7 @@ const AppContent = () => {
     currentPath.startsWith("/company-links/") ||
     currentPath.startsWith("/auth/") ||
     currentPath.startsWith("/register/") ||
+    currentPath.startsWith("/dental-portal") ||
     currentPath.startsWith("/affiliate-register") ||
     currentPath.startsWith("/payment/") ||
     currentPath.startsWith("/checkout/") ||
@@ -1996,6 +2020,7 @@ const AppContent = () => {
               path="/preview/platform-home/:variantId"
               element={<PlatformLandingPreviewPage />}
             />
+            <Route path="/store/articles/:slug" element={<StorefrontArticlePage />} />
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
             {isAuthenticated && (
@@ -2928,6 +2953,16 @@ const AppContent = () => {
                     <PermissionProtectedRoute requiredPermissions={['customers.view']}>
                       <Layout>
                         <CustomerWhatsAppNotify />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/customers/product-offers"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['customers.view']}>
+                      <Layout>
+                        <ProductOffers />
                       </Layout>
                     </PermissionProtectedRoute>
                   }
@@ -3927,6 +3962,36 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/articles"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ArticlesList />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/articles/new"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['products.create']}>
+                      <Layout>
+                        <ArticleEditor />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/articles/:id"
+                  element={
+                    <PermissionProtectedRoute requiredPermissions={['products.view']}>
+                      <Layout>
+                        <ArticleEditor />
+                      </Layout>
+                    </PermissionProtectedRoute>
+                  }
+                />
+                <Route
                   path="/products/:id"
                   element={
                     <PermissionProtectedRoute requiredPermissions={['products.view']}>
@@ -4099,6 +4164,32 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
+                {/* Amazon Affiliate Routes */}
+                <Route
+                  path="/amazon-affiliate/settings"
+                  element={
+                    <Layout>
+                      <AmazonAffiliateSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/amazon-affiliate/import"
+                  element={
+                    <Layout>
+                      <AmazonAffiliateImport />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/amazon-affiliate/products"
+                  element={
+                    <Layout>
+                      <AmazonAffiliateProducts />
+                    </Layout>
+                  }
+                />
+
                 {/* Affiliate Routes */}
                 <Route
                   path="/affiliates/management/:id"
@@ -7217,6 +7308,23 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/dental-lab/cases/:id"
+                  element={
+                    <Layout fullWidth>
+                      <DentalCaseDetailPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/dental-lab/*"
+                  element={
+                    <Layout fullWidth>
+                      <DentalLabManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route path="/dental-portal/*" element={<DentalPortalRoutes />} />
+                <Route
                   path="/admin/education/funnel"
                   element={
                     <Layout fullWidth>
@@ -7331,6 +7439,7 @@ const AppContent = () => {
                   element={<Navigate to="/auth/login" replace />}
                 />
                 <Route path="/" element={<PlatformLandingPage />} />
+                <Route path="/dental-portal/*" element={<DentalPortalRoutes />} />
                 <Route path="/bot-widget/:companyId" element={<BotWidgetPage />} />
                 <Route
                   path="/store-settings"

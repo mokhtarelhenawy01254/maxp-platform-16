@@ -253,6 +253,17 @@ router.get('/re-engagement/counts',
 );
 
 // 🎯 قائمة العملاء المطابقين (drill-down)
+// 🕐 الرسائل الدورية الثابتة (Retention Cadence): منتج كل 10 أيام / رصيد كل 15 / إحالة كل 30 / مستوى كل 30
+router.get('/retention-cadence/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getRetentionCadenceSettings
+);
+
+router.put('/retention-cadence/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateRetentionCadenceSettings
+);
+
 router.get('/re-engagement/customers',
   verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
   customerLoyaltyController.getReEngagementCustomers

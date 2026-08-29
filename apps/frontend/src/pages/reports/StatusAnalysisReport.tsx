@@ -137,48 +137,13 @@ const StatusAnalysisReport: React.FC = () => {
       setLoading(true);
       setError(null);
       try {
-        // Try to fetch from API, use fallback mock if it fails (during development)
-        let reportData: StatusAnalysisData;
-        try {
-            reportData = await analyticsService.getStatusAnalysisReport(
-            selectedStatus,
-            period,
-            startDate,
-            endDate,
-            );
-            if (!reportData || !reportData.summary) throw new Error("Invalid format");
-        } catch (apiErr) {
-            console.warn("Using mock data for status report due to API error", apiErr);
-            // Mock Data Generation
-            const days = period === "custom" ? 14 : parseInt(period) || 30;
-            const mockTrend = Array.from({ length: days }).map((_, i) => {
-                const date = new Date();
-                date.setDate(date.getDate() - (days - i - 1));
-                return {
-                    date: date.toISOString().split("T")[0],
-                    orders: Math.floor(Math.random() * 20) + 5,
-                    revenue: Math.floor(Math.random() * 5000) + 1000,
-                };
-            });
-            
-            reportData = {
-                summary: {
-                    totalOrders: mockTrend.reduce((acc, curr) => acc + curr.orders, 0),
-                    totalRevenue: mockTrend.reduce((acc, curr) => acc + curr.revenue, 0),
-                    averageOrderValue: 450,
-                    successRate: Math.floor(Math.random() * 30) + 60,
-                },
-                trend: mockTrend,
-                orders: Array.from({ length: 10 }).map((_, i) => ({
-                    id: `ORD-${Math.floor(Math.random() * 10000) + 1000}`,
-                    customerName: `عميل تجريبي ${i + 1}`,
-                    date: new Date(Date.now() - Math.random() * 10000000000).toISOString(),
-                    total: Math.floor(Math.random() * 1000) + 200,
-                    paymentMethod: Math.random() > 0.5 ? "الدفع عند الاستلام" : "بطاقة ائتمان",
-                    lastUpdated: new Date().toISOString(),
-                })).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()),
-            };
-        }
+        const reportData: StatusAnalysisData = await analyticsService.getStatusAnalysisReport(
+          selectedStatus,
+          period,
+          startDate,
+          endDate,
+        );
+        if (!reportData || !reportData.summary) throw new Error("Invalid format");
 
         setData(reportData);
       } catch (err) {
