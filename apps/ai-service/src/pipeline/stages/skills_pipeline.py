@@ -115,13 +115,42 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
         provider_response = await _llm_call(ctx, system_prompt, skills)
     except Exception as e:
         import logging as _log; _log.warning("LLM_CALL_EXCEPTION %s %s", type(e).__name__, str(e)[:300])
-        logger.error("skills_pipeline_llm_failed", error=str(e))
-        error_details = provider_error_result(e)
-        if error_details.get("error_code") == "LLM_RATE_LIMITED":
-            ctx.final_reply = "عذراً، واجهت خدمة الذكاء الاصطناعي ضغطاً في الاستخدام حالياً. الرجاء المحاولة بعد قليل."
-        else:
-            ctx.final_reply = "عذراً، حدث خطأ في معالجة طلبك. الرجاء المحاولة مرة أخرى."
-        return ctx
+        logger.error("skills_pipeline_llm_failed_trying_fallbacks", error=str(e))
+
+        # Call-time failover: retry with agent-configured fallback models
+        # (model_policy.fallback) before surfacing an error to the customer.
+        fallbacks: list[dict] = []
+        if ctx.agent is not None and getattr(ctx.agent, "policies", None):
+            fallbacks = ((ctx.agent.policies or {}).get("model_policy") or {}).get("fallback") or []
+
+        recovered = False
+        for fb in fallbacks:
+            fb_model = (fb or {}).get("model")
+            if not fb_model:
+                continue
+            try:
+                from src.llm.model_manager import model_manager
+
+                routing = await model_manager.get_next_key(fb_model, ctx.company_id)
+                ctx.llm_client = LLMClient(
+                    provider=routing.provider,
+                    model=routing.model,
+                    api_key=routing.api_key,
+                    base_url=routing.base_url,
+                )
+                logger.info("skills_pipeline_llm_fallback_activated", model=fb_model)
+                provider_response = await _llm_call(ctx, system_prompt, skills)
+                recovered = True
+                break
+            except Exception as fb_err:
+                logger.warning("skills_pipeline_llm_fallback_failed", model=fb_model, error=str(fb_err)[:200])
+
+        if not recovered:
+            # Silent Escalation: never expose internal AI errors to customers.
+            ctx.final_reply = None
+            ctx.escalation_requested = True
+            ctx.escalation_reason = f"llm_failed: {type(e).__name__}: {str(e)[:200]}"
+            return ctx
 
     # 4b. Retry once on empty response (DeepSeek cold-start workaround)
     if not provider_response.text and not provider_response.tool_calls:

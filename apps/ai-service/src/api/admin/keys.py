@@ -527,7 +527,7 @@ async def list_logs(
         pub = await session.execute(_t(f"""
             SELECT id, provider, "keyId" AS key_id, action, status,
                    model, "latencyMs" AS latency_ms,
-                   COALESCE(message, '') AS error,
+                    COALESCE(CAST(COALESCE(metadata, '{{}}') AS jsonb)->>'error', NULLIF(COALESCE(message, ''), '')) AS error,
                    CAST(COALESCE(metadata, '{{}}') AS jsonb)->>'response' AS response,
                    "companyId" AS company_id, "createdAt" AS created_at
             FROM public.ai_provider_logs

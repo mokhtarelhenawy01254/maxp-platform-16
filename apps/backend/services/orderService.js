@@ -52,6 +52,24 @@ const PREPARATION_PIPELINE_STATUSES = new Set([
   'ON_HOLD_PREP'
 ]);
 
+// 🛡️ PRODUCTION-FIX (stale-prep-hijack): المراحل الحقيقية لطابور التجهيز فقط —
+// اللي يُسمح بكتابتها في metadata.preparationStatus. الحالات النظامية العادية
+// (PENDING/CONFIRMED/SCHEDULED/PROCESSING) خارجها عمدًا: التغيير ليها لازم يمسح
+// أي مرحلة تجهيز قديمة بدل ما يكتبها ويخطف العرض (كانت بتترجم PROCESSING دايمًا).
+const PREP_METADATA_STATUSES = new Set([
+  'PENDING_PREPARATION',
+  'PREPARING',
+  'QUALITY_CHECK',
+  'PACKAGED',
+  'PACKED',
+  'READY',
+  'READY_TO_SHIP',
+  'STOCK_SHORTAGE',
+  'PENDING_STOCK',
+  'ON_HOLD_STOCK',
+  'ON_HOLD_PREP'
+]);
+
 const parsePreparationMetadata = (rawValue) => {
   if (!rawValue) return {};
   if (typeof rawValue === 'object' && !Array.isArray(rawValue)) return rawValue;
@@ -124,9 +142,6 @@ class OrderService {
    */
   async syncPreparationMetadata(orderId, status, prismaClient = null) {
     const normalized = String(status || '').toUpperCase();
-    if (!PREPARATION_PIPELINE_STATUSES.has(normalized)) {
-      return null;
-    }
     const prisma = prismaClient || this.getPrisma();
     const order = await prisma.order.findUnique({
       where: { id: orderId },
@@ -134,11 +149,22 @@ class OrderService {
     });
     if (!order) return null;
     const currentMetadata = parsePreparationMetadata(order.metadata);
-    const nextMetadata = JSON.stringify({
-      ...currentMetadata,
-      preparationStatus: normalized,
-      preparationStatusUpdatedAt: new Date().toISOString(),
-    });
+
+    let nextMetadata;
+    if (PREP_METADATA_STATUSES.has(normalized)) {
+      nextMetadata = JSON.stringify({
+        ...currentMetadata,
+        preparationStatus: normalized,
+        preparationStatusUpdatedAt: new Date().toISOString(),
+      });
+    } else if (currentMetadata.preparationStatus) {
+      // Clear stale preparationStatus when transitioning to a non-prep status
+      const { preparationStatus, preparationStatusUpdatedAt, ...rest } = currentMetadata;
+      nextMetadata = JSON.stringify(rest);
+    } else {
+      return null;
+    }
+
     await prisma.order.update({
       where: { id: orderId },
       data: { metadata: nextMetadata },
@@ -381,14 +407,6 @@ class OrderService {
       }
 
       const isDuplicate = !!duplicateMatch;
-      if (isDuplicate && duplicateSettings?.action === 'ignore') {
-        const existingOrder = await safeQuery(async () => {
-          return await this.getPrisma().order.findUnique({
-            where: { id: duplicateMatch.order.id }
-          });
-        }, 3);
-        return existingOrder ? { ...existingOrder, customer } : existingOrder;
-      }
 
       // إنشاء الطلب بدون items (سنضيفها لاحقاً)
       const orderLimitCheck = await ensureWithinPlanLimit(companyId, 'orders', 1);
@@ -503,18 +521,20 @@ class OrderService {
         console.error('❌ [ORDER-SERVICE] Error in auto-distribution:', distError.message);
       }
 
-      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط لأي طلب جديد من المحادثة
-      try {
-        const customerLoyaltyService = require('./hr/customerLoyaltyService');
-        await customerLoyaltyService.applyLoyaltyPointsForOrder({
-          orderId: order.id,
-          companyId,
-          changedBy: data.createdBy
-        }).catch((loyaltyError) => {
-          console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
-        });
-      } catch (loyaltyError) {
-        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+      // 🎁 الولاء: المنح فقط عند التسليم (DELIVERED) — لا تمنح نقاط عند إنشاء طلب المحادثة (PENDING)
+      if (order.status === 'DELIVERED') {
+        try {
+          const customerLoyaltyService = require('./hr/customerLoyaltyService');
+          await customerLoyaltyService.applyLoyaltyPointsForOrder({
+            orderId: order.id,
+            companyId,
+            changedBy: data.createdBy
+          }).catch((loyaltyError) => {
+            console.error(`❌ [LOYALTY-AUTO] Failed to award points for conversation order ${order.orderNumber}:`, loyaltyError.message);
+          });
+        } catch (loyaltyError) {
+          console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+        }
       }
 
       //console.log('✅ Order created successfully:', order.orderNumber);
@@ -726,7 +746,8 @@ class OrderService {
   async getDuplicateSettings(companyId = null) {
     const settings = await this.getOrderSettings(companyId);
     return {
-      action: settings?.duplicateOrderAction || 'filter',
+      // إزالة "ignore" نهائياً: أي طلب مكرر يُسجَّل دائماً بحالة "طلب مكرر" ويظهر
+      action: 'filter',
       windowMinutes: settings?.duplicateOrderWindowMinutes || 60
     };
   }
@@ -1048,7 +1069,9 @@ class OrderService {
       if (!order) throw createOrderStatusError("الطلب غير موجود", 404);
 
       const currentStatus = normalizeOrderStatusCode(order.status);
-      if (currentStatus === status) {
+      // 🛡️ PRODUCTION-FIX (custom-status-noop): لو عليه كود مخصص، نفس الحالة النظامية
+      // المطلوبة صراحةً مش no-op — التاجر عايز يرجّع للحالة النظامية ويشيل الكود المخصص.
+      if (currentStatus === status && !order.customStatusCode) {
         return order;
       }
 
@@ -1092,13 +1115,28 @@ class OrderService {
       // - storedStatus = القيمة الصالحة اللي تتخزّن فعلاً على order.status.
       // - originalRequestedStatus = الكود اللي المستخدم طلبه (مخصص أو نظامي) — نستخدمه
       //   في statusHistory + إشعار WhatsApp (قالب الحالة المخصصة).
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن دلوقتي في
+      // order.customStatusCode جنب الـ enum — عشان العرض والفلتر والإحصائيات يشوفوه.
       // لو الحالة مش enum ومالهاش mapsToSystem صالح → نرفض بخطأ عربي واضح بدل 500 Prisma.
-      const { resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
-      const { stored: storedStatus, notify: originalRequestedStatus } = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
+      const { resolveOrderStatusForStorage, isValidOrderStatusEnum } = require('../utils/orderStatusEnum');
+      let { stored: storedStatus, notify: originalRequestedStatus } = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
       if (!storedStatus) {
         throw createOrderStatusError(`الحالة "${status}" غير صالحة ولا يمكن تطبيقها على الطلب`, 400);
       }
-      if (currentStatus === storedStatus) {
+      // 🛡️ PRODUCTION-FIX (custom-status-noop): الـ no-op لازم يقارن "الحالة الفعلية"
+      // (customStatusCode لو موجود) — مش الـ enum بس. قبل الإصلاح ده، تطبيق حالة مخصصة
+      // على طلب قاعد بالفعل في قيمة mapsToSystem كان بيرجع مبكرًا: من غير تاريخ ولا
+      // إشعار ولا تحديث للكود المخصص (تحديث صامت لا يعمل شيء).
+      const requestedIsCustom = originalRequestedStatus !== storedStatus;
+      // (mutable — بيتعاد حسابه لو الـ workflow غيّر الحالة لكود مخصص مختلف)
+      let isRequestedCustom = requestedIsCustom;
+      const currentCustomCode = order.customStatusCode
+        ? normalizeOrderStatusCode(order.customStatusCode)
+        : null;
+      const isEffectiveNoOp = requestedIsCustom
+        ? currentCustomCode === originalRequestedStatus
+        : !currentCustomCode && currentStatus === storedStatus;
+      if (isEffectiveNoOp) {
         return order;
       }
       status = storedStatus;
@@ -1142,6 +1180,20 @@ class OrderService {
           workflowAuditLog = workflowResult.auditLog || null;
           if (workflowResult.nextStatusCode) {
             status = workflowResult.nextStatusCode;
+            // 🛡️ PRODUCTION-FIX (custom-status-enum): الـ workflow بيرجّع أكواد من
+            // orderStatusDefinition — ممكن تكون أكواد مخصصة. من غير إعادة الحل دي
+            // الكود المخصص بيوصל لـ prisma.order.update فيكسر الـ enum.
+            if (!isValidOrderStatusEnum(status)) {
+              const reResolved = await resolveOrderStatusForStorage(this.getPrisma(), companyId, status);
+              if (reResolved.stored) {
+                originalRequestedStatus = reResolved.notify;
+                status = reResolved.stored;
+                isRequestedCustom = originalRequestedStatus !== status;
+              } else {
+                status = storedStatus;
+                isRequestedCustom = requestedIsCustom;
+              }
+            }
           }
         }
 
@@ -1179,15 +1231,26 @@ class OrderService {
       // 🔄 [ORDER-SERVICE-UPDATE] Update the order
       // Sync metadata.preparationStatus so external status changes (quick-status,
       // orders page) are reflected on the preparation queue too.
-      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      // 🛡️ PRODUCTION-FIX (stale-prep-hijack): المراحل الحقيقية للتجهيز بس اللي
+      // تتكتب في metadata.preparationStatus — كان PREPARATION_PIPELINE_STATUSES
+      // شايل PENDING/CONFIRMED/SCHEDULED/PROCESSING (حالات نظامية عادية) فتغيير
+      // الحالة لـ CONFIRMED من التفاصيل كان بيكتب preparationStatus=CONFIRMED
+      // والعرض بيرجّعها PROCESSING للأبد — "بغيّر الحالة ومش بتتغير".
+      const isPrepPipelineStatus = PREP_METADATA_STATUSES.has(status);
+      const currentMetadata = parsePreparationMetadata(order.metadata);
       let nextMetadata = null;
       if (isPrepPipelineStatus) {
-        const currentMetadata = parsePreparationMetadata(order.metadata);
         nextMetadata = JSON.stringify({
           ...currentMetadata,
           preparationStatus: status,
           preparationStatusUpdatedAt: new Date().toISOString()
         });
+      } else if (currentMetadata.preparationStatus) {
+        // Clear stale preparationStatus when transitioning to a non-prep status
+        // (e.g. SHIPPED, DELIVERED, CANCELLED) so the COALESCE filter in the
+        // orders list doesn't match on leftover prep data.
+        const { preparationStatus, preparationStatusUpdatedAt, ...rest } = currentMetadata;
+        nextMetadata = JSON.stringify(rest);
       }
 
       const updatedOrder = await safeQuery(async () => {
@@ -1196,6 +1259,9 @@ class OrderService {
           where: { id: order.id },
           data: {
             status: status,
+            // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن جنب الـ enum،
+            // وبيتمسح لما التاجر يرجّع لحالة نظامية مباشرة (مش مخصصة).
+            customStatusCode: isRequestedCustom ? originalRequestedStatus : null,
             notes: notes || undefined,
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
@@ -1377,6 +1443,14 @@ class OrderService {
               console.error(`❌ [LOYALTY-BG-ERROR] Failed for ${orderNumber}:`, error.message);
             });
 
+            // 🎁 Milestone / Gift Engine: هدية الطلب 2 + Milestone 3 + Anniversary
+            try {
+              const milestoneService = require('./milestoneService');
+              await milestoneService.handleOrderMilestones({ orderId: order.id, companyId: order.companyId, customerId: order.customerId }).catch(err => {
+                console.warn(`⚠️ [MILESTONE] Failed for ${orderNumber}:`, err.message);
+              });
+            } catch (mErr) { console.warn('Milestone require failed', mErr.message); }
+
             // 🚀 تسجيل العميل في سلسلة ما بعد الاستلام (بعد أسبوع/أسبوعين/تالت...) عند التسليم الفعلي
             try {
               const WhatsAppJourneyService = require('./whatsapp/WhatsAppJourneyService');
@@ -1397,18 +1471,25 @@ class OrderService {
             // DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback isFallback.
             // 🛡️ PRODUCTION-FIX (custom-status-enum): نستخدم الكود الأصلي (originalRequestedStatus)
             // — مش الـ stored enum — عشان قالب الحالة المخصصة (مثل DELAYED-WITH-CAPTAIN) يشتغل.
-            const notificationStatus = normalizeWhatsAppOrderStatus(originalRequestedStatus) || originalRequestedStatus;
+            // 🛡️ PRODUCTION-FIX (prep-stage-alias): من غير normalizeWhatsAppOrderStatus هنا —
+            // التحويل PACKAGED→PACKED كان بيكسر لقط قالب التاجر المسجّل باسم PACKAGED
+            // (وPREPARING→PICKING مقابل PREPARING) فكانت الرسالة بتتخطّى بصمت no_template.
+            // الـ persistence بيتظبط جوّه الخدمة عبر getPersistedNotificationEventType.
+            const notificationStatus = originalRequestedStatus
+              || normalizeWhatsAppOrderStatus(originalRequestedStatus)
+              || status;
 
             // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
-            // 🛡️ PRODUCTION-FIX (custom-status-enum-dedup): الـ dedup لازم يستخدم نفس القيمة اللي
-            // هتتخزن فعلاً في whatsAppNotificationLog.eventType — للحالات المخصصة دي `mapsToSystem`
-            // (مثل ON_HOLD) مش الكود المخصص — وإلا الرسالة المكررة متتعرفش (قد تسبب سبام للعميل).
+            // 🛡️ PRODUCTION-FIX (custom-status-dedup-identity): بنمرّر الكود الأصلي
+            // (rawEventType) — التطابق بقى على هوية الحالة المخصصة نفسها، مش قيمة
+            // mapsToSystem المشتركة اللي كانت بتبلع رسالة حالتين مختلفتين خلال 10 ثوانٍ.
             const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
-            const persistedEventForDedup = getPersistedNotificationEventType(storedStatus || notificationStatus);
+            const persistedEventForDedup = getPersistedNotificationEventType(notificationStatus);
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
               companyId: order.companyId,
               orderId: order.id,
               eventType: persistedEventForDedup,
+              rawEventType: notificationStatus,
             });
 
             if (recentNotification) {
@@ -1499,15 +1580,20 @@ class OrderService {
         skipValidation: skipTransitionValidation
       });
 
-      const isPrepPipelineStatus = PREPARATION_PIPELINE_STATUSES.has(status);
+      // 🛡️ PRODUCTION-FIX (stale-prep-hijack): نفس إصلاح الطلبات العادية — المراحل
+      // الحقيقية بس، والحالات النظامية تمسح أي مرحلة قديمة.
+      const isPrepPipelineStatus = PREP_METADATA_STATUSES.has(status);
+      const currentGuestMetadata = parsePreparationMetadata(guestOrder.metadata);
       let nextGuestMetadata = null;
       if (isPrepPipelineStatus) {
-        const currentMetadata = parsePreparationMetadata(guestOrder.metadata);
         nextGuestMetadata = JSON.stringify({
-          ...currentMetadata,
+          ...currentGuestMetadata,
           preparationStatus: status,
           preparationStatusUpdatedAt: new Date().toISOString()
         });
+      } else if (currentGuestMetadata.preparationStatus) {
+        const { preparationStatus, preparationStatusUpdatedAt, ...rest } = currentGuestMetadata;
+        nextGuestMetadata = JSON.stringify(rest);
       }
 
       const updatedGuestOrder = await safeQuery(async () => {
@@ -1600,6 +1686,9 @@ class OrderService {
 
             const notificationOrder = {
               ...updatedGuestOrder,
+              // 🛡️ PRODUCTION-FIX (guest-order-fk): علّمة كضيف عشان اللوج يتخزن
+              // بـ orderId=null — الضيوف ملهمش صف في orders وكان الـ FK بيقتل الإرسال
+              isGuestOrder: true,
               customerPhone: updatedGuestOrder.guestPhone,
               customerName: updatedGuestOrder.guestName,
               items: guestItems,
@@ -1610,17 +1699,20 @@ class OrderService {
               return;
             }
 
-            const notificationStatus = normalizeWhatsAppOrderStatus(status) || status;
+            // 🛡️ PRODUCTION-FIX (prep-stage-alias): الكود الأصلي من غير تحويل — نفس منطق
+            // المسار العادي فوق؛ القوالب مسجّلة بالكود الأصلي (PACKAGED/PREPARING).
+            const notificationStatus = status;
 
             // 🚨 PRODUCTION-FIX (notifications-fix-plan §2.1):
             // لا تحجب الحالات غير المرسومة — دع sendOrderStatusNotification يقرر
             // (DB OrderStatusConfig.notifyCustomer + خريطته الأوسع + fallback).
             const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+            const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
             // ✅ Check for duplicate notification (وحّدت عبر isDuplicateNotification §3.1)
             const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
               companyId,
               recipientPhone: notificationOrder.customerPhone,
-              eventType: notificationStatus,
+              eventType: getPersistedNotificationEventType(notificationStatus),
             });
 
             if (recentNotification) {

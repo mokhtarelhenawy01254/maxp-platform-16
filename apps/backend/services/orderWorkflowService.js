@@ -349,9 +349,20 @@ class OrderWorkflowService {
             }
 
             // 9. If allowed, actually update the order and log the audit
+            // 🛡️ PRODUCTION-FIX (custom-status-enum): أكواد orderStatusDefinition ممكن
+            // تكون أكواد مخصصة (مش enum) — الكتابة المباشرة كانت بتكسر prisma. بنحلّها
+            // عبر resolveOrderStatusForStorage وبتخزين الكود المخصص جنب الـ enum.
+            const { resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
+            const wfResolved = await resolveOrderStatusForStorage(this.prisma, companyId, nextStatusDef.code);
+            const wfStored = wfResolved.stored || order.status; // لا نكسر التحديث لو الحالة غير قابلة للتخزين
             await this.prisma.order.update({
                 where: { id: order.id },
-                data: { status: nextStatusDef.code }
+                data: {
+                    status: wfStored,
+                    customStatusCode: wfResolved.stored && wfResolved.notify !== wfResolved.stored
+                        ? wfResolved.notify
+                        : null
+                }
             });
 
             // 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2):
@@ -452,7 +463,10 @@ class OrderWorkflowService {
      * Handle Approval or Rejection
      */
     async handleApproval(companyId, requestId, userId, action, reviewReason = null) {
-        const request = await this.prisma.orderStatusChangeRequest.findUnique({
+        // 🛡️ PRODUCTION-FIX (workflow-approval-findunique): findUnique بـ {id, companyId}
+        // كان بيرمي Prisma validation error (تركيبة غير unique) → كل الموافقات كانت
+        // بتفشل بـ 500. findFirst هو الصح لنطاق الشركة.
+        const request = await this.prisma.orderStatusChangeRequest.findFirst({
             where: { id: requestId, companyId },
             include: { order: true, toStatus: true }
         });
@@ -479,9 +493,19 @@ class OrderWorkflowService {
 
         if (action === 'approve') {
             // 1. Update the order
+            // 🛡️ PRODUCTION-FIX (custom-status-enum): كود toStatus ممكن يكون مخصص —
+            // نحلّه قبل الكتابة على عمود الـ enum ونخزّن الكود المخصص جنبه.
+            const { resolveOrderStatusForStorage } = require('../utils/orderStatusEnum');
+            const apprResolved = await resolveOrderStatusForStorage(this.prisma, companyId, request.toStatus.code);
+            const apprStored = apprResolved.stored || request.order.status;
             await this.prisma.order.update({
                 where: { id: request.orderId },
-                data: { status: request.toStatus.code }
+                data: {
+                    status: apprStored,
+                    customStatusCode: apprResolved.stored && apprResolved.notify !== apprResolved.stored
+                        ? apprResolved.notify
+                        : null
+                }
             });
 
             // 🚨 PRODUCTION-FIX (notifications-fix-plan §5.2):

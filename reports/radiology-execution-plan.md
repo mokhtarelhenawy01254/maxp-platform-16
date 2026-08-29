@@ -1,193 +1,193 @@
-﻿# ╪«╪╖╪⌐ ╪¬┘å┘ü┘è╪░ ╪Ñ╪╡┘ä╪º╪¡ ┘å╪╕╪º┘à ╪º┘ä╪ú╪┤╪╣╪⌐ ΓÇö ╪º┘ä┘å╪│╪«╪⌐ ╪º┘ä┘à╪╣╪¬┘à╪»╪⌐
+# خطة تنفيذ إصلاح نظام الأشعة — النسخة المعتمدة
 
-> **╪º┘ä╪¡╪º┘ä╪⌐:** ┘à╪▒╪º╪¼╪╣╪⌐ ┘ê╪¬╪╡╪¡┘è╪¡ ┘à┘é╪º╪¿┘ä ╪º┘ä┘â┘ê╪» ╪º┘ä┘ü╪╣┘ä┘è (13 ╪ú╪║╪│╪╖╪│ 2026)
-> **╪º┘ä┘à╪╡╪º╪»╪▒:** `radiology-audit-backend.md`, `radiology-audit-frontend.md`, `radiology-2026-standards.md`, `radiology-claims-verification.md`
-> **┘à╪¿╪»╪ú ╪º┘ä╪¬╪▒╪¬┘è╪¿:** ┘à╪º ┘è┘â┘ä┘æ┘ü ┘ü┘ä┘ê╪│/╪¿┘è╪º┘å╪º╪¬/╪º┘à╪¬╪½╪º┘ä ╪º┘ä┘è┘ê┘à ╪ú┘ê┘ä┘ï╪º ΓåÆ ┘é┘è╪º╪│ ┘é╪¿┘ä ╪º┘ä╪ú╪»╪º╪í ΓåÆ ╪¬╪ú╪¼┘è┘ä ╪º┘ä┘à┘è╪▓╪º╪¬ ╪º┘ä╪¬╪«┘à┘è┘å┘è╪⌐ ┘ä╪¡┘è┘å ┘ê╪¼┘ê╪» ╪╣┘à┘è┘ä/╪¬┘â╪º┘à┘ä ┘ü╪╣┘ä┘è.
+> **الحالة:** مراجعة وتصحيح مقابل الكود الفعلي (13 أغسطس 2026)
+> **المصادر:** `radiology-audit-backend.md`, `radiology-audit-frontend.md`, `radiology-2026-standards.md`, `radiology-claims-verification.md`
+> **مبدأ الترتيب:** ما يكلّف فلوس/بيانات/امتثال اليوم أولًا → قياس قبل الأداء → تأجيل الميزات التخمينية لحين وجود عميل/تكامل فعلي.
 
 ---
 
-## ╪º┘ä╪ú╪«╪╖╪º╪í ╪º┘ä┘à╪╡╪¡╪¡╪⌐ ┘ü┘è ╪º┘ä╪¬┘é╪º╪▒┘è╪▒ ╪º┘ä╪│╪º╪¿┘é╪⌐ (┘à╪▒╪¼╪╣ ╪│╪▒┘è╪╣)
+## الأخطاء المصححة في التقارير السابقة (مرجع سريع)
 
-| # | ╪º┘ä╪º╪»╪╣╪º╪í ╪º┘ä┘é╪»┘è┘à | ╪º┘ä╪¡┘é┘è┘é╪⌐ | ╪º┘ä┘à╪▒╪¼╪╣ |
+| # | الادعاء القديم | الحقيقة | المرجع |
 |---|---|---|---|
-| 1 | Refund ┘à┘à┘â┘å ┘è╪╖┘ä╪╣ negative (╪º╪│╪¬╪▒╪¼╪º╪╣ 50 ╪½┘à 50 ╪╣┘ä┘ë 80) | ╪º┘ä╪º╪│╪¬╪▒╪¼╪º╪╣ ╪│╪¼┘ä ╪│╪º┘ä╪¿ ┘ê╪º┘ä┘à╪¼┘à┘ê╪╣ ┘è╪┤┘à┘ä ╪º┘ä╪º╪│╪¬╪▒╪¼╪º╪╣╪º╪¬ ╪º┘ä╪│╪º╪¿┘é╪⌐ ΓåÆ ╪º┘ä╪½╪º┘å┘è ┘è┘Å╪▒┘ü╪╢ | `radiologyPaymentsController.js:109-121` |
-| 2 | paidAmount ┘à┘à┘â┘å off-by-1 ┘à┘å float | `total - remaining` = paidAmount ╪¿╪º┘ä╪╕╪¿╪╖ ┘ä┘ä┘à╪¿╪º┘ä╪║ ╪º┘ä╪╡╪¡┘è╪¡╪⌐ | `StudiesTab.tsx:129` |
-| 3 | ┘à┘ü┘è╪┤ TS types ┘ä┘ä┘Ç responses | 8 interfaces ┘ü┘è `shared.ts:65-121` | `apps/frontend/src/pages/radiology/shared.ts` |
-| 4 | RadiologyExamAddition ┘à┘è╪¬ | ╪╣┘å╪»┘ç CRUD ┘â╪º┘à┘ä + routes + tests + `ExamAdditionsTab.tsx` ΓÇö ╪¬┘â╪▒╪º╪▒ ┘à┘è╪▓╪⌐ ┘à╪┤ dead code | `radiologyExamAdditionsController.js` |
-| 5 | engineSequence ┘è┘Å╪╣┘è╪» ╪¿┘å╪º╪í ╪º┘ä┘Ç viewer ┘à╪╣ ┘â┘ä re-render | `ids` memo ╪╣┘ä┘ë `[studyId]` ┘ü┘é╪╖ ΓÇö ╪Ñ╪╣╪º╪»╪⌐ ╪º┘ä╪¿┘å╪º╪í ╪¬╪¡╪»╪½ ┘ü┘é╪╖ ╪╣┘å╪» ╪¬╪║┘è┘è╪▒ ╪º┘ä╪»╪▒╪º╪│╪⌐ (┘à╪╖┘ä┘ê╪¿) | `DicomViewer.tsx:106-113` |
-| 6 | insurance TOCTOU ┘è┘å╪¬╪¼ paidAmount = 2├ùtotal | ┘ü┘è┘ç `$transaction` ┘ä┘â┘å ╪º┘ä┘é╪▒╪º╪í╪⌐/╪º┘ä╪¬╪¡┘é┘é ╪«╪º╪▒╪¼┘ç ΓåÆ lost update + ╪╢╪╣┘ü ledger (╪º┘ä┘Ç 2├ù ╪º┘ä╪¡┘é┘è┘é┘è ┘ü┘è ┘à╪│╪º╪▒ ╪º┘ä╪»╪▒╪º╪│╪⌐) | `radiologyInsuranceController.js:265-292` |
-| 7 | ╪¡╪░┘ü study ╪¿┘Ç onDelete ┘å╪º┘é╪╡ ΓåÆ orphan | ┘à┘ü┘è╪┤ route ┘ä╪¡╪░┘ü ╪»╪▒╪º╪│╪⌐ ╪ú╪╡┘ä┘ï╪º╪î ┘ê╪º┘ä┘Ç default ┘ü┘è Prisma = Restrict (╪º┘ä╪¡╪░┘ü ┘è┘ü╪┤┘ä ┘ä╪º ┘è╪¬┘Ç orphan) | `radiologyRoutes.js` |
-| 8 | PDPL enforcement ╪║┘è╪▒ ┘à╪ñ┘â╪» | **┘à╪ñ┘â╪»**: ╪º┘ä┘ä╪º╪ª╪¡╪⌐ 1 ┘å┘ê┘ü┘à╪¿╪▒ 2025╪î ╪º┘ä╪¬╪╖╪¿┘è┘é ╪º┘ä┘â╪º┘à┘ä **31 ╪ú┘â╪¬┘ê╪¿╪▒ 2026** (Clyde & Co, Lexology) | ┘é╪º┘å┘ê┘å 151/2020 |
+| 1 | Refund ممكن يطلع negative (استرجاع 50 ثم 50 على 80) | الاسترجاع سجل سالب والمجموع يشمل الاسترجاعات السابقة → الثاني يُرفض | `radiologyPaymentsController.js:109-121` |
+| 2 | paidAmount ممكن off-by-1 من float | `total - remaining` = paidAmount بالظبط للمبالغ الصحيحة | `StudiesTab.tsx:129` |
+| 3 | مفيش TS types للـ responses | 8 interfaces في `shared.ts:65-121` | `apps/frontend/src/pages/radiology/shared.ts` |
+| 4 | RadiologyExamAddition ميت | عنده CRUD كامل + routes + tests + `ExamAdditionsTab.tsx` — تكرار ميزة مش dead code | `radiologyExamAdditionsController.js` |
+| 5 | engineSequence يُعيد بناء الـ viewer مع كل re-render | `ids` memo على `[studyId]` فقط — إعادة البناء تحدث فقط عند تغيير الدراسة (مطلوب) | `DicomViewer.tsx:106-113` |
+| 6 | insurance TOCTOU ينتج paidAmount = 2×total | فيه `$transaction` لكن القراءة/التحقق خارجه → lost update + ضعف ledger (الـ 2× الحقيقي في مسار الدراسة) | `radiologyInsuranceController.js:265-292` |
+| 7 | حذف study بـ onDelete ناقص → orphan | مفيش route لحذف دراسة أصلًا، والـ default في Prisma = Restrict (الحذف يفشل لا يتـ orphan) | `radiologyRoutes.js` |
+| 8 | PDPL enforcement غير مؤكد | **مؤكد**: اللائحة 1 نوفمبر 2025، التطبيق الكامل **31 أكتوبر 2026** (Clyde & Co, Lexology) | قانون 151/2020 |
 
 ---
 
-## ╪ú┘ê┘ä┘ê┘è╪º╪¬ ┘ü┘ê╪▒┘è╪⌐ ΓÇö Sprint 1 (┘ç╪░╪º ╪º┘ä╪ú╪│╪¿┘ê╪╣╪î ╪¡┘à╪º┘è╪⌐ ╪º┘ä┘ü┘ä┘ê╪│ ┘ê╪º┘ä╪¿┘è╪º┘å╪º╪¬)
+## أولويات فورية — Sprint 1 (هذا الأسبوع، حماية الفلوس والبيانات)
 
-### 1. ╪Ñ╪║┘ä╪º┘é ╪│╪¿╪º┘é ╪º┘ä╪»┘ü╪╣ (TOCTOU) ΓÇö P0
-**╪º┘ä╪«╪╖┘ê╪▒╪⌐:** ╪º╪│╪¬╪▒╪¼╪º╪╣┘è┘å/╪»┘ü╪╣╪¬┘è┘å ┘à╪¬┘ê╪º╪▓┘è┘è┘å ┘è╪╢╪º╪╣┘ü╪º┘å ╪º┘ä┘à╪¿┘ä╪║.
-**╪º┘ä┘à┘â╪º┘å:**
+### 1. إغلاق سباق الدفع (TOCTOU) — P0
+**الخطورة:** استرجاعين/دفعتين متوازيين يضاعفان المبلغ.
+**المكان:**
 - `recordStudyPayment` / `refundStudyPayment` (`radiologyPaymentsController.js:54-132`)
 - `radiologyInsuranceController.js:265-292`
-**╪º┘ä╪¡┘ä:** ┘å┘é┘ä ╪º┘ä┘é╪▒╪º╪í╪⌐ + ╪º┘ä╪¬╪¡┘é┘é ╪¼┘ê┘ç `prisma.$transaction` ┘à╪╣ ┘é┘ü┘ä ╪º┘ä╪╡┘ü (`SELECT ... FOR UPDATE` ╪╣╪¿╪▒ raw ╪ú┘ê ╪Ñ╪╣╪º╪»╪⌐ ┘é╪▒╪º╪í╪⌐ ╪»╪º╪«┘ä tx)╪î ┘ê┘â╪¬╪º╪¿╪⌐ ╪º┘ä╪Ñ┘å┘é╪º╪╡ ┘â╪╣┘à┘ä┘è╪⌐ ╪░╪▒┘è╪⌐.
-**╪¬╪¡┘é┘é:** ╪º╪«╪¬╪¿╪º╪▒ ┘à╪¬┘ê╪º╪▓┘è┘è┘å (Promise.all) ┘è┘Å┘ü╪┤┘ä ╪º┘ä╪½╪º┘å┘è.
+**الحل:** نقل القراءة + التحقق جوه `prisma.$transaction` مع قفل الصف (`SELECT ... FOR UPDATE` عبر raw أو إعادة قراءة داخل tx)، وكتابة الإنقاص كعملية ذرية.
+**تحقق:** اختبار متوازيين (Promise.all) يُفشل الثاني.
 
-### 2. ╪¬╪«┘ü┘è╪╢ ╪¡╪»┘ê╪» ╪º┘ä╪▒┘ü╪╣ (upload memoryStorage) ΓÇö P0
-**╪º┘ä╪«╪╖┘ê╪▒╪⌐:** `multer.memoryStorage` ╪¿╪¡╪¼┘à ╪¡╪¬┘ë **10GB ┘ü┘è ╪º┘ä╪░╪º┘â╪▒╪⌐ ┘ä┘â┘ä request** (`radiologyRoutes.js:9-21`).
-**╪º┘ä╪¡┘ä (┘à╪ñ┘é╪¬ ┘ü┘ê╪▒┘è):**
-- ╪¬┘é┘ä┘è┘ä `files` ╪Ñ┘ä┘ë 50 ┘ê `fileSize` ╪Ñ┘ä┘ë 20MB
-- ╪ú┘ê ╪º┘ä╪¬╪¡┘ê┘è┘ä ╪Ñ┘ä┘ë `diskStorage` ┘à╪ñ┘é╪¬ + ╪¡╪░┘ü ╪¿╪╣╪» ╪º┘ä╪¡┘ü╪╕
-- **┘ä╪º╪¡┘é┘ï╪º:** ┘à╪╣ ┘à╪┤╪▒┘ê╪╣ S3 ┘è┘Å╪╡╪¿╪¡ ╪▒┘ü╪╣ ┘à╪¿╪º╪┤╪▒ ┘à┘å ╪º┘ä┘Ç client ╪Ñ┘ä┘ë ╪º┘ä┘Ç object storage
+### 2. تخفيض حدود الرفع (upload memoryStorage) — P0
+**الخطورة:** `multer.memoryStorage` بحجم حتى **10GB في الذاكرة لكل request** (`radiologyRoutes.js:9-21`).
+**الحل (مؤقت فوري):**
+- تقليل `files` إلى 50 و `fileSize` إلى 20MB
+- أو التحويل إلى `diskStorage` مؤقت + حذف بعد الحفظ
+- **لاحقًا:** مع مشروع S3 يُصبح رفع مباشر من الـ client إلى الـ object storage
 
-### 3. ╪¬╪╡╪¡┘è╪¡ PII ┘ü┘è ╪º┘ä┘Ç PDF ΓÇö P0
-**╪º┘ä┘à┘â╪º┘å:** `radiologyPdfService.js:39` (╪╖╪¿╪º╪╣╪⌐ `patientPhone` verbatim).
-**╪º┘ä╪¡┘ä:** redaction ┘ä┘ä╪ú╪▒┘é╪º┘à (╪Ñ╪╕┘ç╪º╪▒ ╪ú┘ê┘ä 3 + ***) + ╪Ñ╪▓╪º┘ä╪⌐ `nationalId` ╪Ñ┘å ┘ê┘Å╪¼╪» ┘à┘å ╪ú┘è ┘é╪º┘ä╪¿ ╪╖╪¿╪º╪╣╪⌐ (╪ú┘è╪╢┘ï╪º ┘ü╪¡╪╡ `radiologyLabelsRoutes` ┘ä┘ä┘æ╪º╪╡┘é╪º╪¬).
-**╪¬╪¡┘é┘é:** ╪º╪«╪¬╪¿╪º╪▒ ┘ê╪¡╪»╪⌐ ╪╣┘ä┘ë `generateStudyReportPdf` ┘è╪¬╪¡┘é┘é ┘à┘å ╪║┘è╪º╪¿ ╪º┘ä╪▒┘é┘à ╪º┘ä┘â╪º┘à┘ä.
+### 3. تصحيح PII في الـ PDF — P0
+**المكان:** `radiologyPdfService.js:39` (طباعة `patientPhone` verbatim).
+**الحل:** redaction للأرقام (إظهار أول 3 + ***) + إزالة `nationalId` إن وُجد من أي قالب طباعة (أيضًا فحص `radiologyLabelsRoutes` للّاصقات).
+**تحقق:** اختبار وحدة على `generateStudyReportPdf` يتحقق من غياب الرقم الكامل.
 
-### 4. ┘é┘ü┘ä ╪º┘ä╪¬┘é╪▒┘è╪▒ ╪º┘ä┘à┘ê┘é┘æ╪╣ ΓÇö P0
-**╪º┘ä╪«╪╖┘ê╪▒╪⌐:** `upsertStudyReport` ┘è┘é╪¿┘ä ╪¬╪╣╪»┘è┘ä ┘å╪╡ ╪¬┘é╪▒┘è╪▒ SIGNED ╪Ñ╪░╪º ┘ä┘à ┘è┘Å╪▒╪│┘ä `reportStatus` ┘ü┘è ╪º┘ä╪╖┘ä╪¿ (`radiologyController.js:743-758`).
-**╪º┘ä╪¡┘ä:** ┘ü┘è ┘ü╪▒╪╣ ╪º┘ä┘Ç update╪î ╪Ñ╪░╪º ┘â╪º┘å `existing.reportStatus === 'SIGNED'` ┘è╪▒┘ü╪╢ ╪¬╪╣╪»┘è┘ä `reportText` ╪¿╪»┘ê┘å ┘à╪▒┘ê╪▒ ╪╣┘ä┘ë `advanceReport` (un-sign flow ╪╡╪▒┘è╪¡).
+### 4. قفل التقرير الموقّع — P0
+**الخطورة:** `upsertStudyReport` يقبل تعديل نص تقرير SIGNED إذا لم يُرسل `reportStatus` في الطلب (`radiologyController.js:743-758`).
+**الحل:** في فرع الـ update، إذا كان `existing.reportStatus === 'SIGNED'` يرفض تعديل `reportText` بدون مرور على `advanceReport` (un-sign flow صريح).
 
-### 5. ╪│╪»┘æ ╪º┘ä┘ê╪╡┘ê┘ä ╪╣┘ä┘ë PHI ΓÇö P0
-**╪º┘ä┘à┘â╪º┘å:** `radiologyRoutes.js:56-58` ΓÇö ╪▒┘ü╪╣ ╪º┘ä╪╡┘ê╪▒ ┘ê╪¼┘ä╪¿┘ç╪º (`getStudyImageFile`) ╪¿╪»┘ê┘å `requireRole`╪¢ ┘ê╪º┘ä┘Ç PDF (`/studies/:id/report/pdf`) ┘â╪░┘ä┘â.
-**╪º┘ä╪¡┘ä:** ┘ê╪╢╪╣ `requireRole(MANAGER_ROLES)` ╪╣┘ä┘ë ╪¼┘ä╪¿ ╪º┘ä┘à┘ä┘ü╪º╪¬ ╪º┘ä╪«╪º┘à ┘ê╪º┘ä┘Ç PDF╪î ┘ê╪Ñ╪¿┘é╪º╪í ╪º┘ä┘Ç metadata ┘ä┘ä┘é╪º╪ª┘à╪⌐ ┘à╪¬╪º╪¡┘ï╪º ┘ä┘ä┘ü╪▒┘è┘é ╪º┘ä╪╖╪¿┘è.
+### 5. سدّ الوصول على PHI — P0
+**المكان:** `radiologyRoutes.js:56-58` — رفع الصور وجلبها (`getStudyImageFile`) بدون `requireRole`؛ والـ PDF (`/studies/:id/report/pdf`) كذلك.
+**الحل:** وضع `requireRole(MANAGER_ROLES)` على جلب الملفات الخام والـ PDF، وإبقاء الـ metadata للقائمة متاحًا للفريق الطبي.
 
-### 6. Audit log ┘ä┘ê╪╡┘ê┘ä ╪º┘ä╪╡┘ê╪▒ ΓÇö P0 (╪º╪│╪¬┘Å╪¿╪╣╪» ┘à┘å ╪º┘ä╪¬┘é╪º╪▒┘è╪▒ ╪¿┘ä╪º ╪│╪¿╪¿)
-**╪º┘ä┘à┘â╪º┘å:** ╪Ñ╪╢╪º┘ü╪⌐ middleware ╪╣┘ä┘ë `GET /studies/:id/images/:imageId` + `/studies/:id/report/pdf`.
-**╪º┘ä╪¡┘ä:** ╪º╪│╪¬╪«╪»╪º┘à `activityLog` (┘à┘ê╪¼┘ê╪» + ┘ä┘ç controller) ΓÇö ╪│╪¼┘æ┘ä: user, studyId, imageId, timestamp, IP.
-**╪¬╪¡┘é┘é:** ╪º╪│╪¬╪╣┘ä╪º┘à ╪º┘ä┘Ç audit ┘è╪╕┘ç╪▒ ┘â┘ä ┘ê╪╡┘ê┘ä ╪╡┘ê╪▒╪⌐.
+### 6. Audit log لوصول الصور — P0 (استُبعد من التقارير بلا سبب)
+**المكان:** إضافة middleware على `GET /studies/:id/images/:imageId` + `/studies/:id/report/pdf`.
+**الحل:** استخدام `activityLog` (موجود + له controller) — سجّل: user, studyId, imageId, timestamp, IP.
+**تحقق:** استعلام الـ audit يظهر كل وصول صورة.
 
-### 7. ╪º╪│╪¬╪┤╪º╪▒╪⌐ ┘é╪º┘å┘ê┘å┘è╪⌐ ╪╣┘ä┘ë PDPL (╪│╪▒┘è╪╣╪⌐) ΓÇö P0
-**╪º┘ä╪¡┘é┘è┘é╪⌐:** ╪º┘ä╪¬╪╖╪¿┘è┘é ╪º┘ä┘â╪º┘à┘ä **31 ╪ú┘â╪¬┘ê╪¿╪▒ 2026** (~2.5 ╪┤┘ç╪▒ ┘à┘å ╪¬╪º╪▒┘è╪« ╪º┘ä╪«╪╖╪⌐).
-**╪º┘ä┘à╪╖┘ä┘ê╪¿ ┘ü┘ê╪▒┘ï╪º:** ╪¬╪╣┘è┘è┘å DPO (╪ú┘ê ╪¬╪╣╪º┘é╪»)╪î ╪Ñ╪╣╪»╪º╪» ┘å┘à┘ê╪░╪¼ ╪Ñ╪¿┘ä╪º╪║ ╪º┘ä╪º╪«╪¬╪▒╪º┘é (72 ╪│╪º╪╣╪⌐)╪î ╪¿╪»╪í ┘à┘ä┘ü╪º╪¬ ╪¬╪▒╪«┘è╪╡ PDPC.
-**┘à┘ä╪º╪¡╪╕╪⌐:** ┘ç╪░┘ç ╪ú┘ê┘ä┘ê┘è╪⌐ ╪╣┘à┘ä **╪║┘è╪▒ ╪¬┘é┘å┘è╪⌐** ┘ä┘â┘å┘ç╪º ╪¬╪│╪¿┘é ╪ú┘è ┘à┘è╪▓╪⌐ 2026.
+### 7. استشارة قانونية على PDPL (سريعة) — P0
+**الحقيقة:** التطبيق الكامل **31 أكتوبر 2026** (~2.5 شهر من تاريخ الخطة).
+**المطلوب فورًا:** تعيين DPO (أو تعاقد)، إعداد نموذج إبلاغ الاختراق (72 ساعة)، بدء ملفات ترخيص PDPC.
+**ملاحظة:** هذه أولوية عمل **غير تقنية** لكنها تسبق أي ميزة 2026.
 
-### 8. ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ╪º┘å╪¡╪»╪º╪▒ ┘ä┘ä┘ü┘ä┘ê╪│ ΓÇö P0
-**╪º┘ä╪¡┘ä:** ╪Ñ╪╢╪º┘ü╪⌐ tests ╪¬╪║╪╖┘è: recordPayment ╪¬╪¡╪¬ ╪º┘ä╪¬┘ê╪º╪▓┘è╪î refund ┘ü┘ê┘é ╪º┘ä┘à╪»┘ü┘ê╪╣╪î ╪¡╪»┘ê╪» transition ┘ä┘ä╪¬┘é╪▒┘è╪▒╪î ┘à┘å╪╣ ╪¬╪╣╪»┘è┘ä SIGNED╪î redaction ╪º┘ä┘Ç PDF.
+### 8. اختبارات انحدار للفلوس — P0
+**الحل:** إضافة tests تغطي: recordPayment تحت التوازي، refund فوق المدفوع، حدود transition للتقرير، منع تعديل SIGNED، redaction الـ PDF.
 
 ---
 
-## Sprint 2 (1-2 ╪ú╪│╪¿┘ê╪╣) ΓÇö ╪ú╪»╪º╪í ╪▒╪«┘è╪╡ ╪¿╪»┘ê┘å ╪¿┘å┘è╪⌐ ╪¼╪»┘è╪»╪⌐
+## Sprint 2 (1-2 أسبوع) — أداء رخيص بدون بنية جديدة
 
-### 9. ┘é┘è╪º╪│ ┘é╪¿┘ä ╪º┘ä╪ú╪»╪º╪í (╪º╪¼╪¿╪º╪▒┘è ┘é╪¿┘ä pagination/indexes)
-**╪º╪│╪ú┘ä ┘é╪º╪╣╪»╪⌐ ╪º┘ä╪¿┘è╪º┘å╪º╪¬:**
+### 9. قياس قبل الأداء (اجباري قبل pagination/indexes)
+**اسأل قاعدة البيانات:**
 ```sql
 SELECT count(*), pg_size_pretty(sum(pg_column_size(data))) FROM "RadiologyStudyImage";
 SELECT count(*) FROM "RadiologyStudy";
 SELECT count(*) FROM "RadiologyAppointment";
 ```
-**╪º┘ä┘é╪º╪╣╪»╪⌐:** ┘ä┘ê ╪ú┘é┘ä ┘à┘å ~50K ╪╡┘ü╪î ╪¬╪ú╪¼┘ä pagination ┘ê╪º┘ä┘Ç trigram indexes ΓÇö ┘ä╪º ╪¬┘Å╪¿┘å┘É ╪¬╪¡╪│┘è┘å╪º╪¬ ┘ä╪│┘è┘å╪º╪▒┘è┘ê ╪║┘è╪▒ ┘à┘ê╪¼┘ê╪».
+**القاعدة:** لو أقل من ~50K صف، تأجل pagination والـ trigram indexes — لا تُبنِ تحسينات لسيناريو غير موجود.
 
-### 10. Cache-Control + ETag ╪╣┘ä┘ë DICOM ΓÇö ╪▒╪«┘è╪╡ ┘ê┘à╪ñ╪½╪▒
-**╪º┘ä┘à┘â╪º┘å:** `getStudyImageFile` (`radiologyController.js:652-679`).
-**╪º┘ä╪¡┘ä:** `Cache-Control: private, max-age=604800` + `ETag` (hash ┘à┘å `updatedAt`/`id`) + `If-None-Match` ΓåÆ 304.
-**╪º┘ä╪ú╪½╪▒:** ┘ü╪¬╪¡ ┘å┘ü╪│ ╪º┘ä╪»╪▒╪º╪│╪⌐ ┘à┘å ╪º┘ä┘Ç viewer ┘ä╪º ┘è╪╣┘è╪» ╪¬┘å╪▓┘è┘ä ╪º┘ä╪╡┘ê╪▒.
+### 10. Cache-Control + ETag على DICOM — رخيص ومؤثر
+**المكان:** `getStudyImageFile` (`radiologyController.js:652-679`).
+**الحل:** `Cache-Control: private, max-age=604800` + `ETag` (hash من `updatedAt`/`id`) + `If-None-Match` → 304.
+**الأثر:** فتح نفس الدراسة من الـ viewer لا يعيد تنزيل الصور.
 
-### 11. Lazy loading ┘ü┘è ╪º┘ä┘Ç viewer (╪º┘ä┘Ç OOM ╪º┘ä╪¡┘é┘è┘é┘è ┘ü┘è ╪º┘ä┘Ç frontend)
-**╪º┘ä┘à┘â╪º┘å:** `DicomViewer.tsx:173` (`await viewport.setStack(imageIds)`).
-**╪º┘ä╪¡┘ä:** `setStack` ┘ä╪ú┘ê┘ä 10 ╪┤╪▒╪º╪ª╪¡ ╪½┘à ╪Ñ╪╢╪º┘ü╪⌐ ╪º┘ä╪¿╪º┘é┘è ╪¬╪»╪▒┘è╪¼┘è┘ï╪º (`viewport.setStack` ┘à╪╣ ╪º┘ä┘å┘à┘ê╪î ╪ú┘ê `addImages`)╪î ┘à╪╣ ┘à╪ñ╪┤╪▒ ╪¬┘é╪»┘à.
-**╪º┘ä╪ú╪½╪▒:** ┘è┘ä╪║┘è ╪¬╪¡┘à┘è┘ä/┘ü┘â 2000 ╪┤╪▒┘è╪¡╪⌐ ╪»┘ü╪╣╪⌐ ┘ê╪º╪¡╪»╪⌐ (~4GB ┘ü┘è ╪º┘ä┘à╪¬╪╡┘ü╪¡).
+### 11. Lazy loading في الـ viewer (الـ OOM الحقيقي في الـ frontend)
+**المكان:** `DicomViewer.tsx:173` (`await viewport.setStack(imageIds)`).
+**الحل:** `setStack` لأول 10 شرائح ثم إضافة الباقي تدريجيًا (`viewport.setStack` مع النمو، أو `addImages`)، مع مؤشر تقدم.
+**الأثر:** يلغي تحميل/فك 2000 شريحة دفعة واحدة (~4GB في المتصفح).
 
-### 12. ╪¼╪»┘ê┘ä╪⌐ ╪º┘ä╪▒┘ü╪╣ ╪º┘ä╪│┘è╪▒┘è╪º┘ä┘è
-**╪º┘ä┘à┘â╪º┘å:** `radiologyController.js:611-631` ΓÇö `await create` ┘ä┘â┘ä ┘à┘ä┘ü ┘ü┘è loop.
-**╪º┘ä╪¡┘ä:** `createMany` ┘ä┘ä╪╡┘ü┘ê┘ü (╪¿╪»┘ê┘å data ╪º┘ä╪¿╪º┘è╪¬╪ƒ ┘ä╪º ΓÇö ╪º┘ä╪¿╪º┘è╪¬ ┘ü┘è ┘å┘ü╪│ ╪º┘ä╪╡┘ü) ╪ú┘ê ╪¬╪┤╪║┘è┘ä ┘à╪¬┘ê╪º╪▓┘ì ┘à╪¡╪»┘ê╪» ╪¿┘Ç concurrency 5. ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐ ╪¿╪╣╪» ┘é╪▒╪º╪▒ ╪º┘ä╪¬╪«╪▓┘è┘å (╪º┘å╪╕╪▒ S3).
+### 12. جدولة الرفع السيريالي
+**المكان:** `radiologyController.js:611-631` — `await create` لكل ملف في loop.
+**الحل:** `createMany` للصفوف (بدون data البايت؟ لا — البايت في نفس الصف) أو تشغيل متوازٍ محدود بـ concurrency 5. الأولوية بعد قرار التخزين (انظر S3).
 
-### 13. ╪¡╪░┘ü dead code + deps
-- `apps/frontend/src/pages/radiology/ReceptionTab.tsx` (╪║┘è╪▒ ┘à╪│╪¬┘ê╪▒╪» ΓÇö ┘ä╪º ┘è┘Å╪╣╪¿┘æ╪ú ┘ä┘â┘å┘ç ┘à┘è╪¬)
+### 13. حذف dead code + deps
+- `apps/frontend/src/pages/radiology/ReceptionTab.tsx` (غير مستورد — لا يُعبّأ لكنه ميت)
 - `apps/frontend/src/components/radiology/polysegStub.js`
-- `@icr/polyseg-wasm` + `dicom-parser` ┘à┘å `package.json` (deps ┘à┘è╪¬╪⌐)
+- `@icr/polyseg-wasm` + `dicom-parser` من `package.json` (deps ميتة)
 
-### 14. ╪¬╪¡┘é┘é ┘à┘å ╪╡┘ä╪º╪¡┘è╪⌐ ╪º┘ä╪▒┘ü╪╣ (Multer ┘è╪½┘é ╪¿╪º┘ä╪º┘à╪¬╪»╪º╪»)
-**╪º┘ä╪¡┘ä:** ┘ü╪¡╪╡ ╪¬┘ê┘é┘è╪╣ DICOM (`DICM` ┘ü┘è ╪º┘ä╪¿╪º┘è╪¬ 128) ┘ü┘è `uploadStudyImages` ┘ê╪▒┘ü╪╢ ╪º┘ä┘à┘ä┘ü╪º╪¬ ╪║┘è╪▒ ╪º┘ä╪╡╪º┘ä╪¡╪⌐ ┘é╪¿┘ä ╪º┘ä╪¡┘ü╪╕ (╪¡╪º┘ä┘è┘ï╪º ╪¬┘Å╪¡┘ü╪╕ ╪¡╪¬┘ë ┘ä┘ê ┘ä┘à ╪¬┘Å┘ü╪│┘æ╪▒).
-
----
-
-## Sprint 3 (2-4 ╪ú╪│╪¿┘ê╪╣) ΓÇö ╪¬┘å╪╕┘è┘ü ╪º┘ä┘Ç schema ┘ê ╪º┘ä╪ú╪│╪º╪│
-
-### 15. ╪¬┘å╪╕┘è┘ü ┘å┘à┘ê╪░╪¼ ╪º┘ä╪Ñ╪╢╪º┘ü╪º╪¬
-**╪º┘ä╪¡┘ä:** ┘é╪▒╪º╪▒ ┘ê╪º╪¡╪»: ╪Ñ┘à╪º `isAddition` ╪╣┘ä┘ë `RadiologyExamType` (╪º┘ä┘à╪│╪¬╪«╪»┘à ┘ü╪╣┘ä┘è┘ï╪º) ╪ú┘ê `RadiologyExamAddition`. ╪Ñ╪¿┘é╪º╪í ╪º┘ä╪º╪½┘å┘è┘å = ╪╡┘è╪º┘å╪⌐ ┘à╪▓╪»┘ê╪¼╪⌐. (╪º╪«╪¬┘è╪º╪▒ ╪Ñ╪¿┘é╪º╪í `isAddition` + ╪Ñ╪▓╪º┘ä╪⌐ `RadiologyExamAddition` + `ExamAdditionsTab`╪î ╪ú┘ê ╪╣┘â╪│┘ç).
-
-### 16. `tagIds` ΓÇö connect ╪ú┘ê disconnect
-**╪º┘ä╪¡╪º┘ä╪⌐:** ╪¡┘é┘ä ┘ü┘è schema (`radiology.prisma:53`) ╪¿┘ä╪º ╪ú┘è controller ┘è┘â╪¬╪¿┘ç/┘è┘é╪▒╪ú┘ç.
-**╪º┘ä╪¡┘ä:** ╪Ñ┘à╪º ┘ê╪│┘à ┘ü╪╣┘ä┘è ┘ü┘è ╪»╪▒╪º╪│╪⌐/╪¬┘é╪▒┘è╪▒╪î ╪ú┘ê ╪Ñ╪▓╪º┘ä╪⌐ ╪º┘ä╪¡┘é┘ä ┘ü┘è migration.
-
-### 17. Transition validator ┘ä┘ä┘à┘ê╪º╪╣┘è╪»
-**╪º┘ä┘à┘â╪º┘å:** `radiologyAppointmentsController.js:179-183` ΓÇö ┘è╪¬╪¡┘é┘é ┘à┘å ╪º┘ä┘é┘è┘à╪⌐ ┘ü┘é╪╖.
-**╪º┘ä╪¡┘ä:** ┘å┘ü╪│ ┘å┘à╪╖ `validateRadiologyStudyTransition` (`radiologyController.js:69`) ΓÇö DONE/CANCELLED ┘å┘ç╪º╪ª┘è╪⌐╪î ┘ê CHECKED_IN ┘ü┘é╪╖ ┘à┘å SCHEDULED.
-
-### 18. Float ΓåÆ Decimal ┘ä┘ä┘ü┘ä┘ê╪│
-**╪º┘ä┘à┘â╪º┘å:** ┘â┘ä ╪¡┘é┘ê┘ä money ┘ü┘è `radiology.prisma` (`price`, `paidAmount`, `amount`, `totalAmount`...).
-**┘à┘ä╪º╪¡╪╕╪⌐:** ╪º┘ä╪ú╪½╪▒ ╪¡┘é┘è┘é┘è ┘ü┘é╪╖ ┘à╪╣ ╪º┘ä┘à╪¿╪º┘ä╪║ ╪º┘ä┘â╪¿┘è╪▒╪⌐ ΓÇö ┘å┘ü┘æ╪░┘ç╪º ┘à╪╣ ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ╪¼┘à╪╣/╪«╪╡┘à ╪»┘é┘è┘é╪⌐.
-
-### 19. ╪Ñ╪║┘ä╪º┘é `financial-summary` ╪¿╪º┘ä╪»┘ê╪▒
-**╪º┘ä┘à┘â╪º┘å:** `radiologyAdminRoutes.js:27` ΓÇö ┘à┘ü╪¬┘ê╪¡ ┘ä╪ú┘è ┘à╪│╪¬╪«╪»┘à ┘à╪╡╪º╪»┘é.
-**╪º┘ä╪¡┘ä:** `requireRole(MANAGER_ROLES)`.
-
-### 20. ╪│╪» ╪º┘ä╪½╪║╪▒╪º╪¬ ╪º┘ä╪╡╪║┘è╪▒╪⌐ ╪º┘ä┘à╪½╪¿╪¬╪⌐
-- `markDelivered` ╪»┘ê┘å validate ╪╣┘ä┘ë ╪│┘ä╪│┘ä╪⌐ ╪º┘ä╪»╪▒╪º╪│╪⌐
-- `attachToActiveShift` ┘è╪¿╪¬┘ä╪╣ ╪º┘ä╪ú╪«╪╖╪º╪í ╪¿╪╡┘à╪¬ ΓåÆ log + ┘ü╪┤┘ä ┘ê╪º╪╢╪¡
-- `branchId` ╪¡┘é┘ä ┘à┘â╪¬┘ê╪¿ ┘ê┘ä╪º ┘è┘Å┘é╪▒╪ú
-- `recordRole` ┘è┘é╪¿┘ä `by` ┘â┘å╪╡ ╪¡╪▒ ΓåÆ ╪▒╪¿╪╖ ╪¿┘à╪│╪¬╪«╪»┘à
-- `previewQuote` ┘ä╪º ┘è╪¬╪¡┘é┘é ╪ú┘å priceListId ╪¬╪¬╪¿╪╣ ╪º┘ä╪┤╪▒┘â╪⌐
-- `studyNumber @unique` ╪¿┘Ç 4 ╪ú╪▒┘é╪º┘à = ╪¬╪╡╪º╪»┘à ┘à╪¡╪¬┘à┘ä ΓåÆ ╪▓┘è╪º╪»╪⌐ ╪º┘ä╪¿╪º╪»╪ª╪⌐/╪º┘ä╪╖┘ê┘ä ╪ú┘ê retry ╪Ñ┘ä┘ë 8
-- ╪º┘ä┘ü┘ç╪º╪▒╪│ ╪º┘ä┘å╪º┘é╪╡╪⌐: `@@index` ╪╣┘ä┘ë `companyId+status`, `companyId+createdAt`, `billingType`
+### 14. تحقق من صلاحية الرفع (Multer يثق بالامتداد)
+**الحل:** فحص توقيع DICOM (`DICM` في البايت 128) في `uploadStudyImages` ورفض الملفات غير الصالحة قبل الحفظ (حاليًا تُحفظ حتى لو لم تُفسّر).
 
 ---
 
-## ┘à╪┤╪▒┘ê╪╣ ┘à┘å┘ü╪╡┘ä ΓÇö ╪¬╪«╪▓┘è┘å DICOM (S3/MinIO/VNA) ΓÇö ╪º┘ä╪┤┘ç╪▒+ ╪º┘ä┘é╪º╪»┘à
+## Sprint 3 (2-4 أسبوع) — تنظيف الـ schema و الأساس
 
-> **┘é╪▒╪º╪▒ ╪Ñ╪»╪º╪▒┘è ┘é╪¿┘ä ╪ú┘è ┘â┘ê╪»:** MinIO ╪░╪º╪¬┘è ╪º┘ä╪º╪│╪¬╪╢╪º┘ü╪⌐ ╪ú┘à S3 ╪ú┘à ┘é╪▒╪╡ ┘à╪¡┘ä┘è ┘à╪╣ VNA╪ƒ
-> **╪┤╪▒╪╖ ┘à╪│╪¿┘é:** ┘é┘è╪º╪│ ╪º┘ä╪¡╪¼┘à ╪º┘ä╪¡╪º┘ä┘è (╪¿┘å╪» 9) ┘ä╪¬┘é╪»┘è╪▒ ╪º┘ä╪¬┘â┘ä┘ü╪⌐ ┘ê╪º┘ä╪¬╪▒╪¡┘è┘ä.
+### 15. تنظيف نموذج الإضافات
+**الحل:** قرار واحد: إما `isAddition` على `RadiologyExamType` (المستخدم فعليًا) أو `RadiologyExamAddition`. إبقاء الاثنين = صيانة مزدوجة. (اختيار إبقاء `isAddition` + إزالة `RadiologyExamAddition` + `ExamAdditionsTab`، أو عكسه).
 
-### 21. ╪º┘ä╪«╪╖╪⌐
-1. ╪╖╪¿┘é╪⌐ ╪¬╪¼╪▒┘è╪» ╪¬╪«╪▓┘è┘å (`storageAdapter`) ΓÇö interface ┘ê╪º╪¡╪»: `put/get/delete/presignedUrl`╪î ╪¬╪╖╪¿┘è┘é╪º┘å: Postgres (╪º┘ä╪¡╪º┘ä┘è) ┘ê S3.
-2. migration script: ┘é╪▒╪º╪í╪⌐ `data` ┘à┘å `RadiologyStudyImage` ΓåÆ ╪▒┘ü╪╣ ╪Ñ┘ä┘ë object storage ΓåÆ ╪¬╪¡╪»┘è╪½ ╪º┘ä╪╡┘ü ╪¿╪¡┘é┘ä `storageKey` (╪¿╪»┘ä ╪º┘ä╪¿╪º┘è╪¬) ΓÇö ╪╣┘ä┘ë ╪»┘ü╪╣╪º╪¬╪î ┘é╪º╪¿┘ä╪⌐ ┘ä┘ä╪º╪│╪¬╪ª┘å╪º┘ü.
-3. ╪¬╪╣╪»┘è┘ä `uploadStudyImages` (╪▒┘ü╪╣ ┘à╪¿╪º╪┤╪▒╪î ┘ä╪º memoryStorage) ┘ê `getStudyImageFile` (stream/presigned URL).
-4. ╪¬╪╣╪»┘è┘ä `DicomViewer` ┘ä╪º╪│╪¬╪«╪»╪º┘à ╪º┘ä┘Ç presigned URLs (┘ê╪╢╪╣ `?token=` ╪ú┘ê header ┘à╪«╪╡╪╡ ┘ä╪ú┘å `beforeSend` ┘à┘ê╪¼┘ê╪»).
-5. **╪º┘ä╪¬╪▒╪º╪¼╪╣ ╪º┘ä╪ó┘à┘å:** ┘ü╪¬╪▒╪⌐ ╪º┘å╪¬┘é╪º┘ä┘è╪⌐ ┘è┘é╪▒╪ú ┘ü┘è┘ç╪º ╪º┘ä┘Ç adapter ┘à┘å ╪ú┘è ┘à┘å ╪º┘ä┘à╪«╪▓┘å┘è┘å ╪¡╪│╪¿ ┘ê╪¼┘ê╪» `storageKey`.
-6. ╪º╪«╪¬╪¿╪º╪▒ ╪º┘ä╪¡┘à┘ä: 200 ╪┤╪▒┘è╪¡╪⌐ CT (~10GB) ╪▒┘ü╪╣ ┘ê╪¬╪╡┘ü╪¡ ┘ü┘è ┘å┘ü╪│ ╪º┘ä┘ê┘é╪¬.
+### 16. `tagIds` — connect أو disconnect
+**الحالة:** حقل في schema (`radiology.prisma:53`) بلا أي controller يكتبه/يقرأه.
+**الحل:** إما وسم فعلي في دراسة/تقرير، أو إزالة الحقل في migration.
 
-**╪¬╪¡╪░┘è╪▒:** ┘ä╪º ╪¬┘Å╪»┘à╪¼ ┘ç╪░┘ç ┘à╪╣ ╪ú┘è ┘à┘ç┘à╪⌐ ╪ú╪«╪▒┘ë ΓÇö ╪ú╪«╪╖╪º╪í┘ç╪º ╪¬┘Å┘ç┘ä┘â ╪º┘ä╪╡┘ê╪▒.
+### 17. Transition validator للمواعيد
+**المكان:** `radiologyAppointmentsController.js:179-183` — يتحقق من القيمة فقط.
+**الحل:** نفس نمط `validateRadiologyStudyTransition` (`radiologyController.js:69`) — DONE/CANCELLED نهائية، و CHECKED_IN فقط من SCHEDULED.
+
+### 18. Float → Decimal للفلوس
+**المكان:** كل حقول money في `radiology.prisma` (`price`, `paidAmount`, `amount`, `totalAmount`...).
+**ملاحظة:** الأثر حقيقي فقط مع المبالغ الكبيرة — نفّذها مع اختبارات جمع/خصم دقيقة.
+
+### 19. إغلاق `financial-summary` بالدور
+**المكان:** `radiologyAdminRoutes.js:27` — مفتوح لأي مستخدم مصادق.
+**الحل:** `requireRole(MANAGER_ROLES)`.
+
+### 20. سد الثغرات الصغيرة المثبتة
+- `markDelivered` دون validate على سلسلة الدراسة
+- `attachToActiveShift` يبتلع الأخطاء بصمت → log + فشل واضح
+- `branchId` حقل مكتوب ولا يُقرأ
+- `recordRole` يقبل `by` كنص حر → ربط بمستخدم
+- `previewQuote` لا يتحقق أن priceListId تتبع الشركة
+- `studyNumber @unique` بـ 4 أرقام = تصادم محتمل → زيادة البادئة/الطول أو retry إلى 8
+- الفهارس الناقصة: `@@index` على `companyId+status`, `companyId+createdAt`, `billingType`
 
 ---
 
-## Sprint 4 (╪¿╪╣╪» ╪º┘ä╪¿┘å┘è╪⌐) ΓÇö ╪º┘ä╪º┘à╪¬╪½╪º┘ä 2026
+## مشروع منفصل — تخزين DICOM (S3/MinIO/VNA) — الشهر+ القادم
 
-### 22. PDPL ╪º┘ä╪¼╪º┘ç╪▓┘è╪⌐ ╪º┘ä╪¬┘é┘å┘è╪⌐ (deadline 31 ╪ú┘â╪¬┘ê╪¿╪▒ 2026)
-- MFA ╪╣┘ä┘ë ┘â┘ä endpoints ePHI (╪ú┘ê ╪╣┘ä┘ë ╪º┘ä╪ú┘é┘ä ┘à╪»╪«┘ä╪º╪¬ ╪º┘ä╪ú╪»┘ê╪º╪▒ ╪º┘ä╪╖╪¿┘è╪⌐/╪º┘ä┘â╪º╪┤┘è╪▒)
-- ┘å┘à┘ê╪░╪¼ ╪Ñ╪¿┘ä╪º╪║ ╪º╪«╪¬╪▒╪º┘é 72 ╪│╪º╪╣╪⌐ + ╪¬╪│╪¼┘è┘ä ╪▓┘à┘å┘è
-- ┘é╪º╪ª┘à╪⌐ ╪º┘ä┘Ç subprocessors + BAA (Rology╪î ┘à┘é╪»┘à┘è ╪º┘ä╪│╪¡╪º╪¿╪⌐)
+> **قرار إداري قبل أي كود:** MinIO ذاتي الاستضافة أم S3 أم قرص محلي مع VNA؟
+> **شرط مسبق:** قياس الحجم الحالي (بند 9) لتقدير التكلفة والترحيل.
+
+### 21. الخطة
+1. طبقة تجريد تخزين (`storageAdapter`) — interface واحد: `put/get/delete/presignedUrl`، تطبيقان: Postgres (الحالي) و S3.
+2. migration script: قراءة `data` من `RadiologyStudyImage` → رفع إلى object storage → تحديث الصف بحقل `storageKey` (بدل البايت) — على دفعات، قابلة للاستئناف.
+3. تعديل `uploadStudyImages` (رفع مباشر، لا memoryStorage) و `getStudyImageFile` (stream/presigned URL).
+4. تعديل `DicomViewer` لاستخدام الـ presigned URLs (وضع `?token=` أو header مخصص لأن `beforeSend` موجود).
+5. **التراجع الآمن:** فترة انتقالية يقرأ فيها الـ adapter من أي من المخزنين حسب وجود `storageKey`.
+6. اختبار الحمل: 200 شريحة CT (~10GB) رفع وتصفح في نفس الوقت.
+
+**تحذير:** لا تُدمج هذه مع أي مهمة أخرى — أخطاءها تُهلك الصور.
+
+---
+
+## Sprint 4 (بعد البنية) — الامتثال 2026
+
+### 22. PDPL الجاهزية التقنية (deadline 31 أكتوبر 2026)
+- MFA على كل endpoints ePHI (أو على الأقل مدخلات الأدوار الطبية/الكاشير)
+- نموذج إبلاغ اختراق 72 ساعة + تسجيل زمني
+- قائمة الـ subprocessors + BAA (Rology، مقدمي السحابة)
 
 ### 23. Critical Findings workflow
-**╪º┘ä┘à╪¬╪╖┘ä╪¿:** ╪Ñ╪┤╪º╪▒╪⌐ ╪╣╪º╪¼┘ä╪⌐ ╪╣┘ä┘ë ╪¬┘é╪▒┘è╪▒ + ╪¬╪│┘ä┘è┘à + escalation + timestamp + ╪Ñ╪┤╪╣╪º╪▒ (WhatsApp/╪¿╪▒┘è╪»).
+**المتطلب:** إشارة عاجلة على تقرير + تسليم + escalation + timestamp + إشعار (WhatsApp/بريد).
 
-### 24. DICOMweb ΓÇö **┘ü┘é╪╖** ╪╣┘å╪» ┘ê╪¼┘ê╪» ╪¬┘â╪º┘à┘ä ┘ü╪╣┘ä┘è
-**╪º┘ä╪¬╪▒╪¬┘è╪¿:** QIDO-RS ╪½┘à WADO-RS ╪½┘à STOW-RS.
-**╪┤╪▒╪╖ ╪º┘ä╪¿╪»╪í:** ╪¼┘ç╪⌐ ╪«╪º╪▒╪¼┘è╪⌐ (EMR/AI) ┘à╪│╪¬╪╣╪»╪⌐ ┘ä┘ä╪º╪«╪¬╪¿╪º╪▒ ΓÇö ╪║┘è╪▒ ╪░┘ä┘â ╪¬╪ú╪¼┘è┘ä.
+### 24. DICOMweb — **فقط** عند وجود تكامل فعلي
+**الترتيب:** QIDO-RS ثم WADO-RS ثم STOW-RS.
+**شرط البدء:** جهة خارجية (EMR/AI) مستعدة للاختبار — غير ذلك تأجيل.
 
 ### 25. AI pipeline
-**╪º┘ä┘à┘ê╪¼┘ê╪»:** `ai-service` Python + Cornerstone ╪¼╪º┘ç╪▓╪º┘å.
-**╪º┘ä╪¿╪»╪º┘è╪⌐ ╪º┘ä╪╡╪║╪▒┘ë:** ╪▒╪¿╪╖ DICOM SR ┘ä┘ä┘Ç AI + flag auto-triage╪î ┘ê┘ä┘è╪│ ╪¿┘å╪º╪í ┘à┘å╪╡╪⌐ AI.
+**الموجود:** `ai-service` Python + Cornerstone جاهزان.
+**البداية الصغرى:** ربط DICOM SR للـ AI + flag auto-triage، وليس بناء منصة AI.
 
 ---
 
-## ┘ä╪º╪¡┘é┘ï╪º (6+ ╪┤┘ç┘ê╪▒) ΓÇö ╪¡╪│╪¿ ╪º┘ä╪╖┘ä╪¿ ┘ü┘é╪╖
+## لاحقًا (6+ شهور) — حسب الطلب فقط
 
 - FHIR R4 `ImagingStudy` resource
 - Radiation Dose tracking (RDSR/CTDIvol/DLP)
-- Speech-to-text ╪╣╪▒╪¿┘è ┘ä┘ä╪¬┘é╪º╪▒┘è╪▒
-- MPR + Measurements + Annotations ┘ü┘è ╪º┘ä┘Ç viewer
+- Speech-to-text عربي للتقارير
+- MPR + Measurements + Annotations في الـ viewer
 - Prior comparison + Key Image Selection
-- BI-RADS / LungRADS ┘é┘ê╪º┘ä╪¿
+- BI-RADS / LungRADS قوالب
 - Peer review / RADPEER
 
 ---
 
-## ┘à┘ä╪«╪╡ ╪º┘ä╪ú┘ê┘ä┘ê┘è╪⌐ ╪º┘ä┘å┘ç╪º╪ª┘è
+## ملخص الأولوية النهائي
 
-| Sprint | ╪º┘ä┘à╪»╪⌐ | ╪º┘ä┘à╪¡╪¬┘ê┘ë |
+| Sprint | المدة | المحتوى |
 |---|---|---|
-| 1 | ┘ç╪░╪º ╪º┘ä╪ú╪│╪¿┘ê╪╣ | ╪º┘ä╪»┘ü╪╣ (TOCTOU)╪î upload memory╪î PDF redaction╪î ┘é┘ü┘ä SIGNED╪î role gates╪î audit log╪î ╪º╪│╪¬╪┤╪º╪▒╪⌐ PDPL╪î ╪º╪«╪¬╪¿╪º╪▒╪º╪¬ ╪º┘ä┘ü┘ä┘ê╪│ |
-| 2 | 1-2 ╪ú╪│╪¿┘ê╪╣ | ┘é┘è╪º╪│╪î Cache-Control╪î lazy viewer╪î dead code╪î Multer validation |
-| 3 | 2-4 ╪ú╪│╪¿┘ê╪╣ | schema cleanup╪î transition validator╪î Decimal╪î ╪º┘ä┘ü┘ç╪º╪▒╪│╪î ╪º┘ä╪½╪║╪▒╪º╪¬ ╪º┘ä╪╡╪║┘è╪▒╪⌐ |
-| S3 project | ╪┤┘ç╪▒+ | ╪¬╪«╪▓┘è┘å DICOM ╪«╪º╪▒╪¼ Postgres (┘à┘å┘ü╪╡┘ä) |
-| 4 | ╪¡╪│╪¿ ╪º┘ä╪¡╪º╪¼╪⌐ | PDPL ╪¬┘é┘å┘è (┘é╪¿┘ä 31/10/2026)╪î Critical Findings╪î DICOMweb (╪╣┘å╪» ╪╖┘ä╪¿)╪î AI |
+| 1 | هذا الأسبوع | الدفع (TOCTOU)، upload memory، PDF redaction، قفل SIGNED، role gates، audit log، استشارة PDPL، اختبارات الفلوس |
+| 2 | 1-2 أسبوع | قياس، Cache-Control، lazy viewer، dead code، Multer validation |
+| 3 | 2-4 أسبوع | schema cleanup، transition validator، Decimal، الفهارس، الثغرات الصغيرة |
+| S3 project | شهر+ | تخزين DICOM خارج Postgres (منفصل) |
+| 4 | حسب الحاجة | PDPL تقني (قبل 31/10/2026)، Critical Findings، DICOMweb (عند طلب)، AI |

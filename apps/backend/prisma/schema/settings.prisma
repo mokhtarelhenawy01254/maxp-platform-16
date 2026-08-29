@@ -689,6 +689,7 @@ model BusinessSpecialty {
   icon                String?
   appSlugs            Json?
   autoInstallOnSignup Boolean   @default(true)
+  themeId             String?
   sortOrder           Int       @default(0)
   isActive            Boolean   @default(true)
   createdAt           DateTime  @default(now())

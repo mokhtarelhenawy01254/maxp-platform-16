@@ -9,12 +9,10 @@ import {
 } from "@heroicons/react/24/outline";
 import { SidebarSection } from "../../../types/layout";
 import { useAuth } from "../../../hooks/useAuthSimple";
-import { useTheme } from "../../../hooks/useTheme";
-import { envConfig } from "../../../config/environment";
-import { buildStoreUrl } from "../../../utils/storeUrl";
 import { isSidebarPathActive } from "./matchSidebarPath";
 import { CompanyLogo } from "@/components/ui/CompanyLogo";
 import { useRoutePrefetch } from "../../../hooks/useRoutePrefetch";
+import { useSidebarNavLink } from "./useSidebarNavLink";
 
 
 interface ThreeTierSidebarProps {
@@ -43,7 +41,6 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
   setSearchQuery,
 }) => {
   const { user, logout } = useAuth();
-  const { derivedTheme } = useTheme();
   const navigate = useNavigate();
   const searchInputId = useId();
   const prefetch = useRoutePrefetch();
@@ -181,27 +178,17 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
     external?: boolean;
     badge?: string;
   }> = ({ to, icon, children, external, badge }) => {
-    const isActive = !external && isSidebarPathActive(currentPath, to);
-    const prefetch = useRoutePrefetch();
+    const { isActive, href, prefetch } = useSidebarNavLink({
+      to,
+      external,
+      currentPath,
+      user,
+    });
 
     if (external) {
-      const slug = user?.company?.slug;
-      const companyId = user?.companyId || user?.company?.id;
-      const customDomain = user?.company?.customDomain;
-      let shopUrl = to;
-
-      if (slug && slug.trim().length > 0) {
-        shopUrl = buildStoreUrl(
-          slug,
-          to,
-          customDomain || undefined,
-          companyId || undefined,
-        );
-      }
-
       return (
         <a
-          href={shopUrl}
+          href={href}
           target="_blank"
           rel="noopener noreferrer"
           className="business-sidebar-nav-link"
@@ -231,6 +218,7 @@ const ThreeTierSidebar: React.FC<ThreeTierSidebarProps> = ({
     return (
       <Link
         to={to}
+        aria-current={isActive ? "page" : undefined}
         className="business-sidebar-nav-link"
         data-active={isActive}
         onMouseEnter={() => prefetch(to)}

@@ -1,0 +1,40 @@
+- generic [ref=e7]:
+  - generic [ref=e12]:
+    - link "م ماكس بي لنظام تشغيل الأعمال" [ref=e13] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e14]: م
+      - generic [ref=e15]: ماكس بي لنظام تشغيل الأعمال
+    - generic [ref=e16]:
+      - generic [ref=e17]: تسجيل دخول آمن
+      - heading "الدخول إلى مساحة العمل" [level=2] [ref=e18]
+      - paragraph [ref=e19]: أدخل بريدك وكلمة المرور للوصول إلى لوحة التشغيل الخاصة بك.
+    - generic [ref=e20]:
+      - alert [ref=e45]:
+        - paragraph [ref=e46]: تعذر تسجيل الدخول
+        - generic [ref=e47]: فشل الاتصال بالخادم. يرجى التحقق من الاتصال بالإنترنت والمحاولة مرة أخرى.
+      - generic [ref=e21]:
+        - generic [ref=e22]:
+          - generic [ref=e23]: البريد الإلكتروني
+          - textbox "البريد الإلكتروني" [ref=e25]:
+            - /placeholder: name@company.com
+            - text: dentallab.admin@maxp.local
+        - generic [ref=e26]:
+          - generic [ref=e27]:
+            - link "نسيت كلمة المرور؟" [ref=e28] [cursor=pointer]:
+              - /url: /auth/forgot-password
+            - generic [ref=e29]: كلمة المرور
+          - generic [ref=e30]:
+            - textbox "كلمة المرور" [ref=e31]:
+              - /placeholder: ••••••••
+              - text: Maxp@12345
+            - button [ref=e32] [cursor=pointer]
+        - generic [ref=e37] [cursor=pointer]:
+          - generic [ref=e38]: تذكرني
+          - checkbox "تذكرني" [ref=e39]
+        - button "دخول إلى النظام" [ref=e40] [cursor=pointer]
+    - contentinfo [ref=e41]:
+      - generic [ref=e42]:
+        - generic [ref=e43]: ليس لديك حساب؟
+        - link "إنشاء حساب جديد" [ref=e44] [cursor=pointer]:
+          - /url: /auth/register
+  - region "Notifications alt+T"

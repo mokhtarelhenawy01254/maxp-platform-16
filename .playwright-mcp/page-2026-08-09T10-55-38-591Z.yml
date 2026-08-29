@@ -1,0 +1,432 @@
+- generic [ref=e7]:
+  - generic [ref=e10]:
+    - generic [ref=e132]:
+      - generic [ref=e133]:
+        - link "E" [ref=e135] [cursor=pointer]:
+          - /url: /company-dashboard
+          - generic "El Nouby" [ref=e136]: E
+        - generic [ref=e137]:
+          - button "الرئيسية" [ref=e138] [cursor=pointer]
+          - button "الطلبات" [ref=e143] [cursor=pointer]
+          - button "المنتجات" [ref=e149] [cursor=pointer]
+          - button "المتجر" [ref=e155] [cursor=pointer]
+          - button "المخزون" [ref=e164] [cursor=pointer]
+          - button "حسابي" [ref=e170] [cursor=pointer]
+          - button "إدارة شركاتي" [ref=e177] [cursor=pointer]
+          - button "التطبيقات" [ref=e183] [cursor=pointer]
+          - button "الإعدادات" [ref=e189] [cursor=pointer]
+      - generic [ref=e195]:
+        - generic [ref=e196]:
+          - link "E El Nouby متجر التطبيقات" [ref=e241] [cursor=pointer]:
+            - /url: /company-dashboard
+            - generic [ref=e199]: E
+            - generic [ref=e200]:
+              - heading "El Nouby" [level=2] [ref=e201]
+              - paragraph [ref=e202]: متجر التطبيقات
+          - button "طي القائمة" [ref=e203] [cursor=pointer]
+        - generic [ref=e206]:
+          - generic [ref=e207]: البحث داخل القائمة
+          - textbox "البحث داخل القائمة" [ref=e208]:
+            - /placeholder: البحث
+        - generic [ref=e209]:
+          - link "تطبيقاتي" [ref=e528] [cursor=pointer]:
+            - /url: /my-apps
+          - link "تصفح التطبيقات" [ref=e533] [cursor=pointer]:
+            - /url: /marketplace
+          - link "قوالب المتجر" [ref=e539] [cursor=pointer]:
+            - /url: /marketplace/themes
+          - link "الباقات" [ref=e548] [cursor=pointer]:
+            - /url: /marketplace/bundles
+          - link "مدفوعاتي" [ref=e555] [cursor=pointer]:
+            - /url: /payments
+    - generic [ref=e11]:
+      - banner [ref=e12]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - button "تبديل للوضع الليلي" [ref=e25] [cursor=pointer]
+            - button "Change language" [ref=e27] [cursor=pointer]:
+              - generic [ref=e28]: ar
+            - button "الإشعارات" [ref=e30] [cursor=pointer]:
+              - generic [ref=e283]: "9"
+            - link "header.whatsapp" [ref=e34] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+          - button "الملف الشخصي EN" [ref=e220]:
+            - generic [ref=e221]: EN
+            - generic [ref=e222]:
+              - generic [ref=e223]: El
+              - generic [ref=e224]: OWNER
+      - main [ref=e37]:
+        - generic [ref=e563]:
+          - generic [ref=e564]:
+            - generic [ref=e571]:
+              - paragraph [ref=e572]: إجمالي التطبيقات
+              - paragraph [ref=e573]: "76"
+            - generic [ref=e579]:
+              - paragraph [ref=e580]: التطبيقات المثبتة
+              - paragraph [ref=e581]: "3"
+            - generic [ref=e586]:
+              - paragraph [ref=e587]: متوسط التقييم
+              - paragraph [ref=e588]: "--"
+            - generic [ref=e594]:
+              - paragraph [ref=e595]: الأكثر رواجاً
+              - paragraph [ref=e596]: "10"
+            - generic [ref=e603]:
+              - paragraph [ref=e604]: التخصص
+              - paragraph [ref=e605]: التجارة والمتاجر
+          - generic [ref=e606]:
+            - complementary [ref=e607]:
+              - heading "التصنيفات" [level=3] [ref=e608]
+              - generic [ref=e612]:
+                - button "كل التصنيفات 76" [ref=e613]:
+                  - generic [ref=e614]: كل التصنيفات
+                  - generic [ref=e621]: "76"
+                - generic [ref=e622]:
+                  - button "البيع والتجارة" [ref=e623]
+                  - generic [ref=e626]:
+                    - button "المتجر والمنتجات 9" [ref=e627]:
+                      - generic [ref=e628]: المتجر والمنتجات
+                      - generic [ref=e635]: "9"
+                    - button "إدارة العملاء 4" [ref=e636]:
+                      - generic [ref=e637]: إدارة العملاء
+                      - generic [ref=e641]: "4"
+                    - button "البيع بالجملة 1" [ref=e642]:
+                      - generic [ref=e643]: البيع بالجملة
+                      - generic [ref=e649]: "1"
+                    - button "التسويق 12" [ref=e650]:
+                      - generic [ref=e651]: التسويق
+                      - generic [ref=e655]: "12"
+                    - button "الطلبات والتنفيذ 6" [ref=e656]:
+                      - generic [ref=e657]: الطلبات والتنفيذ
+                      - generic [ref=e662]: "6"
+                - generic [ref=e663]:
+                  - button "البيانات والذكاء الاصطناعي" [ref=e664]
+                  - generic [ref=e667]:
+                    - button "التحليلات 5" [ref=e668]:
+                      - generic [ref=e669]: التحليلات
+                      - generic [ref=e674]: "5"
+                    - button "الأتمتة 4" [ref=e675]:
+                      - generic [ref=e676]: الأتمتة
+                      - generic [ref=e681]: "4"
+                - generic [ref=e682]:
+                  - button "التشغيل والإدارة" [ref=e683]
+                  - generic [ref=e686]:
+                    - button "المخزون والمستودعات 2" [ref=e687]:
+                      - generic [ref=e688]: المخزون والمستودعات
+                      - generic [ref=e694]: "2"
+                    - button "الدفع والتحصيل 1" [ref=e695]:
+                      - generic [ref=e696]: الدفع والتحصيل
+                      - generic [ref=e700]: "1"
+                    - button "الموارد البشرية 7" [ref=e701]:
+                      - generic [ref=e702]: الموارد البشرية
+                      - generic [ref=e709]: "7"
+                    - button "الفواتير والمحاسبة 1" [ref=e710]:
+                      - generic [ref=e711]: الفواتير والمحاسبة
+                      - generic [ref=e716]: "1"
+                    - button "الشحن والتوصيل 1" [ref=e717]:
+                      - generic [ref=e718]: الشحن والتوصيل
+                      - generic [ref=e725]: "1"
+                    - button "المشتريات والموردين 1" [ref=e726]:
+                      - generic [ref=e727]: المشتريات والموردين
+                      - generic [ref=e732]: "1"
+                    - button "الإنتاجية 10" [ref=e733]:
+                      - generic [ref=e734]: الإنتاجية
+                      - generic [ref=e740]: "10"
+                    - button "المالية 2" [ref=e741]:
+                      - generic [ref=e742]: المالية
+                      - generic [ref=e746]: "2"
+                - generic [ref=e747]:
+                  - button "التواصل والتكامل" [ref=e748]
+                  - generic [ref=e751]:
+                    - button "التواصل 4" [ref=e752]:
+                      - generic [ref=e753]: التواصل
+                      - generic [ref=e757]: "4"
+                    - button "التكاملات 3" [ref=e758]:
+                      - generic [ref=e759]: التكاملات
+                      - generic [ref=e763]: "3"
+                - generic [ref=e764]:
+                  - button "القطاعات المتخصصة" [ref=e765]
+                  - generic [ref=e768]:
+                    - button "الألعاب والترفيه 2" [ref=e769]:
+                      - generic [ref=e770]: الألعاب والترفيه
+                      - generic [ref=e774]: "2"
+                    - button "النظام الطبي 1" [ref=e775]:
+                      - generic [ref=e776]: النظام الطبي
+                      - generic [ref=e780]: "1"
+            - generic [ref=e781]:
+              - generic [ref=e782]:
+                - generic [ref=e783]:
+                  - generic [ref=e786]:
+                    - textbox "ابحث عن تطبيق أو ميزة أو مطور…" [ref=e787]
+                    - generic [ref=e788]: /
+                  - generic [ref=e790]:
+                    - combobox [ref=e791] [cursor=pointer]:
+                      - option "الأكثر تميزاً" [selected]
+                      - option "الأكثر شعبية"
+                      - option "الأحدث"
+                      - 'option "السعر: الأقل"'
+                      - 'option "السعر: الأعلى"'
+                      - option "الأعلى تقييماً"
+                      - option "الأكثر تثبيتاً"
+                      - option "آخر تحديث"
+                    - button "مثبت" [ref=e792]
+                    - button "الفلاتر" [ref=e793]
+                - generic [ref=e794]:
+                  - button "كل الأدوات" [ref=e795]
+                  - button "مميز" [ref=e798]
+                  - button "الأكثر شعبية" [ref=e801]
+                  - button "الأكثر رواجاً" [ref=e805]
+                  - button "تطبيقات مجانية" [ref=e808]
+              - generic [ref=e812]:
+                - generic [ref=e814]:
+                  - heading "كل الأدوات" [level=2] [ref=e820]
+                  - generic [ref=e821]: "76"
+                - generic [ref=e822]:
+                  - button [ref=e825]:
+                    - link "التحليلات والتقارير 0 تحليلات متقدمة مع تقارير مخصصة، تصدير البيانات، وتتبع الأهداف. 249 ج/شهر 1 تفعيل" [ref=e827] [cursor=pointer]:
+                      - /url: /marketplace/analytics-basic
+                      - generic [ref=e832]:
+                        - generic [ref=e833]:
+                          - heading "التحليلات والتقارير" [level=3] [ref=e834]
+                          - text: "0"
+                        - paragraph [ref=e835]: تحليلات متقدمة مع تقارير مخصصة، تصدير البيانات، وتتبع الأهداف.
+                        - generic [ref=e836]:
+                          - generic [ref=e837]: 249 ج/شهر
+                          - generic [ref=e838]: "1"
+                        - button "تفعيل" [ref=e843]
+                  - button [ref=e846]:
+                    - link "النظام الطبي 0 نظام متكامل لإدارة المنشآت الطبية والعيادات — الفروع، الأطباء، الخدمات، المواعيد، ووكيل ذكاء اصطناعي للحجوزات. 249 ج/شهر 10 تفعيل" [ref=e848] [cursor=pointer]:
+                      - /url: /marketplace/medical-system
+                      - generic [ref=e853]:
+                        - generic [ref=e854]:
+                          - heading "النظام الطبي" [level=3] [ref=e855]
+                          - text: "0"
+                        - paragraph [ref=e856]: نظام متكامل لإدارة المنشآت الطبية والعيادات — الفروع، الأطباء، الخدمات، المواعيد، ووكيل ذكاء اصطناعي للحجوزات.
+                        - generic [ref=e857]:
+                          - generic [ref=e858]: 249 ج/شهر
+                          - generic [ref=e859]: "10"
+                        - button "تفعيل" [ref=e864]
+                  - button [ref=e867]:
+                    - link "Conversion Suite 0 Urgency bars, PDP conversion components, popups, and theme-ready growth modules for storefronts. 349 ج/شهر 14 تفعيل" [ref=e869] [cursor=pointer]:
+                      - /url: /marketplace/conversion-suite
+                      - generic [ref=e874]:
+                        - generic [ref=e875]:
+                          - heading "Conversion Suite" [level=3] [ref=e876]
+                          - text: "0"
+                        - paragraph [ref=e877]: Urgency bars, PDP conversion components, popups, and theme-ready growth modules for storefronts.
+                        - generic [ref=e878]:
+                          - generic [ref=e879]: 349 ج/شهر
+                          - generic [ref=e880]: "14"
+                        - button "تفعيل" [ref=e885]
+                  - button [ref=e888]:
+                    - link "محادثات AI الأساسية 0 محادثات ذكية مع العملاء باستخدام الذكاء الاصطناعي. دفع 0.5 ج لكل محادثة. 0.5 ج/ وحدة 1 تفعيل" [ref=e890] [cursor=pointer]:
+                      - /url: /marketplace/ai-chat-basic
+                      - generic [ref=e896]:
+                        - generic [ref=e897]:
+                          - heading "محادثات AI الأساسية" [level=3] [ref=e898]
+                          - text: "0"
+                        - paragraph [ref=e899]: محادثات ذكية مع العملاء باستخدام الذكاء الاصطناعي. دفع 0.5 ج لكل محادثة.
+                        - generic [ref=e900]:
+                          - generic [ref=e901]: 0.5 ج/ وحدة
+                          - generic [ref=e902]: "1"
+                        - button "تفعيل" [ref=e907]
+                  - button [ref=e910]:
+                    - link "البيع بالجملة 0 نظام متكامل للبيع بالجملة — قوائم أسعار، شريحة عملاء، كشوف حساب، تتبع المديونية، وإدارة الموزعين. 299 ج/شهر 8 تفعيل" [ref=e912] [cursor=pointer]:
+                      - /url: /marketplace/wholesale-pro
+                      - generic [ref=e919]:
+                        - generic [ref=e920]:
+                          - heading "البيع بالجملة" [level=3] [ref=e921]
+                          - text: "0"
+                        - paragraph [ref=e922]: نظام متكامل للبيع بالجملة — قوائم أسعار، شريحة عملاء، كشوف حساب، تتبع المديونية، وإدارة الموزعين.
+                        - generic [ref=e923]:
+                          - generic [ref=e924]: 299 ج/شهر
+                          - generic [ref=e925]: "8"
+                        - button "تفعيل" [ref=e930]
+                  - button [ref=e933]:
+                    - link "المتجر 0 إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد. 2 ج/ وحدة 16 مثبت" [ref=e935] [cursor=pointer]:
+                      - /url: /marketplace/store
+                      - generic [ref=e943]:
+                        - generic [ref=e944]:
+                          - heading "المتجر" [level=3] [ref=e945]
+                          - text: "0"
+                        - paragraph [ref=e946]: إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.
+                        - generic [ref=e947]:
+                          - generic [ref=e948]: 2 ج/ وحدة
+                          - generic [ref=e949]: "16"
+                        - generic [ref=e953]:
+                          - button [ref=e954]
+                          - generic [ref=e955]: مثبت
+                  - button [ref=e961]:
+                    - link "إعلانات فيسبوك وانستجرام 0 إدارة حملات فيسبوك وانستجرام مع AI Optimization وتقارير متقدمة. 199 ج/شهر 1 تفعيل" [ref=e963] [cursor=pointer]:
+                      - /url: /marketplace/facebook-ads-pro
+                      - generic [ref=e968]:
+                        - generic [ref=e969]:
+                          - heading "إعلانات فيسبوك وانستجرام" [level=3] [ref=e970]
+                          - text: "0"
+                        - paragraph [ref=e971]: إدارة حملات فيسبوك وانستجرام مع AI Optimization وتقارير متقدمة.
+                        - generic [ref=e972]:
+                          - generic [ref=e973]: 199 ج/شهر
+                          - generic [ref=e974]: "1"
+                        - button "تفعيل" [ref=e979]
+                  - button [ref=e982]:
+                    - link "🛒 المتجر الإلكتروني الأساسي 0 متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة. 199 ج/شهر 1 تفعيل" [ref=e984] [cursor=pointer]:
+                      - /url: /marketplace/ecommerce-basic
+                      - generic [ref=e985]:
+                        - generic [ref=e986]: 🛒
+                        - generic [ref=e988]:
+                          - generic [ref=e989]:
+                            - heading "المتجر الإلكتروني الأساسي" [level=3] [ref=e990]
+                            - text: "0"
+                          - paragraph [ref=e991]: متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة.
+                          - generic [ref=e992]:
+                            - generic [ref=e993]: 199 ج/شهر
+                            - generic [ref=e994]: "1"
+                          - button "تفعيل" [ref=e999]
+                  - button [ref=e1002]:
+                    - link "WhatsApp Business API 0 تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية. 199 ج/شهر 1 تفعيل" [ref=e1004] [cursor=pointer]:
+                      - /url: /marketplace/whatsapp-business
+                      - generic [ref=e1009]:
+                        - generic [ref=e1010]:
+                          - heading "WhatsApp Business API" [level=3] [ref=e1011]
+                          - text: "0"
+                        - paragraph [ref=e1012]: تكامل كامل مع WhatsApp Business API. إرسال واستقبال الرسائل والردود التلقائية.
+                        - generic [ref=e1013]:
+                          - generic [ref=e1014]: 199 ج/شهر
+                          - generic [ref=e1015]: "1"
+                        - button "تفعيل" [ref=e1020]
+                  - button [ref=e1023]:
+                    - link "المتجر الأساسي 0 متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة. 249 ج/شهر 1 تفعيل" [ref=e1025] [cursor=pointer]:
+                      - /url: /marketplace/store-basic
+                      - generic [ref=e1033]:
+                        - generic [ref=e1034]:
+                          - heading "المتجر الأساسي" [level=3] [ref=e1035]
+                          - text: "0"
+                        - paragraph [ref=e1036]: متجر إلكتروني كامل مع إدارة المنتجات والطلبات وسلة التسوق. مناسب للمشاريع الصغيرة والمتوسطة.
+                        - generic [ref=e1037]:
+                          - generic [ref=e1038]: 249 ج/شهر
+                          - generic [ref=e1039]: "1"
+                        - button "تفعيل" [ref=e1044]
+                  - button [ref=e1047]:
+                    - 'link "شحن Turbo الذكي 0 تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات. 149 ج/شهر 14 تفعيل" [ref=e1049] [cursor=pointer]':
+                      - /url: /marketplace/order-shipping-turbo
+                      - generic [ref=e1057]:
+                        - generic [ref=e1058]:
+                          - heading "شحن Turbo الذكي" [level=3] [ref=e1059]
+                          - text: "0"
+                        - paragraph [ref=e1060]: "تكامل كامل مع نظام شحن Turbo: إنشاء بوالص الشحن، تتبع لحظي، وإدارة المسارات."
+                        - generic [ref=e1061]:
+                          - generic [ref=e1062]: 149 ج/شهر
+                          - generic [ref=e1063]: "14"
+                        - button "تفعيل" [ref=e1068]
+                  - button [ref=e1071]:
+                    - 'link "🎓 نظام إدارة المراكز التعليمية 0 نظام شامل لإدارة المراكز التعليمية: المواد، الباقات، الطلاب، المدرسين، الحصص، والتسجيلات. مع ربط ولي الأمر كعميل في CRM. 199 ج/شهر 9 تفعيل" [ref=e1073] [cursor=pointer]':
+                      - /url: /marketplace/education-app
+                      - generic [ref=e1074]:
+                        - generic [ref=e1075]: 🎓
+                        - generic [ref=e1077]:
+                          - generic [ref=e1078]:
+                            - heading "نظام إدارة المراكز التعليمية" [level=3] [ref=e1079]
+                            - text: "0"
+                          - paragraph [ref=e1080]: "نظام شامل لإدارة المراكز التعليمية: المواد، الباقات، الطلاب، المدرسين، الحصص، والتسجيلات. مع ربط ولي الأمر كعميل في CRM."
+                          - generic [ref=e1081]:
+                            - generic [ref=e1082]: 199 ج/شهر
+                            - generic [ref=e1083]: "9"
+                          - button "تفعيل" [ref=e1088]
+                  - button [ref=e1091]:
+                    - link "المتجر الاحترافي 0 متجر متقدم مع POS، إدارة مخزون متعدد، وميزات احترافية للشركات المتوسطة والكبيرة. 499 ج/شهر 1 تفعيل" [ref=e1093] [cursor=pointer]:
+                      - /url: /marketplace/store-pro
+                      - generic [ref=e1101]:
+                        - generic [ref=e1102]:
+                          - heading "المتجر الاحترافي" [level=3] [ref=e1103]
+                          - text: "0"
+                        - paragraph [ref=e1104]: متجر متقدم مع POS، إدارة مخزون متعدد، وميزات احترافية للشركات المتوسطة والكبيرة.
+                        - generic [ref=e1105]:
+                          - generic [ref=e1106]: 499 ج/شهر
+                          - generic [ref=e1107]: "1"
+                        - button "تفعيل" [ref=e1112]
+                  - button [ref=e1115]:
+                    - link "CRM + نظام الولاء 0 CRM متقدم مع نظام نقاط الولاء، المكافآت، والهدايا للعملاء. 299 ج/شهر 1 تفعيل" [ref=e1117] [cursor=pointer]:
+                      - /url: /marketplace/crm-loyalty
+                      - generic [ref=e1124]:
+                        - generic [ref=e1125]:
+                          - heading "CRM + نظام الولاء" [level=3] [ref=e1126]
+                          - text: "0"
+                        - paragraph [ref=e1127]: CRM متقدم مع نظام نقاط الولاء، المكافآت، والهدايا للعملاء.
+                        - generic [ref=e1128]:
+                          - generic [ref=e1129]: 299 ج/شهر
+                          - generic [ref=e1130]: "1"
+                        - button "تفعيل" [ref=e1135]
+                  - button [ref=e1138]:
+                    - link "Turbo Analytics Pro 0 تحليلات فورية Real-time مع AI Insights والتنبؤات المستقبلية. 399 ج/شهر 1 تفعيل" [ref=e1140] [cursor=pointer]:
+                      - /url: /marketplace/turbo-analytics
+                      - generic [ref=e1146]:
+                        - generic [ref=e1147]:
+                          - heading "Turbo Analytics Pro" [level=3] [ref=e1148]
+                          - text: "0"
+                        - paragraph [ref=e1149]: تحليلات فورية Real-time مع AI Insights والتنبؤات المستقبلية.
+                        - generic [ref=e1150]:
+                          - generic [ref=e1151]: 399 ج/شهر
+                          - generic [ref=e1152]: "1"
+                        - button "تفعيل" [ref=e1157]
+                  - button [ref=e1160]:
+                    - link "محادثات AI المتقدمة 0 محادثات AI متقدمة مع RAG وتعلم Few-Shot ودعم متعدد اللغات. 2000 محادثة شهرياً. 799 ج/شهر 1 تفعيل" [ref=e1162] [cursor=pointer]:
+                      - /url: /marketplace/ai-chat-pro
+                      - generic [ref=e1168]:
+                        - generic [ref=e1169]:
+                          - heading "محادثات AI المتقدمة" [level=3] [ref=e1170]
+                          - text: "0"
+                        - paragraph [ref=e1171]: محادثات AI متقدمة مع RAG وتعلم Few-Shot ودعم متعدد اللغات. 2000 محادثة شهرياً.
+                        - generic [ref=e1172]:
+                          - generic [ref=e1173]: 799 ج/شهر
+                          - generic [ref=e1174]: "1"
+                        - button "تفعيل" [ref=e1179]
+                  - button [ref=e1182]:
+                    - link "Pixel وتحليلات التحويل 0 تتبع الزوار والتحويلات عبر Pixel و CAPI مع تقارير دقيقة. 99 ج/شهر 0 تفعيل" [ref=e1184] [cursor=pointer]:
+                      - /url: /marketplace/facebook-pixel-capi
+                      - generic [ref=e1189]:
+                        - generic [ref=e1190]:
+                          - heading "Pixel وتحليلات التحويل" [level=3] [ref=e1191]
+                          - text: "0"
+                        - paragraph [ref=e1192]: تتبع الزوار والتحويلات عبر Pixel و CAPI مع تقارير دقيقة.
+                        - generic [ref=e1193]:
+                          - generic [ref=e1194]: 99 ج/شهر
+                          - generic [ref=e1195]: "0"
+                        - button "تفعيل" [ref=e1200]
+                  - button [ref=e1203]:
+                    - 'link "🏪 المتجر الإلكتروني المتقدم 0 متجر إلكتروني متقدم مع ميزات احترافية: منتجات غير محدودة وتقارير متقدمة. 499 ج/شهر 0 تفعيل" [ref=e1205] [cursor=pointer]':
+                      - /url: /marketplace/ecommerce-pro
+                      - generic [ref=e1206]:
+                        - generic [ref=e1207]: 🏪
+                        - generic [ref=e1209]:
+                          - generic [ref=e1210]:
+                            - heading "المتجر الإلكتروني المتقدم" [level=3] [ref=e1211]
+                            - text: "0"
+                          - paragraph [ref=e1212]: "متجر إلكتروني متقدم مع ميزات احترافية: منتجات غير محدودة وتقارير متقدمة."
+                          - generic [ref=e1213]:
+                            - generic [ref=e1214]: 499 ج/شهر
+                            - generic [ref=e1215]: "0"
+                          - button "تفعيل" [ref=e1220]
+                  - button [ref=e1223]:
+                    - link "Commerce Advanced 0 Advanced commerce controls for pre-orders, extended inventory signals, and special selling flows. 179 ج/شهر 11 تفعيل" [ref=e1225] [cursor=pointer]:
+                      - /url: /marketplace/commerce-advanced
+                      - generic [ref=e1232]:
+                        - generic [ref=e1233]:
+                          - heading "Commerce Advanced" [level=3] [ref=e1234]
+                          - text: "0"
+                        - paragraph [ref=e1235]: Advanced commerce controls for pre-orders, extended inventory signals, and special selling flows.
+                        - generic [ref=e1236]:
+                          - generic [ref=e1237]: 179 ج/شهر
+                          - generic [ref=e1238]: "11"
+                        - button "تفعيل" [ref=e1243]
+                  - button [ref=e1246]:
+                    - link "AI Image Studio 0 توليد صور احترافية للمنتجات والتسويق باستخدام AI. 200 صورة شهرياً. 149 ج/شهر 1 تفعيل" [ref=e1248] [cursor=pointer]:
+                      - /url: /marketplace/ai-image-studio
+                      - generic [ref=e1255]:
+                        - generic [ref=e1256]:
+                          - heading "AI Image Studio" [level=3] [ref=e1257]
+                          - text: "0"
+                        - paragraph [ref=e1258]: توليد صور احترافية للمنتجات والتسويق باستخدام AI. 200 صورة شهرياً.
+                        - generic [ref=e1259]:
+                          - generic [ref=e1260]: 149 ج/شهر
+                          - generic [ref=e1261]: "1"
+                        - button "تفعيل" [ref=e1266]
+  - region "Notifications alt+T"

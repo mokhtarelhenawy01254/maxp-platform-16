@@ -9,6 +9,7 @@ import {
   Gift,
   RefreshCw,
   Users,
+  BadgePercent,
 } from "lucide-react";
 
 interface CustomerLoyaltyProgram {
@@ -24,6 +25,7 @@ interface CustomerLoyaltyProgram {
 const LoyaltyAnalytics: React.FC = () => {
   const [stats, setStats] = useState<{ totalCashback: number } | null>(null);
   const [programs, setPrograms] = useState<CustomerLoyaltyProgram[]>([]);
+  const [systemAnalytics, setSystemAnalytics] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -33,13 +35,15 @@ const LoyaltyAnalytics: React.FC = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [programsRes, statsRes] = await Promise.all([
+      const [programsRes, statsRes, systemRes] = await Promise.all([
         apiClient.get("/hr/customer-loyalty/programs"),
         apiClient.get("/wallet/stats"),
+        apiClient.get("/hr/customer-loyalty/system-analytics"),
       ]);
 
       setPrograms(programsRes.data.data || []);
       setStats(statsRes.data.data || null);
+      setSystemAnalytics((systemRes.data?.data as any) || null);
     } catch (error) {
       console.error("Error fetching analytics:", error);
     } finally {
@@ -166,6 +170,42 @@ const LoyaltyAnalytics: React.FC = () => {
           </p>
         </div>
       </div>
+
+      {/* Auto-Discount System Analytics */}
+      {systemAnalytics?.system === "AUTO_DISCOUNT" && (
+        <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10 p-6">
+          <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <BadgePercent className="h-5 w-5 text-amber-500" />
+            تحليل نظام الخصم التلقائي
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { label: "عملاء عندهم كوبون", value: systemAnalytics.appliedCustomers ?? 0 },
+              { label: "كوبونات متاحة", value: systemAnalytics.activeVouchers ?? 0 },
+              { label: "كوبونات مستخدمة", value: systemAnalytics.usedVouchers ?? 0 },
+              { label: "اتحولت كاش باك", value: systemAnalytics.convertedVouchers ?? 0 },
+              { label: "كوبونات منتهية", value: systemAnalytics.expiredVouchers ?? 0 },
+              { label: "أوردرات مستنية كوبون", value: systemAnalytics.waitingForDelivery ?? 0 },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-lg border border-amber-200 dark:border-amber-800 bg-white dark:bg-gray-800/60 p-3"
+              >
+                <p className="text-2xl font-bold text-gray-900 dark:text-white">
+                  {Number(item.value || 0).toLocaleString()}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{item.label}</p>
+              </div>
+            ))}
+          </div>
+          {Number(systemAnalytics.preActivationCustomers || 0) > 0 && (
+            <p className="mt-3 text-xs text-amber-700 dark:text-amber-300">
+              ⚠️ {systemAnalytics.preActivationCustomers} عميل عندهم أوردرات اتسلمت قبل
+              تفعيل النظام — مش بياخدوا كوبون خصم تلقائي.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Program Performance */}

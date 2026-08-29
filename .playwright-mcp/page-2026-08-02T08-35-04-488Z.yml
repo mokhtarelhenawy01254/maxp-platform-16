@@ -1,0 +1,46 @@
+- generic [ref=f15e7]:
+  - generic [ref=f15e10]:
+    - generic [ref=f15e12]:
+      - generic [ref=f15e13]: auth.businessOs
+      - heading "كل أعمالك في نظام واحد" [level=1] [ref=f15e14]
+      - paragraph [ref=f15e15]: منصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — باشتراك واحد.
+      - generic [ref=f15e16]:
+        - generic [ref=f15e17]:
+          - generic [ref=f15e18]: auth.visualStart
+          - generic [ref=f15e19]: auth.visualImmediately
+        - generic [ref=f15e20]:
+          - generic [ref=f15e21]: auth.visualWithout
+          - generic [ref=f15e22]: auth.visualTrialPeriod
+    - generic [ref=f15e24]:
+      - link "MAX-P auth.brandName" [ref=f15e25] [cursor=pointer]:
+        - /url: /
+        - img "MAX-P" [ref=f15e26]
+        - generic [ref=f15e27]: auth.brandName
+      - generic [ref=f15e28]:
+        - generic [ref=f15e29]: auth.secureSignIn
+        - heading "الدخول إلى مساحة العمل" [level=2] [ref=f15e30]
+        - paragraph [ref=f15e31]: أدخل بريدك وكلمة المرور للوصول إلى لوحة التشغيل الخاصة بك.
+      - generic [ref=f15e33]:
+        - generic [ref=f15e34]:
+          - generic [ref=f15e35]: البريد الإلكتروني
+          - textbox "البريد الإلكتروني" [ref=f15e37]:
+            - /placeholder: name@company.com
+        - generic [ref=f15e38]:
+          - generic [ref=f15e39]:
+            - link "نسيت كلمة المرور؟" [ref=f15e40] [cursor=pointer]:
+              - /url: /auth/forgot-password
+            - generic [ref=f15e41]: كلمة المرور
+          - generic [ref=f15e42]:
+            - textbox "كلمة المرور" [ref=f15e43]:
+              - /placeholder: ••••••••
+            - button [ref=f15e44] [cursor=pointer]
+        - generic [ref=f15e49] [cursor=pointer]:
+          - generic [ref=f15e50]: تذكرني
+          - checkbox "تذكرني" [ref=f15e51]
+        - button "دخول إلى النظام" [disabled] [ref=f15e52]
+      - contentinfo [ref=f15e53]:
+        - generic [ref=f15e54]:
+          - generic [ref=f15e55]: ليس لديك حساب؟
+          - link "إنشاء حساب جديد" [ref=f15e56] [cursor=pointer]:
+            - /url: /auth/register
+  - region "Notifications alt+T"

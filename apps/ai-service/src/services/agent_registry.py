@@ -144,8 +144,15 @@ class AgentRegistry:
             model
             or resolved_policy.get("default")
             or resolved_policy.get("model")
-            or settings.default_model
         )
+        if not resolved_model:
+            # DB-first: company model → platform default. No env fallback.
+            try:
+                from src.services.model_resolver import resolve_db_default_model
+
+                resolved_model = await resolve_db_default_model(company_id)
+            except Exception as e:
+                logger.warning("db_default_model_resolution_failed", company_id=company_id, error=str(e)[:160])
 
         tool_names = allowed_tools or get_tool_names_for_role(role)
 

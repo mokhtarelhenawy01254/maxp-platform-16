@@ -2875,6 +2875,25 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                                 }
                             }
 
+                            // AI ignore list (do-not-reply): skip auto-reply for listed numbers
+                            try {
+                                const _ignorePhone = String(first.customerPhone || (first.remoteJid || '').split('@')[0] || '').replace(/\D/g, '');
+                                if (_ignorePhone) {
+                                    const _ignoredRows = await prisma.$queryRaw`SELECT 1 FROM ai.whatsapp_ai_ignore_list WHERE company_id = ${first.companyId} AND phone_number = ${_ignorePhone} LIMIT 1`;
+                                    if (Array.isArray(_ignoredRows) && _ignoredRows.length > 0) {
+                                        console.log(`🚫 [BAILEYS-DEBOUNCE] Sender ${_ignorePhone} is on AI ignore list → skipping auto-reply`);
+                                        try {
+                                            await prisma.$executeRaw`INSERT INTO ai.whatsapp_ai_ignore_log (id, company_id, phone_number, thread_id, message_mid) VALUES (gen_random_uuid(), ${first.companyId}, ${_ignorePhone}, ${String(first.conversationId || '')}, null)`;
+                                        } catch (_logErr) {
+                                            console.warn('[BAILEYS-DEBOUNCE] ignore log insert failed:', _logErr.message);
+                                        }
+                                        return;
+                                    }
+                                }
+                            } catch (_ignoreErr) {
+                                console.warn('[BAILEYS-DEBOUNCE] AI ignore list check failed (fail-open):', _ignoreErr.message);
+                            }
+
                             const aiSdkClient = require('../aiSdkClient');
                             const result = await aiSdkClient.sendChatMessage({
                                 companyId: first.companyId,

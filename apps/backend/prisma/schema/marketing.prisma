@@ -962,6 +962,8 @@ model WhatsAppNotificationLog {
   recipientType                   WhatsAppNotificationLogsRecipientType @default(CUSTOMER)
   category                        WhatsAppNotificationLogsCategory
   eventType                       WhatsAppNotificationLogsEventType
+  /// rawEventType - original custom status code before enum mapping (dedup identity + report attribution)
+  rawEventType                    String?
   content                         String
   orderId                         String?
   customerId                      String?
@@ -1054,6 +1056,11 @@ model WhatsAppNotificationSettings {
   backInStockEnabled            Boolean  @default(true)
   priceDropEnabled              Boolean  @default(true)
   newProductEnabled             Boolean  @default(false)
+  /// 🚀 إرسال تلقائي لأي منتج جديد فور إنشائه (عروض المنتجات — واتساب فقط)
+  newProductAutoSend            Boolean  @default(false)
+  newProductAudience            String   @default("all") // all | withOrders | newCustomers | activeCustomers
+  newProductNewDays             Int      @default(7)
+  newProductMessage             String?
   abandonedCartEnabled          Boolean  @default(true)
   abandonedCartFirstReminder    Int      @default(1)
   abandonedCartSecondReminder   Int      @default(24)
@@ -1065,7 +1072,7 @@ model WhatsAppNotificationSettings {
   promotionalEnabled            Boolean  @default(false)
   couponEnabled                 Boolean  @default(false)
   birthdayEnabled               Boolean  @default(false)
-  loyaltyEnabled                Boolean  @default(false)
+  loyaltyEnabled                Boolean  @default(true)
   companyLifecycleNotificationsEnabled Boolean @default(true)
   newSignupWelcomeEnabled       Boolean  @default(true)
   newSignupAdminAlertEnabled    Boolean  @default(true)

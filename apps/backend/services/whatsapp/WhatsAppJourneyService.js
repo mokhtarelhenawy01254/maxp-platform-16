@@ -127,6 +127,7 @@ class WhatsAppJourneyService {
             // 1. جلب الرحلة المفعلة لهذه الشركة
             const flow = await this.prisma.whatsAppFollowUpFlow.findFirst({
                 where: { companyId, isEnabled: true },
+                orderBy: [{ isGeneral: 'desc' }, { createdAt: 'asc' }],
                 include: {
                     steps: {
                         orderBy: { stepOrder: 'asc' }
@@ -156,10 +157,14 @@ class WhatsAppJourneyService {
                 return;
             }
 
-            // 3. تحديد موعد أول خطوة
+            // 3. تحديد موعد أول خطوة (يدعم التأخير بالساعات — فحص مقاس Day0+4س)
             const firstStep = flow.steps[0];
             const nextSendAt = new Date();
-            nextSendAt.setDate(nextSendAt.getDate() + firstStep.delayDays);
+            if (firstStep.delayUnit === 'HOURS' && firstStep.delayHours != null && firstStep.delayHours > 0) {
+                nextSendAt.setHours(nextSendAt.getHours() + Math.min(firstStep.delayHours, 720));
+            } else {
+                nextSendAt.setDate(nextSendAt.getDate() + (firstStep.delayDays || 0));
+            }
 
             // 4. إنشاء السجل
             const created = await this.prisma.customerJourney.create({
@@ -259,16 +264,20 @@ class WhatsAppJourneyService {
             // إرسال الرسالة باستخدام contentOverride
             const result = await WhatsAppNotificationService.sendNotification({
                 companyId: journey.companyId,
+                deliveryStrategy: 'platform-fallback',
                 recipientPhone: phone,
                 recipientName: `${journey.customer.firstName || ''} ${journey.customer.lastName || ''}`.trim(),
                 recipientType: 'CUSTOMER',
-                category: 'MARKETING',
-                eventType: isCategoryTrigger ? 'CATEGORY_FOLLOWUP' : 'POST_DELIVERY_FOLLOWUP',
+                category: 'OCCASION',
+                // NOTE: مؤقتاً نستخدم قالب المناسبة المعتمد CUSTOMER_OCCASION_msvsy2ut
+                // حتى يُنشأ قالب مخصص (POST_DELIVERY_FOLLOWUP / CATEGORY_FOLLOWUP) ومعتمد على Meta.
+                eventType: 'CUSTOMER_OCCASION_msvsy2ut',
                 contentOverride: step.content,
                 variables: {
                     firstName: journey.customer.firstName || '',
                     lastName: journey.customer.lastName || '',
                     customerName: journey.customer.firstName,
+                    reason: 'متابعة طلبك',
                     orderNumber: journey.order?.orderNumber || '',
                     totalPrice: journey.order?.total?.toString() || '0'
                 },

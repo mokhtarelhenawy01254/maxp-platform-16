@@ -90,14 +90,18 @@ describe('orderService.syncPreparationMetadata (§5.2)', () => {
     expect(parsed.preparationStatusUpdatedAt).toBeDefined();
   });
 
-  test('does not touch metadata when status is outside the preparation pipeline', async () => {
+  test('clears stale preparationStatus when status is outside the preparation pipeline', async () => {
     await orderService.syncPreparationMetadata('o1', 'CANCELLED', focusedPrisma);
-    expect(focusedPrisma.order.update).not.toHaveBeenCalled();
+    expect(focusedPrisma.order.update).toHaveBeenCalledTimes(1);
+    const data = focusedPrisma.order.update.mock.calls[0][0].data;
+    const parsed = JSON.parse(data.metadata);
+    expect(parsed.preparationStatus).toBeUndefined();
+    expect(parsed.customerNote).toBe('x');
   });
 
-  test('does not even read the order when status is outside the pipeline', async () => {
+  test('reads the order when status is outside the pipeline to check for stale metadata', async () => {
     await orderService.syncPreparationMetadata('o1', 'DELIVERED', focusedPrisma);
-    expect(focusedPrisma.order.findUnique).not.toHaveBeenCalled();
+    expect(focusedPrisma.order.findUnique).toHaveBeenCalled();
   });
 
   test('idempotent in value: calling twice with the same status writes the same preparationStatus', async () => {

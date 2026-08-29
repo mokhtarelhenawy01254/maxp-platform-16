@@ -1,0 +1,46 @@
+- generic [ref=f5e7]:
+  - generic [ref=f5e230]:
+    - generic [ref=f5e232]:
+      - generic [ref=f5e233]: نظام تشغيل الأعمال
+      - heading "كل أعمالك في نظام واحد" [level=1] [ref=f5e234]
+      - paragraph [ref=f5e235]: منصة تشغيل متكاملة تجمع المبيعات، المحادثات، المخازن، الموارد البشرية، والتسويق — باشتراك واحد.
+      - generic [ref=f5e236]:
+        - generic [ref=f5e237]:
+          - generic [ref=f5e238]: ابدأ فوراً
+          - generic [ref=f5e239]: فوراً
+        - generic [ref=f5e240]:
+          - generic [ref=f5e241]: بدون بطاقة بنكية
+          - generic [ref=f5e242]: فترة تجريبية
+    - generic [ref=f5e244]:
+      - link "M ماكس بي لنظام تشغيل الأعمال" [ref=f5e245] [cursor=pointer]:
+        - /url: /
+        - generic [ref=f5e246]: M
+        - generic [ref=f5e247]: ماكس بي لنظام تشغيل الأعمال
+      - generic [ref=f5e248]:
+        - generic [ref=f5e249]: تسجيل دخول آمن
+        - heading "الدخول إلى مساحة العمل" [level=2] [ref=f5e250]
+        - paragraph [ref=f5e251]: أدخل بريدك وكلمة المرور للوصول إلى لوحة التشغيل الخاصة بك.
+      - generic [ref=f5e253]:
+        - generic [ref=f5e254]:
+          - generic [ref=f5e255]: البريد الإلكتروني
+          - textbox "البريد الإلكتروني" [ref=f5e257]:
+            - /placeholder: name@company.com
+        - generic [ref=f5e258]:
+          - generic [ref=f5e259]:
+            - link "نسيت كلمة المرور؟" [ref=f5e260] [cursor=pointer]:
+              - /url: /auth/forgot-password
+            - generic [ref=f5e261]: كلمة المرور
+          - generic [ref=f5e262]:
+            - textbox "كلمة المرور" [ref=f5e263]:
+              - /placeholder: ••••••••
+            - button [ref=f5e264] [cursor=pointer]
+        - generic [ref=f5e269] [cursor=pointer]:
+          - generic [ref=f5e270]: تذكرني
+          - checkbox "تذكرني" [ref=f5e271]
+        - button "دخول إلى النظام" [disabled] [ref=f5e272]
+      - contentinfo [ref=f5e273]:
+        - generic [ref=f5e274]:
+          - generic [ref=f5e275]: ليس لديك حساب؟
+          - link "إنشاء حساب جديد" [ref=f5e276] [cursor=pointer]:
+            - /url: /auth/register
+  - region "Notifications alt+T"

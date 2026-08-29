@@ -1837,7 +1837,9 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
 
         return savedMessage;
     } catch (error) {
-        console.error('❌ Error sending template message:', error);
+        // 🔍 DIAG (2026-08-26): اطبع response ميتا الكامل عشان نشوف السبب الحقيقي للرفض
+        console.error('❌ Error sending template message:', error?.message);
+        console.error('❌ [META-RAW]', JSON.stringify(error?.response?.data || error?.originalError?.response?.data || error?.details || error));
         throw error;
     }
 }

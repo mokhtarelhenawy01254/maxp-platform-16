@@ -1,0 +1,87 @@
+- generic [ref=e7]:
+  - generic [ref=e10]:
+    - generic [ref=e132]:
+      - generic [ref=e133]:
+        - link "E" [ref=e135] [cursor=pointer]:
+          - /url: /company-dashboard
+          - generic "El Nouby" [ref=e136]: E
+        - generic [ref=e137]:
+          - button "الرئيسية" [ref=e138] [cursor=pointer]
+          - button "الطلبات" [ref=e143] [cursor=pointer]
+          - button "المنتجات" [ref=e149] [cursor=pointer]
+          - button "المتجر" [ref=e155] [cursor=pointer]
+          - button "المخزون" [ref=e164] [cursor=pointer]
+          - button "حسابي" [ref=e170] [cursor=pointer]
+          - button "إدارة شركاتي" [ref=e177] [cursor=pointer]
+          - button "التطبيقات" [active] [ref=e183] [cursor=pointer]
+          - button "الإعدادات" [ref=e189] [cursor=pointer]
+      - generic [ref=e195]:
+        - generic [ref=e196]:
+          - link "E El Nouby متجر التطبيقات" [ref=e241] [cursor=pointer]:
+            - /url: /company-dashboard
+            - generic [ref=e199]: E
+            - generic [ref=e200]:
+              - heading "El Nouby" [level=2] [ref=e201]
+              - paragraph [ref=e202]: متجر التطبيقات
+          - button "طي القائمة" [ref=e203] [cursor=pointer]
+        - generic [ref=e206]:
+          - generic [ref=e207]: البحث داخل القائمة
+          - textbox "البحث داخل القائمة" [ref=e208]:
+            - /placeholder: البحث
+        - generic [ref=e209]:
+          - link "تطبيقاتي" [ref=e243] [cursor=pointer]:
+            - /url: /my-apps
+          - link "تصفح التطبيقات" [ref=e249] [cursor=pointer]:
+            - /url: /marketplace
+          - link "قوالب المتجر" [ref=e256] [cursor=pointer]:
+            - /url: /marketplace/themes
+          - link "الباقات" [ref=e266] [cursor=pointer]:
+            - /url: /marketplace/bundles
+          - link "مدفوعاتي" [ref=e274] [cursor=pointer]:
+            - /url: /payments
+    - generic [ref=e11]:
+      - banner [ref=e12]:
+        - generic [ref=e23]:
+          - generic [ref=e24]:
+            - button "تبديل للوضع الليلي" [ref=e25] [cursor=pointer]
+            - button "Change language" [ref=e27] [cursor=pointer]:
+              - generic [ref=e28]: ar
+            - button "الإشعارات" [ref=e30] [cursor=pointer]:
+              - generic [ref=e283]: "9"
+            - link "header.whatsapp" [ref=e34] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+          - button "الملف الشخصي EN" [ref=e220]:
+            - generic [ref=e221]: EN
+            - generic [ref=e222]:
+              - generic [ref=e223]: El
+              - generic [ref=e224]: OWNER
+      - main [ref=e37]:
+        - generic [ref=e38]:
+          - heading "لوحة تشغيل واتساب" [level=1] [ref=e59]
+          - generic [ref=e60]:
+            - complementary [ref=e61]:
+              - generic [ref=e62]:
+                - button "W يتطلب اتصال" [ref=e64]:
+                  - generic [ref=e65]: W
+                  - generic "يتطلب اتصال" [ref=e67]
+                - generic [ref=e68]:
+                  - button "محادثة" [ref=e69]
+                  - button "المزيد" [ref=e70]
+              - generic [ref=e71]:
+                - generic [ref=e72]:
+                  - textbox "بحث..." [ref=e73]
+                  - button "غير مقروء" [ref=e74]
+                - generic [ref=e75]:
+                  - button "الكل" [ref=e76]
+                  - button "بانتظار الرد" [ref=e78]
+                  - button "غير مقروء" [ref=e80]
+                  - button "مجموعات" [ref=e82]
+                  - button "أرشفة" [ref=e84]
+                  - button "حالات" [ref=e86]
+            - generic [ref=e234]:
+              - paragraph [ref=e239]: اختر محادثة للبدء
+              - paragraph [ref=e240]: اختر محادثة من القائمة لقراءة الرسائل والرد من الجلسة المتصلة.
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e314]:
+        - generic [ref=e318]: "⚠️ هذه الميزة تتطلب تفعيل: WhatsApp Business API"

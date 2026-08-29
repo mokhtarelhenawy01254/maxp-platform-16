@@ -70,10 +70,25 @@ function buildMetaBodyParams(variablesOrder, localContent, values = {}) {
     orderedVars = localNames.map((name, idx) => ({ position: idx + 1, name }));
   }
 
-  return orderedVars.map(v => ({
-    type: 'text',
-    text: values[v.name] !== undefined && values[v.name] !== null ? String(values[v.name]) : '',
-  }));
+  // 🚨 PRODUCTION-FIX (131008-string-vars-2026-08-24):
+  // بعض صفوف القوالب في الداتابيز مخزنة variables كنصوص عادية
+  // ["orderNumber","total"] بدل [{position,name}] — قراءة v.name كانت
+  // بترجع undefined وكل الباراميترات بتتبعت فاضية → ميتا ترفض بـ
+  // "(#131008) Required parameter is missing". نوحّد الصيغتين هنا.
+  orderedVars = orderedVars.map((v, idx) =>
+    typeof v === 'string' ? { position: idx + 1, name: v } : v
+  );
+
+  // 🚨 PRODUCTION-FIX (132018-regression-2026-08-23):
+  // ميتا ترفض معاملات الـ body اللي فيها أسطر جديدة (\n) بـ
+  // "(#132018) There's an issue with the parameters in your template".
+  // الإصلاح ده ضاع في استرجاع force-push يوم 2026-08-20 (commits 1a6039fd/fccb9da1)
+  // وسبب فشل قوالب ORDER_CONFIRMED / ORDER_CREATED اللي فيها orderItems متعدد الأسطر.
+  return orderedVars.map(v => {
+    let text = values[v.name] !== undefined && values[v.name] !== null ? String(values[v.name]) : '';
+    text = text.replace(/\r?\n/g, ' ').replace(/\s+/g, ' ').trim();
+    return { type: 'text', text };
+  });
 }
 
 module.exports = {

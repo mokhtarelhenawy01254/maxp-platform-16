@@ -1,4 +1,4 @@
-﻿# Radiology System Claims -- Independent Verification
+# Radiology System Claims -- Independent Verification
 
 > Verifier: branch session (verifier agent) -- Workspace: `H:/maxp-platform`
 > Backend: Node.js/Express + Prisma -- Frontend: React + TypeScript + @cornerstonejs

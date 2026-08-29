@@ -867,12 +867,15 @@ const getStatusStats = async (req, res) => {
       _count: true
     });
 
-    // عدد الطلبات لكل حالة
-    const ordersByStatus = await getSharedPrismaClient().order.groupBy({
-      by: ['status'],
-      where: { companyId },
-      _count: true
-    });
+    // 🛡️ PRODUCTION-FIX (custom-status-persist): عدد الطلبات لكل "حالة فعلية"
+    // (كود مخصص ← مرحلة تجهيز محوّلة ← enum) — نفس أولوية صفحة الطلبات، بدل
+    // groupBy على الـ enum بس اللي كان بيخفي الحالات المخصصة نهائيًا.
+    const { getEffectiveOrderStatusCounts } = require('../utils/orderEffectiveStatus');
+    const effectiveCounts = await getEffectiveOrderStatusCounts(getSharedPrismaClient(), companyId);
+    const ordersByStatus = Object.entries(effectiveCounts).map(([status, count]) => ({
+      status,
+      _count: count
+    }));
 
     res.json({
       success: true,
@@ -949,13 +952,28 @@ const getStatusesWithTemplates = async (req, res) => {
     });
 
     // كل حالة ليه قالبان مستقلان: template (واتساب عادي/تلقائي) + metaTemplate (قناة META_CLOUD).
-    // التصنيف بالـ channel — نفس منطق صفحة /customers/customer-notifications.
+    // 🚨 PRODUCTION-FIX (meta-bound-channel-2026-08-26): القالب المربوط بميتا بيتسجّل بـ channel=AUTO
+    // (legacy) مع metaTemplateName معتمد — الـ sender بيلقطه بـ metaTemplateName+APPROVED بغض النظر
+    // عن الـ channel (findNotificationTemplateForEvent). لكن العرض هنا كان بيفصل metaMap بالاعتماد على
+    // channel==='META_CLOUD' فقط → القوالب المربوطة بتقع في regularMap وmetaMap تفضل فاضية → الصفحة
+    // بتعرض "بدون قالب ميتا" رغم إنها مربوطة وبتتبعت. الحل: أي قالب عليه metaTemplateName يتحسب
+    // قالب ميتا (legacy أو جديد)، ونفضّل المربوط المعتمد عند تكرار الصفوف لنفس الحالة.
     const regularMap = {};
     const metaMap = {};
+    const isMetaBound = (t) => Boolean(t.metaTemplateName);
+    const isApproved = (t) => String(t.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
+    const setPreferring = (map, key, t) => {
+      const existing = map[key];
+      if (!existing) { map[key] = t; return; }
+      // فضّل الصف اللي عليه ربط ميتا على اللي من غيره، ثم المعتمد على اللي pending.
+      const existingBound = isMetaBound(existing);
+      const tBound = isMetaBound(t);
+      if (tBound && !existingBound) { map[key] = t; return; }
+      if (tBound === existingBound && isApproved(t) && !isApproved(existing)) { map[key] = t; }
+    };
     for (const t of templates) {
-      const isMeta = String(t.channel || '').toUpperCase() === 'META_CLOUD';
-      const map = isMeta ? metaMap : regularMap;
-      if (!map[t.eventType]) map[t.eventType] = t;
+      const isMeta = String(t.channel || '').toUpperCase() === 'META_CLOUD' || isMetaBound(t);
+      setPreferring(isMeta ? metaMap : regularMap, t.eventType, t);
     }
 
     const buildStatus = (base, code) => {

@@ -329,6 +329,32 @@ describe('whatsapp channel-aware template selection (two slots per status)', () 
     expect(legacyIdx).toBeGreaterThanOrEqual(0);
     expect(res).toBeDefined();
   });
+
+  it('🚨 deterministic selection: استعلام ميتا الأول لازم يفلتر APPROVED + metaTemplateName مش فارغ + ترتيب حاسم', async () => {
+    // سجل قوالب مكررة لنفس الحدث كان بيسبب اختيار عشوائي بين قالب ميتا ونص حر
+    // (العميل مرة ياخد قالب ومرة رسالة تفشل خارج نافذة 24 ساعة).
+    mockSettings.whatsAppSession.findFirst.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockSettings.whatsAppSession.findUnique.mockResolvedValue({ id: 'sess-m', status: 'CONNECTED', provider: 'META_CLOUD' });
+    mockFindFirst([
+      { eventType: 'CONFIRMED', channel: 'META_CLOUD', id: 'meta-approved-1', content: 'مرجع', isActive: true, metaTemplateName: 'confirm_ar', metaTemplateStatus: 'APPROVED', variables: JSON.stringify([]) },
+      { eventType: 'CONFIRMED', channel: 'AUTO', id: 'regular-1', content: 'نص عادي', isActive: true },
+    ]);
+
+    const { sendOrderStatusNotification } = require('../../services/whatsapp/WhatsAppNotificationService');
+    await sendOrderStatusNotification(order, 'CONFIRMED', 'PENDING');
+
+    const calls = mockSettings.whatsAppNotificationTemplate.findFirst.mock.calls;
+    const metaCall = calls.find((c) => c[0].where.channel === 'META_CLOUD');
+    expect(metaCall).toBeTruthy();
+    expect(metaCall[0].where.metaTemplateName).toEqual({ not: null });
+    expect(metaCall[0].where.metaTemplateStatus).toEqual({ equals: 'APPROVED', mode: 'insensitive' });
+    // ترتيب حاسم: isDefault ثم updatedAt ثم createdAt
+    expect(metaCall[0].orderBy).toEqual([
+      { isDefault: 'desc' },
+      { updatedAt: 'desc' },
+      { createdAt: 'desc' }
+    ]);
+  });
 });
 
 describe('whatsapp order-creation dispatch (sendOrderCreationNotification)', () => {

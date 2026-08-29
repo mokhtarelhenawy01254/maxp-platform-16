@@ -20,6 +20,11 @@ const ORDER_STATUS_TO_EVENT_TYPE = {
   REFUNDED: 'ORDER_REFUNDED',
   PARTIALLY_REFUNDED: 'PARTIAL_REFUND',
   EXCHANGED: 'ORDER_RETURNED',
+  // 🛡️ PRODUCTION-FIX (prep-stage-alias): أكواد خط التجهيز بتتخزّن في الـ enum
+  // بأسماء مختلفة (normalizeWhatsAppOrderStatus) — من غير المapping ده كان
+  // getPersistedNotificationEventType بيرجّع ANNOUNCEMENT ويبوّظ الـ dedup الموحّد.
+  PREPARING: 'PICKING',
+  PACKAGED: 'PACKED',
   // الحالات القياسية الست — تطابق statusEventMap في sendOrderStatusNotification
   CONFIRMED: 'ORDER_CONFIRMED',
   PROCESSING: 'ORDER_PROCESSING',

@@ -79,6 +79,20 @@ const renderHeroAction = (
   className: string,
 ) => {
   if (!href || !label?.trim()) return null;
+  if (href.startsWith("#")) {
+    return (
+      <a
+        href={href}
+        onClick={(e) => {
+          e.preventDefault();
+          document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
+        }}
+        className={className}
+      >
+        {label}
+      </a>
+    );
+  }
   return isExternalHref(href) ? (
     <a href={href} target="_blank" rel="noreferrer" className={className}>
       {label}
@@ -3122,6 +3136,40 @@ const SpeedBannerHero: React.FC<HeroVariantProps> = (props) => {
   );
 };
 
+const GroomingProHero: React.FC<HeroVariantProps> = (props) => {
+  const bg = props.backgroundImage || props.panel.image;
+  return (
+    <section
+      className="relative flex min-h-[360px] items-center justify-center overflow-hidden px-4 py-16 text-center"
+      style={bg ? { backgroundColor: "#19212B", backgroundImage: `url(${bg})`, backgroundSize: "cover", backgroundPosition: "center" } : { backgroundColor: "#19212B" }}
+    >
+      <div className="absolute inset-0 bg-[linear-gradient(to_bottom,rgba(10,20,35,.72)_0%,rgba(10,20,35,.60)_50%,rgba(10,20,35,.75)_100%)]" />
+      <div className="relative z-10 mx-auto w-full max-w-[700px]">
+        {props.eyebrow ? (
+          <p className="mb-3 text-xs font-semibold uppercase tracking-[0.2em] text-white/80">{props.eyebrow}</p>
+        ) : null}
+        <h1 className="font-heading text-[2.4rem] font-extrabold leading-[1.2] text-white drop-shadow-[0_2px_12px_rgba(0,0,0,.65)]">
+          {props.title}
+        </h1>
+        {props.subtitle ? (
+          <p className="mx-auto mt-3 max-w-[580px] text-[17px] leading-[1.6] text-white/95 drop-shadow-[0_1px_8px_rgba(0,0,0,.55)]">
+            {props.subtitle}
+          </p>
+        ) : null}
+        {props.ctaText ? (
+          <div className="mt-6">
+            {renderHeroAction(
+              props.primaryHref,
+              props.ctaText,
+              "inline-block rounded-[6px] bg-white px-7 py-3 text-[15px] font-bold text-[#19212B] shadow-[0_4px_14px_rgba(0,0,0,.2)] transition-transform hover:-translate-y-0.5",
+            )}
+          </div>
+        ) : null}
+      </div>
+    </section>
+  );
+};
+
 const HeroBanner: React.FC<HeroBannerProps> = ({ section, settings }) => {
   const location = useLocation();
   const resolveScopedHref = (href: unknown, fallback = ""): string => {
@@ -3239,6 +3287,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ section, settings }) => {
     return <ElessiJewelSalonHero {...props} />;
   if (variant === "elessi-pet-sunroom")
     return <ElessiPetSunroomHero {...props} />;
+  if (variant === "grooming-hero") return <GroomingProHero {...props} />;
 
   return <CenteredHero {...props} />;
 };

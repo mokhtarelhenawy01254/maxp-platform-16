@@ -1,4 +1,8 @@
-# System Structure & Architecture
+### Turbo Records & Status Synchronization Architecture
+1. **Unbound Bulk Status Refresh (`turboController.js` & `turboStatusSyncService.js`)**:
+   - `GET /api/v1/turbo/records?refresh=true` — Performs a comprehensive 180-day bulk status sync across all company orders via `turboStatusSyncService.syncTurboStatusToOrder`.
+   - Incorporates branch-presence heuristics: shipments with status `processing` but missing branch assignments (`branch` null/empty) or containing Arabic location phrases like `"في انتظاري التسليم لتربو"` are mapped to canonical `turbo_sent` ("قيد الانتظار").
+   - Automatically converts legacy `processing` shipments to `turbo_sent` when not active in branch feeds.
 
 ### Sidebar Navigation & Path Matching
 1. Refactored `isSidebarPathActive` in `matchSidebarPath.ts` to support generalized sub-path highlighting. It now returns true for sub-paths (e.g. `/orders/123` highlights `/orders`), while excluding root-level dashboards such as `/`, `/hr`, `/admin/booking`, and `/admin/education` to prevent duplicate active state styling.

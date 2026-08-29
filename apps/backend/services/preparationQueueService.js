@@ -76,6 +76,32 @@ const getMappedRegularOrderStatus = (preparationStatus) => {
   return 'PROCESSING';
 };
 
+// 🛡️ PRODUCTION-FIX (prep-stage-notify): تحركات خط التجهيز من صفحة التجهيز كانت
+// بتحدّث الأوردر وتكتب History من غير أي رسالة واتساب — على عكس نفس الحالات لما
+// تتغير من صفحة الطلبات. الدالة دي بترسل إشعار تغيير الحالة بنفس مسار orderService
+// (dedup + sendOrderStatusNotification) fire-and-forget عشان مايعطلش العملية.
+const notifyPreparationStageChange = async ({ companyId, orderPayload, status }) => {
+  try {
+    if (!orderPayload || !companyId || !status) return;
+    const WhatsAppNotificationService = require('./whatsapp/WhatsAppNotificationService');
+    const { getPersistedNotificationEventType } = require('./whatsapp/notificationTypes');
+
+    const recentNotification = await WhatsAppNotificationService.isDuplicateNotification({
+      companyId,
+      orderId: orderPayload.id,
+      recipientPhone: orderPayload.customerPhone,
+      eventType: getPersistedNotificationEventType(status),
+      // 🛡️ (custom-status-dedup-identity): هوية الحالة الأصلية — نفس إصلاح orderService
+      rawEventType: status,
+    });
+    if (recentNotification) return;
+
+    await WhatsAppNotificationService.sendOrderStatusNotification(orderPayload, status);
+  } catch (notifyError) {
+    console.warn(`⚠️ [PREP-QUEUE] WhatsApp status notification failed (${status}):`, notifyError.message);
+  }
+};
+
 const updatePreparationOrderStatus = async ({
   orderIdentifier,
   companyId,
@@ -147,6 +173,11 @@ const updatePreparationOrderStatus = async ({
       }
     });
 
+    // 🛡️ PRODUCTION-FIX (prep-stage-notify): أبلغ العميل بتغيير الحالة (fire-and-forget)
+    setImmediate(() => {
+      notifyPreparationStageChange({ companyId, orderPayload: updatedOrder, status: normalizedStatus });
+    });
+
     return { orderType: 'regular', order: updatedOrder };
   }
 
@@ -197,6 +228,32 @@ const updatePreparationOrderStatus = async ({
         },
         updatedAt: new Date()
       }
+    });
+
+    // 🛡️ PRODUCTION-FIX (prep-stage-notify): نفس الإشعار لطلبات الضيوف — بنحوّل
+    // guestPhone/guestName إلى شكل الـ orderPayload المتوقّع في الخدمة.
+    setImmediate(() => {
+      let guestItems = [];
+      try {
+        guestItems = typeof updatedGuestOrder.items === 'string'
+          ? JSON.parse(updatedGuestOrder.items)
+          : (updatedGuestOrder.items || []);
+      } catch (_itemsError) {
+        guestItems = [];
+      }
+      notifyPreparationStageChange({
+        companyId,
+        orderPayload: {
+          ...updatedGuestOrder,
+          // 🛡️ PRODUCTION-FIX (guest-order-fk): orderId=null في اللوج (guest-order-fk)
+          isGuestOrder: true,
+          customerPhone: updatedGuestOrder.guestPhone,
+          customerName: updatedGuestOrder.guestName,
+          items: guestItems,
+          currency: 'EGP'
+        },
+        status: normalizedStatus
+      });
     });
 
     return { orderType: 'guest', order: updatedGuestOrder };
@@ -1930,5 +1987,8 @@ module.exports = {
   getPreparationQueue,
   bulkUpdateByFilters,
   assertPreparationStockRule,
-  assertPreparationHoldRule
+  assertPreparationHoldRule,
+  // exported for regression tests (prep-stage-notify)
+  updatePreparationOrderStatus,
+  notifyPreparationStageChange
 };

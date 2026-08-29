@@ -7,6 +7,24 @@ const __dirname = path.dirname(__filename);
 
 const LOCALES_DIR = path.join(__dirname, '../apps/frontend/src/locales');
 
+function findJsonFiles(dir) {
+  const results = [];
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      results.push(...findJsonFiles(fullPath));
+    } else if (entry.isFile() && entry.name.endsWith('.json') && !entry.name.startsWith('.')) {
+      results.push(fullPath);
+    }
+  }
+  return results.sort();
+}
+
+function getRelPath(fullPath, baseDir) {
+  return path.relative(baseDir, fullPath);
+}
+
 function getAllKeys(obj, prefix = '') {
   let keys = [];
   for (const key in obj) {
@@ -24,10 +42,15 @@ function checkConsistency() {
   const enSectionsDir = path.join(LOCALES_DIR, 'en', 'sections');
   const arSectionsDir = path.join(LOCALES_DIR, 'ar', 'sections');
 
-  const enFiles = fs.readdirSync(enSectionsDir).filter(f => f.endsWith('.json'));
-  const arFiles = fs.readdirSync(arSectionsDir).filter(f => f.endsWith('.json'));
+  const enFiles = findJsonFiles(enSectionsDir);
+  const arFiles = findJsonFiles(arSectionsDir);
 
-  const allSections = Array.from(new Set([...enFiles, ...arFiles])).sort();
+  const enFileMap = new Map();
+  enFiles.forEach(f => enFileMap.set(path.parse(f).name, f));
+  const arFileMap = new Map();
+  arFiles.forEach(f => arFileMap.set(path.parse(f).name, f));
+
+  const allSections = Array.from(new Set([...enFileMap.keys(), ...arFileMap.keys()])).sort();
 
   console.log(`--- i18n Section Consistency Check ---`);
   
@@ -35,21 +58,18 @@ function checkConsistency() {
   let totalExtra = 0;
   let outOfSyncFilesCount = 0;
 
-  allSections.forEach(file => {
-    const enFilePath = path.join(enSectionsDir, file);
-    const arFilePath = path.join(arSectionsDir, file);
+  allSections.forEach(sectionName => {
+    const enFilePath = enFileMap.get(sectionName);
+    const arFilePath = arFileMap.get(sectionName);
 
-    const enExists = fs.existsSync(enFilePath);
-    const arExists = fs.existsSync(arFilePath);
-
-    if (!enExists) {
-      console.warn(`[MISSING SECTION] ${file} exists in AR but not in EN`);
+    if (!enFilePath) {
+      console.warn(`[MISSING SECTION] ${sectionName} exists in AR but not in EN`);
       totalExtra++;
       return;
     }
 
-    if (!arExists) {
-      console.warn(`[MISSING SECTION] ${file} exists in EN but not in AR`);
+    if (!arFilePath) {
+      console.warn(`[MISSING SECTION] ${sectionName} exists in EN but not in AR`);
       totalMissing++;
       return;
     }
@@ -65,7 +85,7 @@ function checkConsistency() {
 
     if (missingInAr.length > 0 || extraInAr.length > 0) {
       outOfSyncFilesCount++;
-      console.log(`\n📄 Section: ${file}`);
+      console.log(`\n📄 Section: ${sectionName}`);
       if (missingInAr.length > 0) {
         console.log(`   🔴 Missing in AR: ${missingInAr.length} keys`);
         missingInAr.forEach(k => console.log(`      - ${k}`));

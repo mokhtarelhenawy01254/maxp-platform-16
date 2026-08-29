@@ -628,6 +628,23 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تم تجهيز affiliate-pro وربط إدارة الأفليت به مع fallback مؤقت على ecommerce-basic.",
   },
   {
+    id: "amazonAffiliate",
+    area: "marketing",
+    label: "أمازون أفليت",
+    description: "استيراد منتجات أمازون، ربط حساب Amazon Associates، مزامنة الأسعار والمخزون، زر الشراء من أمازون، والتوجيه حسب بلد الزائر.",
+    status: "covered",
+    appSlug: "amazon-affiliate-pro",
+    appLabel: "Amazon Affiliate",
+    currentGate: "amazon-affiliate-pro",
+    legacyGate: "ecommerce-basic",
+    routes: [
+      { path: "/amazon-affiliate/settings", label: "إعدادات أمازون أفليت" },
+      { path: "/amazon-affiliate/import",   label: "استيراد المنتجات" },
+      { path: "/amazon-affiliate/products", label: "المنتجات المستوردة" },
+    ],
+    action: "تم تجهيز amazon-affiliate-pro كتطبيق مستقل لأفليت أمازون.",
+  },
+  {
     id: "notifications",
     area: "productivity",
     label: "التنبيهات والتذكيرات",

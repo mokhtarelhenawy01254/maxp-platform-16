@@ -116,6 +116,10 @@ const upsertBusinessSpecialtyRules = () => {
       .optional()
       .isBoolean()
       .withMessage("تثبيت التطبيقات تلقائيًا يجب أن يكون true أو false"),
+    body("themeId")
+      .optional({ nullable: true })
+      .isString()
+      .withMessage("معرف الثيم يجب أن يكون نصًا"),
     body("isActive")
       .optional()
       .isBoolean()

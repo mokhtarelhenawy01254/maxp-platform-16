@@ -1,0 +1,483 @@
+{
+  "id": "mens-grooming-pro",
+  "name": "Mens Grooming Pro",
+  "direction": "ltr",
+  "tokens": {
+    "colors": {
+      "primary": "212 29% 13%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 97%",
+      "secondaryForeground": "0 0% 10%",
+      "accent": "212 29% 13%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "0 0% 10%",
+      "muted": "0 0% 96%",
+      "mutedForeground": "0 0% 40%",
+      "border": "0 0% 91%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 10%",
+      "ring": "212 29% 13%"
+    },
+    "typography": {
+      "headingFont": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "bodyFont": "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+      "baseSize": "16px",
+      "direction": "ltr"
+    },
+    "shape": {
+      "borderRadius": "0.5rem",
+      "buttonRadius": "0.375rem"
+    },
+    "productCard": {
+      "borderRadius": "0.5rem",
+      "boxShadow": "0 8px 30px rgba(0,0,0,0.08)",
+      "hoverShadow": "0 12px 36px rgba(0,0,0,0.12)",
+      "badgeRadius": "0.25rem",
+      "buttonRadius": "0.375rem",
+      "surfaceOpacity": "1"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Mens Grooming Pro",
+    "description": "Expert product reviews and guides for men's grooming — affiliate & SEO ready with Amazon integration."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/mens-grooming-pro/preview.svg",
+    "colors": ["212 29% 13%", "0 0% 100%", "45 90% 60%"]
+  },
+  "header": {
+    "brandName": "Mens Grooming Pro",
+    "showSearch": false,
+    "showCart": false,
+    "navigation": [
+      { "label": "Home", "to": "/" },
+      { "label": "About", "to": "/about" },
+      { "label": "Contact", "to": "/contact" },
+      { "label": "Disclosure", "to": "/affiliate-disclaimer" }
+    ]
+  },
+  "footer": {
+    "description": "Expert product reviews and guides for men's grooming.",
+    "copyrightText": "© 2026 Mens Grooming Pro. All rights reserved.",
+    "socialLinks": {
+      "facebook": "https://facebook.com/mensgroomingpro",
+      "instagram": "https://instagram.com/mensgroomingpro",
+      "twitter": "https://twitter.com/mensgroomingpro",
+      "youtube": "https://youtube.com/@mensgroomingpro"
+    },
+    "navigation": [
+      {
+        "title": "Explore",
+        "links": [
+          { "label": "Home", "to": "/" },
+          { "label": "Reviews", "to": "/shop" },
+          { "label": "Guides", "to": "/collections" }
+        ]
+      },
+      {
+        "title": "Information",
+        "links": [
+          { "label": "About", "to": "/about" },
+          { "label": "Contact", "to": "/contact" },
+          { "label": "Affiliate Disclaimer", "to": "/affiliate-disclaimer" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "Privacy Policy", "to": "/privacy" },
+      { "label": "Terms of Use", "to": "/terms" },
+      { "label": "Affiliate Disclaimer", "to": "/affiliate-disclaimer" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "grooming-hero",
+          "settings": {
+            "eyebrow": "Expert Reviews • Guides • Quiz Tools",
+            "title": "Mens Grooming Pro",
+            "subtitle": "Expert product reviews and guides for men's grooming",
+            "ctaText": "Browse Reviews & Guides ↓",
+            "ctaLink": "#articles",
+            "secondaryCtaText": "Find Your Perfect Beard Trimmer →",
+            "secondaryCtaLink": "#quiz",
+            "contentAlign": "center",
+            "backgroundImage": "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?auto=format&fit=crop&q=80&w=1600"
+          }
+        },
+        {
+          "type": "affiliate-quiz",
+          "settings": {
+            "title": "Find Your Perfect Beard Trimmer in 60 Seconds",
+            "subtitle": "Answer 5 quick questions and get 3 tailored picks based on your grooming style.",
+            "ctaText": "Start Quiz"
+          }
+        },
+        {
+          "type": "article-grid",
+          "settings": {
+            "title": "Latest Reviews & Guides",
+            "limit": 9
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "Get grooming tips in your inbox",
+            "subtitle": "Weekly reviews, guides and exclusive quiz tools. No spam.",
+            "buttonText": "Subscribe",
+            "placeholder": "Your email address"
+          }
+        }
+      ],
+      "pageGoal": "conversion"
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "minimal-toolbar",
+          "settings": {
+            "title": "Browse Reviews & Guides",
+            "subtitle": "Search and filter all grooming reviews and guides",
+            "searchPlaceholder": "Search beard trimmers, oils, skincare...",
+            "allCategoriesLabel": "All Guides",
+            "resultsLabel": "articles",
+            "clearButtonText": "Clear filters",
+            "stickyLabel": "Filter",
+            "chipLimit": 6
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "title": "Filter",
+            "showSort": "true",
+            "showCategories": "true",
+            "showPriceFilter": "false",
+            "categoryStyle": "list",
+            "clearButtonText": "Clear filters"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "grid",
+          "settings": {
+            "title": "All Articles",
+            "limit": 12
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail",
+          "settings": {
+            "badge": "Why trust us",
+            "title": "How we test & earn",
+            "subtitle": "Editorial standards & affiliate disclosure",
+            "spotlightLabel": "Disclosure",
+            "spotlightTitle": "Amazon Associate — we earn from qualifying purchases",
+            "spotlightText": "Commissions never influence our reviews. Price you pay is the same.",
+            "ctaText": "Read disclosure",
+            "ctaLink": "/affiliate-disclaimer",
+            "trustItems": "Independent reviews|We test hundreds of trimmers, oils & skincare\nFTC Compliant|Clear affiliate disclosure on every article\nNo extra cost|Same price whether you use our link or not",
+            "highlights": "Articles|400+ reviews\nTesting|8 years barber experience\nDisclosure|FTC 16 CFR Part 255"
+          }
+        }
+      ],
+      "pageGoal": "discovery"
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "affiliate-article-seo",
+          "settings": {
+            "headline": "How To Choose The Right Electric Beard Trimmers",
+            "description": "Let's be honest: most guys treat their beard trimmer like a blunt instrument. Expert guide to choosing the right electric beard trimmers.",
+            "image": "https://mensgroomingpro.com/how-to-choose-the-right-electric-beard-trimmers/hero.webp",
+            "datePublished": "2026-08-11",
+            "authorName": "Jake Morrison"
+          }
+        },
+        {
+          "type": "affiliate-breadcrumbs",
+          "settings": {
+            "items": "Home|Guides|How To Choose The Right Electric Beard Trimmers"
+          }
+        },
+        {
+          "type": "affiliate-disclosure",
+          "settings": {
+            "text": "This post contains affiliate links. If you purchase through our links, we may earn a small commission at no extra cost to you.",
+            "linkText": "Full disclosure here.",
+            "linkHref": "/affiliate-disclaimer"
+          }
+        },
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "descriptionTitle": "Guide & Review",
+            "shippingTitle": "Affiliate Disclosure",
+            "shippingText": "As an Amazon Associate we earn from qualifying purchases at no extra cost to you.",
+            "shippingInteraction": "accordion",
+            "showGuarantees": "false"
+          }
+        },
+        {
+          "type": "affiliate-top-picks",
+          "settings": {
+            "title": "Our Top Picks",
+            "subtitle": "Affiliate disclosure: if you buy through these links, we may earn a commission at no extra cost to you."
+          }
+        },
+        {
+          "type": "affiliate-toc",
+          "settings": {
+            "title": "Table of Contents",
+            "items": "Our Top Picks\nQuick Answer\nMotor Power: The Difference Between Shearing and Pulling\nBlade Material: Why Heat Matters More Than You Think\nPrecision Heads and Adjustable Combs\nVisibility and Ergonomics for Clean Lines\nSkin Sensitivity and Tolerance\nFrequently Asked Questions\nSources & References"
+          }
+        },
+        {
+          "type": "affiliate-pro-tip",
+          "settings": {
+            "title": "Pro Tip",
+            "icon": "💡",
+            "text": "If you have dense hair, don't skimp on the motor. A high-power trimmer like the Panasonic ER-GP80 handles thick growth smoothly, whereas a weaker model will bog down and leave you with a patchy finish."
+          }
+        },
+        {
+          "type": "affiliate-faq",
+          "settings": {
+            "title": "Frequently Asked Questions"
+          }
+        },
+        {
+          "type": "affiliate-sources",
+          "settings": {
+            "title": "Sources & References",
+            "updatedAt": "August 11, 2026",
+            "authorName": "Jake Morrison",
+            "items": "How To Use a Beard Trimmer: Prep, Guards, & More - The Beard Club|https://thebeardclub.com/blogs/beard-culture/how-to-use-a-beard-trimmer\nTrimming & Styling Beard Tips - Electric Shaver GURU|https://www.electric-shaver-guru.com/trimming-styling-beard-tips\n7 Best Beard Trimmers for Professional Styling (2026 Reviews)|https://menreviewhub.com/best-beard-trimmers-for-professional-styling/"
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "grid",
+          "settings": {
+            "title": "Similar Posts",
+            "subtitle": "More guides you may like",
+            "limit": 3
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "compact",
+          "settings": {
+            "title": "Relevant Products for This Topic",
+            "subtitle": "Affiliate picks linked to Amazon",
+            "limit": 3
+          }
+        }
+      ],
+      "pageGoal": "trust"
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "Your selection",
+            "subtitle": "Review items before checkout",
+            "continueShoppingText": "Continue browsing",
+            "emptyTitle": "No items yet",
+            "emptyText": "Browse reviews and add products you like."
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "minimal",
+          "settings": {
+            "title": "Order summary",
+            "checkoutButtonText": "Proceed to checkout",
+            "showTrustRow": true,
+            "showFreeShippingProgress": false
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "Review your order",
+            "subtitle": "Final step before confirmation"
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "compact",
+          "settings": {
+            "contactTitle": "Contact details",
+            "shippingTitle": "Shipping address"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "minimal",
+          "settings": {
+            "title": "Payment",
+            "subtitle": "Choose your payment method"
+          }
+        }
+      ]
+    },
+    "collections": {
+      "sections": [
+        {
+          "type": "featured-collections",
+          "variant": "fast-nav-grid",
+          "settings": {
+            "title": "All Categories",
+            "subtitle": "Guides organized by topic",
+            "limit": 8,
+            "ctaText": "Browse all reviews",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "grid",
+          "settings": {
+            "title": "Popular in this category",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "Top Picks",
+            "message": "Our affiliate top picks — we earn from qualifying Amazon purchases at no extra cost to you.",
+            "saleLabel": "Amazon",
+            "shippingLabel": "Independent reviews",
+            "returnLabel": "FTC Compliant",
+            "ctaText": "Browse reviews",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "grid",
+          "settings": {
+            "title": "Deals & Top Picks",
+            "limit": 12,
+            "saleOnly": "false"
+          }
+        }
+      ]
+    },
+    "about": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "About",
+            "title": "About Mens Grooming Pro",
+            "subtitle": "Expert product reviews and guides for men's grooming",
+            "body": "Jake Morrison spent 8 years behind the barber chair before moving into full-time product writing. He's tested hundreds of beard oils, shavers, and skincare lines and cuts through the marketing noise to tell you what actually works.\n\nWe participate in the Amazon Services LLC Associates Program. Affiliate commissions never influence our editorial decisions.",
+            "detailsTitle": "At a glance",
+            "details": "Niche|Men's grooming\nExperience|8 years barber + testing\nRevenue|Amazon Affiliate (no extra cost to you)\nGuides|400+ articles",
+            "ctaText": "Browse reviews",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Contact",
+            "title": "Contact us",
+            "subtitle": "Questions about our reviews or affiliate relationships?",
+            "body": "Have a question about a review or our affiliate disclosure? Reach out and we'll get back to you quickly.",
+            "detailsTitle": "Contact",
+            "details": "Email|hello@example.com\nDisclosure|/affiliate-disclaimer",
+            "ctaText": "Back to home",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "affiliate-disclaimer": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Disclosure",
+            "title": "Affiliate Disclosure",
+            "subtitle": "Amazon Services LLC Associates Program",
+            "body": "Mens Grooming Pro is a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.com.\n\nWhen you click on certain links and make a purchase, we may receive a small commission at no additional cost to you. The price you pay is exactly the same whether you use our affiliate link or go directly to Amazon.\n\nAffiliate commissions never influence our editorial decisions. We only recommend products we genuinely believe provide value. In accordance with FTC 16 CFR Part 255, we disclose our affiliate relationships prominently on all pages that contain affiliate links.",
+            "detailsTitle": "How it works",
+            "details": "Research|We review products in men's grooming\nLink|We link to Amazon with our tracking tag\nCommission|We earn small commission within 24h window\nCost to you|Exactly the same price",
+            "ctaText": "Browse reviews",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Privacy",
+            "title": "Privacy Policy",
+            "subtitle": "How we handle your data",
+            "body": "We use your data only to operate the site and improve our guides. No data is sold.",
+            "detailsTitle": "Summary",
+            "details": "Data|Contact details only\nUse|Site operation\nSharing|No sale of data",
+            "ctaText": "Back to home",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "Terms",
+            "title": "Terms of Use",
+            "subtitle": "By using this site you agree to these terms",
+            "body": "Content is for informational purposes. Affiliate links are clearly disclosed.",
+            "detailsTitle": "Key points",
+            "details": "Content|Informational\nAffiliate|Clearly disclosed\nUse|Personal, non-commercial",
+            "ctaText": "Contact",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    }
+  }
+}

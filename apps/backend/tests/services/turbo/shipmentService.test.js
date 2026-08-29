@@ -130,6 +130,18 @@ describe('ShipmentService', () => {
       expect(callPayload.phone1).toBe('01012345678');
     });
 
+    test('normalizes phone with double-zero international prefix 0020', async () => {
+      // '00201012345678' → strip '00' → '201012345678' → slice '20' → '1012345678' → add '0' → '01012345678'
+      axios.post.mockResolvedValue({
+        data: { success: 1, result: { code: 'T1', bar_code: 'B1' } },
+      });
+
+      await service.createShipment(validOrderData({ customerPhone: '00201012345678' }));
+
+      const callPayload = axios.post.mock.calls[0][1];
+      expect(callPayload.phone1).toBe('01012345678');
+    });
+
     test('throws for invalid phone number', async () => {
       await expect(
         service.createShipment(validOrderData({ customerPhone: '12345' }))

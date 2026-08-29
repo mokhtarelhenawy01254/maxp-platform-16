@@ -70,8 +70,7 @@ router.get('/', async (req, res) => {
                 orderPrefix: settings.orderPrefix,
                 nextOrderNumber: settings.nextOrderNumber,
                 orderNumberFormat: settings.orderNumberFormat,
-                duplicateOrderAction: settings.duplicateOrderAction || 'filter',
-                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
+                duplicateOrderAction: 'filter',                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),
@@ -139,10 +138,10 @@ router.put('/', async (req, res) => {
         }
 
         // Validate duplicate settings
-        if (duplicateOrderAction && !['ignore', 'filter'].includes(duplicateOrderAction)) {
+        if (duplicateOrderAction && duplicateOrderAction !== 'filter') {
             return res.status(400).json({
                 success: false,
-                message: 'Duplicate order action must be either "ignore" or "filter"'
+                message: 'خيار تجاهل الطلبات المكررة أُلغي نهائياً. الإجراء الوحيد المتاح هو "فلترة"'
             });
         }
 
@@ -203,7 +202,7 @@ router.put('/', async (req, res) => {
         if (orderPrefix) updateData.orderPrefix = orderPrefix;
         if (nextOrderNumber) updateData.nextOrderNumber = nextOrderNumber;
         if (orderNumberFormat) updateData.orderNumberFormat = orderNumberFormat;
-        if (duplicateOrderAction !== undefined) updateData.duplicateOrderAction = duplicateOrderAction;
+        if (duplicateOrderAction !== undefined) updateData.duplicateOrderAction = 'filter';
         if (duplicateOrderWindowMinutes !== undefined) {
             updateData.duplicateOrderWindowMinutes = parseInt(duplicateOrderWindowMinutes, 10);
         }
@@ -229,7 +228,7 @@ router.put('/', async (req, res) => {
                 orderPrefix: orderPrefix || 'ORD',
                 nextOrderNumber: nextOrderNumber || 1,
                 orderNumberFormat: orderNumberFormat || 'PREFIX-XXXXXX',
-                duplicateOrderAction: duplicateOrderAction || 'filter',
+                duplicateOrderAction: 'filter',
                 duplicateOrderWindowMinutes: duplicateOrderWindowMinutes ? parseInt(duplicateOrderWindowMinutes, 10) : 60,
                 incompleteOrderLostAfterHours: incompleteOrderLostAfterHours !== undefined
                     ? parseInt(incompleteOrderLostAfterHours, 10)
@@ -304,8 +303,7 @@ router.put('/', async (req, res) => {
                 orderPrefix: settings.orderPrefix,
                 nextOrderNumber: settings.nextOrderNumber,
                 orderNumberFormat: settings.orderNumberFormat,
-                duplicateOrderAction: settings.duplicateOrderAction || 'filter',
-                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
+                duplicateOrderAction: 'filter',                duplicateOrderWindowMinutes: settings.duplicateOrderWindowMinutes || 60,
                 incompleteOrderLostAfterHours: normalizeIncompleteHours(settings.incompleteOrderLostAfterHours),
                 showIncompleteCartsInOrders: Boolean(settings.showIncompleteCartsInOrders),
                 minimumOrderEnabled: Boolean(settings.minimumOrderEnabled),

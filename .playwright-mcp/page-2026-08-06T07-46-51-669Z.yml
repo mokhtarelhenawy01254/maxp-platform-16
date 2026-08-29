@@ -1,0 +1,153 @@
+- generic [ref=f11e7]:
+  - generic [ref=f11e12]:
+    - generic:
+      - dialog "sidebar.navigation":
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - link "E El Nouby المنتجات والمخزون":
+                  - /url: /company-dashboard
+                  - generic: E
+                  - generic:
+                    - heading "El Nouby" [level=2]
+                    - paragraph: المنتجات والمخزون
+              - button "sidebar.close"
+            - generic:
+              - generic: البحث داخل القائمة
+              - textbox "البحث داخل القائمة":
+                - /placeholder: البحث
+            - generic:
+              - generic:
+                - button "الرئيسية 1":
+                  - generic:
+                    - generic:
+                      - strong: الرئيسية
+                      - generic: "1"
+              - generic:
+                - button "إدارة الطلبات 26":
+                  - generic:
+                    - generic:
+                      - strong: إدارة الطلبات
+                      - generic: "26"
+              - generic:
+                - button "المنتجات والمخزون 4" [expanded]:
+                  - generic:
+                    - generic:
+                      - strong: المنتجات والمخزون
+                      - generic: "4"
+                - generic:
+                  - generic:
+                    - link "المنتجات":
+                      - /url: /products
+                  - generic:
+                    - link "الفئات":
+                      - /url: /categories
+                  - generic:
+                    - link "sidebar.upsellManagement":
+                      - /url: /settings/upsell
+                  - generic:
+                    - link "تحليلات المتجر":
+                      - /url: /analytics/store
+              - generic:
+                - button "إدارة المتجر 17":
+                  - generic:
+                    - generic:
+                      - strong: إدارة المتجر
+                      - generic: "17"
+              - generic:
+                - button "المخزون 4":
+                  - generic:
+                    - generic:
+                      - strong: المخزون
+                      - generic: "4"
+              - generic:
+                - button "حسابي 2":
+                  - generic:
+                    - generic:
+                      - strong: حسابي
+                      - generic: "2"
+              - generic:
+                - button "إدارة شركاتي 7":
+                  - generic:
+                    - generic:
+                      - strong: إدارة شركاتي
+                      - generic: "7"
+              - generic:
+                - button "متجر التطبيقات 5":
+                  - generic:
+                    - generic:
+                      - strong: متجر التطبيقات
+                      - generic: "5"
+              - generic:
+                - button "الإعدادات 5":
+                  - generic:
+                    - generic:
+                      - strong: الإعدادات
+                      - generic: "5"
+              - generic:
+                - generic:
+                  - generic: EN
+                  - generic:
+                    - generic: El
+                    - generic: OWNER
+                - generic:
+                  - link "الملف الشخصي":
+                    - /url: /profile
+                  - link "الإعدادات":
+                    - /url: /settings
+                  - button "تسجيل الخروج"
+    - generic [ref=f11e13]:
+      - banner [ref=f11e14]:
+        - generic [ref=f11e15]:
+          - generic [ref=f11e17]:
+            - button "فتح القائمة" [ref=f11e18] [cursor=pointer]
+            - button "الملف الشخصي EN" [ref=f11e23]:
+              - generic [ref=f11e24]: EN
+          - generic [ref=f11e26]:
+            - button "تبديل للوضع الليلي" [ref=f11e27] [cursor=pointer]
+            - button "Change language" [ref=f11e29] [cursor=pointer]:
+              - generic [ref=f11e30]: ar
+            - button "الإشعارات" [ref=f11e32] [cursor=pointer]
+            - link "header.whatsapp" [ref=f11e35] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+      - main [ref=f11e38]:
+        - generic [ref=f11e39]:
+          - generic [ref=f11e41]:
+            - generic [ref=f11e42]:
+              - heading "إدارة الفئات" [level=1] [ref=f11e43]
+              - paragraph [ref=f11e44]: عرض وتنظيم فئات منتجاتك
+            - button "إضافة فئة جديدة" [active] [ref=f11e46] [cursor=pointer]
+          - generic [ref=f11e50]:
+            - textbox "البحث في الفئات..." [ref=f11e55]
+            - button "تحديث" [ref=f11e56] [cursor=pointer]
+          - generic [ref=f11e63]:
+            - heading "لا توجد فئات بعد" [level=3] [ref=f11e67]
+            - paragraph [ref=f11e68]: ابدأ بإضافة فئات لتنظيم منتجاتك وتسهيل وصول العملاء إليها
+            - button "إضافة فئة جديدة" [ref=f11e69] [cursor=pointer]
+          - generic [ref=f11e73]:
+            - generic [ref=f11e74]:
+              - heading "إضافة فئة جديدة" [level=3] [ref=f11e75]
+              - button [ref=f11e76] [cursor=pointer]
+            - generic [ref=f11e80]:
+              - generic [ref=f11e81]:
+                - generic [ref=f11e82]: اسم الفئة *
+                - textbox [ref=f11e83]
+              - generic [ref=f11e84]:
+                - generic [ref=f11e85]: الرابط الفريد (Slug)
+                - textbox "e.g. skin-care-products" [ref=f11e86]
+              - generic [ref=f11e87]:
+                - generic [ref=f11e88]: الوصف
+                - textbox [ref=f11e89]
+              - generic [ref=f11e90]:
+                - generic [ref=f11e91]: Category Image
+                - generic [ref=f11e92]: Upload Image
+              - generic [ref=f11e100]:
+                - generic [ref=f11e101]:
+                  - checkbox [checked]
+                  - generic [ref=f11e102] [cursor=pointer]
+                - generic [ref=f11e103]: الحالة
+              - generic [ref=f11e104]:
+                - button "إلغاء" [ref=f11e105] [cursor=pointer]
+                - button "حفظ الفئة" [ref=f11e106] [cursor=pointer]
+  - region "Notifications alt+T"

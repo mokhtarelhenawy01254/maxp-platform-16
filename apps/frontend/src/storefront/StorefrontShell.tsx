@@ -38,6 +38,9 @@ import type {
 import { useClarityAnalytics } from "../hooks/useClarityAnalytics";
 import { useFacebookPixel } from "../hooks/useFacebookPixel";
 import { useGoogleAnalytics } from "../hooks/useGoogleAnalytics";
+const StorefrontArticlePage = React.lazy(
+  () => import("./pages/StorefrontArticlePage"),
+);
 import { useCategories } from "./hooks/useCategories";
 import StorefrontProductImage from "./components/StorefrontProductImage";
 import StorefrontSkeleton from "./components/StorefrontSkeleton";
@@ -439,6 +442,7 @@ const StorefrontHeader: React.FC<{
 
   const isPcHub = theme.id === "pc-hub-eg";
   const isFastlyTheme = theme.id === "fastly-eg";
+  const isMensGroomingPro = theme.id === "mens-grooming-pro";
   const headerVariant =
     theme.header?.variant?.trim().toLowerCase() || "default";
   const isEditorialSoftHeader = headerVariant === "editorial-soft";
@@ -568,6 +572,43 @@ const StorefrontHeader: React.FC<{
       to: buildStorefrontPath(location.pathname, "/shop", location.search),
     },
   ];
+
+  // Mens Grooming Pro — dark navy header identical to mensgroomingpro.com
+  if (isMensGroomingPro && !isMinimal) {
+    return (
+      <>
+        <header className="sticky top-0 z-50 w-full bg-[#19212B] text-white shadow-[0_2px_8px_rgba(0,0,0,.2)]">
+          <div className="mx-auto flex h-[60px] max-w-[1100px] items-center justify-between px-4 md:px-6">
+            <StorefrontHomeLink {...brandHomeLinkProps} className="flex items-center gap-2 text-[19px] font-bold tracking-[-0.5px] text-white">
+              {displayStoreName}
+            </StorefrontHomeLink>
+            <nav className="hidden items-center gap-6 md:flex">
+              {navLinks.map((link) => (
+                <Link key={link.to} to={link.to} reloadDocument={shouldForceDocumentNavigation} className="text-[14px] font-medium text-white/85 transition-colors hover:text-white">
+                  {link.label}
+                </Link>
+              ))}
+            </nav>
+            <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="inline-flex h-9 w-9 items-center justify-center text-white md:hidden" aria-label="Menu">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+            </button>
+          </div>
+          {mobileMenuOpen ? (
+            <div className="border-t border-white/10 bg-[#19212B] px-4 py-3 md:hidden">
+              <nav className="flex flex-col gap-1">
+                {navLinks.map((link) => (
+                  <Link key={link.to} to={link.to} reloadDocument={shouldForceDocumentNavigation} onClick={() => setMobileMenuOpen(false)} className="py-2 text-sm font-medium text-white/85 transition-colors hover:text-white">
+                    {link.label}
+                  </Link>
+                ))}
+              </nav>
+            </div>
+          ) : null}
+        </header>
+      </>
+    );
+  }
+
   const currentCategory = new URLSearchParams(location.search).get("category");
   const parseThemePath = (value: string) => {
     try {
@@ -3973,6 +4014,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
   const isIntruderNft = theme.id === 'intruder-nft';
   const isMenShoes = theme.id === 'men-shoes-eg';
   const isPcHub = theme.id === 'pc-hub-eg';
+  const isMensGroomingPro = theme.id === 'mens-grooming-pro';
   const footerVariant = theme.footer?.variant?.trim().toLowerCase() || 'default';
   const isEditorialSoftFooter = footerVariant === 'editorial-soft';
   const isUtilityFrameFooter = footerVariant === 'utility-frame';
@@ -4319,6 +4361,69 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
         return null;
     }
   };
+  const renderStorefrontSocialBrandIcon = (
+    social: string,
+    className = 'h-[15px] w-[15px]',
+  ): React.ReactNode => {
+    const key = String(social || '').trim().toLowerCase();
+    const filledSvg = (path: string, size = '15') => (
+      <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="currentColor">
+        <path d={path} />
+      </svg>
+    );
+
+    if (key === 'facebook' || key === 'fb' || key === 'facebook.com') {
+      return filledSvg('M9.101 23.691v-7.98H6.627v-3.667h2.474v-1.58c0-4.085 1.848-5.978 5.858-5.978.401 0 .955.042 1.468.103a8.68 8.68 0 011.141.195v3.325a8.623 8.623 0 00-.653-.036 26.805 26.805 0 00-.733-.009c-.707 0-1.259.096-1.675.309a1.686 1.686 0 00-.679.622c-.258.42-.374.995-.374 1.752v1.297h3.919l-.386 2.103-.287 1.564h-3.246v8.245C19.396 23.238 24 18.179 24 12.044c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.628 3.874 10.35 9.101 11.647Z');
+    }
+
+    if (key === 'instagram' || key === 'insta' || key === 'ig') {
+      return (
+        <svg aria-hidden="true" viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
+          <circle cx="12" cy="12" r="3.8" />
+          <circle cx="17.2" cy="6.8" r="0.8" fill="currentColor" stroke="none" />
+        </svg>
+      );
+    }
+
+    if (key === 'whatsapp' || key === 'wa' || key === 'whatsapp.com' || key === 'واتساب') {
+      return filledSvg('M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z');
+    }
+
+    if (key === 'messenger' || key === 'm.me' || key === 'facebook-messenger') {
+      return filledSvg('M12 0C5.373 0 0 4.974 0 11.111c0 3.353 1.655 6.353 4.242 8.305V24l3.895-2.135c1.16.325 2.384.502 3.672.502h.09C18.438 22.367 24 17.4 24 11.111 24 4.974 18.627 0 12 0zm0 2c5.514 0 10 4.088 10 9.111 0 5.035-4.486 9.122-10 9.122-1.19 0-2.34-.189-3.418-.536l-.417-.135-2.586 1.418.502-2.403-.267-.427A8.926 8.926 0 012 11.11C2 6.089 6.486 2 12 2zm.874 7.283l-5.119 5.432 4.646-2.583 2.35 2.625 5.014-5.36-4.677 2.48z');
+    }
+
+    if (key === 'x' || key === 'twitter' || key === 'x.com' || key === 'twitter.com') {
+      return filledSvg('M18.9 2H22l-6.77 7.74L23 22h-6.06l-4.74-6.2L6.77 22H3.66l7.23-8.27L1 2h6.22l4.28 5.67L18.9 2Zm-1.07 18h1.68L6.31 3.9H4.5L17.83 20Z', '14');
+    }
+
+    if (key === 'youtube' || key === 'yt' || key === 'youtube.com') {
+      return filledSvg('M21.4 7.2a2.9 2.9 0 0 0-2-2C17.7 4.7 12 4.7 12 4.7s-5.7 0-7.4.5a2.9 2.9 0 0 0-2 2C2 8.9 2 12 2 12s0 3.1.6 4.8a2.9 2.9 0 0 0 2 2c1.7.5 7.4.5 7.4.5s5.7 0 7.4-.5a2.9 2.9 0 0 0 2-2c.6-1.7.6-4.8.6-4.8s0-3.1-.6-4.8ZM10 15.6V8.4l6 3.6-6 3.6Z');
+    }
+
+    if (key === 'tiktok' || key === 'ticktok' || key === 'tiktok.com') {
+      return filledSvg('M14.7 3h2.9c.2 1.7 1.3 3.2 3 3.8v2.9a7.06 7.06 0 0 1-3-.8v5.6a5.5 5.5 0 1 1-5.5-5.5c.3 0 .6 0 .9.1v3a2.5 2.5 0 1 0 1.7 2.4V3Z');
+    }
+
+    if (key === 'snapchat' || key === 'snap') {
+      return filledSvg('M12 2.7c2.5 0 4.3 1.9 4.3 4.4 0 .7-.1 1.4-.3 2 .3.4.7.7 1.3.9.6.2 1.2.4 1.8.5.3.1.5.3.5.6 0 .6-1 .9-1.7 1.1-.4.1-.8.3-.9.5-.5 1.1-1.5 1.9-2.8 2.2-.2.8-.9 1.4-1.8 1.4s-1.6-.6-1.8-1.4c-1.3-.3-2.3-1.1-2.8-2.2-.1-.2-.5-.4-.9-.5-.7-.2-1.7-.5-1.7-1.1 0-.3.2-.5.5-.6.6-.1 1.2-.3 1.8-.5.6-.2 1-.5 1.3-.9-.2-.6-.3-1.3-.3-2C7.7 4.6 9.5 2.7 12 2.7Z');
+    }
+
+    if (key === 'linkedin' || key === 'linkedin.com') {
+      return filledSvg('M6.94 8.5H3.56V20h3.38V8.5ZM5.25 3A2.06 2.06 0 1 0 5.3 7.12 2.06 2.06 0 0 0 5.25 3ZM20.44 12.5c0-3.47-1.85-5.08-4.32-5.08-2 0-2.89 1.1-3.39 1.88V8.5H9.35V20h3.38v-6.37c0-1.67.31-3.29 2.39-3.29 2.05 0 2.08 1.92 2.08 3.4V20h3.38l-.14-7.5Z');
+    }
+
+    if (key === 'telegram' || key === 'tg' || key === 'telegram.com') {
+      return filledSvg('M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0a12 12 0 00-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z');
+    }
+
+    if (key === 'pinterest' || key === 'pinterest.com') {
+      return filledSvg('M12 0C5.373 0 0 5.372 0 12c0 5.084 3.163 9.426 7.627 11.174-.105-.949-.2-2.405.042-3.441.218-.937 1.407-5.965 1.407-5.965s-.359-.719-.359-1.782c0-1.668.967-2.914 2.171-2.914 1.023 0 1.518.769 1.518 1.69 0 1.029-.655 2.568-.994 3.995-.283 1.194.599 2.169 1.777 2.169 2.133 0 3.772-2.249 3.772-5.495 0-2.873-2.064-4.882-5.012-4.882-3.414 0-5.418 2.561-5.418 5.207 0 1.031.397 2.138.893 2.738.098.119.112.224.083.345l-.333 1.36c-.053.22-.174.267-.402.161-1.499-.698-2.436-2.889-2.436-4.649 0-3.785 2.75-7.262 7.929-7.262 4.163 0 7.398 2.967 7.398 6.931 0 4.136-2.607 7.464-6.227 7.464-1.216 0-2.359-.631-2.75-1.378l-.748 2.853c-.271 1.043-1.002 2.35-1.492 3.146C9.57 23.812 10.763 24 12 24c6.627 0 12-5.373 12-12 0-6.628-5.373-12-12-12z');
+    }
+
+    return null;
+  };
   const velaSocialOrder = [
     'facebook',
     'instagram',
@@ -4332,6 +4437,39 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
   const velaSocialEntries = velaSocialOrder
     .map((key) => [key, socialIcons[key]] as const)
     .filter((entry): entry is readonly [typeof velaSocialOrder[number], string] => Boolean(entry[1]));
+
+  if (isMensGroomingPro && !isMinimal) {
+    const mgSocialIcons: Record<string, { href: string; label: string; d: string }> = {
+      facebook: { href: socialIcons.facebook, label: 'Facebook', d: 'M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8v-6.93H7.9V12H10V9.8c0-2.07 1.23-3.22 3.12-3.22.9 0 1.85.16 1.85.16v2.03h-1.04c-1.03 0-1.35.64-1.35 1.29V12h2.3l-.37 2.87h-1.93v6.93c4.56-.93 8-4.96 8-9.8Z' },
+      instagram: { href: socialIcons.instagram, label: 'Instagram', d: 'M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.72 3.72 0 0 1-1.38-.9 3.72 3.72 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23-.06-1.27-.07-1.65-.07-4.85s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41 1.27-.06 1.65-.07 4.85-.07Zm0 4.5a5.34 5.34 0 1 0 0 10.68 5.34 5.34 0 0 0 0-10.68Zm0 8.8a3.46 3.46 0 1 1 0-6.92 3.46 3.46 0 0 1 0 6.92Zm6.8-9.2a1.25 1.25 0 1 1-2.5 0 1.25 1.25 0 0 1 2.5 0Z' },
+      twitter: { href: socialIcons.twitter || socialIcons.x, label: 'Twitter', d: 'M18.24 2.25h3.31l-7.23 8.26 8.5 11.24h-6.66l-5.21-6.82-5.97 6.82H1.67l7.73-8.84L1.25 2.25h6.83l4.71 6.23 5.45-6.23Zm-1.16 17.52h1.83L7.08 4.13H5.12l11.96 15.64Z' },
+      youtube: { href: socialIcons.youtube, label: 'YouTube', d: 'M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.55 12 3.55 12 3.55s-7.5 0-9.38.5A3.02 3.02 0 0 0 .5 6.19 31.6 31.6 0 0 0 0 12a31.6 31.6 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.88.5 9.38.5 9.38.5s7.5 0 9.38-.5a3.02 3.02 0 0 0 2.12-2.14A31.6 31.6 0 0 0 24 12a31.6 31.6 0 0 0-.5-5.81ZM9.55 15.57V8.43L15.82 12l-6.27 3.57Z' },
+    };
+    const mgSocialEntries = Object.entries(mgSocialIcons).filter(([, v]) => Boolean(v.href));
+    return (
+      <footer dir={theme.direction} className="border-t border-[#e8e8e8] bg-white">
+        <div className="mx-auto flex max-w-[1100px] flex-col items-center gap-3 px-4 py-6 md:flex-row md:justify-between md:px-6">
+          <p className="text-sm text-[#666]">{footerCopyrightText}</p>
+          <nav className="flex flex-wrap items-center justify-center gap-5">
+            {legalLinks.map((link) => (
+              <Link key={link.label} to={link.to} reloadDocument={shouldForceDocumentNavigation} className="text-sm text-[#19212B] hover:underline">
+                {link.label}
+              </Link>
+            ))}
+          </nav>
+          {mgSocialEntries.length ? (
+            <div className="flex items-center gap-3">
+              {mgSocialEntries.map(([key, v]) => (
+                <a key={key} href={v.href} target="_blank" rel="noopener noreferrer" aria-label={v.label} className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-[#f1f1f1] text-[#19212B] transition-colors hover:bg-[#19212B] hover:text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d={v.d} /></svg>
+                </a>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      </footer>
+    );
+  }
 
   if (isButcherAtelierFooter) {
     return (
@@ -4423,7 +4561,7 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
                         : `Follow us on ${social}`
                     }
                   >
-                    {social[0]?.toUpperCase()}
+                    {renderStorefrontSocialBrandIcon(social) ?? social[0]?.toUpperCase()}
                   </a>
                 ) : null,
               )}
@@ -4566,8 +4704,10 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
                           : `Follow us on ${social}`
                       }
                     >
-                      <span className="text-xs capitalize" aria-hidden="true">
-                        {social[0]?.toUpperCase()}
+                      <span className="inline-flex items-center justify-center" aria-hidden="true">
+                        {renderStorefrontSocialBrandIcon(social) ?? (
+                          <span className="text-xs capitalize">{social[0]?.toUpperCase()}</span>
+                        )}
                       </span>
                     </a>
                   ) : null,
@@ -4737,8 +4877,10 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
                       }
                     >
                       {renderVelaFooterIcon(social as 'facebook' | 'instagram' | 'youtube' | 'linkedin' | 'twitter' | 'tiktok' | 'snapchat' | 'whatsapp') ?? (
-                        <span className="text-xs capitalize" aria-hidden="true">
-                          {social[0]?.toUpperCase()}
+                        <span className="inline-flex items-center justify-center" aria-hidden="true">
+                          {renderStorefrontSocialBrandIcon(social) ?? (
+                            <span className="text-xs capitalize">{social[0]?.toUpperCase()}</span>
+                          )}
                         </span>
                       )}
                     </a>
@@ -4953,8 +5095,10 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
                           : `Follow us on ${social}`
                       }
                     >
-                      <span className="text-xs capitalize" aria-hidden="true">
-                        {social[0]?.toUpperCase()}
+                      <span className="inline-flex items-center justify-center" aria-hidden="true">
+                        {renderStorefrontSocialBrandIcon(social) ?? (
+                          <span className="text-xs capitalize">{social[0]?.toUpperCase()}</span>
+                        )}
                       </span>
                     </a>
                   ),
@@ -8477,6 +8621,14 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <Route
           path={scopedPath("pages/:pageSlug/*")}
           element={<DynamicStorefrontPage />}
+        />
+        <Route
+          path={scopedPath("articles/:slug")}
+          element={
+            <React.Suspense fallback={<div className="container py-20 text-center">جاري التحميل...</div>}>
+              <StorefrontArticlePage embedded />
+            </React.Suspense>
+          }
         />
         <Route
           path={scopedPath("returns")}

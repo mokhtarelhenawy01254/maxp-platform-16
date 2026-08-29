@@ -98,25 +98,43 @@ const handleReviewMediaUpload = (req, res, next) => {
 /**
  * ⭐ Public Routes للتقييمات والمراجعات
  * Mounted at /api/v1/public in server.js
+ *
+ * ⚠️ ملاحظة: الـ middlewares هنا مطبّقة على مستوى الـ routes وليس
+ * router.use — لأن الـ router متركّب على /api/v1/public بالكامل،
+ * وأي router.use(requireCompany) هنا كان بيمنع كل مسارات /api/v1/public/*
+ * التانية المركّبة بعده (زي affiliates و platform) لو الشركة مش متحددة.
  */
 
-router.use(extractSubdomainMiddleware);
-router.use(requireCompany);
+const withCompanyContext = [extractSubdomainMiddleware, requireCompany];
 
 // Get product reviews (Public)
-router.get('/products/:productId/reviews', productReviewController.getProductReviews);
+router.get(
+  '/products/:productId/reviews',
+  ...withCompanyContext,
+  productReviewController.getProductReviews,
+);
 
 // Create review (Public)
 router.post(
   '/products/:productId/reviews',
+  ...withCompanyContext,
   handleReviewMediaUpload,
   productReviewController.createReview,
 );
 
 // Subscribe to back in stock alerts (Public)
-router.post('/products/:productId/back-in-stock', backInStockController.subscribe);
+router.post(
+  '/products/:productId/back-in-stock',
+  ...withCompanyContext,
+  backInStockController.subscribe,
+);
 
 // Mark review as helpful (Public)
-router.put('/reviews/:reviewId/helpful', productReviewController.markHelpful);
+router.put(
+  '/reviews/:reviewId/helpful',
+  ...withCompanyContext,
+  productReviewController.markHelpful,
+);
+
 
 module.exports = router;

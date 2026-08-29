@@ -265,59 +265,79 @@ const sendPopupResponse = (res, data) => {
     <button id="close-btn" class="btn" style="display: none;">إغلاق النافذة</button>
   </div>
 
-  <script>
-    const data = ${JSON.stringify(message)};
-    const isSuccess = data.success === true;
-    
-    try {
-      const targetWindow = window.opener || window.parent;
-      if (targetWindow) {
-        targetWindow.postMessage(data, "*");
-      }
-    } catch (e) {
-      console.error("Failed to post message", e);
-    }
-
-    setTimeout(() => {
-      window.close();
-    }, 1500);
-
-    const statusIcon = document.getElementById("status-icon");
-    const statusTitle = document.getElementById("status-title");
-    const statusDesc = document.getElementById("status-desc");
-    const closeBtn = document.getElementById("close-btn");
-
-    if (isSuccess) {
-      statusIcon.className = "icon-wrapper success-bg";
-      statusIcon.innerHTML = \`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>\`;
-      statusTitle.textContent = "تم الربط بنجاح";
-      statusDesc.textContent = "تم ربط حسابك فيسبوك بالمنصة بنجاح. سيتم إغلاق هذه النافذة تلقائياً.";
-      closeBtn.className = "btn btn-primary";
-      closeBtn.style.display = "block";
-    } else {
-      statusIcon.className = "icon-wrapper error-bg";
-      statusIcon.innerHTML = \`<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>\`;
-      statusTitle.textContent = "فشل الربط";
-      
-      let errorMsg = data.error || "حدث خطأ غير معروف أثناء الاتصال";
-      if (errorMsg === "state_expired") {
-        errorMsg = "انتهت صلاحية جلسة الربط لمرور أكثر من 10 دقائق. يرجى إعادة المحاولة من الإعدادات.";
-      } else if (errorMsg === "no_company_id") {
-        errorMsg = "معرف الشركة مفقود أو غير صالح.";
-      }
-      
-      statusDesc.textContent = errorMsg;
-      closeBtn.className = "btn btn-secondary";
-      closeBtn.style.display = "block";
-    }
-
-    closeBtn.addEventListener("click", () => {
-      window.close();
-    });
-  </script>
+  <script type="application/json" id="fb-oauth-result">${JSON.stringify(message).replace(/</g, "\\u003c")}</script>
+  <script src="/api/v1/facebook-oauth/popup-close.js"></script>
 </body>
 </html>`);
 };
+
+// سكربت خارجي same-origin — CSP بتمنع السكربتات الـ inline في صفحة البوب أب،
+// و'script-src self' بيسمح بالملفات من نفس النطاق فقط
+router.get("/popup-close.js", (req, res) => {
+  res.setHeader("Content-Type", "application/javascript; charset=utf-8");
+  res.setHeader("Cache-Control", "no-store");
+  res.send(`(function () {
+  var block = document.getElementById("fb-oauth-result");
+  var data = {};
+  try {
+    data = JSON.parse(block ? block.textContent : "{}");
+  } catch (e) {
+    data = {};
+  }
+  data.type = "facebook-oauth-callback";
+  var isSuccess = data.success === true;
+
+  try {
+    var targetWindow = window.opener || window.parent;
+    if (targetWindow) {
+      targetWindow.postMessage(data, "*");
+    }
+  } catch (e) {
+    console.error("Failed to post message", e);
+  }
+
+  if (isSuccess) {
+    setTimeout(function () {
+      window.close();
+    }, 1500);
+  }
+
+  var statusIcon = document.getElementById("status-icon");
+  var statusTitle = document.getElementById("status-title");
+  var statusDesc = document.getElementById("status-desc");
+  var closeBtn = document.getElementById("close-btn");
+
+  if (isSuccess) {
+    statusIcon.className = "icon-wrapper success-bg";
+    statusIcon.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+    statusTitle.textContent = "تم الربط بنجاح";
+    statusDesc.textContent = "تم ربط حسابك فيسبوك بالمنصة بنجاح. سيتم إغلاق هذه النافذة تلقائياً.";
+    closeBtn.className = "btn btn-primary";
+    closeBtn.style.display = "block";
+  } else {
+    statusIcon.className = "icon-wrapper error-bg";
+    statusIcon.innerHTML = '<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+    statusTitle.textContent = "فشل الربط";
+
+    var errorMsg = data.error || "حدث خطأ غير معروف أثناء الاتصال";
+    if (errorMsg === "state_expired") {
+      errorMsg = "انتهت صلاحية جلسة الربط لمرور أكثر من 10 دقائق. يرجى إعادة المحاولة من الإعدادات.";
+    } else if (errorMsg === "no_company_id") {
+      errorMsg = "معرف الشركة مفقود أو غير صالح.";
+    } else if (errorMsg === "invalid_state") {
+      errorMsg = "جلسة الربط غير صالحة أو منتهية. يرجى إعادة المحاولة من الإعدادات.";
+    }
+
+    statusDesc.textContent = errorMsg;
+    closeBtn.className = "btn btn-secondary";
+    closeBtn.style.display = "block";
+  }
+
+  closeBtn.addEventListener("click", function () {
+    window.close();
+  });
+})();`);
+});
 
 const sendCallbackRedirect = (res, popup, baseUrl, type, params) => {
   if (popup) {
@@ -609,16 +629,20 @@ const resolveOAuthCallbackContext = (state, fallbackType) => {
 };
 
 // Facebook OAuth Scopes - Pages/Messenger (بدون business_management عشان المستخدم يقدر يختار الصفحات)
+// بدون pages_read_engagement — Advanced Access غير معتمد في التطبيق حاليًا،
+// وطلبه من فيسبوك كان بيمنع الصفحات اللي محتاجته من الظهور في /me/accounts.
+// (يُضاف لاحقًا عند تفعيل الكومنتات/المنشورات بعد App Review)
 const FACEBOOK_PAGE_SCOPES =
-  "public_profile,email,pages_show_list,pages_manage_posts,pages_read_engagement,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_read_user_content,pages_manage_engagement";
+  "public_profile,email,pages_show_list,pages_manage_posts,pages_manage_metadata,pages_messaging,instagram_basic,instagram_manage_comments,instagram_manage_messages,pages_read_user_content,pages_manage_engagement";
 
 // Facebook OAuth Scopes - Pixel/Ads (بـ business_management للوصول للأعمال)
 const FACEBOOK_PIXEL_SCOPES =
   "business_management,ads_management,ads_read";
 
 // Facebook OAuth Scopes - Isolated Ads connection
+// pages_show_list + pages_manage_ads مطلوبة لإنشاء Ad Creative يشير للصفحة
 const FACEBOOK_ADS_SCOPES =
-  "business_management,ads_management,ads_read";
+  "business_management,ads_management,ads_read,pages_show_list,pages_read_engagement,pages_manage_ads";
 
 router.get(
   "/config",
@@ -685,6 +709,71 @@ router.post(
   },
 );
 
+/**
+ * فك صفحة عالقة مربوطة بشركة أخرى — سوبر أدمن فقط
+ * POST /api/v1/facebook-oauth/force-disconnect-page
+ * يفك ارتباط الصفحة من شركتها الحالية (مع إلغاء اشتراك الويب هوك)
+ * حتى يستطيع مالكها ربطها بالشركة الصحيحة.
+ */
+router.post(
+  "/force-disconnect-page",
+  authenticateToken,
+  requireSuperAdmin,
+  async (req, res) => {
+    try {
+      const { pageId } = req.body;
+
+      if (!pageId) {
+        return res.status(400).json({
+          success: false,
+          message: "Page ID مطلوب",
+        });
+      }
+
+      const page = await getSharedPrismaClient().facebookPage.findUnique({
+        where: { pageId },
+        select: {
+          id: true,
+          pageId: true,
+          pageName: true,
+          companyId: true,
+          status: true,
+        },
+      });
+
+      if (!page) {
+        return res.status(404).json({
+          success: false,
+          message: "الصفحة غير موجودة على المنصة",
+        });
+      }
+
+      const { disconnectedPages } = await disconnectCompanyFacebookPages({
+        companyId: page.companyId,
+        pageIds: [page.id],
+      });
+
+      await getSharedPrismaClient().skippedFacebookPage.updateMany({
+        where: { pageId, isResolved: false },
+        data: { isResolved: true, resolvedAt: new Date() },
+      });
+
+      return res.json({
+        success: true,
+        disconnectedPages,
+        message: `تم فك ربط "${page.pageName}" من الشركة السابقة — يمكن ربطها الآن من الشركة الصحيحة`,
+      });
+    } catch (error) {
+      console.error("❌ Error force-disconnecting Facebook page:", error);
+      return res.status(500).json({
+        success: false,
+        message: "فشل فك ربط الصفحة",
+        error: error.message,
+      });
+    }
+  },
+);
+
 // 🎯 NEW: Function to subscribe page to app webhooks
 const subscribePageToApp = async (pageId, pageAccessToken) => {
   try {
@@ -698,6 +787,7 @@ const subscribePageToApp = async (pageId, pageAccessToken) => {
           access_token: pageAccessToken,
           subscribed_fields: FACEBOOK_PAGE_WEBHOOK_FIELDS,
         },
+        timeout: 10000,
       },
     );
 
@@ -722,6 +812,7 @@ const checkPageSubscription = async (pageId, pageAccessToken) => {
       `${FACEBOOK_GRAPH_API_BASE_URL}/${pageId}/subscribed_apps`,
       {
         params: { access_token: pageAccessToken },
+        timeout: 10000,
       },
     );
 
@@ -747,6 +838,44 @@ const ensurePageWebhookSubscription = async (pageId, pageAccessToken) => {
   }
 
   return subscribePageToApp(pageId, pageAccessToken);
+};
+
+// 🔄 تحويل التوكِن القصير (~ساعة) إلى توكِن طويل العمر (~60 يوم) —
+// توكِنات الصفحات المشتقة من التوكِن الطويل تبقى دائمة ولا تنقطع بعد ساعات
+const exchangeForLongLivedFacebookToken = async (shortLivedToken) => {
+  if (!shortLivedToken) {
+    return shortLivedToken;
+  }
+
+  const { appId, appSecret } = getFacebookOAuthConfig();
+  try {
+    const response = await axios.get(
+      `${FACEBOOK_GRAPH_API_BASE_URL}/oauth/access_token`,
+      {
+        params: {
+          grant_type: "fb_exchange_token",
+          client_id: appId,
+          client_secret: appSecret,
+          fb_exchange_token: shortLivedToken,
+        },
+        timeout: 15000,
+      },
+    );
+
+    const longLivedToken = response.data?.access_token;
+    if (typeof longLivedToken === "string" && longLivedToken) {
+      console.log("✅ [FACEBOOK-OAUTH] Exchanged short-lived token for long-lived token");
+      return longLivedToken;
+    }
+
+    return shortLivedToken;
+  } catch (error) {
+    console.warn(
+      "⚠️ [FACEBOOK-OAUTH] Long-lived token exchange failed, keeping short-lived:",
+      error.response?.data?.error?.message || error.message,
+    );
+    return shortLivedToken;
+  }
 };
 
 const loadCompanyFacebookPages = async (
@@ -1477,15 +1606,11 @@ router.get("/callback", async (req, res) => {
     const timestamp = callbackStateData.ts || callbackStateData.timestamp;
     const type = callbackStateData.type || callbackRedirectType;
 
-    // 🔐 Isolated Ads flow: reject unsigned/forged states BEFORE token exchange.
-    // Ads state is HMAC-signed; page/pixel legacy states may lack a valid
-    // signature, so only ads states are hard-rejected here.
-    if (type === "ads" && callbackHmacValid !== true) {
-      console.error(
-        "❌ [ADS] Rejected unsigned or forged ads OAuth state",
-        callbackHmacValid,
-      );
-      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, "ads", {
+    // 🔐 All flows: reject unsigned/forged states BEFORE token exchange.
+    // كل المسارات (page/pixel/ads) بتبني state موقّع HMAC ومعاه timestamp.
+    if (callbackHmacValid !== true) {
+      console.error("❌ [FACEBOOK-OAUTH] Rejected unsigned or forged OAuth state");
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
         error: "invalid_state",
       });
     }
@@ -1497,17 +1622,20 @@ router.get("/callback", async (req, res) => {
       });
     }
 
-    if (timestamp) {
-      const stateAge = Date.now() - timestamp;
-      const maxStateAge = 10 * 60 * 1000; // 10 minutes
-      if (stateAge > maxStateAge) {
-        console.error("❌ State expired");
-        return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
-          error: "state_expired",
-        });
-      }
-    } else {
-      console.warn("⚠️ [FACEBOOK-OAUTH] No timestamp found in state to validate expiration");
+    if (!timestamp) {
+      console.error("❌ [FACEBOOK-OAUTH] State has no timestamp");
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        error: "invalid_state",
+      });
+    }
+
+    const stateAge = Date.now() - timestamp;
+    const maxStateAge = 10 * 60 * 1000; // 10 minutes
+    if (stateAge > maxStateAge) {
+      console.error("❌ State expired");
+      return sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
+        error: "state_expired",
+      });
     }
 
     const company = await getSharedPrismaClient().company.findUnique({
@@ -1531,10 +1659,13 @@ router.get("/callback", async (req, res) => {
           redirect_uri: getFacebookRedirectUri("page"),
           code: code,
         },
+        timeout: 15000,
       },
     );
 
-    const { access_token: userAccessToken, expires_in } = tokenResponse.data;
+    const { access_token: shortLivedToken, expires_in } = tokenResponse.data;
+    // 🔄 تحويل فوري لتوكِن طويل العمر قبل أي استخدام أو تخزين
+    const userAccessToken = await exchangeForLongLivedFacebookToken(shortLivedToken);
     console.log("✅ Got user access token");
 
     // 🔗 Resolve the Facebook user identity so every page links to the
@@ -1690,152 +1821,195 @@ router.get("/callback", async (req, res) => {
       });
     }
 
-    // 🚀 NEW: Background processing for high volumes to avoid timeouts
+    // حفظ الصفحات وكشف المتخطاة قبل إرسال الرد حتى تصل النتيجة الحقيقية
+    // للمستخدم لحظة إغلاق البوب أب (مش بعد ساعة)
+    const savedPages = [];
+    const skippedPages = [];
+
+    // 🔗 Upsert the Facebook account connection so every page fetched in
+    // this OAuth session is refreshable from THIS account's token even
+    // after other accounts connect to the same company.
+    let accountConnectionId = null;
+    if (facebookUserId) {
+      try {
+        const accountConnection =
+          await getSharedPrismaClient().facebookAccountConnection.upsert({
+            where: {
+              companyId_facebookUserId: { companyId, facebookUserId },
+            },
+            update: {
+              accessToken: userAccessToken,
+              facebookUserName: facebookUserName || undefined,
+              facebookUserEmail: facebookUserEmail || undefined,
+              status: "connected",
+              lastSyncedAt: new Date(),
+              connectedByUserId: userId || undefined,
+              updatedAt: new Date(),
+            },
+            create: {
+              companyId,
+              facebookUserId,
+              facebookUserName,
+              facebookUserEmail,
+              accessToken: userAccessToken,
+              status: "connected",
+              connectedByUserId: userId || null,
+              connectedAt: new Date(),
+              updatedAt: new Date(),
+            },
+          });
+        accountConnectionId = accountConnection.id;
+        console.log(
+          `✅ [OAUTH] Account connection ready for ${facebookUserName} (${facebookUserId}): ${accountConnectionId}`,
+        );
+      } catch (accountError) {
+        console.warn(
+          "⚠️ [OAUTH] Could not save Facebook account connection:",
+          accountError.message,
+        );
+      }
+    }
+    const accountLink = accountConnectionId
+      ? { facebookAccountId: accountConnectionId }
+      : {};
+
+    // 🔍 Fetch existing pages from DB to check for company ownership
+    const existingPages =
+      await getSharedPrismaClient().facebookPage.findMany({
+        where: {
+          pageId: { in: allPages.map((p) => p.id) },
+        },
+      });
+    const existingPagesMap = new Map(
+      existingPages.map((p) => [p.pageId, p]),
+    );
+
+    for (const page of allPages) {
+      try {
+        const existingPageInDB = existingPagesMap.get(page.id);
+
+        // 🚫 لا نمنع الربط إلا إذا كانت الصفحة connected فعلياً لدى شركة أخرى.
+        // إذا كان السجل القديم disconnected، نسمح بإعادة ربطها للشركة الحالية.
+        const isConnectedToAnotherCompany = Boolean(
+          existingPageInDB &&
+          existingPageInDB.companyId &&
+          existingPageInDB.companyId !== companyId &&
+          existingPageInDB.status === "connected",
+        );
+
+        if (isConnectedToAnotherCompany) {
+          skippedPages.push({
+            pageId: page.id,
+            pageName: page.name,
+            reason: "already_connected_to_another_company",
+            connectedCompanyId: existingPageInDB.companyId,
+            attemptedCompanyId: companyId,
+          });
+          continue;
+        }
+
+        // Update or Create page
+        if (existingPageInDB && existingPageInDB.companyId === companyId) {
+          await getSharedPrismaClient().facebookPage.update({
+            where: { pageId: page.id },
+            data: {
+              pageAccessToken: page.access_token,
+              pageName: page.name,
+              status: "connected",
+              connectedAt: new Date(),
+              disconnectedAt: null,
+              ...accountLink,
+            },
+          });
+        } else {
+          await getSharedPrismaClient().facebookPage.upsert({
+            where: { pageId: page.id },
+            update: {
+              pageAccessToken: page.access_token,
+              pageName: page.name,
+              status: "connected",
+              connectedAt: new Date(),
+              disconnectedAt: null,
+              companyId: companyId,
+              ...accountLink,
+            },
+            create: {
+              id: uuidv4(),
+              pageId: page.id,
+              pageName: page.name,
+              pageAccessToken: page.access_token,
+              status: "connected",
+              connectedAt: new Date(),
+              updatedAt: new Date(),
+              company: { connect: { id: companyId } },
+              ...accountLink,
+            },
+          });
+        }
+
+        savedPages.push({
+          pageId: page.id,
+          pageAccessToken: page.access_token,
+        });
+      } catch (pageError) {
+        console.error(
+          `❌ [OAUTH] Error processing page ${page.name}:`,
+          pageError.message,
+        );
+      }
+    }
+
+    // Save skipped pages record
+    if (skippedPages.length > 0) {
+      try {
+        await getSharedPrismaClient().skippedFacebookPage.createMany({
+          data: skippedPages.map((sp) => ({
+            pageId: sp.pageId,
+            pageName: sp.pageName,
+            reason: sp.reason,
+            attemptedCompanyId: sp.attemptedCompanyId,
+            connectedToCompanyId: sp.connectedCompanyId,
+            isResolved: false,
+            updatedAt: new Date(),
+          })),
+          skipDuplicates: true,
+        });
+      } catch (skipError) {
+        console.error(
+          `❌ [OAUTH] Error saving skipped pages:`,
+          skipError.message,
+        );
+      }
+    }
+
     sendCallbackRedirect(res, isPopup, callbackRedirectBaseUrl, type, {
       success: true,
-      pages: allPages.length,
-      isProcessing: allPages.length > 10,
+      pages: savedPages.length,
+      skipped: skippedPages.length,
+      skippedPages: skippedPages.map((sp) => ({
+        pageId: sp.pageId,
+        pageName: sp.pageName,
+        reason: sp.reason,
+      })),
       companyId,
     });
 
-    // Process pages in background (capturing necessary data in closure)
+    // المعالجة البطيئة (اشتراكات الويب هوك + بيانات إنستجرام) بالتوازي في الخلفية
     setImmediate(async () => {
       try {
-        const savedPages = [];
-        const skippedPages = [];
-
-        // 🔗 Upsert the Facebook account connection so every page fetched in
-        // this OAuth session is refreshable from THIS account's token even
-        // after other accounts connect to the same company.
-        let accountConnectionId = null;
-        if (facebookUserId) {
-          try {
-            const accountConnection =
-              await getSharedPrismaClient().facebookAccountConnection.upsert({
-                where: {
-                  companyId_facebookUserId: { companyId, facebookUserId },
-                },
-                update: {
-                  accessToken: userAccessToken,
-                  facebookUserName: facebookUserName || undefined,
-                  facebookUserEmail: facebookUserEmail || undefined,
-                  status: "connected",
-                  lastSyncedAt: new Date(),
-                  connectedByUserId: userId || undefined,
-                  updatedAt: new Date(),
-                },
-                create: {
-                  companyId,
-                  facebookUserId,
-                  facebookUserName,
-                  facebookUserEmail,
-                  accessToken: userAccessToken,
-                  status: "connected",
-                  connectedByUserId: userId || null,
-                  connectedAt: new Date(),
-                  updatedAt: new Date(),
-                },
-              });
-            accountConnectionId = accountConnection.id;
-            console.log(
-              `✅ [BG-OAuth] Account connection ready for ${facebookUserName} (${facebookUserId}): ${accountConnectionId}`,
-            );
-          } catch (accountError) {
-            console.warn(
-              "⚠️ [BG-OAuth] Could not save Facebook account connection:",
-              accountError.message,
-            );
-          }
-        }
-        const accountLink = accountConnectionId
-          ? { facebookAccountId: accountConnectionId }
-          : {};
-
-        // 🔍 Fetch existing pages from DB to check for company ownership
-        const existingPages =
-          await getSharedPrismaClient().facebookPage.findMany({
-            where: {
-              pageId: { in: allPages.map((p) => p.id) },
-            },
-          });
-        const existingPagesMap = new Map(
-          existingPages.map((p) => [p.pageId, p]),
-        );
-
-        for (const page of allPages) {
-          try {
-            const existingPageInDB = existingPagesMap.get(page.id);
-
-            // 🚫 لا نمنع الربط إلا إذا كانت الصفحة connected فعلياً لدى شركة أخرى.
-            // إذا كان السجل القديم disconnected، نسمح بإعادة ربطها للشركة الحالية.
-            const isConnectedToAnotherCompany = Boolean(
-              existingPageInDB &&
-              existingPageInDB.companyId &&
-              existingPageInDB.companyId !== companyId &&
-              existingPageInDB.status === "connected",
-            );
-
-            if (isConnectedToAnotherCompany) {
-              skippedPages.push({
-                pageId: page.id,
-                pageName: page.name,
-                reason: "already_connected_to_another_company",
-                connectedCompanyId: existingPageInDB.companyId,
-                attemptedCompanyId: companyId,
-              });
-              continue;
-            }
-
-            // Update or Create page
-            if (existingPageInDB && existingPageInDB.companyId === companyId) {
-              await getSharedPrismaClient().facebookPage.update({
-                where: { pageId: page.id },
-                data: {
-                  pageAccessToken: page.access_token,
-                  pageName: page.name,
-                  status: "connected",
-                  connectedAt: new Date(),
-                  disconnectedAt: null,
-                  ...accountLink,
-                },
-              });
-            } else {
-              await getSharedPrismaClient().facebookPage.upsert({
-                where: { pageId: page.id },
-                update: {
-                  pageAccessToken: page.access_token,
-                  pageName: page.name,
-                  status: "connected",
-                  connectedAt: new Date(),
-                  disconnectedAt: null,
-                  companyId: companyId,
-                  ...accountLink,
-                },
-                create: {
-                  id: uuidv4(),
-                  pageId: page.id,
-                  pageName: page.name,
-                  pageAccessToken: page.access_token,
-                  status: "connected",
-                  connectedAt: new Date(),
-                  updatedAt: new Date(),
-                  company: { connect: { id: companyId } },
-                  ...accountLink,
-                },
-              });
-            }
-
+        await Promise.all(
+          savedPages.map(async (page) => {
             // Subscribe to webhooks (Facebook Messenger)
-            subscribePageToApp(page.id, page.access_token).catch(() => { });
+            subscribePageToApp(page.pageId, page.pageAccessToken).catch(() => { });
 
             // 🆕 Fetch and store linked Instagram Business Account
             try {
               const igResponse = await axios.get(
-                `${FACEBOOK_GRAPH_API_BASE_URL}/${page.id}`,
+                `${FACEBOOK_GRAPH_API_BASE_URL}/${page.pageId}`,
                 {
                   params: {
                     fields: "instagram_business_account",
-                    access_token: page.access_token,
+                    access_token: page.pageAccessToken,
                   },
                   timeout: 10000,
                 },
@@ -1850,7 +2024,7 @@ router.get("/callback", async (req, res) => {
                     {
                       params: {
                         fields: "name,username",
-                        access_token: page.access_token,
+                        access_token: page.pageAccessToken,
                       },
                       timeout: 10000,
                     },
@@ -1859,13 +2033,13 @@ router.get("/callback", async (req, res) => {
                 } catch (_) { /* ignore */ }
 
                 await getSharedPrismaClient().facebookPage.update({
-                  where: { pageId: page.id },
+                  where: { pageId: page.pageId },
                   data: {
                     instagramAccountId: igAccountId,
                     instagramAccountName: igAccountName,
                   },
                 });
-                console.log(`📸 [BG-OAuth] Linked Instagram account ${igAccountId} (${igAccountName}) to page ${page.name}`);
+                console.log(`📸 [BG-OAuth] Linked Instagram account ${igAccountId} (${igAccountName}) to page ${page.pageId}`);
 
                 // Subscribe Instagram account to webhooks for DM delivery
                 try {
@@ -1875,7 +2049,7 @@ router.get("/callback", async (req, res) => {
                     {
                       params: {
                         subscribed_fields: "messages,messaging_seen",
-                        access_token: page.access_token,
+                        access_token: page.pageAccessToken,
                       },
                       timeout: 10000,
                     },
@@ -1886,40 +2060,12 @@ router.get("/callback", async (req, res) => {
                 }
               }
             } catch (igError) {
-              console.warn(`⚠️ [BG-OAuth] Could not fetch Instagram account for page ${page.name}:`, igError.message);
+              console.warn(`⚠️ [BG-OAuth] Could not fetch Instagram account for page ${page.pageId}:`, igError.message);
             }
-          } catch (pageError) {
-            console.error(
-              `❌ [BG-OAuth] Error processing page ${page.name}:`,
-              pageError.message,
-            );
-          }
-        }
-
-        // Save skipped pages record
-        if (skippedPages.length > 0) {
-          try {
-            await getSharedPrismaClient().skippedFacebookPage.createMany({
-              data: skippedPages.map((sp) => ({
-                pageId: sp.pageId,
-                pageName: sp.pageName,
-                reason: sp.reason,
-                attemptedCompanyId: sp.attemptedCompanyId,
-                connectedToCompanyId: sp.connectedCompanyId,
-                isResolved: false,
-                updatedAt: new Date(),
-              })),
-              skipDuplicates: true,
-            });
-          } catch (skipError) {
-            console.error(
-              `❌ [BG-OAuth] Error saving skipped pages:`,
-              skipError.message,
-            );
-          }
-        }
+          }),
+        );
         console.log(
-          `✅ [BG-OAuth] Finished background processing for ${allPages.length} pages.`,
+          `✅ [BG-OAuth] Finished background processing for ${savedPages.length} pages.`,
         );
       } catch (fatalBgError) {
         console.error(
@@ -2451,6 +2597,14 @@ router.get("/debug", verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
+    // Verify user has access to this company
+    if (req.user.companyId !== companyId && req.user.role !== "SUPER_ADMIN") {
+      return res.status(403).json({
+        success: false,
+        error: "Unauthorized access to company",
+      });
+    }
+
     const allPages = await getSharedPrismaClient().facebookPage.findMany({
       where: {
         company: {
@@ -2586,6 +2740,7 @@ router.get("/pixel-callback", async (req, res) => {
       redirectBaseUrl: resolvedRedirectBaseUrl,
       redirectType: resolvedRedirectType,
       stateData: callbackStateData,
+      hmacValid: callbackHmacValid,
     } = resolveOAuthCallbackContext(state, "pixel");
 
     if (resolvedRedirectBaseUrl) callbackRedirectBaseUrl = resolvedRedirectBaseUrl;
@@ -2666,19 +2821,34 @@ router.get("/pixel-callback", async (req, res) => {
       );
     }
 
-    if (timestamp) {
-      const stateAge = Date.now() - timestamp;
-      const maxStateAge = 10 * 60 * 1000; // 10 minutes
-      if (stateAge > maxStateAge) {
-        console.error("❌ [PIXELS] State expired");
-        return res.redirect(
-          buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
-            error: "state_expired",
-          }),
-        );
-      }
-    } else {
-      console.warn("⚠️ [PIXELS] No timestamp found in state to validate expiration");
+    // 🔐 رفض الـ state غير الموقّع أو المزوّر قبل تبادل الكود
+    if (callbackHmacValid !== true) {
+      console.error("❌ [PIXELS] Rejected unsigned or forged OAuth state");
+      return res.redirect(
+        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
+          error: "invalid_state",
+        }),
+      );
+    }
+
+    if (!timestamp) {
+      console.error("❌ [PIXELS] State has no timestamp");
+      return res.redirect(
+        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
+          error: "invalid_state",
+        }),
+      );
+    }
+
+    const pixelStateAge = Date.now() - timestamp;
+    const pixelMaxStateAge = 10 * 60 * 1000; // 10 minutes
+    if (pixelStateAge > pixelMaxStateAge) {
+      console.error("❌ [PIXELS] State expired");
+      return res.redirect(
+        buildFacebookFrontendRedirectUrl(callbackRedirectBaseUrl, type, {
+          error: "state_expired",
+        }),
+      );
     }
 
     const company = await getSharedPrismaClient().company.findUnique({
@@ -2706,10 +2876,13 @@ router.get("/pixel-callback", async (req, res) => {
           redirect_uri: pixelRedirectUri,
           code: code,
         },
+        timeout: 15000,
       },
     );
 
-    const { access_token: pixelAccessToken } = tokenResponse.data;
+    const { access_token: pixelShortLivedToken } = tokenResponse.data;
+    // 🔄 تحويل فوري لتوكِن طويل العمر قبل التخزين
+    const pixelAccessToken = await exchangeForLongLivedFacebookToken(pixelShortLivedToken);
     console.log("✅ [PIXELS] Got user access token for Pixels");
 
     // 💾 حفظ Pixel Access Token في Company (منفصل عن facebookUserAccessToken)

@@ -22,6 +22,9 @@ interface OrderActivityLogProps {
   deletingNote: boolean;
   canAddNote?: boolean;
   currentUserId?: string;
+  /** 🛡️ (custom-status-persist): UPPER(code) → الاسم المعرّف (العربي) — لحالات
+   *  مخصصة مش عند الـ i18n، عشان السجل يعرض الاسم مش الكود الخام. */
+  statusNameMap?: Record<string, string>;
 }
 
 interface ActivityItem {
@@ -69,6 +72,7 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
   deletingNote,
   canAddNote = true,
   currentUserId,
+  statusNameMap,
 }) => {
   const { t } = useTranslation();
   const { formatDateTime } = useDateFormat();
@@ -166,7 +170,11 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
       } else if (isTrash) {
         actionText = t("orderDetails.orderTrashed");
       } else {
-        actionText = t("orderDetails.statusChangeTo", { status: h.status });
+        // 🛡️ (custom-status-persist): اسم الحالة المعرّف لو موجودة (خصيصًا للحالات
+        // المخصصة) — وإلا الكود كما هو (الحالات النظامية بيترجمها الـ i18n عند العرض).
+        const statusLabel =
+          statusNameMap?.[String(h.status || "").trim().toUpperCase()] || h.status;
+        actionText = t("orderDetails.statusChangeTo", { status: statusLabel });
       }
 
       return {
@@ -211,7 +219,7 @@ const OrderActivityLog: React.FC<OrderActivityLogProps> = ({
 
     return [...statusActivities, ...noteActivities, ...scheduledActivities]
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [order, t]);
+  }, [order, t, statusNameMap, canModifyNote, formatScheduledDateTime]);
 
   const activities = useMemo(() => {
     if (filter === "status") return rawActivities.filter((a) => a.type === "status");

@@ -1,0 +1,77 @@
+- generic [ref=f22e7]:
+  - generic [ref=f22e10]:
+    - generic [ref=f22e12]:
+      - generic [ref=f22e13]:
+        - link [ref=f22e15] [cursor=pointer]:
+          - /url: /company-dashboard
+          - img "MAX-P" [ref=f22e16]
+        - generic [ref=f22e17]:
+          - button "sidebar.myAccountSection" [ref=f22e18] [cursor=pointer]
+          - button "sidebar.companyManagementSection" [ref=f22e25] [cursor=pointer]
+          - button "sidebar.marketplace" [ref=f22e31] [cursor=pointer]
+          - button "sidebar.settingsSection" [ref=f22e37] [cursor=pointer]
+      - generic [ref=f22e43]:
+        - generic [ref=f22e44]:
+          - link [ref=f22e46] [cursor=pointer]:
+            - /url: /company-dashboard
+            - img "MAX-P" [ref=f22e47]
+            - generic [ref=f22e48]:
+              - heading "m22" [level=2] [ref=f22e49]
+              - paragraph [ref=f22e50]: sidebar.myAccountSection
+          - button "sidebar.collapse" [ref=f22e51] [cursor=pointer]
+        - generic [ref=f22e54]:
+          - generic [ref=f22e55]: sidebar.searchInMenu
+          - textbox "sidebar.searchInMenu" [ref=f22e56]:
+            - /placeholder: sidebar.search
+        - generic [ref=f22e57]:
+          - link "sidebar.myDashboard" [ref=f22e59] [cursor=pointer]:
+            - /url: /my-dashboard
+          - link "sidebar.myProfile" [ref=f22e65] [cursor=pointer]:
+            - /url: /profile
+          - link "sidebar.myActivity" [ref=f22e73] [cursor=pointer]:
+            - /url: /my-activity
+    - generic [ref=f22e79]:
+      - banner [ref=f22e80]:
+        - generic [ref=f22e82]:
+          - generic [ref=f22e83]:
+            - button "تبديل للوضع الليلي" [ref=f22e84] [cursor=pointer]
+            - button "Change language" [ref=f22e86] [cursor=pointer]:
+              - generic [ref=f22e87]: ar
+            - button "الإشعارات" [ref=f22e89] [cursor=pointer]
+            - link "header.whatsapp" [ref=f22e93] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+          - button "sidebar.profile CS" [ref=f22e98]:
+            - generic [ref=f22e99]: CS
+            - generic [ref=f22e100]:
+              - generic [ref=f22e101]: Codex
+              - generic [ref=f22e102]: OWNER
+      - main [ref=f22e105]:
+        - generic [ref=f22e106]:
+          - generic [ref=f22e108]:
+            - heading "returns.k_160" [level=1] [ref=f22e109]
+            - paragraph [ref=f22e110]: returns.k_161
+          - generic [ref=f22e111]:
+            - button "returns.k_162" [ref=f22e112]
+            - button "returns.k_163" [active] [ref=f22e116]
+          - button "returns.k_172" [ref=f22e436]
+          - generic [ref=f22e439]:
+            - generic [ref=f22e440]:
+              - generic [ref=f22e441]:
+                - heading "returns.k_173" [level=2] [ref=f22e442]
+                - button "returns.k_174" [ref=f22e445]
+              - generic [ref=f22e446]: returns.k_175
+            - generic [ref=f22e448]:
+              - generic [ref=f22e449]:
+                - heading "returns.k_176" [level=2] [ref=f22e450]
+                - button "returns.k_177" [ref=f22e453]
+              - table [ref=f22e455]:
+                - rowgroup [ref=f22e456]:
+                  - row [ref=f22e457]:
+                    - columnheader "returns.k_57" [ref=f22e458]
+                    - columnheader "returns.k_178" [ref=f22e459]
+                    - columnheader "returns.k_61" [ref=f22e460]
+                    - columnheader "returns.k_67" [ref=f22e461]
+                - rowgroup [ref=f22e462]:
+                  - row [ref=f22e463]:
+                    - cell "returns.k_179" [ref=f22e464]
+  - region "Notifications alt+T"

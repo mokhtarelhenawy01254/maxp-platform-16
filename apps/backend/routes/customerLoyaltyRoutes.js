@@ -235,4 +235,38 @@ router.put('/points/settings',
   customerLoyaltyController.updatePointsSettings
 );
 
+// 🎯 إعدادات إعادة الاستهداف (حد السكوت + مفاتيح تفعيل الحلقات)
+router.get('/re-engagement/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getReEngagementSettings
+);
+
+router.put('/re-engagement/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateReEngagementSettings
+);
+
+// 🎯 عدد العملاء المطابق لحلقات إعادة الاستهداف
+router.get('/re-engagement/counts',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getReEngagementCounts
+);
+
+// 🎯 قائمة العملاء المطابقين (drill-down)
+// 🕐 الرسائل الدورية الثابتة (Retention Cadence): منتج كل 10 أيام / رصيد كل 15 / إحالة كل 30 / مستوى كل 30
+router.get('/retention-cadence/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getRetentionCadenceSettings
+);
+
+router.put('/retention-cadence/settings',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.updateRetentionCadenceSettings
+);
+
+router.get('/re-engagement/customers',
+  verifyToken.requireRole(['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER']),
+  customerLoyaltyController.getReEngagementCustomers
+);
+
 module.exports = router;

@@ -7,10 +7,12 @@ const {
 
 const router = express.Router();
 
-router.use(extractSubdomainMiddleware);
-router.use(requireCompany);
+// ⚠️ مطبّقة على مستوى الـ routes وليس router.use — الـ router متركّب على
+// /api/v1/public بالكامل، وأي router.use(requireCompany) هنا كان بيمنع
+// كل مسارات /api/v1/public/* المركّبة بعده لو الشركة مش متحددة.
+const withCompanyContext = [extractSubdomainMiddleware, requireCompany];
 
-router.post('/coupons/validate', async (req, res) => {
+router.post('/coupons/validate', ...withCompanyContext, async (req, res) => {
   try {
     const companyId = req.company?.id || req.companyId;
     const { code, orderAmount, customerId } = req.body || {};

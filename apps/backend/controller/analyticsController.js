@@ -1,5 +1,9 @@
 const analyticsService = require('../services/analyticsService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
+const {
+  effectiveOrderStatusSql,
+  computeEffectiveOrderStatus,
+} = require('../utils/orderEffectiveStatus');
 
 const ANALYTICS_DAY_MS = 24 * 60 * 60 * 1000;
 const DELIVERED_ORDER_STATUSES = new Set(['DELIVERED']);
@@ -12,8 +16,42 @@ const ORDER_STATUS_VALUES = new Set([
   'WOO_TAGHEZ', 'DRAFT', 'TRASH', 'READY_TO_SHIP', 'ON_HOLD', 'NOT_SHIPPED',
   'OUT_FOR_DELIVERY', 'LOST', 'PENDING_PREPARATION', 'PREPARING', 'READY',
   'QUALITY_CHECK', 'PACKAGED',   'ON_HOLD_PREP', 'PARTIALLY_DELIVERED',
-  'STOCK_SHORTAGE', 'SHORTAGE_FAILED'
+  'STOCK_SHORTAGE', 'SHORTAGE_FAILED', 'PENDING_CANCELLATION'
 ]);
+
+/**
+ * 🛡️ PRODUCTION-FIX (analytics-custom-status): فلاتر تقارير الحالات كانت بترمي
+ * أكواد الحالات المخصصة بصمت (فلتر ORDER_STATUS_VALUES فقط) — التاجر يختار حالته
+ * المخصصة من الـ UI والـ API يرفض بـ "لا توجد حالات طلب صالحة". الدالة دي بتقبل
+ * قيم الـ enum + أكواد الحالات المخصصة النشطة للشركة (من orderStatusConfig).
+ */
+const resolveAnalyticsStatusCodes = async (prisma, companyId, statusCodes) => {
+  const enumCodes = statusCodes.filter((code) => ORDER_STATUS_VALUES.has(code));
+  const candidateCustomCodes = statusCodes.filter((code) => !ORDER_STATUS_VALUES.has(code));
+
+  if (candidateCustomCodes.length === 0) {
+    return enumCodes;
+  }
+
+  let customCodes = [];
+  try {
+    const rows = await prisma.orderStatusConfig.findMany({
+      where: {
+        companyId,
+        isActive: true,
+        code: { in: candidateCustomCodes, mode: 'insensitive' },
+      },
+      select: { code: true },
+    });
+    const validCustomSet = new Set(rows.map((r) => String(r.code || '').trim().toUpperCase()));
+    customCodes = candidateCustomCodes.filter((code) => validCustomSet.has(code));
+  } catch (configErr) {
+    console.warn('⚠️ [ANALYTICS] Failed to load custom status codes:', configErr.message);
+  }
+
+  // حافظ على ترتيب اختيار المستخدم (enum أولاً كما ورد ثم المخصصة الصالحة)
+  return [...enumCodes, ...customCodes];
+};
 
 const normalizeAnalyticsDateInput = (value, { endOfDay = false } = {}) => {
   if (!value) {
@@ -653,31 +691,11 @@ const getConversionRate = async (req, res) => {
 
     // Smart date handling - support both days count and actual dates
     try {
-      if (startDate && endDate) {
-        // Check if startDate is a number (days ago)
-        const daysAgo = parseInt(startDate);
-        if (!isNaN(daysAgo) && daysAgo > 0) {
-          start = new Date(end.getTime() - (daysAgo * 24 * 60 * 60 * 1000));
-        } else {
-          // Treat as actual dates
-          start = new Date(startDate);
-          end = new Date(endDate);
-        }
-      } else if (period === 'yesterday') {
-        const yesterday = new Date();
-        yesterday.setDate(yesterday.getDate() - 1);
-        yesterday.setHours(0, 0, 0, 0);
-        start = yesterday;
-        end = new Date(yesterday);
-        end.setHours(23, 59, 59, 999);
-      } else {
-        const days = parseInt(period);
-        start = new Date(end.getTime() - (days * 24 * 60 * 60 * 1000));
-      }
+      ({ start, end } = parseAnalyticsDateRange({ startDate, endDate, period }));
     } catch (dateErr) {
       console.error('Date parsing error:', dateErr);
       // Fallback to 30 days
-      start = new Date(end.getTime() - (30 * 24 * 60 * 60 * 1000));
+      start = new Date(end.getTime() - (30 * ANALYTICS_DAY_MS));
     }
 
     const conversionData = await analyticsService.getStoreConversionRate(companyId, start, end);
@@ -861,6 +879,94 @@ const trackProductView = async (req, res) => {
       message: 'خطأ في تسجيل الزيارة',
       error: error.message
     });
+  }
+};
+
+// 📈 [WebVitals] Real-user monitoring (LCP/CLS/INP/TTFB) — zero-schema:
+// beacons land in a per-company in-memory ring buffer + one structured log
+// line each. Enough to read p75 from the summary endpoint without a DB
+// migration. Buffer resets on process restart by design.
+const WEB_VITALS_BUFFER_LIMIT = 500;
+const webVitalsBuffer = new Map();
+
+const trackWebVitals = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    const { path: pagePath, metrics } = req.body || {};
+
+    if (!companyId || !Array.isArray(metrics) || metrics.length === 0) {
+      return res.status(400).json({ success: false, message: 'بيانات ناقصة - companyId, metrics مطلوبة' });
+    }
+
+    const cleanMetrics = metrics
+      .filter((m) => m && typeof m.name === 'string' && Number.isFinite(Number(m.value)))
+      .slice(0, 8)
+      .map((m) => ({
+        name: String(m.name).slice(0, 12),
+        value: Math.round(Number(m.value)),
+        rating: String(m.rating || '').slice(0, 10),
+        id: String(m.id || '').slice(0, 40),
+      }));
+
+    if (cleanMetrics.length === 0) {
+      return res.status(400).json({ success: false, message: 'لا توجد مقاييس صالحة' });
+    }
+
+    const entry = {
+      at: Date.now(),
+      path: String(pagePath || '/').slice(0, 120),
+      userAgent: String(req.headers['user-agent'] || '').slice(0, 140),
+      metrics: cleanMetrics,
+    };
+
+    const buffer = webVitalsBuffer.get(companyId) || [];
+    buffer.push(entry);
+    while (buffer.length > WEB_VITALS_BUFFER_LIMIT) buffer.shift();
+    webVitalsBuffer.set(companyId, buffer);
+
+    console.log(
+      `📈 [WebVitals] ${companyId} ${entry.path} :: ${cleanMetrics
+        .map((m) => `${m.name}=${m.value}${m.rating ? `(${m.rating})` : ''}`)
+        .join(' ')}`,
+    );
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Error in trackWebVitals:', error);
+    res.status(500).json({ success: false, message: 'خطأ في تسجيل مقاييس الأداء' });
+  }
+};
+
+const getWebVitalsSummary = async (req, res) => {
+  try {
+    const companyId = await resolveAnalyticsCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'companyId مطلوب' });
+    }
+
+    const windowMs = 60 * 60 * 1000;
+    const since = Date.now() - windowMs;
+    const recent = (webVitalsBuffer.get(companyId) || []).filter((e) => e.at >= since);
+
+    const valuesByName = {};
+    for (const entry of recent) {
+      for (const metric of entry.metrics) {
+        (valuesByName[metric.name] = valuesByName[metric.name] || []).push(metric.value);
+      }
+    }
+
+    const summary = Object.fromEntries(
+      Object.entries(valuesByName).map(([name, values]) => {
+        values.sort((a, b) => a - b);
+        const p75Index = Math.max(0, Math.ceil(values.length * 0.75) - 1);
+        return [name, { p75: values[p75Index], count: values.length }];
+      }),
+    );
+
+    res.json({ success: true, windowMinutes: 60, samples: recent.length, summary });
+  } catch (error) {
+    console.error('Error in getWebVitalsSummary:', error);
+    res.status(500).json({ success: false, message: 'خطأ في قراءة مقاييس الأداء' });
   }
 };
 
@@ -4347,8 +4453,10 @@ const getStatusSummaryReport = async (req, res) => {
       return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
     }
 
-    // Filter to only valid Prisma OrderStatus values (exclude payment statuses like PARTIALLY_PAID, PAID, FAILED)
-    const filteredStatusCodes = statusCodes.filter(code => ORDER_STATUS_VALUES.has(code));
+    // 🛡️ PRODUCTION-FIX (analytics-custom-status): اقبل أكواد الـ enum + الحالات
+    // المخصصة النشطة للشركة — بدل فلتر ORDER_STATUS_VALUES اللي كان بيرمي المخصصة
+    // بصمت (وكان ناقصه PENDING_CANCELLATION كمان).
+    const filteredStatusCodes = await resolveAnalyticsStatusCodes(prisma, companyId, statusCodes);
 
     if (filteredStatusCodes.length === 0) {
       return res.status(400).json({ success: false, message: 'لا توجد حالات طلب صالحة للفلترة' });
@@ -4378,9 +4486,12 @@ const getStatusSummaryReport = async (req, res) => {
     const statusPlaceholders = filteredStatusCodes.map((_, i) => `$${queryParams.length + 1 + i}`).join(', ');
     queryParams.push(...filteredStatusCodes);
 
-    // Query using effective status (metadata.preparationStatus takes precedence over order.status)
+    // 🛡️ PRODUCTION-FIX (analytics-unify): نفس تعبير الحالة الفعلية الموحّد بتاع
+    // صفحة الطلبات (كود مخصص ← تجهيز محوّلة ← enum) — كان COALESCE خام غير محوّل
+    // فنفس الطلب كان بيتحسب بشكل مختلف في التحليلات عن صفحة الطلبات.
     const orders = await prisma.$queryRawUnsafe(`
-      SELECT o.id, o.status, o.metadata, o.shipping, o."createdAt",
+      SELECT o.id, o.status, o."customStatusCode", o.metadata, o.shipping, o."createdAt",
+             ${effectiveOrderStatusSql('o')} AS effective_status,
              oi.oi_quantity, oi.oi_total
       FROM "orders" o
       LEFT JOIN LATERAL (
@@ -4391,20 +4502,13 @@ const getStatusSummaryReport = async (req, res) => {
       ) oi ON true
       WHERE o."companyId" = $1
         AND ${dateClause}
-        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${statusPlaceholders})
+        AND ${effectiveOrderStatusSql('o')} IN (${statusPlaceholders})
     `, ...queryParams);
 
-    // Group by effective status
+    // Group by effective status (computed in SQL — same source as the filter)
     const statusMap = {};
     for (const order of orders) {
-      const effectiveStatus = (() => {
-        try {
-          const meta = order.metadata ? JSON.parse(order.metadata) : {};
-          return (meta.preparationStatus || order.status).toUpperCase();
-        } catch {
-          return order.status.toUpperCase();
-        }
-      })();
+      const effectiveStatus = String(order.effective_status || '').toUpperCase() || 'PENDING';
       
       if (!statusMap[effectiveStatus]) {
         statusMap[effectiveStatus] = {
@@ -4474,7 +4578,8 @@ const getStatusSummaryOrders = async (req, res) => {
       return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
     }
 
-    const filteredStatusCodes = statusCodes.filter(code => ORDER_STATUS_VALUES.has(code));
+    // 🛡️ PRODUCTION-FIX (analytics-custom-status): enum + الحالات المخصصة النشطة
+    const filteredStatusCodes = await resolveAnalyticsStatusCodes(prisma, companyId, statusCodes);
 
     if (filteredStatusCodes.length === 0) {
       return res.status(400).json({ success: false, message: 'لا توجد حالات طلب صالحة للفلترة' });
@@ -4492,6 +4597,7 @@ const getStatusSummaryOrders = async (req, res) => {
     }
 
     // Build raw SQL with effective status for orders
+    // 🛡️ PRODUCTION-FIX (analytics-unify): تعبير الحالة الفعلية الموحّد (مخصصة ← تجهيز ← enum)
     const oQueryParams = [String(companyId)];
     const oDateConditions = [];
     if (startDate) {
@@ -4512,7 +4618,7 @@ const getStatusSummaryOrders = async (req, res) => {
       FROM "orders" o
       WHERE o."companyId" = $1
         AND ${oDateClause}
-        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${oStatusPlaceholders})
+        AND ${effectiveOrderStatusSql('o')} IN (${oStatusPlaceholders})
     `;
     const [countResult] = await prisma.$queryRawUnsafe(oCountSql, ...oCountQueryParams);
     const totalCount = countResult.total;
@@ -4520,7 +4626,7 @@ const getStatusSummaryOrders = async (req, res) => {
     const oLimitClause = limitNum ? `LIMIT ${limitNum}` : '';
     const oOffsetClause = skip ? `OFFSET ${skip}` : '';
     const ordersSql = `
-      SELECT o.id, o."orderNumber", o.status, o.metadata, o.total, o.shipping,
+      SELECT o.id, o."orderNumber", o.status, o."customStatusCode", o.metadata, o.total, o.shipping,
              o.subtotal, o."customerId", o.governorate, o.city, o."paymentMethod",
              o."sourceType", o."createdAt",
              c."firstName", c."lastName", c.phone
@@ -4528,7 +4634,7 @@ const getStatusSummaryOrders = async (req, res) => {
       LEFT JOIN "customers" c ON c.id = o."customerId"
       WHERE o."companyId" = $1
         AND ${oDateClause}
-        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${oStatusPlaceholders})
+        AND ${effectiveOrderStatusSql('o')} IN (${oStatusPlaceholders})
       ORDER BY o."createdAt" DESC
       ${oLimitClause} ${oOffsetClause}
     `;
@@ -4557,12 +4663,8 @@ const getStatusSummaryOrders = async (req, res) => {
     const enrichedOrders = orders.map(o => ({
       id: o.id,
       orderNumber: o.orderNumber,
-      status: (() => {
-        try {
-          const meta = o.metadata ? JSON.parse(o.metadata) : {};
-          return meta.preparationStatus || o.status;
-        } catch { return o.status; }
-      })(),
+      // 🛡️ (analytics-unify): نفس أولوية الحالة الفعلية الموحّدة
+      status: computeEffectiveOrderStatus(o).toLowerCase(),
       total: o.total,
       shipping: o.shipping,
       subtotal: o.subtotal,
@@ -4624,7 +4726,8 @@ const getStatusSummaryItems = async (req, res) => {
       return res.status(400).json({ success: false, message: 'يرجى اختيار حالة واحدة على الأقل' });
     }
 
-    const filteredStatusCodes = statusCodes.filter(code => ORDER_STATUS_VALUES.has(code));
+    // 🛡️ PRODUCTION-FIX (analytics-custom-status): enum + الحالات المخصصة النشطة
+    const filteredStatusCodes = await resolveAnalyticsStatusCodes(prisma, companyId, statusCodes);
 
     if (filteredStatusCodes.length === 0) {
       return res.status(400).json({ success: false, message: 'لا توجد حالات طلب صالحة للفلترة' });
@@ -4635,6 +4738,7 @@ const getStatusSummaryItems = async (req, res) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Build raw SQL with effective status for items
+    // 🛡️ PRODUCTION-FIX (analytics-unify): تعبير الحالة الفعلية الموحّد (مخصصة ← تجهيز ← enum)
     const iQueryParams = [String(companyId)];
     const iDateConditions = [];
     if (startDate) {
@@ -4655,26 +4759,22 @@ const getStatusSummaryItems = async (req, res) => {
     const itemsSql = `
       SELECT oi.id, oi.quantity, oi.price, oi.total,
              oi."productName", oi."productColor", oi."productSize", oi."productSku",
-             o.id AS o_id, o."orderNumber", o.status, o.metadata, o."createdAt",
+             o.id AS o_id, o."orderNumber", o.status, o."customStatusCode", o.metadata, o."createdAt",
+             ${effectiveOrderStatusSql('o')} AS effective_status,
              p.name AS p_name, p.sku AS p_sku
       FROM "order_items" oi
       JOIN "orders" o ON o.id = oi."orderId"
       LEFT JOIN "products" p ON p.id = oi."productId"
       WHERE o."companyId" = $1
         AND ${iDateClause}
-        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${iStatusPlaceholders})
+        AND ${effectiveOrderStatusSql('o')} IN (${iStatusPlaceholders})
       ORDER BY o."createdAt" DESC, oi.id
       ${iLimitClause} ${iOffsetClause}
     `;
     const items = await prisma.$queryRawUnsafe(itemsSql, ...iQueryParams);
 
     const flatItems = items.map(item => {
-      const effectiveStatus = (() => {
-        try {
-          const meta = item.metadata ? JSON.parse(item.metadata) : {};
-          return meta.preparationStatus || item.status;
-        } catch { return item.status; }
-      })();
+      const effectiveStatus = String(item.effective_status || item.status || 'UNKNOWN');
       return {
         orderId: item.o_id || '',
         orderNumber: item.orderNumber || 'غير معروف',
@@ -4698,7 +4798,7 @@ const getStatusSummaryItems = async (req, res) => {
       JOIN "orders" o ON o.id = oi."orderId"
       WHERE o."companyId" = $1
         AND ${iDateClause}
-        AND UPPER(COALESCE(NULLIF(o.metadata::jsonb->>'preparationStatus', ''), o.status::text)) IN (${iStatusPlaceholders})
+        AND ${effectiveOrderStatusSql('o')} IN (${iStatusPlaceholders})
     `;
     const [totalResult] = await prisma.$queryRawUnsafe(countItemsSql, ...iQueryParams);
     const totalItems = totalResult.total;
@@ -4877,6 +4977,8 @@ module.exports = {
   getProductConversionRate,
   getTopProducts,
   trackProductView,
+  trackWebVitals,
+  getWebVitalsSummary,
   trackStoreVisit,
   trackConversion,
   getDailyAnalytics,

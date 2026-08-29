@@ -360,6 +360,11 @@ async function updateExistingOrder(prisma, existingOrder, orderData, companyId, 
         where: { id: existingOrder.id },
         data: {
             ...normalizedData,
+            // 🛡️ PRODUCTION-FIX (custom-status-persist): لما السينك يغيّر حالة الطلب
+            // امسح أي كود مخصص قديم — وإلا الطلب هيعرض الحالة المخصصة الميتة.
+            ...(normalizedData.status && normalizedData.status !== existingOrder.status
+                ? { customStatusCode: null }
+                : {}),
             lastSyncAt: new Date()
         }
     });

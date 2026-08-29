@@ -1006,6 +1006,115 @@
     "updatedAt": "2026-05-01T00:00:00Z"
   },
   {
+    "id": "cat-app-amazon-affiliate-pro",
+    "slug": "amazon-affiliate-pro",
+    "name": "Amazon Affiliate",
+    "nameEn": "Amazon Affiliate",
+    "description": "استيراد منتجات أمازون إلى متجرك وربطها بحساب Amazon Associates لكسب العمولات — استيراد بالرابط أو ASIN أو CSV، مزامنة الأسعار والمخزون تلقائيًا، زر الشراء من أمازون، وتوجيه الزائر لسوق بلده.",
+    "descriptionEn": "Import Amazon products into your store, link them to your Amazon Associates account and earn commissions — import by URL, ASIN or CSV, automatic price & stock sync, Buy-on-Amazon button, and visitor-country geotargeting.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "المتاجر التي تريد كسب عمولات من كتالوج أمازون بدون مخزون أو شحن أو خدمة عملاء.",
+      "surface": "داخل قسم أمازون أفليت: ربط حساب العمولة، استيراد المنتجات، ومتابعة المزامنة.",
+      "outcome": "قناة ربح إضافية عبر منتجات أمازون مع ربط حساب العمولة الخاص بك وتحديث تلقائي للأسعار."
+    },
+    "features": {
+      "importProducts": {
+        "enabled": true,
+        "name": "استيراد منتجات أمازون",
+        "description": "استيراد المنتجات بالرابط أو ASIN أو رفع ملف CSV دفعة واحدة.",
+        "access": "PAID"
+      },
+      "autoSync": {
+        "enabled": true,
+        "name": "المزامنة التلقائية",
+        "description": "تحديث الأسعار والمخزون تلقائيًا لتبقى بيانات المتجر دقيقة.",
+        "access": "PAID"
+      },
+      "buyButton": {
+        "enabled": true,
+        "name": "زر الشراء من أمازون",
+        "description": "تحويل الزائر لشراء المنتج من أمازون عبر رابط العمولة الخاص بك.",
+        "access": "PAID"
+      },
+      "geoTargeting": {
+        "enabled": true,
+        "name": "التوجيه حسب بلد الزائر",
+        "description": "تحويل الزائر تلقائيًا لسوق أمازون في بلده لزيادة التحويلات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "globe",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-28T00:00:00Z",
+    "updatedAt": "2026-08-28T00:00:00Z"
+  },
+  {
+    "id": "cat-app-blog-pro",
+    "slug": "blog-pro",
+    "name": "نظام المدونة والـ SEO",
+    "nameEn": "Blog & SEO",
+    "description": "مدونة احترافية مع إدارة مقالات، Affiliate Amazon، FAQ & TOC تلقائي، و SEO متكامل (Article/Breadcrumb/FAQ Schema + sitemap). مثالي لمواقع مثل MensGroomingPro.",
+    "category": "CONTENT",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "مدونات الأفليت ومواقع المراجعات التي تكسب عمولات من أمازون.",
+      "surface": "قسم المدونة والـ SEO في القائمة الجانبية: إدارة المقالات ونشرها.",
+      "outcome": "نشر مقالات SEO جاهزة لـ Amazon Affiliate مع Schema كامل."
+    },
+    "features": {
+      "articles": {
+        "enabled": true,
+        "name": "إدارة المقالات",
+        "description": "إنشاء وتعديل ونشر المقالات بمحرر Blocks (H2/P/صورة/ProTip).",
+        "access": "PAID"
+      },
+      "amazonCards": {
+        "enabled": true,
+        "name": "Amazon Product Cards",
+        "description": "إدراج كروت منتجات أمازون مع زر Check Price.",
+        "access": "PAID"
+      },
+      "seoSchema": {
+        "enabled": true,
+        "name": "SEO Schema",
+        "description": "Article, Breadcrumb, و FAQPage JSON-LD تلقائي.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "pen-line",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-28T00:00:00Z",
+    "updatedAt": "2026-08-28T00:00:00Z"
+  },
+  {
     "id": "cat-app-order-source-tracking",
     "slug": "order-source-tracking",
     "name": "Order Source Tracking",
@@ -1484,6 +1593,80 @@
     "engineCompatibility": null,
     "createdAt": "2026-08-10T00:00:00Z",
     "updatedAt": "2026-08-10T00:00:00Z"
+  },
+  {
+    "id": "cat-app-dental-lab-app",
+    "slug": "dental-lab-app",
+    "name": "نظام معمل الأسنان",
+    "nameEn": "Dental Lab System",
+    "description": "نظام متكامل لإدارة معامل الأسنان — حالات التركيبات، مراحل الإنتاج، تعيين الفنيين، رفع الملفات، فواتير الدكاترة، وبوابة للدكتور.",
+    "category": "MEDICAL",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "معامل الأسنان ومختبرات التركيبات التي تخدم دكاترة الأسنان.",
+      "surface": "لوحة تحكم شاملة داخل نظام معمل الأسنان — إدارة الحالات والمراحل والفنيين والفواتير، مع بوابة ومتجر للدكتور.",
+      "outcome": "تنظيم كامل لدورة عمل معمل الأسنان من استلام الحالة حتى التسليم والتحصيل."
+    },
+    "features": {
+      "cases": {
+        "enabled": true,
+        "name": "إدارة الحالات",
+        "description": "إدارة حالات التركيبات ومتابعتها من الاستلام حتى التسليم.",
+        "access": "PAID"
+      },
+      "stages": {
+        "enabled": true,
+        "name": "مراحل الإنتاج",
+        "description": "تحديد ومتابعة مراحل إنتاج التركيبات داخل المعمل.",
+        "access": "PAID"
+      },
+      "assignments": {
+        "enabled": true,
+        "name": "تعيين الفنيين",
+        "description": "تعيين الفنيين على الحالات ومتابعة أعباء العمل.",
+        "access": "PAID"
+      },
+      "attachments": {
+        "enabled": true,
+        "name": "رفع الملفات",
+        "description": "رفع صور وملفات الحالات والتركيبات.",
+        "access": "PAID"
+      },
+      "invoices": {
+        "enabled": true,
+        "name": "فواتير الدكاترة",
+        "description": "إصدار ومتابعة فواتير دكاترة الأسنان والتحصيل.",
+        "access": "PAID"
+      },
+      "doctorPortal": {
+        "enabled": true,
+        "name": "بوابة ومتجر الدكتور",
+        "description": "بوابة للدكتور لمتابعة حالاته مع متجر للطلبات.",
+        "access": "PAID"
+      },
+      "settings": {
+        "enabled": true,
+        "name": "الإعدادات",
+        "description": "إعدادات المعمل وأنواع العمل والأسعار.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "stethoscope",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-27T00:00:00Z",
+    "updatedAt": "2026-08-27T00:00:00Z"
   },
   {
     "id": "cat-app-inventory-pro",

@@ -57,6 +57,19 @@ async def _sync_agent_config_from_db(agent: Any, db_agent: AgentModel, session: 
     if key_id:
         config.key_id = key_id
 
+    # Sync live agent with DB-driven model changes and invalidate any cached
+    # LLM client so ensure_client() rebuilds it with the new model.
+    new_model = getattr(config, "model", None)
+    if new_model and getattr(agent, "model", None) != new_model:
+        logger.info(
+            "runtime_agent_model_synced",
+            agent_id=getattr(db_agent, "id", None),
+            old_model=getattr(agent, "model", None),
+            new_model=new_model,
+        )
+        agent.model = new_model
+        agent.client = None
+
 
 def _build_runtime_agent_from_db(
     db_agent: AgentModel, *, model: str | None = None, template_instructions: dict[str, str] | None = None

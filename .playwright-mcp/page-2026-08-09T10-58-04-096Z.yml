@@ -1,0 +1,109 @@
+- generic [ref=f4e7]:
+  - generic [ref=f4e10]:
+    - generic [ref=f4e12]:
+      - generic [ref=f4e13]:
+        - link "E" [ref=f4e15] [cursor=pointer]:
+          - /url: /company-dashboard
+          - generic "El Nouby" [ref=f4e16]: E
+        - generic [ref=f4e17]:
+          - button "الرئيسية" [ref=f4e18] [cursor=pointer]
+          - button "الطلبات" [ref=f4e23] [cursor=pointer]
+          - button "المنتجات" [ref=f4e29] [cursor=pointer]
+          - button "المتجر" [ref=f4e35] [cursor=pointer]
+          - button "المخزون" [ref=f4e44] [cursor=pointer]
+          - button "حسابي" [ref=f4e50] [cursor=pointer]
+          - button "إدارة شركاتي" [active] [ref=f4e57] [cursor=pointer]
+          - button "التطبيقات" [ref=f4e63] [cursor=pointer]
+          - button "الإعدادات" [ref=f4e69] [cursor=pointer]
+      - generic [ref=f4e75]:
+        - generic [ref=f4e76]:
+          - link "E El Nouby إدارة شركاتي" [ref=f4e204] [cursor=pointer]:
+            - /url: /company-dashboard
+            - generic [ref=f4e79]: E
+            - generic [ref=f4e80]:
+              - heading "El Nouby" [level=2] [ref=f4e81]
+              - paragraph [ref=f4e82]: إدارة شركاتي
+          - button "طي القائمة" [ref=f4e83] [cursor=pointer]
+        - generic [ref=f4e86]:
+          - generic [ref=f4e87]: البحث داخل القائمة
+          - textbox "البحث داخل القائمة" [ref=f4e88]:
+            - /placeholder: البحث
+        - generic [ref=f4e89]:
+          - link "لوحة تحكم الشركات" [ref=f4e206] [cursor=pointer]:
+            - /url: /my-companies/hr
+          - link "روابط الشركة" [ref=f4e212] [cursor=pointer]:
+            - /url: /my-companies/links
+          - link "التقارير الموحدة" [ref=f4e219] [cursor=pointer]:
+            - /url: /my-companies/reports
+          - link "إدارة المستخدمين" [ref=f4e226] [cursor=pointer]:
+            - /url: /users
+          - link "إعدادات الشركة" [ref=f4e235] [cursor=pointer]:
+            - /url: /settings/company
+          - link "نشاطات الشركة" [ref=f4e242] [cursor=pointer]:
+            - /url: /company/activity
+          - link "إدارة الأدوار والصلاحيات" [ref=f4e248] [cursor=pointer]:
+            - /url: /roles
+    - generic [ref=f4e96]:
+      - banner [ref=f4e97]:
+        - generic [ref=f4e99]:
+          - generic [ref=f4e100]:
+            - button "تبديل للوضع الليلي" [ref=f4e101] [cursor=pointer]
+            - button "Change language" [ref=f4e103] [cursor=pointer]:
+              - generic [ref=f4e104]: ar
+            - button "الإشعارات" [ref=f4e106] [cursor=pointer]:
+              - generic [ref=f4e109]: "9"
+            - link "header.whatsapp" [ref=f4e110] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+          - button "الملف الشخصي EN" [ref=f4e115]:
+            - generic [ref=f4e116]: EN
+            - generic [ref=f4e117]:
+              - generic [ref=f4e118]: El
+              - generic [ref=f4e119]: OWNER
+      - main [ref=f4e122]:
+        - generic [ref=f4e123]:
+          - generic [ref=f4e124]:
+            - generic [ref=f4e125]:
+              - heading "أهلًا El Nouby" [level=1] [ref=f4e126]
+              - paragraph [ref=f4e127]: الأحد، ٩ أغسطس ٢٠٢٦
+            - generic [ref=f4e128]:
+              - generic [ref=f4e129]:
+                - generic [ref=f4e130]: الفترة
+                - combobox [ref=f4e131]:
+                  - generic [ref=f4e132]: today
+                  - img: ▼
+                - textbox [ref=f4e133]: today
+              - button "تحديث" [ref=f4e134]
+            - button "تصدير" [ref=f4e135]
+          - generic [ref=f4e137]:
+            - generic [ref=f4e138]: El Nouby
+            - generic [ref=f4e143]: 3 التطبيقات النشطة
+          - button "3/4 مكتمل نفّذ هذه الخطوات لتنتقل من إعداد الحساب إلى متجر حي قابل للبيع والتجربة. استكمال الإعداد →" [ref=f4e144]:
+            - generic [ref=f4e146]:
+              - generic [ref=f4e147]: 3/4 مكتمل
+              - generic [ref=f4e148]: نفّذ هذه الخطوات لتنتقل من إعداد الحساب إلى متجر حي قابل للبيع والتجربة.
+            - generic [ref=f4e151]: استكمال الإعداد →
+          - button "الإعدادات" [ref=f4e155]
+          - generic [ref=f4e159]:
+            - generic [ref=f4e160]:
+              - heading "التطبيقات النشطة" [level=2] [ref=f4e161]
+              - generic [ref=f4e162]: 2 نشط
+              - button "تخصيص" [ref=f4e163]
+            - generic [ref=f4e166]:
+              - button "نشط المتجر الطلبات 19 العملاء 1" [ref=f4e168]:
+                - generic [ref=f4e169]: نشط
+                - heading "المتجر" [level=3] [ref=f4e175]
+                - generic [ref=f4e176]:
+                  - generic [ref=f4e177]:
+                    - generic [ref=f4e178]: الطلبات
+                    - generic [ref=f4e179]: "19"
+                  - generic [ref=f4e181]:
+                    - generic [ref=f4e182]: العملاء
+                    - generic [ref=f4e183]: "1"
+              - button "نشط المنتجات الإجمالي 5" [ref=f4e186]:
+                - generic [ref=f4e187]: نشط
+                - heading "المنتجات" [level=3] [ref=f4e193]
+                - generic [ref=f4e195]:
+                  - generic [ref=f4e196]: الإجمالي
+                  - generic [ref=f4e197]: "5"
+          - heading "النشاط الأخير (7 أيام)" [level=3] [ref=f4e202]
+  - region "Notifications alt+T"

@@ -30,20 +30,15 @@
   <meta name="twitter:description" content="منصة متكاملة لإدارة المحادثات، الذكاء الاصطناعي، والمتاجر الرقمية في مكان واحد." />
   <meta name="twitter:image" content="https://maxp.online/og-cover.png" />
 
-  <!-- PWA Meta Tags -->
+  <!-- Browser chrome color (not PWA installable anymore) -->
   <meta name="theme-color" content="#3B82F6" media="(prefers-color-scheme: light)" />
   <meta name="theme-color" content="#1e3a5f" media="(prefers-color-scheme: dark)" />
-  <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="apple-mobile-web-app-title" content="MaxP" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <meta name="application-name" content="MaxP" />
-  <link rel="apple-touch-icon" href="/icons/icon-192x192.svg" />
-  <link rel="apple-touch-startup-image" href="/icons/icon-512x512.svg" />
 
-  <!-- Preconnect to API server for faster first request -->
-  <link rel="preconnect" href="https://maxp.online" crossorigin />
-  <link rel="dns-prefetch" href="https://maxp.online" />
+  <!-- Preconnect to critical origins for faster first request -->
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+  <link rel="dns-prefetch" href="https://fonts.gstatic.com" />
+  <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
 
   <!--
     Storefront font loading is route-aware:
@@ -328,6 +323,42 @@
   </div>
 
   <script src="/js/storefront-detection.js"></script>
+
+  <!--
+    CRITICAL: Aggressive SW + cache cleanup on every page load.
+    This runs BEFORE React or any module scripts. It unregisters every
+    service worker that is NOT sw-v4.js and wipes all CacheStorage entries,
+    eliminating stale cached HTML/chunks that cause infinite reload loops
+    after deployments.
+  -->
+  <script>
+    (function () {
+      var CURRENT_SW = /\/sw-v4\.js(?:[?#].*)?$/;
+      try {
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations().then(function (regs) {
+            regs.forEach(function (reg) {
+              var url =
+                (reg.active && reg.active.scriptURL) ||
+                (reg.waiting && reg.waiting.scriptURL) ||
+                (reg.installing && reg.installing.scriptURL) ||
+                '';
+              if (url && !CURRENT_SW.test(url)) {
+                reg.unregister();
+              }
+            });
+          });
+        }
+      } catch (_) {}
+      try {
+        if ('caches' in window) {
+          caches.keys().then(function (keys) {
+            keys.forEach(function (k) { caches.delete(k); });
+          });
+        }
+      } catch (_) {}
+    })();
+  </script>
 
   <!-- React app root -->
   <div id="root"></div>

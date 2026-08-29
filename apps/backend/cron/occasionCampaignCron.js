@@ -200,16 +200,17 @@ async function processDueOccasions() {
           try {
             const result = await WhatsAppNotificationService.sendNotification({
               companyId: occ.companyId,
+              deliveryStrategy: 'platform-fallback',
               recipientPhone: phone,
               recipientName: name,
               recipientType: 'CUSTOMER',
-              category: 'MARKETING',
-              eventType: 'OCCASION_CAMPAIGN',
+              category: 'OCCASION',
+              eventType: 'CUSTOMER_OCCASION_msvsy2ut',
               contentOverride: message,
               variables: {
                 customerName: name,
                 firstName: customer.firstName || '',
-                occasionName: occ.name,
+                reason: occ.name,
               },
               priority: 2,
             });

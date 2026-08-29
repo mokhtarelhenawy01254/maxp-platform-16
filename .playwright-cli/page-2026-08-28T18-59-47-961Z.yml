@@ -1,0 +1,14 @@
+- generic [ref=e7]:
+  - generic [ref=e12]:
+    - link "م ماكس بي لنظام تشغيل الأعمال" [ref=e13] [cursor=pointer]:
+      - /url: /
+      - generic [ref=e14]: م
+      - generic [ref=e15]: ماكس بي لنظام تشغيل الأعمال
+    - generic [ref=e16]:
+      - generic [ref=e17]: التحقق من الجلسة
+      - heading "جاري التحقق من الجلسة" [level=2] [ref=e45]
+      - paragraph [ref=e19]: نراجع حالة الحساب ونجهّز مساحة العمل المناسبة لك.
+    - generic [ref=e46]:
+      - generic [ref=e47]: Loading...
+      - paragraph [ref=e53]: ثوانٍ قليلة ويتم توجيهك تلقائيًا.
+  - region "Notifications alt+T"

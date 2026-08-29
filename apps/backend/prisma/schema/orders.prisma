@@ -298,6 +298,9 @@ model Order {
   customerId              String
   conversationId          String?
   status                  OrderStatus               @default(PENDING)
+  /// كود الحالة المخصصة الفعلي (مثل DELAYED_WITH_CAPTAIN) — يتخزن بجانب الـ enum
+  /// في mapsToSystem. لما يكون موجودًا هو "الحالة الفعلية" للعرض والفلتر والإحصائيات.
+  customStatusCode        String?
   confirmedAt             DateTime?
   confirmedBy             String?
   confirmationNotes       String?
@@ -423,6 +426,7 @@ model Order {
   @@index([scheduledDeliveryDate])
   @@index([turboTrackingNumber])
   @@index([wooCommerceId])
+  @@index([companyId, customStatusCode])
   @@map("orders")
 }
 

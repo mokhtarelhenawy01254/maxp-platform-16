@@ -3,15 +3,20 @@ const {
 } = require("../../utils/facebookOAuthTokenFields");
 
 describe("facebookOAuthTokenFields", () => {
-  test("keeps pixel OAuth tokens out of the page OAuth session", () => {
+  test("keeps pixel OAuth tokens isolated from the ads token column", () => {
     expect(buildFacebookTokenUpdateData("pixel-token", "pixel")).toEqual({
       facebookPixelAccessToken: "pixel-token",
-      facebookAdsAccessToken: "pixel-token",
     });
   });
 
   test("stores page OAuth tokens only in the page OAuth session", () => {
     expect(buildFacebookTokenUpdateData("page-token", "page")).toEqual({
+      facebookUserAccessToken: "page-token",
+    });
+  });
+
+  test("defaults to the page OAuth session when type is missing", () => {
+    expect(buildFacebookTokenUpdateData("page-token")).toEqual({
       facebookUserAccessToken: "page-token",
     });
   });

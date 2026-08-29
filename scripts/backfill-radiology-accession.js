@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @file backfill-radiology-accession.js
  * @description Backfill the unified order number on radiology studies that came from a booking.
  *

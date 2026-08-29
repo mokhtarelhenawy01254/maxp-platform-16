@@ -199,3 +199,68 @@ endpoint). The recovery report now breaks down `recovery.byTeam` vs `recovery.na
 The response includes `from` / `to` (resolved timestamps) and `periodDays` (null for
 a custom range). The reports page offers presets (7/14/30/90/365 days) plus a
 "custom period" option with from/to date pickers.
+
+## Report accuracy fixes (2026-08-26)
+
+### 1. Timezone-correct period parsing
+
+`from` / `to` are now parsed as **local** dates (`parseLocalDate`, strict
+`YYYY-MM-DD`, rejects rolled-over dates like `2026-02-30`) instead of UTC —
+previously "today"/custom ranges started at local 03:00 and dropped early-morning
+conversions. The custom-range end-of-day is built from date components (not a
+fixed +24h) so DST shift days stay exact — **and must stay a `Date` object**
+(`new Date(nextDay.getTime() - 1)`); passing the raw `getTime()` number makes
+Prisma throw `Argument lte: provided Int`. Trend day bucketing uses a local-day
+key (`localDayKey`) instead of `toISOString()`, so late-evening conversions no
+longer land on the next calendar day.
+
+### 2. Correct recovery-rate denominator
+
+`recoveryRate` was `converted / pipeline.total`, but carts are deleted after
+conversion, shrinking the denominator over time (rate could exceed 100%). It is
+now `converted / (total + converted)` — remaining carts plus window conversions.
+
+### 3. Frontend
+
+- Conversion-trend chart uses **two Y axes** (count left, value right, k-formatted)
+  so conversion bars are visible next to monetary values; Tooltip formats value as price.
+- Selecting "custom period" without both dates shows an inline hint
+  (`orders.incompleteSelectCustomDates`, ar/en) instead of silently fetching the
+  last 30 days; picking "custom" prefills the last-30-days range.
+- `periodDays` typed as `number | null`.
+
+## Natural-conversion completeness & source context (2026-08-26, round 2)
+
+### Why recovery numbers look "too small"
+
+Diagnosed with live data: for a typical merchant, most orders are
+`ai_conversation` (WhatsApp/AI) and never create a `GuestCart`, so they are
+outside the incomplete-cart recovery scope. The report only counts logged
+`CartConversionLog` rows (feature started 2026-08-02), so numbers are far below
+total order counts — by design, not a query bug.
+
+### Fix 1 — close the natural-log race
+
+The storefront `checkout-draft` save is debounced (1.2s) and stores the cart id
+in localStorage; `createOrder` sends it via the `x-cart-id` header. If a customer
+submitted before the draft finished, the order went out without the cart id →
+the cart was never deleted and no `natural` conversion log was written.
+
+- `routes/publicOrdersRoutes.js` — create-order route now also accepts
+  `req.body?.cartId` (was header/cookie only).
+- `storefront/hooks/useCheckout.ts` — `placeOrder` awaits `ensureCheckoutCart()`
+  (force-saves a draft and returns the cart id) and injects `cartId` into the
+  order payload via `buildCheckoutOrderPayload(..., cartId)`. `getCartId` is now
+  exported from `storefrontApi.ts`. Quick-order forms are untouched (they don't
+  pass cartId, so no stale-cart side effects).
+
+### Fix 2 — order-source context card
+
+- `routes/orders.js` — reports response adds `orderSources`
+  (`groupBy sourceType` over the window with count + value).
+- `IncompleteReports.tsx` — new "Order sources" section (stacked bar + rows)
+  showing storefront / ai_conversation / internal_push / manual split, so the
+  merchant sees why recovery is lower than total orders.
+- Fixed pre-existing raw-key bug: the total-value pipeline card used
+  `orders.totalValue` which never existed in the locale files (rendered the raw
+  key); added the key in ar/en (`القيمة الإجمالية` / `Total value`).

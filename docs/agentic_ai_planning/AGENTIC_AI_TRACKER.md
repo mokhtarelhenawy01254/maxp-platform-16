@@ -271,3 +271,37 @@
 3. ✅ **حدث الـ tracker** — غير الحالة في الجدول
 4. 🏃 **شغّل tests** — `npx jest tests/path/to/file.test.js --verbose`
 5. ⚠️ **نبهني** لو فيه gaps أو bugs
+
+## ✅ تحديث 2026-08-08 — وكيل تأكيد الطلبات على الواتساب (order-confirmation-agent)
+
+وكيل جديد `order-confirmation-agent` (دور `ORDER_CONFIRMATION`) لتأكيد الطلبات على الواتساب مع وعي كامل بخريطة شركة الشحن:
+
+- **القالب**: `backend/agents/order-confirmation-agent/` (agent.json + SOUL/AGENTS/TOOLS/PERSONA بالعربي، شخصية بشرية "منى — منسقة تأكيد الطلبات"، ردود قصيرة وسؤال واحد في المرة). channels: `whatsapp`. يُسند من صفحة الوكلاء (يستبدل وكيل الواتساب الحالي).
+- **أدوات جديدة** في `ai-service/src/tools/definitions/order.py`:
+  - `order_confirm` — تأكيد طلب موجود → `CONFIRMED` (يضبط confirmedAt + يبعت `ORDER_CONFIRMED` + يفعّل Turbo auto-shipment = التمرير لشركة الشحن).
+  - `order_update_details` — تعديل عنوان/بيانات توصيل عبر `orderDetailsUpdateService`.
+- **أدوات خريطة شركة الشحن** في `shipping.py`:
+  - `shipping_company_governorates` / `shipping_company_areas` — تجيب خريطة المحافظات/المناطق الفعلية لشركة الشحن (Turbo) عشان الوكيل يصلّح العنوان بأسماء صحيحة بدل خريطة الموقع.
+- **Skill إجرائية** جديدة `ai-service/skills/order-confirmation/` (skill.json + SKILL.md) بتعلّم دورة العمل: lookup ← مطابقة العنوان مع خريطة الشركة ← سؤال العميل لو العنوان مش واضح ← update_details ← confirm ← pass to shipping.
+- **تم التنفيذ مباشر بدون موافقة**: `order_confirm` و `order_update_details` في `DIRECT_WRITE_TOOL_NAMES` في `ai-service/src/tools/registry.py`.
+- `role_tools.yaml` أضيف لها دور `ORDER_CONFIRMATION`؛ `superAdminRoutes.js` أضيف أيقونة/صناعات القالب.
+- `backend_client.py` أضيفت: `confirm_order`, `update_order_details`, `get_shipping_company_governorates`, `get_shipping_company_areas`.
+- **ملاحظة**: بذرة القالب/المهارة بتتحمل في DB عند إعادة تشغيل ai-service (أو `POST /admin/agents/templates/seed` + `/admin/agents/skills/seed`).
+
+## ✅ تحديث 2026-08-11 — تحليلات حركة حالات الطلبات (order movement analytics)
+
+ميزة تحليلات (غير agentic) في قسم تحليلات الطلبات:
+
+- **Backend**: `services/orderMovementCore.js` + 8 كونترولرز في `controller/orderMovement/` (مصفوفة انتقالات، سانكي، مسارات، زمن مكوث، نتائج نهائية، أداء فريق، طلبات معلّقة، موافقات) معلّقة على `/api/v1/analytics/order-movement/*` مع تمييز يدوي/تلقائي. اختبارات 44/44.
+- **Frontend**: صفحة `/analytics/orders/status-movement` (OrderMovementPage) بـ 8 تابات + فلتر تاريخ + فلتر يدوي/تلقائي + تنبيه truncation. اختبارات frontend 24/24.
+
+
+## 2026-08-13 - TikTok integrations (5 parallel agents + orchestrator)
+
+- Publish (Content Posting API): services/tiktok/tiktokPublishService.js + controller/routes, frontend /tiktok/publish.
+- Shop: services/tiktok/tiktokShopService.js (HMAC-signed TikTok Shop Partner API) + controller/routes, frontend /tiktok/shop.
+- Login Kit: controller/tiktokAuthController.js (storefront OAuth customer login) + storefront/components/TikTokLoginButton.tsx.
+- Display/Embed: services/tiktok/tiktokDisplayService.js + components/TikTokEmbed.tsx + storefront/sections/TikTokFeedSection.tsx.
+- Events: services/tiktok/tiktokEventsManager.js + controller/routes + components/tiktok/TikTokEventsSettingsCard.tsx, frontend /tiktok/settings.
+- Shared foundation: prisma/schema/tiktok.prisma (TikTokAccount/TikTokSettings/TikTokPost/TikTokShopAccount/TikTokPixelConfig) + services/tiktok/tiktokOAuthService.js + Customer.tiktokId.
+- Mounted in server.js at /api/v1/tiktok/{publish,shop,auth,display,events}. Backend 1156 files syntax OK, prisma validate OK, vite build OK, check-icon-imports OK.

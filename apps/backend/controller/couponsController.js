@@ -452,6 +452,147 @@ exports.applyCoupon = async (req, res) => {
   }
 };
 
+// ✅ إنشاء كوبونات جماعية بكود فريد لكل عميلة (Win-back 90/120/150)
+exports.bulkGenerateCoupons = async (req, res) => {
+  try {
+    const { companyId, id: userId } = req.user;
+    const {
+      prefix,
+      type,
+      value,
+      validFrom,
+      validTo,
+      customerIds,
+      inactiveDays,
+      name,
+      description,
+      minOrderAmount,
+      maxDiscountAmount,
+      userUsageLimit = 1,
+      usageLimit = 1,
+      customerSegments,
+      isActive = true
+    } = req.body;
+
+    if (!prefix || !type || value === undefined || value === null || value === '' || !validFrom || !validTo) {
+      return res.status(400).json({ success: false, error: 'prefix, type, value, validFrom, validTo مطلوبة' });
+    }
+
+    const cleanPrefix = String(prefix).toUpperCase().replace(/[^A-Z0-9_-]/g, '').slice(0, 20) || 'WB';
+    const couponType = String(type).toUpperCase() === 'FIXED' ? 'FIXED_AMOUNT' : String(type).toUpperCase();
+    if (!['PERCENTAGE', 'FIXED_AMOUNT'].includes(couponType)) {
+      return res.status(400).json({ success: false, error: 'type يجب أن يكون PERCENTAGE أو FIXED' });
+    }
+
+    const startDate = new Date(validFrom);
+    const endDate = new Date(validTo);
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || endDate <= startDate) {
+      return res.status(400).json({ success: false, error: 'تواريخ غير صحيحة' });
+    }
+
+    let targetIds = Array.isArray(customerIds) ? customerIds.filter(Boolean) : [];
+
+    // Win-back auto-select: inactiveDays → customers with last order < cutoff
+    if (targetIds.length === 0 && inactiveDays) {
+      const days = Math.max(1, Math.min(365, parseInt(inactiveDays, 10) || 90));
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      const prisma = getPrisma();
+      const rows = await prisma.$queryRaw`
+        SELECT c.id
+        FROM "customers" c
+        JOIN "orders" o ON o."customerId" = c.id
+        WHERE o."companyId" = ${companyId}
+        GROUP BY c.id
+        HAVING MAX(o."createdAt") < ${cutoff}
+        LIMIT 200
+      `;
+      targetIds = (rows || []).map(r => r.id);
+    }
+
+    if (targetIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'لا يوجد عملاء مستهدفين (customerIds أو inactiveDays)' });
+    }
+
+    if (targetIds.length > 200) targetIds = targetIds.slice(0, 200);
+
+    const prisma = getPrisma();
+    // Validate customers belong to company
+    const validCustomers = await prisma.customer.findMany({
+      where: { id: { in: targetIds }, companyId },
+      select: { id: true, phone: true }
+    });
+    const validMap = new Map(validCustomers.map(c => [c.id, c]));
+
+    let created = 0;
+    let skipped = 0;
+    const generated = [];
+    const errors = [];
+
+    for (const cid of targetIds) {
+      if (!validMap.has(cid)) { skipped++; continue; }
+      const cust = validMap.get(cid);
+      const phoneSuffix = (cust.phone || '').replace(/\D/g, '').slice(-4) || '0000';
+      let code;
+      let attempts = 0;
+      do {
+        const rand = Math.random().toString(36).slice(2, 6).toUpperCase();
+        code = `${cleanPrefix}-${phoneSuffix}-${rand}`.toUpperCase();
+        attempts++;
+        if (attempts > 5) break;
+        const exists = await prisma.coupon.findFirst({ where: { companyId, code } });
+        if (!exists) break;
+        code = null;
+      } while (!code && attempts < 5);
+
+      if (!code) { skipped++; errors.push({ customerId: cid, error: 'تعذر توليد كود فريد' }); continue; }
+
+      try {
+        const coupon = await prisma.coupon.create({
+          data: {
+            companyId,
+            code,
+            name: name || `${cleanPrefix} - ${phoneSuffix}`,
+            description: description || `كوبون Win-back ${cleanPrefix}`,
+            type: couponType,
+            value: parseFloat(value),
+            minOrderAmount: minOrderAmount ? parseFloat(minOrderAmount) : null,
+            maxDiscountAmount: maxDiscountAmount ? parseFloat(maxDiscountAmount) : null,
+            usageLimit: usageLimit ? parseInt(usageLimit) : 1,
+            userUsageLimit: userUsageLimit ? parseInt(userUsageLimit) : 1,
+            validFrom: startDate,
+            validTo: endDate,
+            isActive: isActive !== false,
+            customerSegments: customerSegments ? JSON.stringify(customerSegments) : JSON.stringify([cid]),
+            metadata: JSON.stringify({ bulkPrefix: cleanPrefix, customerId: cid, inactiveDays: inactiveDays || null }),
+            createdBy: userId
+          }
+        });
+        generated.push({ customerId: cid, code: coupon.code, couponId: coupon.id });
+        created++;
+      } catch (e) {
+        if (e.code === 'P2002') {
+          skipped++;
+          errors.push({ customerId: cid, error: 'كود مكرر' });
+        } else {
+          skipped++;
+          errors.push({ customerId: cid, error: e.message });
+        }
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      data: { created, skipped, total: targetIds.length, coupons: generated },
+      errors: errors.length ? errors : undefined,
+      message: `تم إنشاء ${created} كوبون فريد من ${targetIds.length}`
+    });
+  } catch (error) {
+    console.error('❌ Error bulk generating coupons:', error);
+    res.status(500).json({ success: false, error: 'فشل في إنشاء الكوبونات الجماعية' });
+  }
+};
+
 // ✅ إحصائيات الكوبونات
 exports.getCouponStats = async (req, res) => {
   try {

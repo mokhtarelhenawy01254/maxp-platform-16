@@ -8,7 +8,9 @@ const FacebookAdsService = require("../services/facebookAdsService");
 const facebookAdsDecisionService = require("../services/facebookAdsDecisionService");
 const { FacebookAdLibraryService } = require("../services/facebookAdLibraryService");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
+const { validateFacebookPageAccessToken } = require("../utils/facebookPageTokenUtils");
 const crypto = require("crypto");
+const axios = require("axios");
 // const prisma = getSharedPrismaClient(); // ❌ Removed to prevent early loading issues
 
 const PRODUCT_LAUNCH_ALLOWED_HOSTS = [
@@ -34,11 +36,20 @@ async function getCompanyAdsAccessToken(companyId) {
     });
 
     // أولوية لـ Ads Access Token، ثم User Access Token
-    return (
+    const companyToken =
       company?.facebookAdsAccessToken ||
       company?.facebookUserAccessToken ||
-      null
-    );
+      null;
+
+    if (companyToken) return companyToken;
+
+    // Fallback: قراءة من ConnectionSource إذا لم يوجد token في Company
+    const source = await getSharedPrismaClient().facebookAdsConnectionSource.findFirst({
+      where: { companyId, status: "connected" },
+      select: { accessToken: true },
+      orderBy: { updatedAt: "desc" },
+    });
+    return source?.accessToken || null;
   } catch (error) {
     console.error("❌ Error getting company access token:", error);
     return null;
@@ -1330,6 +1341,7 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
       select: {
         id: true,
         pageId: true,
+        pageAccessToken: true,
       },
     });
     if (!storedPage) {
@@ -1342,13 +1354,44 @@ async function validateFullAdAssetReadiness({ companyId, pageId, pixelId, adAcco
       };
     }
 
-    const pageAccessToken = await getCompanyPageAccessToken(companyId);
+    // توكِن الصفحة المخزّن هو الصحيح لجلب الصفحات — توكِن المستخدم/الإعلانات
+    // ممكن مايقدرش يجلبها (scopes مختلفة) فيفشل النشر بـ NOT_ACCESSIBLE بلا سبب
+    const pageAccessToken =
+      storedPage.pageAccessToken || (await getCompanyPageAccessToken(companyId));
     if (pageAccessToken) {
       const pageService = new FacebookAdsService(pageAccessToken, adAccount.accountId);
       const pagesResult = await pageService.getFacebookPages();
       const pages = Array.isArray(pagesResult?.data) ? pagesResult.data : [];
-      const selectedPage = pages.find((page) => String(page.id) === String(pageId));
-      if (!selectedPage) {
+      let selectedPage = pages.find((page) => String(page.id) === String(pageId));
+
+      // Page Token لا يستطيع تعداد الحسابات عبر /me/accounts — يرجع قائمة فارغة دائماً.
+      // نتحقق من الصفحة مباشرة عبر /me باستخدام توكن الصفحة المخزن.
+      if (!selectedPage && storedPage.pageAccessToken) {
+        try {
+          const tokenCheck = await validateFacebookPageAccessToken({
+            pageId: String(pageId),
+            pageAccessToken: storedPage.pageAccessToken,
+          });
+          if (tokenCheck.isValid) {
+            selectedPage = tokenCheck.page;
+          } else {
+            console.warn(
+              "⚠️ [FULL-AD] Stored page token check failed:",
+              tokenCheck.reason,
+              tokenCheck.error?.message || "",
+            );
+          }
+        } catch (meError) {
+          console.error(
+            "⚠️ [FULL-AD] Page token verification error:",
+            meError.response?.data?.error?.message || meError.message,
+          );
+        }
+      }
+
+      // الصفحة متصلة في MaxP ولها توكن صفحة تم التحقق منه عند الربط — نثق بالسجل المحلي
+      // بدل منع النشر بسبب فشل فحص مباشر (شبكة/صلاحيات قراءة إضافية غير ضرورية للنشر).
+      if (!selectedPage && !storedPage.pageAccessToken) {
         return {
           success: false,
           errorCode: "FACEBOOK_PAGE_NOT_ACCESSIBLE",
@@ -6513,7 +6556,7 @@ const getAdsConnectionStatus = async (req, res) => {
           checked: true,
           ok: result.success,
           accountsCount,
-          error: result.success ? null : result.error || "FACEBOOK_API_ERROR",
+          error: result.success ? null : (typeof result.error === "string" ? result.error : result.error?.error?.message || result.error?.message || "FACEBOOK_API_ERROR"),
         });
       } catch (checkError) {
         remoteSources.push({

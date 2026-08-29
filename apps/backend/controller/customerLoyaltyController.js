@@ -481,7 +481,7 @@ async function deleteTier(req, res) {
 async function getCustomerRecords(req, res) {
   try {
     const { companyId } = req.user;
-    const { customerId, programId, status, search, page, pageSize } = req.query;
+    const { customerId, programId, status, search, page, pageSize, minPoints } = req.query;
 
     const records = await customerLoyaltyService.getCustomerRecords(companyId, {
       customerId,
@@ -489,7 +489,8 @@ async function getCustomerRecords(req, res) {
       status,
       search,
       page,
-      pageSize
+      pageSize,
+      minPoints
     });
 
     res.json({
@@ -1098,7 +1099,7 @@ async function getSystemAnalytics(req, res) {
       const [activeVouchers, usedVouchers, convertedVouchers, expiredVouchers, totalDeliveredOrders] =
         await Promise.all([
           prisma.customerLoyaltyVoucher.count({
-            where: { companyId, status: 'ACTIVE' }
+            where: { companyId, status: 'ACTIVE', expiresAt: { gt: new Date() } }
           }),
           prisma.customerLoyaltyVoucher.count({
             where: { companyId, status: 'USED' }
@@ -1141,11 +1142,14 @@ async function getSystemAnalytics(req, res) {
 
       let preActivationCustomers = 0;
       if (activatedAt && deliveredCustomerIds.length > 0) {
-        const preActivationIds = deliveredOrders
-          .filter((o) => new Date(o.createdAt) < activatedAt)
-          .map((c) => c.customerId);
+        const preActivationUnique = new Set(
+          deliveredOrders
+            .filter((o) => new Date(o.createdAt) < activatedAt)
+            .map((c) => c.customerId)
+            .filter(Boolean)
+        );
         const withVoucherIds = new Set(customersWithVouchers.map((c) => c.customerId));
-        preActivationCustomers = preActivationIds.filter((id) => !withVoucherIds.has(id)).length;
+        preActivationCustomers = [...preActivationUnique].filter((id) => !withVoucherIds.has(id)).length;
       }
 
       data = {
@@ -1347,7 +1351,259 @@ async function syncCashbackProgramStatus(companyId, enabled, userId) {
   }
 }
 
+const RE_ENGAGEMENT_DEFAULTS = {
+  inactiveDays: 30,
+  loops: { occasion: false, inactive: false, points: false }
+};
+
+/**
+ * 🎯 إعدادات إعادة الاستهداف (حد الـ"سكت" + مفاتيح تفعيل الحلقات).
+ * تُخزن داخل Company.loyaltySettings (JSON) تحت مفتاح reEngagement.
+ */
+async function getReEngagementSettings(req, res) {
+  try {
+    const { companyId } = req.user;
+    const prisma = getSharedPrismaClient();
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { loyaltySettings: true }
+    });
+    let cfg = { ...RE_ENGAGEMENT_DEFAULTS };
+    try {
+      if (company?.loyaltySettings) {
+        const parsed = JSON.parse(company.loyaltySettings);
+        const stored = parsed.reEngagement || {};
+        cfg = { ...RE_ENGAGEMENT_DEFAULTS, ...stored };
+        cfg.loops = { ...RE_ENGAGEMENT_DEFAULTS.loops, ...(cfg.loops || {}) };
+      }
+    } catch (e) { /* ignore malformed */ }
+    res.json({ success: true, data: cfg });
+  } catch (error) {
+    console.error('❌ Error getting re-engagement settings:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب إعدادات إعادة الاستهداف' });
+  }
+}
+
+/**
+ * 🎯 حفظ إعدادات إعادة الاستهداف: حد أيام السكوت + مفاتيح تفعيل الحلقات.
+ * (تفعيل عيد الميلاد بيتم عبر إعدادات أتمتة عيد الميلاد نفسها.)
+ */
+async function updateReEngagementSettings(req, res) {
+  try {
+    const { companyId } = req.user;
+    const body = req.body || {};
+    const prisma = getSharedPrismaClient();
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { loyaltySettings: true }
+    });
+    let stored = {};
+    try {
+      if (company?.loyaltySettings) stored = JSON.parse(company.loyaltySettings);
+    } catch (e) { stored = {}; }
+
+    const current = stored.reEngagement || {};
+    const next = {
+      inactiveDays: Math.max(1, Math.min(365, parseInt(body.inactiveDays, 10) || current.inactiveDays || RE_ENGAGEMENT_DEFAULTS.inactiveDays)),
+      loops: {
+        occasion: body.loops?.occasion !== undefined ? Boolean(body.loops.occasion) : (current.loops?.occasion ?? RE_ENGAGEMENT_DEFAULTS.loops.occasion),
+        inactive: body.loops?.inactive !== undefined ? Boolean(body.loops.inactive) : (current.loops?.inactive ?? RE_ENGAGEMENT_DEFAULTS.loops.inactive),
+        points: body.loops?.points !== undefined ? Boolean(body.loops.points) : (current.loops?.points ?? RE_ENGAGEMENT_DEFAULTS.loops.points)
+      }
+    };
+
+    stored.reEngagement = next;
+    await prisma.company.update({
+      where: { id: companyId },
+      data: { loyaltySettings: JSON.stringify(stored) }
+    });
+
+    res.json({ success: true, data: next, message: 'تم حفظ إعدادات إعادة الاستهداف بنجاح' });
+  } catch (error) {
+    console.error('❌ Error updating re-engagement settings:', error);
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء حفظ إعدادات إعادة الاستهداف' });
+  }
+}
+
+/**
+ * 🎯 عدد العملاء المطابق لكل حلقة إعادة استهداف.
+ * - inactive: عملاء ليهم أوردرات كلها أقدم من حد السكوت (مافيش شراء بعده)
+ * - points: أعضاء ولاء عندهم رصيد نقاط فعلي (> 0)
+ * - occasion: مجموع أعداد قوائم العملاء المستهدفة في المناسبات غير الملغاة
+ * (عدد عيد الميلاد يُجلب من مسار أتمتة عيد الميلاد الحالي).
+ */
+async function getReEngagementCounts(req, res) {
+  try {
+    const { companyId } = req.user;
+    const inactiveDays = Math.max(1, Math.min(365, parseInt(req.query.inactiveDays, 10) || 30));
+    const prisma = getSharedPrismaClient();
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - inactiveDays);
+    const bucket7 = new Date(cutoffDate);
+    bucket7.setDate(bucket7.getDate() - 7);
+    const bucket14 = new Date(bucket7);
+    bucket14.setDate(bucket14.getDate() - 7);
+    const daysAgo30 = new Date();
+    daysAgo30.setDate(daysAgo30.getDate() - 30);
+    const daysAgo60 = new Date();
+    daysAgo60.setDate(daysAgo60.getDate() - 60);
+
+    const [
+      inactiveRows,
+      points,
+      occasions,
+      inactiveBuckets,
+      pointsLast30,
+      pointsPrev30
+    ] = await Promise.all([
+      prisma.$queryRaw`
+        SELECT COUNT(*)::int AS "count"
+        FROM (
+          SELECT o."customerId"
+          FROM "orders" o
+          WHERE o."companyId" = ${companyId}
+            AND o."customerId" IS NOT NULL
+          GROUP BY o."customerId"
+          HAVING MAX(o."createdAt") < ${cutoffDate}
+        ) sub
+      `,
+      prisma.customerLoyaltyRecord.count({
+        where: { companyId, status: 'ACTIVE', currentPoints: { gt: 0 } }
+      }),
+      prisma.occasion.findMany({
+        where: { companyId },
+        select: { customerListIds: true, status: true }
+      }),
+      prisma.$queryRaw`
+        SELECT
+          COUNT(*) FILTER (WHERE "lastOrder" >= ${bucket7} AND "lastOrder" < ${cutoffDate})::int AS "last7d",
+          COUNT(*) FILTER (WHERE "lastOrder" >= ${bucket14} AND "lastOrder" < ${bucket7})::int AS "prev7d"
+        FROM (
+          SELECT MAX(o."createdAt") AS "lastOrder"
+          FROM "orders" o
+          WHERE o."companyId" = ${companyId}
+            AND o."customerId" IS NOT NULL
+          GROUP BY o."customerId"
+        ) sub
+      `,
+      prisma.customerLoyaltyRecord.count({
+        where: { companyId, status: 'ACTIVE', lastPointsEarned: { gte: daysAgo30 } }
+      }),
+      prisma.customerLoyaltyRecord.count({
+        where: { companyId, status: 'ACTIVE', lastPointsEarned: { gte: daysAgo60, lt: daysAgo30 } }
+      })
+    ]);
+    const inactive = Number(inactiveRows?.[0]?.count || 0);
+    const inactiveTrend = {
+      last7d: Number(inactiveBuckets?.[0]?.last7d || 0),
+      prev7d: Number(inactiveBuckets?.[0]?.prev7d || 0)
+    };
+    const pointsTrend = { last30d: pointsLast30, prev30d: pointsPrev30 };
+
+    const activeOccasions = (occasions || []).filter(
+      (occ) => String(occ.status || '').toUpperCase() !== 'CANCELLED'
+    );
+    const listIds = new Set();
+    for (const occ of activeOccasions) {
+      try {
+        (JSON.parse(occ.customerListIds || '[]') || []).forEach((id) => id && listIds.add(id));
+      } catch (e) { /* ignore malformed */ }
+    }
+    let occasion = 0;
+    if (listIds.size > 0) {
+      const lists = await prisma.customerList.findMany({
+        where: { companyId, id: { in: [...listIds] } },
+        select: { count: true }
+      });
+      occasion = (lists || []).reduce((s, l) => s + (Number(l.count) || 0), 0);
+    }
+
+    res.json({
+      success: true,
+      data: { inactive, points, occasion, inactiveTrend, pointsTrend }
+    });
+  } catch (error) {
+    console.error('❌ Error getting re-engagement counts:', error);
+    res.json({
+      success: true,
+      data: {
+        inactive: null,
+        points: null,
+        occasion: null,
+        inactiveTrend: null,
+        pointsTrend: null
+      }
+    });
+  }
+}
+
+/**
+ * 🎯 قائمة العملاء المطابقين لحلقات إعادة الاستهداف (للـ drill-down).
+ * type=inactive: عملاء كل أوردراتهم أقدم من حد السكوت.
+ * type=points: أعضاء ولاء برصيد نقاط (> 0).
+ * (عيد الميلاد له مساره الحالي: /birthday-automation/upcoming)
+ */
+async function getReEngagementCustomers(req, res) {
+  try {
+    const { companyId } = req.user;
+    const type = String(req.query.type || 'inactive');
+    const take = Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const prisma = getSharedPrismaClient();
+
+    let customers = [];
+    if (type === 'inactive') {
+      const days = Math.max(1, Math.min(365, parseInt(req.query.inactiveDays, 10) || 30));
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      const rows = await prisma.$queryRaw`
+        SELECT c.id, c."firstName", c."lastName", c.phone, MAX(o."createdAt") AS "lastOrderDate"
+        FROM "customers" c
+        JOIN "orders" o ON o."customerId" = c.id
+        WHERE o."companyId" = ${companyId}
+        GROUP BY c.id, c."firstName", c."lastName", c.phone
+        HAVING MAX(o."createdAt") < ${cutoff}
+        ORDER BY MAX(o."createdAt") ASC
+        LIMIT ${take}
+      `;
+      customers = (rows || []).map((r) => ({
+        id: r.id,
+        name: `${r.firstName || ''} ${r.lastName || ''}`.trim() || '—',
+        phone: r.phone || '',
+        extra: r.lastOrderDate ? `آخر شراء ${new Date(r.lastOrderDate).toLocaleDateString('ar-EG')}` : ''
+      }));
+    } else if (type === 'points') {
+      const rows = await prisma.customerLoyaltyRecord.findMany({
+        where: { companyId, status: 'ACTIVE', currentPoints: { gt: 0 } },
+        take,
+        orderBy: { currentPoints: 'desc' },
+        include: {
+          customer: { select: { firstName: true, lastName: true, phone: true } }
+        }
+      });
+      customers = (rows || []).map((r) => ({
+        id: r.id,
+        name: r.customer
+          ? `${r.customer.firstName || ''} ${r.customer.lastName || ''}`.trim() || '—'
+          : '—',
+        phone: r.customer?.phone || '',
+        extra: `${Number(r.currentPoints || 0)} نقطة`
+      }));
+    }
+
+    res.json({ success: true, data: customers });
+  } catch (error) {
+    console.error('❌ Error getting re-engagement customers:', error);
+    res.json({ success: true, data: [] });
+  }
+}
+
 module.exports = {
+  getReEngagementSettings,
+  updateReEngagementSettings,
+  getReEngagementCounts,
+  getReEngagementCustomers,
   getLoyaltyConfig,
   updateLoyaltyConfig,
   getPrograms,
@@ -1398,5 +1654,28 @@ module.exports = {
       console.error('❌ Error backfilling vouchers:', error);
       res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء إصدار الكوبونات الناقصة' });
     }
+  },
+  getRetentionCadenceSettings: async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const retentionCadenceService = require('../services/hr/retentionCadenceService');
+      const config = await retentionCadenceService.getConfig(companyId);
+      res.json({ success: true, data: config });
+    } catch (error) {
+      console.error('❌ Error getting retention cadence settings:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء جلب إعدادات الرسائل الدورية' });
+    }
+  },
+  updateRetentionCadenceSettings: async (req, res) => {
+    try {
+      const { companyId } = req.user;
+      const retentionCadenceService = require('../services/hr/retentionCadenceService');
+      const config = await retentionCadenceService.updateConfig(companyId, req.body || {});
+      res.json({ success: true, data: config, message: 'تم حفظ إعدادات الرسائل الدورية بنجاح' });
+    } catch (error) {
+      console.error('❌ Error updating retention cadence settings:', error);
+      res.status(500).json({ success: false, error: error.message || 'حدث خطأ أثناء تحديث إعدادات الرسائل الدورية' });
+    }
   }
+
 };

@@ -1,0 +1,348 @@
+- generic [ref=f47e4]:
+  - banner "AWS Documentation site header" [ref=f47e5]:
+    - link "Skip to main content" [ref=f47e6] [cursor=pointer]:
+      - /url: "#skip-link"
+    - generic [ref=f47e10]:
+      - 'link "Language Selector. Currently set to: English" [ref=f47e14] [cursor=pointer]':
+        - /url: "#"
+        - generic [ref=f47e15]: English
+      - link "preferences" [ref=f47e20]:
+        - /url: "#"
+        - generic [ref=f47e21]: Preferences
+      - link "Contact Us" [ref=f47e25]:
+        - /url: https://aws.amazon.com/contact-us/?cmpid=docs_headercta_contactus
+      - link "Feedback" [ref=f47e28]:
+        - /url: https://docs.aws.amazon.com/feedback/doc-feedback.html?hidden_service_name=AWS+Account+Billing&topic_url=https%3A%2F%2Fdocs.aws.amazon.com%2Fawsaccountbilling%2Flatest%2Faboutv2%2Fbilling-what-is.html
+    - generic [ref=f47e30]:
+      - link [ref=f47e33] [cursor=pointer]:
+        - /url: https://docs.aws.amazon.com
+        - img "AWS Documentation" [ref=f47e34]
+      - generic [ref=f47e36]:
+        - button "Scroll left" [disabled] [ref=f47e38]
+        - generic [ref=f47e39]:
+          - link "Get started" [ref=f47e43] [cursor=pointer]:
+            - /url: "#"
+          - link "Service guides" [ref=f47e49] [cursor=pointer]:
+            - /url: "#"
+          - link "Developer tools" [ref=f47e55] [cursor=pointer]:
+            - /url: "#"
+          - link "AI resources" [ref=f47e61] [cursor=pointer]:
+            - /url: "#"
+        - button "Scroll right" [disabled] [ref=f47e65]
+      - button "Open search" [ref=f47e68] [cursor=pointer]
+  - main [ref=f47e71]:
+    - generic:
+      - navigation "Side navigation":
+        - button "Open side navigation" [ref=f47e74] [cursor=pointer]
+    - generic [ref=f47e79]:
+      - navigation "Breadcrumbs-vr" [ref=f47e83]:
+        - list [ref=f47e84]:
+          - listitem [ref=f47e85]:
+            - link "Documentation" [ref=f47e87] [cursor=pointer]:
+              - /url: https://docs.aws.amazon.com/index.html
+          - listitem [ref=f47e91]:
+            - link "AWS Billing and Cost Management" [ref=f47e93] [cursor=pointer]:
+              - /url: https://docs.aws.amazon.com/account-billing/index.html
+          - listitem [ref=f47e97]:
+            - link "User Guide" [disabled] [ref=f47e99]
+        - list [ref=f47e101]:
+          - listitem [ref=f47e102]:
+            - link [ref=f47e104] [cursor=pointer]:
+              - /url: https://docs.aws.amazon.com/index.html
+              - generic [ref=f47e105]: Documentation
+          - listitem [ref=f47e108]:
+            - link [ref=f47e110] [cursor=pointer]:
+              - /url: https://docs.aws.amazon.com/account-billing/index.html
+              - generic [ref=f47e111]: AWS Billing and Cost Management
+          - listitem [ref=f47e114]:
+            - generic [ref=f47e115]: User Guide
+      - generic [ref=f47e119]:
+        - generic:
+          - heading "What is AWS Billing and Cost Management?" [level=1] [ref=f47e121]
+          - generic [ref=f47e124]:
+            - link "PDF" [ref=f47e126] [cursor=pointer]:
+              - /url: /pdfs/awsaccountbilling/latest/aboutv2/awsaccountbilling-aboutv2.pdf#billing-what-is
+            - link "RSS" [ref=f47e130] [cursor=pointer]:
+              - /url: aws-billing-release-notes.rss
+            - link "Download Markdown" [ref=f47e134] [cursor=pointer]:
+              - /url: billing-what-is.md
+              - generic [ref=f47e135]: Markdown
+            - generic [ref=f47e140]:
+              - checkbox "Focus mode" [ref=f47e143]
+              - generic [ref=f47e144]: Focus mode
+      - generic [ref=f47e152]:
+        - heading [level=3] [ref=f47e158] [cursor=pointer]:
+          - button "On this page" [ref=f47e159]
+        - list [ref=f47e163]:
+          - listitem [ref=f47e164]:
+            - generic [ref=f47e171]:
+              - paragraph [ref=f47e172]: Welcome to the AWS Billing User Guide.
+              - paragraph [ref=f47e173]: AWS Billing and Cost Management provides a suite of features to help you set up your billing, retrieve and pay invoices, and analyze, organize, plan, and optimize your costs.
+              - paragraph [ref=f47e174]: To get started, set up your billing to match your requirements. For individuals or small organizations, AWS will automatically charge the credit card provided.
+              - paragraph [ref=f47e175]: For larger organizations, you can use AWS Organizations to consolidate your charges across multiple AWS accounts. You can then configure invoicing, tax, purchase order, and payment methods to match your organization’s procurement processes.
+              - paragraph [ref=f47e176]: If you have multiple AWS Organizations, use billing transfer to centrally manage and pay for all your organizations from a single account.
+              - paragraph [ref=f47e177]: You can allocate your costs to teams, applications, or environments by using cost categories or cost allocation tags, or using AWS Cost Explorer. You can also export data to your preferred data warehouse or business intelligence tool.
+              - paragraph [ref=f47e178]: See the following overview of features to help you manage your cloud finances.
+              - heading [level=2] [ref=f47e179]:
+                - text: Features of AWS Billing and Cost Management
+                - button "Copy link to the section" [ref=f47e187] [cursor=pointer]
+              - generic [ref=f47e189]:
+                - heading "Topics" [level=6] [ref=f47e190]
+                - list [ref=f47e191]:
+                  - listitem [ref=f47e192]:
+                    - paragraph [ref=f47e193]:
+                      - link "Billing and payments" [ref=f47e194] [cursor=pointer]:
+                        - /url: "#billing-and-payments-features"
+                  - listitem [ref=f47e195]:
+                    - paragraph [ref=f47e196]:
+                      - link "Cost analysis" [ref=f47e197] [cursor=pointer]:
+                        - /url: "#cost-analysis-features"
+                  - listitem [ref=f47e198]:
+                    - paragraph [ref=f47e199]:
+                      - link "Cost organization" [ref=f47e200] [cursor=pointer]:
+                        - /url: "#cost-organization-features"
+                  - listitem [ref=f47e201]:
+                    - paragraph [ref=f47e202]:
+                      - link "Budgeting and planning" [ref=f47e203] [cursor=pointer]:
+                        - /url: "#budgeting-planning-features"
+                  - listitem [ref=f47e204]:
+                    - paragraph [ref=f47e205]:
+                      - link "Savings and commitments" [ref=f47e206] [cursor=pointer]:
+                        - /url: "#savings-commitments-features"
+              - heading "Billing and payments" [level=3] [ref=f47e207]
+              - paragraph [ref=f47e208]: Understand your monthly charges, view and pay invoices, and manage preferences for billing, invoices, tax, and payments.
+              - list [ref=f47e210]:
+                - listitem [ref=f47e211]:
+                  - paragraph [ref=f47e212]: Bills page – Download invoices and view detailed monthly billing data to understand how your charges were calculated.
+                - listitem [ref=f47e213]:
+                  - paragraph [ref=f47e214]: Purchase orders – Create and manage your purchase orders to comply with your organization’s unique procurement processes.
+                - listitem [ref=f47e215]:
+                  - paragraph [ref=f47e216]: Payments – Understand your outstanding or past-due payment balance and payment history.
+                - listitem [ref=f47e217]:
+                  - paragraph [ref=f47e218]: Payment profiles – Set up multiple payment methods for different AWS service providers or parts of your organization.
+                - listitem [ref=f47e219]:
+                  - paragraph [ref=f47e220]: Credits – Review credit balances and choose where credits should be applied.
+                - listitem [ref=f47e221]:
+                  - paragraph [ref=f47e222]: Billing preferences – Enable invoice delivery by email and your preferences for credit sharing, alerts, and discount sharing.
+                - listitem [ref=f47e223]:
+                  - paragraph [ref=f47e224]: Billing transfer – Separates billing and financial management from security and governance management. This enables a single AWS organization to get centralized access to cost data and AWS invoices across multiple AWS organizations.
+              - heading "Cost analysis" [level=3] [ref=f47e225]
+              - paragraph [ref=f47e226]: Analyze your costs, export detailed cost and usage data, and forecast your spending.
+              - list [ref=f47e228]:
+                - listitem [ref=f47e229]:
+                  - paragraph [ref=f47e230]: AWS Cost Explorer – Analyze your cost and usage data with visuals, filtering, and grouping. You can forecast your costs and create custom reports.
+                - listitem [ref=f47e231]:
+                  - paragraph [ref=f47e232]: Data exports – Create custom data exports from Billing and Cost Management datasets.
+                - listitem [ref=f47e233]:
+                  - paragraph [ref=f47e234]: Cost Anomaly Detection – Set up automated alerts when AWS detects a cost anomaly to reduce unexpected costs.
+                - listitem [ref=f47e235]:
+                  - paragraph [ref=f47e236]: AWS Free Tier – Monitor current and forecasted usage of free tier services to avoid unexpected costs.
+                - listitem [ref=f47e237]:
+                  - paragraph [ref=f47e238]: Split cost allocation data – Enable detailed cost and usage data for shared Amazon Elastic Container Service (Amazon ECS) resources.
+                - listitem [ref=f47e239]:
+                  - paragraph [ref=f47e240]: Cost Management preferences – Manage what data that member accounts can view, change account data granularity, and configure cost optimization preferences.
+              - heading "Cost organization" [level=3] [ref=f47e241]
+              - paragraph [ref=f47e242]: Organize your costs across teams, applications, or end customers.
+              - list [ref=f47e244]:
+                - listitem [ref=f47e245]:
+                  - paragraph [ref=f47e246]: Cost categories – Map costs to teams, applications, or environments, and then view costs along these dimensions in Cost Explorer and data exports. Define split charge rules to allocate shared costs.
+                - listitem [ref=f47e247]:
+                  - paragraph [ref=f47e248]: Cost allocation tags – Use resource tags to organize, and then view costs by cost allocation tag in Cost Explorer and data exports.
+              - heading "Budgeting and planning" [level=3] [ref=f47e249]
+              - paragraph [ref=f47e250]: Estimate the cost of a planned workload, and create budgets to track and control costs.
+              - list [ref=f47e252]:
+                - listitem [ref=f47e253]:
+                  - paragraph [ref=f47e254]: Budgets – Set custom budgets for cost and usage to govern costs across your organization and receive alerts when costs exceed your defined thresholds.
+                - listitem [ref=f47e255]:
+                  - paragraph [ref=f47e256]: In-console Pricing calculator – Use this feature to estimate your planned cloud costs using your discount and purchase commitments.
+                - listitem [ref=f47e257]:
+                  - paragraph [ref=f47e258]: Public Pricing calculator website – Create cost estimates for using AWS services with On-Demand rates.
+              - heading "Savings and commitments" [level=3] [ref=f47e259]
+              - paragraph [ref=f47e260]: Optimize resource usage and use flexible pricing models to lower your bill.
+              - list [ref=f47e262]:
+                - listitem [ref=f47e263]:
+                  - paragraph [ref=f47e264]: AWS Cost Optimization Hub – Identify savings opportunities with tailored recommendations including deleting unused resources, rightsizing, Savings Plans, and reservations.
+                - listitem [ref=f47e265]:
+                  - paragraph [ref=f47e266]: Savings Plans – Reduce your bill compared to On-Demand prices with flexible pricing models. Manage your Savings Plans inventory, review purchase recommendations, run purchase analyses, and analyze Savings Plans utilization and coverage.
+                - listitem [ref=f47e267]:
+                  - paragraph [ref=f47e268]: Reservations – Reserve capacity at discounted rates for Amazon Elastic Compute Cloud (Amazon EC2), Amazon Relational Database Service (Amazon RDS), Amazon Redshift, Amazon DynamoDB, and more.
+              - heading [level=2] [ref=f47e269]:
+                - text: Related services
+                - button "Copy link to the section" [ref=f47e277] [cursor=pointer]
+              - heading "AWS Billing Conductor" [level=3] [ref=f47e279]
+              - paragraph [ref=f47e280]: Billing Conductor is a custom billing service that supports the showback and chargeback workflows of AWS Partners reselling AWS services, solutions, and AWS customers purchasing cloud services directly through AWS. You can customize a second, alternative version of your monthly billing data. The service models the billing relationship between you and your customers or business units.
+              - paragraph [ref=f47e281]: Billing Conductor doesn't change the way that you're billed by AWS each month. Instead, you can use the service to configure, generate, and display rates to specific customers over a given billing period. You can also use it to analyze the difference between the rates that you apply to your groupings relative to the actual rates for those same accounts from AWS.
+              - paragraph [ref=f47e282]:
+                - text: As a result of your Billing Conductor configuration, the management account can also see the custom rate that's applied on the billing details page of the
+                - link [ref=f47e283] [cursor=pointer]:
+                  - /url: https://console.aws.amazon.com/billing/home#/bills
+                  - text: AWS Billing and Cost Management console
+                  - generic "Opens in a new tab" [ref=f47e285]
+                - text: . The management account can also configure AWS Cost and Usage Reports per billing group.
+              - paragraph [ref=f47e287]: When billing transfer users sign in to the bill transfer account, Billing Conductor enables the management account of the AWS organization that transfers their bills (bill source account) to view only their usage priced with the rates from the bill transfer account.
+              - paragraph [ref=f47e288]:
+                - text: For more information about Billing Conductor, see the
+                - link "AWS Billing Conductor User Guide" [ref=f47e289] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/billingconductor/latest/userguide/what-is-billingconductor.html
+                - text: . For more information about billing transfer, see
+                - link "Transfer billing management to external accounts" [ref=f47e290] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/orgs_transfer_billing.html
+                - text: .
+              - heading "IAM" [level=3] [ref=f47e291]
+              - paragraph [ref=f47e292]: You can use AWS Identity and Access Management (IAM) to control who in your account or organization has access to specific pages on the Billing and Cost Management console. For example, you can control access to invoices and detailed information about charges and account activity, budgets, payment methods, and credits. IAM is a feature of your AWS account. You don't need to do anything else to sign up for IAM and there's no charge to use it.
+              - paragraph [ref=f47e293]: When you create an account, you begin with one sign-in identity that has complete access to all AWS services and resources in the account. This identity is called the AWS account root user and is accessed by signing in with the email address and password that you used to create the account. We strongly recommend that you don't use the root user for your everyday tasks. Safeguard your root user credentials and use them to perform the tasks that only the root user can perform.
+              - paragraph [ref=f47e294]:
+                - text: For the complete list of tasks that require you to sign in as the root user, see
+                - link "Tasks that require root user credentials" [ref=f47e295] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/IAM/latest/UserGuide/root-user-tasks.html
+                - text: in the
+                - emphasis [ref=f47e296]: IAM User Guide
+                - text: .
+              - paragraph [ref=f47e297]:
+                - text: By default, IAM users and roles in your account can't access the Billing and Cost Management console. To grant access, enable the Activate IAM Access setting. For more information, see
+                - link "About IAM Access" [ref=f47e298] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/control-access-billing.html#ControllingAccessWebsite-Activate
+                - text: .
+              - paragraph [ref=f47e299]:
+                - text: If you have multiple AWS accounts in your organization, you can manage linked account access to Cost Explorer data by using the Cost Management preferences page. For more information, see
+                - link "Controlling access to Cost Explorer" [ref=f47e300] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/cost-management/latest/userguide/ce-access.html
+                - text: .
+              - paragraph [ref=f47e301]:
+                - text: For more information about IAM, see the
+                - link "IAM User Guide" [ref=f47e302] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/IAM/latest/UserGuide/
+                - text: .
+              - heading "AWS Organizations" [level=3] [ref=f47e303]
+              - paragraph [ref=f47e304]:
+                - text: You can use the consolidated billing feature in Organizations to consolidate billing and payment for multiple AWS accounts. Every organization has a
+                - emphasis [ref=f47e305]: management account
+                - text: that pays the charges of all the
+                - emphasis [ref=f47e306]: member accounts
+                - text: .
+              - paragraph [ref=f47e307]: "Consolidated billing has the following benefits:"
+              - list [ref=f47e309]:
+                - listitem [ref=f47e310]:
+                  - paragraph [ref=f47e311]: One bill – Get one bill for multiple accounts.
+                - listitem [ref=f47e312]:
+                  - paragraph [ref=f47e313]: Easy tracking – Track charges across multiple accounts and download the combined cost and usage data.
+                - listitem [ref=f47e314]:
+                  - paragraph [ref=f47e315]:
+                    - text: Combined usage – Combine the usage across all accounts in the organization to share the volume pricing discounts, Reserved Instances discounts, and Savings Plans. This can result in a lower charge for your project, department, or company than with individual standalone accounts. For more information, see
+                    - link "Volume discounts" [ref=f47e316] [cursor=pointer]:
+                      - /url: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/useconsolidatedbilling-effective.html#useconsolidatedbilling-discounts
+                    - text: .
+                - listitem [ref=f47e317]:
+                  - paragraph [ref=f47e318]: No extra fee – Consolidated billing is offered at no additional cost.
+              - paragraph [ref=f47e319]:
+                - text: For more information about Organizations, see the
+                - link "AWS Organizations User Guide" [ref=f47e320] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/organizations/latest/userguide/
+                - text: .
+              - heading "Billing transfer" [level=3] [ref=f47e321]
+              - paragraph [ref=f47e322]: You can use billing transfer to centrally manage and pay for multiple AWS Organizations from a single account.
+              - paragraph [ref=f47e323]: Billing transfer allows a management account to designate an external management account to manage and pay for its consolidated bill. This centralizes billing while maintaining security management autonomy. To set up billing transfer, an external account (bill transfer account) sends a billing transfer invitation to a management account (bill source account). If the invitation is accepted, the external account becomes the bill transfer account. The bill transfer account then manages and pays for the bill source account's consolidated bill, starting on the date specified in the invitation.
+              - paragraph [ref=f47e324]:
+                - text: For more information, see
+                - link "Transfer billing management to external accounts" [ref=f47e325] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/orgs_transfer_billing.html
+                - text: .
+              - heading "AWS Price List API" [level=3] [ref=f47e326]
+              - paragraph [ref=f47e327]: AWS Price List API is a centralized catalog that you can programmatically query AWS for services, products, and pricing information. You can use the bulk API to retrieve up-to-date AWS service information in bulk, available in both JSON and CSV formats.
+              - paragraph [ref=f47e328]:
+                - text: For more information, see
+                - link "What is AWS Price List API?" [ref=f47e329] [cursor=pointer]:
+                  - /url: https://docs.aws.amazon.com/awsaccountbilling/latest/aboutv2/price-changes.html
+                - text: .
+          - listitem [ref=f47e330]:
+            - generic [ref=f47e333]:
+              - generic [ref=f47e335]:
+                - generic [ref=f47e336]: Did this page help you?
+                - generic [ref=f47e340]:
+                  - button "Yes-This page is helpful." [ref=f47e342] [cursor=pointer]: "Yes"
+                  - button "No-This page is not helpful." [ref=f47e345] [cursor=pointer]: "No"
+              - link "Provide feedback" [ref=f47e350]:
+                - /url: https://docs.aws.amazon.com/feedback/doc-feedback.html?hidden_service_name=AWS+Account+Billing&topic_url=https%3A%2F%2Fdocs.aws.amazon.com%2Fawsaccountbilling%2Flatest%2Faboutv2%2Fbilling-what-is.html
+        - generic [ref=f47e354]:
+          - heading "Next topic:" [level=4] [ref=f47e355]
+          - link "Getting set up with Billing" [ref=f47e357]:
+            - /url: ./billing-getting-started.html
+  - contentinfo [ref=f47e358]:
+    - generic [ref=f47e360]:
+      - generic [ref=f47e361]:
+        - generic [ref=f47e362]:
+          - generic:
+            - generic [ref=f47e364]:
+              - heading "Get Started" [level=2] [ref=f47e365]
+              - generic [ref=f47e367]:
+                - link [ref=f47e370]:
+                  - /url: https://aws.amazon.com/getting-started/hands-on/
+                  - text: AWS Hands-On Tutorials
+                  - img "Opens in a new tab" [ref=f47e372]
+                - link [ref=f47e376]:
+                  - /url: https://aws.amazon.com/solutions/
+                  - text: AWS Solutions Library
+                  - img "Opens in a new tab" [ref=f47e378]
+                - link [ref=f47e382]:
+                  - /url: https://aws.amazon.com/getting-started/decision-guides/
+                  - text: AWS Decision Guides
+                  - img "Opens in a new tab" [ref=f47e384]
+            - generic [ref=f47e387]:
+              - heading "Service Guides" [level=2] [ref=f47e388]
+              - generic [ref=f47e390]:
+                - link "Choosing a generative AI service" [ref=f47e393]:
+                  - /url: https://docs.aws.amazon.com/generative-ai-on-aws-how-to-choose/
+                - link "AWS service guides" [ref=f47e396]:
+                  - /url: https://docs.aws.amazon.com/#products
+                - link [ref=f47e399]:
+                  - /url: https://github.com/aws-samples/sample-developer-tutorials
+                  - text: AWS CLI Tutorials on GitHub
+                  - img "Opens in a new tab" [ref=f47e401]
+            - generic [ref=f47e404]:
+              - heading "Developer Tools" [level=2] [ref=f47e405]
+              - generic [ref=f47e407]:
+                - link "AWS Code Example Library" [ref=f47e410]:
+                  - /url: https://docs.aws.amazon.com/code-library/latest/ug/what-is-code-library.html
+                - link "AWS CLI" [ref=f47e413]:
+                  - /url: https://docs.aws.amazon.com/cli/
+                - link [ref=f47e416]:
+                  - /url: https://builder.aws.com/
+                  - text: AWS Builder Center
+                  - img "Opens in a new tab" [ref=f47e418]
+                - link [ref=f47e422]:
+                  - /url: https://aws.amazon.com/blogs/developer/
+                  - text: AWS Developer Tools Blog
+                  - img "Opens in a new tab" [ref=f47e424]
+            - generic [ref=f47e427]:
+              - heading "Helpful Links" [level=2] [ref=f47e428]
+              - generic [ref=f47e430]:
+                - link [ref=f47e433]:
+                  - /url: https://github.com/awslabs/mcp/tree/main/src/aws-documentation-mcp-server
+                  - text: Download the AWS Docs MCP Server
+                  - img "Opens in a new tab" [ref=f47e435]
+                - link [ref=f47e439]:
+                  - /url: https://console.aws.amazon.com/
+                  - text: Sign into the AWS Console
+                  - img "Opens in a new tab" [ref=f47e441]
+                - link [ref=f47e445]:
+                  - /url: https://repost.aws/
+                  - text: AWS re:Post
+                  - img "Opens in a new tab" [ref=f47e447]
+        - generic [ref=f47e449]:
+          - generic [ref=f47e450]:
+            - generic [ref=f47e451]:
+              - link "Privacy" [ref=f47e453]:
+                - /url: https://aws.amazon.com/privacy
+              - text: "|"
+            - generic [ref=f47e454]:
+              - link "Site terms" [ref=f47e456]:
+                - /url: https://aws.amazon.com/terms
+              - text: "|"
+            - generic [ref=f47e457]:
+              - link "Cookie preferences" [ref=f47e459]:
+                - /url: "#"
+              - text: "|"
+            - text: © 2026, Amazon Web Services, Inc. or its affiliates. All rights reserved.
+          - button "Language selector English" [ref=f47e464]:
+            - generic "English" [ref=f47e465]
+      - button "Top" [ref=f47e472] [cursor=pointer]

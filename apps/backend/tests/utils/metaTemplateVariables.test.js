@@ -135,4 +135,15 @@ describe('buildMetaBodyParams', () => {
     const result = buildMetaBodyParams(variablesOrder, null, { body: 'سطر  اول\n\n  سطر تاني  ' });
     expect(result[0].text).toBe('سطر اول سطر تاني');
   });
+
+  test('🚨 131008: يقبل variables كنصوص عادية ["a","b"] ويحولها لـ{position,name}', () => {
+    // صفوف قوالب في الداتابيز مخزنة الصيغة النصية — كانت ترسل باراميترات فاضية
+    const variablesOrder = ['orderNumber', 'total'];
+    const values = { orderNumber: 'ORD-77', total: '540' };
+    const result = buildMetaBodyParams(variablesOrder, null, values);
+    expect(result).toEqual([
+      { type: 'text', text: 'ORD-77' },
+      { type: 'text', text: '540' },
+    ]);
+  });
 });

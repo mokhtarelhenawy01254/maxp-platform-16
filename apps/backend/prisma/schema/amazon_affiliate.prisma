@@ -1,0 +1,70 @@
+// Amazon Affiliate (Amazon Associates) integration.
+// Import Amazon products into a company store, link them to the merchant's own
+// Amazon Associates tag, auto-sync price/stock, and render a Buy-on-Amazon button.
+// NOTE: scalar companyId/productId references (no @relation) to avoid coupling
+// to shared models — same pattern as tiktok.prisma.
+
+/// إعدادات أمازون أفليت لكل شركة
+model AmazonAffiliateSettings {
+  id                String    @id @default(cuid())
+  companyId         String    @unique
+  associateTag      String?
+  marketplace       String    @default("www.amazon.com")
+  enableBuyButton   Boolean   @default(true)
+  autoSyncEnabled   Boolean   @default(false)
+  dataSource        String    @default("manual") // manual | og | creators
+  credentialId      String?
+  credentialSecret  String?   @db.Text
+  credentialVersion String?
+  disclosureEnabled Boolean   @default(true)
+  isEnabled         Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([companyId])
+  @@map("amazon_affiliate_settings")
+}
+
+/// منتج مستورد من أمازون مرتبط بشركة.
+/// Product.source = 'amazon' و Product.externalId = ASIN (في جدول products الحالي)
+model AmazonAffiliateProduct {
+  id                String    @id @default(cuid())
+  companyId         String
+  productId         String
+  asin              String
+  amazonUrl         String?   @db.Text
+  marketplace       String    @default("www.amazon.com")
+  lastPrice         Decimal?  @db.Decimal(10, 2)
+  lastPriceCurrency String    @default("EGP")
+  inStock           Boolean   @default(true)
+  lastSyncAt        DateTime?
+  status            String    @default("IMPORTED") // IMPORTED | SYNCED | ERROR
+  syncError         String?   @db.Text
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@unique([companyId, asin])
+  @@unique([companyId, productId])
+  @@index([companyId])
+  @@index([asin])
+  @@map("amazon_affiliate_products")
+}
+
+/// سجل وظيفة استيراد (يدوي / CSV / مزامنة)
+model AmazonImportJob {
+  id          String    @id @default(cuid())
+  companyId   String
+  type        String    @default("manual") // manual | csv | sync
+  status      String    @default("PENDING") // PENDING | RUNNING | SUCCESS | PARTIAL | FAILED
+  total       Int       @default(0)
+  succeeded   Int       @default(0)
+  failed      Int       @default(0)
+  asins       String?   @db.Text
+  error       String?   @db.Text
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([companyId])
+  @@index([status])
+  @@map("amazon_import_jobs")
+}

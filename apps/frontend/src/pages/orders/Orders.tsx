@@ -5,11 +5,10 @@ import i18n from "../../i18n";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 import useSocket from "../../hooks/useSocket";
-import { format, subDays, startOfDay, endOfDay } from "date-fns";
+import { format, subDays } from "date-fns";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
-import { summarizeOrderDocumentItems } from "../../utils/orderDocumentQuantityOffers";
 import { getOrderStatusDisplay, getStatusDisplay } from "../../utils/statusRegistry";
 import {
   AFFILIATE_OPERATION_APP_SLUGS,
@@ -25,6 +24,7 @@ import { OrdersToolbar } from "./components/OrdersToolbar";
 import { OrdersTable } from "./components/OrdersTable";
 import { OrdersStatsBar } from "./components/OrdersStatsBar";
 import { OrdersOverviewStats } from "./components/OrdersOverviewStats";
+
 import { OrdersPagination } from "./components/OrdersPagination";
 import { BulkActionBar } from "./components/BulkActionBar";
 import { CommandPalette } from "../../components/common/CommandPalette";
@@ -39,17 +39,9 @@ const InvoiceModal = React.lazy(
 );
 
 import {
-  ShoppingBagIcon,
-  EyeIcon,
-  CheckCircleIcon,
-  PrinterIcon,
   InformationCircleIcon,
   StarIcon,
   ExclamationTriangleIcon,
-  RocketLaunchIcon,
-  ChatBubbleLeftRightIcon,
-  MagnifyingGlassIcon,
-  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 
 
@@ -1092,165 +1084,6 @@ const HeldOrdersBanner: React.FC = () => {
   );
 };
 
-interface OrderCodeSearchResult {
-  id: string;
-  orderNumber: string;
-  customerName?: string;
-  customerPhone?: string;
-  status?: string;
-  total?: number;
-  currency?: string;
-}
-
-const OrderCodeSearch: React.FC<{ fieldClassName: string }> = ({ fieldClassName }) => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [code, setCode] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<OrderCodeSearchResult | null>(null);
-  const [error, setError] = useState("");
-  const [notFound, setNotFound] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  const reset = useCallback(() => {
-    setResult(null);
-    setError("");
-    setNotFound(false);
-  }, []);
-
-  const handleSearch = useCallback(async () => {
-    const query = code.trim();
-    if (!query) return;
-
-    setLoading(true);
-    setError("");
-    setNotFound(false);
-    setResult(null);
-
-    try {
-      const response = await apiClient.get<{
-        success?: boolean;
-        data?: OrderCodeSearchResult;
-      }>(`/orders-enhanced/${encodeURIComponent(query)}`);
-      const body = response.data;
-      if (body?.success && body?.data) {
-        setResult({
-          id: body.data.id,
-          orderNumber: body.data.orderNumber || query,
-          customerName: body.data.customerName || t("sidebar.orderCustomerUnknown"),
-          customerPhone: body.data.customerPhone || "",
-          status: body.data.status || "PENDING",
-          total: typeof body.data.total === "number" ? body.data.total : parseFloat(String(body.data.total)) || 0,
-          currency: body.data.currency || "EGP",
-        });
-      } else {
-        setNotFound(true);
-      }
-    } catch (err) {
-      const axiosError = err as {
-        response?: { status?: number; data?: { message?: string } };
-      };
-      if (axiosError.response?.status === 404) {
-        setNotFound(true);
-      } else if (axiosError.response?.status === 401 || axiosError.response?.status === 403) {
-        setError(t("sidebar.orderSearchSessionError"));
-      } else {
-        setError(t("sidebar.orderSearchError"));
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [code, t]);
-
-  const statusDisplay = result?.status ? getOrderStatusDisplay(result.status) : null;
-
-  return (
-    <div className="mb-3 rounded-[22px] border border-slate-200/70 bg-white/90 p-3 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
-      <div className="flex flex-col gap-2.5 sm:flex-row sm:items-center">
-        <div className="relative min-w-[200px] flex-1 sm:min-w-0">
-          <MagnifyingGlassIcon className="pointer-events-none absolute right-3 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
-          <input
-            ref={inputRef}
-            type="text"
-            value={code}
-            onChange={(e) => {
-              setCode(e.target.value);
-              if (result || notFound || error) reset();
-            }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleSearch();
-            }}
-            placeholder={t("sidebar.orderSearchPlaceholder")}
-            className={`${fieldClassName} pr-10`}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={handleSearch}
-          disabled={loading || !code.trim()}
-          className="inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:bg-blue-700 disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
-        >
-          {loading ? (
-            <ArrowPathIcon className="h-4 w-4 animate-spin" />
-          ) : (
-            <MagnifyingGlassIcon className="h-4 w-4" />
-          )}
-          {t("sidebar.orderSearchAction")}
-        </button>
-      </div>
-
-      {error && (
-        <div className="mt-2 rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-          {error}
-        </div>
-      )}
-
-      {notFound && (
-        <div className="mt-2 rounded-xl border border-red-200/80 bg-red-50/80 px-3 py-2 text-xs text-red-700 dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200">
-          {t("sidebar.orderSearchNotFound", { code })}
-        </div>
-      )}
-
-      {result && (
-        <div className="mt-2 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200/70 bg-slate-50/80 p-3 dark:border-slate-700/70 dark:bg-slate-800/50">
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm font-bold text-blue-600 dark:text-blue-400">
-              #{result.orderNumber}
-            </span>
-            {statusDisplay && (
-              <span
-                className="rounded-full px-2 py-0.5 text-xs font-semibold"
-                style={{ backgroundColor: statusDisplay.bgColor, color: statusDisplay.textColor }}
-              >
-                {statusDisplay.label}
-              </span>
-            )}
-          </div>
-          <span className="text-xs text-slate-500 dark:text-slate-400">
-            {result.customerName}
-          </span>
-          {result.customerPhone && (
-            <span className="text-xs text-slate-500 dark:text-slate-400" dir="ltr">
-              {result.customerPhone}
-            </span>
-          )}
-          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
-            {result.total?.toLocaleString()} {result.currency}
-          </span>
-          <button
-            type="button"
-            onClick={() => navigate(`/orders/${result.id}`)}
-            className="ml-auto inline-flex items-center gap-1 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-          >
-            <EyeIcon className="h-3.5 w-3.5" />
-            {t("orders.viewDetails")}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-};
-
 const Orders: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const ordersRef = useRef(orders);
@@ -1307,6 +1140,18 @@ const Orders: React.FC = () => {
 
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
+  );
+  // Debounced search: the input updates filters.search instantly (responsive
+  // typing) while list fetches wait for a 300ms pause — one request per query
+  // instead of one per keystroke.
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(filters.search), 300);
+    return () => clearTimeout(timer);
+  }, [filters.search]);
+  const effectiveFilters = useMemo<OrdersFilters>(
+    () => ({ ...filters, search: debouncedSearch }),
+    [filters, debouncedSearch],
   );
   // Keep a ref to the latest filters so the socket listeners (which only
   // re-subscribe on [socket, isConnected, page]) can read current filter
@@ -1532,11 +1377,8 @@ const Orders: React.FC = () => {
     filters.timeRange === "custom" || filters.startDate || filters.endDate,
   );
 
-  useEffect(() => {
-    if (advancedFilterCount > 0 || hasCustomDateFilters || ordersLoadError) {
-      setShowAdvancedFilters(true);
-    }
-  }, [advancedFilterCount, hasCustomDateFilters, ordersLoadError]);
+  // Active advanced filters are surfaced via FilterChips while the panel stays
+  // collapsed — no auto-open. Users expand deliberately with the فلاتر toggle.
 
   // Socket.IO Integration
   const { socket, isConnected } = useSocket();
@@ -1553,16 +1395,24 @@ const Orders: React.FC = () => {
           return;
         }
 
-        const mergedOrderStatuses = new Map(
-          DEFAULT_ORDER_STATUSES.map((status) => [status.code, status]),
-        );
-        const mergedPaymentStatuses = new Map(
-          DEFAULT_PAYMENT_STATUSES.map((status) => [status.code, status]),
-        );
-
         const fetchedStatuses = Array.isArray(response.data.data)
           ? (response.data.data as Array<Partial<OrderStatusDefinition> & { statusType?: string }>)
           : [];
+
+        // 🛡️ (deleted-status-dropdowns): رد الـ API هو مصدر الحقيقة — الحالات
+        // الافتراضية المدمجة كانت بترجّع حالات التاجر حذفها من إدارة الحالات.
+        // الـ defaults دلوقتي rescue فقط لو الرد فاضي (فشل/شركة جديدة).
+        const useDefaults = fetchedStatuses.length === 0;
+        const mergedOrderStatuses = new Map(
+          useDefaults
+            ? DEFAULT_ORDER_STATUSES.map((status) => [status.code, status])
+            : [],
+        );
+        const mergedPaymentStatuses = new Map(
+          useDefaults
+            ? DEFAULT_PAYMENT_STATUSES.map((status) => [status.code, status])
+            : [],
+        );
 
         fetchedStatuses.forEach((status) => {
           const normalizedCode = normalizeStatusCode(status?.code);
@@ -1792,7 +1642,9 @@ const Orders: React.FC = () => {
 
   useEffect(() => {
     void fetchOrdersRef.current();
-  }, [page, limit, filters]);
+    // effectiveFilters (debounced search) — not raw filters — so typing fires
+    // one request per paused query instead of one per keystroke.
+  }, [page, limit, effectiveFilters]);
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -2159,6 +2011,13 @@ const Orders: React.FC = () => {
     setPage(1);
   };
 
+  // Apply a saved view: merge the saved filter subset into the current state
+  // (keeping any keys the saved view doesn't specify) and reset to page 1.
+  const applySavedFilters = (saved: Partial<OrdersFilters>) => {
+    setFilters((prev) => ({ ...prev, ...saved }));
+    setPage(1);
+  };
+
   const clearAllFilters = () => {
     clearAdvancedFilters();
     setFilters((prev) => ({ ...prev, search: "", onlyUnseen: false }));
@@ -2468,9 +2327,22 @@ const Orders: React.FC = () => {
   const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
     const display = getOrderStatusDisplay(order);
     const customStyle = getStatusBadgeStyle(order.status || "");
+    // 🛡️ (custom-status-persist): الحالات المخصصة — الباك-إند بيرجّع الكود المخصص
+    // والـ registry مش بيعرفه، فكان بيقع على fallback بيعرض الكود الإنجليزي الخام.
+    // لو الحالة مخصّصة عند الشركة، نعرض اسمها المعرّف (العربي) من إعداداتها.
+    const configuredStatus = orderStatusMap.get(
+      normalizeStatusCode(order.status || ""),
+    );
+    const registryText = display.primary.labelKey
+      ? translate(display.primary.labelKey) || display.primary.label
+      : display.primary.label;
+    const text =
+      !display.primary.labelKey && configuredStatus?.name
+        ? configuredStatus.name
+        : registryText;
 
     return {
-      text: translate(display.primary.labelKey) || display.primary.label,
+      text,
       labelKey: display.primary.labelKey,
       className: `inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold ${display.primary.colorClass}`,
       style: customStyle,
@@ -2820,21 +2692,11 @@ const Orders: React.FC = () => {
       <div className="w-full max-w-none">
         <HeldOrdersBanner />
 
-        <OrderCodeSearch fieldClassName={fieldClassName} />
-
         <OrdersOverviewStats />
 
         <OrdersToolbar
         filters={filters}
-        loading={loading}
-        totalOrders={totalOrders}
-        activeFilterCount={activeFilterCount}
         advancedFilterCount={advancedFilterCount}
-        isMerchant={isMerchant}
-        hasAgentWorkspace={hasAgentWorkspace}
-        ordersCount={orders.length}
-        page={page}
-        limit={limit}
         ordersLoadError={ordersLoadError}
         showAdvancedFilters={showAdvancedFilters}
         fieldClassName={fieldClassName}
@@ -2849,14 +2711,11 @@ const Orders: React.FC = () => {
         hasCustomDateFilters={hasCustomDateFilters}
         getAffiliateDisplayName={getAffiliateDisplayName}
         onFilterChange={handleFilterChange}
+        onApplyFilters={applySavedFilters}
         onClearAdvancedFilters={clearAdvancedFilters}
         onToggleAdvancedFilters={() => setShowAdvancedFilters((prev) => !prev)}
         onSetQuickDate={setQuickDate}
-        onOpenWorkspace={() => navigate("/orders/workspace")}
         onRetry={fetchOrders}
-        onRefresh={fetchOrders}
-        lastUpdatedAt={lastUpdatedAt}
-        isConnected={isConnected}
       />
 
       <OrdersStatsBar

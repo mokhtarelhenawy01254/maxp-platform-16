@@ -18,7 +18,7 @@ import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
 
 interface ReportData {
-  periodDays: number;
+  periodDays: number | null;
   pipeline: {
     total: number;
     active: number;
@@ -46,6 +46,7 @@ interface ReportData {
     responseRate: number;
   }>;
   trend: Array<{ date: string; conversions: number; value: number }>;
+  orderSources: Array<{ source: string; count: number; value: number }>;
   recent: Array<{
     cartId: string;
     orderNumber: string | null;
@@ -99,16 +100,22 @@ const IncompleteReports: React.FC = () => {
   const [data, setData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [hint, setHint] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
   const fetchReports = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
+      setHint(null);
       const params: Record<string, string> = {};
       if (period === "custom") {
-        if (customFrom) params["from"] = customFrom;
-        if (customTo) params["to"] = customTo;
+        if (!customFrom || !customTo) {
+          setHint(t("orders.incompleteSelectCustomDates"));
+          return;
+        }
+        params["from"] = customFrom;
+        params["to"] = customTo;
       } else {
         const range = getCalendarRange(period);
         if (range) {
@@ -149,6 +156,20 @@ const IncompleteReports: React.FC = () => {
   };
 
   const BackIcon = isRTL ? ArrowRightIcon : ArrowLeftIcon;
+
+  const sourceMeta: Record<string, { label: string; color: string }> = {
+    storefront: { label: t("orders.sourceStorefront"), color: "bg-blue-500" },
+    ai_conversation: { label: t("orders.sourceAutoConversation"), color: "bg-purple-500" },
+    internal_push: { label: t("orders.sourceInternalPush"), color: "bg-amber-500" },
+    manual: { label: t("orders.sourceManual"), color: "bg-emerald-500" },
+    woocommerce: { label: t("orders.sourceWooCommerce"), color: "bg-teal-500" },
+    api: { label: t("orders.sourceAPI"), color: "bg-pink-500" },
+    import: { label: t("orders.sourceImport"), color: "bg-indigo-500" },
+  };
+  const unknownSourceMeta = { label: t("orders.sourceUnknown"), color: "bg-gray-400" };
+  const totalOrderSources = data
+    ? data.orderSources.reduce((sum, s) => sum + s.count, 0)
+    : 0;
 
   const recoveryCards: StatCard[] = data
     ? [
@@ -224,7 +245,15 @@ const IncompleteReports: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <select
             value={period}
-            onChange={(e) => setPeriod(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value;
+              if (next === "custom") {
+                // تعبئة مبدئية (آخر 30 يوم) حتى لا تُجلب بيانات غير متوقعة بصمت
+                setCustomFrom((prev) => prev || toDateInput(new Date(Date.now() - 29 * 86400000)));
+                setCustomTo((prev) => prev || toDateInput(new Date()));
+              }
+              setPeriod(next);
+            }}
             className="px-3 py-2 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-sm focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/30 outline-none transition-all"
             aria-label={t("orders.incompletePeriodLabel") as string}
           >
@@ -284,6 +313,12 @@ const IncompleteReports: React.FC = () => {
           </Link>
         </div>
       </div>
+
+      {hint && !error && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-700/40 dark:bg-amber-900/20 dark:text-amber-300">
+          {hint}
+        </div>
+      )}
 
       {loading && !data ? (
         <div className="flex items-center justify-center min-h-[300px]">
@@ -367,6 +402,57 @@ const IncompleteReports: React.FC = () => {
             </div>
           </section>
 
+          <section className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+            <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+              {t("orders.incompleteOrderSources")}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-4">
+              {t("orders.incompleteOrderSourcesHint")}
+            </p>
+            {data.orderSources.length ? (
+              <div>
+                <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-100 dark:bg-gray-700" dir="ltr">
+                  {data.orderSources.map((s) => {
+                    if (s.count <= 0 || totalOrderSources <= 0) return null;
+                    const meta = sourceMeta[s.source] || unknownSourceMeta;
+                    return (
+                      <div
+                        key={s.source}
+                        className={`h-full ${meta.color}`}
+                        style={{ width: `${(s.count / totalOrderSources) * 100}%` }}
+                      />
+                    );
+                  })}
+                </div>
+                <div className="mt-4 space-y-2">
+                  {data.orderSources.map((s) => {
+                    const meta = sourceMeta[s.source] || unknownSourceMeta;
+                    return (
+                      <div key={s.source} className="flex items-center justify-between gap-3 text-sm">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${meta.color}`} />
+                          <span className="text-gray-700 dark:text-gray-200 truncate">{meta.label}</span>
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <span className="font-semibold text-gray-900 dark:text-white">
+                            {s.count.toLocaleString()}
+                          </span>
+                          <span className="text-gray-500 dark:text-gray-400 w-24 text-end">
+                            {formatPrice(s.value)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">
+                {t("orders.incompleteNoConversions")}
+              </p>
+            )}
+          </section>
+
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <section className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
               <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
@@ -378,15 +464,33 @@ const IncompleteReports: React.FC = () => {
                     <BarChart data={data.trend} margin={{ top: 5, right: 5, left: -15, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#8884d8" opacity={0.15} />
                       <XAxis dataKey="date" tick={{ fontSize: 11 }} tickFormatter={(v: string) => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
-                      <Tooltip />
+                      {/* محور منفصل للعدد ومحور للقيمة — بدون هذا تصبح أعمدة التحويلات غير مرئية بجانب القيم المالية */}
+                      <YAxis yAxisId="count" tick={{ fontSize: 11 }} allowDecimals={false} />
+                      <YAxis
+                        yAxisId="value"
+                        orientation="right"
+                        tick={{ fontSize: 11 }}
+                        allowDecimals={false}
+                        tickFormatter={(v: number) =>
+                          v >= 1000 ? `${(v / 1000).toFixed(v >= 10000 ? 0 : 1)}k` : String(v)
+                        }
+                      />
+                      <Tooltip
+                        formatter={(value, name) =>
+                          name === (t("orders.incompleteValue") as string)
+                            ? formatPrice(Number(value))
+                            : String(value)
+                        }
+                      />
                       <Bar
+                        yAxisId="count"
                         dataKey="conversions"
                         name={t("orders.incompleteTeamConversions") as string}
                         fill="#3b82f6"
                         radius={[4, 4, 0, 0]}
                       />
                       <Bar
+                        yAxisId="value"
                         dataKey="value"
                         name={t("orders.incompleteValue") as string}
                         fill="#10b981"

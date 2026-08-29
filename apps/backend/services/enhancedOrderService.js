@@ -419,19 +419,21 @@ class EnhancedOrderService {
 
       console.log('✅ [ENHANCED-ORDER] تم إنشاء الطلب بنجاح:', order.orderNumber);
 
-      // 🎁 تسجيل تلقائي في نظام الولاء + حساب النقاط + تحديث المستوى لأي طلب جديد
-      // (مش بس عند التسليم) — أي أوردر بيتطلب يدخل الولاء ويحسب تلقائياً.
-      try {
-        const customerLoyaltyService = require('./hr/customerLoyaltyService');
-        await customerLoyaltyService.applyLoyaltyPointsForOrder({
-          orderId: order.id,
-          companyId: data.companyId,
-          changedBy: data.createdBy
-        }).catch((loyaltyError) => {
-          console.error(`❌ [LOYALTY-AUTO] Failed to award points for ${order.orderNumber}:`, loyaltyError.message);
-        });
-      } catch (loyaltyError) {
-        console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+      // 🎁 الولاء: المنح فقط عند التسليم (DELIVERED) — لا تمنح نقاط/مستوى عند إنشاء الطلب (PENDING)
+      // السبب: computeTierMetric يحسب SPENT/ITEMS على DELIVERED فقط، والمنح المبكر كان يسبب رسالة مستوى قبل التأكيد.
+      if (order.status === 'DELIVERED') {
+        try {
+          const customerLoyaltyService = require('./hr/customerLoyaltyService');
+          await customerLoyaltyService.applyLoyaltyPointsForOrder({
+            orderId: order.id,
+            companyId: data.companyId,
+            changedBy: data.createdBy
+          }).catch((loyaltyError) => {
+            console.error(`❌ [LOYALTY-AUTO] Failed to award points for ${order.orderNumber}:`, loyaltyError.message);
+          });
+        } catch (loyaltyError) {
+          console.error('❌ [LOYALTY-AUTO] Loyalty service error:', loyaltyError.message);
+        }
       }
 
       // 🛒 تصدير تلقائي لـ WooCommerce (في الخلفية) - تجاهل للطلبات المكررة
@@ -2036,7 +2038,7 @@ class EnhancedOrderService {
         totalRevenue,
         avgConfidence,
         extractionMethods,
-        statusDistribution,
+        statusRows,
         topCities
       ] = await Promise.all([
         // إجمالي الطلبات
@@ -2061,11 +2063,12 @@ class EnhancedOrderService {
           _count: true
         }),
 
-        // توزيع الحالات
-        this.getPrisma().order.groupBy({
-          by: ['status'],
+        // 🛡️ PRODUCTION-FIX (custom-status-persist): توزيع الحالات بالحالة الفعلية
+        // (كود مخصص ← تجهيز محوّلة ← enum) — بدل groupBy على الـ enum بس اللي كان
+        // بيخفي الحالات المخصصة من صفحة إحصائيات الطلبات.
+        this.getPrisma().order.findMany({
           where,
-          _count: true
+          select: { status: true, customStatusCode: true, metadata: true }
         }),
 
         // أهم المدن
@@ -2077,6 +2080,15 @@ class EnhancedOrderService {
           take: 10
         })
       ]);
+
+      const { computeEffectiveOrderStatus } = require('../utils/orderEffectiveStatus');
+      const statusDistribution = Object.entries(
+        statusRows.reduce((acc, row) => {
+          const key = computeEffectiveOrderStatus(row);
+          acc[key] = (acc[key] || 0) + 1;
+          return acc;
+        }, {})
+      ).map(([status, count]) => ({ status, _count: count }));
 
       // Recent orders (last 10)
       const recentOrders = await this.getPrisma().order.findMany({

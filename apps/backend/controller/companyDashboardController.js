@@ -192,10 +192,19 @@ const companyDashboardOverview = async (req, res) => {
                     confirmedAt: { not: null }
                 }
             }), null),
-            withDashboardFallback('orderStatuses', () => getSharedPrismaClient().order.groupBy({
-                by: ['status'],
+            withDashboardFallback('orderStatuses', () => getSharedPrismaClient().order.findMany({
                 where: trackedOrdersWhereClause,
-                _count: true
+                select: { status: true, customStatusCode: true, metadata: true }
+            }).then(rows => {
+                // 🛡️ PRODUCTION-FIX (custom-status-persist): عدّ بالحالة الفعلية (كود مخصص ←
+                // تجهيز محوّلة ← enum) — بدل groupBy على الـ enum اللي بيخفي الحالات المخصصة.
+                const { computeEffectiveOrderStatus } = require('../utils/orderEffectiveStatus');
+                const counts = {};
+                for (const row of rows) {
+                    const key = computeEffectiveOrderStatus(row);
+                    counts[key] = (counts[key] || 0) + 1;
+                }
+                return Object.entries(counts).map(([status, count]) => ({ status, _count: count }));
             }), []),
             withDashboardFallback('orderItems', () => getSharedPrismaClient().orderItem.findMany({
                 where: {

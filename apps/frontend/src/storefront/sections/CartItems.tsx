@@ -467,7 +467,7 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
   const imageSizeClassName =
     isWomenFashionCart ? 'h-16 w-16' :
     variant === 'compact' ? 'h-16 w-16' :
-    isWardrobeKhemet ? 'h-28 w-28' :
+    isWardrobeKhemet ? 'h-36 w-36 sm:h-40 sm:w-40' :
     variant === 'command-cart' ? 'h-[5.25rem] w-[5.25rem]' :
     variant === 'market-basket' ? 'h-[4.75rem] w-[4.75rem]' :
     variant === 'nature-cart' ? 'h-[4.75rem] w-[4.75rem]' :
@@ -510,7 +510,7 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
     : isWomenFashionCart
       ? 'grid grid-cols-1 items-center gap-4 rounded-[1.45rem] border border-[#ead9d8] bg-white px-3.5 py-4 shadow-[0_18px_52px_-46px_rgba(107,33,49,0.12)] md:grid-cols-[2fr_1fr_1fr_1fr_auto]'
     : isWardrobeKhemet
-      ? 'grid grid-cols-1 items-center gap-4 border-b border-border/50 px-3 py-4 md:grid-cols-[2fr_1fr_1fr_1fr_auto]'
+      ? 'grid grid-cols-1 items-center gap-4 rounded-[1.5rem] border border-[#eadfd0] bg-white px-4 py-5 shadow-[0_22px_62px_-54px_rgba(65,35,58,0.2)] md:grid-cols-[minmax(0,1fr)_auto_auto_auto]'
       : getRowClassName(variant);
   const imageWrapperClassName = isSproutRoom
     ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1rem] border border-[#d8e6d8] bg-[#f4f8f2] text-xs text-[#6b8a74]`
@@ -527,7 +527,7 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
       : isWomenFashionCart
         ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1.1rem] border border-[#f1dfdc] bg-[#fff7f5] text-xs text-[#8b3d33]`
       : isWardrobeKhemet
-        ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-none bg-[#f8f7f6] text-xs`
+        ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-[#efe4df] bg-[#f8f7f6] text-xs shadow-[0_16px_34px_-28px_rgba(65,35,58,0.24)]`
       : variant === 'wardrobe-cart'
         ? `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] border border-[#f1dfdc] bg-[#fff7f5] text-xs text-[#8b3d33]`
         : `${imageSizeClassName} flex shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius)] bg-muted text-xs text-muted-foreground`;
@@ -834,7 +834,7 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
                   <h3
                     className={`font-heading text-sm text-foreground ${
                       isWomenFashionCart ? 'font-bold leading-5' : 'font-semibold'
-                    } ${isWardrobeKhemet ? 'text-base font-bold leading-6' : ''}`}
+                    } ${isWardrobeKhemet ? 'text-lg font-bold leading-7' : ''}`}
                   >
                     {itemName}
                   </h3>
@@ -881,7 +881,7 @@ const CartItems: React.FC<CartItemsProps> = ({ section, settings }) => {
                       key={key}
                       className={`text-xs text-muted-foreground ${
                         isWomenFashionCart ? 'mt-0 leading-5' : 'mt-0.5'
-                      }`}
+                      } ${isWardrobeKhemet ? 'text-[13px] leading-6' : ''}`}
                     >
                       {key}: {value}
                     </p>

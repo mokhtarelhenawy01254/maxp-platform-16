@@ -74,6 +74,8 @@ model AffiliateReferral {
   affiliateId   String
   customerId    String?
   orderId       String?   @unique
+  couponId      String?   // الكوبون/الكارت المستخدم في الإحالة (إن وُجد)
+  referralChannel String? @default("link") // link | phone | coupon
   referralCode  String
   referralUrl   String?
   ipAddress     String?
@@ -86,12 +88,15 @@ model AffiliateReferral {
   affiliate     Affiliate @relation(fields: [affiliateId], references: [id], onDelete: Cascade)
   customer      Customer? @relation(fields: [customerId], references: [id])
   order         Order?    @relation("OrderAffiliateReferral", fields: [orderId], references: [id])
+  coupon        Coupon?   @relation(fields: [couponId], references: [id])
 
   @@index([affiliateId])
   @@index([converted])
   @@index([customerId])
   @@index([orderId])
+  @@index([couponId])
   @@index([referralCode])
+  @@index([referralChannel])
   @@map("affiliate_referrals")
 }
 
@@ -126,6 +131,8 @@ model Affiliate {
   companyId                String?
   customerId               String?
   affiliateCode            String                   @unique
+  referralPhone           String?                  // رقم المسوق المستخدم كقناة إحالة بديلة عن الكود
+  referralAlias           String?   @unique        // كود ثانٍ (مثل كود كارت الخصم) يربط نفس المسوق
   commissionType           AffiliatesCommissionType @default(PERCENTAGE)
   commissionRate           Float                    @default(5)
   status                   AffiliatesStatus         @default(PENDING)
@@ -154,6 +161,7 @@ model Affiliate {
   identityDocumentVersions AffiliateIdentityDocumentVersion[]
   affiliate_products       AffiliateProduct[]
   affiliate_referrals      AffiliateReferral[]
+  coupons                  Coupon[]               // الكوبونات/الكروت المرتبطة بهذا المسوق
   reviewLogs               AffiliateReviewLog[]
   company                  Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   user                     User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -163,6 +171,8 @@ model Affiliate {
   orders                   Order[]
 
   @@index([affiliateCode])
+  @@index([referralPhone])
+  @@index([referralAlias])
   @@index([companyId])
   @@index([customerId])
   @@index([status])

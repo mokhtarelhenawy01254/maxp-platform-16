@@ -1,0 +1,131 @@
+- generic [ref=e7]:
+  - generic [ref=e10]:
+    - generic:
+      - dialog "sidebar.navigation":
+        - generic:
+          - generic:
+            - generic:
+              - generic:
+                - link "E El Nouby الرئيسية":
+                  - /url: /company-dashboard
+                  - generic: E
+                  - generic:
+                    - heading "El Nouby" [level=2]
+                    - paragraph: الرئيسية
+              - button "sidebar.close"
+            - generic:
+              - generic: البحث داخل القائمة
+              - textbox "البحث داخل القائمة":
+                - /placeholder: البحث
+            - generic:
+              - generic:
+                - button "الرئيسية 1" [expanded]:
+                  - generic:
+                    - generic:
+                      - strong: الرئيسية
+                      - generic: "1"
+                - generic:
+                  - generic:
+                    - link "لوحة التحكم":
+                      - /url: /company-dashboard
+              - generic:
+                - button "إدارة الطلبات 27":
+                  - generic:
+                    - generic:
+                      - strong: إدارة الطلبات
+                      - generic: "27"
+              - generic:
+                - button "المنتجات والمخزون 4":
+                  - generic:
+                    - generic:
+                      - strong: المنتجات والمخزون
+                      - generic: "4"
+              - generic:
+                - button "إدارة المتجر 17":
+                  - generic:
+                    - generic:
+                      - strong: إدارة المتجر
+                      - generic: "17"
+              - generic:
+                - button "المخزون 4":
+                  - generic:
+                    - generic:
+                      - strong: المخزون
+                      - generic: "4"
+              - generic:
+                - button "حسابي 2":
+                  - generic:
+                    - generic:
+                      - strong: حسابي
+                      - generic: "2"
+              - generic:
+                - button "إدارة شركاتي 7":
+                  - generic:
+                    - generic:
+                      - strong: إدارة شركاتي
+                      - generic: "7"
+              - generic:
+                - button "متجر التطبيقات 5":
+                  - generic:
+                    - generic:
+                      - strong: متجر التطبيقات
+                      - generic: "5"
+              - generic:
+                - button "الإعدادات 5":
+                  - generic:
+                    - generic:
+                      - strong: الإعدادات
+                      - generic: "5"
+              - generic:
+                - generic:
+                  - generic: EN
+                  - generic:
+                    - generic: El
+                    - generic: OWNER
+                - generic:
+                  - link "الملف الشخصي":
+                    - /url: /profile
+                  - link "الإعدادات":
+                    - /url: /settings
+                  - button "تسجيل الخروج"
+    - generic [ref=e11]:
+      - banner [ref=e12]:
+        - generic [ref=e13]:
+          - generic [ref=e15]:
+            - button "فتح القائمة" [ref=e16] [cursor=pointer]
+            - button "الملف الشخصي EN" [ref=e21]:
+              - generic [ref=e22]: EN
+          - generic [ref=e24]:
+            - button "تبديل للوضع الليلي" [ref=e25] [cursor=pointer]
+            - button "Change language" [ref=e27] [cursor=pointer]:
+              - generic [ref=e28]: ar
+            - button "الإشعارات" [ref=e30] [cursor=pointer]:
+              - generic [ref=e33]: "9"
+            - link "header.whatsapp" [ref=e34] [cursor=pointer]:
+              - /url: https://wa.me/201123087745
+      - main [ref=e37]:
+        - generic [ref=e38]:
+          - heading "لوحة تشغيل واتساب" [level=1] [ref=e59]
+          - complementary [ref=e61]:
+            - generic [ref=e62]:
+              - button "W يتطلب اتصال" [ref=e64]:
+                - generic [ref=e65]: W
+                - generic "يتطلب اتصال" [ref=e67]
+              - generic [ref=e68]:
+                - button "محادثة" [ref=e69]
+                - button "المزيد" [ref=e70]
+            - generic [ref=e71]:
+              - generic [ref=e72]:
+                - textbox "بحث..." [ref=e73]
+                - button "غير مقروء" [ref=e74]
+              - generic [ref=e75]:
+                - button "الكل" [ref=e76]
+                - button "بانتظار الرد" [ref=e78]
+                - button "غير مقروء" [ref=e80]
+                - button "مجموعات" [ref=e82]
+                - button "أرشفة" [ref=e84]
+                - button "حالات" [ref=e86]
+  - region "Notifications alt+T":
+    - list:
+      - listitem [ref=e125]:
+        - generic [ref=e129]: "⚠️ هذه الميزة تتطلب تفعيل: WhatsApp Business API"

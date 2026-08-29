@@ -607,9 +607,9 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     const sidebarSection = pageConfig.sections[sidebarIndex]!;
     const mainSections = indexedSections.filter(({ index }) => index !== sidebarIndex);
     return (
-      <div className="storefront-page-composer container px-4 md:px-6 py-8">
+      <div className="storefront-page-composer w-full px-4 md:px-6 py-8">
         <div className="lg:hidden mb-6">{renderSection(sidebarSection, sidebarIndex)}</div>
-        <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[280px_minmax(0,1fr)] gap-8">
           <aside className="hidden lg:block">{renderSection(sidebarSection, sidebarIndex)}</aside>
           <div className="flex flex-col w-full">
             {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
@@ -630,9 +630,9 @@ export const PageComposer: React.FC<PageComposerProps> = ({
     const sidebarSection = pageConfig.sections[sidebarIndex]!;
     const mainSections = indexedSections.filter(({ index }) => index !== sidebarIndex);
     return (
-      <div className="storefront-page-composer container px-4 md:px-6 py-8">
+      <div className="storefront-page-composer w-full px-4 py-8 md:px-6">
         <div className="mb-6 lg:hidden">{renderSection(sidebarSection, sidebarIndex)}</div>
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_280px]">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_280px]">
           <div className="flex flex-col w-full">
             {mainSections.map(({ sectionEntry, index }) => renderSection(sectionEntry, index))}
           </div>

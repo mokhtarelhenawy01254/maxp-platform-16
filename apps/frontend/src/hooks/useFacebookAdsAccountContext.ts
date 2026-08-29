@@ -49,9 +49,12 @@ export function useFacebookAdsAccountContext() {
       setAdAccounts(accounts);
     } catch (loadError: any) {
       console.error("Error loading Facebook ad accounts:", loadError);
+      const rawError = loadError?.response?.data?.error;
       setError(
-        loadError?.response?.data?.error ||
-          "فشل في تحميل الحسابات الإعلانية من Meta",
+        typeof rawError === "string"
+          ? rawError
+          : rawError?.message ||
+              "فشل في تحميل الحسابات الإعلانية من Meta",
       );
       setAdAccounts([]);
     } finally {

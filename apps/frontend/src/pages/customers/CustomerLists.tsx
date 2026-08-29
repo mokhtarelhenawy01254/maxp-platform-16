@@ -138,6 +138,8 @@ const CRITERIA_TYPES = [
   { value: "oldest", label: "الأقدم", icon: ArrowDownUp, hint: "أقدم N عملاء" },
   { value: "minTotalSpent", label: "إجمالي الإنفاق", icon: Wallet, hint: "عملاء أنفقوا أكثر من مبلغ" },
   { value: "minOrdersCount", label: "عدد الطلبات", icon: ShoppingBag, hint: "عملاء لديهم N طلب أو أكثر" },
+  { value: "nps", label: "NPS (مروّج/محايد/منتقد)", icon: Star, hint: "فلترة حسب وسم NPS 9-10 / 7-8 / 0-6" },
+  { value: "waitlist", label: "قائمة انتظار مقاس", icon: Heart, hint: "عملاء في Wishlist بمقاس محدد" },
 ] as const;
 
 type CriteriaType = (typeof CRITERIA_TYPES)[number]["value"];

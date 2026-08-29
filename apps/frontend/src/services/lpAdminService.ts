@@ -54,5 +54,18 @@ export const lpAdminService = {
 };
 
 export const lpPublicService = {
-  list: () => request<LpPage[]>("/api/v1/public/lp-pages"),
+  // Public LP pages may return 400 when no company/subdomain context is
+  // available (e.g. on the main domain). Treat that as "no pages" instead of
+  // throwing, so the navbar simply shows no LP links rather than logging a
+  // console error on every load.
+  list: async (): Promise<LpPage[]> => {
+    try {
+      return await request<LpPage[]>("/api/v1/public/lp-pages");
+    } catch (err: any) {
+      if (err?.message?.includes("400") || err?.message?.includes("HTTP 400")) {
+        return [];
+      }
+      throw err;
+    }
+  },
 };

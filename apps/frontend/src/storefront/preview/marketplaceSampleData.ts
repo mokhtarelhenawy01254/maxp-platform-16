@@ -47,6 +47,11 @@ import {
   FASTLY_EG_REVIEWS,
 } from "./fastlyEgMarketplaceData";
 import {
+  SOFT_GRACEFUL_PRODUCTS,
+  SOFT_GRACEFUL_RECOMMENDATIONS,
+  SOFT_GRACEFUL_REVIEWS,
+} from "./softGracefulMarketplaceData";
+import {
   LEGACY_DEFAULT_OLD_PRODUCTS,
   LEGACY_DEFAULT_OLD_RECOMMENDATIONS,
   LEGACY_DEFAULT_OLD_REVIEWS,
@@ -4429,6 +4434,12 @@ previewRecommendationIdsByTheme["fastly-eg"] = {
   boughtTogether: { ...FASTLY_EG_RECOMMENDATIONS.boughtTogether },
 };
 previewProductReviewsByTheme["fastly-eg"] = { ...FASTLY_EG_REVIEWS };
+previewProductsByTheme["soft-graceful"] = SOFT_GRACEFUL_PRODUCTS;
+previewRecommendationIdsByTheme["soft-graceful"] = {
+  related: { ...SOFT_GRACEFUL_RECOMMENDATIONS.related },
+  boughtTogether: { ...SOFT_GRACEFUL_RECOMMENDATIONS.boughtTogether },
+};
+previewProductReviewsByTheme["soft-graceful"] = { ...SOFT_GRACEFUL_REVIEWS };
 ELESSI_PACK_MARKETPLACE_THEME_IDS.forEach((themeId) => {
   previewProductsByTheme[themeId] = ELESSI_PACK_PRODUCTS[themeId] || [];
   previewRecommendationIdsByTheme[themeId] = {

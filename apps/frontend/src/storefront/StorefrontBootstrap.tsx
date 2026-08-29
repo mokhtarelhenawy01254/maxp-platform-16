@@ -408,20 +408,27 @@ const DeferredStorefrontToaster: React.FC = () => {
   );
 };
 
-const StorefrontBootstrap: React.FC = () => (
-  <QueryClientProvider client={queryClient}>
-    <BrowserRouter
-      future={{
-        v7_startTransition: true,
-        v7_relativeSplatPath: true,
-      }}
-    >
-      <React.Suspense fallback={<StorefrontSkeleton />}>
-        <StorefrontShell />
-      </React.Suspense>
-      <StorefrontAppToaster />
-    </BrowserRouter>
-  </QueryClientProvider>
-);
+const StorefrontBootstrap: React.FC = () => {
+  // Real-user performance monitoring (LCP/CLS/INP/TTFB) — storefront only.
+  React.useEffect(() => {
+    void import("../utils/webVitals").then(({ initWebVitals }) => initWebVitals());
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
+        <React.Suspense fallback={<StorefrontSkeleton />}>
+          <StorefrontShell />
+        </React.Suspense>
+        <StorefrontAppToaster />
+      </BrowserRouter>
+    </QueryClientProvider>
+  );
+};
 
 export default StorefrontBootstrap;

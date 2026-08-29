@@ -180,6 +180,9 @@ export interface TemplateScopeConfig {
   defaultContent: string;
   eventLabelResolver: (eventType: string) => string;
 
+  /** أزرار افتراضية عند إنشاء قالب جديد — لو اتحددت بتبدّل أزرار تأكيد/إلغاء الأوردر العامة */
+  defaultCreateButtons?: ReadonlyArray<{ id: string; text: string; action: string; type?: "QUICK_REPLY" | "LINK" }>;
+
   /** تبويبات الصفحة بالترتيب */
   tabs: TabDef[];
 
@@ -194,13 +197,29 @@ export interface TemplateScopeConfig {
     enableSettings: boolean;
     enableFilterChips: boolean;
     enableInternalToggle: boolean;
+    /** إجراءات الزر السريع (عند الضغط) — لو اتحددت بتبدّل إجراءات تأكيد/إلغاء الأوردر العامة */
+    quickReplyActions?: ReadonlyArray<{ value: string; label: string }>;
     sortModes: Array<"statusType" | "alphabetical" | "recent">;
     dialogCategoryOptions?: { value: string; label: string }[];
     categoryMode: "auto" | "manual";
+    /** طريقة تجميع البطاقات: "content" (حسب نص الرسالة) أو "identity" (كل حدث بطاقة مستقلة) */
+    groupMode?: "content" | "identity";
   };
 
   /** لتحديد فئة القالب تلقائياً (وضع auto) */
   resolveCategory?: (row: EventRow) => string;
+
+  /**
+   * تسمية الكيان في نصوص الواجهة («حالة» للطلبات، «حدث» للعملاء).
+   * الافتراضي حالة/حالات — النطاقات غير الطلبية بتعيد تعريفه.
+   */
+  entityLabel?: { singular: string; plural: string };
+
+  /**
+   * مسار صفحة إعدادات الإشعارات — يُستخدم في رسالة «الإشعارات معطلة» لما
+   * النطاق نفسه مش شايل تبويب الإعدادات (enableSettings: false).
+   */
+  settingsPath?: string;
 
   /** فئات السجل اللي يعرضها تقرير الرسائل — لو فاضية نستخدم فئات الطلبات الافتراضية */
   reportCategories?: string[];

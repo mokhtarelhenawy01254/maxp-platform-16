@@ -633,6 +633,8 @@ class SimpleOrderService {
           orderNumber: true,
           total: true,
           status: true,
+          customStatusCode: true,
+          metadata: true,
           customerName: true,
           createdAt: true
         },
@@ -648,8 +650,12 @@ class SimpleOrderService {
       }, 0);
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): العدّ بالحالة الفعلية (كود مخصص ←
+      // تجهيز محوّلة ← enum) — قبل كده كان groupBy خام على الـ enum فكان بيخفي
+      // الحالات المخصصة ومراحل التجهيز من الإحصائيات.
+      const { computeEffectiveOrderStatus } = require('../utils/orderEffectiveStatus');
       const statusCounts = orders.reduce((counts, order) => {
-        const status = order.status?.toLowerCase() || 'pending';
+        const status = computeEffectiveOrderStatus(order).toLowerCase();
         counts[status] = (counts[status] || 0) + 1;
         return counts;
       }, {});
@@ -659,7 +665,7 @@ class SimpleOrderService {
         orderNumber: order.orderNumber,
         customerName: order.customerName || 'عميل غير محدد',
         total: typeof order.total === 'string' ? parseFloat(order.total) : Number(order.total),
-        status: order.status?.toLowerCase() || 'pending',
+        status: computeEffectiveOrderStatus(order).toLowerCase(),
         createdAt: order.createdAt?.toISOString() || new Date().toISOString()
       }));
 

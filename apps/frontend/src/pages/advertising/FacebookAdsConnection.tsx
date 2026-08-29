@@ -23,6 +23,9 @@ import {
   type FacebookAdsConnectionStatus,
 } from "../../services/facebookAdsService";
 
+const safeStr = (v: unknown): string =>
+  v == null ? "" : typeof v === "string" ? v : String(v);
+
 const getOAuthErrorMessage = (errorCode: string) => {
   switch (errorCode) {
     case "facebook_oauth_access_denied":
@@ -262,7 +265,7 @@ const FacebookAdsConnection: React.FC = () => {
 
         {error ? (
           <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-bold text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
-            {error}
+            {safeStr(error)}
           </div>
         ) : null}
 
@@ -360,10 +363,10 @@ const FacebookAdsConnection: React.FC = () => {
                             {remoteSource?.checked
                               ? remoteSource.ok
                                 ? `${remoteSource.accountsCount ?? 0} من Meta`
-                                : remoteSource.error || "فشل الاختبار"
+                                : safeStr(remoteSource.error) || "فشل الاختبار"
                               : "لم يتم الاختبار"}
                           </span>
-                          <span>{source.lastError || i18n.t("FacebookAdsConnection.msg_990c")}</span>
+                          <span>{safeStr(source.lastError) || i18n.t("FacebookAdsConnection.msg_990c")}</span>
                         </div>
                         <div className="flex items-center gap-2 md:justify-end">
                           <StatusPill
@@ -471,7 +474,7 @@ const FacebookAdsConnection: React.FC = () => {
                   {status?.remote.checked
                     ? status.remote.ok
                       ? `Meta رجّعت ${status.remote.accountsCount ?? 0} حساب.`
-                      : status.remote.error || "تعذر اختبار توكن الإعلانات."
+                      : safeStr(status.remote.error) || "تعذر اختبار توكن الإعلانات."
                     : "سيتم اختبار التوكن بعد الربط."}
                 </p>
               </div>

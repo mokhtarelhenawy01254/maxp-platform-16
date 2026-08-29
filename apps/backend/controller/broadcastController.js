@@ -6,6 +6,7 @@ const MetaCloudProvider = require('../services/whatsapp/providers/MetaCloudProvi
 const socketService = require('../services/socketService');
 const { recordSentMessageStat } = require('../utils/statsRecorder');
 const { buildBroadcastBodyParams, countTemplateParams, hasOrderVariables, getTemplateHeaderFormat, buildBroadcastHeaderParams } = require('../utils/broadcastTemplateParams');
+const { isUnsubscribed } = require('../services/botUnsubscribeService');
 const {
   buildEffectiveCustomerListWhere,
   resolveAggregateCustomerIds,
@@ -853,6 +854,21 @@ exports.sendCampaign = async (req, res) => {
     const isWhatsAppChannel = campaign.channel === 'whatsapp';
     console.log(`📤 [SEND CAMPAIGN] بدء إرسال الرسائل عبر ${isWhatsAppChannel ? 'WhatsApp' : 'Facebook Messenger'}`);
 
+    // 🚨 PRODUCTION-FIX (rate-limit enforcement): نطبق الحد الأقصى الفعلي للرسائل/الدقيقة
+    // (كان موجود في الإعدادات بس مش مطبّق كودياً → الحملة كانت بتتبعت بأقصى سرعة = risk of block).
+    // نحسب delay بين كل رسالة من messagesPerMinute، مع احترام حد أدنى آمن (200ms).
+    let perMessageDelayMs = 50;
+    try {
+      const bs = await getSharedPrismaClient().broadcastSettings.findUnique({ where: { companyId } });
+      const mpm = bs?.messagesPerMinute ? Number(bs.messagesPerMinute) : 60;
+      if (mpm > 0) {
+        perMessageDelayMs = Math.max(200, Math.round(60000 / mpm));
+      }
+    } catch (bsErr) {
+      console.warn(`⚠️ [SEND CAMPAIGN] فشل جلب إعدادات البث، هنستخدم delay افتراضي:`, bsErr.message);
+    }
+    console.log(`⏱️ [SEND CAMPAIGN] Rate-limit: ${perMessageDelayMs}ms بين كل رسالة (حسب messagesPerMinute)`);
+
     let sentCount = 0;
     let failedCount = 0;
     const sendResults = [];
@@ -958,6 +974,24 @@ exports.sendCampaign = async (req, res) => {
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
 
+        // 🛡️ PRODUCTION-FIX (opt-out enforcement): استبعاد العملاء الذين ألغوا اشتراكهم
+        // (بعتوا STOP أو ما يعادلها). بدون ده الحملة بتتبعت لعميل لغى اشتراكه = خرق
+        // لسياسات واتساب وممكن يطيح الـ number. نسجله "skipped" عشان نعرف إنه اتفلتر.
+        try {
+          const cid = conv?.customer?.id;
+          if (cid && await isUnsubscribed(companyId, cid, 'WHATSAPP')) {
+            console.log(`🚫 [SEND CAMPAIGN] تخطي ${conv.customer?.firstName || cid} - الغى اشتراكه (unsubscribed)`);
+            failedCount++;
+            await getSharedPrismaClient().broadcastRecipient.updateMany({
+              where: { campaignId: campaign.id, conversationId: conv.id },
+              data: { status: 'skipped', failureReason: 'Unsubscribed', sentAt: new Date() }
+            }).catch(() => {});
+            continue;
+          }
+        } catch (unsubErr) {
+          console.warn(`⚠️ [SEND CAMPAIGN] فحص unsubscribe فشل لـ ${conv?.customer?.id}:`, unsubErr.message);
+        }
+
         // التحقق من حالة الحملة قبل كل رسالة (للسماح بالإيقاف)
         try {
           const currentCampaign = await getSharedPrismaClient().broadcastCampaign.findUnique({
@@ -1056,7 +1090,7 @@ exports.sendCampaign = async (req, res) => {
           if (io) {
             io.emit('campaign:progress', { campaignId: campaign.id, status: 'sending', total: totalRecipients, sent: sentCount, failed: failedCount, progress });
           }
-          await new Promise(resolve => setTimeout(resolve, 50));
+          await new Promise(resolve => setTimeout(resolve, perMessageDelayMs));
         } catch (err) {
           console.error(`❌ [SEND CAMPAIGN] فشل إرسال واتساب لـ ${conv.customer.firstName}:`, err.message);
           failedCount++;
@@ -1078,6 +1112,23 @@ exports.sendCampaign = async (req, res) => {
 
       for (let i = 0; i < conversations.length; i++) {
         const conv = conversations[i];
+
+        // 🛡️ PRODUCTION-FIX (opt-out enforcement): استبعاد العملاء الذين ألغوا اشتراكهم
+        // على قناة الفيسبوك (بعتوا STOP). نفس منطق الواتساب — حماية الـ page من الـ block.
+        try {
+          const cid = conv?.customer?.id;
+          if (cid && await isUnsubscribed(companyId, cid, 'FACEBOOK')) {
+            console.log(`🚫 [SEND CAMPAIGN-FB] تخطي ${conv.customer?.firstName || cid} - الغى اشتراكه (unsubscribed)`);
+            failedCount++;
+            await getSharedPrismaClient().broadcastRecipient.updateMany({
+              where: { campaignId: campaign.id, conversationId: conv.id },
+              data: { status: 'skipped', failureReason: 'Unsubscribed', sentAt: new Date() }
+            }).catch(() => {});
+            continue;
+          }
+        } catch (unsubErr) {
+          console.warn(`⚠️ [SEND CAMPAIGN-FB] فحص unsubscribe فشل لـ ${conv?.customer?.id}:`, unsubErr.message);
+        }
 
         // التحقق من حالة الحملة قبل كل رسالة
         try {

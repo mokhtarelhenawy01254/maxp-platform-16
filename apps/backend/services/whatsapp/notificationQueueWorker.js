@@ -82,14 +82,16 @@ function startNotificationQueueWorker() {
     console.error(`❌ [NOTIF-QUEUE] Worker error:`, err.message)
   );
 
-  // جدولة تكرارية: دفعة كل 60 ثانية. BullMQ يضمن عدم تكرار الـ repeat عبر الـ instances.
+  // 🚨 PRODUCTION-FIX (near-real-time): كانت الدفعة كل 60 ثانية → التأخير كان يوصل
+  // لدقيقة قبل وصول رسالة حالة الطلب للعميل. خفضناها لكل ثانية (6 حقول cron)
+  // عشان الإشعار يوصل فوراً تقريباً (near-real-time) دون لمس منطق الإرسال نفسه.
   const queue = new Queue(QUEUE_NAME, { connection: redisConfig });
   queue
     .add(
       'process-pending',
       {},
       {
-        repeat: { pattern: '* * * * *' },
+        repeat: { pattern: '* * * * * *' },
         removeOnComplete: 100,
         removeOnFail: 500,
       }
@@ -106,13 +108,14 @@ function startNotificationQueueWorker() {
  */
 function startFallbackPolling() {
   if (started) return;
+  // 🚨 PRODUCTION-FIX (near-real-time): polling كل ثانية بدل 60 (نفس هدف الـ worker).
   fallbackTimer = setInterval(async () => {
     try {
       await runQueueTick();
     } catch (e) {
       console.error('[NOTIF-QUEUE] fallback tick failed:', e.message);
     }
-  }, 60000);
+  }, 1000);
   if (typeof fallbackTimer.unref === 'function') fallbackTimer.unref();
   started = true;
   console.log('✅ [NOTIF-QUEUE] Fallback polling started (60s)');

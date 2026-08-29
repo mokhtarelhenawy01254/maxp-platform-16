@@ -70,12 +70,15 @@ function startCustomerBirthdayScheduler() {
             const WhatsAppNotificationService = require('../services/whatsapp/WhatsAppNotificationService');
             const result = await WhatsAppNotificationService.sendNotification({
               companyId: company.id,
+              deliveryStrategy: 'platform-fallback',
               recipientPhone: phone,
               recipientName: name,
               recipientType: 'CUSTOMER',
-              category: 'MARKETING',
-              eventType: 'BIRTHDAY_WISH',
-              variables: { customerName: name, firstName: customer.firstName || '', discount: '', couponCode: '' },
+              // NOTE: مؤقتاً نستخدم قالب المناسبة المعتمد CUSTOMER_OCCASION_msvsy2ut
+              // حتى يُنشأ قالب BIRTHDAY_WISH مخصص ومعتمد على Meta.
+              category: 'OCCASION',
+              eventType: 'CUSTOMER_OCCASION_msvsy2ut',
+              variables: { customerName: name, firstName: customer.firstName || '', reason: 'عيد ميلاد سعيد', discount: '', couponCode: '' },
               customerId: customer.id,
               priority: 3
             });

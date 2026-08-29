@@ -11,13 +11,13 @@ const {
   TURBO_STATUS_ALIASES,
   parseStatusFilter
 } = require('../utils/orderStatusFilter');
+const { EFFECTIVE_ORDER_STATUS_SQL } = require('../utils/orderEffectiveStatus');
 
 const simpleOrderService = require('../services/simpleOrderService');
 const orderService = require('../services/orderService');
 const orderDetailsUpdateService = require('../services/orderDetailsUpdateService');
 const cashbackService = require('../services/cashbackService');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { VALID_ORDER_STATUSES } = require('../utils/constants');
 const preparationQueueService = require('../services/preparationQueueService');
 const {
   extractAttributionFromCheckoutData
@@ -33,8 +33,12 @@ let _knownStatusCodesPromise = null;
 const loadKnownStatusCodes = async () => {
   try {
     const prisma = getSharedPrismaClient();
+    // 🛡️ PRODUCTION-FIX (custom-filter-shipping): حمّل كل الأكواد النشطة من كل
+    // الأنواع (order/preparation/shipping/payment) — كان بياخد order+preparation بس،
+    // فحالة مخصصة نوعها shipping (مثل DELAYED-WITH-CAPTAIN عند Swan) كانت بتقع في
+    // "ignored" والفلتر بيتساقط بصمت والليست بترجع كل الطلبات (82 ألف).
     const statuses = await prisma.orderStatusConfig.findMany({
-      where: { isActive: true, statusType: { in: ['order', 'preparation'] } },
+      where: { isActive: true },
       select: { code: true }
     });
     const dbCodes = new Set(statuses.map(s => s.code.toUpperCase()));
@@ -1097,7 +1101,13 @@ const updateAnyOrderStatus = async ({
         const workflowConfig = order.company?.orderWorkflowConfig;
         if (workflowConfig?.enabled) {
           const orderWorkflowService = require('../services/orderWorkflowService');
-          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const getMappedRegularOrderStatus = (preparationStatus) => {
+            if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+            if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+            if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+            return 'PROCESSING';
+          };
+          const effectiveStatus = currentMetadata?.preparationStatus ? getMappedRegularOrderStatus(currentMetadata.preparationStatus) : order.status;
           const currentStatusDef = await prisma.orderStatusDefinition.findFirst({
             where: { companyId, code: effectiveStatus },
             select: { id: true },
@@ -1137,6 +1147,9 @@ const updateAnyOrderStatus = async ({
         where: { id: order.id },
         data: {
           status: mappedStatus,
+          // 🛡️ PRODUCTION-FIX (custom-status-persist): حالات التجهيز حالات نظامية —
+          // أمسح أي كود مخصص قديم عشان "الحالة الفعلية" تبقى مرحلة التجهيز.
+          customStatusCode: null,
           notes: notes || undefined,
           metadata: JSON.stringify(nextMetadata),
           statusHistory: {
@@ -1150,6 +1163,15 @@ const updateAnyOrderStatus = async ({
           },
           updatedAt: new Date()
         }
+      });
+
+      // 🛡️ PRODUCTION-FIX (prep-stage-notify): إشعار الواتساب كان بيتخطى في مسار الـ bulk
+      setImmediate(() => {
+        preparationQueueService.notifyPreparationStageChange({
+          companyId,
+          orderPayload: { ...order, ...updatedOrder },
+          status: normalizedStatus
+        });
       });
 
       return { orderType: 'regular', order: updatedOrder };
@@ -1190,6 +1212,30 @@ const updateAnyOrderStatus = async ({
           },
           updatedAt: new Date()
         }
+      });
+
+      // 🛡️ PRODUCTION-FIX (prep-stage-notify): إشعار الواتساب لطلبات الضيوف في مسار الـ bulk
+      setImmediate(() => {
+        let guestItems = [];
+        try {
+          guestItems = typeof updatedGuestOrder.items === 'string'
+            ? JSON.parse(updatedGuestOrder.items)
+            : (updatedGuestOrder.items || []);
+        } catch (_itemsError) {
+          guestItems = [];
+        }
+        preparationQueueService.notifyPreparationStageChange({
+          companyId,
+          orderPayload: {
+            ...updatedGuestOrder,
+            isGuestOrder: true,
+            customerPhone: updatedGuestOrder.guestPhone,
+            customerName: updatedGuestOrder.guestName,
+            items: guestItems,
+            currency: 'EGP'
+          },
+          status: normalizedStatus
+        });
       });
 
       return { orderType: 'guest', order: updatedGuestOrder };
@@ -1642,13 +1688,30 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     };
 
     // فترة زمنية: إما days (آخر N يوم) أو from/to مخصص
+    // ملاحظة: نحلل YYYY-MM-DD كتاريخ محلي (مش UTC) حتى لا تضيع ساعات الصباح
+    const parseLocalDate = (s) => {
+      const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+      if (!m) return null;
+      const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+      // ارفض التواريخ اللي JS سحبها (مثل 2026-02-30 -> 2026-03-02)
+      if (Number.isNaN(d.getTime()) || d.getDate() !== Number(m[3])) return null;
+      return d;
+    };
+    // مفتاح اليوم حسب التوقيت المحلي (مش UTC) لتجميع الترند على تقويم التاجر
+    const localDayKey = (d) => {
+      const dt = new Date(d);
+      const y = dt.getFullYear();
+      const mo = String(dt.getMonth() + 1).padStart(2, '0');
+      const da = String(dt.getDate()).padStart(2, '0');
+      return `${y}-${mo}-${da}`;
+    };
     const fromRaw = (req.query.from || '').toString();
     const toRaw = (req.query.to || '').toString();
     let since;
     let toDate = null;
     if (fromRaw) {
-      since = new Date(fromRaw);
-      if (Number.isNaN(since.getTime())) {
+      since = parseLocalDate(fromRaw);
+      if (!since) {
         since = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
       }
     } else {
@@ -1656,15 +1719,18 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       since = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
     }
     if (toRaw) {
-      const parsedTo = new Date(toRaw);
-      if (!Number.isNaN(parsedTo.getTime())) {
-        // يشمل اليوم كاملاً حتى آخر لحظة
-        toDate = new Date(parsedTo.getTime() + 24 * 60 * 60 * 1000 - 1);
+      const parsedTo = parseLocalDate(toRaw);
+      if (parsedTo) {
+        // يشمل اليوم كاملاً حتى آخر لحظة — بالمكونات المحلية مش +24h ثابتة
+        // حتى لا ينزاح الحد عند أيام تغيير التوقيت الصيفي
+        // لازم الناتج يفضل Date object (مش getTime رقمي) لأن Prisma يرفض Int في lte
+        const nextDay = new Date(parsedTo.getFullYear(), parsedTo.getMonth(), parsedTo.getDate() + 1);
+        toDate = new Date(nextDay.getTime() - 1);
       }
     }
     const timeRange = toDate ? { gte: since, lte: toDate } : { gte: since };
 
-    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow] = await Promise.all([
+    const [totalAgg, activeAgg, lostAgg, convWindow, contactWindow, orderSourceAgg] = await Promise.all([
       prisma.guestCart.aggregate({
         where: { companyId },
         _count: { _all: true },
@@ -1706,6 +1772,12 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           result: true,
           createdAt: true
         }
+      }),
+      prisma.order.groupBy({
+        where: { companyId, createdAt: timeRange },
+        by: ['sourceType'],
+        _count: { _all: true },
+        _sum: { total: true }
       })
     ]);
 
@@ -1714,11 +1786,14 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     const convertedValue = convWindow.reduce((s, c) => s + Number(c.cartValue || 0), 0);
     const naturalConverted = convWindow.filter((c) => !c.employeeId && c.channel === 'natural').length;
     const byTeamConverted = converted - naturalConverted;
+    // قاعدة القمع: السلات المتبقية حالياً + اللي اتحولت (اتحذفت) خلال الفترة.
+    // pipeline.total لوحده مضلل لأن السلة بتحذف بعد التحويل فيقل المقام ويعدّي المعدل 100%.
+    const recoveryFunnelBase = total + converted;
 
     // trend by day (JS aggregation over the window rows)
     const dayMap = new Map();
     convWindow.forEach((c) => {
-      const day = c.convertedAt ? new Date(c.convertedAt).toISOString().slice(0, 10) : 'unknown';
+      const day = c.convertedAt ? localDayKey(c.convertedAt) : 'unknown';
       const entry = dayMap.get(day) || { date: day, conversions: 0, value: 0 };
       entry.conversions += 1;
       entry.value += Number(c.cartValue || 0);
@@ -1792,12 +1867,17 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           converted,
           convertedValue,
           avgConvertedValue: converted ? convertedValue / converted : 0,
-          recoveryRate: total ? (converted / total) * 100 : 0,
+          recoveryRate: recoveryFunnelBase ? (converted / recoveryFunnelBase) * 100 : 0,
           byTeam: byTeamConverted,
           natural: naturalConverted,
         },
         team,
         trend,
+        orderSources: orderSourceAgg.map((s) => ({
+          source: s.sourceType || 'unknown',
+          count: s._count._all || 0,
+          value: Number(s._sum.total || 0),
+        })).sort((a, b) => b.count - a.count),
         recent: convWindow.slice(0, 20).map((c) => ({
           cartId: c.cartId,
           orderNumber: c.orderNumber,
@@ -2430,10 +2510,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         // COALESCE(preparationStatus, status) matching), then merged into the OR.
         whereClause._customStatusFilter = customStatuses;
       }
-      if (statusOrBranches.length === 1) {
-        Object.assign(whereClause, statusOrBranches[0]);
-      } else if (statusOrBranches.length > 1) {
-        whereClause.OR = statusOrBranches;
+      // 🛡️ PRODUCTION-FIX (status-filter-and): فروع الحالة بتتخزن مؤقتًا لحد ما
+      // الفلتر المخصص يتحلّ (raw SQL) — وبعدين تتدمج كـ AND group مستقلة. قبل كده
+      // كان البحث بيعمل Object.assign على OR فكان بيمسح فروع الحالة نهائيًا، والفلتر
+      // المخصص كان بيتدمج جوّاه بـ OR بدل ما يقاطع باقي الفلاتر.
+      if (statusOrBranches.length > 0) {
+        whereClause._statusOrBranches = statusOrBranches;
       }
 
       // Guest orders carry statuses on a separate table — mirror the OR across
@@ -2720,7 +2802,6 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // so we fetch IDs via raw SQL first, then use typed Prisma queries.
     const customStatusFilter = whereClause._customStatusFilter;
     let customStatusOrderIds = null;
-    let customStatusTotal = 0;
 
     if (Array.isArray(customStatusFilter) && customStatusFilter.length > 0) {
       delete whereClause._customStatusFilter;
@@ -2728,41 +2809,63 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       // Prep statuses are stored under their mapped order.status while the real
       // stage lives in metadata.preparationStatus — match both so filtering by
       // e.g. PREPARING also finds orders persisted as PROCESSING.
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): الحالة الفعلية بقت بتتخزن في
+      // customStatusCode — الأولوية ليها، وبعدين مرحلة التجهيز، وبعدين الـ enum.
       // But exclude orders whose order.status is already terminal (e.g.
       // DELIVERED) — their stale metadata.preparationStatus from the prep phase
       // must not pull them back into a prep-stage filter.
-      const effectiveStatusExpr = `COALESCE(NULLIF("metadata"::jsonb->>'preparationStatus', ''), "status"::text)`;
+      // Map preparationStatus to its regular order.status equivalent (same as getMappedRegularOrderStatus).
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): التعبير مستورد من utils/orderEffectiveStatus
+      // عشان يفضل متطابق مع الإحصائيات وأي استخدام تاني للحالة الفعلية.
+      const effectiveStatusExpr = EFFECTIVE_ORDER_STATUS_SQL;
       const statusIsTerminalExpr = `UPPER("status"::text) IN ('SHIPPED','DELIVERED','CANCELLED','RETURNED','REFUNDED','PARTIALLY_RETURNED','PARTIALLY_REFUNDED','EXCHANGED','DUPLICATE_ORDER','TRASH','LOST')`;
       const statusPlaceholders = customStatusFilter
         .map((_, index) => `$${index + 2}`)
         .join(', ');
-      const matchExpr = `(UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))`;
-      let countSql = `SELECT COUNT(*) as cnt FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
+      // 🛡️ PRODUCTION-FIX (custom-status-terminal): كود مخصص **محفوظ** على الطلب
+      // (وضعه التاجر صراحةً) لازم يطابق الفلتر حتى لو الـ enum النهائي terminal —
+      // الحاجز النهائي مصمم لاستثناء بيانات التجهيز القديمة، مش لإخفاء حالة التاجر
+      // (مثال حقيقي: WITH_THE_CAPTAIN ماب على SHIPPED — كانت بتختفي من الفلتر).
+      const matchExpr = `(
+        ("customStatusCode" IS NOT NULL AND "customStatusCode" <> '' AND UPPER("customStatusCode") IN (${statusPlaceholders}))
+        OR
+        (UPPER(${effectiveStatusExpr}) IN (${statusPlaceholders}) AND NOT (${statusIsTerminalExpr}))
+      )`;
+      // 🛡️ PRODUCTION-FIX (custom-filter-count): مفيش حاجة محتاجة count خام هنا —
+      // العدّ النهائي بيتم بـ order.count على whereClause الكاملة (أدق مع كل الفلاتر).
       let fetchSql = `SELECT id FROM "orders" WHERE "companyId" = $1 AND ${matchExpr}`;
       const params = [companyId, ...customStatusFilter];
       if (whereClause.createdAt?.gte) {
-        countSql += ` AND "createdAt" >= $3`;
         fetchSql += ` AND "createdAt" >= $3`;
         params.push(whereClause.createdAt.gte);
       }
       if (whereClause.createdAt?.lte) {
         const n = params.length + 1;
-        countSql += ` AND "createdAt" <= $${n}`;
         fetchSql += ` AND "createdAt" <= $${n}`;
         params.push(whereClause.createdAt.lte);
       }
-      const [countRow] = await prisma.$queryRawUnsafe(countSql, ...params);
-      customStatusTotal = Number(countRow?.cnt || 0);
       fetchSql += ` ORDER BY "createdAt" DESC LIMIT ${Number(fetchLimit) || 20}`;
       const rows = await prisma.$queryRawUnsafe(fetchSql, ...params);
       customStatusOrderIds = rows.map(r => r.id);
+    }
 
-      if (Array.isArray(whereClause.OR)) {
-        // The custom-status branch participates in the status OR (e.g. when the
-        // user also selected plain enum / turbo statuses).
-        whereClause.OR.push({ id: { in: customStatusOrderIds } });
-      } else {
-        whereClause.id = { in: customStatusOrderIds };
+    // ── Materialize status branches (enum / turbo / custom) as one AND group ──
+    // 🛡️ PRODUCTION-FIX (status-filter-and): دمج نهائي لفروع الحالة بعد حلّ الفلتر
+    // المخصص — OR بين فروع الحالة نفسها، وAND مع باقي الفلاتر (بحث/دفع/تواريخ).
+    const statusOrBranches = whereClause._statusOrBranches;
+    delete whereClause._statusOrBranches;
+    if (customStatusOrderIds !== null || Array.isArray(statusOrBranches)) {
+      const branches = [...(Array.isArray(statusOrBranches) ? statusOrBranches : [])];
+      if (customStatusOrderIds !== null) {
+        branches.push({ id: { in: customStatusOrderIds } });
+      }
+      if (branches.length === 1) {
+        Object.assign(whereClause, branches[0]);
+      } else if (branches.length > 1) {
+        whereClause.AND = [
+          ...(Array.isArray(whereClause.AND) ? whereClause.AND : []),
+          { OR: branches }
+        ];
       }
     }
 
@@ -2827,12 +2930,42 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         orderBy: [{ createdAt: 'desc' }, { id: 'desc' }]
       }),
       // Count Total Regular (for pagination metadata)
-      customStatusFilter && !Array.isArray(whereClause.OR) && !whereClause.status && !whereClause.turboShipmentStatus
-        ? customStatusTotal
-        : getSharedPrismaClient().order.count({ where: whereClause }),
+      // 🛡️ PRODUCTION-FIX (custom-filter-count): بعد دمج الفلتر المخصص في whereClause
+      // (id.in) الـ count العادي بقا صحيح دايمًا ومع كل الفلاتر — قبل كده كان بيتجاهل
+      // بحث/دفع/تعيين فكان عدّاد الباجينيشن بيكبر غلط.
+      getSharedPrismaClient().order.count({ where: whereClause }),
       // Count Total Guest (for pagination metadata)
       getSharedPrismaClient().guestOrder.count({ where: guestWhereClause })
     ]);
+
+    // ── Guest↔Regular reconciliation ─────────────────────────────────────
+    // A converted/confirmed guest keeps its guest_orders row with a STALE
+    // status (usually PENDING). Once a regular order exists with the same
+    // number, the regular row owns the lifecycle: display ITS effective
+    // status, and drop the twin from status-filtered results when it no
+    // longer matches — otherwise stale PENDING twins pollute filters like
+    // ?status=pending with orders whose real status is CANCELLED/PACKAGED.
+    const guestTwinNumbers = [
+      ...new Set(
+        guestOrders.map((g) => String(g.orderNumber || '').trim()).filter(Boolean)
+      ),
+    ];
+    const regularTwinsByNumber = new Map();
+    if (guestTwinNumbers.length > 0) {
+      const twinRows = await getSharedPrismaClient().order.findMany({
+        where: {
+          companyId,
+          orderNumber: { in: guestTwinNumbers, mode: 'insensitive' },
+        },
+        select: { orderNumber: true, status: true, customStatusCode: true, metadata: true },
+      });
+      for (const t of twinRows) {
+        regularTwinsByNumber.set(String(t.orderNumber).trim().toLowerCase(), t);
+      }
+    }
+    const activeStatusFilterUpper = [...plainEnumStatuses, ...customStatuses];
+    const hasActiveStatusFilter = activeStatusFilterUpper.length > 0;
+    let reconciledGuestsRemoved = 0;
 
     // ── السلال غير المكتملة (guestCart) ─────────────────────────────
     let formattedIncompleteCarts = [];
@@ -2852,21 +2985,59 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     let shadowedGuestOrderNumberSet = new Set();
     let shadowedGuestTotal = 0;
+    // Global count of stale guest twins whose regular counterpart's effective
+    // status no longer matches the requested status filter (see reconciliation
+    // note below). Computed over ALL matching guests so pagination stays right.
+    let reconciledGuestsRemovedGlobal = 0;
+    // Distinct matching-guest numbers that SURVIVE twin reconciliation — used
+    // as the authoritative guest side of totals when a status filter is active.
+    let reconciledSurvivorGuestCount = 0;
 
     const normalizeOrderKey = (value) => String(value || '').trim().toLowerCase();
+
+    // Guest rows keyed by number + shared effective-status rule (handler scope
+    // so both the totals block and the response formatter use one definition):
+    // own metadata.preparationStatus (mapped) → regular twin's prep/status →
+    // stale guest_orders.status column.
+    const guestsByNumber = new Map();
+    const prepFromMeta = (m) => {
+      try {
+        const p = typeof m === 'string' ? JSON.parse(m) : m;
+        return p?.preparationStatus || null;
+      } catch (e) {
+        return null;
+      }
+    };
+    const effectiveCodeForGuest = (numKey) => {
+      const g = guestsByNumber.get(numKey);
+      const t = regularTwinsByNumber.get(numKey);
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): كود الحالة المخصصة للتوأم العادي
+      // (لو موجود) له الأولوية — قبل كده كان بيضيع فكان الضيف الشبح بيعرض حالة قديمة.
+      if (t?.customStatusCode) return String(t.customStatusCode).toUpperCase();
+      const prep = t ? prepFromMeta(t.metadata) : prepFromMeta(g?.metadata);
+      if (prep) return String(getMappedRegularOrderStatus(prep)).toUpperCase();
+      return String((t ? t.status : g?.status) || '').toUpperCase();
+    };
 
     if (totalGuest > 0) {
       const filteredGuestOrderNumberRows = await getSharedPrismaClient().guestOrder.findMany({
         where: guestWhereClause,
         distinct: ['orderNumber'],
         select: {
-          orderNumber: true
+          orderNumber: true,
+          status: true,
+          metadata: true
         }
       });
 
       const filteredGuestOrderNumbers = filteredGuestOrderNumberRows
         .map((order) => (typeof order.orderNumber === 'string' ? order.orderNumber.trim() : ''))
         .filter(Boolean);
+
+      // Guest rows keyed by number — used by the shared effective-status rule.
+      for (const g of filteredGuestOrderNumberRows) {
+        guestsByNumber.set(normalizeOrderKey(g.orderNumber), g);
+      }
 
       if (filteredGuestOrderNumbers.length > 0) {
         const matchingRegularOrderNumbers = await getSharedPrismaClient().order.findMany({
@@ -2877,7 +3048,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           },
           distinct: ['orderNumber'],
           select: {
-            orderNumber: true
+            orderNumber: true,
+            status: true,
+            customStatusCode: true,
+            metadata: true
           }
         });
 
@@ -2889,6 +3063,24 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         shadowedGuestOrderNumberSet = new Set(
           filteredGuestOrderNumbers.filter((n) => regularNormalizedKeys.has(normalizeOrderKey(n)))
         );
+
+        // Global reconciliation: compute how MANY matching guest numbers
+        // survive the shared effective-status rule (own prep → twin prep/status
+        // → stale guest status). Survivors must match the requested filter.
+        let survivorGuestNumbers = 0;
+        if (hasActiveStatusFilter) {
+          for (const num of filteredGuestOrderNumbers) {
+            const eff = effectiveCodeForGuest(normalizeOrderKey(num));
+            if (activeStatusFilterUpper.includes(eff)) {
+              survivorGuestNumbers += 1;
+            } else {
+              reconciledGuestsRemovedGlobal += 1;
+            }
+          }
+        } else {
+          survivorGuestNumbers = filteredGuestOrderNumbers.length;
+        }
+        reconciledSurvivorGuestCount = survivorGuestNumbers;
 
         if (shadowedGuestOrderNumberSet.size > 0) {
           shadowedGuestTotal = await getSharedPrismaClient().guestOrder.count({
@@ -2997,6 +3189,23 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         });
       }
 
+      const getMappedRegularOrderStatus = (preparationStatus) => {
+        if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+        if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+        if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+        return 'PROCESSING';
+      };
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): الحالة الفعلية = الكود المخصص لو
+      // موجود، وإلا مرحلة التجهيز، وإلا الـ enum. قبل كده الكود المخصص كان بيضيع
+      // والتفاصيل بترجع الحالة النظامية الماب عليها فكانت شكلها "مش متطبقة".
+      const effectiveStatus = (
+        order.customStatusCode
+          ? order.customStatusCode
+          : orderMetadata?.preparationStatus
+            ? getMappedRegularOrderStatus(orderMetadata.preparationStatus)
+            : order.status || 'PENDING'
+      ).toLowerCase();
+
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
@@ -3010,7 +3219,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         subtotal: order.subtotal,
         tax: order.tax,
         shipping: order.shipping,
-        status: (order.status || 'PENDING').toLowerCase(),
+        status: effectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
@@ -3087,6 +3296,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         }
       }
 
+      // Unified effective status (own prep → twin prep/status → guest col),
+      // mapped to regular codes — identical rule used for filtering/totals.
+      const twinKey = String(order.orderNumber || '').trim().toLowerCase();
+      const guestDisplayStatus = String(
+        effectiveCodeForGuest(twinKey) || order.status || 'PENDING',
+      ).toLowerCase();
+
       return applyOrderDetailFeatureAccess({
         id: order.orderNumber,
         orderNumber: order.orderNumber,
@@ -3097,7 +3313,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         subtotal: guestAmounts.subtotal,
         tax: 0,
         shipping: guestAmounts.shipping,
-        status: order.status?.toLowerCase() || 'pending',
+        status: guestDisplayStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, metadata),
         paymentMethod: order.paymentMethod?.toLowerCase() || 'cash_on_delivery',
         shippingAddress: shippingAddress,
@@ -3127,9 +3343,22 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       ...formattedRegularOrders.map((order) => normalizeOrderKey(order.orderNumber)),
       ...shadowedGuestOrderNumberSet
     ]);
-    const filteredGuestOrders = formattedGuestOrders.filter(
-      (order) => !regularOrderNumberSet.has(normalizeOrderKey(order.orderNumber))
-    );
+    const filteredGuestOrders = formattedGuestOrders.filter((order) => {
+      const key = normalizeOrderKey(order.orderNumber);
+      if (regularOrderNumberSet.has(key)) return false;
+      // Unified reconciliation: with an active status filter, a guest row
+      // survives only if its shared effective status (own prep → twin →
+      // stale column) actually matches the requested statuses — otherwise
+      // stale rows leak into filters they no longer belong to.
+      if (
+        hasActiveStatusFilter &&
+        !activeStatusFilterUpper.includes(effectiveCodeForGuest(key))
+      ) {
+        reconciledGuestsRemoved += 1;
+        return false;
+      }
+      return true;
+    });
 
     if (filteredGuestOrders.length !== formattedGuestOrders.length) {
       console.log('🧹 [ORDERS] Deduped guest orders:', {
@@ -3173,7 +3402,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       paginatedOrders.push(order);
     }
 
-    const totalOrders = Math.max(totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0), 0);
+    // When a status filter is active, guest totals come from twin
+    // reconciliation (distinct surviving numbers) instead of raw row counts —
+    // stale guest twins would otherwise inflate/deflate pagination.
+    const totalOrders = Math.max(
+      hasActiveStatusFilter
+        ? totalRegular + reconciledSurvivorGuestCount + (cartQueryWhere ? totalIncomplete : 0)
+        : totalRegular + totalGuest - shadowedGuestTotal + (cartQueryWhere ? totalIncomplete : 0),
+      0,
+    );
 
     console.log(`📊 [ORDERS] Returning ${paginatedOrders.length} orders (Page ${page}/${Math.ceil(totalOrders / limit)})`);
 
@@ -3187,7 +3424,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         pages: Math.ceil(totalOrders / limit)
       },
       meta: {
-        showIncompleteCartsInOrders: Boolean(showIncompleteCarts)
+        showIncompleteCartsInOrders: Boolean(showIncompleteCarts),
+        guestReconciliationV4: true,
+        reconciledGuestsRemoved: reconciledGuestsRemovedGlobal
       }
     });
 
@@ -3409,7 +3648,13 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
         const workflowConfig = order.company?.orderWorkflowConfig;
         if (workflowConfig?.enabled) {
           const orderWorkflowService = require('../services/orderWorkflowService');
-          const effectiveStatus = currentMetadata.preparationStatus || order.status;
+          const getMappedRegularOrderStatus = (preparationStatus) => {
+            if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+            if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+            if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+            return 'PROCESSING';
+          };
+          const effectiveStatus = currentMetadata?.preparationStatus ? getMappedRegularOrderStatus(currentMetadata.preparationStatus) : order.status;
           const currentStatusDef = await getSharedPrismaClient().orderStatusDefinition.findFirst({
             where: { companyId, code: effectiveStatus },
             select: { id: true },
@@ -3468,6 +3713,9 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
           where: { id: order.id },
           data: {
             status: mappedStatus,
+            // 🛡️ PRODUCTION-FIX (custom-status-persist): حالات التجهيز حالات نظامية —
+            // أمسح أي كود مخصص قديم عشان "الحالة الفعلية" تبقى مرحلة التجهيز.
+            customStatusCode: null,
             notes: statusNotes || undefined,
             metadata: JSON.stringify(nextMetadata),
             statusHistory: {
@@ -3481,6 +3729,17 @@ router.post('/simple/:orderNumber/status', verifyToken.authenticateToken, async 
             },
             updatedAt: new Date()
           }
+        });
+
+        // 🛡️ PRODUCTION-FIX (prep-stage-notify): نفس إصلاح preparationQueueService —
+        // الفرع ده كان بيحدّث الحالة ويكتب History من غير أي رسالة واتساب للعميل،
+        // رغم إن نفس الحالة من صفحة التجهيز بتبعت إشعار. fire-and-forget زي المسار التاني.
+        setImmediate(() => {
+          preparationQueueService.notifyPreparationStageChange({
+            companyId,
+            orderPayload: { ...order, ...updatedRegularOrder },
+            status: statusUpper
+          });
         });
 
         // 🧾 Auto Invoice Generation (background)
@@ -5167,6 +5426,22 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         finalCustomerName = '';
       }
 
+      const getMappedRegularOrderStatus = (preparationStatus) => {
+        if (preparationStatus === 'PENDING_PREPARATION') return 'CONFIRMED';
+        if (['STOCK_SHORTAGE', 'PENDING_STOCK', 'ON_HOLD_STOCK'].includes(preparationStatus)) return 'STOCK_SHORTAGE';
+        if (preparationStatus === 'ON_HOLD_PREP') return 'ON_HOLD_PREP';
+        return 'PROCESSING';
+      };
+      // 🛡️ PRODUCTION-FIX (custom-status-persist): نفس أولوية الليست — الكود المخصص
+      // له الأولوية، وإلا مرحلة التجهيز، وإلا الـ enum.
+      const detailEffectiveStatus = (
+        order.customStatusCode
+          ? order.customStatusCode
+          : orderMetadata?.preparationStatus
+            ? getMappedRegularOrderStatus(orderMetadata.preparationStatus)
+            : order.status || 'PENDING'
+      ).toLowerCase();
+
       formattedOrder = {
         id: order.orderNumber,
         orderNumber: order.orderNumber,
@@ -5183,7 +5458,7 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         tax: order.tax,
         shipping: order.shipping,
         discount: order.discount,
-        status: (order.status || 'PENDING').toLowerCase(),
+        status: detailEffectiveStatus,
         paymentStatus: derivePaymentStatusForDisplay(order, orderMetadata),
         paymentMethod: (order.paymentMethod || 'CASH').toLowerCase().replace('_', '_on_'),
         shippingAddress: shippingAddress,
@@ -5376,10 +5651,15 @@ router.patch('/:orderNumber/status', verifyToken.authenticateToken, async (req, 
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-    const validStatuses = new Set(VALID_ORDER_STATUSES);
+    // 🛡️ PRODUCTION-FIX (status-validation-unify): التحقق كان بيبني على VALID_ORDER_STATUSES
+    // (فيه أكواد وهمية وناقصه PENDING_CANCELLATION) + orderStatusDefinition (جدول الـ workflow)
+    // — فالحالات المخصصة اللي sync بتاعها للـ workflow فشل كانت بتترفض هنا بينما المسار
+    // الرئيسي بيقبلها. اتوحّد على نفس مصدر الحقيقة: enum + orderStatusConfig النشطة.
+    const { VALID_ORDER_STATUS_ENUM } = require('../utils/orderStatusEnum');
+    const validStatuses = new Set(VALID_ORDER_STATUS_ENUM);
     try {
-      const customStatuses = await getSharedPrismaClient().orderStatusDefinition.findMany({
-        where: { companyId },
+      const customStatuses = await getSharedPrismaClient().orderStatusConfig.findMany({
+        where: { companyId, isActive: true },
         select: { code: true }
       });
       customStatuses.forEach(s => validStatuses.add(s.code.toUpperCase()));
@@ -5577,7 +5857,6 @@ router.post('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     try {
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
-const { VALID_ORDER_STATUSES } = require('../utils/constants');
       const affiliate = await getSharedPrismaClient().affiliate.findUnique({
         where: { userId: req.user.id }
       });

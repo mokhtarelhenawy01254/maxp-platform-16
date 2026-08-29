@@ -87,6 +87,24 @@ const DEFAULT_SPECIALTIES = [
       'store-basic',
     ],
   },
+  {
+    id: 'bizsp_affiliate_blog',
+    slug: 'affiliate-blog-seo',
+    nameAr: 'مدونات الأفليت والـ SEO',
+    nameEn: 'Affiliate Blog & SEO',
+    descriptionAr: 'مدونة أفليت احترافية: مقالات ومراجعات منتجات، كسب عمولات من أمازون، وأدوات SEO متكاملة. يفعّل ثيم Mens Grooming Pro تلقائيًا.',
+    descriptionEn: 'Affiliate blog & SEO: product review articles, Amazon commissions, and full SEO tools. Auto-activates the Mens Grooming Pro theme.',
+    icon: 'BookOpen',
+    sortOrder: 15,
+    themeId: 'mens-grooming-pro',
+    appSlugs: [
+      'blog-pro',
+      'amazon-affiliate-pro',
+      'analytics-basic',
+      'campaign-attribution',
+      'crm-lite',
+    ],
+  },
 ];
 
 function getPrisma(prisma) {
@@ -160,6 +178,7 @@ function serializeSpecialty(specialty) {
     icon: specialty.icon || 'Briefcase',
     appSlugs: normalizeStringArray(specialty.appSlugs),
     autoInstallOnSignup: specialty.autoInstallOnSignup !== false,
+    themeId: specialty.themeId || null,
     sortOrder: Number.isFinite(Number(specialty.sortOrder)) ? Number(specialty.sortOrder) : 0,
     isActive: specialty.isActive !== false,
     companyCount: specialty._count?.companies || 0,
@@ -170,11 +189,8 @@ function serializeSpecialty(specialty) {
 
 async function ensureDefaultSpecialties(prismaArg) {
   const prisma = getPrisma(prismaArg);
-  const count = await prisma.businessSpecialty.count();
-  if (count > 0) {
-    return;
-  }
-
+  // Upsert-style seed: create missing defaults (skip existing by slug/id),
+  // so new specialties (e.g. affiliate-blog-seo) appear on existing DBs too.
   await prisma.businessSpecialty.createMany({
     data: DEFAULT_SPECIALTIES.map((specialty) => ({
       ...specialty,
@@ -300,6 +316,7 @@ function buildSpecialtyPayload(payload = {}, existing = null) {
     icon: String(payload.icon ?? existing?.icon ?? 'Briefcase').trim() || 'Briefcase',
     appSlugs: normalizeStringArray(payload.appSlugs ?? existing?.appSlugs),
     autoInstallOnSignup: payload.autoInstallOnSignup ?? existing?.autoInstallOnSignup ?? true,
+    themeId: String(payload.themeId ?? existing?.themeId ?? '').trim() || null,
     sortOrder: Number.parseInt(String(payload.sortOrder ?? existing?.sortOrder ?? 0), 10) || 0,
     isActive: payload.isActive ?? existing?.isActive ?? true,
   };

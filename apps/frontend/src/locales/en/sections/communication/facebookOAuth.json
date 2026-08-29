@@ -85,10 +85,13 @@
   "skippedPageBoundToOther": "Connected to another account",
   "skippedPagesNote": "Note: To connect these pages, you must first disconnect them from the other company currently using them.",
   "skippedPagesAcknowledge": "Acknowledged - Hide this alert",
+  "forceDisconnect": "Disconnect from previous company",
+  "forceDisconnecting": "Disconnecting...",
+  "forceDisconnectSuccess": "Page disconnected from the previous company — reconnect it now via the connect button",
+  "forceDisconnectError": "Failed to disconnect the page from the previous company",
   "resolveSuccess": "Marked {{count}} page(s) as resolved",
   "resolveError": "Error marking skipped pages",
   "accountsCount": "Accounts: {{count}}",
   "accountGroupTitle": "Facebook Account: {{name}}",
-  "unknownAccount": "Unknown Account",
-  "accountsLinked": "Linked Accounts"
+  "unknownAccount": "Unknown Account"
 }

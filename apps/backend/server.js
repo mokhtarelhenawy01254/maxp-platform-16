@@ -223,6 +223,8 @@ const bookingInsuranceCompaniesRoutes = require("./routes/bookingInsuranceCompan
 const bookingInsuranceMemberTypesRoutes = require("./routes/bookingInsuranceMemberTypesRoutes");
 const bookingPatientDocumentsRoutes = require("./routes/bookingPatientDocumentsRoutes");
 const labTestsRoutes = require("./routes/labTestsRoutes");
+const dentalLabRoutes = require("./routes/dentalLabRoutes");
+const dentalLabPortalRoutes = require("./routes/dentalLabPortalRoutes");
 const labOrdersRoutes = require("./routes/labOrdersRoutes");
 const labCulturesRoutes = require("./routes/labCulturesRoutes");
 const labContractsRoutes = require("./routes/labContractsRoutes");
@@ -693,8 +695,31 @@ app.use("/api/v1/product-landings", productLandingPagesRoutes);
 app.use("/api/v1/external/dev-tasks", devTaskExternalRoutes);
 
 // Static User Content Surface
+// 2026-08 security: sensitive upload folders (HR, payments, affiliate, dental-lab,
+// tasks, support) are gated behind the logged-in refreshToken cookie and never
+// cached. Public-but-shareable folders (conversations/whatsapp/companies) are
+// served no-store so Cloudflare never retains a copy of possibly private media.
+const PRIVATE_UPLOAD_PREFIXES = [
+  '/hr/',
+  '/payment-receipts/',
+  '/affiliate-documents/',
+  '/affiliate-payouts/',
+  '/dental-lab/',
+  '/tasks/',
+  '/dev-tasks/',
+  '/support/',
+];
+const NO_CACHE_UPLOAD_PREFIXES = ['/conversations/', '/whatsapp/', '/companies/'];
+
 app.use("/uploads", async (req, res, next) => {
   try {
+    const uploadPathname = req.path;
+    const isPrivateUpload =
+      PRIVATE_UPLOAD_PREFIXES.some((prefix) => uploadPathname.startsWith(prefix));
+    const isNoCacheUpload =
+      isPrivateUpload ||
+      NO_CACHE_UPLOAD_PREFIXES.some((prefix) => uploadPathname.startsWith(prefix));
+
     const { resolveOptimizedUploadVariant } = require("./utils/uploadImageOptimizer");
     const resolvedUploadFile = resolveUploadRequestFile(req.path);
 
@@ -704,6 +729,27 @@ app.use("/uploads", async (req, res, next) => {
         error: "Asset Not Found",
         message: "الملف المطلوب غير موجود",
         path: `/uploads${req.path}`,
+      });
+    }
+
+    // Private folders: require a logged-in dashboard session (refreshToken cookie).
+    // 404 (not 403) to avoid revealing that the file exists.
+    if (isPrivateUpload && !req.cookies?.refreshToken) {
+      return res.status(404).json({
+        success: false,
+        error: "Asset Not Found",
+        message: "الملف المطلوب غير موجود",
+        path: `/uploads${req.path}`,
+      });
+    }
+
+    // Private / shareable folders must never be cached by Cloudflare or the browser.
+    if (isNoCacheUpload) {
+      res.setHeader("Cache-Control", "private, no-store");
+      return res.sendFile(resolvedUploadFile, (error) => {
+        if (error) {
+          next(error);
+        }
       });
     }
 
@@ -717,6 +763,9 @@ app.use("/uploads", async (req, res, next) => {
       optimizedVariant?.cacheControl || "public, max-age=2592000, immutable";
 
     res.setHeader("Cache-Control", cacheControl);
+    if (optimizedVariant?.contentType) {
+      res.setHeader("Content-Type", optimizedVariant.contentType);
+    }
     return res.sendFile(fileToSend, (error) => {
       if (error) {
         next(error);
@@ -809,6 +858,8 @@ app.use("/api/v1/membership", membershipRoutes);
 
 // Store Management & Catalog
 app.use("/api/v1/products", productRoutes);
+app.use("/api/v1/articles", require("./routes/articleRoutes"));
+app.use("/api/v1/public/articles", require("./routes/publicArticleRoutes"));
 app.use("/api/v1/categories", require("./routes/categoryRoutes"));
 app.use("/api/v1/inventory", inventoryRoutes);
 app.use("/api/v1/procurement", procurementRoutes);
@@ -866,6 +917,8 @@ app.use("/api/v1/booking/insurance-companies", bookingInsuranceCompaniesRoutes);
 app.use("/api/v1/booking/insurance-member-types", bookingInsuranceMemberTypesRoutes);
 app.use("/api/v1/booking/patient-documents", bookingPatientDocumentsRoutes);
 app.use("/api/v1/lab/tests", labTestsRoutes);
+app.use("/api/v1/dental-lab", dentalLabRoutes);
+app.use("/api/v1/dental-lab/portal", dentalLabPortalRoutes);
 app.use("/api/v1/lab/orders", labOrdersRoutes);
 app.use("/api/v1/lab/cultures", labCulturesRoutes);
 app.use("/api/v1/lab/contracts", labContractsRoutes);
@@ -1037,6 +1090,18 @@ try {
   );
 }
 
+// Start Amazon Affiliate auto-sync scheduler (price/stock sync for enabled companies)
+try {
+  const amazonAffiliateAutoSyncScheduler = require("./services/amazonAffiliateAutoSyncScheduler");
+  amazonAffiliateAutoSyncScheduler.getAmazonAffiliateAutoSyncScheduler().start();
+  console.log("✅ [AMAZON-AFFILIATE-SCHEDULER] Auto sync scheduler started");
+} catch (error) {
+  console.error(
+    "❌ [AMAZON-AFFILIATE-SCHEDULER] Failed to start Auto sync scheduler:",
+    error,
+  );
+}
+
 // Start Dreamer Worker (background AI memory consolidation via Python)
 (async () => {
   try {
@@ -1180,6 +1245,15 @@ try {
 } catch (error) {
   console.error("❌ [JOURNEY-CRON] Failed to start WhatsApp Journey scheduler:", error);
 }
+// Start Retention Cadence scheduler — الرسائل الدورية (منتج كل 10 أيام / رصيد كل 15 / إحالة كل 30 / مستوى كل 30)
+try {
+  const { startRetentionCadenceScheduler } = require("./cron/retentionCadenceCron");
+  startRetentionCadenceScheduler();
+  console.log("✅ [CADENCE-CRON] Retention cadence scheduler started (every 6 hours)");
+} catch (error) {
+  console.error("❌ [CADENCE-CRON] Failed to start retention cadence scheduler:", error);
+}
+
 
 // Start Birthday notifications scheduler
 try {
@@ -1394,6 +1468,9 @@ app.use("/api/v1/tiktok/auth", require("./routes/tiktokAuthRoutes"));
 app.use("/api/v1/tiktok/display", require("./routes/tiktokDisplayRoutes"));
 app.use("/api/v1/tiktok/events", require("./routes/tiktokEventsRoutes"));
 app.use("/api/v1/tiktok/messaging", require("./routes/tiktokMessagingRoutes"));
+
+// Amazon Affiliate (Amazon Associates product import / buy-on-Amazon)
+app.use("/api/v1/amazon-affiliate", require("./routes/amazonAffiliateRoutes"));
 
 // 404 Handler - Must return JSON, not HTML
 app.use((req, res, next) => {

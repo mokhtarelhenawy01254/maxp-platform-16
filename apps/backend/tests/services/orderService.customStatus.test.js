@@ -109,6 +109,116 @@ describe('orderService.updateOrderStatus custom-status resolution', () => {
     expect(updateData.statusHistory.create.status).toBe('DELAYED-WITH-CAPTAIN');
   });
 
+  test('PRODUCTION-FIX (custom-status-persist): persists customStatusCode next to the enum', async () => {
+    mockPrisma.orderStatusConfig.findFirst.mockResolvedValue({ mapsToSystem: 'ON_HOLD' });
+
+    await orderService.updateOrderStatus(
+      'ORD-100',
+      'comp_1',
+      'DELAYED-WITH-CAPTAIN',
+      null,
+      'user_1',
+      'Tester',
+      baseOrder,
+      false,
+      { skipCallAttemptGuard: true, skipTransitionValidation: true }
+    );
+
+    const updateData = mockPrisma.order.update.mock.calls[0][0].data;
+    expect(updateData.customStatusCode).toBe('DELAYED-WITH-CAPTAIN');
+    expect(updateData.status).toBe('ON_HOLD');
+  });
+
+  test('PRODUCTION-FIX (custom-status-persist): clears customStatusCode when a plain enum status is set', async () => {
+    const orderWithCustom = { ...baseOrder, status: 'ON_HOLD', customStatusCode: 'DELAYED-WITH-CAPTAIN' };
+    mockPrisma.order.findFirst.mockResolvedValue(orderWithCustom);
+
+    await orderService.updateOrderStatus(
+      'ORD-100',
+      'comp_1',
+      'PENDING',
+      null,
+      'user_1',
+      'Tester',
+      orderWithCustom,
+      false,
+      { skipCallAttemptGuard: true, skipTransitionValidation: true }
+    );
+
+    const updateData = mockPrisma.order.update.mock.calls[0][0].data;
+    expect(updateData.status).toBe('PENDING');
+    expect(updateData.customStatusCode).toBeNull();
+  });
+
+  test('PRODUCTION-FIX (custom-status-noop): custom status on an order already at its mapsToSystem value is NOT a no-op', async () => {
+    // قبل الإصلاح: currentStatus === storedStatus كان بيرجع مبكرًا — لا تحديث ولا تاريخ
+    // ولا إشعار واتساب (تحديث صامت لا يعمل شيء). دلوقتي لازم يكمّل ويخزّن الكود المخصص.
+    const orderAtMappingTarget = { ...baseOrder, status: 'ON_HOLD', customStatusCode: null };
+    mockPrisma.order.findFirst.mockResolvedValue(orderAtMappingTarget);
+    mockPrisma.orderStatusConfig.findFirst.mockResolvedValue({ mapsToSystem: 'ON_HOLD' });
+
+    await orderService.updateOrderStatus(
+      'ORD-100',
+      'comp_1',
+      'DELAYED-WITH-CAPTAIN',
+      null,
+      'user_1',
+      'Tester',
+      orderAtMappingTarget,
+      false,
+      { skipCallAttemptGuard: true, skipTransitionValidation: true }
+    );
+
+    expect(mockPrisma.order.update).toHaveBeenCalledTimes(1);
+    const updateData = mockPrisma.order.update.mock.calls[0][0].data;
+    expect(updateData.status).toBe('ON_HOLD');
+    expect(updateData.customStatusCode).toBe('DELAYED-WITH-CAPTAIN');
+    expect(updateData.statusHistory.create.status).toBe('DELAYED-WITH-CAPTAIN');
+  });
+
+  test('PRODUCTION-FIX (custom-status-noop): re-applying the SAME custom status stays a no-op', async () => {
+    const orderWithCustom = { ...baseOrder, status: 'ON_HOLD', customStatusCode: 'DELAYED-WITH-CAPTAIN' };
+    mockPrisma.order.findFirst.mockResolvedValue(orderWithCustom);
+    mockPrisma.orderStatusConfig.findFirst.mockResolvedValue({ mapsToSystem: 'ON_HOLD' });
+
+    const result = await orderService.updateOrderStatus(
+      'ORD-100',
+      'comp_1',
+      'DELAYED-WITH-CAPTAIN',
+      null,
+      'user_1',
+      'Tester',
+      orderWithCustom,
+      false,
+      { skipCallAttemptGuard: true, skipTransitionValidation: true }
+    );
+
+    expect(mockPrisma.order.update).not.toHaveBeenCalled();
+    expect(result).toBe(orderWithCustom);
+  });
+
+  test('PRODUCTION-FIX (custom-status-noop): setting the mapped enum explicitly replaces the custom status', async () => {
+    // التاجر رجّع الطلب للحالة النظامية ON_HOLD مباشرة — لازم يشيل الكود المخصص
+    const orderWithCustom = { ...baseOrder, status: 'ON_HOLD', customStatusCode: 'DELAYED-WITH-CAPTAIN' };
+    mockPrisma.order.findFirst.mockResolvedValue(orderWithCustom);
+
+    await orderService.updateOrderStatus(
+      'ORD-100',
+      'comp_1',
+      'ON_HOLD',
+      null,
+      'user_1',
+      'Tester',
+      orderWithCustom,
+      false,
+      { skipCallAttemptGuard: true, skipTransitionValidation: true }
+    );
+
+    expect(mockPrisma.order.update).toHaveBeenCalledTimes(1);
+    const updateData = mockPrisma.order.update.mock.calls[0][0].data;
+    expect(updateData.customStatusCode).toBeNull();
+  });
+
   test('rejects a custom status with no valid mapsToSystem with a clean Arabic error (not a Prisma 500)', async () => {
     mockPrisma.orderStatusConfig.findFirst.mockResolvedValue({ mapsToSystem: '' });
 

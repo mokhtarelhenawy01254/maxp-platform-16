@@ -538,9 +538,6 @@ class SocketService {
       this.disconnect();
     }
 
-    // 🔐 Get authentication token from tokenManager
-    const token = tokenManager.getAccessToken();
-
     // Configure Socket.IO with authentication
     const socketConfig: any = {
       transports: ["websocket", "polling"],
@@ -550,16 +547,18 @@ class SocketService {
       reconnectionDelay: 1000,
     };
 
-    // Pass token in both auth and query for maximum compatibility
-    if (token) {
-      socketConfig.auth = { token };
-      socketConfig.query = { token };
-      console.log("🔐 [SOCKET] Connecting with authentication token");
-    } else {
-      console.warn(
-        "⚠️ [SOCKET] No authentication token found, connecting without auth",
-      );
-    }
+    // 🔐 Use a function for auth so each reconnection gets a fresh token
+    socketConfig.auth = (cb: (data: { token: string | null }) => void) => {
+      const freshToken = tokenManager.getAccessToken();
+      if (freshToken) {
+        console.log("🔐 [SOCKET] Connecting with authentication token");
+      } else {
+        console.warn(
+          "⚠️ [SOCKET] No authentication token found, connecting without auth",
+        );
+      }
+      cb({ token: freshToken });
+    };
 
     this.isConnecting = true;
     this.socket = io(this.baseURL, socketConfig);

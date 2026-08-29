@@ -1,0 +1,336 @@
+// Dental Lab module - dentists, work types, technicians, cases, invoices
+model DentalLabDoctor {
+  id          String   @id @default(cuid())
+  companyId   String?
+  name        String
+  phone       String?
+  clinicName  String?
+  governorate String?
+  portalPin   String?   // doctor login PIN (portal)
+  creditLimit Float    @default(0)
+  notes       String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  cases    DentalLabCase[]
+  invoices DentalInvoice[]
+
+  @@index([companyId])
+  @@index([phone])
+  @@map("dental_lab_doctors")
+}
+
+model DentalWorkType {
+  id           String   @id @default(cuid())
+  companyId    String?
+  name         String
+  category     String?   // تلبيس | جسر | طقم | زراعة | تجميلي | أخرى
+  price        Float    @default(0)
+  leadTimeDays Int      @default(5)
+  isActive     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  cases DentalLabCase[]
+
+  @@index([companyId])
+  @@map("dental_work_types")
+}
+
+model DentalTechnician {
+  id           String   @id @default(cuid())
+  companyId    String?
+  userId       String?  // رابط لحساب المنصة (المستخدم بدور TECHNICIAN)
+  name         String
+  phone        String?
+  role         String   @default("TECHNICIAN") // RECEPTION | CAD | TECHNICIAN | QC
+  wagePerStage Float?   // أجر الفني عن كل مرحلة مكتملة (null => المعدل الافتراضي)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  assignments DentalCaseAssignment[]
+
+  @@index([companyId])
+  @@index([userId])
+  @@map("dental_technicians")
+}
+
+model DentalLabCase {
+  id            String    @id @default(cuid())
+  companyId     String?
+  caseNumber    String             // DL-YYYYMMDD-XXXX (فريد لكل شركة)
+  doctorId      String?
+  doctorName    String?
+  patientName   String?
+  patientPhone  String?
+  workTypeId    String?
+  workTypeName  String?
+  teeth         String?   // e.g. "11,12"
+  shade         String?   // A1/B2...
+  material      String?   // زيركون | إيماكس | برسلين
+  status        String    @default("RECEIVED") // RECEIVED | DESIGN | MANUFACTURING | QC | READY | DELIVERED | CLOSED
+  orderStatus   String    @default("PENDING") // PENDING | CHECKED_IN | IN_PROGRESS | COMPLETED | CANCELLED
+  priority      String    @default("NORMAL") // NORMAL | URGENT | STAT
+  dueDate       DateTime?
+  receivedDate  DateTime  @default(now())
+  deliveredAt   DateTime?
+  source        String    @default("MANUAL") // MANUAL | PHONE | PORTAL | WHATSAPP
+  priceSnapshot Float     @default(0)
+  discount      Float     @default(0)
+  total         Float     @default(0)
+  paid          Float     @default(0)
+  remaining     Float     @default(0)
+  paymentStatus String    @default("UNPAID") // UNPAID | PARTIAL | PAID
+  notes         String?
+  createdBy     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  doctor      DentalLabDoctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  workType    DentalWorkType?    @relation(fields: [workTypeId], references: [id], onDelete: SetNull)
+  stages      DentalCaseStage[]
+  assignments DentalCaseAssignment[]
+  attachments DentalCaseAttachment[]
+  invoices    DentalInvoice[]
+  customValues DentalCaseCustomValue[]
+  history     DentalCaseStatusHistory[]
+  qualityChecks DentalQualityCheck[]
+  refabrications DentalRefabrication[]
+  creditNotes  DentalCreditNote[]
+
+  @@index([companyId])
+  @@index([status])
+  @@index([doctorId])
+  @@unique([companyId, caseNumber])
+  @@index([companyId, workTypeId, status])
+  @@index([companyId, dueDate, status])
+  @@index([receivedDate])
+  @@map("dental_lab_cases")
+}
+
+model DentalCaseStage {
+  id           String    @id @default(cuid())
+  companyId    String?
+  caseId       String
+  name         String
+  status       String    @default("PENDING") // PENDING | IN_PROGRESS | DONE
+  assigneeId   String?   // scalar DentalTechnician id
+  assigneeName String?
+  note         String?
+  startedAt    DateTime?
+  completedAt  DateTime?
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([caseId])
+  @@index([assigneeId, status])
+  @@map("dental_case_stages")
+}
+
+model DentalCaseAssignment {
+  id           String   @id @default(cuid())
+  companyId    String?
+  caseId       String
+  technicianId String
+  role         String   @default("TECHNICIAN")
+  assignedAt   DateTime @default(now())
+
+  case      DentalLabCase   @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  technician DentalTechnician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([caseId])
+  @@index([technicianId])
+  @@map("dental_case_assignments")
+}
+
+model DentalCaseAttachment {
+  id         String   @id @default(cuid())
+  companyId  String?
+  caseId     String
+  uploadedBy String?   // userId or "doctor:<id>"
+  kind       String   @default("SCAN") // SCAN | PHOTO | WORK_ORDER | OTHER
+  fileName   String
+  storedPath String
+  mimeType   String?
+  size       Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([caseId])
+  @@map("dental_case_attachments")
+}
+
+model DentalInvoice {
+  id            String    @id @default(cuid())
+  companyId     String?
+  invoiceNumber String    @unique // INV-DL-YYYYMMDD-XXXX
+  caseId        String?
+  doctorId      String?
+  doctorName    String?
+  total         Float     @default(0)
+  discount      Float     @default(0)
+  paid          Float     @default(0)
+  remaining     Float     @default(0)
+  status        String    @default("OPEN") // OPEN | PARTIAL | PAID | VOID
+  dueDate       DateTime?
+  notes         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  case     DentalLabCase?   @relation(fields: [caseId], references: [id], onDelete: SetNull)
+  doctor   DentalLabDoctor? @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  payments DentalPayment[]
+
+  @@unique([companyId, caseId])
+  @@index([companyId])
+  @@index([caseId])
+  @@index([doctorId])
+  @@map("dental_invoices")
+}
+
+model DentalPayment {
+  id        String   @id @default(cuid())
+  companyId String?
+  invoiceId String
+  amount    Float    @default(0)
+  method    String?  // CASH | CARD | BANK | VODAFONE_CASH | OTHER
+  note      String?
+  paidBy    String?
+  createdAt DateTime @default(now())
+
+  invoice DentalInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([invoiceId])
+  @@map("dental_payments")
+}
+
+model DentalCustomFieldDef {
+  id        String   @id @default(cuid())
+  companyId String?
+  name      String
+  fieldType String   @default("TEXT") // TEXT | NUMBER | SELECT | DATE
+  options   Json?
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  values DentalCaseCustomValue[]
+
+  @@index([companyId])
+  @@map("dental_custom_field_defs")
+}
+
+model DentalCaseCustomValue {
+  id        String  @id @default(cuid())
+  companyId String?
+  caseId    String
+  fieldId   String
+  value     String?
+
+  case  DentalLabCase        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  field DentalCustomFieldDef @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@unique([caseId, fieldId])
+  @@index([companyId])
+  @@map("dental_case_custom_values")
+}
+
+model DentalCaseStatusHistory {
+  id        String   @id @default(cuid())
+  companyId String?
+  caseId    String
+  dimension String   @default("STAGE") // STAGE | ORDER | PAYMENT
+  status    String
+  oldStatus String?
+  changedBy String?
+  userName  String?
+  reason    String?
+  createdAt DateTime @default(now())
+
+  case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([caseId])
+  @@map("dental_case_status_histories")
+}
+
+model DentalSetting {
+  id        String   @id @default(cuid())
+  companyId String?
+  key       String
+  value     Json?
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, key])
+  @@index([companyId])
+  @@map("dental_settings")
+}
+
+model DentalCreditNote {
+  id             String   @id @default(cuid())
+  companyId      String?
+  caseId         String
+  doctorId       String?
+  doctorName     String?
+  amount         Float    @default(0)
+  reason         String?
+  createdBy      String?
+  createdByName  String?
+  createdAt      DateTime @default(now())
+
+  case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, caseId])
+  @@index([companyId])
+  @@index([caseId])
+  @@map("dental_credit_notes")
+}
+
+model DentalQualityCheck {
+  id           String   @id @default(cuid())
+  companyId    String?
+  caseId       String
+  checkedBy    String?
+  checkedByName String?
+  passed       Boolean  @default(true)
+  notes        String?
+  checkedAt    DateTime @default(now())
+
+  case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, caseId])
+  @@map("dental_quality_checks")
+}
+
+model DentalRefabrication {
+  id            String    @id @default(cuid())
+  companyId     String?
+  caseId        String
+  reason        String
+  stageFrom     String    @default("DESIGN") // RECEIVED | DESIGN | MANUFACTURING | QC | READY
+  status        String    @default("OPEN") // OPEN | RESOLVED
+  createdBy     String?
+  createdByName String?
+  resolvedBy    String?
+  resolvedNote  String?
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
+
+  case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([companyId, caseId])
+  @@map("dental_refabrications")
+}

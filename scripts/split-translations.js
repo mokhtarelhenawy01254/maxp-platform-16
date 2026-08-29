@@ -32,3 +32,4 @@ console.log('Splitting translations...');
 splitFile('en');
 splitFile('ar');
 console.log('Done!');
+console.log('Note: Sections are saved as flat files. You can organize them into subdirectories manually.');

@@ -50,7 +50,9 @@
   "tabs": {
     "info": "المعلومات",
     "notes": "الملاحظات",
-    "activity": "النشاط"
+    "activity": "النشاط",
+    "loyalty": "الولاء والنقاط",
+    "journey": "رحلة العميل"
   },
   "contactInfo": "معلومات الاتصال",
   "tagsLabel": "العلامات",
@@ -66,6 +68,7 @@
   "notesPlaceholder": "اكتب الملاحظة هنا...",
   "noNotes": "لا توجد ملاحظات سابقة",
   "noActivities": "لا توجد سجل للأنشطة",
+  "noActivity": "لا يوجد نشاط لهذا العميل",
   "deleteConfirmTitle": "تأكيد الحذف النهائي",
   "import": {
     "title": "استيراد عملاء",

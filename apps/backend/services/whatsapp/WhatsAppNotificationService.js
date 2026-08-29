@@ -89,45 +89,67 @@ function resolveOrderPrimaryImage(order) {
  *     مالهاش channel، واللي كان فيها الربط على نفس القالب).
  */
 async function findNotificationTemplateForEvent(companyId, eventType, sessionProvider, prisma) {
-  const isMetaSession = String(sessionProvider || '').toUpperCase() === 'META_CLOUD';
+  // 🚨 PRODUCTION-FIX (meta-template-first-2026-08-24): نبحث عن قالب ميتا معتمد
+  // (metaTemplateName + APPROVED) بغض النظر عن sessionProvider — لأن الـ occasion
+  // template مسجّل بـ channel AUTO وعنده ربط ميتا معتمد، ولازم يتبعت كـ template
+  // مش نص حر. نبدأ بـ META_CLOUD ثم AUTO ثم أي قناة عليه ربط ميتا معتمد.
+  const DETERMINISTIC_ORDER = [
+    { isDefault: 'desc' },
+    { updatedAt: 'desc' },
+    { createdAt: 'desc' }
+  ];
+  const isApprovedLink = (t) =>
+    Boolean(t?.metaTemplateName) && String(t?.metaTemplateStatus || '').toUpperCase() === 'APPROVED';
 
-  if (isMetaSession) {
-    // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
-    const metaTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
-      where: { companyId, eventType, isActive: true, channel: 'META_CLOUD' },
-      orderBy: { isDefault: 'desc' }
-    });
-    if (metaTemplate && metaTemplate.metaTemplateName && String(metaTemplate.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
-      return metaTemplate;
-    }
+  // 1) سجل META_CLOUD مربوط بقالب معتمد — النموذج الجديد (قناة مفصولة).
+  const metaCloudTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+    where: {
+      companyId,
+      eventType,
+      isActive: true,
+      channel: 'META_CLOUD',
+      metaTemplateName: { not: null },
+      metaTemplateStatus: { equals: 'APPROVED', mode: 'insensitive' }
+    },
+    orderBy: DETERMINISTIC_ORDER
+  }));
+  if (isApprovedLink(metaCloudTemplate)) return metaCloudTemplate;
 
-    // 2) توافق قديم (legacy): سجل عادي (channel AUTO/غير محدد) عليه ربط ميتا معتمد.
-    //    لازم يتفّضل على القالب العادي الصريح — وإلا هيتبعت نص حر بدل قالب ميتا.
-    const legacyMeta = await prisma.whatsAppNotificationTemplate.findFirst({
-      where: {
-        companyId,
-        eventType,
-        isActive: true,
-        channel: { not: 'META_CLOUD' },
-        metaTemplateName: { not: null },
-      },
-      orderBy: { isDefault: 'desc' }
-    });
-    if (legacyMeta && legacyMeta.metaTemplateName && String(legacyMeta.metaTemplateStatus || '').toUpperCase() === 'APPROVED') {
-      return legacyMeta;
-    }
-  }
+  // 2) سجل AUTO (أو أي قناة) عليه ربط ميتا معتمد — يحل محل القالب العادي.
+  const autoMeta = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+    where: {
+      companyId,
+      eventType,
+      isActive: true,
+      channel: { in: ['AUTO', 'META_CLOUD'] },
+      metaTemplateName: { not: null },
+      metaTemplateStatus: { equals: 'APPROVED', mode: 'insensitive' }
+    },
+    orderBy: DETERMINISTIC_ORDER
+  }));
+  if (isApprovedLink(autoMeta)) return autoMeta;
 
-  const regularTemplate = await prisma.whatsAppNotificationTemplate.findFirst({
-    where: { companyId, eventType, isActive: true, channel: { not: 'META_CLOUD' } },
-    orderBy: { isDefault: 'desc' }
-  });
+  // 3) أي سجل (أي channel) عليه ربط ميتا معتمد (legacy شامل).
+  const anyMeta = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+    where: {
+      companyId,
+      eventType,
+      isActive: true,
+      metaTemplateName: { not: null },
+      metaTemplateStatus: { equals: 'APPROVED', mode: 'insensitive' }
+    },
+    orderBy: DETERMINISTIC_ORDER
+  }));
+  if (isApprovedLink(anyMeta)) return anyMeta;
+
+  // 4) fallback: أي قالب عادي للحدث.
+  const regularTemplate = await safeQuery(() => prisma.whatsAppNotificationTemplate.findFirst({
+    where: { companyId, eventType, isActive: true },
+    orderBy: DETERMINISTIC_ORDER
+  }));
   if (regularTemplate) return regularTemplate;
 
-  return prisma.whatsAppNotificationTemplate.findFirst({
-    where: { companyId, eventType, isActive: true },
-    orderBy: { isDefault: 'desc' }
-  });
+  return null;
 }
 
 /**
@@ -236,8 +258,13 @@ function formatNotificationDate(value) {
  * - للطلبات الضيوف (بدون orderId): المفتاح = recipientPhone + eventType.
  * - يُطبَّع الـ eventType عبر getPersistedNotificationEventType حتى يطابق ما
  *   يُخزَّن فعلاً في whatsAppNotificationLog (لا contains — تطابق تام).
+ * 🛡️ PRODUCTION-FIX (custom-status-dedup-identity): لو البايع مرّر rawEventType
+ * (كود الحالة المخصصة الأصلي)، التطابق بيبقى على هوية الحالة دي — مش قيمة
+ * mapsToSystem المشتركة. قبل كده حالتان مخصصتان مختلفتان على نفس الـ mapping
+ * خلال 10 ثوانٍ لنفس الطلب كانت الثانية بتتبلع بصمت. الصفوف القديمة
+ * (rawEventType=null) بتتطابق احتياطيًا زي قبل كده.
  */
-async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, windowMs = 10000 }) {
+async function isDuplicateNotification({ companyId, orderId, recipientPhone, eventType, rawEventType = null, windowMs = 10000 }) {
   const prisma = getSharedPrismaClient();
   const persistedEventType = getPersistedNotificationEventType(eventType);
   const where = {
@@ -245,6 +272,9 @@ async function isDuplicateNotification({ companyId, orderId, recipientPhone, eve
     eventType: persistedEventType,
     createdAt: { gte: new Date(Date.now() - windowMs) },
   };
+  if (rawEventType) {
+    where.OR = [{ rawEventType: String(rawEventType).toUpperCase() }, { rawEventType: null }];
+  }
   if (orderId) {
     where.orderId = orderId;
   } else if (recipientPhone) {
@@ -778,6 +808,43 @@ async function resolvePlatformSenderCompanyId() {
     );
   }
 
+  // 🚨 PRODUCTION-FIX (platform-sender-fallback-2026-08-24):
+  // لو ملقيناش platform sender بـ ID/slug ثابت، ندور على أول شركة عندها
+  // جلسة META_CLOUD متصلة فعلاً (لأن الإرسال عبر Meta Cloud محتاج جلسة شغالة).
+  // ده بيصلح حالة الشركات الفرعية اللي مفيش ليها جلسة — تبعت من الشركة الأم.
+  if (!company) {
+    // 🚨 PRODUCTION-FIX (platform-sender-fallback-2026-08-24):
+    // ندور على شركة عندها جلسة META_CLOUD متصلة AND عندها القالب المعتمد
+    // للمناسبات (CUSTOMER_OCCASION_msvsy2ut) — لأن القالب مسجّل لشركة أم محددة (Swan)
+    // مش أي شركة عندها جلسة. لو ملقيناش، نرجع أول شركة عندها جلسة متصلة.
+    const metaCompany = await safeQuery(() =>
+      prisma.$queryRaw`
+        SELECT s."companyId" FROM whatsapp_sessions s
+        JOIN whatsapp_notification_templates t ON t."companyId" = s."companyId"
+        WHERE s.provider = 'META_CLOUD' AND s.status = 'CONNECTED'
+          AND t."eventType" = 'CUSTOMER_OCCASION_msvsy2ut'
+          AND t."metaTemplateStatus" = 'APPROVED' AND t."isActive" = true
+        LIMIT 1`
+    );
+    let chosenId = metaCompany?.[0]?.companyId;
+    if (!chosenId) {
+      const metaSession = await safeQuery(() =>
+        prisma.whatsAppSession.findFirst({
+          where: { provider: 'META_CLOUD', status: 'CONNECTED' },
+          select: { companyId: true },
+          orderBy: [{ lastConnectedAt: 'desc' }, { createdAt: 'desc' } ]
+        })
+      );
+      chosenId = metaSession?.companyId;
+    }
+    if (chosenId) {
+      const metaCompany2 = await safeQuery(() =>
+        prisma.company.findFirst({ where: { id: chosenId, isActive: true }, select: { id: true } })
+      );
+      company = metaCompany2;
+    }
+  }
+
   platformSenderCompanyCache = {
     value: company?.id || null,
     expiresAt: now + 5 * 60 * 1000
@@ -913,9 +980,8 @@ async function ensureNotificationSettings(companyId) {
  * إرسال إشعار
  */
 async function sendNotification(options) {
-  const {
+  let {
     companyId,
-    deliveryCompanyId = companyId,
     recipientPhone,
     recipientName,
     recipientType = 'CUSTOMER',
@@ -936,8 +1002,25 @@ async function sendNotification(options) {
     channel = null,
     // 🛡️ PRODUCTION-FIX (custom-status-enum): قيمة enum صالحة تُخزّن في whatsAppNotificationLog
     // للحالات المخصصة (مثل mapsToSystem بتاعها) — لأن eventType في السجل enum مقفول.
-    persistedEventType = null
+    persistedEventType = null,
+    // 🛡️ (custom-status-identity): الكود الأصلي للحدث قبل التحويل — هوية dedup
+    // دقيقة للحالات المخصصة (بدل mapsToSystem اللي بيلوع رسالة حالتين مختلفتين)
+    // ونسبة الإرسال في التقارير للحالة الصح.
+    rawEventType = null,
+    // 🛡️ (custom-status-meta-fallback): حدث قالب بديل (الحالة النظامية الماب عليها)
+    // يستخدم لو قالب الحالة المخصصة لسه غير معتمد عند ميتا وجلسة الشركة META_CLOUD.
+    metaFallbackEvent = null,
+    // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): استراتيجية تسليم الرسالة
+    // (company / platform-only / platform-fallback) — تحدد هل نبعت من شركة الطلب
+    // ولا من الشركة الأم اللي عندها جلسة Meta متصلة.
+    deliveryStrategy = 'company',
+    // 🛡️ PRODUCTION-FIX (guest-order-fk): الضيوف ملهمش صف في orders — اللوج بـ orderId=null
+    isGuestOrder = false
   } = options;
+  // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): deliveryCompanyId قابل للتعديل
+  // عشان نقدر نعيد تعيينه من resolveDeliveryCompanyId حسب الاستراتيجية.
+  let deliveryCompanyId = companyId;
+  const safeOrderId = isGuestOrder ? null : orderId;
 
   const prisma = getSharedPrismaClient();
 
@@ -977,6 +1060,14 @@ async function sendNotification(options) {
     let sessionId = null;
     let senderSettings = settings;
 
+    // 🚨 PRODUCTION-FIX (platform-fallback-2026-08-24): نحلّ resolvedDeliveryCompanyId
+    // من الاستراتيجية — عشان الشركات الفرعية (اللي مفيش ليها جلسة) تبعت عبر
+    // الشركة الأم اللي عندها META_CLOUD متصل (زي Swan).
+    const resolvedDeliveryCompanyId = await resolveDeliveryCompanyId(companyId, deliveryStrategy);
+    if (resolvedDeliveryCompanyId && resolvedDeliveryCompanyId !== deliveryCompanyId) {
+      deliveryCompanyId = resolvedDeliveryCompanyId;
+    }
+
     if (deliveryCompanyId && deliveryCompanyId !== companyId) {
       senderSettings = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationSettings.findUnique({
         where: { companyId: deliveryCompanyId }
@@ -1014,7 +1105,7 @@ async function sendNotification(options) {
 
     if (!sessionId) {
       console.log(`⚠️ [WHATSAPP-DEBUG] No session available for company ${companyId}`);
-      return { success: false, reason: 'no_session' };
+      return { success: false, reason: 'no_session', error: 'لا توجد جلسة واتساب متصلة للشركة — يرجى ربط حساب واتساب (Meta Cloud أو Baileys) من إعدادات الشركة أولاً' };
     }
 
     // 🆕 تحديد نوع الجلسة (META_CLOUD vs BAILEYS) من قاعدة البيانات.
@@ -1116,7 +1207,7 @@ async function sendNotification(options) {
         // (مثل CONFIRMED بدل ORDER_CONFIRMED - القوالب المنشأة من صفحة حالات الطلبات)
         if (fallbackEventType && fallbackEventType !== eventType) {
           template = await safeQuery(() => findNotificationTemplateForEvent(
-            companyId,
+            deliveryCompanyId,
             fallbackEventType,
             sessionProvider,
             getSharedPrismaClient()
@@ -1125,7 +1216,7 @@ async function sendNotification(options) {
 
         if (!template) {
           template = await safeQuery(() => findNotificationTemplateForEvent(
-            companyId,
+            deliveryCompanyId,
             eventType,
             sessionProvider,
             getSharedPrismaClient()
@@ -1178,6 +1269,39 @@ async function sendNotification(options) {
           return { success: false, reason: 'no_template' };
         }
         templateId = template.id || null;
+
+        // 🛡️ PRODUCTION-FIX (custom-status-meta-fallback): على جلسات META_CLOUD، لو
+        // القالب المختار للحدث (حالة مخصصة) لسه بدون ربط ميتا معتمد (جديد/PENDING —
+        // محتوى قوالب ميتا المقفولة مايتعدلش)، النص الحر بيترفض خارج نافذة الـ 24
+        // ساعة (131047) = فشل صامت. نرجّع لقالب الحالة النظامية الماب عليها (المعتمد
+        // غالبًا) — الأقرب دلاليًا — ونكمل كإرسال قالب ميتا طبيعي.
+        if (
+          sessionProvider === 'META_CLOUD' &&
+          metaFallbackEvent &&
+          metaFallbackEvent !== eventType &&
+          !(template?.metaTemplateName && String(template?.metaTemplateStatus || '').toUpperCase() === 'APPROVED')
+        ) {
+          try {
+            const mappedTemplate = await safeQuery(() => findNotificationTemplateForEvent(
+              deliveryCompanyId,
+              metaFallbackEvent,
+              sessionProvider,
+              getSharedPrismaClient()
+            ));
+            if (
+              mappedTemplate?.metaTemplateName &&
+              String(mappedTemplate?.metaTemplateStatus || '').toUpperCase() === 'APPROVED'
+            ) {
+              console.log(
+                `☁️ [WHATSAPP-META-FALLBACK] قالب "${eventType}" غير معتمد بعد — استخدام قالب "${metaFallbackEvent}" المعتمد (الأقرب دلاليًا).`
+              );
+              template = mappedTemplate;
+              templateId = template.id || null;
+            }
+          } catch (fallbackErr) {
+            console.warn(`⚠️ [WHATSAPP-META-FALLBACK] فشل البحث عن قالب بديل (${metaFallbackEvent}):`, fallbackErr.message);
+          }
+        }
       }
     }
 
@@ -1236,7 +1360,11 @@ async function sendNotification(options) {
     }
 
     // 7. إنشاء سجل الإشعار
-    let notificationLog;
+    // 🛡️ PRODUCTION-FIX (guest-order-fk): أوردرات الضيوف معندهاش صف في جدول orders،
+    // فكانت كتابة اللوج بتفشل Foreign Key والفشل ده كان بيقتل الإرسال نفسه
+    // (الرسالة جاهزة ومش بتتبعت!). اللوج دلوقتي non-fatal: أي فشل فيه مستمر
+    // نكمل الإرسال — ومسار الضيوف بيتخزن بـ orderId=null أصلاً.
+    let notificationLog = null;
     try {
       notificationLog = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.create({
         data: {
@@ -1248,8 +1376,10 @@ async function sendNotification(options) {
           recipientType: persistedRecipientType,
           category: persistedCategory,
           eventType: persistedEventType,
+          // 🛡️ (custom-status-identity): الكود الأصلي — هوية الحالة المخصصة
+          rawEventType: rawEventType || null,
           content,
-          orderId,
+          orderId: safeOrderId,
           customerId,
           productId,
           employeeId,
@@ -1257,25 +1387,31 @@ async function sendNotification(options) {
           status: 'PENDING'
         }
       }));
-    } catch (enumError) {
-      // Workaround for enum issues - use raw SQL
-      console.log(`[WHATSAPP-DEBUG] Enum error, trying raw SQL...`);
-      const result = await prisma.$queryRaw`
-        INSERT INTO "whatsapp_notification_logs" (
-          id, "companyId", "templateId", "sessionId", "recipientPhone", "recipientName",
-          "recipientType", category, "eventType", content, "orderId", "customerId",
-          status, "createdAt", "updatedAt"
-        ) VALUES (
-          gen_random_uuid(), ${companyId}, ${templateId || null}, ${sessionId},
-          ${formattedPhone}, ${recipientName},
-          CAST(${persistedRecipientType} AS "whatsapp_notification_logs_recipientType"),
-          CAST(${persistedCategory} AS "whatsapp_notification_logs_category"),
-          CAST(${persistedEventType} AS "whatsapp_notification_logs_eventType"), ${content},
-          ${orderId}, ${customerId}, 'PENDING', NOW(), NOW()
-        ) RETURNING *;
-      `;
-      notificationLog = result[0];
-      console.log(`[WHATSAPP-DEBUG] Created log via raw SQL: ${notificationLog.id}`);
+    } catch (logCreateError) {
+      console.warn(`[WHATSAPP-DEBUG] Log create failed (${logCreateError.message}) — retrying raw SQL${isGuestOrder ? ' (guest, orderId=null)' : ''}...`);
+      try {
+        const result = await prisma.$queryRaw`
+          INSERT INTO "whatsapp_notification_logs" (
+            id, "companyId", "templateId", "sessionId", "recipientPhone", "recipientName",
+            "recipientType", category, "eventType", "rawEventType", content, "orderId", "customerId",
+            status, "createdAt", "updatedAt"
+          ) VALUES (
+            gen_random_uuid(), ${companyId}, ${templateId || null}, ${sessionId},
+            ${formattedPhone}, ${recipientName},
+            CAST(${persistedRecipientType} AS "whatsapp_notification_logs_recipientType"),
+            CAST(${persistedCategory} AS "whatsapp_notification_logs_category"),
+            CAST(${persistedEventType} AS "whatsapp_notification_logs_eventType"),
+            ${rawEventType || null}, ${content},
+            ${safeOrderId}, ${customerId}, 'PENDING', NOW(), NOW()
+          ) RETURNING *;
+        `;
+        notificationLog = result[0];
+        console.log(`[WHATSAPP-DEBUG] Created log via raw SQL: ${notificationLog.id}`);
+      } catch (rawLogError) {
+        // اللوج مش أهم من الرسالة — نكمل الإرسال من غيره
+        console.warn(`[WHATSAPP-DEBUG] Notification log skipped (non-fatal):`, rawLogError.message);
+        notificationLog = null;
+      }
     }
 
     // 8. إرسال الرسالة
@@ -1291,7 +1427,11 @@ async function sendNotification(options) {
       // لما كان فيه قالب معتمد APPROVED متاح وفشل. خارج نافذة 24 ساعة،
       // free-form (interactive/text) مرفوض من ميتا حتماً — النزول له = فشل مضمون
       // يكتب failureReason مضلل (131047) بدل السبب الحقيقي لفشل القالب.
-      let blockFreeTextMetaFallback = false;
+      // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-26, خطأ 1): لو الجلسة META_CLOUD
+      // ممنوع تماماً ننزل لأي مسار نص حر (sendText/sendButtons/sendList) — سواء فشل
+      // القالب المعتمد أو القالب أصلاً PENDING/مش معتمد. نبلوك الـ free-text دائماً
+      // لما sessionProvider=META_CLOUD عشان ميتا ما ترفضش برسالة مضللة.
+      let blockFreeTextMetaFallback = sessionProvider === 'META_CLOUD';
       let lastMetaTemplateError = null;
 
       // 🔗 زر "صفحة العميل": لو القالب فيه زرار LINK، نبني رابط سري لفتح بوابة العميل
@@ -1347,12 +1487,36 @@ async function sendNotification(options) {
       // ☁️ [META-CLOUD] إرسال عبر قالب ميتا المعتمد (Approved Template) بدلاً من free text
       // ميتا Cloud API ترفض الرسائل النصية الحرة خارج نافذة 24 ساعة، لذلك نستخدم
       // القالب المعتمد (metaTemplateName مع APPROVED) عندما تكون الجلسة META_CLOUD.
+      // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-25): القالب لازم يكون APPROVED فعلاً
+      // من ميتا — لو PENDING (مش معتمد) نرفض الإرسال ونرجع خطأ واضح بدل ما ننزل
+      // لمسار النص الحر (اللي ميتا بترفضه بـ 132018). قرار المستخدم: مفيش إرسال
+      // إلا بقالب معتمد.
       const metaTemplateName = safeTemplate?.metaTemplateName || null;
       const metaTemplateStatus = safeTemplate?.metaTemplateStatus || null;
       const canSendViaMetaTemplate =
         sessionProvider === 'META_CLOUD' &&
         metaTemplateName &&
         String(metaTemplateStatus).toUpperCase() === 'APPROVED';
+
+      // 🔍 DIAG (2026-08-26): اطبع المعطيات قبل تحديد مسار الإرسال
+      console.log(`🔍 [META-SEND] DIAG sessionProvider=${sessionProvider} metaTemplateName=${metaTemplateName} status=${metaTemplateStatus} canSendViaMetaTemplate=${canSendViaMetaTemplate} eventType=${eventType} deliveryCompanyId=${deliveryCompanyId}`);
+
+      // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-25): لو الجلسة META_CLOUD بس القالب
+      // مش معتمد (PENDING أو مفيش metaTemplateName) — نرفض الإرسال صراحةً بدل ما ننزل
+      // لمسار النص الحر (اللي ميتا بترفضه بـ 132018). المستخدم لازم يعتمد القالب من ميتا.
+      if (sessionProvider === 'META_CLOUD' && !canSendViaMetaTemplate) {
+        const reason = metaTemplateName
+          ? `قالب ميتا "${metaTemplateName}" حالته ${metaTemplateStatus || 'غير معروف'} — لازم يكون APPROVED من ميتا قبل الإرسال`
+          : `لا يوجد قالب ميتا معتمد (metaTemplateName) مربوط بالحدث "${eventType}"`;
+        console.warn(`⚠️ [META-CLOUD] ${reason} — تم الرفض (مفيش إرسال نص حر).`);
+        // 🚨 PRODUCTION-FIX (meta-only-approved-2026-08-26, خطأ 2): لو فيه contentOverride
+        // (نص حر من Journey/LeadFollowUp) والجلسة META_CLOUD — نرفض صراحةً بدل ما نحاول
+        // نبعته كـ free-text (ميتا بتترفضه بـ 132018). نفس الرفض meta_template_not_approved.
+        if (options.contentOverride) {
+          console.warn(`⚠️ [META-CLOUD] contentOverride present but no APPROVED template — rejecting free-text.`);
+        }
+        return { success: false, reason: 'meta_template_not_approved', message: reason };
+      }
 
       if (canSendViaMetaTemplate) {
         try {
@@ -1462,7 +1626,16 @@ async function sendNotification(options) {
             }
           } else {
             // إذا فشل الإرسال عبر القالب المعتمد، نسجّل الخطأ.
+            // 🔍 DIAG (2026-08-26): اطبع تفاصيل خطأ ميتا الكاملة عشان نعرف السبب الحقيقي
             console.error(`❌ [META-CLOUD] Failed to send via approved template "${metaTemplateName}":`, metaError?.message || metaError);
+            console.error(`❌ [META-CLOUD] metaError details =>`, JSON.stringify({
+              code: metaError?.code,
+              reason: metaError?.reason,
+              apiMessage: metaError?.apiMessage,
+              details: metaError?.details,
+              httpStatus: metaError?.httpStatus,
+              raw: metaError?.originalError?.response?.data || metaError?.originalError?.message
+            }));
             lastMetaTemplateError = metaError;
 
             // 🆕 PRODUCTION-FIX (notifications-fix-plan §5.3 — Meta → Baileys fallback):
@@ -1578,13 +1751,18 @@ async function sendNotification(options) {
         ];
       }
 
-      if (blockFreeTextMetaFallback) {
+      if (blockFreeTextMetaFallback && !result) {
         // 🚨 PRODUCTION-FIX: القالب المعتمد APPROVED فشل ولا يوجد Baileys بديل.
         // ممنوع تجربة free-text عبر META_CLOUD خارج نافذة 24 ساعة — ميتا سترفض حتماً.
         // نرمي خطأ يحمل السبب الحقيقي لفشل القالب (بدل 131047 مضلل من buttons).
+        // 🚨 PRODUCTION-FIX (2026-08-27): الـ guard لازم يتضمن `&& !result` — كان
+        // blockFreeTextMetaFallback = sessionProvider === 'META_CLOUD' بيبدأ true
+        // لأي جلسة ميتا، فحتى الإرسال الناجح بالقالب المعتمد كان بيمر على هنا ويُرمى
+        // "Approved Meta template failed" كذباً → التقارير بتعرض فشل رغم وصول الرسالة.
         throw new Error(
-          `Approved Meta template failed and free-text is blocked outside 24h window` +
-          (lastMetaTemplateError ? ` (${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''})` : '')
+          `تعذر إرسال قالب ميتا المعتمد "${metaTemplateName || ''}" (ميتا رفضت أو الرقم خارج نافذة 24 ساعة / الـ template محتاج اعتماد أعلى). ` +
+          `النص الحر ممنوع عبر Meta Cloud خارج نافذة 24 ساعة. السبب من ميتا: ` +
+          (lastMetaTemplateError ? `${lastMetaTemplateError.code || ''} ${lastMetaTemplateError.message || ''}` : 'غير محدد')
         );
       }
 
@@ -1700,16 +1878,18 @@ async function sendNotification(options) {
         throw new Error('Both Meta and Baileys send failed');
       }
 
-      // تحديث السجل
-      await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
-        where: { id: notificationLog.id },
-        data: {
-          status: 'SENT',
-          messageType: usedMessageType || result?.messageType || 'TEXT',
-          sentAt: new Date(),
-          whatsappMessageId: result?.messageId || result?.key?.id || null
-        }
-      }));
+      // تحديث السجل (لو اتكتب أصلاً — guest-order-fk: ممكن يكون null بشكل مقصود)
+      if (notificationLog) {
+        await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
+          where: { id: notificationLog.id },
+          data: {
+            status: 'SENT',
+            messageType: usedMessageType || result?.messageType || 'TEXT',
+            sentAt: new Date(),
+            whatsappMessageId: result?.messageId || result?.key?.id || null
+          }
+        }));
+      }
 
       console.log(`✅ [WHATSAPP-DEBUG] Notification SENT successfully: ${eventType} to ${formattedPhone}`);
 
@@ -1728,22 +1908,24 @@ async function sendNotification(options) {
         });
       }
 
-      return { success: true, notificationId: notificationLog.id };
+      return { success: true, notificationId: notificationLog?.id || null };
 
     } catch (sendError) {
       console.error(`❌ [WHATSAPP-DEBUG] Failed to send message:`, sendError.message);
       console.error(`❌ [WHATSAPP-DEBUG] Error stack:`, sendError.stack);
 
-      // تحديث السجل بالخطأ
-      await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
-        where: { id: notificationLog.id },
-        data: {
-          status: 'FAILED',
-          failedAt: new Date(),
-          failureReason: sendError.code ? `[${sendError.code}] ${sendError.message}` : sendError.message,
-          errorCode: sendError.code ? String(sendError.code) : null,
-        }
-      }));
+      // تحديث السجل بالخطأ (لو موجود — guest-order-fk)
+      if (notificationLog) {
+        await safeQuery(() => getSharedPrismaClient().whatsAppNotificationLog.update({
+          where: { id: notificationLog.id },
+          data: {
+            status: 'FAILED',
+            failedAt: new Date(),
+            failureReason: sendError.code ? `[${sendError.code}] ${sendError.message}` : sendError.message,
+            errorCode: sendError.code ? String(sendError.code) : null,
+          }
+        }));
+      }
 
       // 🚨 PRODUCTION-FIX (notifications-fix-plan §4.1):
       // إعادة محاولة واحدة عبر الطابور للأخطاء العابرة (retryable=true من Meta Cloud).
@@ -2143,7 +2325,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     // notifyCustomer=false) — التناقض ده كان بيولّد محاولات إرسال فاشلة 131047.
     try {
       const dbNotify = await prisma.orderStatusConfig.findFirst({
-        where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true },
+        where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping', 'preparation', 'payment'] }, isActive: true },
         select: { notifyCustomer: true }
       });
       if (dbNotify && dbNotify.notifyCustomer === false) {
@@ -2155,9 +2337,12 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
     }
   } else {
     // التحقق من الحالات المخصصة في قاعدة البيانات
-    // (statusType ممكن يكون order أو shipping — الحالات المخصصة بتاعة التاجر زي DELAYED-WITH-CAPTAIN)
+    // 🛡️ PRODUCTION-FIX (custom-status-all-types): الحالات المخصصة بتاعة التاجر بتتسمّى
+    // من صفحة الحالات بأي نوع (order/shipping/preparation/payment) — الفلترة على
+    // order+shipping بس كانت بتسيب حالات preparation/payment تقع في الـ fallback
+    // (مفعّل قسرًا متجاهلًا notifyCustomer وبدون الاسم العربي في {{status}}).
     const dbStatus = await prisma.orderStatusConfig.findFirst({
-      where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping'] }, isActive: true }
+      where: { companyId: order.companyId, code: newStatus, statusType: { in: ['order', 'shipping', 'preparation', 'payment'] }, isActive: true }
     });
 
     if (dbStatus) {
@@ -2168,7 +2353,11 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
         statusName: dbStatus.name,
         // 🛡️ PRODUCTION-FIX (custom-status-enum): نخزّن في السجل قيمة enum صالحة —
         // نستخدم mapsToSystem بتاعة الحالة المخصصة (مثل ON_HOLD) إن وجدت.
-        persistedEventType: getPersistedNotificationEventType(dbStatus.mapsToSystem || dbStatus.code)
+        persistedEventType: getPersistedNotificationEventType(dbStatus.mapsToSystem || dbStatus.code),
+        // 🛡️ PRODUCTION-FIX (custom-status-meta-fallback): لو قالب الحالة المخصصة
+        // لسه غير معتمد عند ميتا، نرجع لقالب الحالة النظامية الماب عليها (الأقرب
+        // دلاليًا) بدل النص الحر اللي بيفشل 131047 خارج نافذة الـ 24 ساعة.
+        metaFallbackEvent: dbStatus.mapsToSystem || null
       };
     } else {
       // 🚀 [FALLBACK] If not in map or DB, allow the notification but let sendNotification decide
@@ -2244,6 +2433,10 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
       eventType: statusConfig.event,
       fallbackEventType: newStatus,
       persistedEventType: statusConfig.persistedEventType || null,
+      // 🛡️ (custom-status-identity): الكود الأصلي — هوية dedup دقيقة + نسبة للتقارير
+      rawEventType: newStatus,
+      // 🛡️ (custom-status-meta-fallback): قالب الحالة النظامية الماب عليها كخطة بديلة
+      metaFallbackEvent: statusConfig.metaFallbackEvent || null,
       variables: {
         customerName: order.customerName || order.customer?.firstName || 'عميلنا العزيز',
         customerPhone: phone,
@@ -2259,6 +2452,7 @@ async function sendOrderStatusNotification(order, newStatus, oldStatus) {
       },
       orderId: trackedOrderId,
       customerId: order.customerId,
+      isGuestOrder: order?.isGuestOrder === true,
       priority: 2
     });
 
