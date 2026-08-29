@@ -88,10 +88,10 @@ function StatementView() {
   const invoices = data?.invoices ?? [];
 
   const kpi = [
-    { label: t("dentalLab.reports.cases"), value: String(totals?.cases ?? "â€”"), tone: "text-gray-900 dark:text-white" },
-    { label: t("dentalLab.reports.invoices"), value: String(totals?.invoicesCount ?? "â€”"), tone: "text-gray-900 dark:text-white" },
-    { label: t("dentalLab.common.paid"), value: totals ? fmtMoney(totals.paid) : "â€”", tone: "text-emerald-600 dark:text-emerald-400" },
-    { label: t("dentalLab.common.remaining"), value: totals ? fmtMoney(totals.remaining) : "â€”", tone: "text-rose-600 dark:text-rose-400" },
+    { label: t("dentalLab.reports.cases"), value: String(totals?.cases ?? "—"), tone: "text-gray-900 dark:text-white" },
+    { label: t("dentalLab.reports.invoices"), value: String(totals?.invoicesCount ?? "—"), tone: "text-gray-900 dark:text-white" },
+    { label: t("dentalLab.common.paid"), value: totals ? fmtMoney(totals.paid) : "—", tone: "text-emerald-600 dark:text-emerald-400" },
+    { label: t("dentalLab.common.remaining"), value: totals ? fmtMoney(totals.remaining) : "—", tone: "text-rose-600 dark:text-rose-400" },
   ];
 
   return (
@@ -161,9 +161,9 @@ function StatementView() {
                   <tbody>
                     {cases.map((cs, i) => (
                       <tr key={cs.caseNumber ?? i} className="border-b dark:border-gray-700 last:border-b-0">
-                        <td className={tdCls} dir="ltr">{cs.caseNumber || "â€”"}</td>
-                        <td className={tdCls}>{cs.patientName || "â€”"}</td>
-                        <td className={tdCls}>{cs.workTypeName || "â€”"}</td>
+                        <td className={tdCls} dir="ltr">{cs.caseNumber || "—"}</td>
+                        <td className={tdCls}>{cs.patientName || "—"}</td>
+                        <td className={tdCls}>{cs.workTypeName || "—"}</td>
                         <td className={tdCls}>{fmtDate(cs.dueDate)}</td>
                         <td className={tdCls}>{fmtMoney(cs.total)}</td>
                         <td className={tdCls}>{fmtMoney(cs.paid)}</td>
@@ -196,7 +196,7 @@ function StatementView() {
                     {invoices.map(inv => (
                       <tr key={inv.id} className="border-b dark:border-gray-700 last:border-b-0">
                         <td className={tdCls} dir="ltr">{inv.invoiceNumber || inv.id.slice(0, 8)}</td>
-                        <td className={tdCls}>{inv.patientName || "â€”"}</td>
+                        <td className={tdCls}>{inv.patientName || "—"}</td>
                         <td className={tdCls}>{fmtMoney(inv.total)}</td>
                         <td className={tdCls}>{fmtMoney(inv.paid)}</td>
                         <td className={`${tdCls} text-rose-600 dark:text-rose-400`}>{fmtMoney(inv.remaining)}</td>
@@ -238,7 +238,7 @@ function ProductivityView() {
   useEffect(() => { load(); }, [load]);
 
   const chartData = useMemo(
-    () => rows.map(r => ({ name: r.name || "â€”", stages: r.completedStages ?? 0 })),
+    () => rows.map(r => ({ name: r.name || "—", stages: r.completedStages ?? 0 })),
     [rows],
   );
 
@@ -290,11 +290,11 @@ function ProductivityView() {
                 </thead>
                 <tbody>
                   {rows.map(r => (
-                    <tr key={r.technicianId ?? r.name ?? "â€”"} className="border-b dark:border-gray-700 last:border-b-0">
-                      <td className={`${tdCls} font-medium`}>{r.name || "â€”"}</td>
+                    <tr key={r.technicianId ?? r.name ?? "—"} className="border-b dark:border-gray-700 last:border-b-0">
+                      <td className={`${tdCls} font-medium`}>{r.name || "—"}</td>
                       <td className={tdCls}>{r.assignedCases ?? 0}</td>
                       <td className={`${tdCls} font-semibold text-amber-600 dark:text-amber-400`}>{r.completedStages ?? 0}</td>
-                      <td className={tdCls}>{r.avgDaysPerStage != null ? Number(r.avgDaysPerStage).toFixed(1) : "â€”"}</td>
+                      <td className={tdCls}>{r.avgDaysPerStage != null ? Number(r.avgDaysPerStage).toFixed(1) : "—"}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -330,7 +330,7 @@ function RevenueView() {
   useEffect(() => { load(); }, [load]);
 
   const chartData = useMemo(
-    () => rows.map(r => ({ name: r.workType || "â€”", paid: r.paid ?? 0, remaining: r.remaining ?? 0 })),
+    () => rows.map(r => ({ name: r.workType || "—", paid: r.paid ?? 0, remaining: r.remaining ?? 0 })),
     [rows],
   );
 
@@ -383,8 +383,8 @@ function RevenueView() {
                 </thead>
                 <tbody>
                   {rows.map(r => (
-                    <tr key={r.workType ?? "â€”"} className="border-b dark:border-gray-700 last:border-b-0">
-                      <td className={`${tdCls} font-medium`}>{r.workType || "â€”"}</td>
+                    <tr key={r.workType ?? "—"} className="border-b dark:border-gray-700 last:border-b-0">
+                      <td className={`${tdCls} font-medium`}>{r.workType || "—"}</td>
                       <td className={tdCls}>{r.cases ?? 0}</td>
                       <td className={tdCls}>{fmtMoney(r.total)}</td>
                       <td className={`${tdCls} text-emerald-600 dark:text-emerald-400`}>{fmtMoney(r.paid)}</td>
@@ -452,10 +452,10 @@ function OverdueView() {
             <tbody>
               {rows.map((r, i) => (
                 <tr key={r.caseNumber ?? i} className="border-b dark:border-gray-700 last:border-b-0">
-                  <td className={tdCls} dir="ltr">{r.caseNumber || "â€”"}</td>
-                  <td className={tdCls}>{r.doctorName || "â€”"}</td>
-                  <td className={tdCls}>{r.patientName || "â€”"}</td>
-                  <td className={tdCls}>{r.workTypeName || "â€”"}</td>
+                  <td className={tdCls} dir="ltr">{r.caseNumber || "—"}</td>
+                  <td className={tdCls}>{r.doctorName || "—"}</td>
+                  <td className={tdCls}>{r.patientName || "—"}</td>
+                  <td className={tdCls}>{r.workTypeName || "—"}</td>
                   <td className={tdCls}>{fmtDate(r.dueDate)}</td>
                   <td className={tdCls}>
                     <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
@@ -571,10 +571,10 @@ export default function DentalLabReportsTab() {
   }, []);
 
   const kpiCards = [
-    { label: t("dentalLab.dashboard.revenue"), value: kpi ? fmtMoney(kpi.revenue) : "â€”", icon: <ArrowUpRight className="w-4 h-4" />, tone: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
-    { label: t("dentalLab.dashboard.outstanding"), value: kpi ? fmtMoney(kpi.outstanding) : "â€”", icon: <ArrowDownLeft className="w-4 h-4" />, tone: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20" },
-    { label: t("dentalLab.dashboard.todayReceived"), value: String(kpi?.todayReceived ?? "â€”"), icon: <Inbox className="w-4 h-4" />, tone: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
-    { label: t("dentalLab.dashboard.overdueCount"), value: String(kpi?.overdueCount ?? "â€”"), icon: <AlertTriangle className="w-4 h-4" />, tone: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20" },
+    { label: t("dentalLab.dashboard.revenue"), value: kpi ? fmtMoney(kpi.revenue) : "—", icon: <ArrowUpRight className="w-4 h-4" />, tone: "text-emerald-600 dark:text-emerald-400", bg: "bg-emerald-50 dark:bg-emerald-900/20" },
+    { label: t("dentalLab.dashboard.outstanding"), value: kpi ? fmtMoney(kpi.outstanding) : "—", icon: <ArrowDownLeft className="w-4 h-4" />, tone: "text-rose-600 dark:text-rose-400", bg: "bg-rose-50 dark:bg-rose-900/20" },
+    { label: t("dentalLab.dashboard.todayReceived"), value: String(kpi?.todayReceived ?? "—"), icon: <Inbox className="w-4 h-4" />, tone: "text-blue-600 dark:text-blue-400", bg: "bg-blue-50 dark:bg-blue-900/20" },
+    { label: t("dentalLab.dashboard.overdueCount"), value: String(kpi?.overdueCount ?? "—"), icon: <AlertTriangle className="w-4 h-4" />, tone: "text-amber-600 dark:text-amber-400", bg: "bg-amber-50 dark:bg-amber-900/20" },
   ];
 
   return (
