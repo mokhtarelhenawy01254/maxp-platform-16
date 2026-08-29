@@ -119,6 +119,12 @@ router.post('/track/store-visit', analyticsController.trackStoreVisit);
 // تسجيل حدث تحويل (إضافة للسلة، شراء، إلخ)
 router.post('/track/conversion', analyticsController.trackConversion);
 
+// مقاييس أداء المستخدم الحقيقي (LCP/CLS/INP/TTFB) من المتصفح
+router.post('/track/web-vitals', analyticsController.trackWebVitals);
+
+// ملخص مقاييس الأداء لآخر ساعة (لللوحة)
+router.get('/web-vitals/summary', authenticateToken, analyticsController.getWebVitalsSummary);
+
 // ==================== Public Analytics Routes (للعرض من Dashboard) ====================
 
 // إحصائيات المتجر الشاملة (Public)
