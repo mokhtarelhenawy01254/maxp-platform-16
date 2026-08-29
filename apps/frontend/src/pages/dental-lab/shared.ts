@@ -532,10 +532,12 @@ export const assignCase = async (id: string, body: { technicianId: string; role:
 
 export const uploadCaseAttachment = async (caseId: string, file: File, kind?: string): Promise<DentalCaseAttachment> => {
   const formData = new FormData();
-  formData.append("files", file);
+  formData.append("file", file);
   if (kind) formData.append("kind", kind);
-  const result = await uploadCaseAttachments(caseId, [file], kind);
-  return Array.isArray(result) ? result[0] : result;
+  return unwrapEnvelope<DentalCaseAttachment>(await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 120000,
+  }));
 };
 
 export const uploadCaseAttachments = async (caseId: string, files: File[], kind?: string): Promise<DentalCaseAttachment | DentalCaseAttachment[]> => {
@@ -567,6 +569,7 @@ export const parseScan = async (file: File): Promise<ScanParseResult> => {
   formData.append("file", file);
   const res = await apiClient.post("/dental-lab/scan-parse", formData, {
     headers: { "Content-Type": "multipart/form-data" },
+    timeout: 120000,
   });
   const body = asRecord(res.data) ?? {};
   if (body["success"] === false) {
