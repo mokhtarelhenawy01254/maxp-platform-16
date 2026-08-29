@@ -55,6 +55,15 @@ content, fix social icons, declutter the cart, and tighten the shop grid.
   so the "تفاصيل المنتج" tab and its "اقرأ المزيد" button are hidden to avoid
   showing the same text twice.
 
+### 6. Theme rebrand — KHEMET LUXE → Swan
+- `apps/frontend/src/storefront/themes/khemet-luxe-eg.json`
+- Changed the theme identity (`name`, `header.brandName`) and every visible
+  brand string from "KHEMET LUXE" to "Swan": SEO title template, hero eyebrow
+  and panel, story-parallax copy, newsletter club name, cart title, sale hero,
+  collections title and terms page — so the storefront reads as Swan instead of
+  the placeholder template brand. The theme `id` / `formVariant` stay
+  `khemet-luxe-eg` (internal identifiers).
+
 ## Verification
 - `validate-themes.ts` passes for all 62 presets including `khemet-luxe-eg`.
 - Khemet cart / featured-collections / theme-validation / ProductCard

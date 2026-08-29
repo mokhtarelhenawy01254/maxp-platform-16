@@ -1,6 +1,6 @@
 {
   "id": "khemet-luxe-eg",
-  "name": "KHEMET LUXE",
+  "name": "Swan",
   "description": "قالب أحذية حريمي فاخر موجّه للسوق المصري، بطابع تحريري وصور أكبر ومسارات شراء أنيقة من غير زحمة الكروت التجارية المعتادة.",
   "direction": "rtl",
   "tokens": {
@@ -43,8 +43,8 @@
     }
   },
   "seo": {
-    "titleTemplate": "%s | KHEMET LUXE",
-    "description": "بوتيك أحذية حريمي فاخر للسوق المصري يمزج الحرفة المصرية مع عرض تحريري هادئ ومسارات شراء أقرب للحسم."
+    "titleTemplate": "%s | Swan",
+    "description": "بوتيك أحذية حريمي فاخر للسوق المصري يقدّم تشكيلة سوان من الجلد والصور الواضحة ومسارات شراء أسرع."
   },
   "preview": {
     "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
@@ -53,7 +53,7 @@
   "header": {
     "variant": "floating-dark",
     "transparentOnHome": true,
-    "brandName": "KHEMET LUXE",
+    "brandName": "Swan",
     "showSearch": true,
     "showCart": true,
     "navigation": [
@@ -65,8 +65,8 @@
   },
   "footer": {
     "variant": "signature-panel",
-    "description": "أحذية حريمي مصنوعة بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلي القرار أسرع.",
-    "copyrightText": "© 2026 KHEMET LUXE. CRAFTED IN EGYPT.",
+    "description": "أحذية حريمي بجلد مختار وصور أوضح، مع مشهد بيع هادئ يخلي قرار الشراء أسرع.",
+    "copyrightText": "© 2026 Swan. جميع الحقوق محفوظة.",
     "contactRows": [
       { "label": "واتساب", "value": "01123087745", "href": "https://wa.me/201123087745" },
       { "label": "البريد", "value": "swan@h2m.com", "href": "mailto:swan@h2m.com" }
@@ -119,9 +119,9 @@
           "type": "hero-banner",
           "variant": "cinematic-plinth",
           "settings": {
-            "eyebrow": "Crafted in Cairo",
+            "eyebrow": "Swan",
             "title": "أناقة تسبق خطواتك",
-            "subtitle": "كوتشيات وأحذية حريمي بلمسة فاخرة تمزج بين روح القاهرة، الجلد المصري، والذوق التحريري الهادئ.",
+            "subtitle": "أحذية حريمي بلمسة فاخرة تمزج بين الراحة والتصميم، بجودة جلد تتماشى مع ذوقك اليومي.",
             "ctaText": "تسوقي مجموعة الكوتشيات",
             "ctaLink": "/shop",
             "secondaryCtaText": "اكتشفي المجموعات",
@@ -132,11 +132,11 @@
               { "label": "خامة", "value": "جلد طبيعي 100%" },
               { "label": "إصدار", "value": "كبسولات محدودة كل شهر" }
             ],
-            "panelTitle": "دار أحذية حريمي بطابع تحريري",
+            "panelTitle": "دار أحذية حريمي بطابع أنيق",
             "panelSubtitle": "اختيارات أقل، صور أقوى، وحسم أسرع من أول نظرة.",
             "panelNote": "ننتقي الموديلات كما لو كانت قطعة توقيع لا مجرد منتج في شبكة عامة.",
             "panelMetricLabel": "الأكثر طلبًا",
-            "panelMetricValue": "Run-Luxe"
+            "panelMetricValue": "Run Luxe"
           }
         },
         {
@@ -176,8 +176,8 @@
           "variant": "split-editorial",
           "settings": {
             "badge": "قصة الحرفة",
-            "title": "صناعة يدوية في القاهرة بجلود مصرية فاخرة",
-            "content": "في KHEMET LUXE نرى الحذاء امتدادًا للهوية لا مجرد قطعة للارتداء. لذلك نمزج بين مهارة الحرفي المصري، خامات الجلد المختارة، وإيقاع بصري معاصر يجعل كل موديل أقرب لقطعة توقيع.",
+            "title": "صناعة مدروسة بخامات مختارة",
+            "content": "في Swan نرى الحذاء امتدادًا للهوية لا مجرد قطعة للارتداء. لذلك نختار خامات الجلد بعناية ونصيغ كل موديل بإيقاع بصري معاصر يجعل القطعة أقرب لاختيار شخصي واضح.",
             "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuA_Jk0j_Aqzqz6TG_m3ZyMRFImWU1VZ87KCmYU7d06wbK9DbaX34AC42tux2Q5WBWTzbT3pdNtVCgitQpDuJQ-B-1BPTeiN61r-9OAxEOwouuY2gJ5GJLOM3LwQmAeWD-giGVsbCAxdhqg50qmrHKVwk834e5B1bH7WWt1ZUZbIR4ElcnQBQwSKvFrqZjzvQztMsSjHmcc59bZKDtqZUJyyFxwLZ6UL33F-95OCwPOO-Xo1v3iQM2GutG2myc74HpR8P0Vs9py5plk",
             "ctaText": "شاهدي كل المجموعات",
             "ctaLink": "/collections"
@@ -262,7 +262,7 @@
           "type": "newsletter",
           "variant": "editorial-strip",
           "settings": {
-            "title": "انضمي إلى نادي Luxe",
+            "title": "انضمي إلى نادي Swan",
             "subtitle": "كوني أول من يعلم عن الكبسولات الحصرية والعروض الخاصة قبل نزولها للجميع.",
             "buttonText": "اشتراك",
             "placeholder": "بريدك الإلكتروني"
@@ -424,7 +424,7 @@
           "type": "cart-items",
           "variant": "wardrobe-cart",
           "settings": {
-            "title": "سلة KHEMET LUXE",
+            "title": "سلة Swan",
             "emptyText": "سلتك فارغة حالياً.",
             "continueShoppingText": "متابعة التسوق",
             "showUpsell": false,
@@ -580,7 +580,7 @@
           "type": "hero-banner",
           "variant": "centered",
           "settings": {
-            "title": "عروض KHEMET LUXE",
+            "title": "عروض Swan",
             "subtitle": "إصدارات مختارة بأسعار موسمية قبل نفاد المقاسات.",
             "ctaText": "ابدئي التسوق",
             "ctaLink": "/shop",
@@ -618,7 +618,7 @@
           "type": "featured-collections",
           "variant": "gallery-columns",
           "settings": {
-            "title": "مجموعات KHEMET LUXE",
+            "title": "مجموعات Swan",
             "subtitle": "اختاري حسب الإيقاع أو المناسبة أو نوع الحذاء.",
             "limit": 3,
             "preferRuntimeCategories": true,
@@ -761,7 +761,7 @@
           "variant": "centered",
           "settings": {
             "title": "الشروط والأحكام",
-            "subtitle": "شراء KHEMET LUXE يعني موافقتك على تفاصيل السعر، الشحن، الاستبدال، وتأكيد الطلب الموضحة قبل الدفع.",
+            "subtitle": "شراء Swan يعني موافقتك على تفاصيل السعر، الشحن، الاستبدال، وتأكيد الطلب الموضحة قبل الدفع.",
             "ctaText": "ابدئي التسوق",
             "ctaLink": "/shop",
             "secondaryCtaText": "دليل المقاسات",
