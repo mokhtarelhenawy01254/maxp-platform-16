@@ -38,6 +38,9 @@ import type {
 import { useClarityAnalytics } from "../hooks/useClarityAnalytics";
 import { useFacebookPixel } from "../hooks/useFacebookPixel";
 import { useGoogleAnalytics } from "../hooks/useGoogleAnalytics";
+const StorefrontArticlePage = React.lazy(
+  () => import("./pages/StorefrontArticlePage"),
+);
 import { useCategories } from "./hooks/useCategories";
 import StorefrontProductImage from "./components/StorefrontProductImage";
 import StorefrontSkeleton from "./components/StorefrontSkeleton";
@@ -8618,6 +8621,14 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         <Route
           path={scopedPath("pages/:pageSlug/*")}
           element={<DynamicStorefrontPage />}
+        />
+        <Route
+          path={scopedPath("articles/:slug")}
+          element={
+            <React.Suspense fallback={<div className="container py-20 text-center">جاري التحميل...</div>}>
+              <StorefrontArticlePage embedded />
+            </React.Suspense>
+          }
         />
         <Route
           path={scopedPath("returns")}

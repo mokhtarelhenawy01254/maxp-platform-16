@@ -25,7 +25,13 @@ const parseJSON = (val?: string | null, fallback: any = null) => {
   try { return JSON.parse(val); } catch { return fallback; }
 };
 
-const StorefrontArticlePage: React.FC = () => {
+interface StorefrontArticlePageProps {
+  embedded?: boolean;
+}
+
+const StorefrontArticlePage: React.FC<StorefrontArticlePageProps> = ({
+  embedded = false,
+}) => {
   const { slug } = useParams();
   const location = useLocation();
   const [article, setArticle] = useState<Article | null>(null);
@@ -56,8 +62,9 @@ const StorefrontArticlePage: React.FC = () => {
 
   return (
     <div className="w-full bg-white" dir="ltr">
-      {/* Dark navy header matching mensgroomingpro.com */}
-      <header className="sticky top-0 z-50 w-full bg-[#19212B] text-white shadow-[0_2px_8px_rgba(0,0,0,.2)]">
+      {/* Dark navy header matching mensgroomingpro.com (only when standalone) */}
+      {!embedded && (
+        <header className="sticky top-0 z-50 w-full bg-[#19212B] text-white shadow-[0_2px_8px_rgba(0,0,0,.2)]">
         <div className="mx-auto flex h-[60px] max-w-[1100px] items-center justify-between px-4 md:px-6">
           <Link to={`/store?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="text-[19px] font-bold tracking-[-0.5px] text-white">
             Mens Grooming Pro
@@ -70,6 +77,7 @@ const StorefrontArticlePage: React.FC = () => {
           </nav>
         </div>
       </header>
+      )}
       {/* Breadcrumbs */}
       <div className="container px-4 md:px-6 py-3">
         <div className="mx-auto max-w-[1100px] text-[13px] text-[#888]">
@@ -192,8 +200,9 @@ const StorefrontArticlePage: React.FC = () => {
         </div>
       </div>
 
-      {/* Footer matching mensgroomingpro.com */}
-      <footer className="mt-12 border-t border-[#e8e8e8] bg-white py-8">
+      {/* Footer matching mensgroomingpro.com (only when standalone) */}
+      {!embedded && (
+        <footer className="mt-12 border-t border-[#e8e8e8] bg-white py-8">
         <div className="mx-auto flex max-w-[1100px] flex-col items-center justify-between gap-4 px-4 md:flex-row md:px-6">
           <p className="text-sm text-[#666]">© 2026 Mens Grooming Pro</p>
           <nav className="flex flex-wrap items-center justify-center gap-5">
@@ -217,6 +226,7 @@ const StorefrontArticlePage: React.FC = () => {
           </div>
         </div>
       </footer>
+      )}
     </div>
   );
 };
