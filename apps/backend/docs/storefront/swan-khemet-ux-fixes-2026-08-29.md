@@ -54,6 +54,10 @@ content, fix social icons, declutter the cart, and tighten the shop grid.
   `plainDescription === shortDescription`), it is already shown in the buybox,
   so the "تفاصيل المنتج" tab and its "اقرأ المزيد" button are hidden to avoid
   showing the same text twice.
+- For the khemet buybox with a long description, the truncated preview paragraph
+  is no longer rendered in the buybox (only the "اقرأ المزيد" link), since the
+  full text lives in the "تفاصيل المنتج" tab — preventing the same opening text
+  appearing in two places.
 
 ### 6. Theme rebrand — KHEMET LUXE → Swan
 - `apps/frontend/src/storefront/themes/khemet-luxe-eg.json`
