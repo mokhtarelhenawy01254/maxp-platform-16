@@ -1525,10 +1525,17 @@ async function sendNotification(options) {
           // بناء الـ components من ترتيب المتغيرات المخزّن في القالب ({position, name}).
           // 🆕 buildMetaBodyParams يوحّد المسارين (variables JSON + fallback من نص القالب)
           // بنفس منطق mapVariablesByOrder المستخدم وقت الربط — يمنع رسايل بمتغيرات مغلوطة.
+          // 🛡️ PRODUCTION-FIX (2026-08-29, #131008): لو القالب مش موجود في الـ DB المحلي
+          // (مثلاً الـ frontend بيبعت metaTemplateName جاي من ميتا مباشرة) → variablesOrder
+          // و content يبقوا null/undefined والـ buildMetaBodyParams بترجّع [] → ميتا ترفض
+          // بـ "missing parameter". نبني الـ order من الـ values (testVariables) نفسها كـ fallback.
           const variablesOrder = safeTemplate?.variables ? (() => {
             try { const parsed = JSON.parse(safeTemplate.variables); return Array.isArray(parsed) ? parsed : null; } catch { return null; }
           })() : null;
-          const bodyParams = buildMetaBodyParams(variablesOrder, safeTemplate?.content, variables);
+          const fallbackOrder = variablesOrder || !safeTemplate?.content
+            ? (variables && typeof variables === 'object' ? Object.keys(variables).map((name, i) => ({ position: i + 1, name })) : null)
+            : null;
+          const bodyParams = buildMetaBodyParams(variablesOrder || fallbackOrder, safeTemplate?.content, variables);
 
           // helper يبني الـ components مع خيار إسقاط الـ header
           // 🚨 PRODUCTION-FIX (meta-header-132018): القالب المعتمد في ميتا ممكن

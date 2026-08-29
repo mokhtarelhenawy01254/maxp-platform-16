@@ -932,6 +932,7 @@ async function sendTestNotification(req, res) {
       expiryDate: '2026-12-31',
       tierName: 'العضوية الذهبية',
       currentTier: 'الفضية',
+      programName: 'برنامج ولاء سوان',
       benefitTitle: 'ميزة تجريبية',
       benefitSummary: 'تم منحك مزايا إضافية لمدة شهر',
       planName: 'Pro',
