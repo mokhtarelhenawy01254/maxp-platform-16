@@ -29,11 +29,6 @@ const EVENT_GROUPS: Record<string, string[]> = {
     "PRICE_DROP",
     "LOW_STOCK_ALERT",
   ],
-  delivery: [
-    "ORDER_DELIVERED",
-    "ORDER_SHIPPED",
-    "ORDER_OUT_FOR_DELIVERY",
-  ],
   birthday: ["BIRTHDAY_WISH"],
   review: ["REVIEW_REQUEST"],
   cadence: [
@@ -497,7 +492,6 @@ export const customerScopeConfig: TemplateScopeConfig = {
     { key: "cashback", label: "قوالب الكاش باك", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
     { key: "quality", label: "قوالب التقسيم", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
     { key: "autoDiscount", label: "قوالب الخصم التلقائي", kind: "list", filter: (r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code)).length },
-    { key: "delivery", label: "رحلة الطلب", kind: "list", filter: (r) => EVENT_GROUPS["delivery"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["delivery"]!.includes(r.code)).length },
     { key: "birthday", label: "أعياد الميلاد", kind: "list", filter: (r) => EVENT_GROUPS["birthday"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["birthday"]!.includes(r.code)).length },
     { key: "review", label: "طلبات التقييم", kind: "list", filter: (r) => EVENT_GROUPS["review"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["review"]!.includes(r.code)).length },
     { key: "cadence", label: "الرسائل الدورية", kind: "list", filter: (r) => EVENT_GROUPS["cadence"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cadence"]!.includes(r.code)).length },
