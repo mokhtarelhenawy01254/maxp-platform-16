@@ -49,6 +49,9 @@ const AffiliateProTip = React.lazy(() => import('../sections/AffiliateProTip'));
 const AffiliateSources = React.lazy(() => import('../sections/AffiliateSources'));
 const AffiliateBreadcrumbs = React.lazy(() => import('../sections/AffiliateBreadcrumbs'));
 const AffiliateArticleSeo = React.lazy(() => import('../sections/AffiliateArticleSeo'));
+const ImageHotspot = React.lazy(() => import('../sections/ImageHotspot'));
+const BeforeAfterSlider = React.lazy(() => import('../sections/BeforeAfterSlider'));
+const CombinedListing = React.lazy(() => import('../sections/CombinedListing'));
 
 const baseComponentRegistry: Record<
   string,
@@ -100,6 +103,9 @@ const baseComponentRegistry: Record<
   'affiliate-sources': AffiliateSources,
   'affiliate-breadcrumbs': AffiliateBreadcrumbs,
   'affiliate-article-seo': AffiliateArticleSeo,
+  'image-hotspot': ImageHotspot,
+  'before-after': BeforeAfterSlider,
+  'combined-listing': CombinedListing,
 };
 
 /**

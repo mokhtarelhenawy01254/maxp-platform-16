@@ -1,0 +1,630 @@
+{
+  "id": "allure",
+  "name": "Allure",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "220 14% 13%",
+      "primaryForeground": "40 33% 97%",
+      "secondary": "40 24% 94%",
+      "secondaryForeground": "220 12% 22%",
+      "accent": "36 64% 52%",
+      "accentForeground": "0 0% 100%",
+      "background": "40 30% 98%",
+      "foreground": "220 16% 14%",
+      "muted": "40 18% 92%",
+      "mutedForeground": "220 8% 42%",
+      "border": "40 16% 86%",
+      "card": "0 0% 100%",
+      "cardForeground": "220 16% 14%",
+      "ring": "36 64% 52%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", Cairo, sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", Cairo, sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 20px 50px -36px rgba(28, 25, 23, 0.30)",
+      "hoverShadow": "0 28px 60px -34px rgba(28, 25, 23, 0.40)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "0.96"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "Allure",
+    "tagline": "Ø£Ù†Ø§Ù‚Ø© Ø¨Ø³ÙŠØ·Ø©ØŒ Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠØ© Ø¨Ø§Ù„ÙƒØ§Ù…Ù„",
+    "transparentOnHome": true,
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "ØªØ´ÙƒÙŠÙ„Ø© Ø§Ù„Ø®Ø±ÙŠÙ Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© ÙˆØµÙ„Øª â€” Ø´Ø­Ù† Ù…Ø¬Ø§Ù†ÙŠ Ù„Ù„Ø·Ù„Ø¨Ø§Øª ÙÙˆÙ‚ Ù¥Ù Ù  Ø¬.Ù…",
+    "announcementLinkText": "ØªØ³ÙˆÙ‘Ù‚ÙŠ Ø§Ù„Ø¢Ù†",
+    "announcementLinkTo": "/shop?sort=newest",
+    "navigation": [
+      {
+        "label": "Ø§Ù„Ø±Ø¦ÙŠØ³ÙŠØ©",
+        "to": "/"
+      },
+      {
+        "label": "Ø§Ù„Ù…Ø¬Ù…ÙˆØ¹Ø§Øª",
+        "to": "/shop"
+      },
+      {
+        "label": "Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø§Øª",
+        "to": "/lookbook"
+      },
+      {
+        "label": "Ø§Ù„Ù…Ø¯ÙˆÙ†Ø©",
+        "to": "/journal"
+      },
+      {
+        "label": "Ø¯Ù„ÙŠÙ„ Ø§Ù„Ù…Ù‚Ø§Ø³Ø§Øª",
+        "to": "/size-guide"
+      }
+    ],
+    "actions": [
+      {
+        "label": "Ø­Ø³Ø§Ø¨ÙŠ",
+        "to": "/account",
+        "style": "link"
+      },
+      {
+        "label": "Ø³Ù„Ø© Ø§Ù„ØªØ³ÙˆÙ‚",
+        "to": "/cart",
+        "style": "primary"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "Allure â€” Ø«ÙŠÙ… Ø£Ø²ÙŠØ§Ø¡ ÙŠØ¬Ù…Ø¹ Ø¨ÙŠÙ† Ø§Ù„Ø±Ù‚ÙŠ ÙˆØ§Ù„Ø¨Ø³Ø§Ø·Ø©: Ø¹Ø±Ø¶ Ø¨ØµØ±ÙŠ Ù‚ÙˆÙŠØŒ Ø¹Ù„Ø§Ù…Ø© ØªØ¬Ø§Ø±ÙŠØ© ÙØ§Ø®Ø±Ø©ØŒ ÙˆØªØ¬Ø±Ø¨Ø© Ø´Ø±Ø§Ø¡ ØªØ²ÙŠØ¯ Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª.",
+    "copyrightText": "Â© 2026 Allure. Ø¬Ù…ÙŠØ¹ Ø§Ù„Ø­Ù‚ÙˆÙ‚ Ù…Ø­ÙÙˆØ¸Ø©.",
+    "socialLinks": {
+      "instagram": "https://instagram.com/",
+      "facebook": "https://facebook.com/",
+      "tiktok": "https://tiktok.com/",
+      "youtube": "https://youtube.com/"
+    },
+    "navigation": [
+      {
+        "title": "Ø§Ù„ØªØ³ÙˆÙ‘Ù‚",
+        "links": [
+          {
+            "label": "ÙƒÙ„ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª",
+            "to": "/shop"
+          },
+          {
+            "label": "Ø§Ù„ÙˆØµÙ„ Ø­Ø¯ÙŠØ«Ù‹Ø§",
+            "to": "/shop?sort=newest"
+          },
+          {
+            "label": "Ø§Ù„Ø£ÙƒØ«Ø± Ù…Ø¨ÙŠØ¹Ù‹Ø§",
+            "to": "/shop?sort=best_selling"
+          }
+        ]
+      },
+      {
+        "title": "Ø§Ù„Ø¯Ø¹Ù…",
+        "links": [
+          {
+            "label": "Ø¯Ù„ÙŠÙ„ Ø§Ù„Ù…Ù‚Ø§Ø³Ø§Øª",
+            "to": "/size-guide"
+          },
+          {
+            "label": "Ø§Ù„Ø£Ø³Ø¦Ù„Ø© Ø§Ù„Ø´Ø§Ø¦Ø¹Ø©",
+            "to": "/faq"
+          },
+          {
+            "label": "Ø³ÙŠØ§Ø³Ø§Øª Ø§Ù„Ø´Ø­Ù†",
+            "to": "/shipping"
+          }
+        ]
+      },
+      {
+        "title": "Ø§Ù„Ø´Ø±ÙƒØ©",
+        "links": [
+          {
+            "label": "Ù…Ù† Ù†Ø­Ù†",
+            "to": "/about"
+          },
+          {
+            "label": "Ø§Ù„Ù…Ø¯ÙˆÙ†Ø©",
+            "to": "/journal"
+          },
+          {
+            "label": "ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§",
+            "to": "/contact"
+          }
+        ]
+      }
+    ]
+  },
+  "seo": {
+    "titleTemplate": "%s | Allure",
+    "description": "Allure â€” Ø«ÙŠÙ… Ø£Ø²ÙŠØ§Ø¡ Ø¹ØµØ±ÙŠ ÙˆÙØ§Ø®Ø± Ù„Ø¹Ø±Ø¶ Ø§Ù„ØªØ´ÙƒÙŠÙ„Ø§Øª Ø¨Ù‚ÙˆØ© ÙˆØ¨Ø³Ø§Ø·Ø©ØŒ ÙˆÙ…ØµÙ…Ù… Ù„Ø²ÙŠØ§Ø¯Ø© Ø§Ù„Ù…Ø¨ÙŠØ¹Ø§Øª.",
+    "defaultOgImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600"
+  },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
+    "colors": [
+      "220 14% 13%",
+      "36 64% 52%",
+      "40 30% 98%"
+    ]
+  },
+  "pages": {
+    "home": {
+      "layoutHint": "stack",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "full-bleed",
+          "settings": {
+            "title": "Ø§Ù„Ø£Ù†Ø§Ù‚Ø© Ø¨Ù…Ø³Ø© Ø¨Ø³ÙŠØ·Ø©",
+            "subtitle": "Ø«ÙŠÙ… Ø¹ØµØ±ÙŠ Ø¯ÙŠÙ†Ø§Ù…ÙŠÙƒÙŠ Ø¨Ø§Ù„ÙƒØ§Ù…Ù„ ÙŠØ¹Ø±Ø¶ ØªØ´ÙƒÙŠÙ„Ø§ØªÙƒ Ø¨Ø£Ù‚ÙˆÙ‰ ØµÙˆØ±Ø© ÙˆÙŠÙÙ‡Ù… Ù„ØºØ© Ø§Ù„Ø£Ø²ÙŠØ§Ø¡.",
+            "ctaText": "Ø§ÙƒØªØ´ÙÙŠ Ø§Ù„ØªØ´ÙƒÙŠÙ„Ø©",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "Ø´Ø§Ù‡Ø¯ÙŠ Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø§Øª",
+            "secondaryCtaLink": "/lookbook",
+            "backgroundImage": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600"
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "trust-strip",
+          "settings": {
+            "title": "Ù„Ù…Ø§Ø°Ø§ Allure",
+            "items": "Ø´Ø­Ù† Ø³Ø±ÙŠØ¹|ØªØ¬Ù‡ÙŠØ² Ø·Ù„Ø¨Ø§ØªÙƒ ÙÙŠ Ø£Ù‚Ø±Ø¨ ÙˆÙ‚Øª.\nØ¯ÙØ¹ Ø¢Ù…Ù†|ÙƒÙ„ Ø§Ù„Ù…Ø¹Ø§Ù…Ù„Ø§Øª Ù…Ø´ÙÙ‘Ø±Ø© Ù…Ù† Ø§Ù„Ø¨Ø¯Ø§ÙŠØ© Ù„Ù„Ù†Ù‡Ø§ÙŠØ©.\nØ¥Ø±Ø¬Ø§Ø¹ Ù…Ø±Ù†|Ø§Ø³ØªØ¨Ø¯Ø§Ù„ Ø£Ùˆ Ø§Ø³ØªØ±Ø¬Ø§Ø¹ Ø¨Ø³Ù‡ÙˆÙ„Ø© Ø®Ù„Ø§Ù„ Ù¡Ù¤ ÙŠÙˆÙ…Ù‹Ø§.\nØ¯Ø¹Ù… Ø­ÙŠ|ÙØ±ÙŠÙ‚ ÙŠØ¬Ø§ÙˆØ¨Ùƒ Ø¹Ù„Ù‰ Ø·ÙˆÙ„ Ø§Ù„ÙŠÙˆÙ…."
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "ØªØµÙÙ‘Ø­ÙŠ Ø­Ø³Ø¨ Ø§Ù„ØªØ´ÙƒÙŠÙ„Ø©",
+            "subtitle": "Ù…Ø¬Ù…ÙˆØ¹Ø§Øª Ù…Ù†Ø³Ù‘Ù‚Ø© ØªØ¬Ù…Ø¹ Ø§Ù„Ù„ÙˆÙƒ Ø§Ù„ÙƒØ§Ù…Ù„ ÙÙŠ Ù…ÙƒØ§Ù† ÙˆØ§Ø­Ø¯.",
+            "limit": 6
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "editorial-card",
+          "settings": {
+            "title": "Ø§Ù„Ù‚Ø·Ø¹ Ø§Ù„Ø±Ø§Ø¦Ø¬Ø©",
+            "subtitle": "Ù…Ù†ØªØ¬Ø§Øª ØªØªØ­Ø±Ùƒ Ø¨Ø³Ø±Ø¹Ø© ÙˆÙŠÙ„Ø§Ù‚ÙŠÙ‡Ø§ Ø¹Ù…Ù„Ø§Ø¤Ùƒ Ø£ÙˆÙ„ Ù…Ø§ ØªÙØªØ­ Ø§Ù„ØµÙØ­Ø©.",
+            "limit": 8
+          }
+        },
+        {
+          "type": "combined-listing",
+          "variant": "default",
+          "settings": {
+            "title": "إطلالة مدمجة",
+            "subtitle": "القطعة الرئيسية مع الأجزاء المكملة في عرض واحد.",
+            "mainImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
+            "mainTitle": "فستان السهرة",
+            "mainPrice": "٥٩٩ ج.م",
+            "mainLink": "/shop",
+            "parts": "حزام جلد|١٢٩ ج.م|https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?auto=format&fit=crop&q=80&w=600|/shop\nحقيبة لامعة|٣٤٩ ج.م|https://images.unsplash.com/photo-1584917865442-de89df76afd3?auto=format&fit=crop&q=80&w=600|/shop"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "standard",
+          "settings": {
+            "title": "Ø¯Ù„ÙŠÙ„ Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø§Øª",
+            "subtitle": "ØµÙÙ‘Ø­ÙŠ Ø§Ù„Ù„ÙˆÙƒØ§Øª Ø§Ù„Ù…ÙƒØªÙ…Ù„Ø© ÙˆØ£Ø¶ÙŠÙÙŠ Ø§Ù„Ù‚Ø·Ø¹Ø© Ø¨Ø¶ØºØ·Ø©.",
+            "limit": 6
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "Ø¹Ø±Ø¶ Ø§Ù„Ù…ÙˆØ³Ù…",
+            "title": "Ø®ØµÙ… ØªØ±Ø­ÙŠØ¨ÙŠ Ù¡Ù¥Ùª",
+            "subtitle": "Ø¹Ù„Ù‰ Ø£ÙˆÙ„ Ø·Ù„Ø¨ÙŠØ© Ù„Ùƒ Ù…Ù† ØªØ´ÙƒÙŠÙ„Ø© Ø§Ù„Ø®Ø±ÙŠÙ.",
+            "ctaText": "Ø§Ø·Ù„Ø¨ÙŠ Ø§Ù„Ø¢Ù†",
+            "ctaLink": "/shop?promo=welcome15"
+          }
+        },
+        {
+          "type": "story-parallax",
+          "variant": "standard",
+          "settings": {
+            "title": "ØµÙÙ†Ø¹ Ù„Ù„Ø¹Ù„Ø§Ù…Ø§Øª Ø§Ù„Ù…ØªØ®ØµØµØ© ÙÙŠ Ø§Ù„Ø£Ø²ÙŠØ§Ø¡",
+            "subtitle": "Ù‡ÙˆÙŠØ© Ø¨ØµØ±ÙŠØ© ÙØ§Ø®Ø±Ø© ØªØ¨Ø±Ø² Ø§Ù„Ø®Ø§Ù…Ø§Øª ÙˆØ§Ù„ØªÙØ§ØµÙŠÙ„.",
+            "backgroundImage": "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=1600"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "settings": {
+            "title": "Ø¹Ø±ÙˆØ¶ Ù…Ø®ØªØ§Ø±Ø©",
+            "subtitle": "Ø¨Ù„ÙˆÙƒØ§Øª Ø¹Ø±ÙˆØ¶ Ù…Ø±Ù†Ø© ØªÙ†Ù‚Ù„Ùƒ Ù„ÙƒÙ„ Ù‚Ø³Ù… Ø¨Ø³Ø±Ø¹Ø©.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "journal-strip",
+          "settings": {
+            "title": "Ù…Ù† Ø§Ù„Ù…Ø¯ÙˆÙ†Ø©",
+            "subtitle": "Ù†ØµØ§Ø¦Ø­ Ø¥Ø·Ù„Ø§Ù„Ø© ÙˆÙ‚ØµØµ Ø¹Ù„Ø§Ù…Ø© ØªØ¬Ø§Ø±ÙŠØ©.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "Ø®Ù„ÙŠÙƒÙ Ø¯Ø§Ø®Ù„ Ø§Ù„Ù…ÙˆØ¬Ø©",
+            "subtitle": "Ø§Ø´ØªØ±ÙƒÙŠ Ù„ØªØµÙ„Ùƒ Ø§Ù„Ø¥ØµØ¯Ø§Ø±Ø§Øª Ø§Ù„Ø¬Ø¯ÙŠØ¯Ø© ÙˆØ§Ù„Ø¹Ø±ÙˆØ¶ Ø§Ù„Ø®Ø§Ø·ÙØ© Ù‚Ø¨Ù„ Ù…Ø§ ØªØ®ØªÙÙŠ.",
+            "buttonText": "Ø§Ø´ØªØ±ÙƒÙŠ Ø§Ù„Ø¢Ù†",
+            "placeholder": "Ø§ÙƒØªØ¨ÙŠ Ø¨Ø±ÙŠØ¯Ùƒ Ø§Ù„Ø¥Ù„ÙƒØªØ±ÙˆÙ†ÙŠ"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "Ø§ÙƒØªØ´ÙÙŠ ÙƒÙ„ Ø§Ù„Ù‚Ø·Ø¹",
+            "subtitle": "ØªØµÙÙ‘Ø­ØŒ Ø±ØªÙ‘Ø¨ÙŠØŒ ÙˆØ§Ù†ØªÙ‚Ù„ÙŠ Ø¨ÙŠÙ† Ø§Ù„ØªØ´ÙƒÙŠÙ„Ø§Øª Ø¨ÙÙ„Ø§ØªØ± Ø£ÙˆØ¶Ø­.",
+            "ctaText": "Ø§Ø¨Ø¯Ø¦ÙŠ Ø§Ù„ØªØµÙØ­",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "ÙˆØµÙ„ Ø­Ø¯ÙŠØ«Ù‹Ø§",
+            "secondaryCtaLink": "/shop?sort=newest"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "Ø£Ø¯ÙˆØ§Øª Ø§Ù„ØªØµÙØ­",
+            "subtitle": "Ø§Ø¨Ø­Ø«ÙŠØŒ Ø±ØªÙ‘Ø¨ÙŠØŒ ÙˆØªÙ†Ù‚Ù‘Ù„ÙŠ Ø¨ÙŠÙ† Ø§Ù„ØªØµÙ†ÙŠÙØ§Øª Ø¨Ø£Ø³Ø±Ø¹ Ù…Ø§ ÙŠÙ…ÙƒÙ†.",
+            "searchPlaceholder": "Ø§Ø¨Ø­Ø«ÙŠ Ø¹Ù† Ù…Ù†ØªØ¬ Ø£Ùˆ ØªØµÙ†ÙŠÙ",
+            "resultsLabel": "Ù‚Ø·Ø¹Ø© Ù…ØªØ§Ø­Ø©",
+            "clearButtonText": "Ù…Ø³Ø­ Ø§Ù„ÙÙ„Ø§ØªØ±",
+            "stickyLabel": "Ø£Ø¯ÙˆØ§Øª Ø§Ù„ØªØµÙØ­",
+            "chipLimit": 6,
+            "enableMegaMenu": true
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "editorial-card",
+          "settings": {
+            "title": "ÙƒÙ„ Ø§Ù„Ù…Ù†ØªØ¬Ø§Øª",
+            "limit": 24,
+            "enableQuickBuy": true,
+            "enableInfiniteScroll": true,
+            "enableSwatchFilters": true,
+            "enableImageRollover": true
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "settings": {
+            "badge": "Ø¹Ø±Ø¶ Ø§Ù„Ù…ÙˆØ³Ù…",
+            "title": "Ø£Ø¨Ù‚Ù Ø§Ù„Ø²Ø®Ù… Ø¸Ø§Ù‡Ø±Ù‹Ø§",
+            "subtitle": "Ø´Ø±ÙŠØ· Ø¬Ø§Ù†Ø¨ÙŠ ÙŠÙ„Ø®Øµ Ø§Ù„Ø¹Ø±ÙˆØ¶ ÙˆØ§Ù„Ø«Ù‚Ø© Ø£Ø«Ù†Ø§Ø¡ Ø§Ù„ØªØµÙØ­.",
+            "spotlightTitle": "Ø¥ØµØ¯Ø§Ø±Ø§Øª Ù…Ø­Ø¯ÙˆØ¯Ø©",
+            "spotlightText": "Ø±ÙƒÙ‘Ø²ÙŠ Ø¹Ù„Ù‰ Ø§Ù„Ù‚Ø·Ø¹ Ø§Ù„Ø£Ø­Ø¯Ø«.",
+            "ctaText": "Ø´Ø§Ù‡Ø¯ÙŠ Ø§Ù„Ø¬Ø¯ÙŠØ¯",
+            "ctaLink": "/shop?sort=newest",
+            "trustItems": "ØªØ¬Ù‡ÙŠØ² Ø£Ø³Ø±Ø¹|Ø·Ù„Ø¨Ø§ØªÙƒ ØªØªØ­Ø¶Ø± Ø¨Ø³Ø±Ø¹Ø©.\nØ­Ø³Ù… Ø£ÙˆØ¶Ø­|Ø¨Ø·Ø§Ù‚Ø§Øª Ù…Ù†ØªØ¬ ÙˆØ±Ø³Ø§Ø¦Ù„ Ø´Ø±Ø§Ø¡ Ø£ÙˆØ¶Ø­.\nØ¹Ø±Ø¶ Ø£Ù‚ÙˆÙ‰|ÙƒØªØ§Ù„ÙˆØ¬ Ù…Ù†Ø¸Ù….",
+            "highlights": "ÙˆØµÙ„ Ø¬Ø¯ÙŠØ¯|Ù…ØªØ§Ø­ Ø§Ù„Ø¢Ù†\nØ´Ø±Ø§Ø¡ Ø£Ø³Ø±Ø¹|Ù†ÙŠØ© Ø£Ø¹Ù„Ù‰"
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "Ø¹Ø±Ø¶",
+            "title": "Ø®ØµÙ… Ù¡Ù Ùª Ø¹Ù„Ù‰ Ø§Ù„ØªØ´ÙƒÙŠÙ„Ø© Ø§Ù„ÙƒØ§Ù…Ù„Ø©",
+            "subtitle": "Ù„ÙØªØ±Ø© Ù…Ø­Ø¯ÙˆØ¯Ø©.",
+            "ctaText": "ØªØ³ÙˆÙ‘Ù‚ÙŠ",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "grid",
+          "settings": {
+            "enableZoom": true,
+            "enableVideo": true,
+            "enableImageRollover": true,
+            "enableThumbnails": true
+          }
+        },
+        {
+          "type": "product-info",
+          "variant": "accordion",
+          "settings": {
+            "enableSwatches": true,
+            "enableOptions": true,
+            "enableTabs": true,
+            "enableCartNotes": true,
+            "enableGiftWrap": true
+          }
+        },
+        {
+          "type": "image-hotspot",
+          "variant": "default",
+          "settings": {
+            "title": "استكشفي التفاصيل",
+            "subtitle": "مرري فوق النقاط لاكتشاف خامات وتفاصيل القطعة.",
+            "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1600",
+            "hotspots": "30|40|القماش|قطن مستورد عالي الجودة.|/shop\n62|55|التطريز|تطريز يدوي بخيوط لامعة.|/shop\n80|70|الإغلاق|سحاب مخفي مريح.|/shop"
+          }
+        },
+        {
+          "type": "before-after",
+          "variant": "default",
+          "settings": {
+            "title": "قبل وبعد",
+            "subtitle": "اسحبي المقبض لمقارنة التفاصيل واللون.",
+            "beforeImage": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?auto=format&fit=crop&q=80&w=1600",
+            "afterImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
+            "beforeLabel": "اللون الأصلي",
+            "afterLabel": "اللون الجديد"
+          }
+        },
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "title": "Ø¯Ù„ÙŠÙ„ Ø§Ù„Ù…Ù‚Ø§Ø³Ø§Øª",
+            "subtitle": "ÙˆÙÙ‘Ø±Ù†Ø§ Ù„Ùƒ Ù…Ù‚Ø§Ø³Ø§Øª Ø¯Ù‚ÙŠÙ‚Ø© Ù„ÙƒÙ„ Ù‚Ø·Ø¹Ø©.",
+            "units": "cm"
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "editorial",
+          "settings": {
+            "countdownStyle": "split",
+            "lowStockStyle": "meter",
+            "estimatedDeliveryStyle": "timeline",
+            "fakeVisitorStyle": "pulse",
+            "soldCounterStyle": "spotlight",
+            "purchaseFomoStyle": "timeline",
+            "backInStockStyle": "accent",
+            "preOrderStyle": "badge"
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "editorial",
+          "settings": {
+            "title": "ÙƒÙ…Ù‘Ù„ÙŠ Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø©",
+            "subtitle": "Ù‚Ø·Ø¹ ÙŠØ¶ÙŠÙÙ‡Ø§ Ø§Ù„Ø¹Ù…ÙŠÙ„Ø§Øª Ù…Ø¹Ù‹Ø§ Ù„Ù„ÙˆÙƒ Ø£ÙƒØ«Ø± Ø§ÙƒØªÙ…Ø§Ù„Ù‹Ø§.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "quantity-offers",
+          "variant": "stacked-cards",
+          "settings": {
+            "title": "Ø®ØµÙ… Ø§Ù„ÙƒÙ…ÙŠØ©",
+            "subtitle": "ÙƒÙ„ Ù…Ø§ Ø²Ø§Ø¯Øª Ø§Ù„ÙƒÙ…ÙŠØ©ØŒ Ø²Ø§Ø¯ Ø§Ù„Ø®ØµÙ….",
+            "tiers": "2|Ø®ØµÙ… Ù¥Ùª\n3|Ø®ØµÙ… Ù¡Ù Ùª\n5|Ø®ØµÙ… Ù¡Ù¥Ùª"
+          }
+        },
+        {
+          "type": "quantity-offers",
+          "variant": "stacked-cards",
+          "settings": {
+            "title": "ÙˆÙÙ‘Ø±ÙŠ Ø£ÙƒØ«Ø±",
+            "subtitle": "Ø¹Ø±ÙˆØ¶ Ø´Ø±Ø§Ø¡ Ø¨Ø§Ù„Ø¬Ù…Ù„Ø© Ù„Ù„ÙƒÙ…ÙŠØ§Øª Ø§Ù„ÙƒØ¨ÙŠØ±Ø©."
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "overlay-card",
+          "settings": {
+            "title": "Ù†Ø³Ù‘Ù‚ÙŠÙ‡Ø§ Ù…Ø¹",
+            "subtitle": "Ø§Ø®ØªÙŠØ§Ø±Ø§Øª ØªÙƒÙ…Ù‘Ù„ Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø©.",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "mediaTitle": "Ø¥Ø·Ù„Ø§Ù„Ø§Øª Ù…Ù† Ø§Ù„Ø¹Ù…ÙŠÙ„Ø§Øª",
+            "mediaDescription": "ØµÙˆØ± Ø­Ù‚ÙŠÙ‚ÙŠØ© Ù…Ù† Ø·Ù„Ø¨Ø§Øª Ø­Ø¯ÙŠØ«Ø©.",
+            "listTitle": "Ù…Ø§Ø°Ø§ ÙŠÙ‚ÙˆÙ„ Ø§Ù„Ø¹Ù…ÙŠÙ„Ø§ØªØŸ",
+            "galleryStyle": "carousel",
+            "cardStyle": "editorial",
+            "reviewLimit": 6
+          }
+        },
+        {
+          "type": "conversion-stack",
+          "variant": "minimal",
+          "settings": {
+            "title": "Ù…ÙˆØ§Ø¹ÙŠØ¯ Ø§Ù„ØªÙˆØµÙŠÙ„",
+            "subtitle": "Ù†Ø¬Ù‡Ù‘Ø² ÙˆÙ†Ø´Ø­Ù† Ø¨Ø£Ù‚Ø±Ø¨ ÙˆÙ‚Øª."
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "Ø§Ù„Ø£Ø³Ø¦Ù„Ø© Ø§Ù„Ø´Ø§Ø¦Ø¹Ø©",
+            "subtitle": "Ø£Ø¨Ø±Ø² Ù…Ø§ ÙŠÙ‡Ù…Ùƒ Ù‚Ø¨Ù„ Ø§Ù„Ø·Ù„Ø¨.",
+            "items": "ÙƒÙŠÙ Ø£Ø¹Ø±Ù Ù…Ù‚Ø§Ø³ÙŠØŸ|Ø±Ø§Ø¬Ø¹ÙŠ Ø¯Ù„ÙŠÙ„ Ø§Ù„Ù…Ù‚Ø§Ø³Ø§Øª Ø£Ø¹Ù„Ù‰ Ø§Ù„ØµÙØ­Ø©.\nÙ‡Ù„ Ø§Ù„Ø´Ø­Ù† Ù…Ø¬Ø§Ù†ÙŠØŸ|Ù…Ø¬Ø§Ù†ÙŠ Ù„Ù„Ø·Ù„Ø¨Ø§Øª ÙÙˆÙ‚ Ù¥Ù Ù  Ø¬.Ù….\nÙ…Ø§ Ø³ÙŠØ§Ø³Ø© Ø§Ù„Ø¥Ø±Ø¬Ø§Ø¹ØŸ|Ø¥Ø±Ø¬Ø§Ø¹ Ø£Ùˆ Ø§Ø³ØªØ¨Ø¯Ø§Ù„ Ø®Ù„Ø§Ù„ Ù¡Ù¤ ÙŠÙˆÙ…Ù‹Ø§."
+          }
+        }
+      ]
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "editorial",
+          "settings": {
+            "title": "Ø±Ø§Ø¬Ø¹ÙŠ Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø©",
+            "subtitle": "Ø¹Ø±Ø¶ Ø£ÙˆØ¶Ø­ Ù„Ù„Ø³Ù„Ø© ÙŠØ­Ø§ÙØ¸ Ø¹Ù„Ù‰ Ø¥Ø­Ø³Ø§Ø³ Ø§Ù„Ø«ÙŠÙ….",
+            "slideOut": true,
+            "sticky": true
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "subtitle": "Ù…Ù„Ø®Øµ ÙŠØ¯Ø¹Ù… ÙƒÙˆØ¨ÙˆÙ† Ø§Ù„Ø®ØµÙ… ÙˆØ±Ø³Ø§Ø¦Ù„ Ø§Ù„Ø«Ù‚Ø©.",
+            "secureCheckoutText": "Ø¯ÙØ¹ Ù…Ø­Ù…ÙŠ",
+            "returnsText": "Ø§Ø³ØªØ¨Ø¯Ø§Ù„ Ù…Ø±Ù†",
+            "enableCartNotes": true,
+            "enableGiftWrap": true
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactDescription": "Ù‚Ø³Ù‘Ù…Ù†Ø§ Ø§Ù„Ø¯ÙØ¹ Ù„Ø¨Ø·Ø§Ù‚Ø§Øª Ø£ÙˆØ¶Ø­.",
+            "shippingDescription": "Ø­Ù‚ÙˆÙ„ Ø§Ù„Ø´Ø­Ù† Ù…Ø±ØªØ¨Ø© Ù„ØªØ³Ø±ÙŠØ¹ Ø§Ù„Ø¥Ø¯Ø®Ø§Ù„.",
+            "notesDescription": "Ø£Ø¶ÙŠÙÙŠ Ù…Ù„Ø§Ø­Ø¸Ø§Øª Ø§Ù„ØªØºÙ„ÙŠÙ Ø£Ùˆ Ø§Ù„ØªÙˆØµÙŠÙ„.",
+            "enableInStorePickup": true
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "subtitle": "Ø¨Ø·Ø§Ù‚Ø§Øª Ø¯ÙØ¹ Ø£ÙˆØ¶Ø­ Ù…Ø¹ Ù…Ù„Ø®Øµ Ø­ÙŠ.",
+            "summaryDescription": "Ø§Ù„Ø¥Ø¬Ù…Ø§Ù„ÙŠ ÙˆØ§Ù„Ø´Ø­Ù† ÙÙŠ Ø¨Ù„ÙˆÙƒ ÙˆØ§Ø­Ø¯.",
+            "securityText": "Ø§Ù„Ø¯ÙØ¹ Ù…Ø´ÙÙ‘Ø± ÙˆÙ…Ø­Ù…ÙŠ"
+          }
+        }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "settings": {
+            "title": "ØªÙ… ØªØ£ÙƒÙŠØ¯ Ø§Ù„Ø·Ù„Ø¨",
+            "description": "Ø´ÙƒØ±Ù‹Ø§ Ù„ØªØ³ÙˆÙ‘Ù‚Ùƒ Ù…Ù† Allure. Ù†Ø¬Ù‡Ù‘Ø² Ø·Ù„Ø¨Ùƒ Ø§Ù„Ø¢Ù†.",
+            "continueShoppingText": "Ù…ÙˆØ§ØµÙ„Ø© Ø§Ù„ØªØ³ÙˆÙ‚",
+            "orderNumberPrefix": "Ø±Ù‚Ù… Ø§Ù„Ø·Ù„Ø¨:",
+            "supportText": "ØªØ­ØªØ§Ø¬ÙŠÙ† Ù…Ø³Ø§Ø¹Ø¯Ø©ØŸ ØªÙˆØ§ØµÙ„ Ù…Ø¹Ù†Ø§ Ø¹Ø¨Ø±"
+          }
+        }
+      ]
+    },
+    "lookbook": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "Ø¯Ù„ÙŠÙ„ Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø§Øª",
+            "subtitle": "Ù„ÙˆÙƒØ§Øª Ù…ÙƒØªÙ…Ù„Ø© Ù…Ø³ØªÙˆØ­Ø§Ø© Ù…Ù† ØªØ´ÙƒÙŠÙ„Ø§ØªÙ†Ø§.",
+            "ctaText": "ØªØ³ÙˆÙ‘Ù‚ÙŠ Ø§Ù„Ù„ÙˆÙƒ",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "standard",
+          "settings": {
+            "title": "ÙƒÙ„ Ø§Ù„Ø¥Ø·Ù„Ø§Ù„Ø§Øª",
+            "subtitle": "ØµÙÙ‘Ø­ÙŠ ÙˆØ£Ø¶ÙŠÙÙŠ Ø§Ù„Ù‚Ø·Ø¹Ø© Ø¨Ø¶ØºØ·Ø©.",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "Ø¯Ù„ÙŠÙ„ Ø§Ù„Ù…Ù‚Ø§Ø³Ø§Øª",
+            "subtitle": "ÙˆÙÙ‘Ø±Ù†Ø§ Ù…Ù‚Ø§Ø³Ø§Øª Ø¯Ù‚ÙŠÙ‚Ø© Ù„ÙƒÙ„ Ù‚Ø·Ø¹Ø©.",
+            "ctaText": "Ø§Ø¨Ø¯Ø¦ÙŠ Ø§Ù„ØªØ³ÙˆÙ‘Ù‚",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "title": "Ø§Ù„Ù…Ù‚Ø§Ø³Ø§Øª",
+            "units": "cm",
+            "showConverter": true
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "title": "Ù†ØµØ§Ø¦Ø­ Ø§Ù„Ù‚ÙŠØ§Ø³",
+            "items": "Ø§Ù„ØµØ¯Ø±|Ù‚ÙŠØ³ÙŠ Ø­ÙˆÙ„ Ø£ÙˆØ³Ø¹ Ø¬Ø²Ø¡ Ù…Ù† Ø§Ù„ØµØ¯Ø±.\nØ§Ù„Ø®ØµØ±|Ù‚ÙŠØ³ÙŠ Ø¹Ù†Ø¯ Ø£Ø¶ÙŠÙ‚ Ù†Ù‚Ø·Ø©.\nØ§Ù„ÙˆØ±Ùƒ|Ù‚ÙŠØ³ÙŠ Ø­ÙˆÙ„ Ø£ÙˆØ³Ø¹ Ø¬Ø²Ø¡."
+          }
+        }
+      ]
+    },
+    "journal": {
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "centered",
+          "settings": {
+            "title": "Ø§Ù„Ù…Ø¯ÙˆÙ†Ø©",
+            "subtitle": "Ù†ØµØ§Ø¦Ø­ Ø¥Ø·Ù„Ø§Ù„Ø© ÙˆÙ‚ØµØµ Ø§Ù„Ø¹Ù„Ø§Ù…Ø©.",
+            "ctaText": "Ø§Ù‚Ø±Ø¦ÙŠ Ø§Ù„Ù…Ø²ÙŠØ¯",
+            "ctaLink": "/journal"
+          }
+        },
+        {
+          "type": "newsletter",
+          "settings": {
+            "title": "Ø£Ø­Ø¯Ø« Ø§Ù„Ù…Ù‚Ø§Ù„Ø§Øª",
+            "subtitle": "Ø¥Ø·Ù„Ø§Ù„Ø§Øª ÙˆØ®Ù„ÙÙŠØ§Øª ÙˆØ±Ø§Ø¡ ÙƒÙ„ ØªØ´ÙƒÙŠÙ„Ø©.",
+            "limit": 9
+          }
+        }
+      ]
+    },
+    "registration": {
+      "sections": [
+        "member-registration"
+      ]
+    }
+  }
+}

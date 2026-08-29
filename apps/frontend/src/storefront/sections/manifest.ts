@@ -3050,6 +3050,45 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { key: "authorName", label: "Author name", type: "text", placeholder: "Jake Morrison" },
     ],
   },
+  "image-hotspot": {
+    label: "Image Hotspot (نقاط تفاعلية على الصورة)",
+    component: "image-hotspot",
+    note: "أضيفي نقاط تفاعلية على صورة المنتج لتسليط الضوء على الخامات والتفاصيل.",
+    fields: [
+      { key: "title", label: "العنوان", type: "text", placeholder: "استكشفي التفاصيل" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
+      { key: "image", label: "رابط الصورة", type: "url", placeholder: "https://..." },
+      { key: "imageAlt", label: "وصف الصورة البديل", type: "text" },
+      { key: "hotspots", label: "النقاط (x|y|الاسم|النص|الرابط) سطر لكل نقطة", type: "textarea", placeholder: "50|40|القماش|قطن مستورد|/shop" },
+    ],
+  },
+  "before-after": {
+    label: "Before/After Image Slider (مقارنة قبل وبعد)",
+    component: "before-after",
+    note: "مقارنة تفاعلية بين صورتين عبر مقبض قابل للسحب.",
+    fields: [
+      { key: "title", label: "العنوان", type: "text", placeholder: "قبل وبعد" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
+      { key: "beforeImage", label: "صورة قبل", type: "url", placeholder: "https://..." },
+      { key: "afterImage", label: "صورة بعد", type: "url", placeholder: "https://..." },
+      { key: "beforeLabel", label: "نص قبل", type: "text", placeholder: "قبل" },
+      { key: "afterLabel", label: "نص بعد", type: "text", placeholder: "بعد" },
+    ],
+  },
+  "combined-listing": {
+    label: "Combined Listing (عرض منتج مدمج)",
+    component: "combined-listing",
+    note: "اعرضي منتجًا رئيسيًا مع أجزائه المكملة في بلوك واحد.",
+    fields: [
+      { key: "title", label: "العنوان", type: "text", placeholder: "عرض مدمج" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
+      { key: "mainImage", label: "صورة القطعة الرئيسية", type: "url", placeholder: "https://..." },
+      { key: "mainTitle", label: "اسم القطعة الرئيسية", type: "text" },
+      { key: "mainPrice", label: "سعر القطعة الرئيسية", type: "text", placeholder: "٣٩٩ ج.م" },
+      { key: "mainLink", label: "رابط القطعة الرئيسية", type: "text", placeholder: "/shop" },
+      { key: "parts", label: "الأجزاء (الاسم|السعر|الصورة|الرابط) سطر لكل جزء", type: "textarea", placeholder: "حزام|٩٩ ج.م|https://...|/shop" },
+    ],
+  },
 } as const satisfies Record<string, StorefrontSectionManifestEntry>;
 
 export type StorefrontSectionId = keyof typeof STOREFRONT_SECTION_MANIFEST;

@@ -456,6 +456,18 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "meat-shop",
     "جزارة ولحوم",
   ),
+  "soft-graceful": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "luxury-fashion",
+    "أزياء فاخرة",
+  ),
+  "allure": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "fashion-store",
+    "متجر أزياء",
+  ),
 };
 
 const getStorefrontThemeCategoryMeta = (
@@ -465,6 +477,10 @@ const getStorefrontThemeCategoryMeta = (
   DEFAULT_STOREFRONT_THEME_CATEGORY;
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
+  "soft-graceful":
+    "قالب Graceful المنسّق للسوق العربي: اكتشاف تفاعلي بنقاط Hotspot، تشكيلات موسمية وموجهة بالمناسبة، سلة منزلقة وquick view وبحث وتصفية ذكية.",
+  "allure":
+    "نسخة من ثيم Allure (Shopify): أناقة تلتقي بالبساطة، عرض بصري قوي وعلامة تجارية فاخرة. يدعم mega menu، تصفية بالألوان (swatch filters)، quick buy، سلة منزلقة، دليل مقاسات، lookbook، عدّاد نقص المخزون، عدّ تنازلي، تنبيهات عودة المخزون، cross-sell/بُعِد-معًا، ومراجعات العملاء.",
   "modern-minimal":
     "بوتيك أحذية حريمي هادئ يوازن بين إبراز المقاسات، وضوح المقارنة، ومسارات شراء أسرع للسنيكرز والكعب والصنادل.",
   "bold-fashion":
@@ -654,6 +670,10 @@ const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
     "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?auto=format&fit=crop&w=1600&q=80",
   "butcher-shop-eg":
     "https://images.unsplash.com/photo-1603048297172-c92544798d5e?auto=format&fit=crop&w=1600&q=80",
+  "soft-graceful":
+    "https://cdn.shopify.com/theme-store/kgt7iqquyknadz55jw25b59gbxc6.jpg",
+  "allure":
+    "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
 };
 
 const RASTER_THEME_PREVIEW_PATTERN =
