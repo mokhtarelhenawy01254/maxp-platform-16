@@ -29,6 +29,19 @@ const EVENT_GROUPS: Record<string, string[]> = {
     "PRICE_DROP",
     "LOW_STOCK_ALERT",
   ],
+  delivery: [
+    "ORDER_DELIVERED",
+    "ORDER_SHIPPED",
+    "ORDER_OUT_FOR_DELIVERY",
+  ],
+  birthday: ["BIRTHDAY_WISH"],
+  review: ["REVIEW_REQUEST"],
+  cadence: [
+    "CADENCE_PRODUCT",
+    "CADENCE_BALANCE",
+    "CADENCE_REFERRAL",
+    "CADENCE_TIER",
+  ],
 };
 
 const ALL_EVENTS = Object.values(EVENT_GROUPS).flat();
@@ -96,6 +109,15 @@ const EVENT_LABELS: Record<string, string> = {
   BACK_IN_STOCK: "عودة المنتج للتوفر",
   PRICE_DROP: "انخفاض السعر",
   LOW_STOCK_ALERT: "تنبيه نقص المخزون",
+  ORDER_DELIVERED: "تسليم الطلب",
+  ORDER_SHIPPED: "شحن الطلب",
+  ORDER_OUT_FOR_DELIVERY: "خروج الطلب للتوصيل",
+  BIRTHDAY_WISH: "تهنئة عيد الميلاد",
+  REVIEW_REQUEST: "طلب تقييم بعد الاستلام",
+  CADENCE_PRODUCT: "دورية: منتج جديد (كل 10 أيام)",
+  CADENCE_BALANCE: "دورية: تحديث الرصيد (كل 15 يوم)",
+  CADENCE_REFERRAL: "دورية: تذكير الإحالة (كل 30 يوم)",
+  CADENCE_TIER: "دورية: تذكير المستوى (كل 30 يوم)",
 };
 
 const EVENT_TRIGGERS: Record<string, string> = {
@@ -117,6 +139,15 @@ const EVENT_TRIGGERS: Record<string, string> = {
   BACK_IN_STOCK: "عند عودة منتج متوفر بعد نفاد المخزون",
   PRICE_DROP: "عند انخفاض سعر منتج",
   LOW_STOCK_ALERT: "عند انخفاض المخزون لحد التنبيه",
+  ORDER_DELIVERED: "عند تسليم الطلب (يبدأ رحلة ما بعد الاستلام)",
+  ORDER_SHIPPED: "عند شحن الطلب",
+  ORDER_OUT_FOR_DELIVERY: "عند خروج الطلب للتوصيل",
+  BIRTHDAY_WISH: "أتمتة يومية 12:00 (عيد ميلاد العميل)",
+  REVIEW_REQUEST: "بعد 7 أيام من التسليم (رحلة ما بعد الاستلام)",
+  CADENCE_PRODUCT: "كل 10 أيام — رسالة دورية",
+  CADENCE_BALANCE: "كل 15 يوم — رسالة دورية",
+  CADENCE_REFERRAL: "كل 30 يوم — رسالة دورية",
+  CADENCE_TIER: "كل 30 يوم — رسالة دورية",
 };
 
 const DEFAULT_CONTENT = `مرحباً {customerName} 👋\n\n{reason}\n\nشكراً لتعاملك معنا! ✨`;
@@ -207,7 +238,7 @@ export const customerScopeConfig: TemplateScopeConfig = {
       (t) =>
         !!t.eventType &&
         ALL_EVENTS.includes(t.eventType) &&
-        !["OCCASION", "PRODUCTS"].includes(String(t.category || "").toUpperCase()),
+        !["OCCASION", "PRODUCTS", "CADENCE"].includes(String(t.category || "").toUpperCase()),
     );
 
     const scheduleRows = rows.map((row, idx): EventRow => {
@@ -363,7 +394,62 @@ export const customerScopeConfig: TemplateScopeConfig = {
       };
     });
 
-    return [...scheduleRows, ...occasionRows, ...productRows];
+    // 🕐 قوالب الرسائل الدورية (category = CADENCE أو eventType يبدأ بـ CADENCE_)
+    const cadenceTemplates = all.filter(
+      (t) => String(t.category || "").toUpperCase() === "CADENCE" || (t.eventType || "").startsWith("CADENCE_"),
+    );
+    const cadenceGroups = new Map<string, TemplateItem[]>();
+    for (const t of cadenceTemplates) {
+      const key = t.eventType || "CADENCE_PRODUCT";
+      const arr = cadenceGroups.get(key) || [];
+      arr.push(t);
+      cadenceGroups.set(key, arr);
+    }
+
+    const cadenceRows: EventRow[] = Array.from(cadenceGroups.entries()).map(([eventType, list], idx): EventRow => {
+      const regular = slotTemplate(list, "BAILEYS");
+      const meta = slotTemplate(list, "META_CLOUD");
+      const regularTemplate: Template | null = regular
+        ? {
+            ...regular,
+            id: regular.id || "",
+            name: regular.name || "قالب دوري",
+            content: normalizeToDouble(regular.content || ""),
+            isActive: regular.isActive ?? true,
+            eventType,
+          }
+        : null;
+      const metaTemplate: Template | null = meta
+        ? {
+            ...meta,
+            id: meta.id || "",
+            name: meta.name || "قالب دوري (ميتا)",
+            content: normalizeToDouble(meta.content || ""),
+            isActive: meta.isActive ?? true,
+            eventType,
+          }
+        : null;
+
+      return {
+        id: regular?.id || meta?.id || eventType,
+        code: eventType,
+        name: EVENT_LABELS[eventType] || regular?.name || meta?.name || "رسالة دورية",
+        color: "#F59E0B",
+        sortOrder: 3000 + idx,
+        statusType: "cadence",
+        notifyCustomer: regular?.isActive ?? meta?.isActive ?? true,
+        isSystemStatus: false,
+        template: regularTemplate,
+        metaTemplate,
+        hasTemplate: !!regularTemplate,
+        hasMetaTemplate: !!metaTemplate,
+        isNonNotifiable: false,
+        category: "CADENCE",
+        trigger: EVENT_TRIGGERS[eventType] || "",
+      };
+    });
+
+    return [...scheduleRows, ...occasionRows, ...productRows, ...cadenceRows];
   },
 
   toggleNotify: async (api: ApiLike, row: EventRow): Promise<void> => {
@@ -411,6 +497,10 @@ export const customerScopeConfig: TemplateScopeConfig = {
     { key: "cashback", label: "قوالب الكاش باك", kind: "list", filter: (r) => EVENT_GROUPS["cashback"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cashback"]!.includes(r.code)).length },
     { key: "quality", label: "قوالب التقسيم", kind: "list", filter: (r) => EVENT_GROUPS["quality"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["quality"]!.includes(r.code)).length },
     { key: "autoDiscount", label: "قوالب الخصم التلقائي", kind: "list", filter: (r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["autoDiscount"]!.includes(r.code)).length },
+    { key: "delivery", label: "رحلة الطلب", kind: "list", filter: (r) => EVENT_GROUPS["delivery"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["delivery"]!.includes(r.code)).length },
+    { key: "birthday", label: "أعياد الميلاد", kind: "list", filter: (r) => EVENT_GROUPS["birthday"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["birthday"]!.includes(r.code)).length },
+    { key: "review", label: "طلبات التقييم", kind: "list", filter: (r) => EVENT_GROUPS["review"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["review"]!.includes(r.code)).length },
+    { key: "cadence", label: "الرسائل الدورية", kind: "list", filter: (r) => EVENT_GROUPS["cadence"]!.includes(r.code), count: (rows) => rows.filter((r) => EVENT_GROUPS["cadence"]!.includes(r.code)).length },
     { key: "reports", label: "تقارير الرسائل", kind: "reports", isSpecial: true },
   ],
 

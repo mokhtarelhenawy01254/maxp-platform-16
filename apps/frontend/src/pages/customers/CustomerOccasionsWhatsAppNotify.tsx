@@ -2,6 +2,7 @@ import { RefreshCw as ArrowPathIcon, Circle as CalendarDaysIcon, Check as CheckC
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 ;
 import { apiClient } from '../../services/apiClient';
+import MetaTemplatesModal from './components/MetaTemplatesModal';
 
 type Audience = 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers';
 type CampaignState = 'scheduled' | 'running' | 'completed' | 'cancelled';
@@ -107,6 +108,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
     const defaultSchedule = getDefaultSchedule();
 
     const [sessions, setSessions] = useState<Session[]>([]);
+    const [metaModalOpen, setMetaModalOpen] = useState(false);
     const [selectedSession, setSelectedSession] = useState('');
     const [sessionsLoading, setSessionsLoading] = useState(true);
 
@@ -667,6 +669,12 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                             <EyeIcon className="h-3.5 w-3.5" />
                             {showPreview ? 'إخفاء المعاينة' : 'معاينة الرسالة'}
                         </button>
+                        <button
+                            onClick={() => setMetaModalOpen(true)}
+                            className="flex items-center gap-1.5 rounded-lg border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-300 transition-all hover:bg-emerald-100 dark:hover:bg-emerald-900/60"
+                        >
+                            📚 قوالب ميتا
+                        </button>
                     </div>
 
                     <div className={`grid gap-4 ${showPreview ? 'md:grid-cols-2' : 'grid-cols-1'}`}>
@@ -918,6 +926,13 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
                 </div>
 
             </div>
+
+            <MetaTemplatesModal
+                open={metaModalOpen}
+                onClose={() => setMetaModalOpen(false)}
+                onPick={(content) => setMessage((prev) => content || prev)}
+                title="📚 قوالب ميتا المعتمدة"
+            />
         </div>
     );
 };

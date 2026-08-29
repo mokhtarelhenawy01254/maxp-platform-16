@@ -16,6 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { apiClient } from "../../services/apiClient";
 import { broadcastService } from "../../services/broadcastService";
+import MetaTemplatesModal from "./components/MetaTemplatesModal";
 
 interface Session {
   sessionId: string;
@@ -106,6 +107,7 @@ const ProductOffers: React.FC = () => {
 
   // ── Message ──
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
+  const [metaModalOpen, setMetaModalOpen] = useState(false);
 
   // ── Schedule ──
   const [scheduleAt, setScheduleAt] = useState("");
@@ -421,6 +423,14 @@ const ProductOffers: React.FC = () => {
                 <p className="text-xs text-[color:var(--color-muted-foreground)]">
                   متغيرات: {"{اسم العميل}"} / {"{customerName}"} / {"{productName}"} / {"{price}"}
                 </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMetaModalOpen(true)}
+                  className="rounded-full border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300"
+                >
+                  📚 قوالب ميتا معتمدة
+                </Button>
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
@@ -641,6 +651,12 @@ const ProductOffers: React.FC = () => {
             </CardContent>
           </Card>
         </TabsContent>
+      <MetaTemplatesModal
+        open={metaModalOpen}
+        onClose={() => setMetaModalOpen(false)}
+        onPick={(content) => setMessage((prev) => content || prev)}
+        title="📚 قوالب ميتا للعروض"
+      />
       </Tabs>
     </div>
   );
