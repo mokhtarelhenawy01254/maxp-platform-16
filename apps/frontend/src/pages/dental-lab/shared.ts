@@ -532,7 +532,7 @@ export const assignCase = async (id: string, body: { technicianId: string; role:
 
 export const uploadCaseAttachment = async (caseId: string, file: File, kind?: string): Promise<DentalCaseAttachment> => {
   const formData = new FormData();
-  formData.append("file", file);
+  formData.append("files", file);
   if (kind) formData.append("kind", kind);
   return unwrapEnvelope<DentalCaseAttachment>(await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
     headers: { "Content-Type": "multipart/form-data" },
