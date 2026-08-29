@@ -17,17 +17,19 @@ async function initializeSaasTheme(companyId, options = {}) {
     let themePath = path.join(__dirname, '..', 'defaults', 'saas_theme_v1.json');
 
     if (requestedThemeId) {
-      const customPath = path.join(
-        __dirname,
-        '..', '..', 'apps', 'frontend', 'src', 'storefront', 'themes',
-        `${requestedThemeId}.json`,
-      );
-      // fallback: repo-relative when running from backend dir
-      const altPath = path.join(
-        __dirname, '..', '..', 'frontend', 'src', 'storefront', 'themes',
-        `${requestedThemeId}.json`,
-      );
-      const candidatePath = fs.existsSync(customPath) ? customPath : (fs.existsSync(altPath) ? altPath : null);
+      const candidates = [
+        // monorepo checkout (local dev / CI)
+        path.join(__dirname, '..', '..', 'apps', 'frontend', 'src', 'storefront', 'themes', `${requestedThemeId}.json`),
+        // repo-relative when running from backend dir
+        path.join(__dirname, '..', '..', 'frontend', 'src', 'storefront', 'themes', `${requestedThemeId}.json`),
+        // production server layout (deploy syncs presets under frontend2)
+        path.join('/', 'var', 'www', 'frontend2', 'src', 'storefront', 'themes', `${requestedThemeId}.json`),
+      ];
+      // explicit env override wins over every convention
+      if (process.env.FRONTEND_THEMES_DIR) {
+        candidates.unshift(path.join(process.env.FRONTEND_THEMES_DIR, `${requestedThemeId}.json`));
+      }
+      const candidatePath = candidates.find((p) => fs.existsSync(p)) || null;
       if (candidatePath) {
         themePath = candidatePath;
       } else {
