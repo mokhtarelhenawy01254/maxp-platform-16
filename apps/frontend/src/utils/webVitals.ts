@@ -18,20 +18,36 @@ type VitalMetric = {
   id?: string;
 };
 
-const BEACON_ENDPOINT = '/api/v1/analytics/track/web-vitals';
+const BEACON_ENDPOINT = "/api/v1/analytics/track/web-vitals";
 let initialized = false;
 
-const sendBeacon = (payload: Record<string, unknown>): void => {
+// Same fallback chain as analyticsService.getCompanyId — sendBeacon cannot
+// set custom headers, so the company rides on the query string instead of
+// the x-company-id header.
+const resolveCompanyId = (): string | null => {
+  try {
+    return (
+      new URLSearchParams(window.location.search).get("companyId") ||
+      localStorage.getItem("storefront_companyId") ||
+      sessionStorage.getItem("currentCompanyId") ||
+      null
+    );
+  } catch {
+    return null;
+  }
+};
+
+const sendBeacon = (endpoint: string, payload: Record<string, unknown>): void => {
   try {
     const body = JSON.stringify(payload);
-    if (typeof navigator.sendBeacon === 'function') {
-      const blob = new Blob([body], { type: 'application/json' });
-      if (navigator.sendBeacon(BEACON_ENDPOINT, blob)) return;
+    if (typeof navigator.sendBeacon === "function") {
+      const blob = new Blob([body], { type: "application/json" });
+      if (navigator.sendBeacon(endpoint, blob)) return;
     }
-    void fetch(BEACON_ENDPOINT, {
-      method: 'POST',
+    void fetch(endpoint, {
+      method: "POST",
       keepalive: true,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { "Content-Type": "application/json" },
       body,
     }).catch(() => {});
   } catch {
@@ -135,7 +151,11 @@ export const initWebVitals = (): void => {
   const flush = (): void => {
     if (sent || metrics.size === 0) return;
     sent = true;
-    sendBeacon({ path: window.location.pathname, metrics: [...metrics.values()] });
+    const companyId = resolveCompanyId();
+    const endpoint = companyId
+      ? `${BEACON_ENDPOINT}?companyId=${encodeURIComponent(companyId)}`
+      : BEACON_ENDPOINT;
+    sendBeacon(endpoint, { path: window.location.pathname, metrics: [...metrics.values()] });
   };
 
   // Send once the page is being left (fires reliably even on mobile).

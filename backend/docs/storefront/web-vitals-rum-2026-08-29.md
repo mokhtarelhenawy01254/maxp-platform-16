@@ -34,7 +34,8 @@
   إعادة تشغيل العملية. لو احتجنا تاريخًا طويل المدى: نموذج `WebVital` + SQL
   يدوي على الإنتاج.
 - sendBeacon لا يستطيع إرسال headers مخصصة، لذا تحديد الشركة يعتمد على
-  الـ subdomain (يعمل تلقائيًا لكل المتاجر).
+  `?companyId=` في الـ URL (فرونت يقرأه بنفس سلسلة analyticsService:
+  query → `localStorage.storefront_companyId` → `sessionStorage.currentCompanyId`).
 
 ## الاستخدام
 
