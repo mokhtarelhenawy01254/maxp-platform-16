@@ -8,6 +8,7 @@ import {
   Edit,
   GitBranch,
   MessageSquare,
+  MessageSquareText,
   Plus,
   RefreshCw,
   Search,
