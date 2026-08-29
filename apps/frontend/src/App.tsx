@@ -1177,6 +1177,9 @@ const BillingOverview = React.lazy(
 const SubscriptionCenter = React.lazy(
   () => import("./pages/super-admin/SubscriptionCenter"),
 );
+const SuperAdminAppDetail = React.lazy(
+  () => import("./pages/super-admin/SuperAdminAppDetail"),
+);
 const StorefrontThemesManagement = React.lazy(
   () => import("./pages/super-admin/StorefrontThemesManagement"),
 );
@@ -2675,12 +2678,24 @@ const AppContent = () => {
               }
             />
             <Route
-              path="/super-admin/marketplace-management"
+              path="/super-admin/apps"
               element={
                 <Layout>
                   <SubscriptionCenter />
                 </Layout>
               }
+            />
+            <Route
+              path="/super-admin/apps/:appId"
+              element={
+                <Layout>
+                  <SuperAdminAppDetail />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/marketplace-management"
+              element={<Navigate to="/super-admin/apps" replace />}
             />
 
             <Route

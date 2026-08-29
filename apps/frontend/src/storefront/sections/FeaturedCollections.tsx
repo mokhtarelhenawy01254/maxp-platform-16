@@ -1374,7 +1374,9 @@ const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({
                                                           ? "✦ وقت المرح"
                                                           : isNovaMobile
                                                             ? "Techno Curation"
-                                                            : "مجموعات مختارة"}
+                                                            : theme.direction === "rtl"
+                                                              ? "مجموعات مختارة"
+                                                              : "Curated Collections"}
               </span>
             ) : null}
             <h2
@@ -3011,7 +3013,9 @@ const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({
                           ? "افتح القسم"
                           : isCafeDemo
                             ? "تسوق القسم"
-                            : "شاهد منتجات القسم"}
+                            : theme.direction === "rtl"
+                              ? "شاهد منتجات القسم"
+                              : "Shop the collection"}
                       </span>
                       {isSoleaFemme ? (
                         <span className="text-xs font-bold uppercase tracking-[0.18em] text-muted-foreground">

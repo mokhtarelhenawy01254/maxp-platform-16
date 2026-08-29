@@ -1,0 +1,1008 @@
+- generic [active] [ref=e1]:
+  - generic: Loading
+  - link "Skip to content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - generic [ref=e6]:
+    - generic [ref=e10]:
+      - button "USD $" [ref=e12] [cursor=pointer]
+      - button "English" [ref=e18] [cursor=pointer]
+    - generic [ref=e22]:
+      - button [ref=e23] [cursor=pointer]
+      - generic [ref=e27]:
+        - generic [ref=e28]: New Season Collection Is Now Live
+        - generic [ref=e29]: Enjoy Free Shipping on Orders Over $500
+        - generic [ref=e30]: New Season Collection Is Now Live
+        - generic [ref=e31]: Enjoy Free Shipping on Orders Over $500
+      - button [ref=e32] [cursor=pointer]
+    - list [ref=e36]:
+      - listitem [ref=e37]:
+        - link "Facebook" [ref=e38] [cursor=pointer]:
+          - /url: https://www.facebook.com/login/?next=https%3A%2F%2Fwww.facebook.com%2Fshopify%2F
+      - listitem [ref=e42]:
+        - link "Instagram" [ref=e43] [cursor=pointer]:
+          - /url: https://www.instagram.com/shopify
+      - listitem [ref=e47]:
+        - link "YouTube" [ref=e48] [cursor=pointer]:
+          - /url: https://www.youtube.com/shopify
+      - listitem [ref=e52]:
+        - link "X" [ref=e53] [cursor=pointer]:
+          - /url: https://x.com/Shopify?lang=en
+      - listitem [ref=e57]:
+        - link "Pinterest" [ref=e58] [cursor=pointer]:
+          - /url: https://www.pinterest.com/shopify/
+  - generic [ref=e63]:
+    - generic [ref=e68]:
+      - link [ref=e70] [cursor=pointer]:
+        - /url: /
+        - img "Graceful" [ref=e72]
+      - list [ref=e74]:
+        - listitem [ref=e75]:
+          - link "Shop By Categories" [ref=e76] [cursor=pointer]:
+            - /url: /collections
+        - listitem [ref=e81]:
+          - link "Shop By Season" [ref=e82] [cursor=pointer]:
+            - /url: /pages/shop-by-season
+        - listitem [ref=e87]:
+          - link "Style By Occasion" [ref=e88] [cursor=pointer]:
+            - /url: /collections
+        - listitem [ref=e93]:
+          - link "Pages" [ref=e94] [cursor=pointer]:
+            - /url: /
+        - listitem [ref=e99]:
+          - link "Contact" [ref=e100] [cursor=pointer]:
+            - /url: /pages/contact
+      - generic [ref=e102]:
+        - generic [ref=e103]:
+          - button "Account" [ref=e107] [cursor=pointer]
+          - generic [ref=e114]: Log in
+        - link "Cart icon" [ref=e115] [cursor=pointer]:
+          - /url: /cart
+          - generic [ref=e124]:
+            - generic [ref=e125]: "0"
+            - generic [ref=e126]: 0 items
+          - generic [ref=e127]: Cart
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - button
+            - generic:
+              - generic:
+                - generic:
+                  - generic:
+                    - link:
+                      - /url: /collections
+                      - text: Shop By Categories
+                    - button
+                  - generic:
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/mens
+                          - text: Men
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/womens
+                          - text: Women
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/kids
+                          - text: Kids
+                - generic:
+                  - generic:
+                    - link:
+                      - /url: /pages/shop-by-season
+                      - text: Shop By Season
+                    - button
+                  - generic:
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/winter-collection
+                          - text: Winter
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/spring-collection
+                          - text: Spring
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/summer-essentials
+                          - text: Summer
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/autumn-layers
+                          - text: Autumn
+                - generic:
+                  - generic:
+                    - link:
+                      - /url: /collections
+                      - text: Style By Occasion
+                    - button
+                  - generic:
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/casual-look
+                          - text: Everyday Essentials
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/office-wear
+                          - text: Workwear Edit
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/party-night
+                          - text: Party & Evening
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /collections/vacation-style
+                          - text: Holiday & Resort
+                - generic:
+                  - generic:
+                    - link:
+                      - /url: /
+                      - text: Pages
+                    - button
+                  - generic:
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /pages/about-us
+                          - text: About Us
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /pages/faq
+                          - text: Faq
+                    - generic:
+                      - generic:
+                        - link:
+                          - /url: /blogs/news
+                          - text: Blog
+                - generic:
+                  - generic:
+                    - link:
+                      - /url: /pages/contact
+                      - text: Contact
+          - generic:
+            - generic:
+              - button [ref=e131] [cursor=pointer]
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - button:
+                        - generic: USD $
+                    - generic:
+                      - button:
+                        - generic: English
+            - generic:
+              - list:
+                - listitem:
+                  - link:
+                    - /url: https://www.facebook.com/login/?next=https%3A%2F%2Fwww.facebook.com%2Fshopify%2F
+                - listitem:
+                  - link:
+                    - /url: https://www.instagram.com/shopify
+                - listitem:
+                  - link:
+                    - /url: https://www.youtube.com/shopify
+                - listitem:
+                  - link:
+                    - /url: https://x.com/Shopify?lang=en
+                - listitem:
+                  - link:
+                    - /url: https://www.pinterest.com/shopify/
+  - main [ref=e138]:
+    - generic [ref=e141]:
+      - img "daccfbaeaecdedc" [ref=e143]
+      - generic [ref=e145]:
+        - heading "Products" [level=1] [ref=e146]
+        - navigation "breadcrumbs" [ref=e147]:
+          - list [ref=e149]:
+            - listitem [ref=e150]:
+              - link "Home" [ref=e151] [cursor=pointer]:
+                - /url: /
+            - listitem [ref=e152]: ">>"
+            - listitem [ref=e153]:
+              - link "Collections" [ref=e154] [cursor=pointer]:
+                - /url: /collections
+            - listitem [ref=e155]: ">>"
+            - listitem [ref=e156]: Products
+    - generic [ref=e157]:
+      - generic [ref=e160]:
+        - generic [ref=e161]:
+          - button "Mobile filter icon" [ref=e163] [cursor=pointer]:
+            - generic [ref=e164]: Filter
+          - generic [ref=e169]:
+            - paragraph [ref=e171]: "Total products: 62"
+            - generic [ref=e174]:
+              - generic [ref=e175]: "Sort by:"
+              - combobox "Sort by:" [ref=e177] [cursor=pointer]:
+                - option "Featured"
+                - option "Most relevant"
+                - option "Best selling"
+                - option "Alphabetically, A-Z" [selected]
+                - option "Alphabetically, Z-A"
+                - option "Price, low to high"
+                - option "Price, high to low"
+                - option "Date, old to new"
+                - option "Date, new to old"
+        - generic [ref=e179]:
+          - generic [ref=e180]:
+            - generic [ref=e183]:
+              - generic [ref=e184] [cursor=pointer]:
+                - link "Autumn Bloom Rust Dress" [ref=e185]:
+                  - /url: /products/autumn-bloom-rust-dress
+                - generic [ref=e187]:
+                  - group "1 / 3" [ref=e188]:
+                    - img "Autumn Bloom Rust Dress" [ref=e190]
+                  - group "2 / 3":
+                    - generic:
+                      - img "Autumn Bloom Rust Dress"
+                  - group "3 / 3":
+                    - generic:
+                      - img "Autumn Bloom Rust Dress"
+                - generic [ref=e191]:
+                  - button "Thumbnail 1" [ref=e193]:
+                    - img "Autumn Bloom Rust Dress" [ref=e195]
+                  - button "Thumbnail 2" [ref=e197]:
+                    - img "Autumn Bloom Rust Dress" [ref=e199]
+                  - button "Thumbnail 3" [ref=e201]:
+                    - img "Autumn Bloom Rust Dress" [ref=e203]
+              - generic [ref=e206]:
+                - paragraph [ref=e209]:
+                  - link "Autumn Bloom Rust Dress" [ref=e210] [cursor=pointer]:
+                    - /url: /products/autumn-bloom-rust-dress
+                - generic [ref=e211]: $491.00 - $534.00
+            - generic [ref=e217]:
+              - generic [ref=e218] [cursor=pointer]:
+                - link "Autumn Harvest Layered Dress" [ref=e219]:
+                  - /url: /products/meadow-breeze-polka-dot-dress
+                - generic [ref=e221]:
+                  - group "1 / 3" [ref=e222]:
+                    - img "Autumn Harvest Layered Dress" [ref=e224]
+                  - group "2 / 3":
+                    - generic:
+                      - img "Autumn Harvest Layered Dress"
+                  - group "3 / 3":
+                    - generic:
+                      - img "Autumn Harvest Layered Dress"
+                - generic [ref=e225]:
+                  - button "Thumbnail 1" [ref=e227]:
+                    - img "Autumn Harvest Layered Dress" [ref=e229]
+                  - button "Thumbnail 2" [ref=e231]:
+                    - img "Autumn Harvest Layered Dress" [ref=e233]
+                  - button "Thumbnail 3" [ref=e235]:
+                    - img "Autumn Harvest Layered Dress" [ref=e237]
+              - generic [ref=e240]:
+                - paragraph [ref=e243]:
+                  - link "Autumn Harvest Layered Dress" [ref=e244] [cursor=pointer]:
+                    - /url: /products/meadow-breeze-polka-dot-dress
+                - generic [ref=e245]: $609.00 - $651.00
+            - generic [ref=e251]:
+              - generic [ref=e252] [cursor=pointer]:
+                - link "Boho Crochet Mini Dress" [ref=e253]:
+                  - /url: /products/boho-crochet-mini-dress
+                - generic [ref=e255]:
+                  - group "1 / 3" [ref=e256]:
+                    - img "Boho Crochet Mini Dress" [ref=e258]
+                  - group "2 / 3":
+                    - generic:
+                      - img "Boho Crochet Mini Dress"
+                  - group "3 / 3":
+                    - generic:
+                      - img "Boho Crochet Mini Dress"
+                - generic [ref=e259]:
+                  - button "Thumbnail 1" [ref=e261]:
+                    - img "Boho Crochet Mini Dress" [ref=e263]
+                  - button "Thumbnail 2" [ref=e265]:
+                    - img "Boho Crochet Mini Dress" [ref=e267]
+                  - button "Thumbnail 3" [ref=e269]:
+                    - img "Boho Crochet Mini Dress" [ref=e271]
+              - generic [ref=e274]:
+                - paragraph [ref=e277]:
+                  - link "Boho Crochet Mini Dress" [ref=e278] [cursor=pointer]:
+                    - /url: /products/boho-crochet-mini-dress
+                - generic [ref=e279]: $193.00
+            - generic [ref=e285]:
+              - generic [ref=e286] [cursor=pointer]:
+                - link "Boho Tshirt" [ref=e287]:
+                  - /url: /products/boho-tshirt
+                - generic [ref=e289]:
+                  - group "1 / 4" [ref=e290]:
+                    - img "Boho Tshirt" [ref=e292]
+                  - group "2 / 4":
+                    - generic:
+                      - img "Boho Tshirt"
+                  - group "3 / 4":
+                    - generic:
+                      - img "Boho Tshirt"
+                  - group "4 / 4":
+                    - generic:
+                      - img "Red T-Shirt Kids Fashion"
+                - generic [ref=e293]:
+                  - button "Thumbnail 1" [ref=e295]:
+                    - img "Boho Tshirt" [ref=e297]
+                  - button "Thumbnail 2" [ref=e299]:
+                    - img "Boho Tshirt" [ref=e301]
+                  - button "Thumbnail 3" [ref=e303]:
+                    - img "Boho Tshirt" [ref=e305]
+                  - link "View more images" [ref=e307]:
+                    - /url: /products/boho-tshirt
+                    - text: "+1"
+              - generic [ref=e310]:
+                - paragraph [ref=e313]:
+                  - link "Boho Tshirt" [ref=e314] [cursor=pointer]:
+                    - /url: /products/boho-tshirt
+                - generic [ref=e315]: $119.00
+            - generic [ref=e321]:
+              - generic [ref=e322] [cursor=pointer]:
+                - link "Botanical Print Co-Ord Set" [ref=e323]:
+                  - /url: /products/botanical-print-co-ord-set
+                - generic [ref=e325]:
+                  - img "Botanical Print Co-Ord Set" [ref=e328]
+                  - img "Botanical Coord Set - Blush Pink" [ref=e331]
+                  - img "Botanical Coord Set - Terracotta" [ref=e334]
+                  - img "Botanical Coord Set - Sage Green" [ref=e337]
+                - generic [ref=e338]:
+                  - button "Thumbnail 1" [ref=e340]:
+                    - img "Botanical Print Co-Ord Set" [ref=e342]
+                  - button "Thumbnail 2" [ref=e344]:
+                    - img "Botanical Coord Set - Blush Pink" [ref=e346]
+                  - button "Thumbnail 3" [ref=e348]:
+                    - img "Botanical Coord Set - Terracotta" [ref=e350]
+                  - link "View more images" [ref=e352]:
+                    - /url: /products/botanical-print-co-ord-set
+                    - text: "+1"
+              - generic [ref=e355]:
+                - paragraph [ref=e358]:
+                  - link "Botanical Print Co-Ord Set" [ref=e359] [cursor=pointer]:
+                    - /url: /products/botanical-print-co-ord-set
+                - generic [ref=e360]: $252.00 - $295.00
+            - generic [ref=e366]:
+              - generic [ref=e367] [cursor=pointer]:
+                - link "Boys’ Full Sleeve Regular T-Shirt" [ref=e368]:
+                  - /url: /products/boys-full-sleeve-regular-t-shirt
+                - generic [ref=e370]:
+                  - img "T-Shirt - Olive Green 1000x1000" [ref=e373]
+                  - img "T-Shirt - Burgundy Red 1000x1000" [ref=e376]
+                  - img "T-Shirt - Navy Blue 1000x1000" [ref=e379]
+                - generic [ref=e380]:
+                  - button "Thumbnail 1" [ref=e382]:
+                    - img "T-Shirt - Olive Green 1000x1000" [ref=e384]
+                  - button "Thumbnail 2" [ref=e386]:
+                    - img "T-Shirt - Burgundy Red 1000x1000" [ref=e388]
+                  - button "Thumbnail 3" [ref=e390]:
+                    - img "T-Shirt - Navy Blue 1000x1000" [ref=e392]
+              - generic [ref=e395]:
+                - paragraph [ref=e398]:
+                  - link "Boys’ Full Sleeve Regular T-Shirt" [ref=e399] [cursor=pointer]:
+                    - /url: /products/boys-full-sleeve-regular-t-shirt
+                - generic [ref=e400]: $339.00 - $381.00
+            - generic [ref=e406]:
+              - generic [ref=e407] [cursor=pointer]:
+                - link "Burgundy Casual Shirt" [ref=e408]:
+                  - /url: /products/burgundy-casual-button-down-shirt
+                - generic [ref=e410]:
+                  - img "Burgundy Casual Shirt" [ref=e413]
+                  - img "Burgundy Casual Shirt" [ref=e416]
+                - generic [ref=e417]:
+                  - button "Thumbnail 1" [ref=e419]:
+                    - img "Burgundy Casual Shirt" [ref=e421]
+                  - button "Thumbnail 2" [ref=e423]:
+                    - img "Burgundy Casual Shirt" [ref=e425]
+              - generic [ref=e428]:
+                - paragraph [ref=e431]:
+                  - link "Burgundy Casual Shirt" [ref=e432] [cursor=pointer]:
+                    - /url: /products/burgundy-casual-button-down-shirt
+                - generic [ref=e433]: $235.00 - $278.00
+            - generic [ref=e439]:
+              - generic [ref=e440] [cursor=pointer]:
+                - link "Burgundy Check Casual Shirt" [ref=e441]:
+                  - /url: /products/mens-burgundy-check-casual-shirt
+                - generic [ref=e443]:
+                  - img "Burgundy Check Casual Shirt" [ref=e446]
+                  - img "Burgundy Check Casual Shirt" [ref=e449]
+                  - img "Burgundy Check Casual Shirt" [ref=e452]
+                  - img "Men's Check Casual Shirt - White" [ref=e455]
+                  - img "Men's Check Casual Shirt - Gray" [ref=e458]
+                  - img "Men's Flannel Shirt - Blue Variant" [ref=e461]
+                - generic [ref=e462]:
+                  - button "Thumbnail 1" [ref=e464]:
+                    - img "Burgundy Check Casual Shirt" [ref=e466]
+                  - button "Thumbnail 2" [ref=e468]:
+                    - img "Burgundy Check Casual Shirt" [ref=e470]
+                  - button "Thumbnail 3" [ref=e472]:
+                    - img "Burgundy Check Casual Shirt" [ref=e474]
+                  - link "View more images" [ref=e476]:
+                    - /url: /products/mens-burgundy-check-casual-shirt
+                    - text: "+3"
+              - generic [ref=e479]:
+                - paragraph [ref=e482]:
+                  - link "Burgundy Check Casual Shirt" [ref=e483] [cursor=pointer]:
+                    - /url: /products/mens-burgundy-check-casual-shirt
+                - generic [ref=e484]: $203.00 - $246.00
+            - generic [ref=e490]:
+              - generic [ref=e491] [cursor=pointer]:
+                - link "Cargo Shorts & Crew Tee" [ref=e492]:
+                  - /url: /products/relaxed-printed-robe-dress
+                - generic [ref=e494]:
+                  - img "Cargo Shorts & Crew Tee" [ref=e497]
+                  - img "Cargo Shorts & Crew Tee" [ref=e500]
+                - generic [ref=e501]:
+                  - button "Thumbnail 1" [ref=e503]:
+                    - img "Cargo Shorts & Crew Tee" [ref=e505]
+                  - button "Thumbnail 2" [ref=e507]:
+                    - img "Cargo Shorts & Crew Tee" [ref=e509]
+              - generic [ref=e512]:
+                - paragraph [ref=e515]:
+                  - link "Cargo Shorts & Crew Tee" [ref=e516] [cursor=pointer]:
+                    - /url: /products/relaxed-printed-robe-dress
+                - generic [ref=e517]: $97.00 - $139.00
+            - generic [ref=e523]:
+              - generic [ref=e524] [cursor=pointer]:
+                - link "Casual Autumn Girls Outfit" [ref=e525]:
+                  - /url: /products/casual-autumn-girls-outfit
+                - img "Casual Autumn Girls Outfit" [ref=e530]
+              - generic [ref=e533]:
+                - paragraph [ref=e536]:
+                  - link "Casual Autumn Girls Outfit" [ref=e537] [cursor=pointer]:
+                    - /url: /products/casual-autumn-girls-outfit
+                - generic [ref=e538]: $118.00
+            - generic [ref=e544]:
+              - generic [ref=e545] [cursor=pointer]:
+                - generic [ref=e546]: 14% OFF
+                - link "Chic Twist Crop Top" [ref=e547]:
+                  - /url: /products/chic-twist-crop-top
+                - generic [ref=e549]:
+                  - img "Chic Twist Crop Top" [ref=e552]
+                  - img "Chic Twist Crop Top" [ref=e555]
+                  - img "Chic Twist Crop Top" [ref=e558]
+                  - img "Chic Twist Crop Top - Dusty Rose" [ref=e561]
+                  - img "Chic Twist Crop Top - Beige" [ref=e564]
+                  - img "Gray One-Shoulder Crop Top" [ref=e567]
+                - generic [ref=e568]:
+                  - button "Thumbnail 1" [ref=e570]:
+                    - img "Chic Twist Crop Top" [ref=e572]
+                  - button "Thumbnail 2" [ref=e574]:
+                    - img "Chic Twist Crop Top" [ref=e576]
+                  - button "Thumbnail 3" [ref=e578]:
+                    - img "Chic Twist Crop Top" [ref=e580]
+                  - link "View more images" [ref=e582]:
+                    - /url: /products/chic-twist-crop-top
+                    - text: "+3"
+              - generic [ref=e585]:
+                - paragraph [ref=e588]:
+                  - link "Chic Twist Crop Top" [ref=e589] [cursor=pointer]:
+                    - /url: /products/chic-twist-crop-top
+                - generic [ref=e592]:
+                  - generic [ref=e593]: $274.00
+                  - generic [ref=e594]: $321.00
+            - generic [ref=e597]:
+              - generic [ref=e598] [cursor=pointer]:
+                - link "Classic Belted Trench Coat Set" [ref=e599]:
+                  - /url: /products/classic-belted-trench-coat-set
+                - generic [ref=e601]:
+                  - img "Camel Trench Coat Outfit" [ref=e604]
+                  - img "Black Trench Coat Outfit" [ref=e607]
+                  - img "Olive Green Trench Coat Outfit" [ref=e610]
+                - generic [ref=e611]:
+                  - button "Thumbnail 1" [ref=e613]:
+                    - img "Camel Trench Coat Outfit" [ref=e615]
+                  - button "Thumbnail 2" [ref=e617]:
+                    - img "Black Trench Coat Outfit" [ref=e619]
+                  - button "Thumbnail 3" [ref=e621]:
+                    - img "Olive Green Trench Coat Outfit" [ref=e623]
+              - generic [ref=e626]:
+                - paragraph [ref=e629]:
+                  - link "Classic Belted Trench Coat Set" [ref=e630] [cursor=pointer]:
+                    - /url: /products/classic-belted-trench-coat-set
+                - generic [ref=e631]: $252.00 - $295.00
+          - navigation "Pagination" [ref=e636]:
+            - list [ref=e637]:
+              - listitem [ref=e638]:
+                - link "Page 1" [disabled]:
+                  - generic: "1"
+              - listitem [ref=e639]:
+                - link "Page 2" [ref=e640] [cursor=pointer]:
+                  - /url: /collections/all?page=2
+                  - generic [ref=e641]: "2"
+              - listitem [ref=e642]:
+                - link "Page 3" [ref=e643] [cursor=pointer]:
+                  - /url: /collections/all?page=3
+                  - generic [ref=e644]: "3"
+              - listitem [ref=e645]: …
+              - listitem [ref=e646]:
+                - link "Page 6" [ref=e647] [cursor=pointer]:
+                  - /url: /collections/all?page=6
+                  - generic [ref=e648]: "6"
+              - listitem [ref=e649]:
+                - link "Next page" [ref=e650] [cursor=pointer]:
+                  - /url: /collections/all?page=2
+                  - generic [ref=e651]: Next
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - heading [level=2]: Filters
+              - button
+            - generic:
+              - generic:
+                - group:
+                  - generic: Availability
+                  - generic:
+                    - list:
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: In stock
+                - group:
+                  - generic: Color
+                  - generic:
+                    - list:
+                      - listitem:
+                        - generic: Beige
+                      - listitem:
+                        - generic: Black
+                      - listitem:
+                        - generic: Blue
+                      - listitem:
+                        - generic: Bronze
+                      - listitem:
+                        - generic: Brown
+                      - listitem:
+                        - generic: Gray
+                      - listitem:
+                        - generic: Green
+                      - listitem:
+                        - generic: Multicolor
+                      - listitem:
+                        - generic: Navy
+                      - listitem:
+                        - generic: Orange
+                      - listitem:
+                        - generic: Pink
+                      - listitem:
+                        - generic: Purple
+                      - listitem:
+                        - generic: Red
+                      - listitem:
+                        - generic: Silver
+                      - listitem:
+                        - generic: White
+                      - listitem:
+                        - generic: Yellow
+                - group:
+                  - generic: Size
+                  - generic:
+                    - list:
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Extra small (XS)
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Small (S)
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Medium (M)
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Large (L)
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Extra large (XL)
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Double extra large (XXL)
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 9-12 months
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 12-18 months
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 18-24 months
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 2-3 years
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 3-4 years
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 4-5 years
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 5-6 years
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: 8-9 years
+                - group:
+                  - generic: Fabric
+                  - generic:
+                    - list:
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Cotton
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Denim
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Faux leather
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Satin
+                - group:
+                  - generic: Category
+                  - generic:
+                    - list:
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Baby & Children's Dresses
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Baby & Children's Hats
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Baby & Children's Outfits
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Blazers
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Blouses
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Bomber Jackets
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Cardigans
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Coats & Jackets
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Dress Shirts
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Dresses
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Hoodies
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: One-Pieces
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Outfit Sets
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Overcoats
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Polos
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Shirts
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Suits
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Sun Hats
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Sweatshirts
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: T-Shirts
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Tank Tops
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Trucker Jackets
+                      - listitem:
+                        - generic:
+                          - checkbox
+                          - generic: Varsity Jackets
+            - generic:
+              - button: Apply
+  - generic [ref=e658]:
+    - generic [ref=e659]:
+      - img "express delivery" [ref=e661]
+      - generic [ref=e662]:
+        - heading "Worldwide Shipping" [level=2] [ref=e663]
+        - paragraph [ref=e665]: International shipping available for all orders over &99
+    - generic [ref=e666]:
+      - img "refund" [ref=e668]
+      - generic [ref=e669]:
+        - heading "Money-Back Guarantee" [level=2] [ref=e670]
+        - paragraph [ref=e672]: Collect & Redeem on every order that you purchased.
+    - generic [ref=e673]:
+      - img "credit card" [ref=e675]
+      - generic [ref=e676]:
+        - heading "Secure Payments" [level=2] [ref=e677]
+        - paragraph [ref=e679]: Guarantee 100% secure payments online on our website
+    - generic [ref=e680]:
+      - img "hand" [ref=e682]
+      - generic [ref=e683]:
+        - heading "Buy Now. Pay Later" [level=2] [ref=e684]
+        - paragraph [ref=e686]: 0% Interest financing available. Pay after 30 days
+  - generic [ref=e690]:
+    - generic [ref=e693]:
+      - generic [ref=e695]:
+        - img "Graceful" [ref=e697]
+        - paragraph [ref=e698]: Get 20% off for your first order.
+        - paragraph [ref=e700]: Be the first one to get our latest promotions and expert articles
+        - generic [ref=e703]:
+          - generic [ref=e704]:
+            - textbox "Enter your email address" [ref=e705]
+            - generic: Enter your email address
+          - button "Subscribe" [ref=e706] [cursor=pointer]:
+            - generic [ref=e707]: Subscribe Now
+      - generic [ref=e708]:
+        - heading "Collections" [level=3] [ref=e710]
+        - list [ref=e712]:
+          - listitem [ref=e713]:
+            - link "Collection all" [ref=e714] [cursor=pointer]:
+              - /url: /collections/all
+          - listitem [ref=e715]:
+            - link "Men" [ref=e716] [cursor=pointer]:
+              - /url: /collections/mens
+          - listitem [ref=e717]:
+            - link "Women" [ref=e718] [cursor=pointer]:
+              - /url: /collections/womens
+          - listitem [ref=e719]:
+            - link "Kids" [ref=e720] [cursor=pointer]:
+              - /url: /collections/kids
+      - generic [ref=e721]:
+        - heading "Useful Links" [level=3] [ref=e723]
+        - list [ref=e725]:
+          - listitem [ref=e726]:
+            - link "Home" [ref=e727] [cursor=pointer]:
+              - /url: /
+          - listitem [ref=e728]:
+            - link "Shop" [ref=e729] [cursor=pointer]:
+              - /url: /collections/all
+          - listitem [ref=e730]:
+            - link "About Us" [ref=e731] [cursor=pointer]:
+              - /url: /pages/about-us
+          - listitem [ref=e732]:
+            - link "Blogs" [ref=e733] [cursor=pointer]:
+              - /url: /blogs/news
+      - generic [ref=e734]:
+        - heading "Information" [level=3] [ref=e736]
+        - list [ref=e738]:
+          - listitem [ref=e739]:
+            - link "Privacy Policy" [ref=e740] [cursor=pointer]:
+              - /url: /policies/privacy-policy
+          - listitem [ref=e741]:
+            - link "Terms & Conditions" [ref=e742] [cursor=pointer]:
+              - /url: /policies/terms-of-service
+          - listitem [ref=e743]:
+            - link "Refund Policy" [ref=e744] [cursor=pointer]:
+              - /url: /policies/refund-policy
+          - listitem [ref=e745]:
+            - link "Shipping Policy" [ref=e746] [cursor=pointer]:
+              - /url: /policies/shipping-policy
+      - generic [ref=e747]:
+        - heading "Address :" [level=3] [ref=e749]
+        - paragraph [ref=e751]: 456 North New Ballas Road Creve Coeur, MO 63141 United States
+      - generic [ref=e752]:
+        - heading "Phone Number :" [level=3] [ref=e754]
+        - paragraph [ref=e756]: +12 5678912345
+      - generic [ref=e757]:
+        - heading "Email Address :" [level=3] [ref=e759]
+        - paragraph [ref=e761]: graceful@gmail.com
+    - generic [ref=e764]:
+      - paragraph [ref=e766]:
+        - text: © 2026,
+        - link "Graceful" [ref=e767] [cursor=pointer]:
+          - /url: /
+        - text: "-"
+        - link "Powered by Shopify" [ref=e768] [cursor=pointer]:
+          - /url: https://www.shopify.com?utm_campaign=poweredby&utm_medium=shopify&utm_source=onlinestore
+      - list [ref=e769]:
+        - listitem [ref=e770]:
+          - img "Visa" [ref=e771]
+        - listitem [ref=e776]:
+          - img "Mastercard" [ref=e777]
+        - listitem [ref=e784]:
+          - img "American Express" [ref=e785]
+        - listitem [ref=e790]:
+          - img "PayPal" [ref=e791]
+        - listitem [ref=e797]:
+          - img "Diners Club" [ref=e798]
+        - listitem [ref=e802]:
+          - img "Discover" [ref=e803]
+  - generic:
+    - generic:
+      - dialog "Your Cart":
+        - generic:
+          - banner:
+            - generic:
+              - heading "Your Cart (0)" [level=4]
+            - generic:
+              - button "Close"
+          - generic:
+            - heading "My cart is currently empty." [level=4]
+            - generic:
+              - link "Continue shopping":
+                - /url: /collections/all
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - search:
+              - paragraph: Search
+              - generic:
+                - generic:
+                  - combobox "Search"
+                  - generic: Search
+                - button "Close"
+            - generic:
+              - generic:
+                - generic:
+                  - paragraph: Collections
+                - generic:
+                  - generic:
+                    - list:
+                      - listitem:
+                        - generic:
+                          - generic:
+                            - link "Autumn":
+                              - /url: /collections/autumn-layers
+                              - img "Rectangle"
+                          - generic:
+                            - paragraph:
+                              - link "Collection link":
+                                - /url: /collections/autumn-layers
+                                - text: Autumn
+                            - generic: "4"
+                            - generic:
+                              - link "Collection link":
+                                - /url: /collections/autumn-layers
+                                - text: Explore Now >>
+                      - listitem:
+                        - generic:
+                          - generic:
+                            - link "Best Seller":
+                              - /url: /collections/best-seller
+                              - img "graphic shirt trendy design mockup"
+                          - generic:
+                            - paragraph:
+                              - link "Collection link":
+                                - /url: /collections/best-seller
+                                - text: Best Seller
+                            - generic: "8"
+                            - generic:
+                              - link "Collection link":
+                                - /url: /collections/best-seller
+                                - text: Explore Now >>
+                      - listitem:
+                        - generic:
+                          - generic:
+                            - link "Elegant Dresses":
+                              - /url: /collections/elegant-dress
+                              - img "Rectangle dc e bbe ccfa"
+                          - generic:
+                            - paragraph:
+                              - link "Collection link":
+                                - /url: /collections/elegant-dress
+                                - text: Elegant Dresses
+                            - generic: "5"
+                            - generic:
+                              - link "Collection link":
+                                - /url: /collections/elegant-dress
+                                - text: Explore Now >>
+                      - listitem:
+                        - generic:
+                          - generic:
+                            - link "Everyday Essentials":
+                              - /url: /collections/casual-look
+                              - img "Everyday Essentials"
+                          - generic:
+                            - paragraph:
+                              - link "Collection link":
+                                - /url: /collections/casual-look
+                                - text: Everyday Essentials
+                            - generic: "12"
+                            - generic:
+                              - link "Collection link":
+                                - /url: /collections/casual-look
+                                - text: Explore Now >>
+                      - listitem:
+                        - generic:
+                          - generic:
+                            - link "Holiday & Resort":
+                              - /url: /collections/vacation-style
+                              - img "Holiday & Resort"
+                          - generic:
+                            - paragraph:
+                              - link "Collection link":
+                                - /url: /collections/vacation-style
+                                - text: Holiday & Resort
+                            - generic: "8"
+                            - generic:
+                              - link "Collection link":
+                                - /url: /collections/vacation-style
+                                - text: Explore Now >>
+                      - listitem:
+                        - generic:
+                          - generic:
+                            - link "Jackets":
+                              - /url: /collections/jackets
+                              - img "Orange White Varsity Jacket"
+                          - generic:
+                            - paragraph:
+                              - link "Collection link":
+                                - /url: /collections/jackets
+                                - text: Jackets
+                            - generic: "7"
+                            - generic:
+                              - link "Collection link":
+                                - /url: /collections/jackets
+                                - text: Explore Now >>
+  - generic:
+    - generic:
+      - generic:
+        - generic:
+          - generic:
+            - generic:
+              - paragraph: Quick View
+              - button "close"
+  - generic:
+    - button "Back to top"

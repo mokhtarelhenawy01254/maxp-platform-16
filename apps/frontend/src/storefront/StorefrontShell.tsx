@@ -46,6 +46,9 @@ import StorefrontProductImage from "./components/StorefrontProductImage";
 import StorefrontSkeleton from "./components/StorefrontSkeleton";
 import { getProductImageCandidates } from "./utils/productImages";
 import MobileBottomNav from "./components/MobileBottomNav";
+import GracefulHeader from "./components/GracefulHeader";
+import GracefulFooter from "./components/GracefulFooter";
+import GracefulScrollTop from "./components/GracefulScrollTop";
 import "./styles/conversion-animations.css";
 import {
   extractShopStudioConfig,
@@ -54,6 +57,7 @@ import {
 } from "../utils/shopPageStudioConfig";
 import { useSearch, type UseSearchResult } from "./hooks/useSearch";
 import { useStorefrontProductRouteScrollReset } from "./hooks/useStorefrontProductRouteScrollReset";
+import { useScrollReveal } from "./hooks/useScrollReveal";
 import { useStorefrontVisitTracking } from "./hooks/useStorefrontVisitTracking";
 import { captureStorefrontAttribution } from "./utils/orderAttribution";
 import { shouldStorefrontForceDocumentNavigation } from "./utils/navigationGuards";
@@ -443,6 +447,7 @@ const StorefrontHeader: React.FC<{
   const isPcHub = theme.id === "pc-hub-eg";
   const isFastlyTheme = theme.id === "fastly-eg";
   const isMensGroomingPro = theme.id === "mens-grooming-pro";
+  const isGracefulTheme = theme.id === "soft-graceful";
   const headerVariant =
     theme.header?.variant?.trim().toLowerCase() || "default";
   const isEditorialSoftHeader = headerVariant === "editorial-soft";
@@ -572,6 +577,11 @@ const StorefrontHeader: React.FC<{
       to: buildStorefrontPath(location.pathname, "/shop", location.search),
     },
   ];
+
+  // Soft Graceful — dedicated Texture-style fashion header (utility bar + mega menu)
+  if (isGracefulTheme && !isMinimal) {
+    return <GracefulHeader search={search} />;
+  }
 
   // Mens Grooming Pro — dark navy header identical to mensgroomingpro.com
   if (isMensGroomingPro && !isMinimal) {
@@ -4016,6 +4026,10 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
   const isPcHub = theme.id === 'pc-hub-eg';
   const isMensGroomingPro = theme.id === 'mens-grooming-pro';
   const footerVariant = theme.footer?.variant?.trim().toLowerCase() || 'default';
+  // Soft Graceful — dedicated Texture-style dark footer
+  if (theme.id === 'soft-graceful') {
+    return <GracefulFooter />;
+  }
   const isEditorialSoftFooter = footerVariant === 'editorial-soft';
   const isUtilityFrameFooter = footerVariant === 'utility-frame';
   const isSignaturePanelFooter = footerVariant === 'signature-panel';
@@ -5228,7 +5242,10 @@ const resolveStorefrontPageLayout = (
 ): StorefrontPageLayout => pageConfig?.layoutHint || fallback;
 
 const renderSectionFrame = ({ element, index }: { element: React.ReactNode; index: number }) => (
-  <div className={index > 0 ? 'mt-12' : ''}>
+  <div
+    className={`sf-reveal ${index > 0 ? 'mt-12' : ''}`}
+    data-reveal-delay={(index % 5) + 1}
+  >
     {element}
   </div>
 );
@@ -7397,6 +7414,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
   const location = useLocation();
   const navigate = useNavigate();
   useStorefrontProductRouteScrollReset();
+  useScrollReveal();
   const search = useSearch();
   const canRenderConversionHosts = useDeferredStorefrontConversionHosts();
   const searchParams = useMemo(
@@ -7551,6 +7569,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     searchParams.get("preview") === "1";
   const previewProductId = searchParams.get("previewProductId");
   const isFastlyTheme = theme.id === "fastly-eg";
+  const isGracefulTheme = theme.id === "soft-graceful";
   const productRouteKey = getStorefrontProductRouteKey(normalizedPath);
   const legacyProductSlugAliasTarget = useMemo(
     () =>
@@ -7633,7 +7652,8 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     !isProductDetailPage &&
     !isDistrictMarketShopRoute &&
     !isElessiPackTheme &&
-    !isFastlyTheme;
+    !isFastlyTheme &&
+    !isGracefulTheme;
   const showPreviewThemeBanner =
     Boolean(previewThemeId) &&
     !isKhemetMinimalCommerce &&
@@ -8703,8 +8723,9 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       {showPreviewThemeBanner && previewThemeId ? (
         <StorefrontPreviewBanner previewThemeId={previewThemeId} />
       ) : null}
-      {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme ? <StorePromotionBar /> : null}
-      {!isProductImageLandingPage && !isFastlyTheme && canRenderConversionHosts ? (
+      {isGracefulTheme ? <GracefulScrollTop /> : null}
+      {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme && !isGracefulTheme ? <StorePromotionBar /> : null}
+      {!isProductImageLandingPage && !isFastlyTheme && !isGracefulTheme && canRenderConversionHosts ? (
         <>
           <React.Suspense fallback={null}>
             {!isElessiPackTheme ? <GlobalConversionHost /> : null}

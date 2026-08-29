@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import GracefulSmartCard from '../components/GracefulSmartCard';
 import { useCategories } from '../hooks/useCategories';
 import { useProducts } from '../hooks/useProducts';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
@@ -461,6 +462,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
   const isPerfumeEg = theme.id === 'perfume-eg';
   const isVelaFashion = theme.id === 'vela-fashion-eg';
   const isFastlyTheme = theme.id === 'fastly-eg';
+  const isGracefulTheme = theme.id === 'soft-graceful';
   const isKhemetLuxe = isKhemetLuxeTheme(theme.id);
   const hasCustomShopStudio =
     isShopPage && hasShopStudioConfig(storefrontSettings?.storefront);
@@ -616,6 +618,8 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
   const gridClass =
     hasCustomShopStudio && !isHorizontalRail
       ? resolveShopGridClassName(shopStudioConfig)
+      : isGracefulTheme
+        ? 'grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4'
       : variant === 'curated-rack'
         ? isShopPage
           ? 'grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4'
@@ -1875,16 +1879,26 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
               ) : null}
               <div className={resolvedGridClass}>
                 {filteredProducts.map((product, index) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    variant={resolvedCardVariant}
-                    styleOverrides={shopProductCardStyleOverrides}
-                    quickViewLabel={settings?.['quickViewLabel'] as string}
-                    addToWishlistLabel={settings?.['addToWishlistLabel'] as string}
-                    imageLoading={resolveGridCardImageLoading(index)}
-                    imageFetchPriority={resolveGridCardImageFetchPriority(index)}
-                  />
+                  isGracefulTheme ? (
+                    <GracefulSmartCard
+                      key={product.id}
+                      product={product}
+                      index={index}
+                      quickViewLabel={settings?.['quickViewLabel'] as string}
+                      addToWishlistLabel={settings?.['addToWishlistLabel'] as string}
+                    />
+                  ) : (
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      variant={resolvedCardVariant}
+                      styleOverrides={shopProductCardStyleOverrides}
+                      quickViewLabel={settings?.['quickViewLabel'] as string}
+                      addToWishlistLabel={settings?.['addToWishlistLabel'] as string}
+                      imageLoading={resolveGridCardImageLoading(index)}
+                      imageFetchPriority={resolveGridCardImageFetchPriority(index)}
+                    />
+                  )
                 ))}
               </div>
             </div>

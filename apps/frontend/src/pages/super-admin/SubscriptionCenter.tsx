@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
@@ -811,6 +812,7 @@ const MarketplaceAppsTab = ({
   ) => Promise<boolean>;
   onEditingChange?: (editing: boolean) => void;
 }) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
   const [sortBy, setSortBy] = useState("installations");
@@ -1452,9 +1454,14 @@ const MarketplaceAppsTab = ({
 
                       {/* Actions */}
                       <div className="flex justify-between items-center">
-                        <Button size="sm" onClick={() => setExpandedApp(isExpanded ? null : (app.id ?? null))} variant="ghost" className="text-primary hover:bg-primary/10 hover:text-primary">
-                          {isExpanded ? "أقل" : "المزيد"}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)} variant="ghost" className="text-primary hover:bg-primary/10 hover:text-primary">
+                            إدارة التطبيق
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setExpandedApp(isExpanded ? null : (app.id ?? null))} className="text-muted-foreground hover:bg-muted">
+                            {isExpanded ? "أقل" : "المزيد"}
+                          </Button>
+                        </div>
                         <div>
                           <TooltipProvider>
                             <Tooltip>
@@ -2247,7 +2254,7 @@ const StorefrontThemesTab = ({
     try {
       const results = await Promise.allSettled(
         uniqueThemes.map((theme) =>
-          persistThemeDraft(theme.themeId, nextDrafts[theme.themeId]),
+          persistThemeDraft(theme.themeId, nextDrafts[theme.themeId]!),
         ),
       );
       const failedCount = results.filter(

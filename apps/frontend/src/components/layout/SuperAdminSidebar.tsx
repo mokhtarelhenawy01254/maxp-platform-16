@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Brain, History, Globe, Headphones, Tag, ChevronUp, ChevronDown, Activity, Sliders, Facebook, Award, GitBranch, Users, Clock, HardDrive, MessageSquare, Key, Play, Download, Code2, Zap, Brush, Server, Grid, Bell, Image, Briefcase, Wallet, Ticket, Palette, Database, Wrench, Layers, Trophy, Rocket } from 'lucide-react';
+import { LayoutDashboard, Building2, BarChart3, Settings, Shield, DollarSign, Brain, History, Globe, Headphones, Tag, ChevronUp, ChevronDown, Activity, Sliders, Facebook, GitBranch, Users, Clock, HardDrive, MessageSquare, Key, Play, Download, Code2, Grid, Bell, Image, Briefcase, Wallet, Ticket, Palette, Database, Wrench, Layers, Trophy, Rocket } from 'lucide-react';
 import i18n from "../../i18n";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -35,14 +35,16 @@ export const getMenuGroups = (t: (key: string) => string) => [
   { title: t("superAdmin.sidebar.subscriptionsBilling"), icon: <Briefcase className="size-5" />, items: [
     { text: t("superAdmin.sidebar.walletManagement"), icon: <Wallet className="size-5" />, path: "/super-admin/wallet-management" },
     { text: t("superAdmin.sidebar.pendingReceipts"), icon: <BarChart3 className="size-5" />, path: "/super-admin/pending-receipts" },
-    { text: t("superAdmin.sidebar.marketplaceManagement"), icon: <Globe className="size-5" />, path: "/super-admin/marketplace-management" },
-    { text: t("superAdmin.sidebar.marketplaceCoverage"), icon: <Shield className="size-5" />, path: "/super-admin/marketplace-coverage" },
     { text: t("superAdmin.sidebar.businessSpecialties"), icon: <Briefcase className="size-5" />, path: "/super-admin/business-specialties" },
-    { text: t("superAdmin.sidebar.storefrontThemes"), icon: <Palette className="size-5" />, path: "/super-admin/storefront-themes" },
     { text: t("superAdmin.sidebar.customerInvoices"), icon: <BarChart3 className="size-5" />, path: "/super-admin/invoices" },
     { text: t("superAdmin.sidebar.customerPayments"), icon: <DollarSign className="size-5" />, path: "/super-admin/payments" },
     { text: t("superAdmin.sidebar.revenueAnalytics"), icon: <BarChart3 className="size-5" />, path: "/super-admin/billing-overview" },
     { text: t("superAdmin.sidebar.signupCoupons"), icon: <Tag className="size-5" />, path: "/super-admin/platform-signup-coupons" },
+  ]},
+  { title: t("superAdmin.sidebar.storeApps"), icon: <Grid className="size-5" />, items: [
+    { text: t("superAdmin.sidebar.marketplaceManagement"), icon: <Globe className="size-5" />, path: "/super-admin/apps" },
+    { text: t("superAdmin.sidebar.marketplaceCoverage"), icon: <Shield className="size-5" />, path: "/super-admin/marketplace-coverage" },
+    { text: t("superAdmin.sidebar.storefrontThemes"), icon: <Palette className="size-5" />, path: "/super-admin/storefront-themes" },
   ]},
   { title: t("superAdmin.evaluation.aiModels"), icon: <Brain className="size-5" />, items: [
     { text: t("superAdmin.sidebar.aiConsumption"), icon: <BarChart3 className="size-4" />, path: "/super-admin/ai-consumption" },

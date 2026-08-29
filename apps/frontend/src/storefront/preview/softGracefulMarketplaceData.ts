@@ -82,8 +82,6 @@ type RawProduct = {
   gallery?: string[];
 };
 
-const SIZES = ["XS", "S", "M", "L", "XL", "2XL"];
-
 const RAW_PRODUCTS: RawProduct[] = [
   {
     id: "classic-white-belted-shirt-dress",
@@ -333,14 +331,6 @@ const RAW_PRODUCTS: RawProduct[] = [
   },
 ];
 
-const PALETTE: Record<string, string> = {
-  ofw: "#F5F1EC", black: "#171412", navy: "#24303E", beige: "#D6C6B2", gray: "#8A8A8A",
-  yellow: "#D9A33B", wine: "#6E2438", pink: "#E7A9B8", blue: "#4A69A2", brown: "#6B4A35",
-  bronze: "#9A6B45", white: "#FFFFFF", cream: "#F2EBDF", mint: "#CFE0D6", floral: "#C9A9B0",
-  red: "#B02A33", green: "#2E5B42", blush: "#EBC4CB", burgundy: "#7A2236", emerald: "#1F6B5A",
-  rust: "#B4513A", terracotta: "#C46A4A", olive: "#5C6642", camel: "#B98E5F", maroon: "#6E2438",
-  natural: "#D9C9A8", turquoise: "#6FBFC0",
-};
 
 const buildVariants = (product: RawProduct) =>
   product.variantColors.flatMap((color, ci) =>
@@ -350,7 +340,7 @@ const buildVariants = (product: RawProduct) =>
       price: product.price,
       comparePrice: product.comparePrice,
       sku: `${product.id.toUpperCase()}-${color.toUpperCase()}-${size}`,
-      image: product.gallery?.[ci % product.gallery.length] ? cdn(product.gallery[ci % product.gallery.length]) : cdn(product.thumb),
+      image: cdn(product.gallery?.[ci % (product.gallery?.length || 1)] || product.thumb),
       stock: Math.max(2, 12 - ci - si),
       attributes: { color, size },
       attributeValues: { color, size },
@@ -374,7 +364,7 @@ const buildProduct = (product: RawProduct, index: number): Product => {
     imageUrl: images[0],
     mainImage: images[0],
     categoryId: category.id,
-    category: { id: category.id, name: category.name, slug: category.slug, image: category.image },
+    category: { id: category.id, name: category.name },
     stock: Math.max(4, 18 - (index % 6)),
     tags: [category.name, "graceful", "fashion"],
     productVariants: variants,
@@ -422,12 +412,12 @@ const REVIEW_COPY = [
 
 export const SOFT_GRACEFUL_REVIEWS: Record<string, MarketplacePreviewProductReviewsResponse> = Object.fromEntries(
   RAW_PRODUCTS.map((product, index) => {
-    const a1 = REVIEW_AUTHORS[index % REVIEW_AUTHORS.length];
-    const a2 = REVIEW_AUTHORS[(index + 2) % REVIEW_AUTHORS.length];
+    const a1 = REVIEW_AUTHORS[index % REVIEW_AUTHORS.length] ?? "Sarah";
+    const a2 = REVIEW_AUTHORS[(index + 2) % REVIEW_AUTHORS.length] ?? "Nour";
     return [
       product.id,
       buildMarketplacePreviewReviewsResponse([
-        { id: `${product.id}-r1`, author: a1, date: "2026-08-18", createdAt: "2026-08-18T10:00:00.000Z", rating: 5, title: "Curated and clear", comment: REVIEW_COPY[index % REVIEW_COPY.length], verified: true, helpfulCount: 4 + index },
+        { id: `${product.id}-r1`, author: a1, date: "2026-08-18", createdAt: "2026-08-18T10:00:00.000Z", rating: 5, title: "Curated and clear", comment: REVIEW_COPY[index % REVIEW_COPY.length] ?? "", verified: true, helpfulCount: 4 + index },
         { id: `${product.id}-r2`, author: a2, date: "2026-08-16", createdAt: "2026-08-16T10:00:00.000Z", rating: 4, title: "Easy size + swatches", comment: "Sizing, swatch colors, and the discount all stayed readable without opening extra panels.", verified: true, helpfulCount: 2 + (index % 5) },
       ]),
     ];

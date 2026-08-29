@@ -122,6 +122,30 @@ export interface StorefrontHeaderConfig {
     style?: 'link' | 'outline' | 'primary';
   }>;
   navigation: Array<{ label: string; to: string }>;
+  megaMenu?: {
+    triggerLabel?: string;
+    ctaText?: string;
+    ctaLink?: string;
+    tabs?: Array<{
+      label?: string;
+      title?: string;
+      link?: string;
+      image?: string;
+      products?: Array<{
+        title?: string;
+        price?: string;
+        comparePrice?: string;
+        image?: string;
+        link?: string;
+        badge?: string;
+        discount?: string;
+      }>;
+    }>;
+  };
+  dropdowns?: Array<{
+    label?: string;
+    items?: Array<{ label?: string; to?: string }>;
+  }>;
 }
 
 export interface StorefrontFooterConfig {
