@@ -87,6 +87,24 @@ const DEFAULT_SPECIALTIES = [
       'store-basic',
     ],
   },
+  {
+    id: 'bizsp_affiliate_blog',
+    slug: 'affiliate-blog-seo',
+    nameAr: 'مدونات الأفليت والـ SEO',
+    nameEn: 'Affiliate Blog & SEO',
+    descriptionAr: 'مدونة أفليت احترافية: مقالات ومراجعات منتجات، كسب عمولات من أمازون، وأدوات SEO متكاملة. يفعّل ثيم Mens Grooming Pro تلقائيًا.',
+    descriptionEn: 'Affiliate blog & SEO: product review articles, Amazon commissions, and full SEO tools. Auto-activates the Mens Grooming Pro theme.',
+    icon: 'BookOpen',
+    sortOrder: 15,
+    themeId: 'mens-grooming-pro',
+    appSlugs: [
+      'blog-pro',
+      'amazon-affiliate-pro',
+      'analytics-basic',
+      'campaign-attribution',
+      'crm-lite',
+    ],
+  },
 ];
 
 function getPrisma(prisma) {
@@ -171,11 +189,8 @@ function serializeSpecialty(specialty) {
 
 async function ensureDefaultSpecialties(prismaArg) {
   const prisma = getPrisma(prismaArg);
-  const count = await prisma.businessSpecialty.count();
-  if (count > 0) {
-    return;
-  }
-
+  // Upsert-style seed: create missing defaults (skip existing by slug/id),
+  // so new specialties (e.g. affiliate-blog-seo) appear on existing DBs too.
   await prisma.businessSpecialty.createMany({
     data: DEFAULT_SPECIALTIES.map((specialty) => ({
       ...specialty,
