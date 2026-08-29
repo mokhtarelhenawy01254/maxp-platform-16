@@ -1065,6 +1065,56 @@
     "updatedAt": "2026-08-28T00:00:00Z"
   },
   {
+    "id": "cat-app-blog-pro",
+    "slug": "blog-pro",
+    "name": "نظام المدونة والـ SEO",
+    "nameEn": "Blog & SEO",
+    "description": "مدونة احترافية مع إدارة مقالات، Affiliate Amazon، FAQ & TOC تلقائي، و SEO متكامل (Article/Breadcrumb/FAQ Schema + sitemap). مثالي لمواقع مثل MensGroomingPro.",
+    "category": "CONTENT",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "مدونات الأفليت ومواقع المراجعات التي تكسب عمولات من أمازون.",
+      "surface": "قسم المدونة والـ SEO في القائمة الجانبية: إدارة المقالات ونشرها.",
+      "outcome": "نشر مقالات SEO جاهزة لـ Amazon Affiliate مع Schema كامل."
+    },
+    "features": {
+      "articles": {
+        "enabled": true,
+        "name": "إدارة المقالات",
+        "description": "إنشاء وتعديل ونشر المقالات بمحرر Blocks (H2/P/صورة/ProTip).",
+        "access": "PAID"
+      },
+      "amazonCards": {
+        "enabled": true,
+        "name": "Amazon Product Cards",
+        "description": "إدراج كروت منتجات أمازون مع زر Check Price.",
+        "access": "PAID"
+      },
+      "seoSchema": {
+        "enabled": true,
+        "name": "SEO Schema",
+        "description": "Article, Breadcrumb, و FAQPage JSON-LD تلقائي.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "pen-line",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-08-28T00:00:00Z",
+    "updatedAt": "2026-08-28T00:00:00Z"
+  },
+  {
     "id": "cat-app-order-source-tracking",
     "slug": "order-source-tracking",
     "name": "Order Source Tracking",

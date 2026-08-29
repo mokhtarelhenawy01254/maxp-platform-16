@@ -10,6 +10,7 @@ export interface BusinessSpecialty {
   icon: string;
   appSlugs: string[];
   autoInstallOnSignup: boolean;
+  themeId?: string | null;
   sortOrder: number;
   isActive: boolean;
   companyCount: number;
@@ -26,6 +27,7 @@ export interface BusinessSpecialtyFormPayload {
   icon: string;
   appSlugs: string[];
   autoInstallOnSignup: boolean;
+  themeId?: string | null;
   sortOrder: number;
   isActive: boolean;
 }
@@ -84,6 +86,7 @@ const normalizeSpecialty = (
   icon: String(value?.icon || "Briefcase"),
   appSlugs: normalizeStringArray(value?.appSlugs),
   autoInstallOnSignup: value?.autoInstallOnSignup !== false,
+  themeId: value?.themeId ? String(value.themeId) : null,
   sortOrder: normalizeNumber(value?.sortOrder),
   isActive: value?.isActive !== false,
   companyCount: normalizeNumber(value?.companyCount),

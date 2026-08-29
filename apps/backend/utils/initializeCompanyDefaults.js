@@ -3,19 +3,49 @@ const path = require('path');
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 
 /**
- * Initialize the complete SaaS theme (Elegance V1) for a new company
+ * Initialize the complete SaaS theme for a new company.
+ * Accepts an optional themeId override (from BusinessSpecialty) — when set,
+ * loads the matching theme preset from the frontend storefront themes folder.
  */
-async function initializeSaasTheme(companyId) {
+async function initializeSaasTheme(companyId, options = {}) {
   try {
-    console.log(`🎨 [INIT] Initializing SaaS Theme (Elegance V1) for company: ${companyId}`);
+    const requestedThemeId = String(options.themeId || '').trim();
+    console.log(`🎨 [INIT] Initializing theme ${requestedThemeId || 'Elegance V1'} for company: ${companyId}`);
 
     // 1. Load the theme JSON
-    const themePath = path.join(__dirname, '..', 'defaults', 'saas_theme_v1.json');
+    let theme = null;
+    let themePath = path.join(__dirname, '..', 'defaults', 'saas_theme_v1.json');
+
+    if (requestedThemeId) {
+      const customPath = path.join(
+        __dirname,
+        '..', '..', 'apps', 'frontend', 'src', 'storefront', 'themes',
+        `${requestedThemeId}.json`,
+      );
+      // fallback: repo-relative when running from backend dir
+      const altPath = path.join(
+        __dirname, '..', '..', 'frontend', 'src', 'storefront', 'themes',
+        `${requestedThemeId}.json`,
+      );
+      const candidatePath = fs.existsSync(customPath) ? customPath : (fs.existsSync(altPath) ? altPath : null);
+      if (candidatePath) {
+        themePath = candidatePath;
+      } else {
+        console.warn(`⚠️ [INIT] Theme file not found for "${requestedThemeId}", falling back to default.`);
+      }
+    }
+
     if (!fs.existsSync(themePath)) {
       console.error('❌ [INIT] Default theme file not found at:', themePath);
       return { success: false, error: 'Theme file missing' };
     }
-    const theme = JSON.parse(fs.readFileSync(themePath, 'utf8'));
+    theme = JSON.parse(fs.readFileSync(themePath, 'utf8'));
+
+    // Ensure designTokens carry the resolved themeId so the storefront renders the right preset
+    const designTokens = {
+      ...(theme.designTokens || {}),
+      ...(requestedThemeId ? { themeId: requestedThemeId } : {}),
+    };
 
     // 2. Initialize Storefront Settings with Design Tokens
     await executeWithRetry(async () => {
@@ -25,18 +55,18 @@ async function initializeSaasTheme(companyId) {
       await prisma.storefrontSettings.upsert({
         where: { companyId },
         update: {
-          designTokens: theme.designTokens,
+          designTokens,
         },
         create: {
           companyId,
-          designTokens: theme.designTokens,
+          designTokens,
           supportedLanguages: "ar,en"
         }
       });
     });
 
     // 3. Initialize Theme Pages
-    for (const [key, pageDef] of Object.entries(theme.pages)) {
+    for (const [key, pageDef] of Object.entries(theme.pages || {})) {
       await executeWithRetry(async () => {
         const prisma = getSharedPrismaClient();
 
@@ -67,10 +97,10 @@ async function initializeSaasTheme(companyId) {
       });
     }
 
-    console.log(`✅ [INIT] SaaS Theme "Elegance V1" initialized for ${companyId}`);
-    return { success: true, theme: theme.themeName };
+    console.log(`✅ [INIT] Theme "${requestedThemeId || theme.themeName || 'Elegance V1'}" initialized for ${companyId}`);
+    return { success: true, theme: theme.themeName || requestedThemeId };
   } catch (error) {
-    console.error(`❌ [INIT] Error initializing SaaS theme:`, error);
+    console.error(`❌ [INIT] Error initializing theme:`, error);
     return { success: false, error: error.message };
   }
 }

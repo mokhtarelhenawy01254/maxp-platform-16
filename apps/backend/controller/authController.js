@@ -83,7 +83,9 @@ const initializeRegisteredCompany = async (companyId, trialDays = 0, options = {
     const billingService = require('../services/billingService');
 
     await tenantContext.run(companyId, async () => {
-      await initializeSaasTheme(companyId);
+      await initializeSaasTheme(companyId, {
+        themeId: options.themeId || null,
+      });
       await initializeDefaultStorePages(companyId);
       await initializeDefaultApps(companyId, {
         specialtyAppSlugs: options.specialtyAppSlugs || [],
@@ -275,6 +277,7 @@ const register = async (req, res) => {
     await initializeRegisteredCompany(company.id, totalTrialDays, {
       specialtyAppSlugs,
       specialtySlug: selectedSpecialty?.slug || null,
+      themeId: selectedSpecialty?.themeId || null,
     });
 
     // Attribution window: prefer the cookie/session code captured by the

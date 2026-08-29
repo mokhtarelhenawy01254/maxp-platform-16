@@ -160,6 +160,7 @@ function serializeSpecialty(specialty) {
     icon: specialty.icon || 'Briefcase',
     appSlugs: normalizeStringArray(specialty.appSlugs),
     autoInstallOnSignup: specialty.autoInstallOnSignup !== false,
+    themeId: specialty.themeId || null,
     sortOrder: Number.isFinite(Number(specialty.sortOrder)) ? Number(specialty.sortOrder) : 0,
     isActive: specialty.isActive !== false,
     companyCount: specialty._count?.companies || 0,
@@ -300,6 +301,7 @@ function buildSpecialtyPayload(payload = {}, existing = null) {
     icon: String(payload.icon ?? existing?.icon ?? 'Briefcase').trim() || 'Briefcase',
     appSlugs: normalizeStringArray(payload.appSlugs ?? existing?.appSlugs),
     autoInstallOnSignup: payload.autoInstallOnSignup ?? existing?.autoInstallOnSignup ?? true,
+    themeId: String(payload.themeId ?? existing?.themeId ?? '').trim() || null,
     sortOrder: Number.parseInt(String(payload.sortOrder ?? existing?.sortOrder ?? 0), 10) || 0,
     isActive: payload.isActive ?? existing?.isActive ?? true,
   };
