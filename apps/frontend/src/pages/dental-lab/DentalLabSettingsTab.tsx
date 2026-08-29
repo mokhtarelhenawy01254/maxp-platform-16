@@ -350,9 +350,9 @@ export default function DentalLabSettingsTab() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        <aside className="w-full lg:w-64 shrink-0">
-          <nav className="flex lg:flex-col gap-1 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-2 overflow-x-auto lg:overflow-visible lg:sticky lg:top-4">
+      <div className="grid grid-cols-1 lg:grid-cols-[240px_minmax(0,1fr)] gap-6 items-start">
+        <aside className="min-w-0">
+          <nav className="flex flex-wrap lg:flex-col gap-1 bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-2">
             {SETTINGS_SECTIONS.map(section => {
               const Icon = section.icon;
               const sectionDirty = !loading && (dirtyMap[section.id] ?? false);
@@ -362,16 +362,16 @@ export default function DentalLabSettingsTab() {
                   type="button"
                   onClick={() => setActiveSection(section.id)}
                   aria-current={activeSection === section.id ? "page" : undefined}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap shrink-0 transition-colors ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                     activeSection === section.id
                       ? "bg-blue-600 text-white shadow-sm"
                       : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                   }`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />
-                  {t(section.labelKey)}
+                  <span className="whitespace-nowrap">{t(section.labelKey)}</span>
                   {sectionDirty && (
-                    <span className={`w-1.5 h-1.5 rounded-full ${activeSection === section.id ? "bg-white" : "bg-amber-500"}`} title={t("dentalLab.settings.unsavedChanges")} />
+                    <span className={`ms-auto w-1.5 h-1.5 shrink-0 rounded-full ${activeSection === section.id ? "bg-white" : "bg-amber-500"}`} title={t("dentalLab.settings.unsavedChanges")} />
                   )}
                 </button>
               );
@@ -379,7 +379,7 @@ export default function DentalLabSettingsTab() {
           </nav>
         </aside>
 
-        <div className="flex-1 min-w-0 space-y-6">
+        <div className="min-w-0 space-y-6">
           {loading ? (
             <div className={`${sectionCls} space-y-4`}>
               <div className="h-5 w-44 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
