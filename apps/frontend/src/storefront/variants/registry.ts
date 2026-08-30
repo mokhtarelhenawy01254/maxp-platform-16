@@ -300,17 +300,6 @@ export const storefrontVariantRegistry = {
       status: 'implemented-now',
     },
     {
-      id: 'graceful-bar',
-      section: 'ShopCommandBar',
-      purpose: 'Texture-style single-row catalog toolbar: filter dropdown, live product count, and sort select',
-      bestPages: ['shop'],
-      bestArchetypes: ['women-fashion', 'sales-led-fashion', 'egypt-fashion'],
-      rtlSuitability: 'high',
-      density: 'low',
-      tone: 'fashion-commerce',
-      status: 'implemented-now',
-    },
-    {
       id: 'graceful-banner',
       section: 'HeroBanner',
       purpose: 'Soft Graceful full-bleed image banner with centered title and breadcrumb for catalog and journal pages',
@@ -931,6 +920,17 @@ export const storefrontVariantRegistry = {
   ],
   ProductInfo: [
     {
+      id: 'graceful',
+      section: 'ProductInfo',
+      purpose: 'Texture-style buybox: divider under the title, coral variant chips, grey quantity stepper, and black+blue CTA pair',
+      bestPages: ['pdp'],
+      bestArchetypes: ['women-fashion', 'sales-led-fashion', 'egypt-fashion'],
+      rtlSuitability: 'high',
+      density: 'medium',
+      tone: 'fashion-commerce',
+      status: 'implemented-now',
+    },
+    {
       id: 'standard',
       section: 'ProductInfo',
       purpose: 'Balanced default product details layout',
@@ -1548,6 +1548,17 @@ export const storefrontVariantRegistry = {
   ],
   RelatedProducts: [
     {
+      id: 'graceful-related',
+      section: 'RelatedProducts',
+      purpose: 'Texture-style related rail rendered with the graceful grey-plate catalog cards',
+      bestPages: ['pdp'],
+      bestArchetypes: ['women-fashion', 'sales-led-fashion', 'egypt-fashion'],
+      rtlSuitability: 'high',
+      density: 'medium',
+      tone: 'fashion-commerce',
+      status: 'implemented-now',
+    },
+    {
       id: 'standard',
       section: 'RelatedProducts',
       purpose: 'Classic alternative discovery after the main product',
@@ -1826,6 +1837,17 @@ export const storefrontVariantRegistry = {
     },
   ],
   ProductGallery: [
+    {
+      id: 'graceful',
+      section: 'ProductGallery',
+      purpose: 'Texture-style product gallery: one large rounded hero image or a two-column editorial image grid',
+      bestPages: ['pdp'],
+      bestArchetypes: ['women-fashion', 'sales-led-fashion', 'egypt-fashion'],
+      rtlSuitability: 'high',
+      density: 'medium-high',
+      tone: 'fashion-commerce',
+      status: 'implemented-now',
+    },
     {
       id: 'standard',
       section: 'ProductGallery',
@@ -2531,6 +2553,17 @@ export const storefrontVariantRegistry = {
     },
   ],
   ShopCommandBar: [
+    {
+      id: 'graceful-bar',
+      section: 'ShopCommandBar',
+      purpose: 'Texture-style single-row catalog toolbar: filter dropdown, live product count, and sort select',
+      bestPages: ['shop'],
+      bestArchetypes: ['women-fashion', 'sales-led-fashion', 'egypt-fashion'],
+      rtlSuitability: 'high',
+      density: 'low',
+      tone: 'fashion-commerce',
+      status: 'implemented-now',
+    },
     {
       id: 'default-discovery',
       section: 'ShopCommandBar',

@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { storefrontFetch } from '../../utils/storefrontApi';
 import ProductCard from '../components/ProductCard';
+import GracefulSmartCard from '../components/GracefulSmartCard';
 import StorefrontProductImage from '../components/StorefrontProductImage';
 import { useProduct } from '../hooks/useProduct';
 import { useProducts, type Product } from '../hooks/useProducts';
@@ -517,6 +518,7 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ section, settings }) 
   const isFastlyOfferWallRelated = sectionVariant === 'fastly-offer-wall';
   const isWomenFashionClosetPairings = isWomenFashionTheme && isClosetPairings;
   const effectiveCardVariant = isWomenFashionClosetPairings ? 'compact' : cardVariant;
+  const isGracefulRelated = section?.variant === 'graceful-related';
   const effectiveRelatedGridClass = isWomenFashionClosetPairings
     ? relatedGridClass.replaceAll('gap-5', 'gap-3')
     : relatedGridClass;
@@ -1064,10 +1066,17 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ section, settings }) 
                     ) : null}
                   </div>
                 ) : null}
-                <ProductCard
-                  product={relatedProduct}
-                  variant={effectiveCardVariant}
-                />
+                {isGracefulRelated ? (
+                  <GracefulSmartCard
+                    product={relatedProduct}
+                    index={index}
+                  />
+                ) : (
+                  <ProductCard
+                    product={relatedProduct}
+                    variant={effectiveCardVariant}
+                  />
+                )}
               </div>
             ))}
           </div>

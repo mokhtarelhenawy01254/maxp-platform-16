@@ -449,13 +449,11 @@
       "layoutHint": "product-detail",
       "compositionPolicy": { "pageGoal": "trust", "preserveManualOrder": true, "enforceTrustSignals": true },
       "sections": [
-        { "type": "product-gallery", "variant": "mirror-carousel" },
-        { "type": "product-info", "variant": "bento-specs", "settings": { "descriptionTitle": "Product Overview", "shippingTitle": "Shipping & Returns", "shippingText": "Free shipping over $500 and easy 14-day returns on qualifying pieces.", "guaranteesTitle": "Why You'll Love It", "guaranteeStyle": "grid", "guaranteeItems": "Premium Fabric|Soft, durable, selected for comfort.\nSmart Sizing|Slim, regular, relaxed and oversized.\nEasy Returns|14-day exchange policy.", "sizeGuideText": "Size Guide", "sizeGuideLink": "/size-guide", "fitNote": "Between sizes? Size up for a more relaxed fit." } },
-        { "type": "conversion-stack", "variant": "couture-minimal" },
+        { "type": "product-gallery", "variant": "graceful" },
+        { "type": "product-info", "variant": "graceful" },
         { "type": "background-video", "variant": "standard", "settings": { "badge": "Discover the Story", "title": "Discover the Story Behind Every Collection", "poster": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Group_1171276085.png?v=1784527786&width=1200", "ctaText": "Shop Now", "ctaLink": "/shop" } },
-        { "type": "bought-together", "variant": "pairing-rail", "settings": { "title": "Pairs With", "subtitle": "Complete the look.", "limit": 3 } },
-        { "type": "related-products", "variant": "luxury-card", "settings": { "title": "Recommended for You", "subtitle": "Similar pieces styled around the same occasion.", "limit": 4 } },
-        { "type": "reviews", "variant": "voice-notes", "settings": { "title": "The Best Reviews From Clients", "subtitle": "Curated feedback from the Graceful community.", "reviewLimit": 4 } }
+        { "type": "affiliate-faq", "settings": { "title": "Everything You Need to Know", "faqs": "What sizes do you offer?|We offer a wide range of sizes from XS to XXL. Please refer to our Size Guide on each product page to find your perfect fit.\nHow long does shipping take?|Most orders are prepared within 24-48 business hours, with delivery times shown at checkout by governorate.\nWhat is your return policy?|Eligible pieces can be exchanged or returned within the stated period provided they remain in their original condition.\nDo you offer free shipping?|Yes — enjoy free shipping on all orders over $500.\nHow can I track my order?|Use the Track Order tool from your confirmation page with the same phone number used at checkout." } },
+        { "type": "related-products", "variant": "graceful-related", "settings": { "title": "Related Products", "subtitle": "", "limit": 4 } }
       ]
     },
     "cart": {
