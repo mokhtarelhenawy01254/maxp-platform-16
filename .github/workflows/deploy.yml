@@ -25,7 +25,14 @@ jobs:
     runs-on: ubuntu-latest
     concurrency:
       group: production-build
-      cancel-in-progress: true
+      # cancel-in-progress: false (was true) — when the team pushes
+      # frequently, true caused every new build to kill the previous
+      # one before it could finish, so deploys piled up in the
+      # queue and only the last one in a burst actually shipped.
+      # False makes builds queue and run serially. The deploy job
+      # below still has its own concurrency group at
+      # cancel-in-progress: false, so the live server stays safe.
+      cancel-in-progress: false
     outputs:
       is-latest: ${{ steps.check-latest.outputs.is-latest }}
       catalog-changed: ${{ steps.cat-check.outputs.cat-changed }}
