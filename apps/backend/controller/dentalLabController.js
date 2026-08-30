@@ -27,7 +27,7 @@ const { parseScanImage } = require('../services/dentalScanParser');
 const { getBillingPolicy, assertCreditLimit, DEFAULT_BILLING_POLICY } = require('../services/dentalBillingPolicy');
 
 const CASE_STATUSES = new Set(CASE_STATUS_CHAIN);
-const ATTACHMENT_KINDS = new Set(['SCAN', 'PHOTO', 'WORK_ORDER', 'DESIGN_REVIEW', 'OTHER']);
+const ATTACHMENT_KINDS = new Set(['SCAN', 'PHOTO', 'XRAY', 'PRESCRIPTION', 'WORK_ORDER', 'DESIGN_REVIEW', 'OTHER']);
 const INVOICE_STATUSES = new Set(['OPEN', 'PARTIAL', 'PAID', 'VOID']);
 const PAYMENT_METHODS = new Set(['CASH', 'CARD', 'BANK', 'VODAFONE_CASH', 'OTHER']);
 
