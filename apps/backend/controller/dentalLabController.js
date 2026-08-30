@@ -1160,18 +1160,39 @@ const uploadCaseAttachment = async (req, res) => {
     const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
     if (files.length === 0) return res.status(400).json({ success: false, error: 'لم يتم رفع أي ملف' });
 
-    let kind = 'SCAN';
-    if (req.body && req.body.kind) {
-      const requested = String(req.body.kind).toUpperCase();
-      if (!ATTACHMENT_KINDS.has(requested)) {
+    // يحدد نوع كل مرفق:
+    //  - req.body.kind (string) → يطبق على كل الملفات (توافق عكسي)
+    //  - req.body.kinds (array) → نوع مستقل لكل ملف (مهم في الـmulti-upload)
+    const normalizeKinds = (raw) => {
+      if (raw == null) return [];
+      if (Array.isArray(raw)) return raw.map((k) => String(k).toUpperCase());
+      if (typeof raw === 'object') {
+        // multer قد يحوّل list-form-fields إلى object مرقّم
+        return Object.keys(raw).sort((a, b) => Number(a) - Number(b)).map((k) => String(raw[k]).toUpperCase());
+      }
+      return [String(raw).toUpperCase()];
+    };
+    let perFileKinds = normalizeKinds(req.body?.kinds);
+    if (perFileKinds.length === 0 && req.body?.kind) {
+      perFileKinds = normalizeKinds(req.body.kind);
+    }
+    // pad/truncate to match file count
+    if (perFileKinds.length < files.length) {
+      const last = perFileKinds[perFileKinds.length - 1] || 'SCAN';
+      while (perFileKinds.length < files.length) perFileKinds.push(last);
+    } else if (perFileKinds.length > files.length) {
+      perFileKinds = perFileKinds.slice(0, files.length);
+    }
+    // validate all kinds
+    for (const k of perFileKinds) {
+      if (!ATTACHMENT_KINDS.has(k)) {
         for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
         return res.status(400).json({ success: false, error: 'نوع المرفق غير صحيح' });
       }
-      kind = requested;
     }
 
     // رفع مراجعة التصميم (HTML من exocad) لمالك/مدير فقط
-    if (kind === 'DESIGN_REVIEW') {
+    if (perFileKinds.includes('DESIGN_REVIEW')) {
       const teamRoles = await require('../services/dentalRoles').loadTeamRoles(companyId);
       const role = resolveDentalRole(req.user, teamRoles);
       if (!['OWNER', 'MANAGER'].includes(role)) {
@@ -1186,25 +1207,29 @@ const uploadCaseAttachment = async (req, res) => {
       const mime = String(f.mimetype || '').toLowerCase();
       return ext === '.html' || mime === 'text/html';
     };
-    if (kind === 'DESIGN_REVIEW' && !files.some(isHtmlFile)) {
-      for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
-      return res.status(400).json({ success: false, error: 'مراجعة التصميم يجب أن تكون ملف HTML من exocad' });
-    }
-    const htmlOffenders = files.filter((f) => isHtmlFile(f) && kind !== 'DESIGN_REVIEW');
-    if (htmlOffenders.length > 0) {
-      for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
-      return res.status(400).json({ success: false, error: 'ملفات HTML مسموحة فقط لمراجعة التصميم (DESIGN_REVIEW)' });
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const k = perFileKinds[i];
+      if (k === 'DESIGN_REVIEW' && !isHtmlFile(f)) {
+        for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
+        return res.status(400).json({ success: false, error: 'مراجعة التصميم يجب أن تكون ملف HTML من exocad' });
+      }
+      if (k !== 'DESIGN_REVIEW' && isHtmlFile(f)) {
+        for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
+        return res.status(400).json({ success: false, error: 'ملفات HTML مسموحة فقط لمراجعة التصميم (DESIGN_REVIEW)' });
+      }
     }
 
     const uploader = req.user?.id || req.user?.email || null;
     const created = [];
-    for (const f of files) {
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
       const att = await prisma.dentalCaseAttachment.create({
         data: {
           companyId,
           caseId: id,
           uploadedBy: uploader,
-          kind,
+          kind: perFileKinds[i],
           fileName: f.originalname || f.filename,
           storedPath: f.filename,
           mimeType: f.mimetype || null,
@@ -1217,7 +1242,7 @@ const uploadCaseAttachment = async (req, res) => {
     res.json({
       success: true,
       data: created.length === 1 ? created[0] : created,
-      meta: { count: created.length, kind },
+      meta: { count: created.length, kinds: perFileKinds },
     });
   } catch (error) {
     console.error('Error uploading dental attachment:', error);
