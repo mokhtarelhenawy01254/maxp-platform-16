@@ -42,8 +42,12 @@ jobs:
       - name: Dental test suites
         run: node node_modules/jest/bin/jest.js tests/controller/dentalLab --runInBand --testTimeout=30000 --forceExit
 
+  # On push to main the frontend build is redundant: deploy.yml always
+  # rebuilds the frontend for every push. Only build it here on PRs,
+  # where it is the sole frontend gate.
   frontend:
     name: Frontend build
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     defaults:
       run:
