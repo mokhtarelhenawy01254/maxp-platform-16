@@ -902,6 +902,49 @@ async function sendTestNotification(req, res) {
       }
     } catch { /* غير حرج — نقع على الاسم المحايد */ }
 
+    // 🛡️ PRODUCTION-FIX (2026-08-29): نبني متغيرات القالب أوتوماتيكياً من الـ DB
+    // عشان أي قالب جديد (معتمد) يشتغل في الـ test من غير ما نعدل الـ testVariables يدوياً.
+    // نقرأ variables المخزنة للقالب (eventType + companyId) ونبعت قيمة افتراضية
+    // منطقية لكل متغير، ثم ندمجها فوق الـ testVariables اليدوية المعروفة.
+    const autoVars = {};
+    try {
+      const dbTpl = await safeQuery(() => getSharedPrismaClient().whatsAppNotificationTemplate.findFirst({
+        where: {
+          companyId,
+          eventType,
+          isActive: true,
+          OR: [
+            { channel: 'META_CLOUD' },
+            { channel: 'AUTO' },
+            { metaTemplateStatus: 'APPROVED' }
+          ]
+        },
+        orderBy: [{ metaTemplateStatus: 'asc' }, { updatedAt: 'desc' }],
+        select: { variables: true }
+      }));
+      if (dbTpl?.variables) {
+        let parsed = null;
+        try { parsed = typeof dbTpl.variables === 'string' ? JSON.parse(dbTpl.variables) : dbTpl.variables; } catch { parsed = null; }
+        if (Array.isArray(parsed)) {
+          for (const v of parsed) {
+            const name = typeof v === 'string' ? v : v?.name;
+            if (!name) continue;
+            const n = String(name).toLowerCase();
+            let def = '—';
+            if (n.includes('date') || n.includes('time')) def = '2026-12-31';
+            else if (n.includes('point') || n.includes('balance') || n.includes('amount') || n.includes('cash') || n.includes('price') || n.includes('total') || n.includes('subtotal') || n.includes('discount') || n.includes('fee') || n.includes('salary')) def = '100';
+            else if (n.includes('tier') || n.includes('level') || n.includes('rank')) def = 'العضوية الذهبية';
+            else if (n.includes('name')) def = testCustomerName;
+            else if (n.includes('count') || n.includes('number') || n.includes('qty')) def = '1';
+            else if (n.includes('link') || n.includes('url')) def = 'https://example.com';
+            else if (n.includes('percent')) def = '10';
+            else if (n.includes('day')) def = '5';
+            autoVars[name] = def;
+          }
+        }
+      }
+    } catch { /* غير حرج */ }
+
     const testVariables = {
       customerName: testCustomerName,
       reason: 'مناسبة سعيدة',
@@ -949,6 +992,11 @@ async function sendTestNotification(req, res) {
       startTime: '09:00',
       trackingLink: 'https://store.example.com/track/12345'
     };
+
+    // 🛡️ ندمج الـ autoVars (المبنية من الـ DB) فوق الـ testVariables اليدوية —
+    // أي متغير في الـ DB مش موجود في الـ testVariables بياخد قيمته الأوتوماتيكية.
+    // كده أي قالب جديد معتمد يشتغل في الـ test من غير تعديل يدوي.
+    Object.assign(testVariables, autoVars);
 
     if (eventType === 'OTP') {
       testVariables.otpCode = String(Math.floor(1000 + Math.random() * 9000));
