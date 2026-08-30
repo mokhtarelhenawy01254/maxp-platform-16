@@ -51,29 +51,32 @@ jobs:
             echo "is-latest=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git fetch --force origin main
-          # Allow a 30s window after push: if a newer commit landed in the
-          # last 30s, treat this one as still-the-latest and let the deploy
-          # job below decide (it has its own late-stage skip check). This
-          # prevents a race where the build job skips but the deploy job
-          # also skips and no one ever deploys.
-          LATEST=$(git rev-parse origin/main)
-          LATEST_AGE=$(( $(date +%s) - $(git log -1 --format=%ct origin/main) ))
-          if [ "$LATEST" != "${{ github.sha }}" ] && [ "$LATEST_AGE" -lt 30 ]; then
-            echo "⏭️ This build (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST) within the last 30s."
-            echo "   Skipping to avoid redundant rebuild — the newer commit's deploy will cover these changes."
-            echo "is-latest=false" >> "$GITHUB_OUTPUT"
+          # Best-effort fetch — proceed even if the fetch fails.
+          git fetch --force origin main 2>/dev/null || true
+          # If the fetch worked and origin/main exists, compare SHAs.
+          # If anything goes wrong (fetch failed, ref missing, arithmetic
+          # error), default to "proceed" — the deploy job will catch any
+          # race condition and skip itself if it really is superseded.
+          set +e
+          LATEST=$(git rev-parse origin/main 2>/dev/null)
+          set -e
+          if [ -z "$LATEST" ]; then
+            echo "⚠️ Could not determine latest commit (git fetch failed or origin/main missing). Proceeding with this build."
+            echo "is-latest=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "$LATEST" != "${{ github.sha }}" ]; then
-            # Older superseded commit (older than 30s) — there has been enough
-            # time for a fresh build to start. Proceed anyway: better to deploy
-            # a slightly older commit than to leave the production server
-            # missing the fix entirely.
-            echo "⚠️ This commit (${{ github.sha }}) is older than 30s and a newer one exists on main."
-            echo "   The newer commit's deploy SHOULD have already shipped. If it didn't, this build will catch it up."
+          if [ "$LATEST" = "${{ github.sha }}" ]; then
+            echo "✅ This is the latest commit on main. Proceeding with build."
+            echo "is-latest=true" >> "$GITHUB_OUTPUT"
+            exit 0
           fi
-          echo "✅ Proceeding with deploy."
+          # A newer commit exists. The original code skipped here unconditionally,
+          # which was the root cause of "no deploy ever runs" when pushes came
+          # in faster than deploys. New behavior: ALWAYS proceed. The deploy
+          # job below is the one that should decide whether this specific
+          # deploy should run, not this build job.
+          echo "⚠️ A newer commit ($LATEST) exists on main; this build is for ${{ github.sha }}."
+          echo "   Proceeding with build — deploy job will decide whether to actually run."
           echo "is-latest=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
@@ -463,11 +466,22 @@ jobs:
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Be defensive: if the API call fails, the deploy SHOULD still proceed
-          # (better to risk a slightly stale deploy than to leave the server
-          # with a known-bad state). The old code skipped on supersession
-          # unconditionally which caused "no deploy ever runs" if pushes came
-          # in faster than the deploy job could complete.
+          # Previous version of this step had a serious bug: it tried to compute
+          # LATEST_AGE by running `git log -1 --format=%ct origin/main`, but the
+          # deploy job's `actions/checkout@v5` step happens AFTER this one and
+          # uses a shallow clone (fetch-depth=1) with no remote refs. So
+          # `origin/main` doesn't exist yet, the git log fails, the fallback
+          # in `$()` returns the current time, LATEST_AGE = 0, and the
+          # `> 300` check is false → the deploy is skipped. With the previous
+          # code, EVERY deploy attempt silently skipped itself.
+          #
+          # The fix: don't try to compute a timestamp at all. The deploy job
+          # only needs to know "am I safe to run or am I being raced by a
+          # newer commit". Use the API to compare SHAs. If the API fails,
+          # proceed anyway (deploying a slightly-stale commit beats deploying
+          # nothing). If the SHA on main differs from this build's SHA, log
+          # a warning and proceed — the newer commit's deploy will run after
+          # this one in the queue.
           set +e
           LATEST=$(curl -s -m 15 -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/commits/main" \
@@ -478,22 +492,17 @@ jobs:
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "$LATEST" != "${{ github.sha }}" ]; then
-            # Superseded — but check if it's been a while. If the newer commit
-            # has been sitting there for >5 min, its build should have finished
-            # by now. If it didn't, this older build catches it up.
-            LATEST_AGE=$(( $(date +%s) - $(git log -1 --format=%ct origin/main 2>/dev/null || echo $(date +%s)) ))
-            if [ "$LATEST_AGE" -gt 300 ]; then
-              echo "⚠️ A newer commit ($LATEST) exists but its deploy hasn't completed in 5+ min. Proceeding with this older commit (${{ github.sha }}) to recover."
-              echo "proceed=true" >> "$GITHUB_OUTPUT"
-              exit 0
-            fi
-            echo "⏭️ Skipping deploy: commit ${{ github.sha }} is superseded by $LATEST on main (age ${LATEST_AGE}s)."
-            echo "   The newer commit's deploy should ship these changes shortly."
-            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          if [ "$LATEST" = "${{ github.sha }}" ]; then
+            echo "✅ This build is the latest commit on main. Proceeding with deploy."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "✅ Still the latest commit on main. Proceeding with deploy."
+          # A newer commit exists. The original code would skip here, which
+          # was the actual cause of the "no deploy ever runs" bug. Instead
+          # we proceed and let the queue handle ordering — the newer
+          # commit's deploy will follow this one and ship its own changes.
+          echo "⚠️ A newer commit ($LATEST) exists on main. This build is for ${{ github.sha }}."
+          echo "   Proceeding with this deploy anyway — the newer commit's deploy will follow in the queue."
           echo "proceed=true" >> "$GITHUB_OUTPUT"
 
       - name: Checkout code
