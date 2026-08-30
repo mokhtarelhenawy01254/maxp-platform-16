@@ -65,12 +65,14 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
   const [show3d, setShow3d] = useState(false);
+  const [showPdf, setShowPdf] = useState(false);
   const isImage = attachment.mimeType?.startsWith("image/") || (!attachment.mimeType && !failed);
   // 3D-viewable: anything that dental lab techs would want to rotate/zoom
   // on. STL/PLY/OBJ are the dental scan formats; DCM is x-ray (DICOM) which
   // the model-viewer can also render.
   const fileExt = (attachment.fileName || "").split(".").pop()?.toLowerCase() || "";
   const is3D = ["stl", "ply", "obj", "dcm"].includes(fileExt);
+  const isPdf = fileExt === "pdf";
 
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -114,12 +116,17 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
     if (url) setShow3d(true);
   };
 
+  const openPdf = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (url) setShowPdf(true);
+  };
+
   return (
     <div className="border dark:border-gray-700 rounded-lg overflow-hidden group relative">
       <div
         className="h-28 bg-gray-100 dark:bg-gray-900 flex items-center justify-center cursor-pointer"
-        onClick={is3D && url ? open3d : open}
-        title={is3D ? "اضغط للمعاينة 3D" : "اضغط للتحميل"}
+        onClick={is3D && url ? open3d : isPdf && url ? openPdf : open}
+        title={is3D ? "اضغط للمعاينة 3D" : isPdf ? "اضغط لمعاينة الـPDF" : "اضغط للتحميل"}
       >
         {url && isImage ? (
           <img src={url} alt={attachment.fileName} className="h-full w-full object-cover" />
@@ -133,6 +140,11 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
             3D
           </div>
         )}
+        {isPdf && (
+          <div className="absolute top-1 right-1 bg-red-500 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
+            PDF
+          </div>
+        )}
       </div>
       <div className="p-2 flex items-center justify-between gap-2">
         <span className="text-xs truncate" title={attachment.fileName}>{attachment.fileName}</span>
@@ -144,6 +156,15 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
               title="معاينة 3D"
             >
               <Box className="w-3.5 h-3.5" />
+            </button>
+          )}
+          {isPdf && url && (
+            <button
+              onClick={openPdf}
+              className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+              title="معاينة الـPDF"
+            >
+              <FileText className="w-3.5 h-3.5" />
             </button>
           )}
           <button onClick={open} className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("dentalLab.detail.download")}>
@@ -203,6 +224,52 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
             </div>
             <div className="p-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
               <span>اسحب لتدوير · عجلة للتقريب · نقرة مزدوجة للإعادة</span>
+              <a
+                href={url}
+                download={attachment.fileName}
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                تحميل الملف
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PDF Viewer Modal — native browser PDF rendering via iframe.
+          Chrome/Edge/Safari/Firefox all support this; on mobile the user
+          gets a download. We tried pdf.js but the native viewer has
+          better scroll/zoom UX for clinical prescriptions. */}
+      {showPdf && url && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setShowPdf(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+              <div className="flex items-center gap-2 min-w-0">
+                <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{attachment.fileName}</span>
+                <span className="text-xs text-gray-400 flex-shrink-0">({(attachment.size / 1024).toFixed(0)}KB · PDF)</span>
+              </div>
+              <button
+                onClick={() => setShowPdf(false)}
+                className="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 rounded flex-shrink-0"
+                title="إغلاق"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <iframe
+              src={url}
+              title={attachment.fileName}
+              className="flex-1 w-full bg-white"
+            />
+            <div className="p-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
+              <span>الروشتة / الوصفة الطبية</span>
               <a
                 href={url}
                 download={attachment.fileName}
@@ -465,6 +532,47 @@ export default function DentalCaseDetailPage() {
   // stop users picking 200MB STL files that would silently 502.
   const MAX_FILE_SIZE = 50 * 1024 * 1024;
   const ACCEPT_ATTR = ".stl,.ply,.obj,.jpg,.jpeg,.png,.webp,.pdf,.dcm";
+  // WebP compression: only worth doing on photos larger than 200KB
+  // (smaller files already compressed enough; canvas re-encode would
+  // just lose quality). The quality 0.85 is the sweet spot — visually
+  // indistinguishable from the source for clinical photos.
+  const WEBP_THRESHOLD = 200 * 1024;
+  const WEBP_QUALITY = 0.85;
+
+  // Compress an image file (JPG/PNG/JPEG/etc) to WebP in the browser
+  // using canvas. Returns the original file if the source is already
+  // small, or compression fails (e.g. animated PNG, HEIC without
+  // decoder). Compression is lossless in size terms — we just trade
+  // bytes for browser re-encode time.
+  const compressToWebP = async (file: File): Promise<File> => {
+    if (file.size < WEBP_THRESHOLD) return file;
+    if (!file.type.startsWith("image/")) return file;
+    // Don't re-compress if it's already WebP.
+    if (file.type === "image/webp") return file;
+    try {
+      const bitmap = await createImageBitmap(file);
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return file;
+      ctx.drawImage(bitmap, 0, 0);
+      bitmap.close?.();
+      const blob: Blob = await new Promise((resolve, reject) =>
+        canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("toBlob failed"))), "image/webp", WEBP_QUALITY),
+      );
+      // Only keep the new file if it's actually smaller. Sometimes
+      // (rare) the WebP re-encode is bigger than the source.
+      if (blob.size >= file.size) return file;
+      const newName = file.name.replace(/\.(jpe?g|png|bmp|tiff?|webp)$/i, ".webp");
+      return new File([blob], newName, { type: "image/webp" });
+    } catch (e) {
+      // Compression failed (animated image, codec not supported, etc).
+      // Fall back to the original file rather than blocking the upload.
+      console.warn("WebP compression failed for", file.name, e);
+      return file;
+    }
+  };
 
   // Per-file upload queue. Each file gets its own item so progress
   // shows individually and one failure doesn't kill the batch.
@@ -472,10 +580,38 @@ export default function DentalCaseDetailPage() {
     async (filesToUpload: File[], perFileKinds?: string[]) => {
       if (!id || filesToUpload.length === 0) return;
 
-      // Client-side validation: drop anything oversized before hitting the network.
+      // Step 1: compress any oversized photos to WebP before validation.
+      // This is the only place we mutate the file; the rest of the queue
+      // just sees a smaller File object of the same name (with .webp
+      // extension). The inferAttachmentKind() function already routes
+      // .webp → PHOTO, so no kind change needed.
+      const processed: File[] = [];
+      for (const f of filesToUpload) {
+        if (f.type.startsWith("image/") && f.size >= WEBP_THRESHOLD && f.type !== "image/webp") {
+          toast.promise(compressToWebP(f), {
+            loading: `جاري ضغط ${f.name}...`,
+            success: (out) => {
+              const saved = f.size - out.size;
+              const savedPct = Math.round((saved / f.size) * 100);
+              if (saved > 0) {
+                return `تم ضغط ${f.name}: وفّرنا ${(saved / 1024).toFixed(0)}KB (${savedPct}%)`;
+              }
+              return `لم يوفّر شيء بضغط ${f.name}`;
+            },
+            error: () => `فشل ضغط ${f.name}، هيترفع أصلي`,
+          });
+        }
+        processed.push(f);
+      }
+      // Wait for compressions (toasts already shown for each)
+      const compressed = await Promise.all(
+        processed.map((f) => (f.type.startsWith("image/") && f.size >= WEBP_THRESHOLD && f.type !== "image/webp" ? compressToWebP(f) : f)),
+      );
+
+      // Step 2: client-side validation on the (possibly compressed) files.
       const valid: { file: File; kind: string }[] = [];
-      for (let i = 0; i < filesToUpload.length; i++) {
-        const f = filesToUpload[i];
+      for (let i = 0; i < compressed.length; i++) {
+        const f = compressed[i];
         if (f.size > MAX_FILE_SIZE) {
           toast.error(`${f.name}: أكبر من 50MB (الحجم: ${(f.size / 1024 / 1024).toFixed(1)}MB)`);
           continue;
