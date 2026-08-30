@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { apiClient } from '../../services/apiClient';
 import MetaTemplatesModal from './components/MetaTemplatesModal';
 import TemplateStatsPanel from './components/TemplateStatsPanel';
@@ -84,6 +86,7 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
   const [form, setForm] = useState(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [sendingNow, setSendingNow] = useState(false);
 
   const [viewOccasion, setViewOccasion] = useState<Occasion | null>(null);
   const [metaModalOpen, setMetaModalOpen] = useState(false);
@@ -143,6 +146,30 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
     setFormOpen(true);
   };
 
+  const sendNow = async () => {
+    if (!form.message.trim()) return;
+    setSendingNow(true);
+    try {
+      await apiClient.post('/customers/whatsapp-notify/smart-send', {
+        audience,
+        message: form.message.trim(),
+        mediaUrl: form.mediaUrl.trim() || undefined,
+        sessionId: selectedSession || undefined,
+        delayMs: 1500,
+        occasionName: form.name.trim() || 'مناسبة خاصة',
+        eventType: 'PROMOTIONAL',
+      });
+      toast.success('الحملة الفورية اتبعتت وبتشتغل في الخلفية');
+      setFormOpen(false);
+      loadOccasions();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال الفوري';
+      toast.error(msg);
+    } finally {
+      setSendingNow(false);
+    }
+  };
+
   const save = async () => {
     if (!form.name.trim() || !form.message.trim() || !form.scheduledAt) return;
     setSaving(true);
@@ -162,11 +189,12 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
       } else {
         await apiClient.post('/customers/whatsapp-notify/occasions', payload);
       }
+      toast.success(form.id ? 'اتحفظت التعديلات' : 'المناسبة اتجدولت');
       setFormOpen(false);
       loadOccasions();
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الحفظ';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -341,6 +369,16 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
 
             <div className="flex justify-end gap-2 border-t pt-4">
               <Button variant="ghost" onClick={() => setFormOpen(false)} className="rounded-full">إلغاء</Button>
+              <Button
+                variant="outline"
+                onClick={sendNow}
+                disabled={sendingNow || !hasBaileys || !form.message.trim()}
+                className="rounded-full"
+                title={hasBaileys ? 'إرسال فوري دلوقتي عبر واتساب متصل' : 'محتاجة جلسة واتساب متصلة'}
+              >
+                {sendingNow ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                إرسال فوري
+              </Button>
               <Button onClick={save} disabled={saving || !form.name.trim() || !form.message.trim() || !form.scheduledAt} className="rounded-full">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                 {form.id ? 'حفظ التعديلات' : 'جدولة المناسبة'}
@@ -427,7 +465,9 @@ const ChannelStatus: React.FC<{
             {hasBaileys ? 'جلسة واتساب متصلة — الإرسال الفوري جاهز' : 'مفيش جلسة واتساب متصلة'}
           </p>
           <p className="text-xs text-[color:var(--color-muted-foreground)]">
-            {hasBaileys ? 'المناسبات المجدولة بتتبعت أوتوماتيك من السيرفر حتى لو القناة مقفولة' : 'اربطي جلسة واتساب من صفحة إشعارات واتساب للإرسال الفوري'}
+            {hasBaileys
+              ? 'المناسبات المجدولة بتتبعت أوتوماتيك من السيرفر حتى لو القناة مقفولة'
+              : <>مفيش جلسة متصلة —{' '}<Link to="/customers/whatsapp-notify" className="font-medium text-[color:var(--color-primary)] underline-offset-2 hover:underline">اربطيها من إشعارات واتساب</Link>{' '}للإرسال الفوري</>}
           </p>
         </div>
       </div>

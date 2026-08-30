@@ -50,6 +50,11 @@ const SocialGallery: React.FC<SocialGalleryProps> = ({ section, settings }) => {
   const images = parseImages(settings?.images);
   const resolvedImages = images.length > 0 ? images : DEFAULT_IMAGES;
   const isMarquee = variant === 'marquee';
+  const socialHandleHref = handle.startsWith('@')
+    ? `https://instagram.com/${handle.slice(1)}`
+    : handle.startsWith('http')
+      ? handle
+      : `https://instagram.com/${handle}`;
 
   const renderTile = (src: string, index: number) => (
     <div key={`${src}-${index}`} className="group relative aspect-square shrink-0 overflow-hidden">
@@ -84,14 +89,42 @@ const SocialGallery: React.FC<SocialGalleryProps> = ({ section, settings }) => {
           .sf-social-track { display: flex; width: max-content; animation: sfSocialScroll 28s linear infinite; }
           .sf-social-track:hover { animation-play-state: paused; }
           @keyframes sfSocialScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+          @media (prefers-reduced-motion: reduce) { .sf-social-track { animation: none; } }
         `}</style>
-        <div className="overflow-hidden">
+        <div className="relative overflow-hidden">
           <div className="sf-social-track gap-3">
             {doubled.map((src, index) => {
               const tile = renderTile(src, index % resolvedImages.length);
               return React.cloneElement(tile as React.ReactElement, { key: `marquee-${index}` });
             })}
             <span className="sr-only">{handle}</span>
+          </div>
+          {/* Center Instagram card */}
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+            <a
+              href={socialHandleHref}
+              target="_blank"
+              rel="noreferrer"
+              className="pointer-events-auto flex w-56 flex-col items-center gap-2 rounded-2xl bg-white/95 px-6 py-7 text-center shadow-[0_30px_70px_-30px_rgba(0,0,0,0.4)] backdrop-blur-sm transition-transform duration-300 hover:scale-[1.03]"
+            >
+              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <rect x="2.5" y="2.5" width="19" height="19" rx="5.5" stroke="url(#sfIgGrad)" strokeWidth="1.8" />
+                <circle cx="12" cy="12" r="4.2" stroke="url(#sfIgGrad)" strokeWidth="1.8" />
+                <circle cx="17.2" cy="6.8" r="1.2" fill="#e1306c" />
+                <defs>
+                  <linearGradient id="sfIgGrad" x1="3" y1="21" x2="21" y2="3">
+                    <stop stopColor="#f9ce34" />
+                    <stop offset="0.5" stopColor="#ee2a7b" />
+                    <stop offset="1" stopColor="#6228d7" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              <p className="text-sm font-bold text-[#171717]">Instagram</p>
+              <p className="-mt-1 text-xs text-[#8a8a8a]">Follow Us</p>
+              <span className="mt-1 inline-flex rounded-lg bg-[#171717] px-4 py-2 text-[11px] font-semibold text-white">
+                {handle}
+              </span>
+            </a>
           </div>
         </div>
       </section>

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { toast } from 'sonner';
 import { apiClient } from '../../services/apiClient';
 import MetaTemplatesModal from './components/MetaTemplatesModal';
 import TemplateStatsPanel from './components/TemplateStatsPanel';
@@ -100,11 +101,12 @@ const BirthdayWhatsAppNotify: React.FC = () => {
     if (!testPhone.trim()) return;
     setSendingTest(true);
     try {
-      await apiClient.post('/customers/whatsapp-notify/birthday-automation/send-test', { testPhone: testPhone.trim() });
+      await apiClient.post('/customers/whatsapp-notify/birthday-automation/send-test', { testPhone: testPhone.trim(), messageTemplate: settings.messageTemplate, couponCode: settings.couponCode });
+      toast.success('التجربة اتبعتت على رقمك');
       setTestPhone('');
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال التجريبي';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSendingTest(false);
     }
@@ -260,7 +262,7 @@ function resToList(data: unknown): BirthdayCustomer[] {
     id: String(c.id || ''),
     name: String(c.name || [c.firstName, c.lastName].filter(Boolean).join(' ') || 'عميلة'),
     phone: (c.phone as string) || null,
-    birthDate: (c.birthdayDate as string) || (c.birthDate as string) || null,
+    birthDate: (c.birthdayDate as string) || (c.birthday as string) || (c.birthDate as string) || null,
     daysUntil: Number(c.daysRemaining ?? c.daysUntil ?? 0),
   }));
 }

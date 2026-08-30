@@ -2307,6 +2307,32 @@ const CenteredHero: React.FC<HeroVariantProps> = (props) => (
   </section>
 );
 
+/* Soft Graceful — full-bleed image banner with centered title + breadcrumb
+   (matches the Texture collections/journal page header). */
+const GracefulBannerHero: React.FC<HeroVariantProps> = (props) => (
+  <section className="relative flex h-[340px] items-center justify-center overflow-hidden bg-[#1a1a1a] text-white md:h-[420px]">
+    {props.backgroundImage ? (
+      <img
+        src={props.backgroundImage}
+        alt=""
+        loading="eager"
+        fetchpriority="high"
+        className="absolute inset-0 h-full w-full object-cover"
+      />
+    ) : null}
+    <div className="absolute inset-0 bg-black/30" />
+    <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.15),rgba(0,0,0,0.35))]" />
+    <div className="relative z-10 px-6 text-center">
+      <h1 className="font-heading text-4xl font-semibold tracking-tight md:text-[3.4rem]">
+        {props.title}
+      </h1>
+      {props.subtitle ? (
+        <p className="mt-4 text-sm text-white/85 md:text-base">{props.subtitle}</p>
+      ) : null}
+    </div>
+  </section>
+);
+
 const ElessiDigitalLaunchHero: React.FC<HeroVariantProps> = (props) => {
   const heroImage = props.backgroundImage || props.panel.image;
   const detailImage = props.panel.image || props.backgroundImage;
@@ -3250,6 +3276,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ section, settings }) => {
   if (variant === "fashion-billboard")
     return <FashionBillboardHero {...props} />;
   if (variant === "style-ledger") return <StyleLedgerHero {...props} />;
+  if (variant === "graceful-banner") return <GracefulBannerHero {...props} />;
   if (variant === "retail-command") return <RetailCommandHero {...props} />;
   if (variant === "runway-grid") return <RunwayGridHero {...props} />;
   if (variant === "wardrobe-planner") return <WardrobePlannerHero {...props} />;

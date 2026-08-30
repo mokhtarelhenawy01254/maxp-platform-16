@@ -90,7 +90,8 @@ const ProductOffersRedesign: React.FC = () => {
   const loadLists = useCallback(async () => {
     try {
       const res = await apiClient.get('/broadcast/customer-lists');
-      setLists(res.data?.data?.lists || res.data?.lists || res.data?.data || []);
+      const all = res.data?.data?.lists || res.data?.lists || res.data?.data || [];
+      setLists(all.filter((l: { isDefault?: boolean }) => !l.isDefault));
     } catch { /* ignore */ }
   }, []);
 
@@ -152,6 +153,7 @@ const ProductOffersRedesign: React.FC = () => {
       const payload: Record<string, unknown> = {
         audience: audience === 'list' ? 'list' : audience,
         customMessage: message,
+        sessionId: selectedSession || undefined,
         productId: selectedProduct.id,
         mediaUrl: mediaUrl || undefined,
         delayMs,
@@ -159,10 +161,10 @@ const ProductOffersRedesign: React.FC = () => {
         customerListIds: audience === 'list' ? selectedListIds : undefined,
       };
       await apiClient.post('/customers/whatsapp-notify/smart-send', payload);
-      alert('الحملة اتبعتت للخلفية وبتشتغل — تابعيها من سجل الحملات');
+      toast.success('الحملة اتبعتت للخلفية وبتشتغل دلوقتي');
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || 'فشل الإرسال';
-      alert(msg);
+      toast.error(msg);
     } finally {
       setSending(false);
     }

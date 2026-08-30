@@ -688,38 +688,62 @@ async function getTemplateStats(req, res) {
     if (endDate) { createdAtFilter.lte = new Date(endDate); }
 
     const prisma = getSharedPrismaClient();
-    const grouped = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
-      by: ['templateId'],
+    // delivered/read قيم مشتقة من status (DELIVERED/READ) — groupBy واحد بالـ status يكفي
+    const byStatus = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+      by: ['templateId', 'status'],
       where: { companyId, createdAt: createdAtFilter, templateId: { not: null } },
-      _count: { _all: true, delivered: true, read: true, clicked: true, responded: true },
+      _count: { _all: true },
       _sum: { cost: true }
     }));
 
-    const failedByTemplate = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+    // تجميع per-template: total/delivered/read/failed/cost
+    const acc = new Map();
+    for (const g of byStatus) {
+      const key = g.templateId;
+      if (!acc.has(key)) {
+        acc.set(key, { templateId: key, total: 0, delivered: 0, read: 0, failed: 0, cost: 0 });
+      }
+      const item = acc.get(key);
+      const count = g._count?._all || 0;
+      item.total += count;
+      if (g.status === 'DELIVERED' || g.status === 'READ') item.delivered += count;
+      if (g.status === 'READ') item.read += count;
+      if (g.status === 'FAILED') item.failed += count;
+      item.cost += Number(g._sum?.cost || 0);
+    }
+
+    // التفاعل (clicked/responded booleans) — count مباشر لكل templateId
+    const interacted = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
       by: ['templateId'],
-      where: { companyId, createdAt: createdAtFilter, templateId: { not: null }, status: 'FAILED' },
+      where: {
+        companyId, createdAt: createdAtFilter, templateId: { not: null },
+        OR: [{ clicked: true }, { responded: true }]
+      },
       _count: { _all: true }
     }));
+    const interactMap = interacted.reduce((m, g) => { m[g.templateId] = g._count?._all || 0; return m; }, {});
 
-    const failMap = failedByTemplate.reduce((acc, g) => { acc[g.templateId] = g._count._all; return acc; }, {});
+    // eventHint: أكثر eventType متكرر لكل templateId — عرض بديل لما القالب يكون اتمسح من القوالب
+    const byEvent = await safeQuery(() => prisma.whatsAppNotificationLog.groupBy({
+      by: ['templateId', 'eventType'],
+      where: { companyId, createdAt: createdAtFilter, templateId: { not: null } },
+      _count: { _all: true }
+    }));
+    const eventHintMap = new Map();
+    for (const g of byEvent) {
+      const cur = eventHintMap.get(g.templateId);
+      const count = g._count?._all || 0;
+      if (!cur || count > cur.count) eventHintMap.set(g.templateId, { eventType: g.eventType, count });
+    }
 
-    const stats = grouped.map((g) => {
-      const total = g._count._all;
-      const delivered = g._count.delivered || 0;
-      const read = g._count.read || 0;
-      return {
-        templateId: g.templateId,
-        total,
-        delivered,
-        read,
-        clicked: g._count.clicked || 0,
-        responded: g._count.responded || 0,
-        failed: failMap[g.templateId] || 0,
-        cost: Number(g._sum.cost || 0),
-        deliveryRate: total > 0 ? ((delivered / total) * 100).toFixed(1) : '0.0',
-        readRate: delivered > 0 ? ((read / delivered) * 100).toFixed(1) : '0.0'
-      };
-    }).sort((a, b) => b.total - a.total);
+    const stats = Array.from(acc.values()).map((item) => ({
+      ...item,
+      eventHint: eventHintMap.get(item.templateId)?.eventType || null,
+      clicked: interactMap[item.templateId] || 0,
+      responded: interactMap[item.templateId] || 0,
+      deliveryRate: item.total > 0 ? ((item.delivered / item.total) * 100).toFixed(1) : '0.0',
+      readRate: item.delivered > 0 ? ((item.read / item.delivered) * 100).toFixed(1) : '0.0'
+    })).sort((a, b) => b.total - a.total);
 
     res.json({ success: true, stats });
   } catch (error) {

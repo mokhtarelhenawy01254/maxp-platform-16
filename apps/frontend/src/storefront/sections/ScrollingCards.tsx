@@ -1,6 +1,4 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { buildStorefrontPath } from '../utils/paths';
 import { buildOptimizedStorefrontImageUrl } from '../utils/productImages';
 
 interface ScrollingCardItem {
@@ -18,6 +16,7 @@ interface ScrollingCardsProps {
     title?: string;
     subtitle?: string;
     cards?: ScrollingCardItem[] | string;
+    images?: string[] | string;
   };
 }
 
@@ -61,10 +60,20 @@ const ICON_PATHS: Record<string, string> = {
   rotate: 'M4 12a8 8 0 0 1 14-5m2 5a8 8 0 0 1-14 5',
 };
 
-const isExternalHref = (href: string) => /^(https?:\/\/|mailto:|tel:)/i.test(href);
+const parseImages = (value: ScrollingCardsProps['settings'] extends undefined ? never : unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return [];
+  }
+  return value
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean);
+};
 
 const ScrollingCards: React.FC<ScrollingCardsProps> = ({ section, settings }) => {
-  const location = useLocation();
   const variant = normalizeVariant(section?.variant);
   const badge = settings?.badge || 'Why Choose Us';
   const title = settings?.title || 'Trusted Quality, Designed for Everyday Confidence';
@@ -72,37 +81,84 @@ const ScrollingCards: React.FC<ScrollingCardsProps> = ({ section, settings }) =>
   const cards = parseCards(settings?.cards);
   const resolvedCards = cards.length > 0 ? cards : DEFAULT_CARDS;
   const isLayered = variant === 'layered' || variant === 'style2';
+  const stackImages = parseImages(settings?.images);
 
-  const renderCard = (card: ScrollingCardItem, index: number) => {
-    const bg = card.bg || (index % 2 === 0 ? '#f3efea' : '#eaf0f5');
-    const imageUrl = card.image ? buildOptimizedStorefrontImageUrl(card.image, { width: 640 }) : '';
-    return (
-      <div
-        key={`${card.title}-${index}`}
-        className={`relative shrink-0 overflow-hidden rounded-[15px] ${isLayered ? 'w-[16rem] md:w-[18rem]' : 'w-[15rem] md:w-[17rem]'}`}
-        style={{ background: bg }}
-      >
-        {imageUrl && (
-          <div className="h-40 overflow-hidden">
-            <img src={imageUrl} alt={card.title || 'card'} loading="lazy" className="h-full w-full object-cover" />
-          </div>
-        )}
-        <div className={`${imageUrl ? 'p-5' : 'flex h-[13rem] flex-col justify-between p-5'}`}>
-          {card.icon && !imageUrl && (
-            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/70 text-[#8a6a3c]">
-              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
-                <path d={ICON_PATHS[card.icon] || ICON_PATHS.shield} />
-              </svg>
-            </span>
-          )}
-          <div className="space-y-2">
-            <h3 className="font-heading text-lg font-semibold text-[#171717]">{card.title}</h3>
-            {card.description && <p className="text-sm leading-6 text-[#575757]">{card.description}</p>}
+  React.useEffect(() => {
+    if (!isLayered || stackImages.length < 2) return undefined;
+    const sectionEl = document.getElementById('sf-layered-images');
+    if (!sectionEl) return undefined;
+    let frame = 0;
+    const timer = setInterval(() => {
+      frame = (frame + 1) % stackImages.length;
+      const tiles = sectionEl.querySelectorAll<HTMLElement>('[data-sf-stack-tile]');
+      tiles.forEach((tile, index) => {
+        const offset = (index + frame) % stackImages.length;
+        tile.style.zIndex = String(10 - offset);
+        tile.style.transform = `rotate(${offset === 0 ? -2 : offset === 1 ? 2.5 : -1}deg) translate(${offset * -10}px, ${offset * -12}px) scale(${1 - offset * 0.05})`;
+        tile.style.opacity = offset > 2 ? '0' : '1';
+      });
+    }, 3200);
+    return () => clearInterval(timer);
+  }, [isLayered, stackImages.length]);
+
+  const renderFeatureGrid = () => (
+    <div className="grid gap-x-10 gap-y-8 sm:grid-cols-2">
+      {resolvedCards.map((card, index) => (
+        <div key={`${card.title}-${index}`} className="flex items-start gap-4 border-b border-black/[0.07] pb-7">
+          <span
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-[14px]"
+            style={{ background: card.bg || '#f3efea' }}
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6 text-[#171717]" fill="none" stroke="currentColor" strokeWidth="1.6">
+              <path d={ICON_PATHS[card.icon || ''] || ICON_PATHS['shield']} />
+            </svg>
+          </span>
+          <div>
+            <h3 className="font-heading text-[17px] font-semibold leading-6 text-[#171717]">{card.title}</h3>
+            {card.description && <p className="mt-1.5 text-sm leading-6 text-[#575757]">{card.description}</p>}
           </div>
         </div>
-      </div>
+      ))}
+    </div>
+  );
+
+  if (isLayered && stackImages.length >= 2) {
+    return (
+      <section className="w-full bg-white py-14 md:py-24">
+        <div className="container mx-auto grid max-w-[1360px] items-center gap-14 px-5 md:px-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.25fr)]">
+          {/* Stacked rotating images */}
+          <div id="sf-layered-images" className="relative mx-auto h-[420px] w-full max-w-[400px] md:h-[500px]">
+            {stackImages.slice(0, 3).map((src, index) => (
+              <div
+                key={`${src}-${index}`}
+                data-sf-stack-tile
+                className="absolute inset-0 overflow-hidden rounded-[18px] border border-black/5 shadow-[0_30px_70px_-38px_rgba(0,0,0,0.45)]"
+                style={{
+                  zIndex: 10 - index,
+                  transform: `rotate(${index === 0 ? -2 : index === 1 ? 2.5 : -1}deg) translate(${index * -10}px, ${index * -12}px) scale(${1 - index * 0.05})`,
+                  transition: 'transform 0.9s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.9s ease, z-index 0s',
+                  opacity: index > 2 ? 0 : 1,
+                }}
+              >
+                <img src={buildOptimizedStorefrontImageUrl(src, { width: 640 })} alt="" loading="lazy" className="h-full w-full object-cover" />
+              </div>
+            ))}
+          </div>
+          {/* Feature grid */}
+          <div>
+            <div className="mb-8">
+              <span className="inline-block border-b border-[#e16244] pb-2 text-[11px] font-semibold uppercase tracking-[0.3em] text-[#575757]">
+                {badge}
+              </span>
+              <h2 className="mt-3 font-heading text-2xl font-semibold leading-snug text-[#171717] md:text-[2.1rem]">{title}</h2>
+              {subtitle && <p className="mt-2 max-w-xl text-sm leading-7 text-[#575757] md:text-base">{subtitle}</p>}
+            </div>
+            {renderFeatureGrid()}
+          </div>
+        </div>
+      </section>
     );
-  };
+  }
 
   return (
     <section className="w-full bg-[#efe8e3] py-14 md:py-20">
@@ -116,7 +172,36 @@ const ScrollingCards: React.FC<ScrollingCardsProps> = ({ section, settings }) =>
         </div>
 
         <div className="flex gap-4 overflow-x-auto pb-6 [scrollbar-width:thin]">
-          {resolvedCards.map((card, index) => renderCard(card, index))}
+          {resolvedCards.map((card, index) => {
+            const bg = card.bg || (index % 2 === 0 ? '#f3efea' : '#eaf0f5');
+            const imageUrl = card.image ? buildOptimizedStorefrontImageUrl(card.image, { width: 640 }) : '';
+            return (
+              <div
+                key={`${card.title}-${index}`}
+                className="relative w-[15rem] shrink-0 overflow-hidden rounded-[15px] md:w-[17rem]"
+                style={{ background: bg }}
+              >
+                {imageUrl ? (
+                  <div className="h-40 overflow-hidden">
+                    <img src={imageUrl} alt={card.title || 'card'} loading="lazy" className="h-full w-full object-cover" />
+                  </div>
+                ) : null}
+                <div className={imageUrl ? 'p-5' : 'flex h-[13rem] flex-col justify-between p-5'}>
+                  {card.icon && !imageUrl ? (
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/70 text-[#8a6a3c]">
+                      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <path d={ICON_PATHS[card.icon] || ICON_PATHS['shield']} />
+                      </svg>
+                    </span>
+                  ) : null}
+                  <div className="space-y-2">
+                    <h3 className="font-heading text-lg font-semibold text-[#171717]">{card.title}</h3>
+                    {card.description && <p className="text-sm leading-6 text-[#575757]">{card.description}</p>}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {isLayered && (

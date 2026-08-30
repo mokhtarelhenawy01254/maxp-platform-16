@@ -2159,6 +2159,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
   const isWomenFashionEg = theme.id === "women-fashion-eg";
   const prefersArabicCopy = theme.direction === "rtl";
   const variant = normalizeProductGalleryVariant(section?.variant);
+  const isGracefulGallery = theme.id === "soft-graceful";
   const { product, isLoading } = useProduct(id);
   const toggleWishlist = useWishlistStore((state) => state.toggleItem);
   const hasWishlistItem = useWishlistStore((state) => state.hasItem);
@@ -2281,6 +2282,67 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
           : "Removed from compare",
     );
   };
+
+  if (isGracefulGallery) {
+    if (isLoading) {
+      return (
+        <div className="aspect-[4/5] w-full animate-pulse rounded-[10px] bg-[#f0f0f0]" />
+      );
+    }
+
+    if (!product || images.length === 0) {
+      return (
+        <div className="flex aspect-[4/5] w-full items-center justify-center rounded-[10px] bg-[#f5f5f5]">
+          <GalleryImageFallback productName={product?.name} prefersArabicCopy={prefersArabicCopy} />
+        </div>
+      );
+    }
+
+    if (images.length === 1) {
+      return (
+        <div className="w-full">
+          <div className="relative overflow-hidden rounded-[10px] bg-[#f5f5f5]">
+            <StorefrontProductImage
+              candidates={[images[0]!]}
+              alt={product.name}
+              loading="eager"
+              fetchpriority="high"
+              requestedWidth={1200}
+              responsiveWidths={[640, 960, 1280, 1600]}
+              responsiveSizes="(min-width: 1024px) 46vw, 92vw"
+              imageQuality={82}
+              className="aspect-[4/5] w-full object-cover"
+              fallback={<div className="aspect-[4/5] w-full bg-[#eee]" />}
+            />
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="grid w-full gap-3 md:grid-cols-2">
+        {images.map((imageSrc, imageIdx) => (
+          <div
+            key={`${imageSrc}-${imageIdx}`}
+            className="relative overflow-hidden rounded-[10px] bg-[#f5f5f5]"
+          >
+            <StorefrontProductImage
+              candidates={[imageSrc]}
+              alt={`${product.name} — image ${imageIdx + 1}`}
+              loading={imageIdx === 0 ? "eager" : "lazy"}
+              fetchpriority={imageIdx === 0 ? "high" : undefined}
+              requestedWidth={900}
+              responsiveWidths={[480, 720, 960]}
+              responsiveSizes="(min-width: 1024px) 23vw, 46vw"
+              imageQuality={80}
+              className="aspect-[4/5] w-full object-cover"
+              fallback={<div className="aspect-[4/5] w-full bg-[#eee]" />}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   const elessiOverlayActions =
     variant === "elessi-showroom" ? (

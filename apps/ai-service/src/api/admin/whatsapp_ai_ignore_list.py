@@ -212,7 +212,28 @@ async def bulk_add_ignore_entries(
     session: SessionDep,
     admin: dict | None = Depends(verify_admin_jwt),
 ) -> IgnoreBulkResponse:
-    """Bulk insert numbers. Duplicates (per-company) are skipped silently."""
+    """Bulk insert numbers. Duplicates (per-company) are skipped silently.
+
+    Implementation notes
+    --------------------
+    We deliberately do **not** rely on Python-side try/except around each
+    INSERT. With PostgreSQL, a single failed statement (e.g. a
+    ``UNIQUE (company_id, phone_number)`` violation) marks the surrounding
+    transaction as "needs rollback", so every subsequent statement on the
+    same session fails with ``current transaction is aborted``. The previous
+    version of this function looked like it was recovering from per-row
+    errors, but in practice a single bad row would silently skip the rest
+    of the batch.
+
+    The fix combines two PostgreSQL-idiomatic techniques:
+
+    1. ``INSERT ... ON CONFLICT (company_id, phone_number) DO NOTHING`` makes
+       duplicates an atomic no-op instead of raising an error that poisons
+       the transaction.
+    2. ``session.begin_nested()`` opens a savepoint per row, so any other
+       unexpected DB error stays isolated to that single row and the rest
+       of the batch still commits.
+    """
     company_id = _validate_company_id(body.companyId)
     if len(body.items) > MAX_BULK_SIZE:
         raise HTTPException(
@@ -231,37 +252,52 @@ async def bulk_add_ignore_entries(
             continue
         entry_id = str(uuid.uuid4())
         try:
-            row = await session.execute(
-                text(
-                    "INSERT INTO ai.whatsapp_ai_ignore_list "
-                    "(id, company_id, phone_number, label, notes, added_by_user_id) "
-                    "VALUES (:id, :cid, :pn, :lbl, :notes, :uid) "
-                    "RETURNING id, company_id, phone_number, label, notes, "
-                    "added_by_user_id, created_at, updated_at"
-                ),
-                {
-                    "id": entry_id,
-                    "cid": company_id,
-                    "pn": phone,
-                    "lbl": item.label,
-                    "notes": item.notes,
-                    "uid": added_by,
-                },
-            )
-            r = row.mappings().one()
-            inserted.append(
-                IgnoreEntryRead(
-                    id=str(r["id"]),
-                    companyId=str(r["company_id"]),
-                    phoneNumber=r["phone_number"],
-                    label=r["label"],
-                    notes=r["notes"],
-                    addedByUserId=str(r["added_by_user_id"]) if r["added_by_user_id"] else None,
-                    createdAt=r["created_at"],
-                    updatedAt=r["updated_at"],
+            # savepoint isolates this row from any earlier failure in the
+            # outer transaction. If anything inside raises, only the
+            # savepoint is rolled back and the rest of the batch keeps
+            # going.
+            async with session.begin_nested():
+                row = await session.execute(
+                    text(
+                        "INSERT INTO ai.whatsapp_ai_ignore_list "
+                        "(id, company_id, phone_number, label, notes, added_by_user_id) "
+                        "VALUES (:id, :cid, :pn, :lbl, :notes, :uid) "
+                        "ON CONFLICT (company_id, phone_number) DO NOTHING "
+                        "RETURNING id, company_id, phone_number, label, notes, "
+                        "added_by_user_id, created_at, updated_at"
+                    ),
+                    {
+                        "id": entry_id,
+                        "cid": company_id,
+                        "pn": phone,
+                        "lbl": item.label,
+                        "notes": item.notes,
+                        "uid": added_by,
+                    },
                 )
-            )
+                r = row.mappings().one_or_none()
+                if r is None:
+                    # ON CONFLICT DO NOTHING matched → this phone is already
+                    # on the list for this company. Count as skipped and
+                    # move on.
+                    skipped += 1
+                else:
+                    inserted.append(
+                        IgnoreEntryRead(
+                            id=str(r["id"]),
+                            companyId=str(r["company_id"]),
+                            phoneNumber=r["phone_number"],
+                            label=r["label"],
+                            notes=r["notes"],
+                            addedByUserId=str(r["added_by_user_id"]) if r["added_by_user_id"] else None,
+                            createdAt=r["created_at"],
+                            updatedAt=r["updated_at"],
+                        )
+                    )
         except Exception:
+            # Any other error (validation, schema, db hiccup) is confined
+            # to this row thanks to the savepoint above, so we can safely
+            # continue with the next item.
             skipped += 1
             continue
 

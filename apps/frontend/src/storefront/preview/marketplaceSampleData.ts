@@ -7371,7 +7371,7 @@ export const getMarketplacePreviewCategories = (
         typeof product.category?.description === "string" &&
         product.category.description.trim()
           ? product.category.description.trim()
-          : `تصنيف معاينة ${categoryName}`,
+          : categoryName,
       image:
         product.category?.image ||
         product.mainImage ||

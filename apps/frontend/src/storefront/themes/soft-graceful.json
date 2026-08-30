@@ -1,891 +1,531 @@
-﻿{
-    "id":  "soft-graceful",
-    "name":  "Graceful",
-    "description":  "Soft Graceful â€” Ù‚Ø§Ù„Ø¨ Ø£Ø²ÙŠØ§Ø¡ ØªØ­Ø±ÙŠØ±ÙŠ Ù„Ù„Ø¹Ù„Ø§Ù…Ø§Øª Ø§Ù„Ø¹ØµØ±ÙŠØ©: Ù…Ø¬Ù…ÙˆØ¹Ø§Øª Ù…Ù†Ø³Ù‘Ù‚Ø©ØŒ Ù„ÙˆÙƒØ§Øª Ù…ÙˆØ³Ù…ÙŠØ©ØŒ Ø§ÙƒØªØ´Ø§Ù Ø°ÙƒÙŠ Ø¨Ø§Ù„Ù€ HotspotØŒ ÙˆØ´Ø±Ø§Ø¡ Ø³Ø±ÙŠØ¹ Ø¨Ø§Ù„Ø³Ù„Ù‘Ø© Ø§Ù„Ù…Ù†Ø²Ù„Ù‚Ø© ÙˆQuick View.",
-    "direction":  "ltr",
-    "tokens":  {
-                   "colors":  {
-                                  "primary":  "0 0% 9%",
-                                  "primaryForeground":  "0 0% 100%",
-                                  "secondary":  "0 0% 96%",
-                                  "secondaryForeground":  "0 0% 9%",
-                                  "accent":  "11 73% 57%",
-                                  "accentForeground":  "0 0% 100%",
-                                  "background":  "0 0% 100%",
-                                  "foreground":  "0 0% 9%",
-                                  "muted":  "0 0% 96%",
-                                  "mutedForeground":  "0 0% 38%",
-                                  "border":  "0 0% 92%",
-                                  "card":  "0 0% 100%",
-                                  "cardForeground":  "0 0% 9%",
-                                  "ring":  "11 73% 57%"
-                              },
-                   "typography":  {
-                                      "headingFont":  "\"Montserrat\", sans-serif",
-                                      "bodyFont":  "\"Lato\", sans-serif",
-                                      "baseSize":  "16px",
-                                      "direction":  "ltr"
-                                  },
-                   "shape":  {
-                                 "borderRadius":  "15px",
-                                 "buttonRadius":  "8px"
-                             },
-                   "productCard":  {
-                                       "borderRadius":  "15px",
-                                       "boxShadow":  "0 14px 34px -26px rgba(0, 0, 0, 0.18)",
-                                       "hoverShadow":  "0 22px 46px -24px rgba(0, 0, 0, 0.24)",
-                                       "badgeRadius":  "4px",
-                                       "buttonRadius":  "8px",
-                                       "surfaceOpacity":  "1"
-                                   },
-                   "layout":  {
-                                  "contentAlign":  "start"
-                              }
-               },
-    "seo":  {
-                "titleTemplate":  "%s | Graceful",
-                "description":  "Soft Graceful â€” ØªØ­Ø±ÙŠØ± Ø£Ø²ÙŠØ§Ø¡ Ù…Ù†Ø³Ù‘Ù‚: Ù…Ø¬Ù…ÙˆØ¹Ø§Øª Ù…Ø®ØªØ§Ø±Ø©ØŒ Ù„ÙˆÙƒØ§Øª Ù…ÙˆØ³Ù…ÙŠØ©ØŒ Hotspot ØªÙØ§Ø¹Ù„ÙŠØŒ Ù…Ù†ØªØ¬Ø§Øª Ù…ÙˆØµÙ‰ Ø¨Ù‡Ø§ØŒ ÙˆØ³Ù„Ù‘Ø© Ù…Ù†Ø²Ù„Ù‚Ø©."
-            },
-    "preview":  {
-                    "imageUrl":  "https://cdn.shopify.com/theme-store/kgt7iqquyknadz55jw25b59gbxc6.jpg",
-                    "colors":  [
-                                   "0 0% 9%",
-                                   "11 73% 57%",
-                                   "0 0% 100%"
-                               ]
-                },
-    "header":  {
-                   "variant":  "fashion-retail",
-                   "brandName":  "Graceful",
-                   "brandTagline":  "EVERYDAY FASHION",
-                   "showSearch":  true,
-                   "showCart":  true,
-                   "announcementText":  "Enjoy Free Shipping on Orders Over $500 Â· New Season Collection Is Now Live",
-                   "announcementLinkText":  "Shop Now",
-                   "announcementLinkTo":  "/shop",
-                   "navigation":  [
-                                      {
-                                          "label":  "Shop By Categories",
-                                          "to":  "/collections"
-                                      },
-                                      {
-                                          "label":  "Shop By Season",
-                                          "to":  "/shop?season=winter"
-                                      },
-                                      {
-                                          "label":  "Style By Occasion",
-                                          "to":  "/collections"
-                                      },
-                                      {
-                                          "label":  "Shop",
-                                          "to":  "/shop"
-                                      },
-                                      {
-                                          "label":  "Sale",
-                                          "to":  "/sale"
-                                      },
-                                      {
-                                          "label":  "Contact",
-                                          "to":  "/contact"
-                                      }
-                                  ],
-                   "actions":  [
-                                   {
-                                       "label":  "Login",
-                                       "to":  "/contact",
-                                       "style":  "link"
-                                   },
-                                   {
-                                       "label":  "Shop Now",
-                                       "to":  "/shop",
-                                       "style":  "primary"
-                                   }
-                               ]
-               },
-    "footer":  {
-                   "variant":  "signature-panel",
-                   "description":  "Soft Graceful â€” ØªØ­Ø±ÙŠØ± Ø£Ø²ÙŠØ§Ø¡ ÙŠØ¹Ø±Ù‘Ù Ø§Ù„Ø¹Ù„Ø§Ù…Ø© Ø§Ù„Ø­Ø¯ÙŠØ«Ø© Ø¨Ù„Ù…Ø³Ø§Øª Ù…Ù†Ø³Ù‘Ù‚Ø© ÙˆÙ…Ø¬Ù…ÙˆØ¹Ø§Øª Ù…ÙˆØ³Ù…ÙŠØ© ÙˆØ£Ø¯ÙˆØ§Øª Ø§ÙƒØªØ´Ø§Ù Ø°ÙƒÙŠØ©.",
-                   "copyrightText":  "Â© 2026 Graceful Soft Preset. All rights reserved.",
-                   "contactRows":  [
-                                       {
-                                           "label":  "Support",
-                                           "value":  "help@graceful.store",
-                                           "href":  "mailto:help@graceful.store"
-                                       },
-                                       {
-                                           "label":  "WhatsApp",
-                                           "value":  "+20 100 000 0000",
-                                           "href":  "https://wa.me/201000000000"
-                                       }
-                                   ],
-                   "socialLinks":  {
-                                       "facebook":  "https://facebook.com",
-                                       "instagram":  "https://instagram.com",
-                                       "tiktok":  "https://tiktok.com",
-                                       "pinterest":  "https://pinterest.com"
-                                   },
-                   "navigation":  [
-                                      {
-                                          "title":  "Shop",
-                                          "links":  [
-                                                        {
-                                                            "label":  "Men",
-                                                            "to":  "/shop?category=mens"
-                                                        },
-                                                        {
-                                                            "label":  "Women",
-                                                            "to":  "/shop?category=womens"
-                                                        },
-                                                        {
-                                                            "label":  "Kids",
-                                                            "to":  "/shop?category=kids"
-                                                        },
-                                                        {
-                                                            "label":  "Sale",
-                                                            "to":  "/sale"
-                                                        }
-                                                    ]
-                                      },
-                                      {
-                                          "title":  "Support",
-                                          "links":  [
-                                                        {
-                                                            "label":  "Size Guide",
-                                                            "to":  "/size-guide"
-                                                        },
-                                                        {
-                                                            "label":  "Shipping",
-                                                            "to":  "/shipping"
-                                                        },
-                                                        {
-                                                            "label":  "Contact",
-                                                            "to":  "/contact"
-                                                        }
-                                                    ]
-                                      }
-                                  ],
-                   "legalLinks":  [
-                                      {
-                                          "label":  "Privacy",
-                                          "to":  "/privacy"
-                                      },
-                                      {
-                                          "label":  "Terms",
-                                          "to":  "/terms"
-                                      }
-                                  ]
-               },
-    "pages":  {
-                  "home":  {
-                               "pageGoal":  "conversion",
-                               "compositionPolicy":  {
-                                                         "pageGoal":  "conversion",
-                                                         "preserveManualOrder":  true,
-                                                         "enforceTrustSignals":  true
-                                                     },
-                               "sections":  [
-                                                {
-                                                    "type":  "promo-strip",
-                                                    "variant":  "sale-signal",
-                                                    "settings":  {
-                                                                     "badge":  "Graceful Picks",
-                                                                     "message":  "Enjoy Free Shipping on Orders Over $500",
-                                                                     "saleLabel":  "New Season Collection",
-                                                                     "shippingLabel":  "Free Shipping $500+",
-                                                                     "returnLabel":  "Easy 14-Day Returns",
-                                                                     "ctaText":  "Shop Now",
-                                                                     "ctaLink":  "/shop"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "hover-cards",
-                                                    "variant":  "editorial",
-                                                    "settings":  {
-                                                                     "heading":  "Style Made for Every You",
-                                                                     "description":  "Discover fashion made for every moment. Explore thoughtfully curated styles for women, men, and kids designed to bring effortless style and everyday confidence to every look.",
-                                                                     "ctaText":  "Shop Now",
-                                                                     "ctaLink":  "/collections",
-                                                                     "cards":  "Women in Style|Effortless pieces for every mood and moment.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_3.png?v=1787656064|Shop Now|/shop?category=womens|#634A01|#120707\nMen in Style|Confident looks for every occasion.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_2.png?v=1787656064|Shop Now|/shop?category=mens|#4A3A2F|#100C08\nLittle Style|Fun, comfortable styles for little trendsetters.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_6.png?v=1787656064|Shop Now|/shop?category=kids|#7A4A6B|#15070F"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "featured-products",
-                                                    "variant":  "quick-view-fashion-grid",
-                                                    "settings":  {
-                                                                     "title":  "Trending This Week",
-                                                                     "subtitle":  "Fresh styles and everyday essentials, selected for the season.",
-                                                                     "limit":  8,
-                                                                     "ctaText":  "View All",
-                                                                     "ctaLink":  "/shop?sort=popular"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "countdown",
-                                                    "variant":  "layered",
-                                                    "settings":  {
-                                                                     "heading":  "New Season Layers",
-                                                                     "description":  "Lightweight jackets and versatile layers made for effortless everyday styling.",
-                                                                     "image":  "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45418.png?v=1784710656\u0026width=2400",
-                                                                     "ctaText":  "Shop Jacket",
-                                                                     "ctaLink":  "/products/classic-varsity-jacket",
-                                                                     "counterBg":  "#4c3636",
-                                                                     "counterText":  "#ffffff"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "collection-tab",
-                                                    "variant":  "standard",
-                                                    "settings":  {
-                                                                     "badge":  "Dress Perfectly for Every Occasion",
-                                                                     "title":  "Dress Perfectly for Every Occasion",
-                                                                     "subtitle":  "From everyday looks to special occasions, find styles made for every moment.",
-                                                                     "ctaText":  "View All",
-                                                                     "ctaLink":  "/collections",
-                                                                     "columns":  "4",
-                                                                     "tabs":  "Casual Look|Casual Look|12 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45421_1.png?v=1784716462\u0026width=700|/shop?category=casual-look\nWorkwear Edit|Workwear Edit|4 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45422.png?v=1784363472\u0026width=700|/shop?category=office-wear\nParty \u0026 Evening|Party \u0026 Evening|7 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45423.png?v=1784363503\u0026width=700|/shop?category=party-night\nHoliday \u0026 Resort|Holiday \u0026 Resort|8 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45424.png?v=1784363524\u0026width=700|/shop?category=vacation-style"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "collection-tab",
-                                                    "variant":  "pills",
-                                                    "settings":  {
-                                                                     "badge":  "Style for Every Season",
-                                                                     "title":  "Style for Every Season",
-                                                                     "subtitle":  "Discover timeless fashion, seasonal essentials, and effortless styles made for every time of the year.",
-                                                                     "ctaText":  "Explore More",
-                                                                     "ctaLink":  "/shop",
-                                                                     "columns":  "3",
-                                                                     "tabs":  "Winter|Winter Collection|Layered warmth for the cold season.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_3.svg?v=1784620486|/shop?season=winter\nSpring|Spring Collection|Light fabrics and soft color.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_4.svg?v=1784620486|/shop?season=spring\nSummer|Summer Essentials|Breathable, airy basics for longer days.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/sunny-day_1_1.svg?v=1784620486|/shop?season=summer\nAutumn|Autumn Layers|Earthy tones and transition pieces.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_5.svg?v=1784620486|/shop?season=autumn"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "richtext",
-                                                    "variant":  "centered",
-                                                    "settings":  {
-                                                                     "badge":  "The Collection",
-                                                                     "title":  "Inspired by Style, Designed for Everyday Living",
-                                                                     "subtitle":  "Discover Timeless Fashion",
-                                                                     "body":  "Explore thoughtfully curated outfits built to move from everyday looks to special occasions with effortless style and everyday confidence."
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "featured-products",
-                                                    "variant":  "quick-view-fashion-grid",
-                                                    "settings":  {
-                                                                     "title":  "Discover Timeless Fashion",
-                                                                     "subtitle":  "Curated collection of refined pieces for any occasion.",
-                                                                     "limit":  8,
-                                                                     "ctaText":  "View Collection",
-                                                                     "ctaLink":  "/shop?sort=newest"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "background-video",
-                                                    "variant":  "standard",
-                                                    "settings":  {
-                                                                     "badge":  "Discover the Story",
-                                                                     "title":  "Discover the Story Behind Every Collection",
-                                                                     "subtitle":  "Every piece is crafted with thought â€” explore the inspiration behind the season.",
-                                                                     "poster":  "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Group_1171276085.png?v=1784527786\u0026width=1200",
-                                                                     "ctaText":  "Shop Now",
-                                                                     "ctaLink":  "/shop"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "featured-product",
-                                                    "variant":  "spotlight",
-                                                    "settings":  {
-                                                                     "badge":  "Featured Piece",
-                                                                     "title":  "Classic White Belted Shirt Dress",
-                                                                     "subtitle":  "Women in Style",
-                                                                     "description":  "Crafted with care and attention to detail â€” a refined piece designed to move from everyday looks to special occasions.",
-                                                                     "image":  "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842\u0026width=800",
-                                                                     "gallery":  "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842\u0026width=120\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle96_5.png?v=1787287360\u0026width=120\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle93_3.png?v=1787287360\u0026width=120\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle96_4.png?v=1787287360\u0026width=120",
-                                                                     "price":  "$491.00",
-                                                                     "comparePrice":  "$565.00",
-                                                                     "ctaText":  "Add to Bag",
-                                                                     "ctaLink":  "/shop"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "collection-tab",
-                                                    "variant":  "standard",
-                                                    "settings":  {
-                                                                     "badge":  "Find Your Perfect Fit",
-                                                                     "title":  "Find Your Perfect Fit",
-                                                                     "subtitle":  "Explore thoughtfully curated styles in slim, regular, relaxed and oversized fits.",
-                                                                     "ctaText":  "View All",
-                                                                     "ctaLink":  "/shop?sort=popular",
-                                                                     "columns":  "4",
-                                                                     "tabs":  "The Best Reviews From Clients|The Best Reviews From Clients|Curated and trusted styles|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45568_2.png?v=1787836886\u0026width=700|/shop\nTrusted Quality|Trusted Quality|Designed for everyday confidence|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45437.png?v=1784891712\u0026width=700|/shop?sort=popular\nFashion Tips|Fashion Tips|Style inspiration for the season|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45499_7.png?v=1787408202\u0026width=700|/blogs\nStyled By Our Community|Styled By Our Community|Instagram @Graceful|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334\u0026width=700|/collections"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "scrolling-cards",
-                                                    "variant":  "layered",
-                                                    "settings":  {
-                                                                     "badge":  "Why Choose Us",
-                                                                     "title":  "Trusted Quality, Designed for Everyday Confidence",
-                                                                     "subtitle":  "Premium fabrics, secure shopping, easy returns.",
-                                                                     "cards":  "Premium Quality Fabrics|Soft, durable materials selected for lasting comfort.||shield|#f3efea\nSafe \u0026 Secure Shopping|Protected checkout and encrypted payments.||lock|#eaf0f5\nFree Shipping $500+|Convenient delivery on qualifying orders.||truck|#f0f1e8\nEasy 14-Day Returns|Simple exchange and return policy.||rotate|#f5eaf0"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "journal-strip",
-                                                    "variant":  "editorial-cards",
-                                                    "settings":  {
-                                                                     "badge":  "Fashion Tips \u0026 Style Inspiration",
-                                                                     "title":  "Fashion Tips \u0026 Style Inspiration",
-                                                                     "subtitle":  "Why Smart Shopping Matters â€” thoughtful purchasing habits for a curated wardrobe.",
-                                                                     "items":  "Why Smart Shopping Matters|Style Guide|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45499_7.png?v=1787408202\u0026width=900|/blogs|Fashion has become more accessible than ever â€” shop with each piece in mind.\nCurate Your Everyday Wardrobe|Editorial|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45500_2.png?v=1787408190\u0026width=900|/blogs|Build versatile layers that move from day to evening effortlessly.\nStyled By Our Community|Instagram|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45379.png?v=1784544329\u0026width=900|/collections|Real customers styling Graceful pieces for every moment."
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "social-gallery",
-                                                    "variant":  "marquee",
-                                                    "settings":  {
-                                                                     "badge":  "Styled By Our Community",
-                                                                     "title":  "Styled By Our Community",
-                                                                     "subtitle":  "Instagram Â· Follow Us",
-                                                                     "handle":  "@Graceful",
-                                                                     "images":  "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334\u0026width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45382.png?v=1784544330\u0026width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45379.png?v=1784544329\u0026width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45380.png?v=1784544330\u0026width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/181d35ac45c081698fb605a0ea26ecd2e95158dc.jpg?v=1784544331\u0026width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45446.png?v=1784783015\u0026width=600"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "newsletter",
-                                                    "variant":  "editorial-strip",
-                                                    "settings":  {
-                                                                     "title":  "Join the Graceful Edit",
-                                                                     "subtitle":  "Be the first to know about new collections, seasonal looks, and exclusive offers.",
-                                                                     "buttonText":  "Subscribe",
-                                                                     "placeholder":  "Email address"
-                                                                 }
-                                                }
-                                            ]
-                           },
-                  "shop":  {
-                               "pageGoal":  "discovery",
-                               "layoutHint":  "commerce-3col",
-                               "compositionPolicy":  {
-                                                         "pageGoal":  "discovery",
-                                                         "preserveManualOrder":  true,
-                                                         "enforceTrustSignals":  true
-                                                     },
-                               "sections":  [
-                                                {
-                                                    "type":  "shop-command-bar",
-                                                    "variant":  "decision-deck",
-                                                    "settings":  {
-                                                                     "title":  "Shop",
-                                                                     "subtitle":  "Enhanced search, filtering and sorting to find your fit fast.",
-                                                                     "searchPlaceholder":  "Search products",
-                                                                     "allCategoriesLabel":  "All categories",
-                                                                     "resultsLabel":  "products found",
-                                                                     "clearButtonText":  "Clear",
-                                                                     "stickyLabel":  "Shop Filters",
-                                                                     "chipLimit":  7
-                                                                 }
-                                                },
-                                                "filters-sidebar",
-                                                {
-                                                    "type":  "product-grid",
-                                                    "variant":  "quick-view-fashion-grid",
-                                                    "settings":  {
-                                                                     "title":  "Discover the Collection",
-                                                                     "subtitle":  "Smart product discovery with swatch filters, quick view and slide-out cart.",
-                                                                     "limit":  12,
-                                                                     "clearButtonText":  "View all products"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "shop-promo-rail",
-                                                    "variant":  "stylist-rail",
-                                                    "settings":  {
-                                                                     "badge":  "Smart Discovery",
-                                                                     "title":  "Find Your Perfect Fit",
-                                                                     "subtitle":  "Slim, regular, relaxed and oversized fits curated for every moment.",
-                                                                     "spotlightTitle":  "Style by Occasion",
-                                                                     "spotlightText":  "From casual looks to party and evening, discover curated edits.",
-                                                                     "ctaText":  "View Collection",
-                                                                     "ctaLink":  "/collections",
-                                                                     "trustItems":  "Quick View|Preview without leaving the page.\nSwatch Filters|Filter by color and size fast.\nSlide-Out Cart|Add to bag instantly.",
-                                                                     "highlights":  "Hotspot|Interactive\nQuick View|Instant\nSticky Header|On scroll"
-                                                                 }
-                                                }
-                                            ]
-                           },
-                  "collections":  {
-                                      "pageGoal":  "discovery",
-                                      "compositionPolicy":  {
-                                                                "pageGoal":  "discovery",
-                                                                "preserveManualOrder":  true,
-                                                                "enforceTrustSignals":  true
-                                                            },
-                                      "sections":  [
-                                                       {
-                                                           "type":  "promo-strip",
-                                                           "variant":  "benefit-ribbon",
-                                                           "settings":  {
-                                                                            "badge":  "Curated Collections",
-                                                                            "message":  "Discover thoughtful collections built for every occasion and season.",
-                                                                            "saleLabel":  "Seasonal Edits",
-                                                                            "shippingLabel":  "Free Shipping $500+",
-                                                                            "returnLabel":  "Easy Returns",
-                                                                            "ctaText":  "View All",
-                                                                            "ctaLink":  "/shop"
-                                                                        }
-                                                       },
-                                                       {
-                                                           "type":  "featured-collections",
-                                                           "variant":  "editorial-categories",
-                                                           "settings":  {
-                                                                            "title":  "Shop By Category",
-                                                                            "subtitle":  "Women Â· Men Â· Kids Â· Occasions",
-                                                                            "limit":  8,
-                                                                            "ctaText":  "Shop Now",
-                                                                            "ctaLink":  "/shop"
-                                                                        }
-                                                       },
-                                                       {
-                                                           "type":  "featured-products",
-                                                           "variant":  "overlay-card",
-                                                           "settings":  {
-                                                                            "title":  "Featured Picks",
-                                                                            "subtitle":  "Refined pieces curated for the season.",
-                                                                            "limit":  8
-                                                                        }
-                                                       }
-                                                   ]
-                                  },
-                  "sale":  {
-                               "pageGoal":  "conversion",
-                               "compositionPolicy":  {
-                                                         "pageGoal":  "conversion",
-                                                         "preserveManualOrder":  true,
-                                                         "enforceTrustSignals":  true
-                                                     },
-                               "sections":  [
-                                                {
-                                                    "type":  "promo-strip",
-                                                    "variant":  "sale-signal",
-                                                    "settings":  {
-                                                                     "badge":  "Season Sale",
-                                                                     "message":  "Curated pieces at season prices.",
-                                                                     "saleLabel":  "Limited Time",
-                                                                     "shippingLabel":  "Free Shipping $500+",
-                                                                     "returnLabel":  "Easy Returns",
-                                                                     "ctaText":  "Shop Sale",
-                                                                     "ctaLink":  "/shop"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "offer-bento",
-                                                    "variant":  "campaign-stack",
-                                                    "settings":  {
-                                                                     "badge":  "Season Offers",
-                                                                     "title":  "Seasonal Offers",
-                                                                     "subtitle":  "Curated pieces at their best price, organized by season.",
-                                                                     "cards":  [
-                                                                                   {
-                                                                                       "label":  "Winter",
-                                                                                       "title":  "Warm Layers",
-                                                                                       "subtitle":  "Coats and knits for the cold.",
-                                                                                       "ctaText":  "Shop",
-                                                                                       "link":  "/sale?season=winter",
-                                                                                       "tone":  "primary",
-                                                                                       "stat":  "Winter"
-                                                                                   },
-                                                                                   {
-                                                                                       "label":  "Spring",
-                                                                                       "title":  "Light Essentials",
-                                                                                       "subtitle":  "Fresh fabrics and color.",
-                                                                                       "ctaText":  "Shop",
-                                                                                       "link":  "/sale?season=spring",
-                                                                                       "tone":  "accent",
-                                                                                       "stat":  "Spring"
-                                                                                   },
-                                                                                   {
-                                                                                       "label":  "Party",
-                                                                                       "title":  "Evening Edit",
-                                                                                       "subtitle":  "Refined night-out pieces.",
-                                                                                       "ctaText":  "Shop",
-                                                                                       "link":  "/sale?category=party-night",
-                                                                                       "tone":  "slate",
-                                                                                       "stat":  "Evening"
-                                                                                   }
-                                                                               ]
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "product-grid",
-                                                    "variant":  "deal-edit",
-                                                    "settings":  {
-                                                                     "title":  "All Offers",
-                                                                     "subtitle":  "Curated pieces on sale this season.",
-                                                                     "limit":  12,
-                                                                     "saleOnly":  true,
-                                                                     "clearButtonText":  "View all products"
-                                                                 }
-                                                }
-                                            ]
-                           },
-                  "pdp":  {
-                              "pageGoal":  "trust",
-                              "layoutHint":  "product-detail",
-                              "compositionPolicy":  {
-                                                        "pageGoal":  "trust",
-                                                        "preserveManualOrder":  true,
-                                                        "enforceTrustSignals":  true
-                                                    },
-                              "sections":  [
-                                               {
-                                                   "type":  "product-gallery",
-                                                   "variant":  "mirror-carousel"
-                                               },
-                                               {
-                                                   "type":  "product-info",
-                                                   "variant":  "bento-specs",
-                                                   "settings":  {
-                                                                    "descriptionTitle":  "Product Overview",
-                                                                    "shippingTitle":  "Shipping \u0026 Returns",
-                                                                    "shippingText":  "Free shipping over $500 and easy 14-day returns on qualifying pieces.",
-                                                                    "guaranteesTitle":  "Why You\u0027ll Love It",
-                                                                    "guaranteeStyle":  "grid",
-                                                                    "guaranteeItems":  "Premium Fabric|Soft, durable, selected for comfort.\nSmart Sizing|Slim, regular, relaxed and oversized.\nEasy Returns|14-day exchange policy.",
-                                                                    "sizeGuideText":  "Size Guide",
-                                                                    "sizeGuideLink":  "/size-guide",
-                                                                    "fitNote":  "Between sizes? Size up for a more relaxed fit."
-                                                                }
-                                               },
-                                               {
-                                                   "type":  "conversion-stack",
-                                                   "variant":  "couture-minimal"
-                                               },
-                                               {
-                                                   "type":  "bought-together",
-                                                   "variant":  "pairing-rail",
-                                                   "settings":  {
-                                                                    "title":  "Pairs With",
-                                                                    "subtitle":  "Complete the look.",
-                                                                    "limit":  3
-                                                                }
-                                               },
-                                               {
-                                                   "type":  "related-products",
-                                                   "variant":  "luxury-card",
-                                                   "settings":  {
-                                                                    "title":  "Recommended for You",
-                                                                    "subtitle":  "Similar pieces styled around the same occasion.",
-                                                                    "limit":  4
-                                                                }
-                                               },
-                                               {
-                                                   "type":  "reviews",
-                                                   "variant":  "voice-notes",
-                                                   "settings":  {
-                                                                    "title":  "The Best Reviews From Clients",
-                                                                    "subtitle":  "Curated feedback from the Graceful community.",
-                                                                    "reviewLimit":  4
-                                                                }
-                                               }
-                                           ]
-                          },
-                  "cart":  {
-                               "pageGoal":  "trust",
-                               "compositionPolicy":  {
-                                                         "preserveManualOrder":  false,
-                                                         "enforceTrustSignals":  true
-                                                     },
-                               "sections":  [
-                                                {
-                                                    "type":  "cart-items",
-                                                    "variant":  "compact",
-                                                    "settings":  {
-                                                                     "title":  "Shopping Bag",
-                                                                     "subtitle":  "Review your items before checkout.",
-                                                                     "emptyText":  "Your bag is empty.",
-                                                                     "continueShoppingText":  "Continue shopping"
-                                                                 }
-                                                },
-                                                {
-                                                    "type":  "order-summary",
-                                                    "variant":  "highlighted",
-                                                    "settings":  {
-                                                                     "title":  "Order Summary",
-                                                                     "subtitle":  "Shipping, subtotal and total in one place.",
-                                                                     "checkoutButtonText":  "Checkout",
-                                                                     "secureCheckoutText":  "Secure checkout",
-                                                                     "returnsText":  "Easy returns",
-                                                                     "showTrustRow":  true,
-                                                                     "showFreeShippingProgress":  true
-                                                                 }
-                                                }
-                                            ]
-                           },
-                  "checkout":  {
-                                   "pageGoal":  "conversion",
-                                   "compositionPolicy":  {
-                                                             "pageGoal":  "conversion",
-                                                             "preserveManualOrder":  false,
-                                                             "enforceTrustSignals":  true
-                                                         },
-                                   "sections":  [
-                                                    {
-                                                        "type":  "promo-strip",
-                                                        "variant":  "benefit-ribbon",
-                                                        "settings":  {
-                                                                         "badge":  "Secure Checkout",
-                                                                         "message":  "Sign in with Shop for a faster, smoother purchase experience.",
-                                                                         "saleLabel":  "Secure",
-                                                                         "shippingLabel":  "Fast",
-                                                                         "returnLabel":  "Trusted",
-                                                                         "ctaText":  "Shop More",
-                                                                         "ctaLink":  "/shop"
-                                                                     }
-                                                    },
-                                                    {
-                                                        "type":  "cart-items",
-                                                        "variant":  "compact",
-                                                        "settings":  {
-                                                                         "title":  "Review Items",
-                                                                         "subtitle":  "Confirm your selections before placing the order."
-                                                                     }
-                                                    },
-                                                    {
-                                                        "type":  "checkout-form",
-                                                        "variant":  "split",
-                                                        "settings":  {
-                                                                         "contactTitle":  "Contact",
-                                                                         "contactDescription":  "Your email and phone for order updates.",
-                                                                         "shippingTitle":  "Shipping",
-                                                                         "shippingDescription":  "Delivery address and governorate.",
-                                                                         "notesTitle":  "Order Notes",
-                                                                         "notesDescription":  "Optional â€” gift note or delivery preference."
-                                                                     }
-                                                    },
-                                                    {
-                                                        "type":  "payment",
-                                                        "variant":  "cards",
-                                                        "settings":  {
-                                                                         "title":  "Payment",
-                                                                         "subtitle":  "Choose your preferred payment method.",
-                                                                         "confirmOrderText":  "Place Order",
-                                                                         "codLabel":  "Cash on Delivery",
-                                                                         "cardLabel":  "Card",
-                                                                         "walletLabel":  "Wallet"
-                                                                     }
-                                                    },
-                                                    {
-                                                        "type":  "order-summary",
-                                                        "variant":  "highlighted",
-                                                        "settings":  {
-                                                                         "title":  "Summary",
-                                                                         "hideCheckoutButton":  true,
-                                                                         "showCouponField":  false
-                                                                     }
-                                                    }
-                                                ]
-                               },
-                  "lookbook":  {
-                                   "pageGoal":  "discovery",
-                                   "compositionPolicy":  {
-                                                             "pageGoal":  "discovery",
-                                                             "preserveManualOrder":  true,
-                                                             "enforceTrustSignals":  true
-                                                         },
-                                   "sections":  [
-                                                    {
-                                                        "type":  "hero-banner",
-                                                        "variant":  "style-ledger",
-                                                        "settings":  {
-                                                                         "eyebrow":  "Shop The Look",
-                                                                         "title":  "Shop The Look",
-                                                                         "subtitle":  "Discover every look with interactive hotspots and curated pieces.",
-                                                                         "ctaText":  "Shop The Looks",
-                                                                         "ctaLink":  "/shop",
-                                                                         "secondaryCtaText":  "View Collections",
-                                                                         "secondaryCtaLink":  "/collections",
-                                                                         "backgroundImage":  "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_3.png?v=1787656064\u0026width=1400",
-                                                                         "panelImage":  "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_2.png?v=1787656064\u0026width=900"
-                                                                     }
-                                                    },
-                                                    {
-                                                        "type":  "lookbook-showcase",
-                                                        "variant":  "standard",
-                                                        "settings":  {
-                                                                         "badge":  "Curated Edits",
-                                                                         "title":  "Curated Seasonal Looks",
-                                                                         "subtitle":  "Shop The Look with hotspots on every outfit.",
-                                                                         "limit":  6,
-                                                                         "ctaText":  "Shop",
-                                                                         "ctaLink":  "/shop"
-                                                                     }
-                                                    },
-                                                    {
-                                                        "type":  "featured-products",
-                                                        "variant":  "overlay-card",
-                                                        "settings":  {
-                                                                         "title":  "Shop The Edit",
-                                                                         "subtitle":  "Refined pieces from the lookbook.",
-                                                                         "limit":  8
-                                                                     }
-                                                    }
-                                                ]
-                               },
-                  "shipping":  {
-                                   "sections":  [
-                                                    {
-                                                        "type":  "info-content",
-                                                        "settings":  {
-                                                                         "badge":  "Shipping",
-                                                                         "title":  "Shipping \u0026 Delivery",
-                                                                         "subtitle":  "Orders processed within 24-48 hours.",
-                                                                         "body":  "Most orders are prepared within 24-48 business hours. Shipping fees appear before confirmation based on your governorate.",
-                                                                         "detailsTitle":  "Quick Info",
-                                                                         "details":  "Processing|24-48 business hours\nShipping|By governorate\nTracking|After dispatch",
-                                                                         "ctaText":  "Back to shop",
-                                                                         "ctaLink":  "/shop"
-                                                                     }
-                                                    }
-                                                ]
-                               },
-                  "returns":  {
-                                  "sections":  [
-                                                   {
-                                                       "type":  "info-content",
-                                                       "settings":  {
-                                                                        "badge":  "Returns",
-                                                                        "title":  "Exchange \u0026 Returns",
-                                                                        "subtitle":  "Easy returns on qualifying pieces.",
-                                                                        "body":  "Eligible pieces can be exchanged or returned within the stated period provided they remain in original condition.",
-                                                                        "detailsTitle":  "Key Terms",
-                                                                        "details":  "Period|Per current policy\nCondition|Original state\nProcess|Contact support with order number",
-                                                                        "ctaText":  "Size Guide",
-                                                                        "ctaLink":  "/size-guide"
-                                                                    }
-                                                   }
-                                               ]
-                              },
-                  "contact":  {
-                                  "sections":  [
-                                                   {
-                                                       "type":  "info-content",
-                                                       "settings":  {
-                                                                        "badge":  "Support",
-                                                                        "title":  "Contact Us",
-                                                                        "subtitle":  "For sizing, shipping and order follow-up.",
-                                                                        "body":  "The Graceful team responds during business hours. Include your order number for faster follow-up.",
-                                                                        "detailsTitle":  "Channels",
-                                                                        "details":  "Email|help@graceful.store\nWhatsApp|+20 100 000 0000\nHours|Sun-Thu 10am-6pm",
-                                                                        "ctaText":  "Start shopping",
-                                                                        "ctaLink":  "/shop"
-                                                                    }
-                                                   }
-                                               ]
-                              },
-                  "privacy":  {
-                                  "sections":  [
-                                                   {
-                                                       "type":  "info-content",
-                                                       "settings":  {
-                                                                        "badge":  "Privacy",
-                                                                        "title":  "Privacy Policy",
-                                                                        "subtitle":  "How we handle your data.",
-                                                                        "body":  "We use your data only to fulfill orders, support shipping and after-sales service.",
-                                                                        "ctaText":  "Home",
-                                                                        "ctaLink":  "/"
-                                                                    }
-                                                   }
-                                               ]
-                              },
-                  "terms":  {
-                                "sections":  [
-                                                 {
-                                                     "type":  "info-content",
-                                                     "settings":  {
-                                                                      "badge":  "Terms",
-                                                                      "title":  "Terms \u0026 Conditions",
-                                                                      "subtitle":  "Purchase, payment and shipping basics.",
-                                                                      "body":  "Order confirmation depends on availability and accurate data. The chosen payment method applies with any related verification or fees.",
-                                                                      "ctaText":  "Shipping policy",
-                                                                      "ctaLink":  "/shipping"
-                                                                  }
-                                                 }
-                                             ]
-                            },
-                  "size-guide":  {
-                                     "sections":  [
-                                                      {
-                                                          "type":  "size-guide",
-                                                          "variant":  "detailed",
-                                                          "settings":  {
-                                                                           "badge":  "Size Guide",
-                                                                           "title":  "Graceful Size Guide",
-                                                                           "subtitle":  "Slim, regular, relaxed and oversized fit reference.",
-                                                                           "note":  "Between sizes? Size up for a more relaxed fit.",
-                                                                           "ctaText":  "Back to shop",
-                                                                           "ctaLink":  "/shop",
-                                                                           "guideRows":  "X-Slim|0|2|32|24\nSlim|2|4|34|26\nRegular|4|6|36|28\nRelaxed|8|10|38|30\nOversized|12|14|40|32",
-                                                                           "measurementSteps":  "Measure chest and waist|Prefer measuring over a light layer.\nCompare to the nearest size|Start with the closest to your chest.\nBetween sizes?|Choose the larger for ease.",
-                                                                           "fitTips":  "Slim fits run tighter.\nOversized pieces allow extra room.\nReview the kid size chart separately."
-                                                                       }
-                                                      }
-                                                  ]
-                                 },
-                  "faq":  {
-                              "sections":  [
-                                               {
-                                                   "type":  "info-content",
-                                                   "settings":  {
-                                                                    "badge":  "FAQ",
-                                                                    "title":  "Frequently Asked Questions",
-                                                                    "subtitle":  "Answers about sizing, shipping and payment.",
-                                                                    "body":  "Here are the most common questions about sizing, shipping, exchanges and payment.",
-                                                                    "detailsTitle":  "Top Questions",
-                                                                    "details":  "Sizing|Review the size guide; size up between sizes.\nShipping|24-48h processing, cost by governorate.\nPayment|COD, card or wallet.",
-                                                                    "ctaText":  "Contact us",
-                                                                    "ctaLink":  "/contact"
-                                                                }
-                                               }
-                                           ]
-                          },
-                  "thank-you":  {
-                                    "sections":  [
-                                                     {
-                                                         "type":  "order-confirmation",
-                                                         "variant":  "soft-thanks",
-                                                         "settings":  {
-                                                                          "title":  "Thank you for your order",
-                                                                          "description":  "We received your order and will confirm the details shortly.",
-                                                                          "continueShoppingText":  "Back to shop",
-                                                                          "orderNumberPrefix":  "Order number:",
-                                                                          "supportText":  "Need help? Contact support via",
-                                                                          "statusLabel":  "Processing",
-                                                                          "showTimeline":  true,
-                                                                          "showTrackOrder":  true,
-                                                                          "showReorder":  true,
-                                                                          "showRecommended":  true,
-                                                                          "trackOrderTitle":  "Track your order",
-                                                                          "trackOrderDescription":  "Enter the same phone number used at checkout.",
-                                                                          "trackOrderButtonText":  "Show latest update",
-                                                                          "reorderTitle":  "Reorder your favorites",
-                                                                          "reorderDescription":  "Return the same pieces to your bag in one tap.",
-                                                                          "reorderButtonText":  "Add to bag",
-                                                                          "reorderSuccessText":  "Added to bag.",
-                                                                          "recommendedTitle":  "Recommended for you",
-                                                                          "recommendedSubtitle":  "Pieces styled around your order.",
-                                                                          "recommendedBadge":  "Graceful Picks",
-                                                                          "recommendedLimit":  3,
-                                                                          "recommendedCtaLabel":  "Add to bag",
-                                                                          "recommendedChooseOptionsLabel":  "View details"
-                                                                      }
-                                                     }
-                                                 ]
-                                },
-                  "registration":  {
-                                       "sections":  [
-                                                        "member-registration"
-                                                    ]
-                                   }
-              }
+{
+  "id": "soft-graceful",
+  "name": "Graceful",
+  "description": "Soft Graceful — قالب أزياء تحريري للعلامات العصرية: مجموعات منسّقة، لوكات موسمية، اكتشاف ذكي بالـ Hotspot، وشراء سريع بالسلّة المنزلقة وQuick View.",
+  "direction": "ltr",
+  "tokens": {
+    "colors": {
+      "primary": "0 0% 9%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "0 0% 96%",
+      "secondaryForeground": "0 0% 9%",
+      "accent": "11 73% 57%",
+      "accentForeground": "0 0% 100%",
+      "background": "0 0% 100%",
+      "foreground": "0 0% 9%",
+      "muted": "0 0% 96%",
+      "mutedForeground": "0 0% 38%",
+      "border": "0 0% 92%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 9%",
+      "ring": "11 73% 57%"
+    },
+    "typography": {
+      "headingFont": "\"Montserrat\", sans-serif",
+      "bodyFont": "\"Lato\", sans-serif",
+      "baseSize": "16px",
+      "direction": "ltr"
+    },
+    "shape": {
+      "borderRadius": "15px",
+      "buttonRadius": "8px"
+    },
+    "productCard": {
+      "borderRadius": "15px",
+      "boxShadow": "0 14px 34px -26px rgba(0, 0, 0, 0.18)",
+      "hoverShadow": "0 22px 46px -24px rgba(0, 0, 0, 0.24)",
+      "badgeRadius": "4px",
+      "buttonRadius": "8px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | Graceful",
+    "description": "Soft Graceful — تحرير أزياء منسّق: مجموعات مختارة، لوكات موسمية، Hotspot تفاعلي، منتجات موصى بها، وسلّة منزلقة."
+  },
+  "preview": {
+    "imageUrl": "https://cdn.shopify.com/theme-store/kgt7iqquyknadz55jw25b59gbxc6.jpg",
+    "colors": ["0 0% 9%", "11 73% 57%", "0 0% 100%"]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "Graceful",
+    "brandTagline": "EVERYDAY FASHION",
+    "showSearch": true,
+    "showCart": true,
+    "announcementText": "Enjoy Free Shipping on Orders Over $500 · New Season Collection Is Now Live",
+    "announcementLinkText": "Shop Now",
+    "announcementLinkTo": "/shop",
+    "navigation": [
+      { "label": "Shop By Categories", "to": "/collections" },
+      { "label": "Shop By Season", "to": "/shop?season=winter" },
+      { "label": "Style By Occasion", "to": "/collections" },
+      { "label": "Shop", "to": "/shop" },
+      { "label": "Sale", "to": "/sale" },
+      { "label": "Contact", "to": "/contact" }
+    ],
+    "dropdowns": [
+      {
+        "label": "Shop By Season",
+        "items": [
+          { "label": "Winter Collection", "to": "/shop?season=winter" },
+          { "label": "Spring Collection", "to": "/shop?season=spring" },
+          { "label": "Summer Essentials", "to": "/shop?season=summer" },
+          { "label": "Autumn Layers", "to": "/shop?season=autumn" }
+        ]
+      },
+      {
+        "label": "Style By Occasion",
+        "items": [
+          { "label": "Casual Look", "to": "/shop?category=casual-look" },
+          { "label": "Workwear Edit", "to": "/shop?category=office-wear" },
+          { "label": "Party & Evening", "to": "/shop?category=party-night" },
+          { "label": "Holiday & Resort", "to": "/shop?category=vacation-style" }
+        ]
+      },
+      {
+        "label": "Pages",
+        "items": [
+          { "label": "About Us", "to": "/about" },
+          { "label": "Faq", "to": "/faq" },
+          { "label": "Blog", "to": "/blogs" }
+        ]
+      }
+    ],
+    "actions": [
+      { "label": "Login", "to": "/contact", "style": "link" },
+      { "label": "Shop Now", "to": "/shop", "style": "primary" }
+    ],
+    "megaMenu": {
+      "triggerLabel": "Shop By Categories",
+      "ctaText": "Shop Now",
+      "ctaLink": "/shop",
+      "tabs": [
+        {
+          "label": "Men",
+          "title": "Men in Style",
+          "link": "/shop?category=mens",
+          "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_2.png?v=1787656064&width=700",
+          "products": [
+            { "title": "Men's Classic Heritage Blazer", "price": "$310.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45541_1.png?v=1787663089&width=400", "link": "/products/mens-classic-heritage-blazer" },
+            { "title": "Men's Mustard Casual Jacket", "price": "$348.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45497.png?v=1787546116&width=400", "link": "/products/mens-mustard-casual-jacket" },
+            { "title": "Burgundy Check Casual Shirt", "price": "$203.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45459.png?v=1787545950&width=400", "link": "/products/mens-burgundy-check-casual-shirt" },
+            { "title": "Urban Rider Leather Jacket", "price": "$380.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_33_12.png?v=1787286499&width=400", "link": "/products/classic-leather-jacket" }
+          ]
+        },
+        {
+          "label": "Women",
+          "title": "Women in Style",
+          "link": "/shop?category=womens",
+          "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_3.png?v=1787656064&width=700",
+          "products": [
+            { "title": "Classic White Belted Shirt Dress", "price": "$491.00", "comparePrice": "$565.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=400", "link": "/products/classic-white-belted-shirt-dress" },
+            { "title": "Chic Twist Crop Top", "price": "$274.00", "comparePrice": "$321.00", "discount": "15%", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45453.png?v=1787407941&width=400", "link": "/products/chic-twist-crop-top" },
+            { "title": "Garden Day White Maxi Dress", "price": "$381.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45524_1.png?v=1787658905&width=400", "link": "/products/blossom-lane-lavender-mini-dress" },
+            { "title": "Meadow Dot Wrap Midi Dress", "price": "$263.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45530_1.png?v=1787658626&width=400", "link": "/products/meadow-dot-wrap-midi-dress" }
+          ]
+        },
+        {
+          "label": "Kids",
+          "title": "Little Style",
+          "link": "/shop?category=kids",
+          "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_6.png?v=1787656064&width=700",
+          "products": [
+            { "title": "Little Sunshine Ruffle Dress", "price": "$168.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45542.png?v=1787663167&width=400", "link": "/products/little-sunshine-ruffle-dress" },
+            { "title": "Little Gentleman Suspender Set", "price": "$121.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/graphic-shirt-trendy-design-mockup7.png?v=1785126187&width=400", "link": "/products/little-gentleman-suspender-set" },
+            { "title": "Classic Kids Summer Hat", "price": "$161.00", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/graphic-shirt-trendy-design-mockup11_03ec01d7-7d2d-497c-b857-7f40b4e2b784.png?v=1785227486&width=400", "link": "/products/classic-kids-summer-hat" }
+          ]
+        }
+      ]
+    }
+  },
+  "footer": {
+    "variant": "signature-panel",
+    "description": "The Graceful Edit — curated fashion for women, men and kids, designed for effortless everyday style.",
+    "copyrightText": "© 2026 Graceful Soft Preset. All rights reserved.",
+    "contactRows": [
+      { "label": "Support", "value": "help@graceful.store", "href": "mailto:help@graceful.store" },
+      { "label": "WhatsApp", "value": "+20 100 000 0000", "href": "https://wa.me/201000000000" }
+    ],
+    "socialLinks": {
+      "facebook": "https://facebook.com",
+      "instagram": "https://instagram.com",
+      "tiktok": "https://tiktok.com",
+      "pinterest": "https://pinterest.com"
+    },
+    "navigation": [
+      {
+        "title": "Shop",
+        "links": [
+          { "label": "Men", "to": "/shop?category=mens" },
+          { "label": "Women", "to": "/shop?category=womens" },
+          { "label": "Kids", "to": "/shop?category=kids" },
+          { "label": "Sale", "to": "/sale" }
+        ]
+      },
+      {
+        "title": "Support",
+        "links": [
+          { "label": "Size Guide", "to": "/size-guide" },
+          { "label": "Shipping", "to": "/shipping" },
+          { "label": "Contact", "to": "/contact" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "Privacy", "to": "/privacy" },
+      { "label": "Terms", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      },
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "Graceful Picks",
+            "message": "Enjoy Free Shipping on Orders Over $500",
+            "saleLabel": "New Season Collection",
+            "shippingLabel": "Free Shipping $500+",
+            "returnLabel": "Easy 14-Day Returns",
+            "ctaText": "Shop Now",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hover-cards",
+          "variant": "dark",
+          "settings": {
+            "heading": "Style Made for Every You",
+            "description": "Discover fashion made for every moment. Explore thoughtfully curated styles for women, men, and kids designed to bring effortless style and everyday confidence to every look.",
+            "ctaText": "Shop Now",
+            "ctaLink": "/collections",
+            "gradientFrom": "#194C21",
+            "gradientTo": "#071009",
+            "cards": "Women in Style|Effortless pieces for every mood and moment.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_3.png?v=1787656064|Shop Now|/shop?category=womens\nMen in Style|Confident looks for every occasion.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_2.png?v=1787656064|Shop Now|/shop?category=mens\nLittle Style|Fun, comfortable styles for little trendsetters.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_6.png?v=1787656064|Shop Now|/shop?category=kids"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "quick-view-fashion-grid",
+          "settings": {
+            "title": "Trending This Week",
+            "subtitle": "Fresh styles and everyday essentials, selected for the season.",
+            "limit": 8,
+            "ctaText": "View All",
+            "ctaLink": "/shop?sort=popular"
+          }
+        },
+        {
+          "type": "countdown",
+          "variant": "layered",
+          "settings": {
+            "heading": "New Season Layers",
+            "description": "Lightweight jackets and versatile layers made for effortless everyday styling.",
+            "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45418.png?v=1784710656&width=2400",
+            "ctaText": "Shop Jacket",
+            "ctaLink": "/products/classic-varsity-jacket",
+            "counterBg": "#4c3636",
+            "counterText": "#ffffff"
+          }
+        },
+        {
+          "type": "collection-tab",
+          "variant": "standard",
+          "settings": {
+            "badge": "Dress Perfectly for Every Occasion",
+            "title": "Dress Perfectly for Every Occasion",
+            "subtitle": "From everyday looks to special occasions, find styles made for every moment.",
+            "ctaText": "View All",
+            "ctaLink": "/collections",
+            "columns": "4",
+            "tabs": "Casual Look|Casual Look|12 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45421_1.png?v=1784716462&width=700|/shop?category=casual-look\nWorkwear Edit|Workwear Edit|4 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45422.png?v=1784363472&width=700|/shop?category=office-wear\nParty & Evening|Party & Evening|7 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45423.png?v=1784363503&width=700|/shop?category=party-night\nHoliday & Resort|Holiday & Resort|8 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45424.png?v=1784363524&width=700|/shop?category=vacation-style"
+          }
+        },
+        {
+          "type": "collection-tab",
+          "variant": "pills",
+          "settings": {
+            "badge": "Style for Every Season",
+            "title": "Style for Every Season",
+            "subtitle": "Discover timeless fashion, seasonal essentials, and effortless styles made for every time of the year.",
+            "ctaText": "Explore More",
+            "ctaLink": "/shop",
+            "columns": "3",
+            "tabs": "Winter|Winter Collection|Layered warmth for the cold season.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_3.svg?v=1784620486|/shop?season=winter\nSpring|Spring Collection|Light fabrics and soft color.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_4.svg?v=1784620486|/shop?season=spring\nSummer|Summer Essentials|Breathable, airy basics for longer days.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/sunny-day_1_1.svg?v=1784620486|/shop?season=summer\nAutumn|Autumn Layers|Earthy tones and transition pieces.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Vector_5.svg?v=1784620486|/shop?season=autumn"
+          }
+        },
+        {
+          "type": "richtext",
+          "variant": "centered",
+          "settings": {
+            "badge": "The Collection",
+            "title": "Inspired by Style, Designed for Everyday Living",
+            "subtitle": "Discover Timeless Fashion",
+            "body": "Explore thoughtfully curated outfits built to move from everyday looks to special occasions with effortless style and everyday confidence.",
+            "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45437.png?v=1784891712&width=700",
+            "secondaryImage": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334&width=700"
+          }
+        },
+        {
+          "type": "collection-tab",
+          "variant": "pills",
+          "settings": {
+            "badge": "Discover Timeless Fashion",
+            "title": "Discover Timeless Fashion",
+            "subtitle": "Curated collection of refined pieces for any occasion.",
+            "ctaText": "View Collection",
+            "ctaLink": "/shop",
+            "columns": "3",
+            "tabs": "New Arrival|New Arrival|Freshly curated seasonal pieces.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=700|/shop?sort=newest\nBest Seller|Best Seller|Most-loved, fast-moving styles.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/red-satin-mermaid-gown.png?v=1787653215&width=700|/shop?sort=popular\nTrending|Trending|What the Graceful community loves.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45453.png?v=1787407941&width=700|/shop?sort=trending"
+          }
+        },
+        {
+          "type": "background-video",
+          "variant": "standard",
+          "settings": {
+            "badge": "Discover the Story",
+            "title": "Discover the Story Behind Every Collection",
+            "subtitle": "Every piece is crafted with thought — explore the inspiration behind the season.",
+            "poster": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Group_1171276085.png?v=1784527786&width=1200",
+            "ctaText": "Shop Now",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "featured-product",
+          "variant": "spotlight",
+          "settings": {
+            "badge": "Featured Piece",
+            "title": "Classic White Belted Shirt Dress",
+            "subtitle": "Women in Style",
+            "description": "Crafted with care and attention to detail — a refined piece designed to move from everyday looks to special occasions.",
+            "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=800",
+            "gallery": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=120\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle96_5.png?v=1787287360&width=120\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle93_3.png?v=1787287360&width=120\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle96_4.png?v=1787287360&width=120",
+            "price": "$491.00",
+            "comparePrice": "$565.00",
+            "colors": "White|#ffffff\nBlack|#111111\nBlue|#2b2ba0\nGray|#8a8a8a",
+            "sizes": "S, M, L, XL, 2XL",
+            "payments": "VISA, Mastercard, AMEX, PayPal, Discover",
+            "taxesNote": "Taxes included. Shipping calculated at checkout.",
+            "ctaText": "Add to Bag",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "collection-tab",
+          "variant": "standard",
+          "settings": {
+            "badge": "Find Your Perfect Fit",
+            "title": "Find Your Perfect Fit",
+            "subtitle": "Explore thoughtfully curated styles in slim, regular, relaxed and oversized fits.",
+            "ctaText": "View All",
+            "ctaLink": "/shop?sort=popular",
+            "columns": "4",
+            "tabs": "The Best Reviews From Clients|The Best Reviews From Clients|Curated and trusted styles|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45568_2.png?v=1787836886&width=700|/shop\nTrusted Quality|Trusted Quality|Designed for everyday confidence|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45437.png?v=1784891712&width=700|/shop?sort=popular\nFashion Tips|Fashion Tips|Style inspiration for the season|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45499_7.png?v=1787408202&width=700|/blogs\nStyled By Our Community|Styled By Our Community|Instagram @Graceful|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334&width=700|/collections"
+          }
+        },
+        {
+          "type": "review-circle",
+          "variant": "circle",
+          "settings": {
+            "title": "The Best Reviews From Clients",
+            "intro": "Explore curated styles designed to bring effortless elegance and everyday confidence to every look.",
+            "reviews": "Mackle Johnathan|Manager|The quality and fit are outstanding — every piece feels curated and premium.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45444.png?v=1787286485&width=120|5\nNoah Anderson|Stylist|From the fabric to the stitching, everything reads intentional and timeless.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle93_3.png?v=1787287360&width=120|5\nAva Thompson|Buyer|Effortless to style and always gets compliments — my go-to wardrobe edit.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45440.png?v=1787286887&width=120|4\nJames Richardson|Director|Professional, polished, and a seamless shopping experience start to finish.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle33_7.png?v=1784364663&width=120|5\nOlivia Bennett|Creator|The color and size options made the decision effortless and exact.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/88396e42bdc4fabeb247862b7d9c51cef76aa494.jpg?v=1784534763&width=120|5\nEmma Wilson|Client|Refined pieces that move beautifully from the office to the evening.|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle96_7.png?v=1787287360&width=120|4"
+          }
+        },
+        {
+          "type": "shop-the-look",
+          "variant": "spotlight",
+          "settings": {
+            "badge": "Shop The Look",
+            "title": "Explore Every Detail of Your Perfect Outfit",
+            "subtitle": "Click the hotspots to discover premium fabrics, refined craftsmanship, stylish details, and the carefully selected features that make every piece comfortable, durable, and effortlessly fashionable.",
+            "tabs": "Men|Urban Rider Leather Jacket|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_33_12.png?v=1787286499&width=900|60:28:Refined Craftsmanship:Premium stitching and tailored finishing::/shop?category=mens;42:46:Premium Fabrics:Soft, durable materials built to last::/shop?category=mens;70:64:Everyday Comfort:Designed for effortless daily wear::/shop?category=mens\nWomen|Classic White Belted Shirt Dress|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/white-pinstripe-blazer-dress.png?v=1787655842&width=900|48:30:Tailored Silhouette:A relaxed, feminine fit::/shop?category=womens;65:52:Polished Detail:Collared neckline and refined finish::/shop?category=womens\nKids|Little Sunshine Ruffle Dress|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45542.png?v=1787663167&width=900|50:40:Soft Comfort:Gentle fabrics for little ones::/shop?category=kids"
+          }
+        },
+        {
+          "type": "scrolling-cards",
+          "variant": "layered",
+          "settings": {
+            "badge": "Why Choose Us",
+            "title": "Trusted Quality, Designed for Everyday Confidence",
+            "subtitle": "Premium fabrics, secure shopping, easy returns.",
+            "images": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle45568_2.png?v=1787836886&width=700\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45437.png?v=1784891712&width=700\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334&width=700",
+            "cards": "Premium Quality Fabrics|Soft, durable materials selected for lasting comfort.||shield|#f3efea\nSafe & Secure Shopping|Protected checkout and encrypted payments.||lock|#eaf0f5\nFree Shipping $500+|Convenient delivery on qualifying orders.||truck|#f0f1e8\nEasy 14-Day Returns|Simple exchange and return policy.||rotate|#f5eaf0"
+          }
+        },
+        {
+          "type": "journal-strip",
+          "variant": "editorial-cards",
+          "settings": {
+            "badge": "Fashion Tips & Style Inspiration",
+            "title": "Fashion Tips & Style Inspiration",
+            "subtitle": "Why Smart Shopping Matters — thoughtful purchasing habits for a curated wardrobe.",
+            "items": "Why Smart Shopping Matters|Style Guide|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45499_7.png?v=1787408202&width=900|/blogs|Fashion has become more accessible than ever — shop with each piece in mind.\nCurate Your Everyday Wardrobe|Editorial|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45500_2.png?v=1787408190&width=900|/blogs|Build versatile layers that move from day to evening effortlessly.\nStyled By Our Community|Instagram|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45379.png?v=1784544329&width=900|/collections|Real customers styling Graceful pieces for every moment."
+          }
+        },
+        {
+          "type": "social-gallery",
+          "variant": "marquee",
+          "settings": {
+            "badge": "Styled By Our Community",
+            "title": "Styled By Our Community",
+            "subtitle": "Instagram · Follow Us",
+            "handle": "@Graceful",
+            "images": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45382.png?v=1784544330&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45379.png?v=1784544329&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45380.png?v=1784544330&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/181d35ac45c081698fb605a0ea26ecd2e95158dc.jpg?v=1784544331&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45446.png?v=1784783015&width=600"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "editorial-strip",
+          "settings": {
+            "title": "Join the Graceful Edit",
+            "subtitle": "Be the first to know about new collections, seasonal looks, and exclusive offers.",
+            "buttonText": "Subscribe",
+            "placeholder": "Email address"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "pageGoal": "discovery",
+      "compositionPolicy": { "pageGoal": "discovery", "preserveManualOrder": true, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "hero-banner", "variant": "graceful-banner", "settings": { "eyebrow": "Shop", "title": "Products", "subtitle": "Home >> Shop", "ctaText": "", "ctaLink": "", "backgroundImage": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45418.png?v=1784710656&width=1600" } },
+        { "type": "shop-command-bar", "variant": "graceful-bar", "settings": { "allCategoriesLabel": "All categories", "resultsLabel": "", "clearButtonText": "Clear all", "chipLimit": 12 } },
+        { "type": "product-grid", "variant": "quick-view-fashion-grid", "settings": { "hideHeader": true, "limit": 12, "clearButtonText": "View all products" } }
+      ]
+    },
+    "collections": {
+      "pageGoal": "discovery",
+      "compositionPolicy": { "pageGoal": "discovery", "preserveManualOrder": true, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "hero-banner", "variant": "graceful-banner", "settings": { "eyebrow": "Collection List", "title": "Collection List", "subtitle": "Home >> Collections", "ctaText": "Shop All", "ctaLink": "/shop", "backgroundImage": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45418.png?v=1784710656&width=1600" } },
+        { "type": "promo-strip", "variant": "benefit-ribbon", "settings": { "badge": "Curated Collections", "message": "Discover thoughtful collections built for every occasion and season.", "saleLabel": "Seasonal Edits", "shippingLabel": "Free Shipping $500+", "returnLabel": "Easy Returns", "ctaText": "View All", "ctaLink": "/shop" } },
+        { "type": "featured-collections", "variant": "editorial-categories", "settings": { "badge": "Curated Collections", "title": "Shop By Category", "subtitle": "Women · Men · Kids · Occasions", "limit": 8, "ctaText": "Shop Now", "ctaLink": "/shop" } },
+        { "type": "featured-products", "variant": "overlay-card", "settings": { "title": "Featured Picks", "subtitle": "Refined pieces curated for the season.", "limit": 8 } }
+      ]
+    },
+    "blogs": {
+      "pageGoal": "discovery",
+      "compositionPolicy": { "pageGoal": "discovery", "preserveManualOrder": true, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "hero-banner", "variant": "graceful-banner", "settings": { "eyebrow": "Journal", "title": "Fashion Tips & Style Inspiration", "subtitle": "Home >> Blogs", "ctaText": "Shop The Edit", "ctaLink": "/shop", "backgroundImage": "https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45499_7.png?v=1787408202&width=1600" } },
+        { "type": "journal-strip", "variant": "editorial-cards", "settings": { "badge": "Latest Stories", "title": "Latest From The Journal", "subtitle": "Style guides, editorials and community stories.", "items": "Why Smart Shopping Matters|Style Guide|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45499_7.png?v=1787408202&width=900|/blogs|Fashion has become more accessible than ever — shop with each piece in mind.\nCurate Your Everyday Wardrobe|Editorial|https://texture-a2xirfpg.myshopify.com/cdn/shop/articles/Rectangle_45500_2.png?v=1787408190&width=900|/blogs|Build versatile layers that move from day to evening effortlessly.\nStyled By Our Community|Instagram|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45379.png?v=1784544329&width=900|/collections|Real customers styling Graceful pieces for every moment." } },
+        { "type": "newsletter", "variant": "editorial-strip", "settings": { "title": "Join the Graceful Edit", "subtitle": "Be the first to know about new collections, seasonal looks, and exclusive offers.", "buttonText": "Subscribe", "placeholder": "Email address" } }
+      ]
+    },
+    "about": {
+      "pageGoal": "trust",
+      "compositionPolicy": { "pageGoal": "trust", "preserveManualOrder": true, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "richtext", "variant": "centered", "settings": { "badge": "About Graceful", "title": "Inspired by Style, Designed for Everyday Living", "subtitle": "Discover Timeless Fashion", "body": "Graceful is a curated fashion edit for women, men and kids — thoughtfully designed pieces that move effortlessly from everyday looks to special occasions.", "image": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45437.png?v=1784891712&width=700", "secondaryImage": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334&width=700" } },
+        { "type": "collection-tab", "variant": "standard", "settings": { "badge": "Dress Perfectly for Every Occasion", "title": "Dress Perfectly for Every Occasion", "subtitle": "From everyday looks to special occasions, find styles made for every moment.", "ctaText": "View All", "ctaLink": "/collections", "columns": "4", "tabs": "Casual Look|Casual Look|12 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45421_1.png?v=1784716462&width=700|/shop?category=casual-look\nWorkwear Edit|Workwear Edit|4 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45422.png?v=1784363472&width=700|/shop?category=office-wear\nParty & Evening|Party & Evening|7 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45423.png?v=1784363503&width=700|/shop?category=party-night\nHoliday & Resort|Holiday & Resort|8 items|https://texture-a2xirfpg.myshopify.com/cdn/shop/collections/Rectangle_45424.png?v=1784363524&width=700|/shop?category=vacation-style" } },
+        { "type": "social-gallery", "variant": "marquee", "settings": { "badge": "Styled By Our Community", "title": "Styled By Our Community", "subtitle": "Instagram · Follow Us", "handle": "@Graceful", "images": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/47f164fdd70cd02bbb66b1dcb7c26a2fba4828af.jpg?v=1784544334&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45382.png?v=1784544330&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45379.png?v=1784544329&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45380.png?v=1784544330&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/181d35ac45c081698fb605a0ea26ecd2e95158dc.jpg?v=1784544331&width=600\nhttps://texture-a2xirfpg.myshopify.com/cdn/shop/files/Rectangle_45446.png?v=1784783015&width=600" } }
+      ]
+    },
+    "sale": {
+      "pageGoal": "conversion",
+      "compositionPolicy": { "pageGoal": "conversion", "preserveManualOrder": true, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "promo-strip", "variant": "sale-signal", "settings": { "badge": "Season Sale", "message": "Curated pieces at season prices.", "saleLabel": "Limited Time", "shippingLabel": "Free Shipping $500+", "returnLabel": "Easy Returns", "ctaText": "Shop Sale", "ctaLink": "/shop" } },
+        { "type": "offer-bento", "variant": "campaign-stack", "settings": { "badge": "Season Offers", "title": "Seasonal Offers", "subtitle": "Curated pieces at their best price, organized by season.", "cards": [ { "label": "Winter", "title": "Warm Layers", "subtitle": "Coats and knits for the cold.", "ctaText": "Shop", "link": "/sale?season=winter", "tone": "primary", "stat": "Winter" }, { "label": "Spring", "title": "Light Essentials", "subtitle": "Fresh fabrics and color.", "ctaText": "Shop", "link": "/sale?season=spring", "tone": "accent", "stat": "Spring" }, { "label": "Party", "title": "Evening Edit", "subtitle": "Refined night-out pieces.", "ctaText": "Shop", "link": "/sale?category=party-night", "tone": "slate", "stat": "Evening" } ] } },
+        { "type": "product-grid", "variant": "deal-edit", "settings": { "title": "All Offers", "subtitle": "Curated pieces on sale this season.", "limit": 12, "saleOnly": true, "clearButtonText": "View all products" } }
+      ]
+    },
+    "pdp": {
+      "pageGoal": "trust",
+      "layoutHint": "product-detail",
+      "compositionPolicy": { "pageGoal": "trust", "preserveManualOrder": true, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "product-gallery", "variant": "graceful" },
+        { "type": "product-info", "variant": "graceful" },
+        { "type": "background-video", "variant": "standard", "settings": { "badge": "Discover the Story", "title": "Discover the Story Behind Every Collection", "poster": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/Group_1171276085.png?v=1784527786&width=1200", "ctaText": "Shop Now", "ctaLink": "/shop" } },
+        { "type": "affiliate-faq", "settings": { "title": "Everything You Need to Know", "faqs": "What sizes do you offer?|We offer a wide range of sizes from XS to XXL. Please refer to our Size Guide on each product page to find your perfect fit.\nHow long does shipping take?|Most orders are prepared within 24-48 business hours, with delivery times shown at checkout by governorate.\nWhat is your return policy?|Eligible pieces can be exchanged or returned within the stated period provided they remain in their original condition.\nDo you offer free shipping?|Yes — enjoy free shipping on all orders over $500.\nHow can I track my order?|Use the Track Order tool from your confirmation page with the same phone number used at checkout." } },
+        { "type": "related-products", "variant": "graceful-related", "settings": { "title": "Related Products", "subtitle": "", "limit": 4 } }
+      ]
+    },
+    "cart": {
+      "pageGoal": "trust",
+      "compositionPolicy": { "preserveManualOrder": false, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "cart-items", "variant": "compact", "settings": { "title": "Shopping Bag", "subtitle": "Review your items before checkout.", "emptyText": "Your bag is empty.", "continueShoppingText": "Continue shopping" } },
+        { "type": "order-summary", "variant": "highlighted", "settings": { "title": "Order Summary", "subtitle": "Shipping, subtotal and total in one place.", "checkoutButtonText": "Checkout", "secureCheckoutText": "Secure checkout", "returnsText": "Easy returns", "showTrustRow": true, "showFreeShippingProgress": true } }
+      ]
+    },
+    "checkout": {
+      "pageGoal": "conversion",
+      "compositionPolicy": { "pageGoal": "conversion", "preserveManualOrder": false, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "promo-strip", "variant": "benefit-ribbon", "settings": { "badge": "Secure Checkout", "message": "Sign in with Shop for a faster, smoother purchase experience.", "saleLabel": "Secure", "shippingLabel": "Fast", "returnLabel": "Trusted", "ctaText": "Shop More", "ctaLink": "/shop" } },
+        { "type": "cart-items", "variant": "compact", "settings": { "title": "Review Items", "subtitle": "Confirm your selections before placing the order." } },
+        { "type": "checkout-form", "variant": "split", "settings": { "contactTitle": "Contact", "contactDescription": "Your email and phone for order updates.", "shippingTitle": "Shipping", "shippingDescription": "Delivery address and governorate.", "notesTitle": "Order Notes", "notesDescription": "Optional — gift note or delivery preference." } },
+        { "type": "payment", "variant": "cards", "settings": { "title": "Payment", "subtitle": "Choose your preferred payment method.", "confirmOrderText": "Place Order", "codLabel": "Cash on Delivery", "cardLabel": "Card", "walletLabel": "Wallet" } },
+        { "type": "order-summary", "variant": "highlighted", "settings": { "title": "Summary", "hideCheckoutButton": true, "showCouponField": false } }
+      ]
+    },
+    "lookbook": {
+      "pageGoal": "discovery",
+      "compositionPolicy": { "pageGoal": "discovery", "preserveManualOrder": true, "enforceTrustSignals": true },
+      "sections": [
+        { "type": "hero-banner", "variant": "graceful-banner", "settings": { "eyebrow": "Shop The Look", "title": "Shop The Look", "subtitle": "Discover every look with interactive hotspots and curated pieces.", "ctaText": "Shop The Looks", "ctaLink": "/shop", "secondaryCtaText": "View Collections", "secondaryCtaLink": "/collections", "backgroundImage": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_3.png?v=1787656064&width=1400", "panelImage": "https://texture-a2xirfpg.myshopify.com/cdn/shop/files/fashion-portrait-young-elegant-woman_1_2.png?v=1787656064&width=900" } },
+        { "type": "lookbook-showcase", "variant": "standard", "settings": { "badge": "Curated Edits", "title": "Curated Seasonal Looks", "subtitle": "Shop The Look with hotspots on every outfit.", "limit": 6, "ctaText": "Shop", "ctaLink": "/shop" } },
+        { "type": "featured-products", "variant": "overlay-card", "settings": { "title": "Shop The Edit", "subtitle": "Refined pieces from the lookbook.", "limit": 8 } }
+      ]
+    },
+    "shipping": {
+      "sections": [
+        { "type": "info-content", "settings": { "badge": "Shipping", "title": "Shipping & Delivery", "subtitle": "Orders processed within 24-48 hours.", "body": "Most orders are prepared within 24-48 business hours. Shipping fees appear before confirmation based on your governorate.", "detailsTitle": "Quick Info", "details": "Processing|24-48 business hours\nShipping|By governorate\nTracking|After dispatch", "ctaText": "Back to shop", "ctaLink": "/shop" } }
+      ]
+    },
+    "returns": {
+      "sections": [
+        { "type": "info-content", "settings": { "badge": "Returns", "title": "Exchange & Returns", "subtitle": "Easy returns on qualifying pieces.", "body": "Eligible pieces can be exchanged or returned within the stated period provided they remain in original condition.", "detailsTitle": "Key Terms", "details": "Period|Per current policy\nCondition|Original state\nProcess|Contact support with order number", "ctaText": "Size Guide", "ctaLink": "/size-guide" } }
+      ]
+    },
+    "contact": {
+      "sections": [
+        { "type": "info-content", "settings": { "badge": "Support", "title": "Contact Us", "subtitle": "For sizing, shipping and order follow-up.", "body": "The Graceful team responds during business hours. Include your order number for faster follow-up.", "detailsTitle": "Channels", "details": "Email|help@graceful.store\nWhatsApp|+20 100 000 0000\nHours|Sun-Thu 10am-6pm", "ctaText": "Start shopping", "ctaLink": "/shop" } }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        { "type": "info-content", "settings": { "badge": "Privacy", "title": "Privacy Policy", "subtitle": "How we handle your data.", "body": "We use your data only to fulfill orders, support shipping and after-sales service.", "ctaText": "Home", "ctaLink": "/" } }
+      ]
+    },
+    "terms": {
+      "sections": [
+        { "type": "info-content", "settings": { "badge": "Terms", "title": "Terms & Conditions", "subtitle": "Purchase, payment and shipping basics.", "body": "Order confirmation depends on availability and accurate data. The chosen payment method applies with any related verification or fees.", "ctaText": "Shipping policy", "ctaLink": "/shipping" } }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        { "type": "size-guide", "variant": "detailed", "settings": { "badge": "Size Guide", "title": "Graceful Size Guide", "subtitle": "Slim, regular, relaxed and oversized fit reference.", "note": "Between sizes? Size up for a more relaxed fit.", "ctaText": "Back to shop", "ctaLink": "/shop", "guideRows": "X-Slim|0|2|32|24\nSlim|2|4|34|26\nRegular|4|6|36|28\nRelaxed|8|10|38|30\nOversized|12|14|40|32" } }
+      ]
+    },
+    "faq": {
+      "sections": [
+        { "type": "info-content", "settings": { "badge": "FAQ", "title": "Frequently Asked Questions", "subtitle": "Answers about sizing, shipping and payment.", "body": "Here are the most common questions about sizing, shipping, exchanges and payment.", "detailsTitle": "Top Questions", "details": "Sizing|Review the size guide; size up between sizes.\nShipping|24-48h processing, cost by governorate.\nPayment|COD, card or wallet.", "ctaText": "Contact us", "ctaLink": "/contact" } }
+      ]
+    },
+    "thank-you": {
+      "sections": [
+        { "type": "order-confirmation", "variant": "soft-thanks", "settings": { "title": "Thank you for your order", "description": "We received your order and will confirm the details shortly.", "continueShoppingText": "Back to shop", "orderNumberPrefix": "Order number:", "supportText": "Need help? Contact support via", "statusLabel": "Processing", "showTimeline": true, "showTrackOrder": true, "showReorder": true, "showRecommended": true, "trackOrderTitle": "Track your order", "trackOrderDescription": "Enter the same phone number used at checkout.", "trackOrderButtonText": "Show latest update", "reorderTitle": "Reorder your favorites", "reorderDescription": "Return the same pieces to your bag in one tap.", "reorderButtonText": "Add to bag", "reorderSuccessText": "Added to bag.", "recommendedTitle": "Recommended for you", "recommendedSubtitle": "Pieces styled around your order.", "recommendedBadge": "Graceful Picks", "recommendedLimit": 3, "recommendedCtaLabel": "Add to bag", "recommendedChooseOptionsLabel": "View details" } }
+      ]
+    },
+    "registration": {
+      "sections": ["member-registration"]
+    }
+  }
 }

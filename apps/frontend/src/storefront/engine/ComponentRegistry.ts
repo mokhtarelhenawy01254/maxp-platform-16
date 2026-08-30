@@ -60,6 +60,8 @@ const ScrollingCards = React.lazy(() => import('../sections/ScrollingCards'));
 const SocialGallery = React.lazy(() => import('../sections/SocialGallery'));
 const RichText = React.lazy(() => import('../sections/RichText'));
 const FeaturedProduct = React.lazy(() => import('../sections/FeaturedProduct'));
+const ReviewsCircle = React.lazy(() => import('../sections/Reviews'));
+const ShopTheLook = React.lazy(() => import('../sections/ShopTheLook'));
 
 const baseComponentRegistry: Record<
   string,
@@ -122,6 +124,8 @@ const baseComponentRegistry: Record<
   'social-gallery': SocialGallery,
   richtext: RichText,
   'featured-product': FeaturedProduct,
+  'review-circle': ReviewsCircle,
+  'shop-the-look': ShopTheLook,
 };
 
 /**

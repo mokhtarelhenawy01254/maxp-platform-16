@@ -55,7 +55,8 @@ type ShopCommandBarVariant =
   | 'elessi-bike-toolbar'
   | 'butcher-cut-console'
   | 'decision-deck'
-  | 'occasion-planner';
+  | 'occasion-planner'
+  | 'graceful-bar';
 
 const SHOP_COMMAND_BAR_FAMILY = 'ShopCommandBar';
 const SHOP_COMMAND_BAR_DEFAULT =
@@ -86,6 +87,7 @@ const normalizeShopCommandBarVariant = (rawVariant: unknown): ShopCommandBarVari
       value === 'elessi-bike-toolbar' ||
       value === 'butcher-cut-console' ||
       value === 'decision-deck' ||
+      value === 'graceful-bar' ||
       value === 'occasion-planner'
     ) &&
     hasRegisteredVariant(SHOP_COMMAND_BAR_FAMILY, value)
@@ -125,6 +127,8 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
   const isElessiDigitalToolbar = variant === 'elessi-digital-toolbar';
   const isElessiBikeToolbar = variant === 'elessi-bike-toolbar';
   const isButcherCutConsole = variant === 'butcher-cut-console';
+  const isGracefulBar = variant === 'graceful-bar';
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const chipLimit =
     typeof settings?.chipLimit === 'number' && settings.chipLimit > 0
       ? settings.chipLimit
@@ -284,8 +288,12 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
           : variant === 'spec-console'
             ? 'أدوات التصفح'
           : variant === 'decision-deck'
-            ? 'غرفة القرار'
-          : 'أدوات التصفح');
+            ? prefersArabicCopy
+              ? 'غرفة القرار'
+              : 'Decision deck'
+          : prefersArabicCopy
+            ? 'أدوات التصفح'
+            : 'Browse tools');
   const hideHeader = settings?.hideHeader === true;
   const hideDesktopCategoryChips = settings?.hideDesktopCategoryChips === true;
   const hideSearch = settings?.hideSearch === true;
@@ -311,10 +319,16 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
   const hasActiveControls =
     selectedCategory !== 'all' || Boolean(activeSearch) || selectedSort !== 'featured';
   const decisionModeLabel = activeSearch
-    ? 'بحث مباشر'
+    ? prefersArabicCopy
+      ? 'بحث مباشر'
+      : 'Live search'
     : hasActiveControls
-      ? 'فلترة مركزة'
-      : 'جاهز للاستكشاف';
+      ? prefersArabicCopy
+        ? 'فلترة مركزة'
+        : 'Focused filtering'
+      : prefersArabicCopy
+        ? 'جاهز للاستكشاف'
+        : 'Ready to explore';
 
   const handleSearchSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -324,6 +338,103 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
       }),
     );
   };
+
+  if (isGracefulBar) {
+    const totalProducts = isLoading ? '…' : pagination.total;
+    const isFilterOpen = filterPanelOpen;
+
+    return (
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4 border-b border-black/[0.06] pb-5">
+        {/* Filter dropdown */}
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setFilterPanelOpen(!isFilterOpen)}
+            aria-expanded={isFilterOpen}
+            className="inline-flex items-center gap-2.5 text-[15px] text-[#2f2f2f] transition-colors hover:text-[#e16244]"
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+              <path d="M3 6h18M7 12h10M10 18h4" />
+            </svg>
+            Filter
+          </button>
+          {isFilterOpen ? (
+            <div className="absolute left-0 top-full z-30 mt-3 w-72 rounded-[14px] border border-black/[0.06] bg-white p-5 shadow-[0_30px_70px_-32px_rgba(0,0,0,0.4)]">
+              <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#9a9a9a]">Categories</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchParams(applyCatalogFilters(searchParams, { categoryId: null }));
+                  }}
+                  className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                    selectedCategory === 'all'
+                      ? 'bg-[#171717] text-white'
+                      : 'border border-black/10 text-[#2f2f2f] hover:border-[#171717]'
+                  }`}
+                >
+                  {allCategoriesLabel}
+                </button>
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    onClick={() => {
+                      setSearchParams(applyCatalogFilters(searchParams, { categoryId: category.id }));
+                    }}
+                    className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                      selectedCategory === category.id
+                        ? 'bg-[#171717] text-white'
+                        : 'border border-black/10 text-[#2f2f2f] hover:border-[#171717]'
+                    }`}
+                  >
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+              {hasActiveControls ? (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="mt-4 text-xs font-semibold text-[#e16244] underline-offset-4 hover:underline"
+                >
+                  {clearButtonText}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        {/* Count */}
+        <p className="text-[15px] text-[#2f2f2f]">
+          Total products: <span className="font-semibold">{totalProducts}</span>
+        </p>
+
+        {/* Sort */}
+        <div className="flex items-center gap-3">
+          <span className="text-[15px] text-[#2f2f2f]">Sort by:</span>
+          <select
+            id={sortSelectId}
+            value={selectedSort}
+            onChange={(event) =>
+              setSearchParams(
+                applyCatalogFilters(searchParams, {
+                  sortValue: event.target.value,
+                }),
+              )
+            }
+            className="h-11 rounded-[10px] border border-black/[0.08] bg-[#f6f6f6] px-4 text-sm font-medium text-[#2f2f2f] outline-none transition-colors focus:border-[#171717]"
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+    );
+  }
 
   if (isButcherCutConsole) {
     return (
@@ -495,28 +606,51 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
   }
 
   if (isOccasionPlanner) {
-    const occasionRoutes = [
-      {
-        label: 'خطوبة أو كتب كتاب',
-        searchTerm: 'فستان',
-        note: 'قطع أنيقة لكن غير ثقيلة من أول مرور.',
-      },
-      {
-        label: 'دعوة عشاء',
-        searchTerm: 'سهرة',
-        note: 'خامات ولمعان خفيف مناسب للصور والمساء.',
-      },
-      {
-        label: 'نهار رسمي',
-        searchTerm: 'طقم',
-        note: 'إطلالة متوازنة لو المناسبة تبدأ بدري.',
-      },
-      {
-        label: 'طلب مستعجل',
-        searchTerm: 'جاهز',
-        note: 'ابدئي بالقطع الأقرب للحسم خلال يوم واحد.',
-      },
-    ];
+    const occasionRoutes = prefersArabicCopy
+      ? [
+          {
+            label: 'خطوبة أو كتب كتاب',
+            searchTerm: 'فستان',
+            note: 'قطع أنيقة لكن غير ثقيلة من أول مرور.',
+          },
+          {
+            label: 'دعوة عشاء',
+            searchTerm: 'سهرة',
+            note: 'خامات ولمعان خفيف مناسب للصور والمساء.',
+          },
+          {
+            label: 'نهار رسمي',
+            searchTerm: 'طقم',
+            note: 'إطلالة متوازنة لو المناسبة تبدأ بدري.',
+          },
+          {
+            label: 'طلب مستعجل',
+            searchTerm: 'جاهز',
+            note: 'ابدئي بالقطع الأقرب للحسم خلال يوم واحد.',
+          },
+        ]
+      : [
+          {
+            label: 'Engagement or Wedding',
+            searchTerm: 'dress',
+            note: 'Elegant pieces that stay light from the first pass.',
+          },
+          {
+            label: 'Dinner Invitation',
+            searchTerm: 'evening',
+            note: 'Fluid fabrics with a soft sheen made for evenings.',
+          },
+          {
+            label: 'Formal Daytime',
+            note: 'A balanced look if the occasion starts early.',
+            searchTerm: 'set',
+          },
+          {
+            label: 'Last-Minute Order',
+            note: 'Start with the quickest pieces to decide within a day.',
+            searchTerm: 'ready',
+          },
+        ];
 
     return (
       <section className="mb-6 overflow-hidden rounded-[2rem] border border-[#e9d9d1] bg-[linear-gradient(135deg,#fffdfb_0%,#f7efe8_46%,#fff9f4_100%)] shadow-[0_32px_88px_-64px_rgba(76,42,44,0.26)]">
@@ -1857,7 +1991,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
           <div className="grid gap-3 rounded-[1.5rem] border border-[#1f242c]/10 bg-white/82 p-3 sm:grid-cols-2 xl:grid-cols-4">
             <div className="rounded-[1rem] border border-[#1f242c]/8 bg-[#fffdf7] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7c818b]">
-                المسار الحالي
+                {prefersArabicCopy ? 'المسار الحالي' : 'Current path'}
               </p>
               <p className="mt-2 text-sm font-black text-[#1f242c]">
                 {activeCategoryLabel}
@@ -1865,7 +1999,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#1f242c]/8 bg-[#fffdf7] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7c818b]">
-                المعروض الآن
+                {prefersArabicCopy ? 'المعروض الآن' : 'Showing now'}
               </p>
               <p className="mt-2 text-sm font-black text-[#1f242c]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -1873,7 +2007,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#1f242c]/8 bg-[#fffdf7] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7c818b]">
-                ترتيب الفحص
+                {prefersArabicCopy ? 'ترتيب الفحص' : 'Sort review'}
               </p>
               <p className="mt-2 text-sm font-black text-[#1f242c]">
                 {selectedSortLabel}
@@ -1881,7 +2015,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#1f242c]/8 bg-[#1f242c] px-4 py-3 text-[#fff4d1] shadow-[0_24px_60px_-48px_rgba(31,36,44,0.72)]">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#ffd400]">
-                جاهزية القرار
+                {prefersArabicCopy ? 'جاهزية القرار' : 'Decision readiness'}
               </p>
               <p className="mt-2 text-sm font-black">
                 {decisionModeLabel}
@@ -1892,7 +2026,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
           <div className="grid gap-3 rounded-[1.45rem] border border-[#1f242c]/10 bg-white/76 p-3 sm:grid-cols-3">
             <div className="rounded-[1rem] border border-[#1f242c]/8 bg-[#fffdf6] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7c818b]">
-                التصنيف الحالي
+                {prefersArabicCopy ? 'التصنيف الحالي' : 'Current category'}
               </p>
               <p className="mt-2 text-sm font-black text-[#1f242c]">
                 {activeCategoryLabel}
@@ -1900,7 +2034,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#1f242c]/8 bg-[#fffdf6] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#7c818b]">
-                المطابق الآن
+                {prefersArabicCopy ? 'المطابق الآن' : 'Matching now'}
               </p>
               <p className="mt-2 text-sm font-black text-[#1f242c]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -1908,7 +2042,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#1f242c]/8 bg-[#1f242c] px-4 py-3 text-[#fff4d1] shadow-[0_24px_60px_-48px_rgba(31,36,44,0.72)]">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#ffd400]">
-                ترتيب القراءة
+                {prefersArabicCopy ? 'ترتيب القراءة' : 'Read order'}
               </p>
               <p className="mt-2 text-sm font-black">
                 {selectedSortLabel}
@@ -1927,7 +2061,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#efe0d4] bg-[#fffaf6] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8f5c44]">
-                المعروض الآن
+                {prefersArabicCopy ? 'المعروض الآن' : 'Showing now'}
               </p>
               <p className="mt-2 text-sm font-black text-[#2d211e]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -1954,7 +2088,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#e7dccd] bg-[#fffdf7] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8a6a48]">
-                المطابق الآن
+                {prefersArabicCopy ? 'المطابق الآن' : 'Matching now'}
               </p>
               <p className="mt-2 text-sm font-black text-[#2d241f]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -1981,7 +2115,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#efe0d4] bg-[#fffaf6] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8f5c44]">
-                المعروض الآن
+                {prefersArabicCopy ? 'المعروض الآن' : 'Showing now'}
               </p>
               <p className="mt-2 text-sm font-bold text-[#2d211e]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -2008,7 +2142,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#f0e4dd] bg-[#fffaf6] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8b623e]">
-                المعروض الآن
+                {prefersArabicCopy ? 'المعروض الآن' : 'Showing now'}
               </p>
               <p className="mt-2 text-sm font-bold text-[#3d292c]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -2035,7 +2169,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#f0e2db] bg-[#fffaf6] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8f4d41]">
-                المعروض الآن
+                {prefersArabicCopy ? 'المعروض الآن' : 'Showing now'}
               </p>
               <p className="mt-2 text-sm font-bold text-[#3d2a2f]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -2104,7 +2238,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             </div>
             <div className="rounded-[1rem] border border-[#f0e4dd] bg-[#fffaf6] px-4 py-3">
               <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8b623e]">
-                المعروض الآن
+                {prefersArabicCopy ? 'المعروض الآن' : 'Showing now'}
               </p>
               <p className="mt-2 text-sm font-bold text-[#3d292c]">
                 {isLoading ? '...' : `${pagination.total} ${resultsLabel}`}
@@ -2177,7 +2311,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                     : 'bg-primary text-primary-foreground'
                 }`}
               >
-                بحث
+                {prefersArabicCopy ? 'بحث' : 'Search'}
               </button>
             </form>
           ) : null}
