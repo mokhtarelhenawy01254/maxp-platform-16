@@ -673,7 +673,7 @@ class ApiClient {
 
     return this.client.post<T>(url, formData, {
       headers: {
-        /* boundary set by browser */,
+        // boundary set by browser
       },
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
