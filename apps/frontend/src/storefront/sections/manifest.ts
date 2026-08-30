@@ -3112,8 +3112,8 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { key: "cards", label: "البطاقات (العنوان|الوصف|الصورة|نص الزر|الرابط)", type: "textarea", placeholder: "Women in Style|Effortless pieces|https://...|Shop Now|/shop" },
     ],
   },
-  countdown: {
-    label: "Countdown (عدّاد تنازلي)",
+  "countdown-banner": {
+    label: "Countdown Banner (عدّاد تنازلي)",
     component: "countdown",
     note: "قسم عدّاد تنازلي مستقل بخلفية صورة وأرقام أيام/ساعات/دقائق/ثواني حية.",
     pages: ["home", "sale"],

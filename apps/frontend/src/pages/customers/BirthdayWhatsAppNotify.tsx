@@ -167,7 +167,7 @@ const BirthdayWhatsAppNotify: React.FC = () => {
 
         {/* ═══ أعياد اليوم والقادمة ═══ */}
         <TabsContent value="audience" className="space-y-5">
-          <BirthdaySection title="أعياد النهارده" icon={<Sparkles className="h-4 w-4 text-amber-500" />} list={todayList} loading={loading} emptyText="مفيش عميلة عندها عيد ميلاد النهارده" highlight />
+          <BirthdaySection title="أعياد النهارده" icon={<Sparkles className="h-4 w-4 text-amber-500" />} list={todayList} loading={loading} emptyText="مفيش عميلة عندها عيد ميلاد النهارده — سجلي تواريخ الميلاد من صفحة العميلة" highlight />
           <BirthdaySection title="القادمة خلال 30 يوم" icon={<CalendarDays className="h-4 w-4" />} list={upcomingList.slice(0, 15)} loading={loading} emptyText="مفيش أعياد قريبة" />
         </TabsContent>
 

@@ -142,7 +142,8 @@ async function processDueOccasions() {
     take: 50,
   });
 
-  // ربط حي: لو المناسبة متربطة بقالب، استخدم محتوى القالب الحالي كرسالة
+  // ربط حي: لو المناسبة متربطة بقالب، استخدم محتوى القالب + eventType القالب نفسه
+  // عشان findNotificationTemplateForEvent يلقط القالب الميتا الصحيح الخاص بالمناسبة دي
   const templateIds = occasions.map(o => o.templateId).filter(Boolean);
   const templateMap = new Map();
   if (templateIds.length > 0) {
@@ -198,6 +199,9 @@ async function processDueOccasions() {
           if (!phone) continue;
           const name = `${customer.firstName || ''} ${customer.lastName || ''}`.trim() || 'عزيزي العميل';
           try {
+            // eventType القالب المرتبط (إن وجد) — عشان ميتا يلقط القالب المحدد للمناسبة دي
+            // fallback: قالب ميتا مناسبة عام معتمد أو contentOverride بنص المناسبة
+            const tplEventType = tpl?.eventType || 'CUSTOMER_OCCASION_msvsy2ut';
             const result = await WhatsAppNotificationService.sendNotification({
               companyId: occ.companyId,
               deliveryStrategy: 'platform-fallback',
@@ -205,7 +209,7 @@ async function processDueOccasions() {
               recipientName: name,
               recipientType: 'CUSTOMER',
               category: 'OCCASION',
-              eventType: 'CUSTOMER_OCCASION_msvsy2ut',
+              eventType: tplEventType,
               contentOverride: message,
               variables: {
                 customerName: name,

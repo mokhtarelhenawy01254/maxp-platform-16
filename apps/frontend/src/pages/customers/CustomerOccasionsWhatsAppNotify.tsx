@@ -349,14 +349,16 @@ const CustomerOccasionsWhatsAppNotify: React.FC = () => {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label>نص الرسالة</Label>
+                <Label>الرسالة</Label>
                 <Button type="button" variant="outline" size="sm" onClick={() => setMetaModalOpen(true)} className="rounded-full border-emerald-300 text-emerald-700 hover:bg-emerald-50 dark:border-emerald-700 dark:text-emerald-300">
                   <LayoutTemplate className="h-3.5 w-3.5" />
                   اختيار قالب ميتا
                 </Button>
               </div>
-              <Textarea rows={6} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="rounded-xl" maxLength={3000} />
-              <p className="text-xs text-[color:var(--color-muted-foreground)]">متغيرات: {'{اسم العميل}'} · {'{اسم المناسبة}'} · {'{customer_link}'}</p>
+              <Textarea rows={5} value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} className="rounded-xl" maxLength={3000} placeholder="أو اكتبي رسالة عادية هنا…" />
+              <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                متغيرات: {'{اسم العميل}'} · {'{اسم المناسبة}'} · {'{customer_link}'} — القوالب الميتا المعتمدة أسرع وأرخص في الإرسال
+              </p>
             </div>
 
             <div className="space-y-1.5">

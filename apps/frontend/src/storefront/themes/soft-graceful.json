@@ -227,7 +227,7 @@
           }
         },
         {
-          "type": "countdown",
+          "type": "countdown-banner",
           "variant": "layered",
           "settings": {
             "heading": "New Season Layers",

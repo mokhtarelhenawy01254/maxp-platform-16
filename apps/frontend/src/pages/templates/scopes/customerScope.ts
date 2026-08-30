@@ -444,7 +444,62 @@ export const customerScopeConfig: TemplateScopeConfig = {
       };
     });
 
-    return [...scheduleRows, ...occasionRows, ...productRows, ...cadenceRows];
+    // 🎂 قوالب الميلاد والتقييم — من قوالب category=CUSTOMER بـ eventType المخصص
+    // (جربت من نفس مصدر occasionTemplates لكن بفئتها)
+    const specialTemplates = all.filter((t) => {
+      const ev = String(t.eventType || "").toUpperCase();
+      return ev === "BIRTHDAY_WISH" || ev === "REVIEW_REQUEST";
+    });
+    const specialGroups = new Map<string, TemplateItem[]>();
+    for (const t of specialTemplates) {
+      const key = t.eventType as string;
+      const arr = specialGroups.get(key) || [];
+      arr.push(t);
+      specialGroups.set(key, arr);
+    }
+    const specialRows: EventRow[] = Array.from(specialGroups.entries()).map(([eventType, list], idx): EventRow => {
+      const regular = slotTemplate(list, "BAILEYS");
+      const meta = slotTemplate(list, "META_CLOUD");
+      const regularTemplate: Template | null = regular
+        ? {
+            ...regular,
+            id: regular.id || "",
+            name: regular.name || "قالب",
+            content: normalizeToDouble(regular.content || ""),
+            isActive: regular.isActive ?? true,
+            eventType,
+          }
+        : null;
+      const metaTemplate: Template | null = meta
+        ? {
+            ...meta,
+            id: meta.id || "",
+            name: meta.name || "قالب واتساب بيزنس",
+            content: normalizeToDouble(meta.content || ""),
+            isActive: meta.isActive ?? true,
+            eventType,
+          }
+        : null;
+      const isBirthday = eventType === "BIRTHDAY_WISH";
+      return {
+        id: regular?.id || meta?.id || eventType,
+        code: eventType,
+        name: isBirthday ? "عيد ميلاد العميل" : "طلب تقييم",
+        color: isBirthday ? "#F59E0B" : "#10B981",
+        sortOrder: 1500 + idx,
+        statusType: "custom" as const,
+        notifyCustomer: regular?.isActive ?? meta?.isActive ?? true,
+        isSystemStatus: false,
+        template: regularTemplate,
+        metaTemplate,
+        hasTemplate: !!regularTemplate,
+        hasMetaTemplate: !!metaTemplate,
+        isNonNotifiable: false,
+        category: "CUSTOMER",
+      };
+    });
+
+    return [...scheduleRows, ...occasionRows, ...productRows, ...cadenceRows, ...specialRows];
   },
 
   toggleNotify: async (api: ApiLike, row: EventRow): Promise<void> => {

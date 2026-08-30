@@ -31,6 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import ConfirmDialog from "@/components/common/ConfirmDialog";
+import MetaTemplatesModal from "../customers/components/MetaTemplatesModal";
 import { Label } from "@/components/ui/label";
 import { normalizeVariableSyntax } from "./utils";
 import type { TemplateScopeConfig, EventRow } from "./types";
@@ -545,6 +546,36 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
   const [testing, setTesting] = useState(false);
   // ── شريط الإنشاء الموحد فوق كل تبويب (عربي) ──
   const [topCreateEvent, setTopCreateEvent] = useState("");
+  // 🔗 المناسبات الحقيقية المجدولة (من صفحة مناسبات العملاء) — للربط بالقوالب
+  const [liveOccasions, setLiveOccasions] = useState<Array<{ id: string; name: string; scheduledAt: string; recurrence: string; templateId: string | null; totalSent: number }>>([]);
+  const [linkedOccasionId, setLinkedOccasionId] = useState<string | null>(null);
+  const [linkingOccasion, setLinkingOccasion] = useState<{ id: string; name: string } | null>(null);
+
+  const loadLiveOccasions = useCallback(async () => {
+    try {
+      const res = await apiClient.get("/customers/whatsapp-notify/occasions");
+      setLiveOccasions(res.data?.data || []);
+    } catch {
+      // صامت — المناسبات اختيارية في العرض
+    }
+  }, []);
+
+  useEffect(() => {
+    if (config.scope === "customers") loadLiveOccasions();
+  }, [config.scope, loadLiveOccasions]);
+
+  // ربط مناسبة بقالب معين
+  const linkOccasionToTemplate = useCallback(async (occasionId: string, templateId: string | null) => {
+    try {
+      await apiClient.put(`/customers/whatsapp-notify/occasions/${occasionId}`, { templateId });
+      toast.success("اتربطت المناسبة بالقالب");
+      setLinkedOccasionId(null);
+      loadLiveOccasions();
+    } catch (e: unknown) {
+      const msg = (e as { response?: { data?: { message?: string } } })?.response?.data?.message || "فشل الربط";
+      toast.error(msg);
+    }
+  }, [loadLiveOccasions]);
 
   const saveScheduleRow = async (row: EventRow) => {
     if (!editingSchedule || !config.saveSchedule) return;
@@ -2171,6 +2202,72 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
               <span className="text-xs text-slate-400 dark:text-slate-500">
                 {visibleStatuses.length} {noun.plural} في هذا التبويب
               </span>
+            </div>
+          )}
+
+          
+          {/* 🔗 المناسبات المجدولة الحقيقية — كل مناسبة ليها قالبها الخاص (ميتا أو عادي) */}
+          {config.scope === "customers" && activeTab === "occasions" && liveOccasions.length > 0 && (
+            <div className="mb-4 rounded-xl border border-violet-200/70 bg-violet-50/40 p-4 dark:border-violet-900/30 dark:bg-violet-950/20">
+              <div className="mb-2 flex items-center justify-between">
+                <div>
+                  <h3 className="text-sm font-bold text-violet-900 dark:text-violet-200">
+                    المناسبات المجدولة ({liveOccasions.length})
+                  </h3>
+                  <p className="text-xs text-violet-600 dark:text-violet-400">
+                    كل مناسبة بتبعت برسالتها الخاصة — اربطي كل مناسبة بقالب ميتا أو رسالة عادية
+                  </p>
+                </div>
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {liveOccasions.map((occ) => {
+                  const isLinked = linkedOccasionId === occ.id;
+                  return (
+                    <div
+                      key={occ.id}
+                      className="rounded-lg border border-violet-200 bg-white p-3 dark:border-violet-900/40 dark:bg-slate-900/50"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-slate-900 dark:text-white">{occ.name}</p>
+                          <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                            {new Date(occ.scheduledAt).toLocaleDateString("ar-EG", { day: "numeric", month: "long" })}
+                            {" · "}
+                            {occ.recurrence === "yearly" ? "سنوي" : occ.recurrence === "monthly" ? "شهري" : "مرة واحدة"}
+                            {" · "}
+                            {(occ.totalSent || 0).toLocaleString("ar-EG")} مرسل
+                          </p>
+                        </div>
+                        {occ.templateId && !isLinked && (
+                          <span className="shrink-0 rounded-full bg-green-100 px-2 py-0.5 text-[10px] font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                            ✓ مربوطة بقالب
+                          </span>
+                        )}
+                      </div>
+                      {!occ.templateId ? (
+                        <button
+                          onClick={() => setLinkingOccasion({ id: occ.id, name: occ.name })}
+                          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-[11px] font-medium text-white transition hover:bg-blue-700"
+                        >
+                          <span>🔗</span>
+                          اختيار قالب ميتا للمناسبة
+                        </button>
+                      ) : isLinked ? (
+                        <p className="mt-2 rounded-md bg-violet-100/60 p-2 text-[11px] text-violet-700 dark:bg-violet-900/30 dark:text-violet-300">
+                          جاري الربط… اختاري القالب من النافذة
+                        </p>
+                      ) : (
+                        <button
+                          onClick={() => setLinkingOccasion({ id: occ.id, name: occ.name })}
+                          className="mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-violet-300 px-3 py-1.5 text-[11px] font-medium text-violet-700 transition hover:bg-violet-50 dark:border-violet-800 dark:text-violet-300"
+                        >
+                          🔄 تغيير القالب
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -3996,6 +4093,22 @@ function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[];
             </div>
           </div>
         </>
+      )}
+      {linkingOccasion && (
+        <MetaTemplatesModal
+          open={!!linkingOccasion}
+          onClose={() => setLinkingOccasion(null)}
+          onPick={async (_content: string, template?: { id?: string }) => {
+            if (!template?.id) {
+              toast.error("اختاري قالب ميتا معتمد");
+              return;
+            }
+            const occ = linkingOccasion;
+            setLinkingOccasion(null);
+            await linkOccasionToTemplate(occ.id, template.id);
+          }}
+          title={`ربط مناسبة: ${linkingOccasion.name}`}
+        />
       )}
     </div>
   );
