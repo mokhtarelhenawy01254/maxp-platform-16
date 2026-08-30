@@ -371,3 +371,7 @@ dogfood-output/
 
 # Playwright MCP snapshots (transient)
 .playwright-mcp/
+
+# local browser automation artifacts
+.playwright-cli/
+.playwright-shots/
