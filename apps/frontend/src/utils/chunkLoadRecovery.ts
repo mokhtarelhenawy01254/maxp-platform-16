@@ -151,9 +151,6 @@ export const recoverFromChunkLoadError = (
   // Purge SW caches to prevent reloading stale or corrupt SW entries
   void clearAllSWCaches();
 
-  // Purge SW caches to prevent reloading stale or corrupt SW entries
-  void clearAllSWCaches();
-
   window.setTimeout(() => {
     window.location.reload();
   }, 0);
