@@ -4117,9 +4117,17 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
   })();
 
   // Build social links: merge theme social links with footerSettings links (user settings override)
+  // Only known social platforms are picked up — footerSettings also carries
+  // non-social string fields (aboutStore/email/phone/copyrightText/address).
   const mergedFooterSocialLinks = {
     ...(theme.footer?.socialLinks || {}),
-    ...normalizeSocialLinks(footerSettings),
+    ...normalizeSocialLinks(footerSettings?.socialLinks || footerSettings, [
+      'facebook', 'instagram', 'whatsapp', 'messenger', 'x', 'twitter',
+      'youtube', 'tiktok', 'snapchat', 'linkedin', 'telegram', 'pinterest',
+      'ticktok', 'snap', 'x.com', 'twitter.com', 'instagram.com',
+      'facebook.com', 'whatsapp.com', 'wa.me', 'tiktok.com', 'youtube.com',
+      'linkedin.com', 'telegram.com', 'pinterest.com',
+    ]),
   };
 
   const runtimeStorefrontSettings =
@@ -4130,14 +4138,24 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     settings?.storefront?.designTokens && typeof settings.storefront.designTokens === 'object'
       ? (settings.storefront.designTokens as Record<string, unknown>)
       : {};
-  function normalizeSocialLinks(value: unknown): Record<string, string> {
+  function normalizeSocialLinks(
+    value: unknown,
+    allowedKeys?: string[],
+  ): Record<string, string> {
     if (!value || typeof value !== 'object' || Array.isArray(value)) {
       return {};
     }
 
+    const allowed = allowedKeys?.length
+      ? new Set(allowedKeys.map((key) => key.toLowerCase()))
+      : null;
+
     return Object.entries(value as Record<string, unknown>).reduce<Record<string, string>>(
       (links, [key, url]) => {
         if (typeof url === 'string' && url.trim()) {
+          if (allowed && !allowed.has(key.trim().toLowerCase())) {
+            return links;
+          }
           links[key] = url.trim();
         }
         return links;

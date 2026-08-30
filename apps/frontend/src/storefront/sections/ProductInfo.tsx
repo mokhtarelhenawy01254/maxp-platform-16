@@ -1160,10 +1160,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         ? 'after-description'
         : pdpQuickOrderSettings.placement;
   const pdpQuickOrderSurfaceMode =
-    hasStoredPdpQuickOrderSettings
-      ? pdpQuickOrderSettings.surfaceMode
-      : embeddedPdpCheckoutSettings?.surfaceMode === 'merged-buybox'
+    embeddedPdpCheckoutSettings?.surfaceMode === 'merged-buybox'
       ? 'merged-buybox'
+      : hasStoredPdpQuickOrderSettings
+      ? pdpQuickOrderSettings.surfaceMode
       : 'standalone';
   const supportsInlineQuickOrderPlacement =
     !isIntruderNft &&
