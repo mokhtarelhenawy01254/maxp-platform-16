@@ -3677,6 +3677,10 @@ declare module 'react-i18next' {
         metricTracking: string;
         metricOut: string;
         search: string;
+        filterCategory: string;
+        filterPreOrder: string;
+        filterTracking: string;
+        filterStock: string;
         allCategories: string;
         allPreOrder: string;
         preOrderOn: string;
@@ -3703,6 +3707,7 @@ declare module 'react-i18next' {
         variants: string;
         trackSaved: string;
         preOrderSaved: string;
+        preOrderDateSaved: string;
         saveError: string;
         loadError: string;
         edit: string;

@@ -26,6 +26,8 @@ import {
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Switch } from "../../components/ui/switch";
+import { Label } from "../../components/ui/label";
+import ErrorBoundary from "../../components/common/ErrorBoundary";
 import {
   Select,
   SelectContent,
@@ -107,6 +109,31 @@ function Skeleton({ className }: { className?: string }) {
   );
 }
 
+function parseSafeDate(value: string | null | undefined): Date | null {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return date;
+}
+
+function formatSafeDate(
+  value: string | null | undefined,
+  locale: string,
+): string {
+  const date = parseSafeDate(value);
+  if (!date) return "";
+  return date.toLocaleDateString(locale);
+}
+
+function toDateInputValue(value: string | null | undefined): string {
+  const date = parseSafeDate(value);
+  if (!date) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 const ProductAvailabilityGrid: React.FC = () => {
   const { t } = useTranslation();
   const { formatPrice } = useCurrency();
@@ -138,7 +165,6 @@ const ProductAvailabilityGrid: React.FC = () => {
       do {
         const response = await apiClient.get<AvailabilityResponse>("products", {
           params: { page: currentPage, limit, sortBy: "name", sortOrder: "asc" },
-          _skipTransientRetry: true,
         });
         const data = response.data;
         if (data.success) {
@@ -225,7 +251,6 @@ const ProductAvailabilityGrid: React.FC = () => {
       }
     });
     return result;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rows, search, categoryFilter, preOrderFilter, trackFilter, stockFilter, sortBy, sortDir]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -249,15 +274,23 @@ const ProductAvailabilityGrid: React.FC = () => {
     const key = `${row.id}:${field}`;
     setSavingKey(key);
     const previous = { ...row };
+    const nextRow = { ...row, [field]: value };
+    if (field === "isPreOrder" && value && !row.preOrderDate) {
+      const now = new Date();
+      nextRow.preOrderDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    }
+    if (field === "isPreOrder" && !value) {
+      nextRow.preOrderDate = null;
+    }
     setRows((prev) =>
       prev.map((r) =>
-        r.id === row.id ? { ...r, [field]: value } : r,
+        r.id === row.id ? nextRow : r,
       ),
     );
     try {
       const payload: Record<string, unknown> = { [field]: value };
-      if (field === "isPreOrder" && !value) {
-        payload.preOrderDate = null;
+      if (field === "isPreOrder") {
+        payload.preOrderDate = nextRow.preOrderDate;
       }
       const res = await apiClient.patch(`products/${row.id}`, payload, {
         timeout: 60000,
@@ -269,6 +302,36 @@ const ProductAvailabilityGrid: React.FC = () => {
         field === "trackInventory"
           ? t("productAvailability.trackSaved", "تم تحديث تتبع المخزون") as string
           : t("productAvailability.preOrderSaved", "تم تحديث الطلب المسبق") as string,
+      );
+    } catch (err) {
+      setRows((prev) =>
+        prev.map((r) => (r.id === row.id ? previous : r)),
+      );
+      toast.error(t("productAvailability.saveError", "فشل الحفظ") as string);
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  const savePreOrderDate = async (row: AvailabilityRow, dateValue: string) => {
+    const key = `${row.id}:preOrderDate`;
+    setSavingKey(key);
+    const previous = { ...row };
+    const nextDate = dateValue || null;
+    setRows((prev) =>
+      prev.map((r) =>
+        r.id === row.id ? { ...r, preOrderDate: nextDate } : r,
+      ),
+    );
+    try {
+      const res = await apiClient.patch(`products/${row.id}`, { preOrderDate: nextDate }, {
+        timeout: 60000,
+      });
+      if (res.data?.success === false) {
+        throw new Error(res.data?.message || "save failed");
+      }
+      toast.success(
+        t("productAvailability.preOrderDateSaved", "تم تحديث تاريخ الطلب المسبق") as string,
       );
     } catch (err) {
       setRows((prev) =>
@@ -309,7 +372,7 @@ const ProductAvailabilityGrid: React.FC = () => {
       row.stock,
       row.trackInventory ? "yes" : "no",
       row.isPreOrder ? "yes" : "no",
-      row.preOrderDate ? new Date(row.preOrderDate).toLocaleDateString("en-CA") : "",
+      row.preOrderDate ? formatSafeDate(row.preOrderDate, "en-CA") : "",
       getStockStatus(row),
     ]);
     const csv = [headers, ...rowsData]
@@ -433,56 +496,77 @@ const ProductAvailabilityGrid: React.FC = () => {
                     setPage(1);
                   }}
                   placeholder={t("productAvailability.search", "بحث بالاسم أو SKU...") as string}
+                  aria-label={t("productAvailability.search", "بحث بالاسم أو SKU...") as string}
                   className="pl-9 w-full xl:w-60"
                 />
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <div className="flex items-center gap-1.5">
-                  <FunnelIcon className="h-4 w-4 text-gray-400" />
-                  <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v ?? "all"); setPage(1); }}>
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder={t("productAvailability.allCategories", "كل الأقسام")} />
+                <div className="flex flex-col gap-1">
+                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-category-filter">
+                    {t("productAvailability.filterCategory", "القسم")}
+                  </Label>
+                  <div className="flex items-center gap-1.5">
+                    <FunnelIcon className="h-4 w-4 text-gray-400" />
+                    <Select value={categoryFilter} onValueChange={(v) => { setCategoryFilter(v ?? "all"); setPage(1); }}>
+                      <SelectTrigger id="availability-category-filter" className="w-40" aria-label={t("productAvailability.filterCategory", "القسم")}>
+                        <SelectValue placeholder={t("productAvailability.allCategories", "كل الأقسام")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t("productAvailability.allCategories", "كل الأقسام")}</SelectItem>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-preorder-filter">
+                    {t("productAvailability.filterPreOrder", "الطلب المسبق")}
+                  </Label>
+                  <Select value={preOrderFilter} onValueChange={(v) => { setPreOrderFilter(v ?? "all"); setPage(1); }}>
+                    <SelectTrigger id="availability-preorder-filter" className="w-40" aria-label={t("productAvailability.filterPreOrder", "الطلب المسبق")}>
+                      <SelectValue placeholder={t("productAvailability.allPreOrder", "الطلب المسبق")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">{t("productAvailability.allCategories", "كل الأقسام")}</SelectItem>
-                      {categories.map((cat) => (
-                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                      ))}
+                      <SelectItem value="all">{t("productAvailability.allPreOrder", "الطلب المسبق")}</SelectItem>
+                      <SelectItem value="on">{t("productAvailability.preOrderOn", "مفعل")}</SelectItem>
+                      <SelectItem value="off">{t("productAvailability.preOrderOff", "معطل")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <Select value={preOrderFilter} onValueChange={(v) => { setPreOrderFilter(v ?? "all"); setPage(1); }}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t("productAvailability.allPreOrder", "الطلب المسبق")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t("productAvailability.allPreOrder", "الطلب المسبق")}</SelectItem>
-                    <SelectItem value="on">{t("productAvailability.preOrderOn", "مفعل")}</SelectItem>
-                    <SelectItem value="off">{t("productAvailability.preOrderOff", "معطل")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={trackFilter} onValueChange={(v) => { setTrackFilter(v ?? "all"); setPage(1); }}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t("productAvailability.allTracking", "تتبع المخزون")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t("productAvailability.allTracking", "تتبع المخزون")}</SelectItem>
-                    <SelectItem value="on">{t("productAvailability.trackingOn", "مفعل")}</SelectItem>
-                    <SelectItem value="off">{t("productAvailability.trackingOff", "معطل")}</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={stockFilter} onValueChange={(v) => { setStockFilter(v ?? "all"); setPage(1); }}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder={t("productAvailability.allStock", "حالة المخزون")} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">{t("productAvailability.allStock", "حالة المخزون")}</SelectItem>
-                    <SelectItem value="in-stock">{STOCK_STATUS_META["in-stock"].label}</SelectItem>
-                    <SelectItem value="low-stock">{STOCK_STATUS_META["low-stock"].label}</SelectItem>
-                    <SelectItem value="out-of-stock">{STOCK_STATUS_META["out-of-stock"].label}</SelectItem>
-                    <SelectItem value="untracked">{STOCK_STATUS_META.untracked.label}</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-tracking-filter">
+                    {t("productAvailability.filterTracking", "تتبع المخزون")}
+                  </Label>
+                  <Select value={trackFilter} onValueChange={(v) => { setTrackFilter(v ?? "all"); setPage(1); }}>
+                    <SelectTrigger id="availability-tracking-filter" className="w-40" aria-label={t("productAvailability.filterTracking", "تتبع المخزون")}>
+                      <SelectValue placeholder={t("productAvailability.allTracking", "تتبع المخزون")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("productAvailability.allTracking", "تتبع المخزون")}</SelectItem>
+                      <SelectItem value="on">{t("productAvailability.trackingOn", "مفعل")}</SelectItem>
+                      <SelectItem value="off">{t("productAvailability.trackingOff", "معطل")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <Label className="text-[11px] text-gray-500 dark:text-gray-400" htmlFor="availability-stock-filter">
+                    {t("productAvailability.filterStock", "حالة المخزون")}
+                  </Label>
+                  <Select value={stockFilter} onValueChange={(v) => { setStockFilter(v ?? "all"); setPage(1); }}>
+                    <SelectTrigger id="availability-stock-filter" className="w-40" aria-label={t("productAvailability.filterStock", "حالة المخزون")}>
+                      <SelectValue placeholder={t("productAvailability.allStock", "حالة المخزون")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t("productAvailability.allStock", "حالة المخزون")}</SelectItem>
+                      <SelectItem value="in-stock">{STOCK_STATUS_META["in-stock"].label}</SelectItem>
+                      <SelectItem value="low-stock">{STOCK_STATUS_META["low-stock"].label}</SelectItem>
+                      <SelectItem value="out-of-stock">{STOCK_STATUS_META["out-of-stock"].label}</SelectItem>
+                      <SelectItem value="untracked">{STOCK_STATUS_META.untracked.label}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </CardHeader>
@@ -490,6 +574,7 @@ const ProductAvailabilityGrid: React.FC = () => {
 
         <Card>
           <CardContent className="pt-4">
+            <ErrorBoundary>
             {loading ? (
               <div className="space-y-3">
                 <Skeleton className="h-10 w-full" />
@@ -530,6 +615,7 @@ const ProductAvailabilityGrid: React.FC = () => {
                       const imageUrl = row.image ? getImageUrl(row.image) : null;
                       const trackSaving = savingKey === `${row.id}:trackInventory`;
                       const preOrderSaving = savingKey === `${row.id}:isPreOrder`;
+                      const preOrderDateSaving = savingKey === `${row.id}:preOrderDate`;
                       return (
                         <TableRow key={row.id} className={index % 2 === 1 ? "bg-gray-50 dark:bg-gray-800/50" : ""}>
                           <TableCell className="text-center text-xs text-gray-400 font-mono">
@@ -615,10 +701,22 @@ const ProductAvailabilityGrid: React.FC = () => {
                             </div>
                           </TableCell>
                           <TableCell className="text-center">
-                            {row.preOrderDate ? (
-                              <span className="text-xs text-gray-600 dark:text-gray-300">
-                                {new Date(row.preOrderDate).toLocaleDateString("ar-EG")}
-                              </span>
+                            {row.isPreOrder ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <input
+                                  type="date"
+                                  value={toDateInputValue(row.preOrderDate)}
+                                  disabled={preOrderDateSaving}
+                                  onChange={(event) => savePreOrderDate(row, event.target.value)}
+                                  aria-label={t("productAvailability.colPreOrderDate", "تاريخ الطلب") as string}
+                                  className="h-8 w-[130px] rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2 text-xs text-gray-900 dark:text-white focus:border-indigo-500 focus:ring-indigo-500 focus:outline-none"
+                                />
+                                {row.preOrderDate && (
+                                  <span className="text-[10px] text-gray-400">
+                                    {formatSafeDate(row.preOrderDate, "ar-EG")}
+                                  </span>
+                                )}
+                              </div>
                             ) : (
                               <span className="text-xs text-gray-400">—</span>
                             )}
@@ -707,6 +805,7 @@ const ProductAvailabilityGrid: React.FC = () => {
                 </Pagination>
               </div>
             )}
+            </ErrorBoundary>
           </CardContent>
         </Card>
 

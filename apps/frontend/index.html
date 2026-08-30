@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" href="/favicon.ico" />
+  <link rel="icon" href="/icons/icon-96x96.svg" type="image/svg+xml" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="منصة متكاملة لإدارة التواصل والتجارة الإلكترونية للشركات" />
   <meta name="keywords"
@@ -17,6 +18,7 @@
   <meta property="og:description" content="منصة متكاملة لإدارة المحادثات، الذكاء الاصطناعي، والمتاجر الرقمية في مكان واحد." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://maxp.online" />
+  <link rel="canonical" href="https://maxp.online" />
   <meta property="og:image" content="https://maxp.online/og-cover.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -322,43 +324,20 @@
     <div class="text">جاري التحميل...</div>
   </div>
 
+  <noscript>
+    <div style="background:#f9fafb;color:#111827;padding:40px;text-align:center;font-family:UI,sans-serif">
+      <h2>تم تعطيل JavaScript</h2>
+      <p>للاستفادة من كل مميزات منصة MaxP، يُرجى تفعيل JavaScript في المتصفح.</p>
+      <p>يمكنك تصفح المحتوى الأساسي، ولكن بعض الميزات قد لا تعمل.</p>
+    </div>
+  </noscript>
+
   <script src="/js/storefront-detection.js"></script>
 
   <!--
-    CRITICAL: Aggressive SW + cache cleanup on every page load.
-    This runs BEFORE React or any module scripts. It unregisters every
-    service worker that is NOT sw-v4.js and wipes all CacheStorage entries,
-    eliminating stale cached HTML/chunks that cause infinite reload loops
-    after deployments.
+    Service worker management is handled by the React app (main.tsx).
+    Legacy workers are automatically unregistered on startup.
   -->
-  <script>
-    (function () {
-      var CURRENT_SW = /\/sw-v4\.js(?:[?#].*)?$/;
-      try {
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.getRegistrations().then(function (regs) {
-            regs.forEach(function (reg) {
-              var url =
-                (reg.active && reg.active.scriptURL) ||
-                (reg.waiting && reg.waiting.scriptURL) ||
-                (reg.installing && reg.installing.scriptURL) ||
-                '';
-              if (url && !CURRENT_SW.test(url)) {
-                reg.unregister();
-              }
-            });
-          });
-        }
-      } catch (_) {}
-      try {
-        if ('caches' in window) {
-          caches.keys().then(function (keys) {
-            keys.forEach(function (k) { caches.delete(k); });
-          });
-        }
-      } catch (_) {}
-    })();
-  </script>
 
   <!-- React app root -->
   <div id="root"></div>
@@ -369,29 +348,6 @@
     based on the active theme's headingFont/bodyFont configuration.
     This avoids loading all 11 Google Fonts for every store visit.
   -->
-
-  <script src="/js/chunk-recovery.js"></script>
-
-  <!-- Fallback for old route bundles that reference undefined getStatusText -->
-  <script>
-    window.getStatusText = function(s) {
-      var key = (s || 'PENDING').toUpperCase().trim().replace(/\s+/g, '_');
-      var labels = {
-        PENDING: '\u0642\u064A\u062F \u0627\u0644\u0627\u0646\u062A\u0638\u0627\u0631',
-        CONFIRMED: '\u0645\u0624\u0643\u062F',
-        PROCESSING: '\u0642\u064A\u062F \u0627\u0644\u062A\u062C\u0647\u064A\u0632',
-        SHIPPED: '\u062A\u0645 \u0627\u0644\u0634\u062D\u0646',
-        DELIVERED: '\u062A\u0645 \u0627\u0644\u062A\u0633\u0644\u064A\u0645',
-        CANCELLED: '\u0645\u0644\u063A\u064A',
-        RETURNED: '\u0645\u0631\u062A\u062C\u0639',
-        REFUNDED: '\u0645\u0633\u062A\u0631\u062F',
-        DRAFT: '\u0645\u0633\u0648\u062F\u0629',
-        SCHEDULED: '\u0637\u0644\u0628 \u0645\u062C\u062F\u0648\u0644',
-        ON_HOLD: '\u0645\u0639\u0644\u0642'
-      };
-      return labels[key] || key.replace(/_/g, ' ');
-    };
-  </script>
 
   <!-- Module script will be injected by Vite -->
   <script type="module" src="/src/main.tsx"></script>

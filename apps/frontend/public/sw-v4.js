@@ -14,18 +14,11 @@ self.addEventListener('install', () => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
-    // Purge every cache left behind by the old caching worker so no stale
-    // shell/chunks are ever served again and old cache errors disappear.
-    // Never let a CacheStorage failure (private mode, storage disabled) block
-    // activation, or the push subscription would stop working.
-    try {
-      const cacheKeys = await caches.keys();
-      await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-    } catch (error) {
-      // Non-fatal: activation must still succeed.
-    }
+    // Claim clients immediately so the new SW takes control
     await self.clients.claim();
   })());
+  // Note: CacheStorage is not managed by this SW (it is NOT a cache worker).
+  // Cache clearing is handled once during SW migration in main.tsx via localStorage flag.
 });
 
 self.addEventListener('message', (event) => {
