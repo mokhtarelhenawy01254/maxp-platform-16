@@ -37,7 +37,6 @@ import SuperAdminPaymentSettings from "./SuperAdminPaymentSettings";
 import AppPricingSheet from "../subscription/AppPricingSheet";
 import {
   Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard, Loader2, ArrowRight, Info, Image as ImageIcon, ListChecks, Route, Tags,
-  Boxes, BarChart3, MessageSquare, Megaphone, Users, Shield, Truck, Database, Wrench, Settings2, Layers, Wallet, Heart, Briefcase, Calendar, Headphones, Zap,
 } from "lucide-react";
 
 type SubscriptionCenterProps = {
@@ -819,7 +818,6 @@ const MarketplaceAppsTab = ({
   const [sortBy, setSortBy] = useState("installations");
   const [expandedApp, setExpandedApp] = useState<string | null>(null);
   const [showCatalogDiffDetails, setShowCatalogDiffDetails] = useState(false);
-  const [showCatalogTools, setShowCatalogTools] = useState(false);
   const [editingApp, setEditingApp] = useState<{
     item: MarketplaceManagementItem | null;
   } | null>(null);
@@ -987,65 +985,9 @@ const MarketplaceAppsTab = ({
         <img src={app.logo} alt="" className="h-full w-full object-cover" />
       );
     }
-    // Known lucide icon names stored in app.icon (e.g. "users", "sparkles", "store")
-    const knownIcons: Record<string, React.ComponentType<{ className?: string }>> = {
-      users: Users,
-      sparkles: Zap,
-      store: Store,
-      route: Route,
-      "shopping-cart": ShoppingBag,
-      package: Package,
-      box: Boxes,
-      chart: BarChart3,
-      message: MessageSquare,
-      megaphone: Megaphone,
-      shield: Shield,
-      truck: Truck,
-      database: Database,
-      wrench: Wrench,
-      layers: Layers,
-      wallet: Wallet,
-      heart: Heart,
-      briefcase: Briefcase,
-      calendar: Calendar,
-      headphones: Headphones,
-      settings: Settings2,
-      tag: Tags,
-      image: ImageIcon,
-      credit: CreditCard,
-      building: Building2,
-    };
-    const iconName = (app.icon || "").toLowerCase().trim();
-    if (iconName && knownIcons[iconName]) {
-      const Icon = knownIcons[iconName];
-      return <Icon className="h-6 w-6" />;
+    if (app.icon) {
+      return <span className="text-lg">{app.icon}</span>;
     }
-    // Category-based fallback for a consistent vector look (2026-style)
-    const categoryIcon: Record<string, React.ComponentType<{ className?: string }>> = {
-      "التجارة الإلكترونية": ShoppingBag,
-      التحليلات: BarChart3,
-      التواصل: MessageSquare,
-      التسويق: Megaphone,
-      "إدارة العملاء": Users,
-      "إدارة الطلبات": Package,
-      المخازن: Boxes,
-      المدفوعات: CreditCard,
-      "الإنتاجية": Calendar,
-      الجملة: Briefcase,
-      المشتريات: ShoppingBag,
-      المحاسبة: Wallet,
-      الشحن: Truck,
-      التحفيز: Heart,
-      المالية: DollarSign,
-      "الموارد البشرية": Users,
-      الأتمتة: Zap,
-      التكاملات: Wrench,
-      الطبية: Shield,
-      CONTENT: ImageIcon,
-    };
-    const CatIcon = categoryIcon[(app.category || "").trim()];
-    if (CatIcon) return <CatIcon className="h-6 w-6" />;
-    // Last resort: first letter
     return <span className="text-lg font-black">{(app.name || "؟").charAt(0)}</span>;
   };
 
@@ -1178,8 +1120,7 @@ const MarketplaceAppsTab = ({
         </div>
       </div>
 
-      {/* Catalog Diff (Files vs DB) — developer tool, collapsed by default */}
-      {showCatalogTools && (
+      {/* Catalog Diff (Files vs DB) */}
       <div className={`rounded-2xl border bg-card text-card-foreground shadow-sm p-4 ${(catalogDiff?.totals?.diffEntries || 0) > 0 ? "border-yellow-500/60 dark:border-yellow-500/40" : "border-green-500/60 dark:border-green-500/40"}`}>
         <div className="flex justify-between items-start md:items-center flex-col md:flex-row gap-2 mb-3">
           <div>
@@ -1365,15 +1306,6 @@ const MarketplaceAppsTab = ({
           <span className="text-xs text-muted-foreground block mt-2">عرض {filteredApps.length} من {apps.length} تطبيق</span>
         )}
       </div>
-      )}
-
-      {/* Developer tools toggle */}
-      <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={() => setShowCatalogTools((prev) => !prev)} className="text-muted-foreground hover:bg-muted">
-          <Wrench className="h-4 w-4 ml-1" />
-          {showCatalogTools ? "إخفاء أدوات المطور" : "أدوات المطور (فحص الكاتالوج)"}
-        </Button>
-      </div>
 
       {/* Category Tabs + Apps Grid Layout */}
       <div className="grid grid-cols-12 gap-4">
@@ -1481,9 +1413,9 @@ const MarketplaceAppsTab = ({
                       <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2">
                         <div className="flex items-baseline gap-1">
                           <span className="text-lg font-extrabold text-primary">
-                            {monthlyPrice ? monthlyPrice.toLocaleString("ar-EG") : "مجاني"}
+                            {monthlyPrice ? monthlyPrice.toLocaleString("ar-EG") : 0} ج
                           </span>
-                          {monthlyPrice ? <span className="text-xs text-muted-foreground">/ شهر</span> : null}
+                          <span className="text-xs text-muted-foreground">/ شهر</span>
                         </div>
                         {yearlySavings > 0 && (
                           <span className="inline-flex items-center rounded-full bg-green-500/15 px-2 py-0.5 text-[0.65rem] font-semibold text-green-700 dark:text-green-400">
