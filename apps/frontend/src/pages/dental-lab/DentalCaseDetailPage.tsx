@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
-  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Upload, X as XMarkIcon, XCircle,
+  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Upload, UploadCloud, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
   CASE_STATUSES, CASE_STATUS_MAP, PRIORITY_CONFIG, PAYMENT_STATUS_MAP, ROLE_CONFIG, STAGE_STATUS_MAP,
@@ -13,9 +13,20 @@ import {
   fetchCaseDetail, advanceCase, updateCase, uploadCaseAttachment, deleteCaseAttachment,
   addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf,
   recordQualityCheck, flagRefabrication, resolveRefabrication,
+  inferAttachmentKind,
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
+
+type UploadItem = {
+  id: string;
+  file: File;
+  kind: string;
+  status: "queued" | "uploading" | "done" | "error";
+  progress: number; // 0..100
+  error?: string;
+  attachmentId?: string;
+};
 
 const FALLBACK_BADGE = { label: "", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" };
 
@@ -295,6 +306,8 @@ export default function DentalCaseDetailPage() {
   const [statusOpen, setStatusOpen] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState<DentalInvoice | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
+  const [uploadDragOver, setUploadDragOver] = useState(false);
   const [workOrderLoading, setWorkOrderLoading] = useState(false);
   const [qualityOpen, setQualityOpen] = useState(false);
   const [refabOpen, setRefabOpen] = useState(false);
@@ -355,20 +368,143 @@ export default function DentalCaseDetailPage() {
       .catch(() => setTechnicians([]));
   }, [refresh]);
 
-  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    e.target.value = "";
-    if (!file || !id || uploading) return;
-    setUploading(true);
-    try {
-      await uploadCaseAttachment(id, file);
-      toast.success(t("dentalLab.detail.fileUploaded"));
-      await refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : t("dentalLab.common.noData"));
-    } finally {
+  // Max file size (50MB) — matches backend upload limit. Hard cap to
+  // stop users picking 200MB STL files that would silently 502.
+  const MAX_FILE_SIZE = 50 * 1024 * 1024;
+  const ACCEPT_ATTR = ".stl,.ply,.obj,.jpg,.jpeg,.png,.webp,.pdf,.dcm";
+
+  // Per-file upload queue. Each file gets its own item so progress
+  // shows individually and one failure doesn't kill the batch.
+  const startUpload = useCallback(
+    async (filesToUpload: File[], perFileKinds?: string[]) => {
+      if (!id || filesToUpload.length === 0) return;
+
+      // Client-side validation: drop anything oversized before hitting the network.
+      const valid: { file: File; kind: string }[] = [];
+      for (let i = 0; i < filesToUpload.length; i++) {
+        const f = filesToUpload[i];
+        if (f.size > MAX_FILE_SIZE) {
+          toast.error(`${f.name}: أكبر من 50MB (الحجم: ${(f.size / 1024 / 1024).toFixed(1)}MB)`);
+          continue;
+        }
+        if (f.size === 0) {
+          toast.error(`${f.name}: ملف فاضي`);
+          continue;
+        }
+        const kind = perFileKinds?.[i] || inferAttachmentKind(f.name);
+        valid.push({ file: f, kind });
+      }
+      if (valid.length === 0) return;
+
+      // Build queue items
+      const items: UploadItem[] = valid.map((v) => ({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        file: v.file,
+        kind: v.kind,
+        status: "queued",
+        progress: 0,
+      }));
+      setUploadItems((prev) => [...prev, ...items]);
+      setUploading(true);
+
+      // Upload in parallel (max 3 concurrent to avoid server overload
+      // — see backend memory budget for 15MB STL files).
+      const CONCURRENCY = 3;
+      const updateItem = (id: string, patch: Partial<UploadItem>) => {
+        setUploadItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+      };
+      let cursor = 0;
+      const next = async (): Promise<void> => {
+        while (cursor < items.length) {
+          const item = items[cursor++];
+          updateItem(item.id, { status: "uploading" });
+          try {
+            const fd = new FormData();
+            fd.append("files", item.file);
+            fd.append("kinds", item.kind);
+            // We use the apiClient directly here so we can hook onUploadProgress
+            // for real per-file progress (the helper doesn't expose it).
+            const { apiClient } = await import("@/services/api");
+            const res = await apiClient.post(
+              `/dental-lab/cases/${id}/attachments`,
+              fd,
+              {
+                timeout: 600000, // 10min per file (large STL on slow link)
+                onUploadProgress: (ev) => {
+                  if (ev.total) {
+                    const pct = Math.round((ev.loaded * 100) / ev.total);
+                    updateItem(item.id, { progress: pct });
+                  }
+                },
+              },
+            );
+            const body = (res as { data?: { success?: boolean; data?: { id?: string } | { id?: string }[] } }).data;
+            const att = Array.isArray(body?.data) ? body?.data?.[0] : body?.data;
+            updateItem(item.id, {
+              status: "done",
+              progress: 100,
+              attachmentId: att?.id,
+            });
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : "فشل الرفع";
+            updateItem(item.id, { status: "error", error: msg });
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: Math.min(CONCURRENCY, items.length) }, () => next()));
+
       setUploading(false);
-    }
+      // Refresh once after the whole queue finishes
+      await refresh();
+      const successCount = items.filter((i) => i.status === "done").length;
+      const failCount = items.filter((i) => i.status === "error").length;
+      if (successCount > 0 && failCount === 0) {
+        toast.success(`تم رفع ${successCount} ملف بنجاح`);
+      } else if (successCount > 0 && failCount > 0) {
+        toast.warning(`تم رفع ${successCount}، فشل ${failCount}`);
+      } else if (failCount > 0) {
+        toast.error(`فشل رفع ${failCount} ملف`);
+      }
+    },
+    [id, refresh],
+  );
+
+  const handleUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = "";
+    if (files.length === 0 || !id) return;
+    await startUpload(files);
+  };
+
+  // Drag-and-drop handlers on the dropzone.
+  const handleUploadDragOver = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUploadDragOver(true);
+  };
+  const handleUploadDragLeave = (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUploadDragOver(false);
+  };
+  const handleUploadDrop = async (e: DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setUploadDragOver(false);
+    const files = e.dataTransfer?.files ? Array.from(e.dataTransfer.files) : [];
+    if (files.length === 0 || !id) return;
+    await startUpload(files);
+  };
+
+  // Retry a single failed item
+  const retryUpload = async (itemId: string) => {
+    const item = uploadItems.find((i) => i.id === itemId);
+    if (!item) return;
+    await startUpload([item.file], [item.kind]);
+  };
+  // Clear finished/error items from the list
+  const clearFinishedUploads = () => {
+    setUploadItems((prev) => prev.filter((i) => i.status === "uploading" || i.status === "queued"));
   };
 
   if (!id) return <div className="text-center py-16 text-gray-400 dark:text-gray-500">{t("dentalLab.common.noData")}</div>;
@@ -647,7 +783,85 @@ export default function DentalCaseDetailPage() {
               </button>
             }
           >
-            <input ref={fileInputRef} type="file" className="hidden" onChange={handleUpload} />
+            <input ref={fileInputRef} type="file" className="hidden" multiple accept={ACCEPT_ATTR} onChange={handleUpload} />
+            {/* Drag-and-drop zone — visible feedback when files hover */}
+            <div
+              onDragOver={handleUploadDragOver}
+              onDragLeave={handleUploadDragLeave}
+              onDrop={handleUploadDrop}
+              onClick={() => !uploading && fileInputRef.current?.click()}
+              className={`flex flex-col items-center justify-center gap-2 px-4 py-6 mb-4 border-2 border-dashed rounded-lg cursor-pointer transition ${
+                uploadDragOver
+                  ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                  : "border-gray-300 dark:border-gray-600 hover:border-blue-400 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+              }`}
+            >
+              <UploadCloud className={`w-8 h-8 ${uploadDragOver ? "text-blue-500" : "text-gray-400"}`} />
+              <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
+                {uploadDragOver ? "إفلت الملفات هنا" : "اسحب الملفات هنا أو اضغط للاختيار"}
+              </p>
+              <p className="text-xs text-gray-400 text-center">
+                STL, PLY, OBJ, JPG, PNG, PDF, DCM — حد أقصى 50MB للملف
+              </p>
+            </div>
+
+            {/* Active / finished upload queue */}
+            {uploadItems.length > 0 && (
+              <div className="mb-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                    {uploading ? "جاري الرفع..." : "نتائج الرفع"}
+                  </span>
+                  {!uploading && (
+                    <button onClick={clearFinishedUploads} className="text-xs text-gray-500 hover:text-gray-700">
+                      مسح المكتمل
+                    </button>
+                  )}
+                </div>
+                {uploadItems.map((it) => (
+                  <div key={it.id} className="border dark:border-gray-700 rounded-lg p-2.5 bg-gray-50 dark:bg-gray-800/50">
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <FileText className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                        <span className="text-xs truncate" title={it.file.name}>{it.file.name}</span>
+                        <span className="text-[10px] text-gray-400 flex-shrink-0">
+                          ({(it.file.size / 1024 / 1024).toFixed(1)}MB · {it.kind})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1.5 flex-shrink-0">
+                        {it.status === "uploading" && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
+                        {it.status === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
+                        {it.status === "error" && (
+                          <>
+                            <XCircle className="w-3.5 h-3.5 text-red-500" />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); retryUpload(it.id); }}
+                              className="text-[10px] text-blue-600 hover:underline"
+                              title={it.error}
+                            >
+                              إعادة
+                            </button>
+                          </>
+                        )}
+                        {it.status === "queued" && <span className="text-[10px] text-gray-400">في الانتظار</span>}
+                      </div>
+                    </div>
+                    {(it.status === "uploading" || it.status === "done") && (
+                      <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${it.status === "done" ? "bg-green-500" : "bg-blue-500"}`}
+                          style={{ width: `${it.progress}%` }}
+                        />
+                      </div>
+                    )}
+                    {it.status === "error" && it.error && (
+                      <p className="text-[10px] text-red-500 mt-1 truncate" title={it.error}>{it.error}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
             {attachments.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">{t("dentalLab.detail.noFiles")}</p>
             ) : (

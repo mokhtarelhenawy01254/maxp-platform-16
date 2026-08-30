@@ -30,7 +30,7 @@ const bulkStatusUpdateService = {
     form.append('file', file);
     return api
       .post<BulkStatusResponse>('/orders/bulk-status', form, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        /* boundary set by browser */
       })
       .then((res) => res.data);
   }

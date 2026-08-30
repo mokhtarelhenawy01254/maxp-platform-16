@@ -530,24 +530,67 @@ export const advanceCase = async (id: string, body: { to?: string; status?: stri
 export const assignCase = async (id: string, body: { technicianId: string; role: DentalTechnicianRole }): Promise<DentalLabCase> =>
   unwrapEnvelope<DentalLabCase>(await apiClient.post(`/dental-lab/cases/${id}/assign`, body));
 
+// Infer attachment kind from filename. Used as default when the user
+// doesn't pick one explicitly. Matches the ATTACHMENT_KINDS enum in the
+// backend (apps/backend/controller/dentalLabController.js).
+export const inferAttachmentKind = (filename: string): "SCAN" | "PHOTO" | "XRAY" | "PRESCRIPTION" | "WORK_ORDER" | "OTHER" => {
+  const ext = (filename.split(".").pop() || "").toLowerCase();
+  if (["stl", "ply", "obj", "dcm"].includes(ext)) return "SCAN";
+  if (["jpg", "jpeg", "png", "webp", "bmp", "tiff", "heic"].includes(ext)) return "PHOTO";
+  if (ext === "pdf") return "PRESCRIPTION";
+  return "OTHER";
+};
+
+// Build a per-file kind array. If `kinds` is shorter than files, the
+// last value is reused. If `defaultKind` is given, missing entries use it.
+const buildKindsArray = (files: File[], kinds: (string | undefined)[], defaultKind?: string): string[] => {
+  const result: string[] = [];
+  for (let i = 0; i < files.length; i++) {
+    const k = kinds[i] || defaultKind || inferAttachmentKind(files[i].name);
+    result.push(k.toUpperCase());
+  }
+  return result;
+};
+
+// Single file upload (backward compatible signature).
+// IMPORTANT: do NOT set Content-Type manually — the browser adds the
+// multipart boundary itself and a manual header breaks parsing on the
+// server side.
 export const uploadCaseAttachment = async (caseId: string, file: File, kind?: string): Promise<DentalCaseAttachment> => {
   const formData = new FormData();
   formData.append("files", file);
-  if (kind) formData.append("kind", kind);
+  if (kind) formData.append("kinds", kind);
   return unwrapEnvelope<DentalCaseAttachment>(await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 120000,
+    timeout: 300000, // 5 min — STL/PLY can be 15MB+ on slow networks
   }));
 };
 
-export const uploadCaseAttachments = async (caseId: string, files: File[], kind?: string): Promise<DentalCaseAttachment | DentalCaseAttachment[]> => {
+// Multi-file upload with per-file kinds. Sends `kinds` (one entry per
+// file) so the backend can record each attachment with the right kind
+// instead of silently coercing all of them to SCAN.
+export const uploadCaseAttachments = async (
+  caseId: string,
+  files: File[],
+  kindOrKinds?: string | string[]
+): Promise<DentalCaseAttachment[]> => {
   if (!files || files.length === 0) throw new Error("مفيش ملفات للرفع");
   const formData = new FormData();
   for (const f of files) formData.append("files", f);
-  if (kind) formData.append("kind", kind);
-  return unwrapEnvelope<DentalCaseAttachment | DentalCaseAttachment[]>(await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  }));
+
+  let kindsArr: string[];
+  if (Array.isArray(kindOrKinds)) {
+    kindsArr = buildKindsArray(files, kindOrKinds);
+  } else {
+    // single string or undefined → infer per-file from extension
+    kindsArr = buildKindsArray(files, [], kindOrKinds);
+  }
+  for (const k of kindsArr) formData.append("kinds", k);
+
+  const res = await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
+    timeout: 600000, // 10 min for big batches
+  });
+  const data = unwrapEnvelope<DentalCaseAttachment | DentalCaseAttachment[]>(res);
+  return Array.isArray(data) ? data : [data];
 };
 
 export const deleteCaseAttachment = async (caseId: string, attachmentId: string): Promise<void> => {
@@ -568,7 +611,6 @@ export const parseScan = async (file: File): Promise<ScanParseResult> => {
   const formData = new FormData();
   formData.append("file", file);
   const res = await apiClient.post("/dental-lab/scan-parse", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
     timeout: 120000,
   });
   const body = asRecord(res.data) ?? {};

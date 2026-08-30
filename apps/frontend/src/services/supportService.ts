@@ -79,7 +79,7 @@ const supportService = {
   createTicket: async (formData: FormData) => {
     const response = await apiClient.post("/support/tickets", formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        /* boundary set by browser */,
       },
     });
     return response.data;
@@ -103,7 +103,7 @@ const supportService = {
       formData,
       {
         headers: {
-          "Content-Type": "multipart/form-data",
+          /* boundary set by browser */,
         },
       },
     );

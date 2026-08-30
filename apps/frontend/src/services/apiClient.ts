@@ -673,7 +673,7 @@ class ApiClient {
 
     return this.client.post<T>(url, formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        /* boundary set by browser */,
       },
       onUploadProgress: (progressEvent) => {
         if (onProgress && progressEvent.total) {
