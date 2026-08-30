@@ -1,32 +1,44 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import {
-  BadgePercent,
+  Check,
+  ChevronDown,
   Gift,
+  Loader2,
   PackageCheck,
-  RefreshCcw,
-  Save,
+  PanelTop,
+  Percent,
+  Plus,
+  RotateCcw,
   Sparkles,
   Truck,
-  Wand2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 
 import {
   SettingsLoadingState,
   SettingsPageHero,
   SettingsPageShell,
-  SettingsSection,
   SettingsStatusAlert,
+  SettingsStatusMessage,
 } from "./components/SettingsPagePrimitives";
 import {
   getApiErrorMessage,
@@ -35,16 +47,7 @@ import {
 import { apiClient } from "../../services/apiClient";
 import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 
-type PromotionMessageState = {
-  type: "success" | "error";
-  text: string;
-};
-
-type PromotionTabValue =
-  | "promotion"
-  | "volume-discounts"
-  | "delivery-options"
-  | "recommendations";
+type SaveState = "idle" | "saving" | "saved";
 
 type FreeShippingSettings = {
   freeShippingEnabled: boolean;
@@ -57,99 +60,217 @@ type FlatShippingSettings = {
   flatShippingFee: number;
 };
 
-const PROMOTION_ROUTE_MAP: Record<PromotionTabValue, string | null> = {
-  promotion: null,
-  "volume-discounts": "/settings/volume-discounts",
-  "delivery-options": "/settings/delivery-options",
-  recommendations: "/settings/recommendations",
-};
+const MAX_THRESHOLD = 100000;
+const MAX_FEE = 10000;
+const AMOUNT_TOKEN = "{amount}";
+
+const formatAmount = (value: number): string =>
+  Number(value || 0).toLocaleString("en-US");
+
+/* حالات القسم: أيقونة + عنوان + مؤشر حالة + سويتش في نفس الصف */
+function PromoSection({
+  icon: Icon,
+  title,
+  description,
+  accentClassName,
+  isOn,
+  pill,
+  switchChecked,
+  onSwitchChange,
+  switchLabel,
+  children,
+}: {
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
+  title: string;
+  description: string;
+  accentClassName: { sectionBorder: string; iconActive: string };
+  isOn: boolean;
+  pill: React.ReactNode;
+  switchChecked: boolean;
+  onSwitchChange: (checked: boolean) => void;
+  switchLabel: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <section
+      className={cn(
+        "rounded-[24px] border bg-white/80 p-5 shadow-sm transition-colors",
+        isOn ? accentClassName.sectionBorder : "border-slate-200/70",
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-3">
+        <div
+          className={cn(
+            "flex size-11 shrink-0 items-center justify-center rounded-2xl ring-1 ring-inset transition-colors",
+            isOn
+              ? accentClassName.iconActive
+              : "bg-slate-50 text-slate-500 ring-slate-200",
+          )}
+        >
+          <Icon className="size-5" />
+        </div>
+        <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+          <h2 className="text-base font-bold text-slate-950">{title}</h2>
+          {pill}
+        </div>
+        <div className="ms-auto flex items-center gap-3">
+          <Switch
+            checked={switchChecked}
+            onCheckedChange={onSwitchChange}
+            aria-label={switchLabel}
+          />
+        </div>
+      </div>
+      <p className="mt-2.5 text-sm leading-6 text-slate-500">{description}</p>
+      <div className="mt-5 space-y-4">{children}</div>
+    </section>
+  );
+}
+
+function StatusPill({
+  active,
+  activeLabel,
+  inactiveLabel,
+  warn = false,
+}: {
+  active: boolean;
+  activeLabel: string;
+  inactiveLabel: string;
+  warn?: boolean;
+}) {
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold",
+        active
+          ? warn
+            ? "bg-amber-100 text-amber-800"
+            : "bg-emerald-100 text-emerald-800"
+          : "bg-slate-200/80 text-slate-600",
+      )}
+    >
+      <span
+        className={cn(
+          "size-1.5 rounded-full",
+          active ? (warn ? "bg-amber-500" : "bg-emerald-500") : "bg-slate-400",
+        )}
+      />
+      {active ? activeLabel : inactiveLabel}
+    </span>
+  );
+}
 
 const PromotionSettings: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-  const [currentTab, setCurrentTab] = useState<PromotionTabValue>("promotion");
+
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<PromotionMessageState | null>(null);
-
-  const DEFAULT_FREE_SHIPPING_MESSAGE = t("promotionSettings.defaultFreeMessage");
-
-  const PROMOTION_TABS: Array<{
-    value: PromotionTabValue;
-    label: string;
-    description: string;
-    icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
-  }> = [
-    {
-      value: "promotion",
-      label: t("promotionSettings.tabFreeShipping"),
-      description: t("promotionSettings.tabFreeShippingDesc"),
-      icon: Truck,
-    },
-    {
-      value: "volume-discounts",
-      label: t("promotionSettings.tabVolumeDiscounts"),
-      description: t("promotionSettings.tabVolumeDiscountsDesc"),
-      icon: BadgePercent,
-    },
-    {
-      value: "delivery-options",
-      label: t("promotionSettings.tabDeliveryOptions"),
-      description: t("promotionSettings.tabDeliveryOptionsDesc"),
-      icon: PackageCheck,
-    },
-    {
-      value: "recommendations",
-      label: t("promotionSettings.tabRecommendations"),
-      description: t("promotionSettings.tabRecommendationsDesc"),
-      icon: Wand2,
-    },
-  ];
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [message, setMessage] = useState<SettingsStatusMessage | null>(null);
 
   const [freeShippingSettings, setFreeShippingSettings] =
     useState<FreeShippingSettings>({
       freeShippingEnabled: false,
       freeShippingThreshold: 0,
-      freeShippingMessage: DEFAULT_FREE_SHIPPING_MESSAGE,
+      freeShippingMessage: t("promotionSettings.defaultFreeMessage"),
     });
-
   const [flatShippingSettings, setFlatShippingSettings] =
-    useState<FlatShippingSettings>({
-      flatShippingEnabled: false,
-      flatShippingFee: 0,
-    });
-
+    useState<FlatShippingSettings>({ flatShippingEnabled: false, flatShippingFee: 0 });
   const [hideUtilityBar, setHideUtilityBar] = useState(false);
-  const [utilityBarSaving, setUtilityBarSaving] = useState(false);
 
+  const [thresholdError, setThresholdError] = useState(false);
+  const [feeError, setFeeError] = useState(false);
+
+  const loadedRef = useRef(false);
+  const saveTimersRef = useRef<{ save?: number; idle?: number }>({});
+  const stateRef = useRef({ freeShippingSettings, flatShippingSettings });
+  stateRef.current = { freeShippingSettings, flatShippingSettings };
+
+  const msgRef = useRef<HTMLTextAreaElement | null>(null);
+
+  /* ---------- الحفظ التلقائي الموحّد (نفس الـ API الحالي بدون تغيير في الباك إند) ---------- */
+  const scheduleIdle = useCallback(() => {
+    clearTimeout(saveTimersRef.current.idle);
+    saveTimersRef.current.idle = window.setTimeout(
+      () => setSaveState("idle"),
+      2600,
+    );
+  }, []);
+
+  const flushSettings = useCallback(async () => {
+    try {
+      const { freeShippingSettings: free, flatShippingSettings: flat } =
+        stateRef.current;
+      await apiClient.post("/promotion-settings", { ...free, ...flat });
+      setSaveState("saved");
+      scheduleIdle();
+    } catch (error) {
+      setSaveState("idle");
+      setMessage({
+        type: "error",
+        text: getApiErrorMessage(error, t("promotionSettings.settingsSaveFailed")),
+      });
+    }
+  }, [scheduleIdle, t]);
+
+  const queueSave = useCallback(() => {
+    if (!loadedRef.current) return;
+    setSaveState("saving");
+    clearTimeout(saveTimersRef.current.save);
+    saveTimersRef.current.save = window.setTimeout(() => {
+      void flushSettings();
+    }, 650);
+  }, [flushSettings]);
+
+  useEffect(
+    () => () => {
+      clearTimeout(saveTimersRef.current.save);
+      clearTimeout(saveTimersRef.current.idle);
+    },
+    [],
+  );
+
+  /* ---------- التحميل ---------- */
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
       const response = await apiClient.get("/promotion-settings");
-
-      if (response.data.success) {
-        const data = response.data.data || {};
+      const envelope = response.data as {
+        success?: boolean;
+        data?: {
+          freeShippingEnabled?: boolean;
+          freeShippingThreshold?: number | string;
+          freeShippingMessage?: string;
+          flatShippingEnabled?: boolean;
+          flatShippingFee?: number | string;
+        };
+      };
+      if (envelope.success) {
+        const data = envelope.data || {};
+        const storedMessage =
+          typeof data.freeShippingMessage === "string" &&
+          data.freeShippingMessage.trim()
+            ? data.freeShippingMessage
+            : t("promotionSettings.defaultFreeMessage");
         setFreeShippingSettings({
           freeShippingEnabled: Boolean(data.freeShippingEnabled),
           freeShippingThreshold: getNumericValue(data.freeShippingThreshold),
-          freeShippingMessage:
-            typeof data.freeShippingMessage === "string" &&
-            data.freeShippingMessage.trim()
-              ? data.freeShippingMessage
-              : t("promotionSettings.defaultFreeMessage"),
+          freeShippingMessage: storedMessage,
         });
         setFlatShippingSettings({
           flatShippingEnabled: Boolean(data.flatShippingEnabled),
           flatShippingFee: getNumericValue(data.flatShippingFee),
         });
       }
-
       try {
-        const sfRes = await storefrontSettingsService.getSettings(undefined, { allowFallback: false });
-        setHideUtilityBar(sfRes.data.hideUtilityBar === true);
+        const sfRes = await storefrontSettingsService.getSettings(undefined, {
+          allowFallback: false,
+        });
+        const sfData = sfRes.data as { hideUtilityBar?: boolean };
+        setHideUtilityBar(sfData?.hideUtilityBar === true);
       } catch {
-        // non-blocking
+        // غير مانعة — إخفاء الشريط اختياري
       }
+      loadedRef.current = true;
     } catch (error) {
       console.error("Error fetching settings:", error);
       setMessage({
@@ -165,101 +286,119 @@ const PromotionSettings: React.FC = () => {
     void loadSettings();
   }, [loadSettings]);
 
-  const previewMessage = useMemo(
-    () =>
-      freeShippingSettings.freeShippingMessage.replace(
-        "{amount}",
-        String(freeShippingSettings.freeShippingThreshold || 0),
-      ),
-    [
-      freeShippingSettings.freeShippingMessage,
-      freeShippingSettings.freeShippingThreshold,
-    ],
-  );
-
-  const handleTabChange = useCallback(
-    (nextTab: string) => {
-      const normalizedTab = nextTab as PromotionTabValue;
-      const destination = PROMOTION_ROUTE_MAP[normalizedTab];
-
-      setCurrentTab(normalizedTab);
-
-      if (destination) {
-        navigate(destination);
-      }
+  /* ---------- معالجات الحقول ---------- */
+  const updateFree = useCallback(
+    (patch: Partial<FreeShippingSettings>) => {
+      setFreeShippingSettings((current) => ({ ...current, ...patch }));
+      queueSave();
     },
-    [navigate],
+    [queueSave],
   );
 
-  const handleSavePromotionSettings = useCallback(async () => {
-    try {
-      setSaving(true);
-      setMessage(null);
+  const updateFlat = useCallback(
+    (patch: Partial<FlatShippingSettings>) => {
+      setFlatShippingSettings((current) => ({ ...current, ...patch }));
+      queueSave();
+    },
+    [queueSave],
+  );
 
-      const response = await apiClient.post("/promotion-settings", {
-        ...freeShippingSettings,
-        ...flatShippingSettings,
-      });
-
-      if (response.data.success) {
+  const handleToggleUtilityBar = useCallback(
+    async (value: boolean) => {
+      setHideUtilityBar(value);
+      setSaveState("saving");
+      try {
+        await storefrontSettingsService.updateSettings({ hideUtilityBar: value });
+        setSaveState("saved");
+        scheduleIdle();
+      } catch {
+        setHideUtilityBar(!value);
+        setSaveState("idle");
         setMessage({
-          type: "success",
-          text: t("promotionSettings.settingsSaved"),
+          type: "error",
+          text: t("promotionSettings.settingsSaveFailed"),
         });
       }
-    } catch (error) {
-      console.error("Error saving settings:", error);
-      setMessage({
-        type: "error",
-        text: getApiErrorMessage(error, t("promotionSettings.settingsSaveFailed")),
-      });
-    } finally {
-      setSaving(false);
-    }
-  }, [flatShippingSettings, freeShippingSettings, t]);
+    },
+    [scheduleIdle, t],
+  );
 
-  const handleResetSettings = useCallback(async () => {
-    if (
-      !window.confirm(t("promotionSettings.resetConfirm"))
-    ) {
-      return;
-    }
+  const insertAmountToken = useCallback(() => {
+    const el = msgRef.current;
+    if (!el) return;
+    const start = el.selectionStart ?? el.value.length;
+    const end = el.selectionEnd ?? start;
+    const next = el.value.slice(0, start) + AMOUNT_TOKEN + el.value.slice(end);
+    updateFree({ freeShippingMessage: next });
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + AMOUNT_TOKEN.length, start + AMOUNT_TOKEN.length);
+    });
+  }, [updateFree]);
 
+  const handleReset = useCallback(async () => {
     try {
-      setSaving(true);
-      setMessage(null);
-
       const response = await apiClient.post("/promotion-settings/reset", {});
-
-      if (response.data.success) {
+      const envelope = response.data as { success?: boolean };
+      if (envelope.success) {
         await loadSettings();
+        setSaveState("saved");
+        scheduleIdle();
         setMessage({
           type: "success",
           text: t("promotionSettings.settingsReset"),
         });
       }
     } catch (error) {
-      console.error("Error resetting settings:", error);
       setMessage({
         type: "error",
         text: getApiErrorMessage(error, t("promotionSettings.settingsResetFailed")),
       });
-    } finally {
-      setSaving(false);
     }
-  }, [loadSettings, t]);
+  }, [loadSettings, scheduleIdle, t]);
 
-  const handleToggleUtilityBar = useCallback(async (value: boolean) => {
-    setHideUtilityBar(value);
-    setUtilityBarSaving(true);
-    try {
-      await storefrontSettingsService.updateSettings({ hideUtilityBar: value });
-    } catch {
-      setHideUtilityBar(!value);
-    } finally {
-      setUtilityBarSaving(false);
+  /* ---------- المعاينة ---------- */
+  const { freeShippingMessage, freeShippingThreshold, freeShippingEnabled } =
+    freeShippingSettings;
+  const preview = useMemo(() => {
+    if (!freeShippingEnabled) {
+      return { live: false, text: t("promotionSettings.previewOff") };
     }
-  }, []);
+    if (!(freeShippingThreshold > 0)) {
+      return { live: false, text: t("promotionSettings.previewZero") };
+    }
+    const formatted = formatAmount(freeShippingThreshold);
+    return {
+      live: true,
+      text: freeShippingMessage.split(AMOUNT_TOKEN).join(formatted),
+    };
+  }, [freeShippingEnabled, freeShippingMessage, freeShippingThreshold, t]);
+
+  /* ---------- الأدوات المرتبطة ---------- */
+  const relatedTools = [
+    {
+      to: "/settings/volume-discounts",
+      icon: Percent,
+      label: t("promotionSettings.relatedVolume"),
+      desc: t("promotionSettings.relatedVolumeDesc"),
+    },
+    {
+      to: "/settings/delivery-options",
+      icon: PackageCheck,
+      label: t("promotionSettings.relatedDelivery"),
+      desc: t("promotionSettings.relatedDeliveryDesc"),
+    },
+    {
+      to: "/settings/recommendations",
+      icon: Sparkles,
+      label: t("promotionSettings.relatedRecommend"),
+      desc: t("promotionSettings.relatedRecommendDesc"),
+    },
+  ];
+
+  const msgHelpParts = t("promotionSettings.freeShippingMessageDesc").split(
+    AMOUNT_TOKEN,
+  );
 
   if (loading) {
     return (
@@ -270,6 +409,8 @@ const PromotionSettings: React.FC = () => {
     );
   }
 
+  const lockedFieldsClass = "bg-slate-50/50 cursor-not-allowed";
+
   return (
     <SettingsPageShell>
       <SettingsPageHero
@@ -277,393 +418,383 @@ const PromotionSettings: React.FC = () => {
         badgeLabel={t("promotionSettings.badgeLabel")}
         title={t("promotionSettings.pageTitle")}
         description={t("promotionSettings.pageDescription")}
+        action={
+          <div
+            aria-live="polite"
+            className={cn(
+              "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-bold transition-colors",
+              saveState === "saving" &&
+                "border-amber-200 bg-amber-50 text-amber-800",
+              saveState === "saved" &&
+                "border-emerald-200 bg-emerald-50 text-emerald-800",
+              saveState === "idle" && "border-slate-200 bg-white/85 text-slate-500",
+            )}
+          >
+            {saveState === "saving" ? (
+              <Loader2 className="size-3.5 animate-spin" />
+            ) : (
+              <Check className="size-3.5" />
+            )}
+            {saveState === "saving"
+              ? t("promotionSettings.saveSaving")
+              : saveState === "saved"
+                ? t("promotionSettings.saveSaved")
+                : t("promotionSettings.saveIdle")}
+          </div>
+        }
         summaryItems={[
           {
             label: t("promotionSettings.freeShipping"),
-            value: freeShippingSettings.freeShippingEnabled
-              ? t("promotionSettings.freeShippingActive")
-              : t("promotionSettings.freeShippingInactive"),
+            value: freeShippingEnabled
+              ? t("promotionSettings.pillActive")
+              : t("promotionSettings.pillInactive"),
           },
           {
             label: t("promotionSettings.flatShippingTitle"),
             value: flatShippingSettings.flatShippingEnabled
-              ? `${flatShippingSettings.flatShippingFee} ${t("promotionSettings.freeShippingThreshold").includes("EGP") ? "EGP" : "ج.م"}`
-              : t("promotionSettings.freeShippingInactive"),
+              ? `${formatAmount(flatShippingSettings.flatShippingFee)} ${t("promotionSettings.currency")}`
+              : t("promotionSettings.pillInactive"),
+            valueDir: "ltr",
           },
         ]}
       />
 
       <div className="space-y-6 px-6 py-6">
-        <SettingsStatusAlert
-          message={message}
-          onDismiss={() => setMessage(null)}
-        />
+        <SettingsStatusAlert message={message} onDismiss={() => setMessage(null)} />
 
-        <Tabs
-          value={currentTab}
-          onValueChange={handleTabChange}
-          className="gap-5"
+        {/* أدوات مرتبطة: روابط حقيقية مش تابات */}
+        <nav
+          aria-label={t("promotionSettings.relatedToolsLabel")}
+          className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4"
         >
-          <TabsList
-            variant="line"
-            className="h-auto w-full !grid grid-cols-1 gap-2 rounded-none border-b border-slate-200/70 bg-transparent p-0 pb-3 sm:grid-cols-2 xl:grid-cols-4"
+          {relatedTools.map((tool) => {
+            const Icon = tool.icon;
+            return (
+              <Link
+                key={tool.to}
+                to={tool.to}
+                className="group flex items-start gap-2.5 rounded-2xl border border-slate-200/70 bg-white/85 px-3.5 py-3 transition hover:-translate-y-px hover:border-slate-300 hover:shadow-sm"
+              >
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-200/70 transition group-hover:bg-white">
+                  <Icon className="size-4" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-sm font-bold text-slate-950">
+                    {tool.label}
+                  </span>
+                  <span className="block text-xs text-slate-500">{tool.desc}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* الشحن المجاني */}
+        <PromoSection
+          icon={Gift}
+          title={t("promotionSettings.freeShipping")}
+          description={t("promotionSettings.freeShippingDesc")}
+          isOn={freeShippingEnabled}
+          accentClassName={{
+            sectionBorder: "border-emerald-200/80",
+            iconActive: "bg-emerald-50 text-emerald-700 ring-emerald-200/70",
+          }}
+          pill={
+            <StatusPill
+              active={freeShippingEnabled}
+              activeLabel={t("promotionSettings.pillActive")}
+              inactiveLabel={t("promotionSettings.pillInactive")}
+            />
+          }
+          switchChecked={freeShippingEnabled}
+          onSwitchChange={(checked) => updateFree({ freeShippingEnabled: checked })}
+          switchLabel={t("promotionSettings.freeShippingTitle")}
+        >
+          <fieldset
+            disabled={!freeShippingEnabled}
+            className={cn("grid gap-4 lg:grid-cols-[minmax(0,264px)_minmax(0,1fr)]")}
           >
-            {PROMOTION_TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = currentTab === tab.value;
-
-              return (
-                <TabsTrigger
-                  key={tab.value}
-                  value={tab.value}
+            <div className="space-y-2">
+              <Label htmlFor="freeShippingThreshold">
+                {t("promotionSettings.freeShippingThreshold")}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="freeShippingThreshold"
+                  type="number"
+                  min={0}
+                  max={MAX_THRESHOLD}
+                  inputMode="numeric"
+                  value={freeShippingSettings.freeShippingThreshold}
+                  onChange={(event) => {
+                    const next = getNumericValue(event.target.value);
+                    setThresholdError(next > MAX_THRESHOLD);
+                    updateFree({ freeShippingThreshold: next });
+                  }}
+                  onBlur={() => {
+                    if (freeShippingSettings.freeShippingThreshold > MAX_THRESHOLD) {
+                      setThresholdError(false);
+                      updateFree({ freeShippingThreshold: MAX_THRESHOLD });
+                    }
+                  }}
+                  aria-invalid={thresholdError}
+                  aria-describedby="freeShippingThresholdHint freeShippingThresholdError"
                   className={cn(
-                    "group min-h-[74px] w-full rounded-2xl border px-4 py-3 text-right text-sm font-semibold transition-colors",
-                    isActive
-                      ? "!border-slate-900 !bg-slate-900 !text-white shadow-sm"
-                      : "!border-transparent !bg-slate-50/65 !text-slate-500 hover:!border-slate-200 hover:!bg-slate-50",
+                    "h-11 rounded-xl bg-white/90 font-semibold tabular-nums ltr:pr-14 rtl:pl-14",
+                    !freeShippingEnabled && lockedFieldsClass,
+                    thresholdError && "border-rose-300 focus-visible:ring-rose-200",
                   )}
-                >
-                  <div className="flex w-full items-start gap-3">
-                    <div
-                      className={cn(
-                        "mt-0.5 rounded-xl p-2 ring-1 transition",
-                        isActive
-                          ? "bg-white/10 text-white ring-white/15"
-                          : "bg-white/90 text-slate-700 ring-slate-200/80",
-                      )}
-                    >
-                      <Icon className="size-4.5" />
-                    </div>
-                    <div className="min-w-0 text-right">
-                      <div className="font-bold">{tab.label}</div>
-                      <div
-                        className={cn(
-                          "mt-1 text-xs font-medium leading-5",
-                          isActive ? "text-slate-200" : "text-slate-400",
-                        )}
-                      >
-                        {tab.description}
-                      </div>
-                    </div>
-                  </div>
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
-
-          <TabsContent value="promotion" className="space-y-5 pt-0">
-            <SettingsSection
-              icon={Gift}
-              title={t("promotionSettings.freeShipping")}
-              description={t("promotionSettings.freeShippingDesc")}
-              accentClassName="bg-emerald-50 text-emerald-700 ring-emerald-200/70"
-            >
-                <div
-                  className={cn(
-                    "rounded-[22px] border p-4 transition-colors",
-                    freeShippingSettings.freeShippingEnabled
-                      ? "border-emerald-200 bg-emerald-50/70"
-                      : "border-slate-200 bg-slate-50/70",
-                  )}
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-slate-950">
-                          {t("promotionSettings.freeShippingTitle")}
-                        </h3>
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-1 text-[11px] font-bold",
-                            freeShippingSettings.freeShippingEnabled
-                              ? "bg-emerald-100 text-emerald-700"
-                              : "bg-slate-200 text-slate-600",
-                          )}
-                        >
-                          {freeShippingSettings.freeShippingEnabled
-                            ? t("promotionSettings.freeShippingActive")
-                            : t("promotionSettings.freeShippingInactive")}
-                        </span>
-                      </div>
-                      <p className="text-sm leading-6 text-slate-500">
-                        {t("promotionSettings.freeShippingDesc")}
-                      </p>
-                    </div>
-                    <Switch
-                      aria-label={t("promotionSettings.freeShippingTitle")}
-                      checked={freeShippingSettings.freeShippingEnabled}
-                      onCheckedChange={(checked) =>
-                        setFreeShippingSettings((currentSettings) => ({
-                          ...currentSettings,
-                          freeShippingEnabled: checked,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
-                  <div className="space-y-2">
-                    <Label htmlFor="freeShippingThreshold">
-                      {t("promotionSettings.freeShippingThreshold")}
-                    </Label>
-                    <Input
-                      id="freeShippingThreshold"
-                      type="number"
-                      min={0}
-                      max={100000}
-                      step={10}
-                      value={freeShippingSettings.freeShippingThreshold}
-                      onChange={(event) =>
-                        setFreeShippingSettings((currentSettings) => ({
-                          ...currentSettings,
-                          freeShippingThreshold:
-                            getNumericValue(event.target.value),
-                        }))
-                      }
-                      readOnly={!freeShippingSettings.freeShippingEnabled}
-                      className={cn(
-                        "h-11 rounded-xl bg-white/90",
-                        !freeShippingSettings.freeShippingEnabled &&
-                          "bg-slate-50/50 cursor-not-allowed",
-                      )}
-                    />
-                    <p className="text-xs leading-5 text-slate-500">
-                      {t("promotionSettings.freeShippingThresholdDesc")}
-                    </p>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="freeShippingMessage">
-                      {t("promotionSettings.freeShippingMessage")}
-                    </Label>
-                    <Textarea
-                      id="freeShippingMessage"
-                      rows={4}
-                      value={freeShippingSettings.freeShippingMessage}
-                      onChange={(event) =>
-                        setFreeShippingSettings((currentSettings) => ({
-                          ...currentSettings,
-                          freeShippingMessage: event.target.value,
-                        }))
-                      }
-                      readOnly={!freeShippingSettings.freeShippingEnabled}
-                      className={cn(
-                        "min-h-[132px] rounded-xl border-slate-200 bg-white/90 text-sm text-slate-950",
-                        !freeShippingSettings.freeShippingEnabled &&
-                          "bg-slate-50/50 cursor-not-allowed",
-                      )}
-                    />
-                    <p className="text-xs leading-5 text-slate-500">
-                      {t("promotionSettings.freeShippingMessageDesc")}
-                    </p>
-                  </div>
-                </div>
-
-                <div
-                  className={cn(
-                    "rounded-[22px] border border-dashed p-4",
-                    freeShippingSettings.freeShippingEnabled
-                      ? "border-emerald-300 bg-emerald-50/80"
-                      : "border-slate-200 bg-slate-50/80",
-                  )}
-                >
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    {t("promotionSettings.freeShippingPreview")}
-                  </p>
-                  <p className="mt-2 text-sm font-semibold leading-7 text-slate-900">
-                    {previewMessage}
-                  </p>
-                  {!freeShippingSettings.freeShippingEnabled && (
-                    <p className="mt-2 text-xs text-slate-500">
-                      {t("promotionSettings.freeShippingPreviewInactive")}
-                    </p>
-                  )}
-                </div>
-            </SettingsSection>
-
-            <SettingsSection
-              icon={Sparkles}
-              title={t("promotionSettings.hideTopBarTitle")}
-              description={t("promotionSettings.hideTopBarDesc")}
-              accentClassName="bg-amber-50 text-amber-700 ring-amber-200/70"
-            >
-              <div className="rounded-[22px] border border-slate-200 bg-slate-50/70 p-4">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="space-y-1">
-                    <h3 className="text-base font-bold text-slate-950">
-                      {t("promotionSettings.hideTopBarTitle")}
-                    </h3>
-                    <p className="text-sm leading-6 text-slate-500">
-                      {t("promotionSettings.hideTopBarDesc")}
-                    </p>
-                  </div>
-                  <Switch
-                    aria-label={t("promotionSettings.hideTopBarTitle")}
-                    checked={hideUtilityBar}
-                    disabled={utilityBarSaving}
-                    onCheckedChange={(checked) => { void handleToggleUtilityBar(checked); }}
-                  />
-                </div>
-              </div>
-            </SettingsSection>
-
-            <div className="relative my-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-dashed border-slate-200/60" />
-              </div>
-              <div className="relative flex justify-center text-sm">
-                <span className="px-4 bg-slate-50/65 text-slate-400 font-medium">
-                  {t("promotionSettings.pricingSettings")}
+                />
+                <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 ltr:right-3 rtl:left-3">
+                  {t("promotionSettings.currency")}
                 </span>
               </div>
+              <p
+                id="freeShippingThresholdHint"
+                className="text-xs leading-5 text-slate-500"
+              >
+                {t("promotionSettings.freeShippingThresholdDesc")}
+              </p>
+              {thresholdError ? (
+                <p
+                  id="freeShippingThresholdError"
+                  className="text-xs font-bold text-rose-700"
+                >
+                  {t("promotionSettings.thresholdMaxError")}
+                </p>
+              ) : null}
             </div>
 
-            <SettingsSection
-              icon={Truck}
-              title={t("promotionSettings.flatShippingTitle")}
-              description={t("promotionSettings.flatShippingDesc")}
-              accentClassName="bg-sky-50 text-sky-700 ring-sky-200/70"
-            >
-                <div
-                  className={cn(
-                    "rounded-[22px] border p-4 transition-colors",
-                    flatShippingSettings.flatShippingEnabled
-                      ? "border-sky-200 bg-sky-50/70"
-                      : "border-slate-200 bg-slate-50/70",
-                  )}
-                >
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-bold text-slate-950">
-                          {t("promotionSettings.flatShippingEnabled")}
-                        </h3>
-                        <span
-                          className={cn(
-                            "rounded-full px-2 py-1 text-[11px] font-bold",
-                            flatShippingSettings.flatShippingEnabled
-                              ? "bg-sky-100 text-sky-700"
-                              : "bg-slate-200 text-slate-600",
-                          )}
-                        >
-                          {flatShippingSettings.flatShippingEnabled
-                            ? t("promotionSettings.flatShippingPricing")
-                            : t("promotionSettings.flatShippingRegional")}
-                        </span>
-                      </div>
-                      <p className="text-sm leading-6 text-slate-500">
-                        {t("promotionSettings.flatShippingEnabledDesc")}
-                      </p>
-                    </div>
-                    <Switch
-                      aria-label={t("promotionSettings.flatShippingEnabled")}
-                      checked={flatShippingSettings.flatShippingEnabled}
-                      onCheckedChange={(checked) =>
-                        setFlatShippingSettings((currentSettings) => ({
-                          ...currentSettings,
-                          flatShippingEnabled: checked,
-                        }))
-                      }
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,260px)_minmax(0,1fr)]">
-                  <div className="space-y-2">
-                    <Label htmlFor="flatShippingFee">
-                      {t("promotionSettings.flatShippingFee")}
-                    </Label>
-                    <Input
-                      id="flatShippingFee"
-                      type="number"
-                      min={0}
-                      max={10000}
-                      step={5}
-                      value={flatShippingSettings.flatShippingFee}
-                      onChange={(event) =>
-                        setFlatShippingSettings((currentSettings) => ({
-                          ...currentSettings,
-                          flatShippingFee: getNumericValue(event.target.value),
-                        }))
-                      }
-                      readOnly={!flatShippingSettings.flatShippingEnabled}
-                      className={cn(
-                        "h-11 rounded-xl bg-white/90",
-                        !flatShippingSettings.flatShippingEnabled &&
-                          "bg-slate-50/50 cursor-not-allowed",
-                      )}
-                    />
-                    <p className="text-xs leading-5 text-slate-500">
-                      {t("promotionSettings.flatShippingFeeDesc")}
-                    </p>
-                  </div>
-
-                  <div className="rounded-[22px] border border-slate-200 bg-slate-50/80 p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-2xl bg-white p-2 text-slate-700 ring-1 ring-slate-200/70">
-                        <PackageCheck className="size-5" />
-                      </div>
-                      <div className="space-y-2">
-                        <h4 className="text-sm font-bold text-slate-950">
-                          {t("promotionSettings.flatShippingWhenToUse")}
-                        </h4>
-                        <ul className="space-y-1 text-sm leading-6 text-slate-500">
-                          <li>
-                            {t("promotionSettings.flatShippingUseCase1")}
-                          </li>
-                          <li>
-                            {t("promotionSettings.flatShippingUseCase2")}
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-            </SettingsSection>
-
-            <Separator />
-
-            <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-slate-50/65 p-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-1">
-                <h3 className="text-sm font-bold text-slate-950">
-                  {t("promotionSettings.saveApply")}
-                </h3>
-                <p className="text-sm leading-6 text-slate-500">
-                  {t("promotionSettings.saveApplyDesc")}
-                </p>
-              </div>
-
-              <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+            <div className="space-y-2">
+              <Label htmlFor="freeShippingMessage">
+                {t("promotionSettings.freeShippingMessage")}
+              </Label>
+              <Textarea
+                id="freeShippingMessage"
+                ref={msgRef}
+                rows={3}
+                value={freeShippingSettings.freeShippingMessage}
+                onChange={(event) =>
+                  updateFree({ freeShippingMessage: event.target.value })
+                }
+                className={cn(
+                  "min-h-[104px] rounded-xl border-slate-200 bg-white/90 text-sm font-semibold leading-7 text-slate-950",
+                  !freeShippingEnabled && lockedFieldsClass,
+                )}
+              />
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
                   type="button"
                   variant="outline"
-                  size="lg"
-                  onClick={() => {
-                    void handleResetSettings();
-                  }}
-                  disabled={saving}
-                  className="rounded-2xl"
+                  size="sm"
+                  onClick={insertAmountToken}
+                  className="rounded-lg border-dashed text-xs font-bold text-slate-600"
                 >
-                  <RefreshCcw className="size-4" />
-                  {t("promotionSettings.resetSettings")}
+                  <Plus className="size-3.5" />
+                  {t("promotionSettings.insertToken")}
                 </Button>
-                <Button
-                  type="button"
-                  size="lg"
-                  onClick={() => {
-                    void handleSavePromotionSettings();
-                  }}
-                  disabled={saving}
-                  className="rounded-2xl bg-slate-950 text-white hover:bg-slate-800"
-                >
-                  <Save className={cn("size-4", saving && "animate-pulse")} />
-                  {saving ? t("promotionSettings.savingSettings") : t("promotionSettings.saveSettings")}
-                </Button>
+                <p className="text-xs leading-5 text-slate-500">
+                  {msgHelpParts[0]}
+                  <code className="mx-1 rounded-md border border-slate-200 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-900" dir="ltr">
+                    {AMOUNT_TOKEN}
+                  </code>
+                  {msgHelpParts[1]}
+                </p>
               </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          </fieldset>
+
+          {/* المعاينة بشكل شريط المتجر */}
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-baseline gap-2.5">
+              <p className="text-xs font-bold text-slate-700">
+                {t("promotionSettings.previewTitle")}
+              </p>
+              <p className="text-xs text-slate-500">{t("promotionSettings.previewNote")}</p>
+            </div>
+            <div
+              className={cn(
+                "flex items-center gap-2.5 rounded-xl border px-4 py-2.5 transition-colors",
+                preview.live
+                  ? "border-slate-950 bg-slate-950 text-white"
+                  : "border-dashed border-slate-300 bg-slate-50/80 text-slate-500",
+              )}
+            >
+              <Truck className="size-4 shrink-0" />
+              <p className="flex-1 text-sm font-semibold leading-6" dir="auto">
+                {preview.text}
+              </p>
+              <span
+                className={cn(
+                  "shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-bold",
+                  preview.live ? "bg-white/15 text-slate-200" : "bg-slate-200/70 text-slate-500",
+                )}
+              >
+                {t("promotionSettings.storeBadge")}
+              </span>
+            </div>
+          </div>
+        </PromoSection>
+
+        {/* إخفاء الشريط العلوي */}
+        <PromoSection
+          icon={PanelTop}
+          title={t("promotionSettings.hideTopBarTitle")}
+          description={t("promotionSettings.hideTopBarDesc")}
+          isOn={hideUtilityBar}
+          accentClassName={{
+            sectionBorder: "border-amber-200/80",
+            iconActive: "bg-amber-50 text-amber-700 ring-amber-200/70",
+          }}
+          pill={
+            <StatusPill
+              active={hideUtilityBar}
+              activeLabel={t("promotionSettings.pillHidden")}
+              inactiveLabel={t("promotionSettings.pillVisible")}
+              warn
+            />
+          }
+          switchChecked={hideUtilityBar}
+          onSwitchChange={(checked) => void handleToggleUtilityBar(checked)}
+          switchLabel={t("promotionSettings.hideTopBarTitle")}
+        />
+
+        {/* سعر الشحن الموحّد */}
+        <PromoSection
+          icon={PackageCheck}
+          title={t("promotionSettings.flatShippingTitle")}
+          description={t("promotionSettings.flatShippingDesc")}
+          isOn={flatShippingSettings.flatShippingEnabled}
+          accentClassName={{
+            sectionBorder: "border-sky-200/80",
+            iconActive: "bg-sky-50 text-sky-700 ring-sky-200/70",
+          }}
+          pill={
+            <StatusPill
+              active={flatShippingSettings.flatShippingEnabled}
+              activeLabel={t("promotionSettings.pillActive")}
+              inactiveLabel={t("promotionSettings.pillInactive")}
+            />
+          }
+          switchChecked={flatShippingSettings.flatShippingEnabled}
+          onSwitchChange={(checked) => updateFlat({ flatShippingEnabled: checked })}
+          switchLabel={t("promotionSettings.flatShippingEnabledLabel")}
+        >
+          <fieldset
+            disabled={!flatShippingSettings.flatShippingEnabled}
+            className={cn("grid gap-4 lg:grid-cols-[minmax(0,264px)_minmax(0,1fr)]")}
+          >
+            <div className="space-y-2">
+              <Label htmlFor="flatShippingFee">
+                {t("promotionSettings.flatShippingFee")}
+              </Label>
+              <div className="relative">
+                <Input
+                  id="flatShippingFee"
+                  type="number"
+                  min={0}
+                  max={MAX_FEE}
+                  inputMode="numeric"
+                  value={flatShippingSettings.flatShippingFee}
+                  onChange={(event) => {
+                    const next = getNumericValue(event.target.value);
+                    setFeeError(next > MAX_FEE);
+                    updateFlat({ flatShippingFee: next });
+                  }}
+                  onBlur={() => {
+                    if (flatShippingSettings.flatShippingFee > MAX_FEE) {
+                      setFeeError(false);
+                      updateFlat({ flatShippingFee: MAX_FEE });
+                    }
+                  }}
+                  aria-invalid={feeError}
+                  aria-describedby="flatShippingFeeHint flatShippingFeeError"
+                  className={cn(
+                    "h-11 rounded-xl bg-white/90 font-semibold tabular-nums ltr:pr-14 rtl:pl-14",
+                    !flatShippingSettings.flatShippingEnabled && lockedFieldsClass,
+                    feeError && "border-rose-300 focus-visible:ring-rose-200",
+                  )}
+                />
+                <span className="pointer-events-none absolute top-1/2 -translate-y-1/2 rounded-md bg-slate-100 px-2 py-0.5 text-xs font-bold text-slate-600 ltr:right-3 rtl:left-3">
+                  {t("promotionSettings.currency")}
+                </span>
+              </div>
+              <p id="flatShippingFeeHint" className="text-xs leading-5 text-slate-500">
+                {t("promotionSettings.flatShippingFeeDesc")}
+              </p>
+              {feeError ? (
+                <p id="flatShippingFeeError" className="text-xs font-bold text-rose-700">
+                  {t("promotionSettings.feeMaxError")}
+                </p>
+              ) : null}
+            </div>
+
+            <details className="group rounded-xl border border-slate-200/70 bg-slate-50/70 px-4 py-3">
+              <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-slate-950 [&::-webkit-details-marker]:hidden">
+                <ChevronDown className="size-4 text-slate-500 transition-transform group-open:rotate-180" />
+                {t("promotionSettings.flatShippingWhenToUse")}
+              </summary>
+              <ul className="mt-2 space-y-1.5">
+                <li className="flex gap-2 text-sm leading-6 text-slate-500">
+                  <Check className="mt-1 size-4 shrink-0 text-sky-700" />
+                  {t("promotionSettings.flatShippingUseCase1")}
+                </li>
+                <li className="flex gap-2 text-sm leading-6 text-slate-500">
+                  <Check className="mt-1 size-4 shrink-0 text-sky-700" />
+                  {t("promotionSettings.flatShippingUseCase2")}
+                </li>
+              </ul>
+            </details>
+          </fieldset>
+        </PromoSection>
+
+        {/* إعادة التعيين */}
+        <div className="flex flex-col gap-4 rounded-[24px] border border-slate-200/70 bg-white/80 p-5 shadow-sm sm:flex-row sm:items-center">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-200/70">
+            <RotateCcw className="size-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-slate-950">
+              {t("promotionSettings.resetTitle")}
+            </p>
+            <p className="text-xs leading-5 text-slate-500">
+              {t("promotionSettings.resetDesc")}
+            </p>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+              >
+                <RotateCcw className="size-4" />
+                {t("promotionSettings.resetAction")}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>
+                  {t("promotionSettings.resetModalTitle")}
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  {t("promotionSettings.resetModalBody")}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>
+                  {t("promotionSettings.resetModalCancel")}
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => void handleReset()}
+                  className="bg-rose-700 text-white hover:bg-rose-800"
+                >
+                  {t("promotionSettings.resetModalConfirm")}
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
     </SettingsPageShell>
   );

@@ -1,0 +1,365 @@
+{
+  "id": "anjella-boutique",
+  "name": "أنجيلا بوتيك",
+  "description": "قالب بوتيك أزياء وعبايات محتشمة بتصميم أنيق وبسيط، يعتمد على نقاء المساحات البيضاء، صور كولكشن راقية، وأزرار شراء واضحة وسريعة.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "0 0% 10%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "340 30% 97%",
+      "secondaryForeground": "0 0% 15%",
+      "accent": "345 60% 60%",
+      "accentForeground": "0 0% 100%",
+      "background": "240 10% 99%",
+      "foreground": "0 0% 15%",
+      "muted": "220 15% 95%",
+      "mutedForeground": "220 10% 45%",
+      "border": "220 13% 91%",
+      "card": "0 0% 100%",
+      "cardForeground": "0 0% 15%",
+      "ring": "0 0% 10%"
+    },
+    "typography": {
+      "headingFont": "\"Tajawal\", \"Almarai\", \"Cairo\", sans-serif",
+      "bodyFont": "\"Tajawal\", \"Almarai\", \"Inter\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.2rem",
+      "buttonRadius": "9999px"
+    },
+    "productCard": {
+      "borderRadius": "1rem",
+      "boxShadow": "0 4px 20px -4px rgba(0, 0, 0, 0.06)",
+      "hoverShadow": "0 12px 32px -4px rgba(0, 0, 0, 0.12)",
+      "badgeRadius": "9999px",
+      "buttonRadius": "9999px",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | أنجيلا بوتيك",
+    "description": "هتكون أول خطوة ليكي تلبسي واسع لكن مش الأخيرة - تجدي هنا ما يلامس قلبك بأناقة وحشمة راقية."
+  },
+  "preview": {
+    "imageUrl": "/assets/themes/anjella-boutique/preview.svg",
+    "colors": ["0 0% 10%", "340 30% 97%", "345 60% 60%"]
+  },
+  "header": {
+    "variant": "editorial-soft",
+    "brandName": "Anjella | أنجيلا",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "المتجر", "to": "/shop" },
+      { "label": "فساتين", "to": "/collections/dresses" },
+      { "label": "أطقم", "to": "/collections/sets" },
+      { "label": "عبايات", "to": "/collections/abayas" },
+      { "label": "العروض", "to": "/sale" }
+    ],
+    "actions": [
+      { "label": "تسوقي الآن", "to": "/shop", "style": "primary" }
+    ]
+  },
+  "footer": {
+    "variant": "editorial-soft",
+    "description": "هتكون أول خطوة ليكي تلبسي واسع لكن مش الأخيرة.. تجدي هنا ما يلامس قلبك بأناقة وحشمة راقية.",
+    "copyrightText": "© 2026 Anjella__eg. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "instagram": "https://www.instagram.com/anjella__eg",
+      "tiktok": "https://www.tiktok.com/@enjy_designs",
+      "whatsapp": "https://wa.me/201062543932"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          { "label": "كل المنتجات", "to": "/shop" },
+          { "label": "الفساتين", "to": "/collections/dresses" },
+          { "label": "الأطقم", "to": "/collections/sets" },
+          { "label": "العبايات", "to": "/collections/abayas" },
+          { "label": "العروض الخاصة", "to": "/sale" }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
+          { "label": "دليل المقاسات", "to": "/size-guide" },
+          { "label": "الشحن والتوصيل", "to": "/shipping" },
+          { "label": "الاستبدال والاسترجاع", "to": "/returns" },
+          { "label": "تواصل معنا", "to": "/contact" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "سياسة الخصوصية", "to": "/privacy" },
+      { "label": "الشروط والأحكام", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "كولكشن جديد",
+            "message": "هنا كل ما يناسب الفتاة الأنيقة 💗🛍️ — شحن سريع لجميع المحافظات واستبدال سهل خلال 14 يوم",
+            "saleLabel": "خصم حتى 20%",
+            "shippingLabel": "شحن سريع",
+            "returnLabel": "استبدال 14 يوم",
+            "ctaText": "تسوقي الآن",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "boutique-muse",
+          "settings": {
+            "eyebrow": "كولكشن الموسم الجديد",
+            "title": "تصاميم تلامس قلبك\nبأناقة وحشمة راقية",
+            "subtitle": "هتكون أول خطوة ليكي تلبسي واسع وأنيق، لكن مش الأخيرة.. تشكيلة من أرقى الفساتين والأطقم المصممة لتبرز جمالك بحشمة.",
+            "ctaText": "تسوقي الآن",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "تصفحي الأطقم",
+            "secondaryCtaLink": "/collections/sets",
+            "backgroundImage": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1200",
+            "highlights": [
+              { "label": "الخامة", "value": "أقمشة صيفية ناعمة" },
+              { "label": "القصة", "value": "واسعة ومريحة" },
+              { "label": "التوصيل", "value": "خلال 2 - 4 أيام" }
+            ]
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "من نحن | Who We Are",
+            "title": "هتكون أول خطوة ليكي تلبسي واسع لكن مش الأخيرة",
+            "subtitle": "تجدين هنا كل ما يلامس قلبك",
+            "body": "نؤمن في أنجيلا أن الأناقة الحقيقية تبدأ من الراحة والحرية في اختيار ما يناسبك. نصمم لكِ فساتين وأطقم محتشمة بلمسات عصرية وخامات منتقاة بعناية لتعكس شخصيتك المتألقة في كل وقت.",
+            "contentAlign": "center",
+            "ctaText": "استكشفي التشكيلة",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "منتجاتنا الأكثر طلباً",
+            "subtitle": "قطع تم اختيارها بعناية لتناسب إطلالتك اليومية ومناسباتك الخاصة",
+            "limit": 8
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "تسوقي حسب التشكيلة",
+            "subtitle": "كل تصنيف تم تصميمه ليناسب أوقاتك المختلفة",
+            "limit": 3
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "bundle-matrix",
+          "settings": {
+            "badge": "عروض وتنسيقات",
+            "title": "إطلالات أنجيلا المتكاملة",
+            "subtitle": "وفري وقت التنسيق واختاري إطلالة كاملة متناسقة بخصم مميز",
+            "cards": [
+              {
+                "label": "الفساتين اليومية",
+                "title": "فساتين واسعة ومريحة للمشاوير والعمل",
+                "subtitle": "قصات انسيابية تناسب يومك الطويل",
+                "ctaText": "تصفحي الفساتين",
+                "link": "/collections/dresses",
+                "tone": "primary",
+                "stat": "الأساس"
+              },
+              {
+                "label": "الأطقم الجاهزة",
+                "title": "أطقم متكاملة من قطعتين أو ثلاث",
+                "subtitle": "تناسق مثالي يوفر عليكِ عناء التنسيق",
+                "ctaText": "تصفحي الأطقم",
+                "link": "/collections/sets",
+                "tone": "accent",
+                "stat": "الأطقم"
+              },
+              {
+                "label": "المناسبات الراقية",
+                "title": "إطلالات فخمة بلمسات ناعمة",
+                "subtitle": "فساتين سهرة ومناسبات تبرز جمالك بحشمة",
+                "ctaText": "شاهدي التشكيلة",
+                "link": "/collections/abayas",
+                "tone": "slate",
+                "stat": "المناسبات"
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "انضمي لمجتمع أنجيلا",
+            "subtitle": "اشتركي لتكوني أول من يعرف بالموديلات الجديدة والخصومات الحصرية",
+            "buttonText": "اشتراك",
+            "placeholder": "أدخلي بريدك الإلكتروني"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "ANJELLA COLLECTION",
+            "message": "استمتعي بتجربة تسوق فريدة مع خدمة الشحن والتوصيل السريع وسياسة الاستبدال السهلة",
+            "saleLabel": "عروض مميزة",
+            "shippingLabel": "شحن سريع",
+            "returnLabel": "استبدال 14 يوم",
+            "ctaText": "الأكثر طلباً",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "variant": "default-discovery",
+          "settings": {
+            "placeholder": "ابحثي عن فستان، طقم، عباية..."
+          }
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "showCategories": true,
+            "showPriceRange": true
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "جميع القطع",
+            "limit": 16
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "boutique-portrait-stage",
+          "settings": {
+            "showThumbnails": true,
+            "zoomEnabled": true
+          }
+        },
+        {
+          "type": "product-info",
+          "variant": "boutique-ledger",
+          "settings": {
+            "showStockBadge": true,
+            "showSizeGuide": true,
+            "showDeliveryEstimate": true
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "minimal-card",
+          "settings": {
+            "title": "قد يعجبك أيضاً",
+            "limit": 4
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "standard",
+          "settings": {
+            "title": "تقييمات المنتج"
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "settings": {
+            "title": "سلة المشتريات",
+            "showPromoCode": true
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "ملخص الطلب"
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "checkout-form",
+          "settings": {
+            "title": "بيانات التوصيل والدفع",
+            "allowGuestCheckout": true
+          }
+        },
+        {
+          "type": "order-summary",
+          "settings": {
+            "title": "ملخص الطلب"
+          }
+        }
+      ]
+    },
+    "lookbook": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "boutique-muse",
+          "settings": {
+            "eyebrow": "إطلالات الموسم",
+            "title": "لوكبـوك أنجيلا",
+            "subtitle": "استلهمي إطلالتك القادمة من أحدث تنسيقات الفساتين والعبايات المحتشمة.",
+            "backgroundImage": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1600"
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "settings": {
+            "title": "تنسيقات مميزة",
+            "subtitle": "شاهدي كيف تتألق كل قطعة في تفاصيلها اليومية"
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "minimal",
+          "settings": {
+            "title": "انضمي لعائلة أنجيلا",
+            "subtitle": "اشتركي للحصول على جديد التصاميم أولاً بأول"
+          }
+        }
+      ]
+    }
+  }
+}

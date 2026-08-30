@@ -5,24 +5,24 @@
   "direction": "rtl",
   "tokens": {
     "colors": {
-      "primary": "162 30% 17%",
-      "primaryForeground": "43 60% 96%",
-      "secondary": "150 18% 92%",
-      "secondaryForeground": "162 30% 17%",
-      "accent": "38 60% 56%",
-      "accentForeground": "162 30% 12%",
-      "background": "150 16% 97%",
-      "foreground": "162 25% 14%",
-      "muted": "150 12% 90%",
-      "mutedForeground": "160 8% 38%",
-      "border": "150 14% 85%",
+      "primary": "250 42% 16%",
+      "primaryForeground": "42 45% 98%",
+      "secondary": "255 24% 93%",
+      "secondaryForeground": "250 42% 16%",
+      "accent": "262 84% 63%",
+      "accentForeground": "250 42% 12%",
+      "background": "42 30% 98%",
+      "foreground": "250 38% 14%",
+      "muted": "255 16% 90%",
+      "mutedForeground": "250 12% 40%",
+      "border": "255 16% 85%",
       "card": "0 0% 100%",
-      "cardForeground": "162 25% 14%",
-      "ring": "38 60% 56%"
+      "cardForeground": "250 38% 14%",
+      "ring": "262 84% 63%"
     },
     "typography": {
-      "headingFont": "\"El Messiri\", \"Cairo\", serif",
-      "bodyFont": "\"Mada\", \"Tajawal\", sans-serif",
+      "headingFont": "\"Alexandria\", \"Cairo\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"
     },
@@ -32,8 +32,8 @@
     },
     "productCard": {
       "borderRadius": "1.1rem",
-      "boxShadow": "0 20px 48px -34px rgba(22, 61, 46, 0.20)",
-      "hoverShadow": "0 30px 72px -40px rgba(22, 61, 46, 0.28)",
+      "boxShadow": "0 22px 54px -36px rgba(46, 32, 92, 0.22)",
+      "hoverShadow": "0 34px 80px -42px rgba(46, 32, 92, 0.30)",
       "badgeRadius": "0.75rem",
       "buttonRadius": "0.9rem",
       "surfaceOpacity": "1"
@@ -49,9 +49,9 @@
   "preview": {
     "imageUrl": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=1600",
     "colors": [
-      "162 30% 17%",
-      "38 60% 56%",
-      "150 16% 97%"
+      "250 42% 16%",
+      "262 84% 63%",
+      "42 30% 98%"
     ]
   },
   "header": {
@@ -169,8 +169,8 @@
             "ctaLink": "/shop",
             "secondaryCtaText": "العروض",
             "secondaryCtaLink": "/sale",
-            "backgroundImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=1600",
-            "panelImage": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1200",
+            "backgroundImage": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1200",
             "highlights": [
               {
                 "label": "لوكات",
@@ -206,6 +206,232 @@
           }
         },
         {
+          "type": "look-mosaic",
+          "variant": "bento",
+          "settings": {
+            "title": "لوكات جاهزة تختاري منها",
+            "subtitle": "إطلالات كاملة",
+            "ctaText": "كل اللوكات",
+            "ctaLink": "/shop?sort=looks",
+            "looks": [
+              {
+                "title": "لوك الشغل",
+                "subtitle": "فستان ميدي + بليزر خفيف يخليكي حاضرة من أول اجتماع",
+                "image": "https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 1,150 ج",
+                "pieces": [
+                  "فستان ميدي",
+                  "بليزر",
+                  "حقيبة شغل"
+                ],
+                "link": "/shop?category=work"
+              },
+              {
+                "title": "لوك الخروجة",
+                "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 990 ج",
+                "pieces": [
+                  "فستان",
+                  "كعب",
+                  "شنطة كروس"
+                ],
+                "link": "/shop?category=going-out"
+              },
+              {
+                "title": "لوك الجامعة",
+                "image": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 620 ج",
+                "pieces": [
+                  "جينز",
+                  "بلوزة",
+                  "سنيكرز"
+                ],
+                "link": "/shop?category=casual"
+              },
+              {
+                "title": "لوك العزومة",
+                "image": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 1,400 ج",
+                "pieces": [
+                  "فستان سهرة",
+                  "كعب",
+                  "كلتش"
+                ],
+                "link": "/shop?category=evening"
+              },
+              {
+                "title": "لوك الويكند",
+                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 540 ج",
+                "pieces": [
+                  "توب",
+                  "جينز واسع",
+                  "كاب"
+                ],
+                "link": "/shop?category=weekend"
+              },
+              {
+                "title": "لوك البيت",
+                "image": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 420 ج",
+                "pieces": [
+                  "طقم ريلاكس",
+                  "كارديجان",
+                  "شبشب"
+                ],
+                "link": "/shop?category=loungewear"
+              }
+            ]
+          }
+        },
+        {
+          "type": "look-planner",
+          "variant": "stepper",
+          "settings": {
+            "title": "ابنِ لوكك في خطوتين",
+            "subtitle": "مناسبتك + مزاجك = لوكك",
+            "ctaText": "كل اللوكات",
+            "ctaLink": "/shop",
+            "occasions": [
+              {
+                "label": "الشغل"
+              },
+              {
+                "label": "الخروجة"
+              },
+              {
+                "label": "الجامعة"
+              },
+              {
+                "label": "العزومة"
+              },
+              {
+                "label": "البيت"
+              }
+            ],
+            "moods": [
+              {
+                "label": "شيك"
+              },
+              {
+                "label": "كاجوال"
+              },
+              {
+                "label": "جريء"
+              },
+              {
+                "label": "هادي"
+              }
+            ],
+            "looks": [
+              {
+                "title": "فستان ميدي شيك",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1400",
+                "price": "من 850 ج",
+                "pieces": [
+                  "فستان",
+                  "بليزر"
+                ],
+                "occasions": [
+                  "الشغل",
+                  "الخروجة"
+                ],
+                "moods": [
+                  "شيك"
+                ],
+                "link": "/shop?category=work"
+              },
+              {
+                "title": "جينز وبلوزة",
+                "image": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=1400",
+                "price": "من 620 ج",
+                "pieces": [
+                  "جينز",
+                  "بلوزة"
+                ],
+                "occasions": [
+                  "الجامعة",
+                  "الشغل"
+                ],
+                "moods": [
+                  "كاجوال"
+                ],
+                "link": "/shop?category=casual"
+              },
+              {
+                "title": "فستان سهرة",
+                "image": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1400",
+                "price": "من 1,400 ج",
+                "pieces": [
+                  "فستان",
+                  "كعب"
+                ],
+                "occasions": [
+                  "العزومة",
+                  "الخروجة"
+                ],
+                "moods": [
+                  "شيك",
+                  "جريء"
+                ],
+                "link": "/shop?category=evening"
+              },
+              {
+                "title": "طقم هادي",
+                "image": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&q=80&w=1400",
+                "price": "من 420 ج",
+                "pieces": [
+                  "طقم",
+                  "كارديجان"
+                ],
+                "occasions": [
+                  "البيت",
+                  "الجامعة"
+                ],
+                "moods": [
+                  "هادي"
+                ],
+                "link": "/shop?category=loungewear"
+              },
+              {
+                "title": "جينز واسع وتوب",
+                "image": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=1400",
+                "price": "من 540 ج",
+                "pieces": [
+                  "توب",
+                  "جينز"
+                ],
+                "occasions": [
+                  "الجامعة",
+                  "الخروجة"
+                ],
+                "moods": [
+                  "جريء",
+                  "كاجوال"
+                ],
+                "link": "/shop?category=weekend"
+              },
+              {
+                "title": "بلوزة وكارديجان",
+                "image": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=1400",
+                "price": "من 700 ج",
+                "pieces": [
+                  "بلوزة",
+                  "كارديجان"
+                ],
+                "occasions": [
+                  "الشغل"
+                ],
+                "moods": [
+                  "هادي",
+                  "شيك"
+                ],
+                "link": "/shop?category=work"
+              }
+            ]
+          }
+        },
+        {
           "type": "promo-strip",
           "variant": "benefit-ribbon",
           "settings": {
@@ -231,13 +457,13 @@
               {
                 "title": "الشغل واليوم الطويل",
                 "subtitle": "قطع مرتبة ومريحة تصلح لمكتب ومشاوير بدون تنسيق كتير.",
-                "image": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1200",
+                "image": "https://images.unsplash.com/photo-1539109136881-3be0616acf4b?auto=format&fit=crop&q=80&w=1200",
                 "link": "/shop?category=tops"
               },
               {
                 "title": "خروجات ومناسبات",
                 "subtitle": "فساتين وإطلالات جاهزة تحسبيها من أول نظرة.",
-                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+                "image": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1200",
                 "link": "/shop?category=dresses"
               },
               {
@@ -249,7 +475,7 @@
               {
                 "title": "البيت والريلاكس",
                 "subtitle": "أقمشة مريحة لبيت ونوم ومشاوير قريبة.",
-                "image": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&q=80&w=1200",
+                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1200",
                 "link": "/shop?category=loungewear"
               }
             ]
@@ -302,15 +528,6 @@
                 "stat": "تجهيز 48 ساعة"
               }
             ]
-          }
-        },
-        {
-          "type": "lookbook-showcase",
-          "variant": "boutique-storyboard",
-          "settings": {
-            "badge": "جورنال الأتيليه",
-            "title": "لوكات من تنسيقاتنا الحقيقية",
-            "subtitle": "إطلالات جمعناها قطعة قطعة — وكل قطعة في اللوك متاحة للطلب."
           }
         },
         {
@@ -387,6 +604,59 @@
           }
         },
         {
+          "type": "look-mosaic",
+          "variant": "masonry",
+          "settings": {
+            "title": "لوكات متنسّقة جاهزة",
+            "subtitle": "كل قطعة متاحة للطلب",
+            "ctaText": "شوفي الكل",
+            "ctaLink": "/shop",
+            "looks": [
+              {
+                "title": "الويكند",
+                "image": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 540 ج",
+                "pieces": [
+                  "توب",
+                  "جينز",
+                  "كاب"
+                ],
+                "link": "/shop?category=weekend"
+              },
+              {
+                "title": "الخروجة",
+                "image": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 990 ج",
+                "pieces": [
+                  "فستان",
+                  "كعب"
+                ],
+                "link": "/shop?category=going-out"
+              },
+              {
+                "title": "الشغل",
+                "image": "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 700 ج",
+                "pieces": [
+                  "بلوزة",
+                  "كارديجان"
+                ],
+                "link": "/shop?category=work"
+              },
+              {
+                "title": "البيت",
+                "image": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&q=80&w=1400",
+                "priceLabel": "من 420 ج",
+                "pieces": [
+                  "طقم",
+                  "كارديجان"
+                ],
+                "link": "/shop?category=loungewear"
+              }
+            ]
+          }
+        },
+        {
           "type": "shop-promo-rail",
           "variant": "trust-rail",
           "settings": {
@@ -457,15 +727,53 @@
           }
         },
         {
-          "type": "quantity-offers",
-          "variant": "look-builder",
+          "type": "look-progress",
+          "variant": "ladder",
           "settings": {
-            "title": "كملي اللوك",
-            "subtitle": "ضيفي قطع تكميلية ووفري — كل ما زاد العدد زاد الخصم تلقائي.",
-            "placement": "inline-buybox",
-            "decisionMode": "primary",
-            "addOfferLabel": "ضيفي قطعة للوك",
-            "continueToFormLabel": "كملي بياناتك"
+            "title": "كمّلي اللوك ووفّري",
+            "subtitle": "علّمي على القطع اللي عايزاها — كل قطعة بتقرّبك من خصم أكبر",
+            "progressHint": "اختاري قطع اللوك وهيتحسب الخصم تلقائي",
+            "ctaText": "أضيفي اللوك كامل",
+            "ctaLink": "/cart",
+            "pieces": [
+              {
+                "title": "فستان ميدي",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1400",
+                "price": "850 ج"
+              },
+              {
+                "title": "حذاء كعب",
+                "image": "https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=1400",
+                "price": "640 ج"
+              },
+              {
+                "title": "حقيبة كروس",
+                "image": "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1400",
+                "price": "380 ج"
+              },
+              {
+                "title": "اكسسوار",
+                "image": "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1400",
+                "price": "190 ج"
+              }
+            ],
+            "tiers": [
+              {
+                "threshold": 2,
+                "label": "قطعتين",
+                "discount": "خصم 5%"
+              },
+              {
+                "threshold": 3,
+                "label": "3 قطع",
+                "discount": "خصم 10%"
+              },
+              {
+                "threshold": 4,
+                "label": "اللوك كامل",
+                "discount": "خصم 15%"
+              }
+            ]
           }
         },
         {
@@ -501,15 +809,6 @@
             "cardStyle": "editorial",
             "reviewLimit": 6,
             "mobileReviewLimit": 2
-          }
-        },
-        {
-          "type": "bought-together",
-          "variant": "complete-look",
-          "settings": {
-            "title": "كملي اللوك من هنا",
-            "subtitle": "القطع اللي بتحصل مع القطعة دي في التنسيق متجمعة تحت بعضها — علّمي عليها وتدخل في نفس الطلب.",
-            "limit": 3
           }
         },
         {

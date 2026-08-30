@@ -257,6 +257,12 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "modest-fashion",
     "أزياء محتشمة",
   ),
+  "anjella-boutique": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "modest-fashion",
+    "بوتيك أزياء وعبايات محتشمة",
+  ),
   "rihla-resort-eg": createThemeCategoryMeta(
     "fashion",
     "أزياء",
@@ -626,6 +632,7 @@ const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
   "closet-os": "/assets/themes/closet-os/preview.jpg",
   "cutline-club": "/assets/themes/cutline-club/preview.jpg",
   "hayah-modest-eg": "/assets/themes/hayah-modest-eg/preview.svg",
+  "anjella-boutique": "/assets/themes/anjella-boutique/preview.svg",
   "rihla-resort-eg": "/assets/themes/rihla-resort-eg/preview.svg",
   "layali-edit-eg": "/assets/themes/layali-edit-eg/preview.svg",
   "legacy-default-old": "/assets/themes/legacy-default-old/preview.jpg",

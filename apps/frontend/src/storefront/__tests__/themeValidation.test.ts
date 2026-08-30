@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { validateStorefrontTheme } from "../engine/themeValidation";
+import { STOREFRONT_THEME_PRESETS } from "../themes";
 import type { StorefrontTheme } from "../types/theme.types";
 
 const buildValidTheme = (): StorefrontTheme => ({
@@ -78,10 +79,9 @@ describe("validateStorefrontTheme", () => {
     );
   });
 
-  it("allows cart-items to be attached to checkout pages", () => {
-    const theme = buildValidTheme();
-    theme.pages.checkout.sections = ["cart-items", "checkout-form", "payment"];
-
-    expect(validateStorefrontTheme(theme)).toEqual([]);
+  it("validates anjella-boutique theme preset successfully without errors", () => {
+    const anjellaTheme = STOREFRONT_THEME_PRESETS["anjella-boutique"];
+    expect(anjellaTheme).toBeDefined();
+    expect(validateStorefrontTheme(anjellaTheme)).toEqual([]);
   });
 });

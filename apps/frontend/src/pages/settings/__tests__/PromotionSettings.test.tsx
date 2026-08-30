@@ -6,12 +6,31 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import PromotionSettings from "../PromotionSettings";
 
-const mockNavigate = vi.fn();
+/* jsdom لا ينفذ PointerEvent، ومكونات Radix (زي Switch) محتاجاه أثناء النقر */
+const win = window as unknown as { PointerEvent?: unknown };
+if (typeof win.PointerEvent === "undefined") {
+  class PointerEventPolyfill extends MouseEvent {
+    pointerId: number;
+    pointerType: string;
+    isPrimary: boolean;
+    constructor(type: string, params: PointerEventInit = {}) {
+      super(type, params);
+      this.pointerId = params.pointerId ?? 1;
+      this.pointerType = params.pointerType ?? "mouse";
+      this.isPrimary = params.isPrimary ?? true;
+    }
+  }
+  win.PointerEvent = PointerEventPolyfill;
+}
+
 const mockApiGet = vi.fn();
 const mockApiPost = vi.fn();
+const mockGetStorefrontSettings = vi.fn();
+const mockUpdateStorefrontSettings = vi.fn();
 
 vi.mock("react-router-dom", () => ({
-  useNavigate: () => mockNavigate,
+  Link: ({ children }: { children: React.ReactNode }) => <a href="#">{children}</a>,
+  useNavigate: () => vi.fn(),
 }));
 
 vi.mock("../../../services/apiClient", () => ({
@@ -21,88 +40,107 @@ vi.mock("../../../services/apiClient", () => ({
   },
 }));
 
+vi.mock("../../../services/storefrontSettingsService", () => ({
+  storefrontSettingsService: {
+    getSettings: (...args: unknown[]) => mockGetStorefrontSettings(...args),
+    updateSettings: (...args: unknown[]) => mockUpdateStorefrontSettings(...args),
+  },
+}));
+
+const loadedSettings = {
+  freeShippingEnabled: true,
+  freeShippingThreshold: "250",
+  freeShippingMessage: "شحن مجاني لما الطلب يوصل {amount} جنيه",
+  flatShippingEnabled: true,
+  flatShippingFee: "35",
+};
+
 describe("PromotionSettings", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(window, "confirm").mockReturnValue(true);
+    mockApiGet.mockResolvedValue({ data: { success: true, data: loadedSettings } });
+    mockApiPost.mockResolvedValue({ data: { success: true } });
+    mockGetStorefrontSettings.mockResolvedValue({ data: { hideUtilityBar: false } });
+    mockUpdateStorefrontSettings.mockResolvedValue({});
   });
 
   afterEach(() => {
     cleanup();
-    vi.restoreAllMocks();
   });
 
-  it("loads promotion settings and saves the updated payload", async () => {
-    mockApiGet.mockResolvedValue({
-      data: {
-        success: true,
-        data: {
-          freeShippingEnabled: true,
-          freeShippingThreshold: "250",
-          freeShippingMessage: "شحن مجاني لما الطلب يوصل {amount} جنيه",
-          flatShippingEnabled: true,
-          flatShippingFee: "35",
-        },
-      },
-    });
-
-    mockApiPost.mockResolvedValue({
-      data: {
-        success: true,
-      },
-    });
-
+  it("loads settings, shows active state pills and the live store-bar preview", async () => {
     render(<PromotionSettings />);
 
-    await screen.findByRole("heading", {
-      name: "إعدادات الترويج وزيادة المبيعات",
-    });
+    await screen.findByRole("heading", { name: "إعدادات الترويج وزيادة المبيعات" });
 
-    fireEvent.change(screen.getByLabelText("الحد الأدنى للطلب (جنيه)"), {
-      target: { value: "450" },
+    const activePills = await screen.findAllByText("يعمل الآن");
+    expect(activePills.length).toBeGreaterThanOrEqual(2);
+
+    const preview = await screen.findByText(
+      "شحن مجاني لما الطلب يوصل 250 جنيه",
+      {},
+      { timeout: 3000 },
+    );
+    expect(preview).toBeTruthy();
+  });
+
+  it("saves automatically after editing the threshold, without a save button", async () => {
+    render(<PromotionSettings />);
+    await screen.findByRole("heading", { name: "إعدادات الترويج وزيادة المبيعات" });
+
+    expect(screen.queryByText("حفظ وتطبيق التغييرات")).toBeNull();
+
+    const threshold = screen.getByRole("spinbutton", { name: "الحد الأدنى للطلب" });
+    fireEvent.change(threshold, { target: { value: "300" } });
+
+    await waitFor(
+      () => {
+        expect(mockApiPost).toHaveBeenCalledTimes(1);
+      },
+      { timeout: 3000 },
+    );
+    expect(mockApiPost).toHaveBeenCalledWith("/promotion-settings", {
+      freeShippingEnabled: true,
+      freeShippingThreshold: 300,
+      freeShippingMessage: "شحن مجاني لما الطلب يوصل {amount} جنيه",
+      flatShippingEnabled: true,
+      flatShippingFee: 35,
     });
-    fireEvent.change(screen.getByLabelText("سعر الشحن الموحد (جنيه)"), {
-      target: { value: "55" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "حفظ الإعدادات" }));
+  });
+
+  it("resets settings through the in-app confirm dialog", async () => {
+    render(<PromotionSettings />);
+    await screen.findByRole("heading", { name: "إعدادات الترويج وزيادة المبيعات" });
+
+    fireEvent.click(screen.getByRole("button", { name: /إعادة تعيين/ }));
+
+    const dialogTitle = await screen.findByText(
+      "إرجاع الإعدادات للوضع الافتراضي؟",
+    );
+    expect(dialogTitle).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "إرجاع للقيم الافتراضية" }));
+
+    await waitFor(
+      () => {
+        expect(mockApiPost).toHaveBeenCalledWith("/promotion-settings/reset", {});
+      },
+      { timeout: 3000 },
+    );
+  });
+
+  it("applies the utility-bar toggle instantly through the storefront settings API", async () => {
+    render(<PromotionSettings />);
+    await screen.findByRole("heading", { name: "إعدادات الترويج وزيادة المبيعات" });
+
+    fireEvent.click(
+      screen.getByRole("switch", { name: "إخفاء الشريط العلوي" }),
+    );
 
     await waitFor(() => {
-      expect(mockApiPost).toHaveBeenCalledWith("/promotion-settings", {
-        freeShippingEnabled: true,
-        freeShippingThreshold: 450,
-        freeShippingMessage: "شحن مجاني لما الطلب يوصل {amount} جنيه",
-        flatShippingEnabled: true,
-        flatShippingFee: 55,
+      expect(mockUpdateStorefrontSettings).toHaveBeenCalledWith({
+        hideUtilityBar: true,
       });
     });
-
-    await waitFor(() => {
-      expect(screen.getByText("تم حفظ الإعدادات بنجاح")).toBeTruthy();
-    });
-  });
-
-  it("navigates to the dedicated page when a sibling tab is clicked", async () => {
-    mockApiGet.mockResolvedValue({
-      data: {
-        success: true,
-        data: {
-          freeShippingEnabled: false,
-          freeShippingThreshold: "0",
-          freeShippingMessage: "",
-          flatShippingEnabled: false,
-          flatShippingFee: "0",
-        },
-      },
-    });
-
-    render(<PromotionSettings />);
-
-    await screen.findByRole("heading", {
-      name: "إعدادات الترويج وزيادة المبيعات",
-    });
-
-    fireEvent.click(screen.getByRole("tab", { name: /خصومات الكميات/i }));
-
-    expect(mockNavigate).toHaveBeenCalledWith("/settings/volume-discounts");
   });
 });

@@ -150,6 +150,47 @@ export const STOREFRONT_CUSTOM_PAGE_STARTER_SECTIONS = [
 ] as const;
 
 export const STOREFRONT_SECTION_MANIFEST = {
+  "look-mosaic": {
+    label: "فسيفساء اللوكات",
+    component: "look-mosaic",
+    pages: ["home", "shop"],
+    variants: [
+      { value: "bento", label: "بنتو" },
+      { value: "masonry", label: "ماسونري" },
+    ],
+    fields: [
+      { key: "title", label: "العنوان", type: "text" },
+      { key: "subtitle", label: "التسمية", type: "textarea" },
+      { key: "ctaText", label: "نص الزر", type: "text" },
+      { key: "ctaLink", label: "رابط الزر", type: "url" },
+    ],
+  },
+  "look-planner": {
+    label: "مخطّط اللوك",
+    component: "look-planner",
+    pages: ["home", "shop"],
+    variants: [
+      { value: "stepper", label: "خطوات" },
+      { value: "chips", label: "شرائح" },
+    ],
+    fields: [
+      { key: "title", label: "العنوان", type: "text" },
+      { key: "subtitle", label: "التسمية", type: "textarea" },
+    ],
+  },
+  "look-progress": {
+    label: "سلّم الإطلالة",
+    component: "look-progress",
+    pages: ["pdp"],
+    variants: [
+      { value: "ladder", label: "سلّم" },
+      { value: "compact", label: "مضغوط" },
+    ],
+    fields: [
+      { key: "title", label: "العنوان", type: "text" },
+      { key: "subtitle", label: "التسمية", type: "textarea" },
+    ],
+  },
   "promo-strip": {
     label: "شريط المزايا",
     component: "promo-strip",

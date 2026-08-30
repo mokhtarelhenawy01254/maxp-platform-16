@@ -154,7 +154,7 @@ const StickyAddToCartHost: React.FC = () => {
   const externalProductAction = resolveExternalProductAction(product);
   const externalAffiliateEnabled =
     commerceAdvancedEnabled &&
-    commerceModules["externalAffiliate"] !== false &&
+    Boolean(commerceModules["externalAffiliate"]) &&
     Boolean(externalProductAction.url);
   const externalOnlyProduct =
     externalAffiliateEnabled && Boolean(externalProductAction.externalOnly);

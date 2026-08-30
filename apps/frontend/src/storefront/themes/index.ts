@@ -50,6 +50,7 @@ import butcherShopEgData from "./butcher-shop-eg.json";
 import mensGroomingProData from "./mens-grooming-pro.json";
 import softGracefulData from "./soft-graceful.json";
 import allureData from "./allure.json";
+import anjellaBoutiqueData from "./anjella-boutique.json";
 import { ELESSI_PACK_THEME_PRESETS } from "./elessiPack";
 import {
   StorefrontPageConfig,
@@ -709,6 +710,7 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "mens-grooming-pro": asStorefrontTheme(mensGroomingProData),
   "soft-graceful": asStorefrontTheme(softGracefulData),
   "allure": asStorefrontTheme(allureData),
+  "anjella-boutique": asStorefrontTheme(anjellaBoutiqueData),
   ...ELESSI_PACK_THEME_PRESETS,
 };
 

@@ -242,4 +242,19 @@ describe("generated storefront theme pages", () => {
     );
     expect(normalizedTheme.pages["auth/login"]).toBeTruthy();
   });
+
+  it("generates commerce, lookbook and trust routes for anjella-boutique theme", () => {
+    const rawTheme = cloneStorefrontTheme(STOREFRONT_THEME_PRESETS["anjella-boutique"]!);
+    expect(rawTheme).toBeDefined();
+    const normalizedTheme = getStorefrontThemePreset("anjella-boutique");
+
+    expect(normalizedTheme.id).toBe("anjella-boutique");
+    expect(normalizedTheme.name).toBe("أنجيلا بوتيك");
+    expect(normalizedTheme.pages.home).toBeTruthy();
+    expect(normalizedTheme.pages.shop).toBeTruthy();
+    expect(normalizedTheme.pages.pdp).toBeTruthy();
+    expect(normalizedTheme.pages.cart).toBeTruthy();
+    expect(normalizedTheme.pages.checkout).toBeTruthy();
+    expect(normalizedTheme.pages.lookbook).toBeTruthy();
+  });
 });

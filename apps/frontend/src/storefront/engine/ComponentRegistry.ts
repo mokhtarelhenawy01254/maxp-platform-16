@@ -62,6 +62,9 @@ const RichText = React.lazy(() => import('../sections/RichText'));
 const FeaturedProduct = React.lazy(() => import('../sections/FeaturedProduct'));
 const ReviewsCircle = React.lazy(() => import('../sections/Reviews'));
 const ShopTheLook = React.lazy(() => import('../sections/ShopTheLook'));
+const LookMosaic = React.lazy(() => import('../sections/LookMosaic'));
+const LookPlanner = React.lazy(() => import('../sections/LookPlanner'));
+const LookProgress = React.lazy(() => import('../sections/LookProgress'));
 
 const baseComponentRegistry: Record<
   string,
@@ -126,6 +129,9 @@ const baseComponentRegistry: Record<
   'featured-product': FeaturedProduct,
   'review-circle': ReviewsCircle,
   'shop-the-look': ShopTheLook,
+  'look-mosaic': LookMosaic,
+  'look-planner': LookPlanner,
+  'look-progress': LookProgress,
 };
 
 /**

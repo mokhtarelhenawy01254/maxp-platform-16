@@ -588,11 +588,11 @@ const ConversionStack: React.FC<ConversionStackProps> = ({
     Number.isFinite(Number(estimatedDelivery["maxDays"]));
   const isPreOrder = Boolean(product?.["isPreOrder"] || metadata?.["isPreOrder"]);
   const showPreOrder =
-    commerceAdvancedEnabled && commerceModules["preOrder"] !== false && isPreOrder;
+    commerceAdvancedEnabled && Boolean(commerceModules["preOrder"]) && isPreOrder;
 
   const showBackInStock =
     modules["backInStock"] && stockCount !== null && stockCount <= 0 && !showPreOrder;
-  const showTrustedBadges = modules["trustedBadges"] !== false;
+  const showTrustedBadges = Boolean(modules["trustedBadges"]);
   const showFakeVisitor = modules["fakeVisitorCounter"] && viewerCount > 0;
   const showSoldCounter = modules["soldCounter"] && soldCount > 0;
   const purchaseFomoSource =
