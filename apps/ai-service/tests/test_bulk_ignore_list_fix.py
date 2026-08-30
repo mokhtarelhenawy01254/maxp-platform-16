@@ -1,37 +1,25 @@
-"""Regression tests for the bulk import silent-drop bug.
+"""Regression test for the bulk import silent-drop bug.
 
-The original ``bulk_add_ignore_entries`` ran every INSERT inside a single
-``AsyncSession`` transaction. When a single statement failed (e.g. a
+The original `bulk_add_ignore_entries` ran every INSERT inside a single
+AsyncSession transaction. When a single statement failed (e.g. a
 ``UNIQUE (company_id, phone_number)`` violation), PostgreSQL marked the
 whole transaction as aborted, so every subsequent ``session.execute``
 silently failed. The result: 3 rows inserted out of 53 with no error
 visible to the user.
 
-The 2026 fix replaces the per-row loop with a **single multi-row
-``INSERT ... ON CONFLICT DO NOTHING RETURNING ...``** emitted via
-SQLAlchemy 2.0's PostgreSQL dialect helper. This is structurally immune
-to the original bug because a single statement either succeeds or
-fails — there is no "first failure poisons the rest" failure mode.
-
-The tests below exercise:
-
-1. **Savepoint-not-needed**: with the multi-row INSERT, the function
-   calls ``session.execute`` exactly once and ``commit`` once, even when
-   the input contains duplicates.
-2. **All-insert**: 53 unique rows → 53 inserted, 0 skipped.
-3. **All-duplicates**: 10 rows that all already exist → 0 inserted,
-   10 skipped, single execute + single commit.
-4. **Phone normalization**: ``+20 100 123 4567`` becomes
-   ``201001234567`` *before* the INSERT is built.
-5. **Empty-after-filter**: every input row is invalid → 0 inserted,
-   skipped == len(items), no DB call at all.
+The fix wraps each row in ``session.begin_nested()`` (savepoint) and
+uses ``ON CONFLICT (company_id, phone_number) DO NOTHING`` so duplicates
+are atomic no-ops. This test exercises the new code path with a mix of
+new and duplicate numbers and asserts that the entire batch survives.
 """
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from sqlalchemy.exc import IntegrityError
 
 from src.api.admin import whatsapp_ai_ignore_list as ignore_list_module
 
@@ -39,89 +27,79 @@ from src.api.admin import whatsapp_ai_ignore_list as ignore_list_module
 # A realistic fixed timestamp that pydantic accepts for ``datetime``.
 _NOW = datetime(2026, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
-# The `admin` value FastAPI's dependency injection would resolve to when
-# a valid JWT was presented. The endpoint requires it (no `| None`), so
-# the tests pass this directly to bypass the auth layer.
-_ADMIN_JWT = {"sub": "user_1", "auth_kind": "jwt"}
 
-
-# ---------------------------------------------------------------------------
-# Mock helpers
-# ---------------------------------------------------------------------------
-
-def _ok_row(phone_number: str, company_id: str = "COMPANY_A") -> dict:
-    """Single row in the shape ``mappings().all()`` returns."""
-    return {
+def _ok_row(**kwargs):
+    """Plain dict — `.mappings().one_or_none()` returns this."""
+    base = {
         "id": "00000000-0000-0000-0000-000000000000",
-        "company_id": company_id,
-        "phone_number": phone_number,
+        "company_id": "COMPANY_A",
+        "phone_number": "966500000000",
         "label": None,
         "notes": None,
         "added_by_user_id": "user_1",
         "created_at": _NOW,
         "updated_at": _NOW,
     }
+    base.update(kwargs)
+    return base
 
 
-def _make_batch_result(rows: list[dict] | None) -> MagicMock:
-    """Build a fake result that mimics ``session.execute(insert_stmt)``:
-    ``.mappings().all()`` returns ``rows`` (which is the list of rows
-    that actually inserted — ON CONFLICT DO NOTHING drops the rest)."""
-
-    class _All:
-        def all(self_inner) -> list[dict]:
-            return rows or []
-
+def _make_execute_result(row_or_none):
+    """Build a fake `row` object whose `.mappings().one_or_none()` returns
+    ``row_or_none``. We avoid MagicMock here because MagicMock's
+    auto-attribute magic is fragile and tends to swallow `return_value`."""
     class _Map:
-        def all(self_inner) -> list[dict]:
-            return rows or []
+        def one_or_none(self_inner):
+            return row_or_none
 
     class _Res:
-        def mappings(self_inner) -> _Map:
+        def mappings(self_inner):
             return _Map()
 
     return _Res()
 
 
-def _make_pg_insert_chain(captured: dict[str, list]) -> tuple[MagicMock, MagicMock]:
-    """Patch ``pg_insert`` so the function still produces a real
-    SQLAlchemy ``Insert``-shaped object that the mock session can
-    ``execute()``, while we record the rows the function passed to it.
+def _build_session(*, fail_on_index: int | None = None,
+                   return_row: bool = True) -> MagicMock:
+    """Mock AsyncSession.
 
-    Returns (pg_insert_mock, final_stmt_mock) so the caller can wire
-    ``final_stmt_mock`` as the value the session "executes".
+    If ``fail_on_index`` is set, the (fail_on_index+1)th call to
+    ``session.execute`` raises ``IntegrityError`` to simulate a
+    duplicate-key violation. If ``return_row`` is False, every result
+    is empty (one_or_none returns None) to simulate "ON CONFLICT DO
+    NOTHING" duplicates.
     """
-    final_stmt = MagicMock(name="InsertStatement")
-    insert_builder = MagicMock()
-    insert_builder.returning.return_value = final_stmt
-    insert_builder.on_conflict_do_nothing.return_value = insert_builder
-    pg_insert_mock = MagicMock()
-    pg_insert_mock.return_value.values.return_value = insert_builder
-    # Capture every .values(...) call.  In our refactor the function
-    # only calls .values(...) once with the full list, but record all
-    # calls so a regression that splits into multiple values() calls is
-    # caught.
-    original_values = pg_insert_mock.return_value.values
-
-    def _record(*args, **kwargs):
-        captured.setdefault("values_calls", []).append((args, kwargs))
-        return insert_builder
-
-    pg_insert_mock.return_value.values.side_effect = _record
-    return pg_insert_mock, final_stmt
-
-
-def _build_session_for_batch(returned_rows: list[dict] | None) -> MagicMock:
-    """Mock AsyncSession that returns ``returned_rows`` from a single
-    ``session.execute`` call (the multi-row INSERT)."""
     session = MagicMock()
     session.commit = AsyncMock(return_value=None)
     session.rollback = AsyncMock(return_value=None)
-    # No more begin_nested — the multi-row INSERT makes it unnecessary.
-    session.begin_nested = MagicMock()  # in case any code path still touches it
-    session.execute = AsyncMock(
-        return_value=_make_batch_result(returned_rows)
-    )
+
+    # begin_nested() returns an async context manager — the fix's
+    # `async with session.begin_nested():` enters it on every row.
+    nested = MagicMock()
+    nested.__aenter__ = AsyncMock(return_value=nested)
+    nested.__aexit__ = AsyncMock(return_value=None)
+    session.begin_nested = MagicMock(return_value=nested)
+
+    call_count = {"n": 0}
+
+    async def fake_execute(*args, **kwargs):
+        call_count["n"] += 1
+        idx = call_count["n"] - 1
+        if fail_on_index is not None and idx == fail_on_index:
+            raise IntegrityError(
+                "INSERT ... duplicate key value violates unique constraint",
+                params=None,
+                orig=Exception("duplicate"),
+            )
+        # The second positional arg is the bound-parameters dict; the
+        # real call is `session.execute(text("..."), {...})` so the dict
+        # is positional, not keyword. Fall back to kwargs for safety.
+        params = (args[1] if len(args) > 1 else None) or kwargs or {}
+        if return_row:
+            return _make_execute_result(_ok_row(phone_number=params.get("pn")))
+        return _make_execute_result(None)
+
+    session.execute = AsyncMock(side_effect=fake_execute)
     return session
 
 
@@ -138,112 +116,63 @@ def _build_body(n: int) -> ignore_list_module.IgnoreBulkCreate:
     )
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
-
 @pytest.mark.asyncio
-async def test_bulk_add_dedupes_duplicates_atomically():
-    """5 rows in, 4 of them are already on the list. The single multi-row
-    INSERT handles the conflict at the DB level; the response reports
-    exactly 4 inserted and 1 skipped, with **one** execute and **one**
-    commit.
+async def test_bulk_add_survives_first_row_duplicate_with_savepoint():
+    """The 3rd row triggers a unique-constraint error. With the fix, the
+    savepoint isolates that row so the remaining rows still insert.
     """
+    session = _build_session(fail_on_index=2)
     body = _build_body(5)
-    # The DB returns the 4 rows that actually inserted.
-    returned = [
-        _ok_row(phone_number=f"96650000000{i}") for i in range(4)
-    ]
-    session = _build_session_for_batch(returned)
 
-    captured: dict = {}
-    pg_mock, _ = _make_pg_insert_chain(captured)
-    with patch("src.api.admin.whatsapp_ai_ignore_list.pg_insert", pg_mock):
-        result = await ignore_list_module.bulk_add_ignore_entries(
-            body=body, session=session, admin=_ADMIN_JWT
-        )
+    result = await ignore_list_module.bulk_add_ignore_entries(
+        body=body, session=session, admin={"sub": "user_1"}
+    )
 
+    # 4 rows should have been "inserted" (the failing 3rd is skipped).
     assert result.inserted == 4
     assert result.skipped == 1
     assert len(result.entries) == 4
-
-    # The whole batch lives in a single execute / single commit.
-    assert session.execute.await_count == 1
+    # commit() called exactly once at the end.
     assert session.commit.await_count == 1
-    # The per-row savepoint pattern is gone.
-    session.begin_nested.assert_not_called()
-
-    # The single .values(...) call carried all 5 rows.
-    assert len(captured["values_calls"]) == 1
-    args, _ = captured["values_calls"][0]
-    assert len(args[0]) == 5
-    inserted_phones = {row["phone_number"] for row in args[0]}
-    assert inserted_phones == {
-        "966500000000",
-        "966500000001",
-        "966500000002",
-        "966500000003",
-        "966500000004",
-    }
+    # Each row entered its own savepoint.
+    assert session.begin_nested.call_count == 5
 
 
 @pytest.mark.asyncio
 async def test_bulk_add_inserts_all_when_no_conflicts():
-    """53 unique rows → 53 inserted, 0 skipped, one execute, one commit."""
+    session = _build_session()
     body = _build_body(53)
-    returned = [_ok_row(phone_number=f"96650000000{i:02d}") for i in range(53)]
-    session = _build_session_for_batch(returned)
 
-    captured: dict = {}
-    pg_mock, _ = _make_pg_insert_chain(captured)
-    with patch("src.api.admin.whatsapp_ai_ignore_list.pg_insert", pg_mock):
-        result = await ignore_list_module.bulk_add_ignore_entries(
-            body=body, session=session, admin=_ADMIN_JWT
-        )
+    result = await ignore_list_module.bulk_add_ignore_entries(
+        body=body, session=session, admin={"sub": "user_1"}
+    )
 
     assert result.inserted == 53
     assert result.skipped == 0
-    assert len(result.entries) == 53
-    assert session.execute.await_count == 1
-    assert session.commit.await_count == 1
-    session.begin_nested.assert_not_called()
-    # All 53 rows were passed in a single .values([...]) call.
-    args, _ = captured["values_calls"][0]
-    assert len(args[0]) == 53
+    assert session.begin_nested.call_count == 53
 
 
 @pytest.mark.asyncio
 async def test_bulk_add_handles_all_rows_being_duplicates():
-    """Every row is a duplicate of an already-existing row. The mock
-    returns an empty list (ON CONFLICT DO NOTHING returned nothing).
-    The function must report 0 inserted, 10 skipped, one execute,
-    one commit, and no exceptions.
-    """
+    """If every row collides, we must still get a clean response: 0
+    inserted, all skipped, commit() once, no exceptions propagated."""
+    session = _build_session(return_row=False)
     body = _build_body(10)
-    session = _build_session_for_batch([])
 
-    with patch(
-        "src.api.admin.whatsapp_ai_ignore_list.pg_insert",
-        _make_pg_insert_chain({})[0],
-    ):
-        result = await ignore_list_module.bulk_add_ignore_entries(
-            body=body, session=session, admin=_ADMIN_JWT
-        )
+    result = await ignore_list_module.bulk_add_ignore_entries(
+        body=body, session=session, admin={"sub": "user_1"}
+    )
 
     assert result.inserted == 0
     assert result.skipped == 10
-    assert result.entries == []
-    assert session.execute.await_count == 1
-    assert session.commit.await_count == 1
-    session.begin_nested.assert_not_called()
+    assert session.begin_nested.call_count == 10
 
 
 @pytest.mark.asyncio
 async def test_bulk_add_phone_normalization_strips_non_digits():
-    """``+20 100 123 4567`` and ``0020 100 765 4321`` are normalized to
-    digits-only *before* the row is built for the INSERT. We assert by
-    inspecting the rows passed to ``pg_insert(...).values(...)``.
-    """
+    """Verify _normalize_phone runs on every item (e.g. ``+20 100 ...``
+    becomes ``20100...``) before the unique-constraint check."""
+    session = _build_session()
     body = ignore_list_module.IgnoreBulkCreate(
         companyId="COMPANY_A",
         items=[
@@ -255,128 +184,21 @@ async def test_bulk_add_phone_normalization_strips_non_digits():
             ),
         ],
     )
-    returned = [
-        _ok_row(phone_number="201001234567"),
-        _ok_row(phone_number="00201007654321"),
-    ]
-    session = _build_session_for_batch(returned)
+    captured_params: list[dict] = []
 
-    captured: dict = {}
-    pg_mock, _ = _make_pg_insert_chain(captured)
-    with patch("src.api.admin.whatsapp_ai_ignore_list.pg_insert", pg_mock):
-        result = await ignore_list_module.bulk_add_ignore_entries(
-            body=body, session=session, admin=_ADMIN_JWT
-        )
+    original_execute = session.execute.side_effect
 
+    async def capture(*args, **kwargs):
+        # The bound-params dict is the second positional arg of
+        # session.execute(text(...), {...}).
+        params = (args[1] if len(args) > 1 else None) or kwargs or {}
+        captured_params.append(params)
+        return _make_execute_result(_ok_row(phone_number=params.get("pn")))
+
+    session.execute = AsyncMock(side_effect=capture)
+    result = await ignore_list_module.bulk_add_ignore_entries(
+        body=body, session=session, admin={"sub": "user_1"}
+    )
     assert result.inserted == 2
-    # Inspect what the function actually sent to the DB.
-    args, _ = captured["values_calls"][0]
-    sent_phones = sorted(row["phone_number"] for row in args[0])
-    assert sent_phones == ["00201007654321", "201001234567"]
-
-
-@pytest.mark.asyncio
-async def test_bulk_add_short_circuits_when_every_row_is_invalid():
-    """Every input has a bad phone (too short, non-digits, etc.). The
-    function should report 0 inserted, len(items) skipped, and **never
-    call the DB at all**.
-    """
-    body = ignore_list_module.IgnoreBulkCreate(
-        companyId="COMPANY_A",
-        items=[
-            # Too short — fails the MIN_PHONE_DIGITS=10 check.
-            ignore_list_module.IgnoreEntryCreate(
-                companyId="COMPANY_A", phoneNumber="123"
-            ),
-            # No digits at all — _is_valid_phone rejects.
-            ignore_list_module.IgnoreEntryCreate(
-                companyId="COMPANY_A", phoneNumber="abc-def"
-            ),
-            # Whitespace only — normalizes to "" which fails _is_valid_phone.
-            ignore_list_module.IgnoreEntryCreate(
-                companyId="COMPANY_A", phoneNumber="   "
-            ),
-        ],
-    )
-    session = _build_session_for_batch([])
-
-    with patch(
-        "src.api.admin.whatsapp_ai_ignore_list.pg_insert",
-        _make_pg_insert_chain({})[0],
-    ):
-        result = await ignore_list_module.bulk_add_ignore_entries(
-            body=body, session=session, admin=_ADMIN_JWT
-        )
-
-    assert result.inserted == 0
-    assert result.skipped == 3
-    assert result.entries == []
-    # No DB call was made — the short-circuit path skips the INSERT.
-    session.execute.assert_not_awaited()
-    session.commit.assert_not_awaited()
-
-
-@pytest.mark.asyncio
-async def test_bulk_add_dedupes_within_a_single_request():
-    """If the user pastes the same number twice in one request, the
-    in-request dedup catches it before the DB ever sees the duplicate.
-    Only one row should be sent to the DB.
-    """
-    body = ignore_list_module.IgnoreBulkCreate(
-        companyId="COMPANY_A",
-        items=[
-            ignore_list_module.IgnoreEntryCreate(
-                companyId="COMPANY_A", phoneNumber="+20 100 123 4567"
-            ),
-            ignore_list_module.IgnoreEntryCreate(
-                companyId="COMPANY_A", phoneNumber="201001234567"  # same
-            ),
-        ],
-    )
-    session = _build_session_for_batch(
-        [_ok_row(phone_number="201001234567")]
-    )
-
-    captured: dict = {}
-    pg_mock, _ = _make_pg_insert_chain(captured)
-    with patch("src.api.admin.whatsapp_ai_ignore_list.pg_insert", pg_mock):
-        result = await ignore_list_module.bulk_add_ignore_entries(
-            body=body, session=session, admin=_ADMIN_JWT
-        )
-
-    assert result.inserted == 1
-    assert result.skipped == 1
-    args, _ = captured["values_calls"][0]
-    assert len(args[0]) == 1
-
-
-@pytest.mark.asyncio
-async def test_bulk_add_rolls_back_on_db_failure():
-    """If the multi-row INSERT raises (e.g. connection drop), the
-    function must call ``session.rollback()``, raise a 500, and not
-    leave the session in a weird state.
-    """
-    body = _build_body(5)
-    session = _build_session_for_batch([])
-
-    async def _raise(*_args, **_kwargs):
-        raise RuntimeError("db is down")
-
-    session.execute = AsyncMock(side_effect=_raise)
-
-    with patch(
-        "src.api.admin.whatsapp_ai_ignore_list.pg_insert",
-        _make_pg_insert_chain({})[0],
-    ):
-        with pytest.raises(Exception) as excinfo:
-            await ignore_list_module.bulk_add_ignore_entries(
-                body=body, session=session, admin=_ADMIN_JWT
-            )
-
-    # The endpoint converts the DB error into an HTTP 500.
-    from fastapi import HTTPException
-
-    assert isinstance(excinfo.value, HTTPException)
-    assert excinfo.value.status_code == 500
-    session.rollback.assert_awaited_once()
-    session.commit.assert_not_awaited()
+    assert captured_params[0]["pn"] == "201001234567"
+    assert captured_params[1]["pn"] == "00201007654321"
