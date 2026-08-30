@@ -47,7 +47,7 @@ export const imageGalleryService = {
 
     const response = await apiClient.post("/user/image-gallery/upload", formData, {
       headers: {
-        /* boundary set by browser */,
+        // boundary set by browser
       },
       timeout: 30000,
     });

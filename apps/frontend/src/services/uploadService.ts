@@ -27,7 +27,7 @@ class UploadService {
         formData,
         {
           headers: {
-            /* boundary set by browser */,
+            // boundary set by browser
           },
           timeout: 30000, // 30 seconds timeout
         },
@@ -68,7 +68,7 @@ class UploadService {
         formData,
         {
           headers: {
-            /* boundary set by browser */,
+            // boundary set by browser
           },
           timeout: 30000, // 30 seconds timeout
         },
@@ -109,7 +109,7 @@ class UploadService {
         formData,
         {
           headers: {
-            /* boundary set by browser */,
+            // boundary set by browser
           },
           timeout: 60000, // 60 seconds for multiple files
         },
@@ -141,7 +141,7 @@ class UploadService {
     try {
       const response = await apiClient.post("/upload/media", formData, {
         headers: {
-          /* boundary set by browser */,
+          // boundary set by browser
         },
         timeout: 60000, // 60 seconds for larger video files
       });
@@ -166,7 +166,7 @@ class UploadService {
 
       const response = await apiClient.post("/upload/single", formData, {
         headers: {
-          /* boundary set by browser */,
+          // boundary set by browser
         },
         timeout: 30000,
       });
@@ -198,7 +198,7 @@ class UploadService {
 
       const response = await apiClient.post("/upload/multiple", formData, {
         headers: {
-          /* boundary set by browser */,
+          // boundary set by browser
         },
         timeout: 60000, // 60 seconds for multiple files
       });
@@ -250,7 +250,7 @@ class UploadService {
     formData.append("file", file);
     try {
       const response = await apiClient.post("/upload/service-file", formData, {
-        /* boundary set by browser */,
+        // boundary set by browser
         timeout: 120000,
       });
       return response.data;

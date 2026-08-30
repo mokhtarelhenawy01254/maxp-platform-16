@@ -18237,6 +18237,7 @@ declare module 'react-i18next' {
           customerPayments: string;
           revenueAnalytics: string;
           signupCoupons: string;
+          storeApps: string;
           reportsAnalytics: string;
           monitoring: string;
           queueMonitor: string;

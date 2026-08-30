@@ -224,7 +224,7 @@ export const useSendMedia = (
         "/whatsapp/messages/upload-send",
         formData,
         {
-          /* boundary set by browser */,
+          // boundary set by browser
         },
       );
       return response.data;

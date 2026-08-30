@@ -79,7 +79,7 @@ const supportService = {
   createTicket: async (formData: FormData) => {
     const response = await apiClient.post("/support/tickets", formData, {
       headers: {
-        /* boundary set by browser */,
+        // boundary set by browser
       },
     });
     return response.data;
@@ -103,7 +103,7 @@ const supportService = {
       formData,
       {
         headers: {
-          /* boundary set by browser */,
+          // boundary set by browser
         },
       },
     );
