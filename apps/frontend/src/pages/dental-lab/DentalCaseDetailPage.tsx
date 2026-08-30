@@ -2,8 +2,12 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEv
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+// Side-effect import: registers the <model-viewer> custom element with
+// the browser. Must run once on the client. Without this, the JSX tag
+// below would just render as an unknown element.
+import "@google/model-viewer";
 import {
-  ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
+  ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
   Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Upload, UploadCloud, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
@@ -60,7 +64,13 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
   const { t } = useTranslation();
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
+  const [show3d, setShow3d] = useState(false);
   const isImage = attachment.mimeType?.startsWith("image/") || (!attachment.mimeType && !failed);
+  // 3D-viewable: anything that dental lab techs would want to rotate/zoom
+  // on. STL/PLY/OBJ are the dental scan formats; DCM is x-ray (DICOM) which
+  // the model-viewer can also render.
+  const fileExt = (attachment.fileName || "").split(".").pop()?.toLowerCase() || "";
+  const is3D = ["stl", "ply", "obj", "dcm"].includes(fileExt);
 
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -99,9 +109,18 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
     if (url) window.open(url, "_blank");
   };
 
+  const open3d = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (url) setShow3d(true);
+  };
+
   return (
-    <div className="border dark:border-gray-700 rounded-lg overflow-hidden group">
-      <div className="h-28 bg-gray-100 dark:bg-gray-900 flex items-center justify-center cursor-pointer" onClick={open}>
+    <div className="border dark:border-gray-700 rounded-lg overflow-hidden group relative">
+      <div
+        className="h-28 bg-gray-100 dark:bg-gray-900 flex items-center justify-center cursor-pointer"
+        onClick={is3D && url ? open3d : open}
+        title={is3D ? "اضغط للمعاينة 3D" : "اضغط للتحميل"}
+      >
         {url && isImage ? (
           <img src={url} alt={attachment.fileName} className="h-full w-full object-cover" />
         ) : failed ? (
@@ -109,10 +128,24 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
         ) : (
           <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
         )}
+        {is3D && (
+          <div className="absolute top-1 right-1 bg-blue-600 text-white text-[9px] px-1.5 py-0.5 rounded font-bold">
+            3D
+          </div>
+        )}
       </div>
       <div className="p-2 flex items-center justify-between gap-2">
         <span className="text-xs truncate" title={attachment.fileName}>{attachment.fileName}</span>
         <div className="flex items-center gap-1">
+          {is3D && url && (
+            <button
+              onClick={open3d}
+              className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+              title="معاينة 3D"
+            >
+              <Box className="w-3.5 h-3.5" />
+            </button>
+          )}
           <button onClick={open} className="p-1 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("dentalLab.detail.download")}>
             <Download className="w-3.5 h-3.5" />
           </button>
@@ -121,6 +154,66 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
           </button>
         </div>
       </div>
+
+      {/* 3D Viewer Modal — Google <model-viewer> for STL/PLY/OBJ/DCM */}
+      {show3d && url && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setShow3d(false)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+              <div className="flex items-center gap-2 min-w-0">
+                <Box className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{attachment.fileName}</span>
+                <span className="text-xs text-gray-400 flex-shrink-0">({(attachment.size / 1024 / 1024).toFixed(1)}MB · {fileExt.toUpperCase()})</span>
+              </div>
+              <button
+                onClick={() => setShow3d(false)}
+                className="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 rounded flex-shrink-0"
+                title="إغلاق"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative min-h-[500px]">
+              {/* @ts-ignore — model-viewer is a custom element, no TS types */}
+              <model-viewer
+                src={url}
+                alt={attachment.fileName}
+                camera-controls
+                auto-rotate
+                auto-rotate-delay="1500"
+                rotation-per-second="20deg"
+                shadow-intensity="1.2"
+                exposure="0.9"
+                tone-mapping="commerce"
+                style={{ width: "100%", height: "100%", minHeight: "500px" }}
+              >
+                <div slot="progress-bar" className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                  جاري تحميل النموذج 3D...
+                </div>
+                <div slot="error" className="absolute inset-0 flex items-center justify-center text-red-500 text-sm p-4 text-center">
+                  فشل تحميل النموذج. تأكد إن الملف STL/PLY/OBJ صالح.
+                </div>
+              </model-viewer>
+            </div>
+            <div className="p-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
+              <span>اسحب لتدوير · عجلة للتقريب · نقرة مزدوجة للإعادة</span>
+              <a
+                href={url}
+                download={attachment.fileName}
+                className="text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                تحميل الملف
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
