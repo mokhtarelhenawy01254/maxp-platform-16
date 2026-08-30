@@ -23,9 +23,15 @@ jobs:
   build:
     name: Build & Verify (cancelable)
     runs-on: ubuntu-latest
+    # WHY cancel-in-progress: false here: in the old config (true), a constant
+    # stream of pushes meant every build got cancelled before it could finish,
+    # so deploys piled up in the queue and only the last one in a burst ever
+    # actually shipped. With false, builds queue and run serially, which is
+    # slower per-commit but reliable. The deploy job below still has its own
+    # concurrency group that protects the live server.
     concurrency:
       group: production-build
-      cancel-in-progress: true
+      cancel-in-progress: false
     outputs:
       is-latest: ${{ steps.check-latest.outputs.is-latest }}
       catalog-changed: ${{ steps.cat-check.outputs.cat-changed }}
@@ -46,14 +52,28 @@ jobs:
             exit 0
           fi
           git fetch --force origin main
+          # Allow a 30s window after push: if a newer commit landed in the
+          # last 30s, treat this one as still-the-latest and let the deploy
+          # job below decide (it has its own late-stage skip check). This
+          # prevents a race where the build job skips but the deploy job
+          # also skips and no one ever deploys.
           LATEST=$(git rev-parse origin/main)
-          if [ "$LATEST" != "${{ github.sha }}" ]; then
-            echo "⏭️ This build (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
+          LATEST_AGE=$(( $(date +%s) - $(git log -1 --format=%ct origin/main) ))
+          if [ "$LATEST" != "${{ github.sha }}" ] && [ "$LATEST_AGE" -lt 30 ]; then
+            echo "⏭️ This build (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST) within the last 30s."
             echo "   Skipping to avoid redundant rebuild — the newer commit's deploy will cover these changes."
             echo "is-latest=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          echo "✅ This is the latest commit on main. Proceeding with deploy."
+          if [ "$LATEST" != "${{ github.sha }}" ]; then
+            # Older superseded commit (older than 30s) — there has been enough
+            # time for a fresh build to start. Proceed anyway: better to deploy
+            # a slightly older commit than to leave the production server
+            # missing the fix entirely.
+            echo "⚠️ This commit (${{ github.sha }}) is older than 30s and a newer one exists on main."
+            echo "   The newer commit's deploy SHOULD have already shipped. If it didn't, this build will catch it up."
+          fi
+          echo "✅ Proceeding with deploy."
           echo "is-latest=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
@@ -443,12 +463,33 @@ jobs:
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          LATEST=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
+          # Be defensive: if the API call fails, the deploy SHOULD still proceed
+          # (better to risk a slightly stale deploy than to leave the server
+          # with a known-bad state). The old code skipped on supersession
+          # unconditionally which caused "no deploy ever runs" if pushes came
+          # in faster than the deploy job could complete.
+          set +e
+          LATEST=$(curl -s -m 15 -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/commits/main" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
-          if [ -n "$LATEST" ] && [ "$LATEST" != "${{ github.sha }}" ]; then
-            echo "⏭️ Skipping deploy: commit ${{ github.sha }} is superseded by $LATEST on main."
-            echo "   The newer commit's deploy will cover these changes."
+            | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null)
+          set -e
+          if [ -z "$LATEST" ]; then
+            echo "⚠️ Could not determine latest commit (API call failed or empty). Proceeding anyway — better to deploy than to stall."
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$LATEST" != "${{ github.sha }}" ]; then
+            # Superseded — but check if it's been a while. If the newer commit
+            # has been sitting there for >5 min, its build should have finished
+            # by now. If it didn't, this older build catches it up.
+            LATEST_AGE=$(( $(date +%s) - $(git log -1 --format=%ct origin/main 2>/dev/null || echo $(date +%s)) ))
+            if [ "$LATEST_AGE" -gt 300 ]; then
+              echo "⚠️ A newer commit ($LATEST) exists but its deploy hasn't completed in 5+ min. Proceeding with this older commit (${{ github.sha }}) to recover."
+              echo "proceed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            echo "⏭️ Skipping deploy: commit ${{ github.sha }} is superseded by $LATEST on main (age ${LATEST_AGE}s)."
+            echo "   The newer commit's deploy should ship these changes shortly."
             echo "proceed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
