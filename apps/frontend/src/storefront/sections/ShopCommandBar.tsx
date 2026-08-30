@@ -4,7 +4,7 @@ import { useCategories } from '../hooks/useCategories';
 import { useProducts } from '../hooks/useProducts';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { getDefaultRegisteredVariantId, hasRegisteredVariant } from '../variants';
-import {
+import { CatalogSortValue,
   applyCatalogFilters,
   clearCatalogFilters,
   getCatalogSortOptions,
@@ -419,7 +419,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
             onChange={(event) =>
               setSearchParams(
                 applyCatalogFilters(searchParams, {
-                  sortValue: event.target.value,
+                  sortValue: event.target.value as CatalogSortValue,
                 }),
               )
             }
@@ -487,7 +487,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                   onChange={(event) =>
                     setSearchParams(
                       applyCatalogFilters(searchParams, {
-                        sortValue: event.target.value,
+                        sortValue: event.target.value as CatalogSortValue,
                       }),
                     )
                   }
@@ -710,7 +710,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                   onChange={(event) =>
                     setSearchParams(
                       applyCatalogFilters(searchParams, {
-                        sortValue: event.target.value,
+                        sortValue: event.target.value as CatalogSortValue,
                       }),
                     )
                   }
@@ -854,7 +854,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                 onChange={(event) =>
                   setSearchParams(
                     applyCatalogFilters(searchParams, {
-                      sortValue: event.target.value,
+                      sortValue: event.target.value as CatalogSortValue,
                     }),
                   )
                 }
@@ -1025,7 +1025,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                 onChange={(event) =>
                   setSearchParams(
                     applyCatalogFilters(searchParams, {
-                      sortValue: event.target.value,
+                      sortValue: event.target.value as CatalogSortValue,
                     }),
                   )
                 }
@@ -1144,7 +1144,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                 onChange={(event) =>
                   setSearchParams(
                     applyCatalogFilters(searchParams, {
-                      sortValue: event.target.value,
+                      sortValue: event.target.value as CatalogSortValue,
                     }),
                   )
                 }
@@ -1336,7 +1336,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                 onChange={(event) =>
                   setSearchParams(
                     applyCatalogFilters(searchParams, {
-                      sortValue: event.target.value,
+                      sortValue: event.target.value as CatalogSortValue,
                     }),
                   )
                 }
@@ -1471,7 +1471,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                 onChange={(event) =>
                   setSearchParams(
                     applyCatalogFilters(searchParams, {
-                      sortValue: event.target.value,
+                      sortValue: event.target.value as CatalogSortValue,
                     }),
                   )
                 }
@@ -1591,7 +1591,7 @@ const ShopCommandBar: React.FC<ShopCommandBarProps> = ({ section, settings }) =>
                 onChange={(event) =>
                   setSearchParams(
                     applyCatalogFilters(searchParams, {
-                      sortValue: event.target.value,
+                      sortValue: event.target.value as CatalogSortValue,
                     }),
                   )
                 }

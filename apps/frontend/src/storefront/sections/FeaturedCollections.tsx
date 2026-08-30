@@ -1034,11 +1034,11 @@ const FeaturedCollections: React.FC<FeaturedCollectionsProps> = ({
         : isSmartBazaar
           ? "كل قسم يجمع منتجات متقاربة وأسعار أوضح حتى يشعر الزائر أنه يتصفح متجرًا فعليًا لا مجرد تقسيمات عامة."
           : "اختيارات سريعة تساعدك على الوصول لنوع الحذاء المناسب أسرع.");
-  const hideBadge = settings?.hideBadge === true;
-  const hideSubtitle = settings?.hideSubtitle === true;
-  const hideSectionCta = settings?.hideCta === true;
-  const hideCardDescriptions = settings?.hideCardDescriptions === true;
-  const hideCardCtas = settings?.hideCardCtas === true;
+  const hideBadge = settings?.["hideBadge"] === true;
+  const hideSubtitle = settings?.["hideSubtitle"] === true;
+  const hideSectionCta = settings?.["hideCta"] === true;
+  const hideCardDescriptions = settings?.["hideCardDescriptions"] === true;
+  const hideCardCtas = settings?.["hideCardCtas"] === true;
   const limit =
     typeof settings?.limit === "number" && settings.limit > 0
       ? settings.limit

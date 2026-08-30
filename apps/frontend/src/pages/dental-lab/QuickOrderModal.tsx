@@ -413,7 +413,9 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
 
       if (files.length > 0) {
         try {
-          await uploadCaseAttachments(created.id, files, "SCAN");
+          // Don't force kind="SCAN" — let inferAttachmentKind pick the right
+          // type per file (STL→SCAN, JPG→PHOTO, PDF→PRESCRIPTION, etc).
+          await uploadCaseAttachments(created.id, files);
           toast.success(t("dentalLab.cases.filesUploaded", { count: files.length }));
         } catch (err) {
           toast.error(`اتعملت الحالة لكن فشل رفع بعض الملفات: ${err instanceof Error ? err.message : ""}`);

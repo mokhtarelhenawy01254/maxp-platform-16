@@ -81,7 +81,7 @@ const ProfileDialog: React.FC<ProfileDialogProps> = ({
       }
 
       await api.post("/whatsapp/profile/update", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
+        /* boundary set by browser */,
       });
 
       tToast.success("ProfileDialog.success_update_7fa9");

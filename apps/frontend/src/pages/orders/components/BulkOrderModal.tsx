@@ -45,7 +45,7 @@ const uploadFile = async (bulkOrderId: string, file: File): Promise<BulkOrderIte
   const formData = new FormData();
   formData.append("file", file);
   const res = await apiClient.post(`/api/v1/bulk-orders/${bulkOrderId}/import`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
+    /* boundary set by browser */,
   });
   return res.data?.items || [];
 };

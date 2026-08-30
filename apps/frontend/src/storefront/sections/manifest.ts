@@ -1970,6 +1970,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
     pages: ["pdp"],
     variants: [
       { value: "standard", label: "قياسي" },
+      { value: "graceful-related", label: "كروت Graceful" },
       { value: "compact", label: "مضغوط" },
       { value: "editorial", label: "تحريري" },
       { value: "glass", label: "زجاجي" },

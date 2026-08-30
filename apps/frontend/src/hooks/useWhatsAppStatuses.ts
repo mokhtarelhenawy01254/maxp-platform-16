@@ -60,7 +60,7 @@ export const usePostStatus = () => {
         `/whatsapp/${sessionId}/status`,
         formData,
         {
-          headers: { "Content-Type": "multipart/form-data" },
+          /* boundary set by browser */,
         },
       );
       return response.data;
