@@ -1,0 +1,811 @@
+{
+  "id": "look-atelier-eg",
+  "name": "أتيليه",
+  "description": "قالب ملابس حريمي للسوق المصري بيعتمد بيع اللوك الكامل بدل القطعة الواحدة: هيرو بيعرض إطلالات جاهزة، وصفحة منتج بتجمّع قطع اللوك جنب بعضها، وخصم يزيد مع عدد القطع.",
+  "direction": "rtl",
+  "tokens": {
+    "colors": {
+      "primary": "162 30% 17%",
+      "primaryForeground": "43 60% 96%",
+      "secondary": "150 18% 92%",
+      "secondaryForeground": "162 30% 17%",
+      "accent": "38 60% 56%",
+      "accentForeground": "162 30% 12%",
+      "background": "150 16% 97%",
+      "foreground": "162 25% 14%",
+      "muted": "150 12% 90%",
+      "mutedForeground": "160 8% 38%",
+      "border": "150 14% 85%",
+      "card": "0 0% 100%",
+      "cardForeground": "162 25% 14%",
+      "ring": "38 60% 56%"
+    },
+    "typography": {
+      "headingFont": "\"El Messiri\", \"Cairo\", serif",
+      "bodyFont": "\"Mada\", \"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.35rem",
+      "buttonRadius": "0.9rem"
+    },
+    "productCard": {
+      "borderRadius": "1.1rem",
+      "boxShadow": "0 20px 48px -34px rgba(22, 61, 46, 0.20)",
+      "hoverShadow": "0 30px 72px -40px rgba(22, 61, 46, 0.28)",
+      "badgeRadius": "0.75rem",
+      "buttonRadius": "0.9rem",
+      "surfaceOpacity": "1"
+    },
+    "layout": {
+      "contentAlign": "start"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | أتيليه",
+    "description": "متجر ملابس حريمي مصري بيعرض لوكات جاهزة للطلب بضغطات قليلة، بمقاسات واضحة وشحن سريع واستبدال مريح."
+  },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=1600",
+    "colors": [
+      "162 30% 17%",
+      "38 60% 56%",
+      "150 16% 97%"
+    ]
+  },
+  "header": {
+    "variant": "fashion-retail",
+    "brandName": "أتيليه",
+    "showSearch": true,
+    "showCart": true,
+    "navigation": [
+      {
+        "label": "الرئيسية",
+        "to": "/"
+      },
+      {
+        "label": "المتجر",
+        "to": "/shop"
+      },
+      {
+        "label": "فساتين",
+        "to": "/shop?category=dresses"
+      },
+      {
+        "label": "بلوزات وقمصان",
+        "to": "/shop?category=tops"
+      },
+      {
+        "label": "بناطيل وجينز",
+        "to": "/shop?category=bottoms"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      },
+      {
+        "label": "تواصلي معنا",
+        "to": "/contact"
+      }
+    ]
+  },
+  "footer": {
+    "variant": "fashion-retail",
+    "description": "أتيليه — متجر ملابس حريمي بيبيع باللوك الكامل: كل إطلالة متجمعة قطعها مع بعض، بمقاسات واضحة وشحن لكل محافظات مصر واستبدال مريح.",
+    "copyrightText": "© 2026 أتيليه. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "tiktok": "https://tiktok.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "التسوق",
+        "links": [
+          {
+            "label": "كل القطع",
+            "to": "/shop"
+          },
+          {
+            "label": "فساتين",
+            "to": "/shop?category=dresses"
+          },
+          {
+            "label": "بلوزات وقمصان",
+            "to": "/shop?category=tops"
+          },
+          {
+            "label": "بناطيل وجينز",
+            "to": "/shop?category=bottoms"
+          }
+        ]
+      },
+      {
+        "title": "خدمة العملاء",
+        "links": [
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          },
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "الاستبدال والاسترجاع",
+            "to": "/returns"
+          },
+          {
+            "label": "تواصلي معنا",
+            "to": "/contact"
+          }
+        ]
+      }
+    ],
+    "legalLinks": [
+      {
+        "label": "سياسة الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "fashion-billboard",
+          "settings": {
+            "eyebrow": "ملابس حريمي · لوكات جاهزة",
+            "title": "اللوك كامل\nمن أول شاشة",
+            "subtitle": "بدل ما تدوّري على القطعة لوحدها، لقيتي الإطلالة متجمّعة: الفستان مع الحذاء والشنطة، أو البلوزة مع الجينز — اختاري اللوك واطلبيه بضغطات قليلة.",
+            "ctaText": "شوفي لوكات النهاردة",
+            "ctaLink": "/shop",
+            "secondaryCtaText": "العروض",
+            "secondaryCtaLink": "/sale",
+            "backgroundImage": "https://images.unsplash.com/photo-1469334031218-e382a71b716b?auto=format&fit=crop&q=80&w=1600",
+            "panelImage": "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?auto=format&fit=crop&q=80&w=1200",
+            "highlights": [
+              {
+                "label": "لوكات",
+                "value": "جاهزة للطلب"
+              },
+              {
+                "label": "شحن",
+                "value": "24-48 ساعة"
+              },
+              {
+                "label": "استبدال",
+                "value": "حتى 14 يوم"
+              }
+            ],
+            "floatingCards": [
+              {
+                "badge": "لوك الأسبوع",
+                "title": "فستان + كعب",
+                "value": "جاهز للخروج",
+                "description": "إطلالة كاملة للمناسبات والخروجات، قطعها متاحة للطلب من صفحة واحدة."
+              },
+              {
+                "badge": "لوك يومي",
+                "title": "بلوزة + جينز",
+                "value": "للشغل والمشاوير",
+                "description": "تنسيق بسيط ومريح يصلح لكل يوم، بمقاسات واضحة وصور حقيقية."
+              }
+            ],
+            "panelEyebrow": "بيع باللوك",
+            "panelTitle": "اختاري الإطلالة مش القطعة",
+            "panelSubtitle": "كل لوك عندنا متجمّع من أول قطعة لحد الإكسسوار.",
+            "panelNote": "خصم يزيد كل ما تكملي قطع اللوك في نفس الطلب."
+          }
+        },
+        {
+          "type": "promo-strip",
+          "variant": "benefit-ribbon",
+          "settings": {
+            "badge": "أول طلب؟",
+            "message": "خصم ترحيبي 10% على أول لوك تكمله بالكود ATELIER10 — ويشتغل على كل الأقسام.",
+            "saleLabel": "خصم 10% أول طلب",
+            "shippingLabel": "شحن 24-48 ساعة",
+            "returnLabel": "استبدال 14 يوم",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "editorial-categories",
+          "settings": {
+            "title": "اختاري حسب يومك",
+            "subtitle": "بدل الأقسام التقليدية، اختاري مناسبتك وهتلاقي اللوكات اللي تناسبها.",
+            "limit": 4,
+            "ctaText": "كل القطع",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "الشغل واليوم الطويل",
+                "subtitle": "قطع مرتبة ومريحة تصلح لمكتب ومشاوير بدون تنسيق كتير.",
+                "image": "https://images.unsplash.com/photo-1509631179647-0177331693ae?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=tops"
+              },
+              {
+                "title": "خروجات ومناسبات",
+                "subtitle": "فساتين وإطلالات جاهزة تحسبيها من أول نظرة.",
+                "image": "https://images.unsplash.com/photo-1496747611176-843222e1e57c?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=dresses"
+              },
+              {
+                "title": "دنيا الجينز",
+                "subtitle": "جينز وبلوزات تنسيقها مش بياخد وقت، ومقاساتها ثابتة.",
+                "image": "https://images.unsplash.com/photo-1541099649105-f69ad21f3246?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=bottoms"
+              },
+              {
+                "title": "البيت والريلاكس",
+                "subtitle": "أقمشة مريحة لبيت ونوم ومشاوير قريبة.",
+                "image": "https://images.unsplash.com/photo-1485968579580-b6d095142e6e?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=loungewear"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-products",
+          "variant": "quick-view-fashion-grid",
+          "settings": {
+            "eyebrow": "مختارة بعناية",
+            "title": "قطع تكمل أي لوك",
+            "limit": 8,
+            "ctaText": "شوفي الكل",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "campaign-stack",
+          "settings": {
+            "badge": "عروض الأتيليه",
+            "title": "احسبي اللوك كويس.. والخصم يكمّل",
+            "subtitle": "كل ما تكتبي قطع أكتر في نفس الطلب، الخصم بيزيد تلقائيًا — والعروض تتحدّث كل أسبوع.",
+            "cards": [
+              {
+                "label": "خصم الكمية",
+                "title": "من قطعتين واكتر خصم يزيد تلقائي",
+                "subtitle": "اختاري قطع اللوك في نفس السلة والخصم يظهر في الملخص من غير أكواد ولا شروط معقدة.",
+                "ctaText": "شوفي العروض",
+                "link": "/sale",
+                "tone": "accent",
+                "stat": "خصم حتى 15%"
+              },
+              {
+                "label": "الأكثر طلبًا",
+                "title": "لوكات اتصنّعت من طلبات حقيقية",
+                "subtitle": "التنسيقات اللي بنتكرر في الطلبات بقت لوكات جاهزة تختاري منها مباشرة.",
+                "ctaText": "شوفي الأكثر طلبًا",
+                "link": "/shop?sort=popular",
+                "tone": "primary",
+                "stat": "محدّث أسبوعيًا"
+              },
+              {
+                "label": "شحن وتجهيز",
+                "title": "تجهيز سريع وشحن لكل المحافظات",
+                "subtitle": "معظم الطلبات بتتجهز خلال 24-48 ساعة، ورسوم الشحن بتظهر قبل تأكيد الطلب.",
+                "ctaText": "تفاصيل الشحن",
+                "link": "/shipping",
+                "tone": "slate",
+                "stat": "تجهيز 48 ساعة"
+              }
+            ]
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "variant": "boutique-storyboard",
+          "settings": {
+            "badge": "جورنال الأتيليه",
+            "title": "لوكات من تنسيقاتنا الحقيقية",
+            "subtitle": "إطلالات جمعناها قطعة قطعة — وكل قطعة في اللوك متاحة للطلب."
+          }
+        },
+        {
+          "type": "features-bar",
+          "variant": "delivery-clarity",
+          "settings": {
+            "title": "من الاختيار لحد الباب.. كل حاجة واضحة",
+            "subtitle": "من أول مقاس لحد الاستلام، الرسائل واضحة ومفيش مفاجآت بعد الطلب.",
+            "items": [
+              {
+                "icon": "target",
+                "title": "لوك مقترح",
+                "description": "كل منتج بنعرضه معاه باقي قطع اللوك علشان تكمله من نفس الصفحة."
+              },
+              {
+                "icon": "grid",
+                "title": "مقاسات واضحة",
+                "description": "جدول مقاسات بالقياسات الفعلية، وملاحظة قصّة لكل قطعة."
+              },
+              {
+                "icon": "search",
+                "title": "متابعة الطلب",
+                "description": "بعد التأكيد تقدري تتابعي حالة الطلب من نفس الرقم."
+              },
+              {
+                "icon": "shield",
+                "title": "دفع مرن",
+                "description": "بطاقات أو دفع عند الاستلام على المنتجات المتاحة، والمراجعة قبل التجهيز."
+              }
+            ]
+          }
+        },
+        {
+          "type": "newsletter",
+          "variant": "split-panel",
+          "settings": {
+            "title": "خصم 10% على أول لوك",
+            "subtitle": "سيبي رقمك ويوصلك كود الخصم وجديد اللوكات أول بأول.",
+            "ctaText": "اشتركي"
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "occasion-planner",
+          "settings": {
+            "title": "ملابس حريمي مقاسات مصرية",
+            "subtitle": "فلتري بالمناسبة أو المقاس أو القسم — الشغل، الخروجة، البيت، أو الجينز.",
+            "searchPlaceholder": "ابحثي عن فستان أو بلوزة أو جينز",
+            "resultsLabel": "قطعة",
+            "clearButtonText": "مسح",
+            "stickyLabel": "فلترة سريعة",
+            "chipLimit": 5
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "quick-view-fashion-grid",
+          "settings": {
+            "title": "كل القطع",
+            "subtitle": "صور حقيقية وسعر واضح، ودوسة سريعة على أي قطعة تعرضلك باقي اللوك.",
+            "limit": 12
+          }
+        },
+        {
+          "type": "shop-promo-rail",
+          "variant": "trust-rail",
+          "settings": {
+            "badge": "قبل الحسم",
+            "title": "المقاس والاستبدال.. من غير مفاجآت",
+            "subtitle": "كل اللي يهمك قبل الطلب ظاهر هنا: دليل المقاسات، مدة الشحن، وسياسة الاستبدال.",
+            "spotlightTitle": "اطلبي اللوك كامل بضغطة",
+            "spotlightText": "أي قطعة تفتحيها هتلاقي معاها قطع التنسيق المقترحة — علّمي عليها ويدخلوا نفس الطلب.",
+            "ctaText": "شوفي العروض",
+            "ctaLink": "/sale",
+            "trustItems": "استبدال مقاس|حتى 14 يوم من الاستلام وفق السياسة المعلنة.\nشحن واضح|الرسوم بتظهر قبل تأكيد الطلب حسب المحافظة.\nمراجعة بشرية|بنراجع الطلب والعنوان قبل التجهيز.",
+            "highlights": "لوكات جاهزة|تنسيق مظبوط\nطلب سريع|من نفس الصفحة\nدعم واتساب|رد سريع"
+          }
+        }
+      ],
+      "pageGoal": "discovery",
+      "compositionPolicy": {
+        "pageGoal": "discovery",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "mirror-carousel"
+        },
+        {
+          "type": "product-info",
+          "variant": "style-ledger",
+          "settings": {
+            "addToCartText": "أضيفي للسلة",
+            "descriptionTitle": "تفاصيل القطعة",
+            "shippingTitle": "الشحن والاستبدال",
+            "shippingText": "رسوم الشحن بتظهر قبل الدفع حسب المحافظة، ولو المقاس مش مظبوط معاكي تقدري تطلبي استبدال أو استرجاع خلال المدة المعلنة.",
+            "shippingInteraction": "modal",
+            "shippingTriggerText": "افتحي تفاصيل التجهيز والتوصيل والاستبدال.",
+            "shippingModalTitle": "الشحن والاستبدال",
+            "showGuarantees": true,
+            "guaranteesTitle": "ليه أتيليه؟",
+            "guaranteesSubtitle": "ثقة أسرع في المقاس والقصّة والخطوة الجاية قبل تأكيد الطلب.",
+            "guaranteeItems": [
+              {
+                "title": "مقاس مظبوط قبل الطلب",
+                "description": "جدول مقاسات بالقياسات الفعلية وملاحظة قصّة لكل قطعة — لو بين مقاسين هتلاقي التوصية مكتوبة.",
+                "icon": "Ruler"
+              },
+              {
+                "title": "صور حقيقية من المتجر",
+                "description": "اللون والخامة ظاهرين من صور فعلية للقطع، مش صور كتالوج عامة.",
+                "icon": "ShieldCheck"
+              },
+              {
+                "title": "اللوك كامل جنبك",
+                "description": "قطع التنسيق المقترحة ظاهرة في نفس الصفحة، تكملي اللوك من غير لفة لصفحة تانية.",
+                "icon": "RotateCcw"
+              }
+            ],
+            "sizeGuideText": "دليل المقاسات",
+            "sizeGuideLayout": "compact",
+            "sizeGuideInteraction": "modal",
+            "sizeGuideModalTitle": "دليل مقاسات الملابس",
+            "sizeGuideLink": "/size-guide",
+            "fitNote": "لو بين مقاسين: القصّة الضيقة خدي الأكبر، والقصّة الواسعة خدي مقاسك العادي.",
+            "showSizeGuide": "always"
+          }
+        },
+        {
+          "type": "quantity-offers",
+          "variant": "look-builder",
+          "settings": {
+            "title": "كملي اللوك",
+            "subtitle": "ضيفي قطع تكميلية ووفري — كل ما زاد العدد زاد الخصم تلقائي.",
+            "placement": "inline-buybox",
+            "decisionMode": "primary",
+            "addOfferLabel": "ضيفي قطعة للوك",
+            "continueToFormLabel": "كملي بياناتك"
+          }
+        },
+        {
+          "type": "pdp-checkout",
+          "settings": {
+            "title": "بيانات الطلب",
+            "subtitle": "",
+            "emptyStateText": "اختاري القطع أو العرض أولًا.",
+            "scrollToBuyBoxText": "اختيار القطع",
+            "submitButtonText": "تأكيد الطلب",
+            "placement": "before-description",
+            "surfaceMode": "merged-buybox"
+          }
+        },
+        {
+          "type": "trusted-badges",
+          "variant": "couture-minimal",
+          "settings": {
+            "trustedBadgeTitle": "ثقة قبل الحسم",
+            "trustedBadgeSubtitle": "ثلاث نقاط تختصر التردد قبل التأكيد.",
+            "trustedBadgeItems": "استبدال مقاس 14 يوم,دفع عند الاستلام متاح,صور حقيقية من المتجر",
+            "trustedBadgeStyle": "minimal"
+          }
+        },
+        {
+          "type": "reviews",
+          "variant": "editorial",
+          "settings": {
+            "mediaTitle": "إطلالات المشتريات الحقيقيات",
+            "mediaDescription": "صور ومراجعات من بنات جربوا القطع فعلاً.",
+            "listTitle": "آراء المشتريات",
+            "galleryStyle": "carousel",
+            "cardStyle": "editorial",
+            "reviewLimit": 6,
+            "mobileReviewLimit": 2
+          }
+        },
+        {
+          "type": "bought-together",
+          "variant": "complete-look",
+          "settings": {
+            "title": "كملي اللوك من هنا",
+            "subtitle": "القطع اللي بتحصل مع القطعة دي في التنسيق متجمعة تحت بعضها — علّمي عليها وتدخل في نفس الطلب.",
+            "limit": 3
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "closet-pairings",
+          "settings": {
+            "title": "قطع قريبة من نفس الستايل",
+            "subtitle": "بدائل أو قطع قريبة لو حابة نفس الإحساس بشكل مختلف.",
+            "limit": 4,
+            "mobileLimit": 2
+          }
+        }
+      ],
+      "pageGoal": "trust",
+      "compositionPolicy": {
+        "pageGoal": "trust",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "cart": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "سلة الطلب",
+            "subtitle": "راجعي قطع اللوك والمقاسات قبل الخطوة الجاية.",
+            "emptyText": "السلة فاضية — شوفي لوكات النهاردة.",
+            "continueShoppingText": "كملي التسوق"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "ملخص الطلب",
+            "subtitle": "الإجمالي والخصم وخطوة المتابعة في صندوق واحد.",
+            "checkoutButtonText": "كمّلي الطلب",
+            "assuranceTitle": "قبل ما تكمّلي",
+            "assuranceItems": "المقاس واللون ظاهرين في السلة.\nالخصم والشحن بيظهروا بوضوح في الخطوة الجاية.\nالدفع والتأكيد بخطوات قليلة.",
+            "nextStepsTitle": "بعد الضغط على المتابعة",
+            "nextSteps": "تكتبي اسمك ورقم موبايلك.\nتختاري المحافظة وطريقة الدفع.\nتأكدي الطلب من نفس الشاشة."
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "checkout": {
+      "layoutHint": "sidebar-right",
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "wardrobe-cart",
+          "settings": {
+            "title": "مراجعة القطع",
+            "subtitle": "راجعي قطع اللوك والمقاسات والألوان قبل تأكيد الطلب.",
+            "showUpsell": false
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "fitting-room-checkout",
+          "settings": {
+            "contactTitle": "بياناتك",
+            "contactDescription": "اسمك ورقم موبايلك الصحيحين أولًا، والباقي بيكمل بسرعة.",
+            "shippingTitle": "عنوان التوصيل",
+            "shippingDescription": "اكتبي العنوان بأقرب تفاصيل ممكنة واختاري المحافظة لحساب الشحن.",
+            "notesTitle": "ملاحظة للتوصيل",
+            "notesDescription": "اختياري — علامة مميزة، مقاس بديل، أو وقت مناسب للتواصل.",
+            "notesOptionalLabel": "اختياري",
+            "fullNameLabel": "الاسم بالكامل",
+            "fullNamePlaceholder": "اسمك",
+            "phoneLabel": "الموبايل",
+            "phonePlaceholder": "01xxxxxxxxx",
+            "addressLabel": "العنوان",
+            "addressPlaceholder": "الشارع، رقم العمارة، الدور، علامة مميزة",
+            "cityLabel": "المدينة أو المركز",
+            "cityPlaceholder": "المدينة",
+            "governorateLabel": "المحافظة",
+            "governoratePlaceholder": "اختاري المحافظة",
+            "notesPlaceholder": "ملاحظة مقاس أو مواعيد توصيل؟",
+            "autoDetectHint": "بنقترح المحافظة من عنوانك تلقائيًا.",
+            "autoDetectSuccessText": "اقترحنا المحافظة — وتقدري تغيريها في أي وقت."
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "boutique-payment",
+          "settings": {
+            "title": "مراجعة وتأكيد",
+            "subtitle": "اختاري طريقة الدفع وراجعي الإجمالي الأخير ثم أكدي الطلب.",
+            "confirmOrderText": "تأكيد الطلب",
+            "securityText": "بياناتك محفوظة والطلب بيراجع قبل التنفيذ",
+            "assuranceTitle": "آخر مراجعة قبل الإرسال",
+            "assuranceItems": "العنوان ورقم الهاتف واضحين قبل التنفيذ.\nالشحن النهائي بيظهر قبل التأكيد.\nالدعم بيتواصل معاكي لو الطلب احتاج مراجعة.",
+            "postConfirmStepsTitle": "بعد التأكيد",
+            "postConfirmSteps": "رقم الطلب يوصلك فورًا.\nبنراجع العنوان والتوفر قبل التجهيز.\nالتنسيق معاكي بيبقى جاهز حتى الاستلام.",
+            "showSummaryCard": false
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "boutique-summary",
+          "settings": {
+            "title": "الخلاصة",
+            "subtitle": "راجعي الإجمالي النهائي قبل اعتماد الطلب.",
+            "hideCheckoutButton": true,
+            "showCouponField": false,
+            "showTrustRow": false,
+            "showFreeShippingProgress": false
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "sale": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "sale-signal",
+          "settings": {
+            "badge": "عروض محدودة",
+            "message": "خصومات واضحة على قطع ولوكات مختارة، والكمية المتبقية ظاهرة على المنتج.",
+            "saleLabel": "خصم حتى 15% على الكمية",
+            "shippingLabel": "شحن لكل المحافظات",
+            "returnLabel": "استبدال مقاس",
+            "ctaText": "شوفي كل القطع",
+            "ctaLink": "/shop"
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "deal-edit",
+          "settings": {
+            "title": "العروض الحالية",
+            "subtitle": "قطع مخفضة بفرق سعر واضح من أول نظرة.",
+            "limit": 12,
+            "saleOnly": true
+          }
+        }
+      ],
+      "pageGoal": "conversion",
+      "compositionPolicy": {
+        "pageGoal": "conversion",
+        "preserveManualOrder": true,
+        "enforceTrustSignals": true
+      }
+    },
+    "shipping": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشحن",
+            "title": "الشحن والتوصيل",
+            "subtitle": "المهم بس قبل تأكيد الطلب.",
+            "body": "بنجهز معظم الطلبات خلال 24 إلى 48 ساعة عمل، ورسوم الشحن بتظهر قبل تأكيد الطلب حسب المحافظة.\n\nبعد خروج الطلب للتوصيل بيوصلك تحديث بحالة الشحنة، ولو احتجت أي مساعدة فريق الدعم متاح.",
+            "detailsTitle": "معلومات سريعة",
+            "details": "مدة التجهيز|من 24 لـ 48 ساعة عمل\nالتوصيل|حسب شركة الشحن والمحافظة\nالمتابعة|حالة الطلب بتتحدث بعد الشحن",
+            "ctaText": "ارجعي للمتجر",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "returns": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الاستبدال",
+            "title": "سياسة الاستبدال والاسترجاع",
+            "subtitle": "راحة بال قبل ما تطلبي.",
+            "body": "لو المقاس أو القصّة مش مناسبين، تقدري تطلبي استبدال أو استرجاع خلال المدة الموضحة، بشرط إن القطعة بحالتها الأصلية وبتغليفها.\n\nالقياس في البيت مقبول طبعًا — احنا عايزين القطعة تناسبك فعلًا، والهدف إن حيرة المقاس تخلص قبل الطلب مش بعده.",
+            "detailsTitle": "أهم البنود",
+            "details": "المدة|حسب سياسة المتجر المعلنة\nالحالة المقبولة|القطعة بحالتها الأصلية وبتغليفها كامل\nطريقة الطلب|تواصلي مع الدعم برقم الطلب والبديل المطلوب",
+            "ctaText": "دليل المقاسات",
+            "ctaLink": "/size-guide"
+          }
+        }
+      ]
+    },
+    "contact": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الدعم",
+            "title": "تواصلي معنا",
+            "subtitle": "لأي سؤال عن الطلبات أو المقاسات أو المتابعة.",
+            "body": "فريقنا بيرد على استفسارات الطلبات والشحن وما بعد البيع خلال أوقات العمل.\n\nلو معاكي رقم الطلب ابعتيه مع السؤال — بيساعدنا نتابع أسرع.",
+            "detailsTitle": "قنوات التواصل",
+            "details": "واتساب|للطلبات السريعة واستفسارات المقاسات\nالبريد الإلكتروني|للمتابعة الرسمية\nأوقات الدعم|من السبت للخميس من 10 ص لـ 6 م",
+            "ctaText": "ابدئي التسوق",
+            "ctaLink": "/shop"
+          }
+        }
+      ]
+    },
+    "privacy": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الخصوصية",
+            "title": "سياسة الخصوصية",
+            "subtitle": "إزاي بنتعامل مع بياناتك أثناء الطلب والمتابعة.",
+            "body": "بنستخدم بياناتك في تنفيذ الطلب ومتابعة التوصيل والتواصل معاكي بخصوص الشحن أو خدمة ما بعد البيع بس.\n\nمفيش استخدام لبياناتك خارج تشغيل المتجر والخدمة المرتبطة بطلبك إلا وفق السياسة المعلنة.",
+            "detailsTitle": "إيه اللي بنجمعه",
+            "details": "بيانات التواصل|الاسم ورقم الهاتف والبريد عند الحاجة\nبيانات الطلب|العنوان وتفاصيل القطع المرتبطة بالشراء\nالغرض|تنفيذ الطلب والتوصيل وخدمة ما بعد البيع",
+            "ctaText": "العودة للرئيسية",
+            "ctaLink": "/"
+          }
+        }
+      ]
+    },
+    "terms": {
+      "sections": [
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "الشروط",
+            "title": "الشروط والأحكام",
+            "subtitle": "النقاط الأساسية عن الشراء والدفع والشحن.",
+            "body": "تأكيد الطلب مرتبط بتوفر القطع وصحة البيانات المدخلة، وبتطبق وسيلة الدفع المختارة وما يرتبط بيها من تحقق أو رسوم عند الحاجة.\n\nممكن تتحدث بعض التفاصيل التشغيلية مع الحفاظ على حقوق العميل والنقاط الأساسية واضحة جوه المتجر.",
+            "detailsTitle": "بيشمل ده",
+            "details": "الطلبات|التأكيد مرتبط بصحة البيانات وتوفر القطع\nالدفع|بتطبق طريقة الدفع المختارة وشروطها\nالخدمة|يجوز تحديث التفاصيل التشغيلية بما لا يخل بحقوق العميل",
+            "ctaText": "سياسة الشحن",
+            "ctaLink": "/shipping"
+          }
+        }
+      ]
+    },
+    "size-guide": {
+      "sections": [
+        {
+          "type": "size-guide",
+          "variant": "detailed",
+          "settings": {
+            "badge": "دليل المقاس",
+            "title": "دليل مقاسات الملابس",
+            "subtitle": "مرجع واضح تختاري بيه المقاس الأنسب قبل الطلب.",
+            "note": "القياسات بالسنتيمتر تقريبية — لو بين مقاسين، المقاس الأكبر أريح في القصص الضيقة.",
+            "guideRows": "default|XS|32|2|80-84\ndefault|S|34|4|84-88\ndefault|M|36|6|88-92\ndefault|L|38|8|92-96\ndefault|XL|40|10|96-102\ndefault|2XL|42|12|102-108"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    },
+    "thank-you": {
+      "sections": [
+        {
+          "type": "order-confirmation",
+          "variant": "soft-thanks",
+          "settings": {
+            "title": "طلبك من أتيليه اتأكد",
+            "description": "بنراجع القطع والعنوان دلوقتي، وهنحدثك بحالة التجهيز والشحن أول بأول لحد الاستلام.",
+            "continueShoppingText": "ارجعي للتسوق",
+            "orderNumberPrefix": "رقم الطلب:",
+            "supportText": "لو محتاجة تعديل مقاس أو عنوان أو متابعة أسرع، تواصلي معانا عبر",
+            "statusLabel": "مراجعة وتجهيز",
+            "showTimeline": true,
+            "showTrackOrder": true,
+            "showReorder": true,
+            "showRecommended": true,
+            "trackOrderTitle": "تابعي حالة الطلب",
+            "trackOrderDescription": "اكتبي نفس رقم الموبايل المستخدم في الطلب لمعرفة آخر تحديث على المراجعة والتجهيز والشحن.",
+            "trackOrderButtonText": "اعرضي آخر تحديث",
+            "reorderTitle": "كرري نفس اللوك بسهولة",
+            "reorderDescription": "لو حابة تطلبي نفس القطع تاني أو تبني لوك قريب منها، رجعيها للسلة بضغطة.",
+            "reorderButtonText": "أضيفي نفس القطع للسلة",
+            "reorderSuccessText": "رجعنا نفس القطع للسلة.",
+            "recommendedTitle": "كملي اللوك",
+            "recommendedSubtitle": "قطع خفيفة تكمل طلبك الحالي من نفس الصفحة.",
+            "recommendedBadge": "إضافات سريعة",
+            "recommendedLimit": 3,
+            "recommendedCtaLabel": "أضيفيها للسلة",
+            "recommendedChooseOptionsLabel": "شوفي التفاصيل"
+          }
+        }
+      ],
+      "compositionPolicy": {
+        "preserveManualOrder": false,
+        "enforceTrustSignals": true
+      }
+    }
+  }
+}

@@ -293,6 +293,12 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "womens-fashion",
     "ملابس وأحذية حريمي",
   ),
+  "look-atelier-eg": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "womens-fashion",
+    "ملابس حريمي",
+  ),
   "khemet-luxe-eg": createThemeCategoryMeta(
     "fashion",
     "أزياء",

@@ -20,6 +20,7 @@ import layaliEditEgData from "./layali-edit-eg.json";
 import legacyDefaultOldData from "./legacy-default-old.json";
 import menShoesEgData from "./men-shoes-eg.json";
 import womenFashionEgData from "./women-fashion-eg.json";
+import lookAtelierEgData from "./look-atelier-eg.json";
 import khemetLuxeEgData from "./khemet-luxe-eg.json";
 import khemetLuxeV2Data from "./khemet-luxe-v2.json";
 import perfumeEgData from "./perfume-eg.json";
@@ -675,6 +676,7 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "legacy-default-old": asStorefrontTheme(legacyDefaultOldData),
   "men-shoes-eg": asStorefrontTheme(menShoesEgData),
   "women-fashion-eg": asStorefrontTheme(womenFashionEgData),
+  "look-atelier-eg": asStorefrontTheme(lookAtelierEgData),
   "khemet-luxe-eg": asStorefrontTheme(khemetLuxeEgData),
   "khemet-luxe-v2": asStorefrontTheme(khemetLuxeV2Data),
   "perfume-eg": asStorefrontTheme(perfumeEgData),
