@@ -23,15 +23,9 @@ jobs:
   build:
     name: Build & Verify (cancelable)
     runs-on: ubuntu-latest
-    # WHY cancel-in-progress: false here: in the old config (true), a constant
-    # stream of pushes meant every build got cancelled before it could finish,
-    # so deploys piled up in the queue and only the last one in a burst ever
-    # actually shipped. With false, builds queue and run serially, which is
-    # slower per-commit but reliable. The deploy job below still has its own
-    # concurrency group that protects the live server.
     concurrency:
       group: production-build
-      cancel-in-progress: false
+      cancel-in-progress: true
     outputs:
       is-latest: ${{ steps.check-latest.outputs.is-latest }}
       catalog-changed: ${{ steps.cat-check.outputs.cat-changed }}
@@ -51,32 +45,15 @@ jobs:
             echo "is-latest=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Best-effort fetch — proceed even if the fetch fails.
-          git fetch --force origin main 2>/dev/null || true
-          # If the fetch worked and origin/main exists, compare SHAs.
-          # If anything goes wrong (fetch failed, ref missing, arithmetic
-          # error), default to "proceed" — the deploy job will catch any
-          # race condition and skip itself if it really is superseded.
-          set +e
-          LATEST=$(git rev-parse origin/main 2>/dev/null)
-          set -e
-          if [ -z "$LATEST" ]; then
-            echo "⚠️ Could not determine latest commit (git fetch failed or origin/main missing). Proceeding with this build."
-            echo "is-latest=true" >> "$GITHUB_OUTPUT"
+          git fetch --force origin main
+          LATEST=$(git rev-parse origin/main)
+          if [ "$LATEST" != "${{ github.sha }}" ]; then
+            echo "⏭️ This build (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
+            echo "   Skipping to avoid redundant rebuild — the newer commit's deploy will cover these changes."
+            echo "is-latest=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "$LATEST" = "${{ github.sha }}" ]; then
-            echo "✅ This is the latest commit on main. Proceeding with build."
-            echo "is-latest=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # A newer commit exists. The original code skipped here unconditionally,
-          # which was the root cause of "no deploy ever runs" when pushes came
-          # in faster than deploys. New behavior: ALWAYS proceed. The deploy
-          # job below is the one that should decide whether this specific
-          # deploy should run, not this build job.
-          echo "⚠️ A newer commit ($LATEST) exists on main; this build is for ${{ github.sha }}."
-          echo "   Proceeding with build — deploy job will decide whether to actually run."
+          echo "✅ This is the latest commit on main. Proceeding with deploy."
           echo "is-latest=true" >> "$GITHUB_OUTPUT"
 
       - name: Setup Node.js
@@ -466,43 +443,16 @@ jobs:
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          # Previous version of this step had a serious bug: it tried to compute
-          # LATEST_AGE by running `git log -1 --format=%ct origin/main`, but the
-          # deploy job's `actions/checkout@v5` step happens AFTER this one and
-          # uses a shallow clone (fetch-depth=1) with no remote refs. So
-          # `origin/main` doesn't exist yet, the git log fails, the fallback
-          # in `$()` returns the current time, LATEST_AGE = 0, and the
-          # `> 300` check is false → the deploy is skipped. With the previous
-          # code, EVERY deploy attempt silently skipped itself.
-          #
-          # The fix: don't try to compute a timestamp at all. The deploy job
-          # only needs to know "am I safe to run or am I being raced by a
-          # newer commit". Use the API to compare SHAs. If the API fails,
-          # proceed anyway (deploying a slightly-stale commit beats deploying
-          # nothing). If the SHA on main differs from this build's SHA, log
-          # a warning and proceed — the newer commit's deploy will run after
-          # this one in the queue.
-          set +e
-          LATEST=$(curl -s -m 15 -H "Authorization: Bearer $GITHUB_TOKEN" \
+          LATEST=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
             "https://api.github.com/repos/${{ github.repository }}/commits/main" \
-            | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))" 2>/dev/null)
-          set -e
-          if [ -z "$LATEST" ]; then
-            echo "⚠️ Could not determine latest commit (API call failed or empty). Proceeding anyway — better to deploy than to stall."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
+            | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
+          if [ -n "$LATEST" ] && [ "$LATEST" != "${{ github.sha }}" ]; then
+            echo "⏭️ Skipping deploy: commit ${{ github.sha }} is superseded by $LATEST on main."
+            echo "   The newer commit's deploy will cover these changes."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ "$LATEST" = "${{ github.sha }}" ]; then
-            echo "✅ This build is the latest commit on main. Proceeding with deploy."
-            echo "proceed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          # A newer commit exists. The original code would skip here, which
-          # was the actual cause of the "no deploy ever runs" bug. Instead
-          # we proceed and let the queue handle ordering — the newer
-          # commit's deploy will follow this one and ship its own changes.
-          echo "⚠️ A newer commit ($LATEST) exists on main. This build is for ${{ github.sha }}."
-          echo "   Proceeding with this deploy anyway — the newer commit's deploy will follow in the queue."
+          echo "✅ Still the latest commit on main. Proceeding with deploy."
           echo "proceed=true" >> "$GITHUB_OUTPUT"
 
       - name: Checkout code

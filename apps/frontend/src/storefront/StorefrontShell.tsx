@@ -7649,6 +7649,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     theme.id === "district-market" && normalizedPath.endsWith("/shop");
   const showMobileBottomNav =
     !isMinimal &&
+    !isProductDetailPage &&
     !isDistrictMarketShopRoute &&
     !isElessiPackTheme &&
     !isFastlyTheme &&
