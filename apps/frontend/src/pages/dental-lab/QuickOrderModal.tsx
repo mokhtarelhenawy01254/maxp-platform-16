@@ -269,6 +269,11 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
   const [parseMsg, setParseMsg] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // per-file upload progress (name -> pct 0-100) + status; total progress separate
+  const [upProgress, setUpProgress] = useState<Record<string, number>>({});
+  const [upStatus, setUpStatus] = useState<Record<string, "uploading" | "done" | "error">>({});
+  const [upTotalPct, setUpTotalPct] = useState(0);
+  const [upDoneCount, setUpDoneCount] = useState(0);
 
   // load refs once
   useEffect(() => {
@@ -413,10 +418,42 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
 
       if (files.length > 0) {
         try {
-          // Don't force kind="SCAN" — let inferAttachmentKind pick the right
-          // type per file (STL→SCAN, JPG→PHOTO, PDF→PRESCRIPTION, etc).
-          await uploadCaseAttachments(created.id, files);
-          toast.success(t("dentalLab.cases.filesUploaded", { count: files.length }));
+          // ارفع كل ملف لوحده (بدون ذكاء اصطناعي) مع نسبة لكل ملف + الإجمالي
+          const { apiClient } = await import("@/services/api");
+          const totalBytes = files.reduce((s, f) => s + f.size, 0);
+          let doneBytes = 0;
+          let done = 0;
+          let errors = 0;
+          for (const f of files) {
+            const fd = new FormData();
+            fd.append("files", f);
+            setUpStatus((p) => ({ ...p, [f.name]: "uploading" }));
+            try {
+              await apiClient.post(`/dental-lab/cases/${created.id}/attachments`, fd, {
+                timeout: 600000,
+                onUploadProgress: (ev) => {
+                  const pct = ev.total ? Math.round((ev.loaded * 100) / ev.total) : 0;
+                  setUpProgress((p) => ({ ...p, [f.name]: pct }));
+                },
+              });
+              setUpStatus((p) => ({ ...p, [f.name]: "done" }));
+              setUpProgress((p) => ({ ...p, [f.name]: 100 }));
+              doneBytes += f.size;
+              done += 1;
+            } catch (err) {
+              setUpStatus((p) => ({ ...p, [f.name]: "error" }));
+              errors += 1;
+            }
+            setUpTotalPct(Math.round((doneBytes * 100) / totalBytes));
+            setUpDoneCount(done);
+          }
+          if (errors === 0) {
+            toast.success(t("dentalLab.cases.filesUploaded", { count: files.length }));
+          } else if (done > 0) {
+            toast.warning(`تم رفع ${done}، فشل ${errors} ملف`);
+          } else {
+            toast.error(`فشل رفع ${errors} ملف`);
+          }
         } catch (err) {
           toast.error(`اتعملت الحالة لكن فشل رفع بعض الملفات: ${err instanceof Error ? err.message : ""}`);
         }
@@ -674,34 +711,77 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
               </div>
 
               {files.length > 0 && (
-                <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                  {files.map((f, idx) => (
-                    <li key={`${f.name}-${idx}`} className="flex items-center justify-between bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 text-xs">
-                      <div className="flex items-center gap-2 min-w-0">
-                        {fileIcon(f.name)}
-                        <span className="truncate">{f.name}</span>
-                        <span className="text-gray-400 shrink-0" dir="ltr">{fmtBytes(f.size)}</span>
+                <>
+                  {submitting && (
+                    <div className="mt-2 rounded-lg border dark:border-gray-700 p-2.5 bg-white dark:bg-gray-800">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">الإجمالي: {upTotalPct}%</span>
+                        <span className="text-[10px] text-gray-400">{upDoneCount}/{files.length} ملف مكتمل</span>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          title={t("dentalLab.cases.scanParse")}
-                          onClick={(e) => { e.stopPropagation(); handleParseFile(f); }}
-                          className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-                        >
-                          <ScanLine className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                          className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+                        <div className={`h-full transition-all ${upTotalPct >= 100 ? "bg-green-500" : "bg-indigo-500"}`} style={{ width: `${upTotalPct}%` }} />
                       </div>
-                    </li>
-                  ))}
-                </ul>
+                    </div>
+                  )}
+                  <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto">
+                    {files.map((f, idx) => {
+                      const pct = upProgress[f.name] ?? 0;
+                      const st = upStatus[f.name];
+                      return (
+                        <li key={`${f.name}-${idx}`} className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 text-xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 min-w-0">
+                              {fileIcon(f.name)}
+                              <span className="truncate">{f.name}</span>
+                              <span className="text-gray-400 shrink-0" dir="ltr">{fmtBytes(f.size)}</span>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              {st === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
+                              {st === "uploading" && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
+                              {st === "error" && <XMarkIcon className="w-3.5 h-3.5 text-red-500" />}
+                              {!submitting && (
+                                <>
+                                  <button
+                                    type="button"
+                                    title={t("dentalLab.cases.scanParse")}
+                                    onClick={(e) => { e.stopPropagation(); handleParseFile(f); }}
+                                    className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                                  >
+                                    <ScanLine className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                                    className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          {(st === "uploading" || st === "done") && (
+                            <div className="flex items-center gap-2 mt-1">
+                              <div className="h-1 flex-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+                                <div className={`h-full transition-all ${st === "done" ? "bg-green-500" : "bg-blue-500"}`} style={{ width: `${pct}%` }} />
+                              </div>
+                              <span className="text-[10px] text-gray-500 w-8 text-left">{pct}%</span>
+                            </div>
+                          )}
+                          {st === "error" && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                              className="text-[10px] text-red-500 mt-1 underline"
+                            >
+                              إزالة الفاشل
+                            </button>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </>
               )}
             </div>
           </div>
