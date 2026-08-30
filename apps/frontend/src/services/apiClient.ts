@@ -69,7 +69,13 @@ class ApiClient {
       timeout: 30000,
       withCredentials: true,
       headers: {
-        "Content-Type": "application/json",
+        // DO NOT set Content-Type here. Axios auto-detects the right
+        // Content-Type per request: application/json for plain objects,
+        // multipart/form-data with the boundary for FormData, etc.
+        // Setting it to "application/json" here used to silently
+        // override the multipart boundary, which made every dental-lab
+        // attachment upload from the UI fail with 400 "لم يتم رفع أي ملف".
+        // The Accept header is fine as a default — most responses are JSON.
         Accept: "application/json",
       },
     });
