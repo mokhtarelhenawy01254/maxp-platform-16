@@ -1047,6 +1047,33 @@ export default function DentalCaseDetailPage() {
                     </button>
                   )}
                 </div>
+
+                {/* Total upload progress */}
+                {(() => {
+                  const totalBytes = uploadItems.reduce((s, it) => s + it.file.size, 0);
+                  const loadedBytes = uploadItems.reduce((s, it) => s + (it.file.size * (it.progress || 0)) / 100, 0);
+                  const doneCount = uploadItems.filter((it) => it.status === "done").length;
+                  const totalPct = totalBytes > 0 ? Math.round((loadedBytes * 100) / totalBytes) : 0;
+                  return (
+                    <div className="border dark:border-gray-700 rounded-lg p-2.5 bg-white dark:bg-gray-800">
+                      <div className="flex items-center justify-between gap-2 mb-1.5">
+                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                          الإجمالي: {totalPct}%
+                        </span>
+                        <span className="text-[10px] text-gray-400">
+                          {doneCount}/{uploadItems.length} ملف مكتمل · {uploadItems.filter((it) => it.status === "error").length > 0 ? `${uploadItems.filter((it) => it.status === "error").length} فشل · ` : ""}{Math.round(loadedBytes / 1024 / 1024)}MB / {Math.round(totalBytes / 1024 / 1024)}MB
+                        </span>
+                      </div>
+                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${totalPct >= 100 ? "bg-green-500" : "bg-indigo-500"}`}
+                          style={{ width: `${totalPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {uploadItems.map((it) => (
                   <div key={it.id} className="border dark:border-gray-700 rounded-lg p-2.5 bg-gray-50 dark:bg-gray-800/50">
                     <div className="flex items-center justify-between gap-2 mb-1.5">
@@ -1076,11 +1103,14 @@ export default function DentalCaseDetailPage() {
                       </div>
                     </div>
                     {(it.status === "uploading" || it.status === "done") && (
-                      <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
-                        <div
-                          className={`h-full transition-all ${it.status === "done" ? "bg-green-500" : "bg-blue-500"}`}
-                          style={{ width: `${it.progress}%` }}
-                        />
+                      <div className="flex items-center gap-2">
+                        <div className="h-1 flex-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${it.status === "done" ? "bg-green-500" : "bg-blue-500"}`}
+                            style={{ width: `${it.progress}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-gray-500 flex-shrink-0 w-8 text-left">{it.progress}%</span>
                       </div>
                     )}
                     {it.status === "error" && it.error && (
