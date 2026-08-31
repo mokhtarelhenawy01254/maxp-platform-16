@@ -1115,8 +1115,8 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const title =
     isKhemetMergedBuyboxQuickOrder
       ? prefersArabicCopy
-        ? "بيانات الطلب"
-        : "Order details"
+        ? "أكملي بياناتك وسنأكد طلبك"
+        : "Add your details & we'll confirm"
       : configuredTitle ||
     (isSoleaFemmeQuickOrder
       ? prefersArabicCopy
@@ -1606,7 +1606,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     rows={isCompactMergedQuickOrder ? 2 : isMenShoesQuickOrder || isWomenFashionQuickOrder ? 3 : 5}
                     className={`${resolvedInputClassName} ${
                       isCompactMergedQuickOrder
-                        ? "min-h-[84px]"
+                        ? "min-h-[64px]"
                         : isMenShoesQuickOrder || isWomenFashionQuickOrder
                           ? "min-h-[96px]"
                           : "min-h-[140px]"
@@ -1855,6 +1855,24 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       : minimumOrderSubmitLabel}
                   </button>
                 ) : null}
+              </div>
+            ) : null}
+
+            {isKhemetMergedBuyboxQuickOrder && shouldRenderActionArea ? (
+              <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-medium text-[#6f5a54]">
+                <span className="inline-flex items-center gap-1.5">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <rect x="2" y="5" width="20" height="14" rx="2" />
+                    <path d="M2 10h20" />
+                  </svg>
+                  {prefersArabicCopy ? 'الدفع عند الاستلام متاح' : 'Cash on delivery available'}
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M20 6 9 17l-5-5" />
+                  </svg>
+                  {prefersArabicCopy ? 'تأكيد قبل الشحن' : 'Confirm before shipping'}
+                </span>
               </div>
             ) : null}
 

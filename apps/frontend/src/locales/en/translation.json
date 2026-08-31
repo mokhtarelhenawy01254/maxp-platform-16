@@ -1283,6 +1283,7 @@
       "files": "Files",
       "uploadFile": "Upload file",
       "uploading": "Uploading...",
+      "uploadTotal": "Total progress",
       "uploadError": "Failed to upload the file",
       "noFiles": "No files uploaded yet",
       "invoices": "Invoices",

@@ -20,9 +20,10 @@ import {
   formatCurrency,
   formatDate,
   getCase,
+  inferAttachmentKind,
   statusVisual,
   submitDesignApproval,
-  uploadAttachment,
+  uploadCaseFilesPortal,
   type DentalCaseAttachment,
   type DentalCaseDetail,
   type DentalInvoice,
@@ -182,6 +183,9 @@ const DentalPortalCaseDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [uploadItems, setUploadItems] = useState<
+    { id: string; name: string; status: "pending" | "uploading" | "done" | "error"; progress: number; error?: string }[]
+  >([]);
   const [downloading, setDownloading] = useState(false);
   const [pdfError, setPdfError] = useState("");
   const [fileUrls, setFileUrls] = useState<Record<string, string>>({});
@@ -267,17 +271,48 @@ const DentalPortalCaseDetailPage: React.FC = () => {
   }, [id, t]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !id) return;
+    const files = e.target.files ? Array.from(e.target.files) : [];
+    e.target.value = "";
+    if (files.length === 0 || !id) return;
     setUploading(true);
+    setError("");
+    const items = files.map((f, i) => ({
+      id: `${Date.now()}-${i}`,
+      name: f.name,
+      status: "pending" as const,
+      progress: 0,
+    }));
+    setUploadItems(items);
+    const updateItem = (idx: number, patch: Partial<(typeof items)[number]>) => {
+      setUploadItems((prev) =>
+        prev.map((it, j) => (j === idx ? { ...it, ...patch } : it)),
+      );
+    };
+    const kinds = files.map((f) => inferAttachmentKind(f.name));
     try {
-      await uploadAttachment(id, file, "photo");
+      await uploadCaseFilesPortal(id, files, kinds, (idx, pct) =>
+        updateItem(idx, { progress: pct, status: "uploading" }),
+      );
+      setUploadItems((prev) =>
+        prev.map((it) => ({ ...it, status: "done" as const, progress: 100 })),
+      );
       await loadCase();
-    } catch {
-      setError(t("dentalPortal.caseDetail.uploadError"));
+    } catch (err) {
+      setUploadItems((prev) =>
+        prev.map((it) => ({
+          ...it,
+          status: "error" as const,
+          error:
+            err instanceof Error
+              ? err.message
+              : t("dentalPortal.caseDetail.uploadError"),
+        })),
+      );
+      setError(
+        err instanceof Error ? err.message : t("dentalPortal.caseDetail.uploadError"),
+      );
     } finally {
       setUploading(false);
-      e.target.value = "";
     }
   };
 
@@ -505,13 +540,76 @@ const DentalPortalCaseDetailPage: React.FC = () => {
             )}
             <input
               type="file"
+              multiple
               className="hidden"
-              accept="image/*,.pdf,.stl,.zip"
+              accept="image/*,.pdf,.stl,.ply,.obj,.dcm,.zip,.json"
               disabled={uploading}
               onChange={handleUpload}
             />
           </label>
         </div>
+
+        {uploadItems.length > 0 && (
+          <div className="mb-4 space-y-2">
+            <div className="flex items-center justify-between text-xs text-gray-500">
+              <span>
+                {t("dentalPortal.caseDetail.uploadTotal")}
+                {" · "}
+                {uploadItems.filter((i) => i.status === "done").length}/
+                {uploadItems.length}
+              </span>
+              <span>
+                {Math.round(
+                  uploadItems.reduce((s, i) => s + i.progress, 0) /
+                    uploadItems.length,
+                )}
+                %
+              </span>
+            </div>
+            <div className="h-2 w-full overflow-hidden rounded-full bg-gray-100">
+              <div
+                className="h-full rounded-full bg-indigo-600 transition-all"
+                style={{
+                  width: `${Math.round(
+                    uploadItems.reduce((s, i) => s + i.progress, 0) /
+                      uploadItems.length,
+                  )}%`,
+                }}
+              />
+            </div>
+            <ul className="space-y-1.5">
+              {uploadItems.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-2 text-xs"
+                >
+                  <span className="truncate text-gray-600" title={item.name}>
+                    {item.name}
+                  </span>
+                  <span className="flex items-center gap-2">
+                    {item.status === "done" ? (
+                      <CheckCircle2 size={14} className="text-green-500" />
+                    ) : item.status === "error" ? (
+                      <span className="text-red-500">{item.error}</span>
+                    ) : (
+                      <>
+                        <span className="w-24 overflow-hidden rounded-full bg-gray-100">
+                          <span
+                            className="block h-1.5 rounded-full bg-indigo-500"
+                            style={{ width: `${item.progress}%` }}
+                          />
+                        </span>
+                        <span className="w-9 text-right text-gray-400">
+                          {item.progress}%
+                        </span>
+                      </>
+                    )}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {detail.attachments.length === 0 ? (
           <p className="text-sm text-gray-400">

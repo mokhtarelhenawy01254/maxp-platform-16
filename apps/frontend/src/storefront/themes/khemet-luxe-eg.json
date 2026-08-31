@@ -48,7 +48,11 @@
   },
   "preview": {
     "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
-    "colors": ["151 34% 16%", "41 45% 63%", "24 31% 97%"]
+    "colors": [
+      "151 34% 16%",
+      "41 45% 63%",
+      "24 31% 97%"
+    ]
   },
   "header": {
     "variant": "floating-dark",
@@ -57,10 +61,22 @@
     "showSearch": true,
     "showCart": true,
     "navigation": [
-      { "label": "كل الأحذية", "to": "/shop" },
-      { "label": "الكوتشيات", "to": "/shop?category=sneakers" },
-      { "label": "الفلات", "to": "/shop?category=flats" },
-      { "label": "العروض", "to": "/sale" }
+      {
+        "label": "كل الأحذية",
+        "to": "/shop"
+      },
+      {
+        "label": "الكوتشيات",
+        "to": "/shop?category=sneakers"
+      },
+      {
+        "label": "الفلات",
+        "to": "/shop?category=flats"
+      },
+      {
+        "label": "العروض",
+        "to": "/sale"
+      }
     ]
   },
   "footer": {
@@ -68,8 +84,16 @@
     "description": "أحذية حريمي مصنوعة بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلي القرار أسرع.",
     "copyrightText": "© 2026 KHEMET LUXE. CRAFTED IN EGYPT.",
     "contactRows": [
-      { "label": "واتساب", "value": "01123087745", "href": "https://wa.me/201123087745" },
-      { "label": "البريد", "value": "swan@h2m.com", "href": "mailto:swan@h2m.com" }
+      {
+        "label": "واتساب",
+        "value": "01123087745",
+        "href": "https://wa.me/201123087745"
+      },
+      {
+        "label": "البريد",
+        "value": "swan@h2m.com",
+        "href": "mailto:swan@h2m.com"
+      }
     ],
     "socialLinks": {
       "instagram": "https://instagram.com",
@@ -80,41 +104,56 @@
       {
         "title": "التسوق",
         "links": [
-          { "label": "كل الأحذية", "to": "/shop" },
-          { "label": "الكوتشيات", "to": "/shop?category=sneakers" },
-          { "label": "الفلات", "to": "/shop?category=flats" },
-          { "label": "العروض الحصرية", "to": "/sale" }
+          {
+            "label": "كل الأحذية",
+            "to": "/shop"
+          },
+          {
+            "label": "الكوتشيات",
+            "to": "/shop?category=sneakers"
+          },
+          {
+            "label": "الفلات",
+            "to": "/shop?category=flats"
+          },
+          {
+            "label": "العروض الحصرية",
+            "to": "/sale"
+          }
         ]
       },
       {
         "title": "الدار",
         "links": [
-          { "label": "المجموعات", "to": "/collections" },
-          { "label": "الشحن والتوصيل", "to": "/shipping" },
-          { "label": "دليل المقاسات", "to": "/size-guide" }
+          {
+            "label": "المجموعات",
+            "to": "/collections"
+          },
+          {
+            "label": "الشحن والتوصيل",
+            "to": "/shipping"
+          },
+          {
+            "label": "دليل المقاسات",
+            "to": "/size-guide"
+          }
         ]
       }
     ],
     "legalLinks": [
-      { "label": "الخصوصية", "to": "/privacy" },
-      { "label": "الشروط والأحكام", "to": "/terms" }
+      {
+        "label": "الخصوصية",
+        "to": "/privacy"
+      },
+      {
+        "label": "الشروط والأحكام",
+        "to": "/terms"
+      }
     ]
   },
   "pages": {
     "home": {
       "sections": [
-        {
-          "type": "promo-strip",
-          "settings": {
-            "badge": "خدمة داخل مصر",
-            "message": "توصيل مجاني لجميع أنحاء مصر",
-            "saleLabel": "شحن داخل 48 ساعة",
-            "shippingLabel": "استبدال مقاس سهل",
-            "returnLabel": "جلد طبيعي مختار",
-            "ctaText": "تسوقي الآن",
-            "ctaLink": "/shop"
-          }
-        },
         {
           "type": "hero-banner",
           "variant": "cinematic-plinth",
@@ -122,21 +161,25 @@
             "eyebrow": "Crafted in Cairo",
             "title": "أناقة تسبق خطواتك",
             "subtitle": "كوتشيات وأحذية حريمي بلمسة فاخرة تمزج بين روح القاهرة، الجلد المصري، والذوق التحريري الهادئ.",
-            "ctaText": "تسوقي مجموعة الكوتشيات",
+            "ctaText": "تسوقي دلوقتي",
             "ctaLink": "/shop",
             "secondaryCtaText": "اكتشفي المجموعات",
             "secondaryCtaLink": "/collections",
             "backgroundImage": "https://lh3.googleusercontent.com/aida-public/AB6AXuBpVmwIwRrTq6gOXxo-t6Eq-8rQp_afRWAxKZtqTPQEPV_BHvK70RQU1ChcmMHilgUfT0O0M7rAb0rUNtgWCzUmk4-rPCnB-BI6hVb4xnoQBLYbZn_rhuq7PAiwttKE7_BVvctERAP0YkNCesMys_lI4U1I4d9D5uYwJvG5Ey7gAf77R2DD2NJA7oD64tur3DbNkyJnPx-Q5gr43qJBSI_dnBVx-aZi8mvArOuBSQ8Z-4lRsnCuk-33VDcoegn7hD2Pq7kq3SvyYh4",
             "highlights": [
-              { "label": "شحن", "value": "داخل مصر خلال 48 ساعة" },
-              { "label": "خامة", "value": "جلد طبيعي 100%" },
-              { "label": "إصدار", "value": "كبسولات محدودة كل شهر" }
-            ],
-            "panelTitle": "دار أحذية حريمي بطابع تحريري",
-            "panelSubtitle": "اختيارات أقل، صور أقوى، وحسم أسرع من أول نظرة.",
-            "panelNote": "ننتقي الموديلات كما لو كانت قطعة توقيع لا مجرد منتج في شبكة عامة.",
-            "panelMetricLabel": "الأكثر طلبًا",
-            "panelMetricValue": "Run-Luxe"
+              {
+                "label": "شحن",
+                "value": "داخل مصر خلال 48 ساعة"
+              },
+              {
+                "label": "استبدال",
+                "value": "مقاس خلال 14 يوم"
+              },
+              {
+                "label": "الدفع",
+                "value": "عند الاستلام"
+              }
+            ]
           }
         },
         {
@@ -188,13 +231,13 @@
           "variant": "editorial-columns",
           "settings": {
             "badge": "عرض حصري لفترة محدودة",
-            "title": "3 زوايا للحسم بدل واجهة تجارية صندوقية",
-            "subtitle": "من العرض الموسمي إلى قصة الخامة وحتى الإصدار المحدود، كل عمود هنا يحافظ على الإيقاع التحريري بدل تكديس كروت الخصومات.",
+            "title": "ليه KHEMET LUXE؟",
+            "subtitle": "عرض واضح، خامة مضمونة، وإصدارات بعدد محدود — تلات حاجات تخلي القرار أسرع.",
             "cards": [
               {
                 "label": "لفترة محدودة",
-                "title": "اشترِ 2 واحصل على الثالث مجاناً",
-                "subtitle": "أفضل طريقة لتكوين خزانة أحذية يومية وموسمية من نفس الخط البصري.",
+                "title": "اشتري 2 والثالث مجانًا",
+                "subtitle": "اختاري 3 أزواج من نفس الروح ووفّري في نفس الطلب.",
                 "ctaText": "تسوقي العرض الآن",
                 "link": "/sale",
                 "tone": "primary",
@@ -237,8 +280,8 @@
           "type": "features-bar",
           "variant": "trust-strip",
           "settings": {
-            "title": "وضوح في الخدمة يوازي وضوح التصميم",
-            "subtitle": "ثقة الشراء هنا لا تأتي من كثرة البلوكات، بل من حضور المعلومات الأهم في مكانها الصحيح.",
+            "title": "خدمة واضحة قبل الطلب وبعده",
+            "subtitle": "كل اللي محتاجة تعرفيه ظاهر من بدري: موعد الشحن، الخامة، وسياسة الاستبدال.",
             "items": [
               {
                 "icon": "truck",
@@ -252,8 +295,8 @@
               },
               {
                 "icon": "star",
-                "title": "تصميم حصري",
-                "description": "إصدارات أقل عدداً ومسارات عرض أنظف تحفظ فرادة القطعة."
+                "title": "موديلات حصرية",
+                "description": "قطع بعدد محدود من تصميمنا الخاص، مش موديلات متكررة في كل مكان."
               }
             ]
           }
@@ -263,7 +306,7 @@
           "variant": "editorial-strip",
           "settings": {
             "title": "انضمي إلى نادي Luxe",
-            "subtitle": "كوني أول من يعلم عن الكبسولات الحصرية والعروض الخاصة قبل نزولها للجميع.",
+            "subtitle": "خصم 10% على أول أوردر + أول واحدة تعرف بالكبسولات الجديدة.",
             "buttonText": "اشتراك",
             "placeholder": "بريدك الإلكتروني"
           }
@@ -496,7 +539,10 @@
             "processingText": "جارٍ المعالجة...",
             "shippingPromptText": "اختاري المحافظة لحساب تكلفة الشحن.",
             "enterGovernorateText": "اختاري المحافظة",
-            "enabledMethods": ["cod", "card"],
+            "enabledMethods": [
+              "cod",
+              "card"
+            ],
             "codLabel": "الدفع عند الاستلام",
             "codDesc": "ادفعي نقدًا عند وصول طلبك",
             "cardLabel": "بطاقة الائتمان",

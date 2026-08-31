@@ -2989,7 +2989,7 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
         <div className="absolute inset-x-0 bottom-0 h-48 bg-[linear-gradient(180deg,transparent,rgba(7,9,8,0.72))]" />
       </div>
 
-      <div className="relative z-10 flex min-h-[42rem] items-center justify-center px-4 py-24 text-center md:min-h-[52rem] md:px-6">
+      <div className="relative z-10 flex min-h-[34rem] items-center justify-center px-4 py-16 text-center md:min-h-[46rem] md:px-6 md:py-20">
         <div className="mx-auto flex max-w-5xl flex-col items-center">
           {(props.eyebrow || props.panel.eyebrow) && (
             <span className="mb-5 inline-flex border-b border-[#d8b572] pb-2 text-[11px] font-semibold uppercase tracking-[0.38em] text-[#f2d79b]">
@@ -2997,7 +2997,7 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
             </span>
           )}
 
-          <h1 className="max-w-[13ch] font-heading text-[3rem] font-semibold leading-[1.08] tracking-[0.01em] text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.34)] md:text-[4.5rem]">
+          <h1 className="max-w-[13ch] font-heading text-[2.6rem] font-semibold leading-[1.12] tracking-[0.01em] text-white drop-shadow-[0_18px_44px_rgba(0,0,0,0.34)] md:text-[4.5rem]">
             {props.title}
           </h1>
           <p className="mt-5 max-w-2xl text-base leading-8 text-white/82 md:text-lg">
@@ -3008,55 +3008,32 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
             {renderHeroAction(
               props.primaryHref,
               props.ctaText,
-              "inline-flex items-center justify-center border border-[#d9b56c] bg-[#173126] px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-[#fff4dc] transition hover:bg-[#204637]",
+              "inline-flex items-center justify-center border border-[#d9b56c] bg-[#173126] px-8 py-3 text-sm font-semibold text-[#fff4dc] transition hover:bg-[#204637]",
             )}
             {renderHeroAction(
               props.secondaryHref,
               props.secondaryCtaText,
-              "inline-flex items-center justify-center border border-white/24 bg-white/8 px-8 py-3 text-sm font-semibold uppercase tracking-[0.2em] text-white backdrop-blur-sm transition hover:bg-white/16",
+              "inline-flex items-center justify-center border border-white/24 bg-white/8 px-8 py-3 text-sm font-semibold text-white backdrop-blur-sm transition hover:bg-white/16",
             )}
           </div>
 
           {leadHighlights.length > 0 ? (
-            <div className="mt-14 flex flex-wrap items-center justify-center gap-3 md:gap-4">
-              {leadHighlights.map((item) => (
-                <div
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-white/80 md:mt-14 md:text-base">
+              {leadHighlights.map((item, index) => (
+                <span
                   key={`${item.label}-${item.value}`}
-                  className="min-w-[10rem] border border-white/14 bg-black/16 px-4 py-3 text-center backdrop-blur-sm"
+                  className="inline-flex items-center gap-2"
                 >
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.26em] text-[#d8b572]">
-                    {item.label}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-white/88 md:text-base">
+                  {index > 0 ? (
+                    <span aria-hidden className="text-[#d8b572]/70">
+                      •
+                    </span>
+                  ) : null}
+                  <span>
                     {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          ) : null}
-
-          {props.panel.title || props.panel.note || props.panel.metricValue ? (
-            <div className="mt-12 max-w-2xl border-t border-white/14 pt-6 text-white/78">
-              {props.panel.title ? (
-                <p className="font-heading text-xl font-semibold text-[#f7efe3] md:text-2xl">
-                  {props.panel.title}
-                </p>
-              ) : null}
-              {props.panel.subtitle ? (
-                <p className="mt-2 text-sm leading-7 text-white/76 md:text-base">
-                  {props.panel.subtitle}
-                </p>
-              ) : null}
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm">
-                {props.panel.note ? (
-                  <span className="text-white/72">{props.panel.note}</span>
-                ) : null}
-                {props.panel.metricValue ? (
-                  <span className="inline-flex border border-[#d8b572]/40 bg-[#111715]/64 px-4 py-2 font-semibold text-[#f2d79b]">
-                    {(props.panel.metricLabel || "مختارات") + " • " + props.panel.metricValue}
                   </span>
-                ) : null}
-              </div>
+                </span>
+              ))}
             </div>
           ) : null}
         </div>

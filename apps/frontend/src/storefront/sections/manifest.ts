@@ -1885,7 +1885,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   reviews: {
     label: "Reviews",
     component: "reviews",
-    pages: ["pdp"],
+    pages: ["home", "pdp"],
     variants: [
       { value: "standard", label: "Standard" },
       { value: "editorial", label: "Editorial" },

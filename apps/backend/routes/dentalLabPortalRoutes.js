@@ -18,7 +18,7 @@ router.get('/cases', controller.myCases);
 router.get('/cases/:id', controller.myCaseDetail);
 router.get('/cases/:id/work-order', controller.getWorkOrderPdf);
 router.post('/cases/:id/design-approval', controller.designApproval);
-router.post('/cases/:id/attachments', upload.single('file'), controller.uploadCaseAttachment);
+router.post('/cases/:id/attachments', upload.any(), controller.uploadCaseAttachment);
 router.get('/invoices', controller.myInvoices);
 
 // Multer error handler

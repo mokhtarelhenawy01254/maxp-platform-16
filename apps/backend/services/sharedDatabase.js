@@ -153,7 +153,12 @@ function createStablePrismaClient() {
   try {
     const urlWithParams = new URL(databaseUrl);
     // 🚀 HIGH PERFORMANCE SETTINGS
-    urlWithParams.searchParams.set('connection_limit', '80');
+    // Pool is shared by maxp-backend + webhook worker + any spawned script; a
+    // fixed 80/process kept ~190 live PG connections open (near max_connections
+    // 300) and amplified memory pressure. 25/process keeps headroom while
+    // sustaining the existing query queue (MAX_CONCURRENT_QUERIES=80).
+    const poolLimit = process.env.DATABASE_CONNECTION_LIMIT || '25';
+    urlWithParams.searchParams.set('connection_limit', poolLimit);
     urlWithParams.searchParams.set('pool_timeout', '30'); // Increased for stability
     urlWithParams.searchParams.set('connect_timeout', '30'); // Increased for stability
 

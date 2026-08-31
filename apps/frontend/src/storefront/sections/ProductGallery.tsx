@@ -2161,6 +2161,13 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
   const variant = normalizeProductGalleryVariant(section?.variant);
   const isGracefulGallery = theme.id === "soft-graceful";
   const { product, isLoading } = useProduct(id);
+  const galleryDiscountPct =
+    product &&
+    typeof product.comparePrice === "number" &&
+    typeof product.price === "number" &&
+    product.comparePrice > product.price
+      ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
+      : 0;
   const toggleWishlist = useWishlistStore((state) => state.toggleItem);
   const hasWishlistItem = useWishlistStore((state) => state.hasItem);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -2347,6 +2354,11 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
   const elessiOverlayActions =
     variant === "elessi-showroom" ? (
       <>
+        {galleryDiscountPct > 0 ? (
+          <span className="pointer-events-auto inline-flex items-center rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-[0_12px_26px_-18px_rgba(185,28,28,0.5)]">
+            {prefersArabicCopy ? `خصم ${galleryDiscountPct}%` : `${galleryDiscountPct}% OFF`}
+          </span>
+        ) : null}
         <button
           type="button"
           onClick={handleWishlistToggle}

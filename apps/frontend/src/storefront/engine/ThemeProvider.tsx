@@ -13,8 +13,8 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-const STOREFRONT_THEME_FONT_WEIGHTS = '400;600';
-const STOREFRONT_THEME_FONT_DISPLAY = 'optional';
+const STOREFRONT_THEME_FONT_WEIGHTS = '400;600;700;900';
+const STOREFRONT_THEME_FONT_DISPLAY = 'swap';
 const GENERIC_OR_LOCAL_FONTS = new Set([
   'ui-sans-serif',
   'system-ui',

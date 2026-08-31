@@ -478,6 +478,87 @@ export async function uploadAttachment(
   return normalizeAttachment(obj);
 }
 
+// Same infer logic as the admin side — matches backend ATTACHMENT_KINDS.
+export function inferAttachmentKind(
+  filename: string,
+): "SCAN" | "PHOTO" | "PRESCRIPTION" | "OTHER" {
+  const ext = (filename.split(".").pop() || "").toLowerCase();
+  if (["stl", "ply", "obj", "dcm"].includes(ext)) return "SCAN";
+  if (["jpg", "jpeg", "png", "webp", "bmp", "tiff", "heic"].includes(ext))
+    return "PHOTO";
+  if (ext === "pdf") return "PRESCRIPTION";
+  return "OTHER";
+}
+
+export interface PortalUploadResult {
+  id?: string;
+  fileName: string;
+}
+
+// Multi-file upload with real per-file progress (XMLHttpRequest). Uploads at
+// most 3 files in parallel to avoid overloading the server with large STLs,
+// mirroring the admin case-detail behaviour.
+export async function uploadCaseFilesPortal(
+  caseId: string,
+  files: File[],
+  kinds: (string | undefined)[],
+  onProgress: (index: number, pct: number) => void,
+): Promise<PortalUploadResult[]> {
+  const token = getPortalToken();
+  const results: PortalUploadResult[] = [];
+  const CONCURRENCY = 3;
+  let cursor = 0;
+  const next = async (): Promise<void> => {
+    while (cursor < files.length) {
+      const i = cursor++;
+      const file = files[i];
+      const kind = (kinds[i] || "SCAN").toUpperCase();
+      const form = new FormData();
+      form.append("files", file);
+      form.append("kinds", kind);
+      await new Promise<void>((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open(
+          "POST",
+          `${PORTAL_BASE}/cases/${encodeURIComponent(caseId)}/attachments`,
+        );
+        if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+        xhr.timeout = 600000; // 10 min per file (large STL on slow link)
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            onProgress(i, Math.round((ev.loaded * 100) / ev.total));
+          }
+        };
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+              const json = JSON.parse(xhr.responseText);
+              const data = (json && json.data) || {};
+              const att = Array.isArray(data) ? data[0] : data;
+              results.push({
+                id: (att && att.id) || undefined,
+                fileName: file.name,
+              });
+            } catch {
+              results.push({ fileName: file.name });
+            }
+            resolve();
+          } else {
+            reject(new Error(`رفع ${file.name} فشل (${xhr.status})`));
+          }
+        };
+        xhr.onerror = () => reject(new Error(`تعذر رفع ${file.name}`));
+        xhr.ontimeout = () => reject(new Error(`انتهت مهلة رفع ${file.name}`));
+        xhr.send(form);
+      });
+    }
+  };
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, files.length) }, () => next()),
+  );
+  return results;
+}
+
 export async function getInvoices(): Promise<DentalInvoice[]> {
   return asArray<DentalInvoice>(await portalFetch<unknown>("/invoices"));
 }

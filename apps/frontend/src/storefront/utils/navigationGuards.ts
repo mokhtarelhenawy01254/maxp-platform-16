@@ -1,4 +1,9 @@
-export const KHEMET_LUXE_THEME_IDS = new Set(['khemet-luxe-eg', 'khemet-luxe-v2']);
+export const KHEMET_LUXE_THEME_IDS = new Set([
+  'khemet-luxe-eg',
+  'khemet-luxe-v2',
+  'khemet-general-eg',
+  'khemet-fashion-eg',
+]);
 
 export const isKhemetLuxeTheme = (themeId: string | null | undefined): boolean =>
   Boolean(themeId && KHEMET_LUXE_THEME_IDS.has(themeId));

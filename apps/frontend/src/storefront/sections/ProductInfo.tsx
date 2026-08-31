@@ -9,6 +9,7 @@ import QuantitySelector from '../components/QuantitySelector';
 import Button from '../components/Button';
 import { useCartStore } from '../store/useCartStore';
 import { useProduct } from '../hooks/useProduct';
+import { useProductReviews } from '../hooks/useProductReviews';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { formatStorefrontCurrency } from '../utils/currency';
 import { sanitizeStorefrontHtml } from '../utils/html';
@@ -36,6 +37,7 @@ import TrustedBadgePanel from '../components/TrustedBadgePanel';
 import {
   AlarmClock,
   BadgeCheck,
+  Check,
   CheckCircle2,
   Eye,
   Facebook,
@@ -921,6 +923,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const variant = section?.variant || 'standard';
   const location = useLocation();
   const { product, isLoading, error, refetch } = useProduct(id);
+  const { reviews: reviewsForRating, averageRating: reviewsAverageRating } = useProductReviews(
+    product?.id,
+    { enabled: Boolean(product?.id) },
+  );
   const { settings: storefrontSettings } = useStorefrontSettings();
   const { trackAddToCartEvent, trackViewContentEvent } = useStorefrontFacebookTracking();
   const { theme } = useStorefrontTheme();
@@ -1936,16 +1942,35 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       ? selectedVariant.price
       : product.price;
   const activeComparePrice =
-    typeof selectedVariant?.comparePrice === 'number' && Number.isFinite(selectedVariant.comparePrice)
+    (typeof selectedVariant?.comparePrice === 'number' && Number.isFinite(selectedVariant.comparePrice)
       ? selectedVariant.comparePrice
-      : product.comparePrice;
+      : null) ??
+    (typeof product.comparePrice === 'number' && Number.isFinite(product.comparePrice)
+      ? product.comparePrice
+      : null) ??
+    (typeof product.compareAtPrice === 'number' && Number.isFinite(product.compareAtPrice)
+      ? product.compareAtPrice
+      : null) ??
+    null;
   const displayPrice = formatStorefrontCurrency(activePrice, currency);
   const originalPrice = activeComparePrice
     ? formatStorefrontCurrency(activeComparePrice, currency)
     : null;
-  const discount = activeComparePrice && activeComparePrice > activePrice
-    ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
+  const productComparePriceValue =
+    typeof product?.comparePrice === "number" && Number.isFinite(product.comparePrice)
+      ? product.comparePrice
+      : typeof product?.compareAtPrice === "number" && Number.isFinite(product.compareAtPrice)
+        ? product.compareAtPrice
+        : 0;
+  const productComparePriceDisplay = productComparePriceValue > 0
+    ? formatStorefrontCurrency(productComparePriceValue, currency)
     : null;
+  const discount = (activeComparePrice && activeComparePrice > activePrice
+    ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
+    : null) ??
+    (productComparePriceValue > 0 && productComparePriceValue > activePrice
+      ? Math.round(((productComparePriceValue - activePrice) / productComparePriceValue) * 100)
+      : null);
 
   if (isGracefulInfo) {
     const gracefulOptionGroups = (() => {
@@ -2190,13 +2215,17 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         : null;
   const stockStatusLabel =
     typeof activeStock === 'number'
-      ? activeStock <= 10
+      ? activeStock <= 0
         ? prefersArabicCopy
-          ? `متبقي ${activeStock}`
-          : `${activeStock} left`
-        : prefersArabicCopy
-          ? 'متاح الآن'
-          : 'Available now'
+          ? 'متاح للطلب'
+          : 'Available to order'
+        : activeStock <= 10
+          ? prefersArabicCopy
+            ? `متبقي ${activeStock}`
+            : `${activeStock} left`
+          : prefersArabicCopy
+            ? 'متاح الآن'
+            : 'Available now'
       : prefersArabicCopy
         ? 'متاح للطلب'
         : 'Available to order';
@@ -3051,12 +3080,18 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       {typeof activeStock === 'number' ? (
         <span
           className={`inline-flex rounded-full px-3 py-1 text-[11px] font-black ${
-            activeStock <= 10
+            activeStock > 0 && activeStock <= 10
               ? 'border border-[#efd7ba] bg-[#fff8ec] text-[#9a6422]'
               : 'border border-[#ead7dc] bg-white text-[#7a5260]'
           }`}
         >
-          {prefersArabicCopy ? `متبقي ${activeStock}` : `${activeStock} left`}
+          {activeStock > 0 && activeStock <= 10
+            ? prefersArabicCopy
+              ? `متبقي ${activeStock}`
+              : `${activeStock} left`
+            : prefersArabicCopy
+              ? 'جاهز للشحن'
+              : 'Ready to ship'}
         </span>
       ) : null}
     </div>
@@ -3071,12 +3106,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       {typeof activeStock === 'number' ? (
         <span
           className={`inline-flex rounded-full px-3 py-1 text-[11px] font-black ${
-            activeStock <= 10
+            activeStock > 0 && activeStock <= 10
               ? 'border border-[#ecd8b1] bg-[#fff8ec] text-[#9e5e18]'
               : 'border border-[#e7d6cb] bg-[#fffaf6] text-[#6d4c4a]'
           }`}
         >
-          {activeStock <= 10
+          {activeStock > 0 && activeStock <= 10
             ? prefersArabicCopy
               ? `متبقي ${activeStock}`
               : `${activeStock} left`
@@ -3371,7 +3406,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           <div className={styleStoreUtilityRailInfoRowClassName}>
             <span className="inline-flex h-2.5 w-2.5 rounded-full bg-[#ff7a2c]" />
             <span>
-              {activeStock <= 10
+              {activeStock > 0 && activeStock <= 10
                 ? prefersArabicCopy
                   ? `متبقي ${activeStock} فقط`
                   : `Only ${activeStock} item(s) left`
@@ -4034,7 +4069,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         ? product.reviewSummary.averageRating
         : typeof product.reviewAverage === 'number'
           ? product.reviewAverage
-          : null;
+          : typeof reviewsAverageRating === 'number' && reviewsAverageRating > 0
+            ? reviewsAverageRating
+            : null;
   const commonReviewCount =
     typeof product.reviewCount === 'number'
       ? product.reviewCount
@@ -4044,7 +4081,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           ? product.ratingCount
           : typeof product.reviewSummary?.totalReviews === 'number'
             ? product.reviewSummary.totalReviews
-            : 0;
+            : reviewsForRating.length > 0
+              ? reviewsForRating.length
+              : 0;
   const commonHeader = isElessiPackTheme ? (
     <div className="space-y-3">
       <nav className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-muted-foreground/80">
@@ -4130,21 +4169,32 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   ) : commonHeader;
 
   const cashbackPreviewBadge = cashbackPreview ? (
-    <span className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-pink-100 px-3 py-1 text-xs font-bold text-pink-700 dark:bg-pink-900/30 dark:text-pink-300">
-      <Sparkles size={14} />
-      {t('product.cashbackPreview', {
-        amount: formatStorefrontCurrency(cashbackPreview.cashback, cashbackPreview.currency),
-      })}
+    <span className="mt-2 inline-flex items-center gap-2 rounded-full bg-[#e7f5ec] px-3 py-1.5 text-xs font-bold text-[#1e6b3b] ring-1 ring-[#bfe3cc]">
+      <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#2e8b57] text-white">
+        <Check size={12} strokeWidth={3} />
+      </span>
+      <span>
+        {prefersArabicCopy
+          ? `ستحصلي على ${formatStorefrontCurrency(cashbackPreview.cashback, cashbackPreview.currency)} كاشباك`
+          : `You'll get ${formatStorefrontCurrency(cashbackPreview.cashback, cashbackPreview.currency)} cashback`}
+      </span>
     </span>
   ) : null;
 
   const commonPrice = (
     <div className="flex flex-col gap-2">
-      <div className="flex items-baseline gap-3">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-4xl font-black text-foreground">{displayPrice}</span>
-        {originalPrice && (
-          <span className="text-xl text-muted-foreground line-through decoration-primary/30 font-bold opacity-40">{originalPrice}</span>
+        {(originalPrice || productComparePriceDisplay) && (
+          <span className="text-xl font-bold text-muted-foreground line-through decoration-red-400/70 decoration-2 opacity-70">
+            {originalPrice || productComparePriceDisplay}
+          </span>
         )}
+        {discount && discount > 0 ? (
+          <span className="inline-flex items-center rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-black text-white">
+            {prefersArabicCopy ? `وفر ${discount}%` : `Save ${discount}%`}
+          </span>
+        ) : null}
       </div>
       {cashbackPreviewBadge}
     </div>
@@ -4719,7 +4769,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           <div className="flex items-center gap-2">
             <span className="inline-flex h-2.5 w-2.5 rounded-full bg-[#d67d3d]" />
             <span>
-              {activeStock <= 10
+              {activeStock > 0 && activeStock <= 10
                 ? prefersArabicCopy
                   ? `متبقي ${activeStock} فقط`
                   : `Only ${activeStock} left`
@@ -7314,13 +7364,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       <button
         type="button"
         onClick={() => handleQuickScroll(STOREFRONT_REVIEWS_SECTION_ID, 'start')}
-        className="inline-flex flex-wrap items-center gap-2 text-sm text-[#6f5a54] transition-colors hover:text-[#2d211e]"
+        className="inline-flex items-center gap-2 rounded-full border border-[#e7d8c8] bg-[#fffdfb] px-3 py-1.5 text-sm text-[#6f5a54] shadow-[0_1px_0_rgba(45,33,30,0.02)] transition-colors hover:border-[#d3b8a9] hover:text-[#2d211e]"
       >
-        <span className="text-[#d49011]">★★★★★</span>
-        <span className="font-black text-[#2d211e]">{commonRatingValue.toFixed(2)}</span>
-        <span>
+        <span className="text-[#d49011] tracking-tight">★★★★★</span>
+        <span className="font-black text-[#2d211e]">{commonRatingValue.toFixed(1)}</span>
+        <span className="text-muted-foreground">
           {prefersArabicCopy
-            ? `(${commonReviewCount} مراجعات)`
+            ? `(${commonReviewCount} تقييم)`
             : `(${commonReviewCount} reviews)`}
         </span>
       </button>
@@ -7465,7 +7515,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         {questionDialog}
         {mobileVariantSheet}
         <section className="w-full overflow-hidden px-1 py-3 sm:py-4">
-          <div className="space-y-4 sm:space-y-5">
+          <div className={isKhemetLuxeTheme ? "space-y-3 sm:space-y-4" : "space-y-4 sm:space-y-5"}>
             {commonHeader}
 
             <div className="flex flex-wrap items-center gap-3 border-b border-[#ead8ca] pb-3 sm:pb-4">
