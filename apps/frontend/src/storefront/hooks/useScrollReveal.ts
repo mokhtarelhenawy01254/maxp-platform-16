@@ -23,9 +23,18 @@ const activateObserver = (): IntersectionObserver =>
  * Adds the Soft Graceful-style fade + rise to elements with `.sf-reveal`
  * as they scroll into view. Re-scans on DOM mutations so lazily-rendered
  * sections animate after they mount, and re-arms on route changes.
+ *
+ * Pass `{ enabled: false }` to disable (e.g. themes that don't opt into the
+ * animation — keeping it off avoids sticking `transform`/`will-change` on
+ * sections, which would break `position: fixed` children like the mobile
+ * sticky add-to-cart bar).
  */
-export const useScrollReveal = (): void => {
+export const useScrollReveal = ({ enabled = true }: { enabled?: boolean } = {}): void => {
   useEffect(() => {
+    if (!enabled) {
+      return undefined;
+    }
+
     let observer: IntersectionObserver | null = null;
 
     const armObserver = () => {

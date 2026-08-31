@@ -93,7 +93,12 @@
 
 .storefront-shell .sf-reveal.sf-reveal-in {
   opacity: 1;
-  transform: translateY(0);
+  /* Clear the transform + will-change after the reveal fully settles.
+     Keeping a transform (or `will-change: transform`) on an ancestor turns
+     it into a containing block for `position: fixed` descendants, which
+     breaks sticky/fixed bars (e.g. the mobile sticky add-to-cart bar). */
+  transform: none;
+  will-change: auto;
 }
 
 .storefront-shell .sf-reveal[data-reveal-delay="1"] {

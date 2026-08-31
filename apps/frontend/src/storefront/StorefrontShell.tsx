@@ -13,7 +13,7 @@ import {
   useStorefrontTheme,
 } from "./engine/ThemeProvider";
 import type { StorefrontThemeInput } from "./engine/runtimeThemeResolver";
-import { PageComposer } from "./engine/PageComposer";
+import { PageComposer, type RenderSectionFrameArgs } from "./engine/PageComposer";
 import { useCartStore } from "./store/useCartStore";
 import {
   DEFAULT_STOREFRONT_CART_STORAGE_NAME,
@@ -5259,14 +5259,31 @@ const resolveStorefrontPageLayout = (
   fallback: StorefrontPageLayout = "stack",
 ): StorefrontPageLayout => pageConfig?.layoutHint || fallback;
 
-const renderSectionFrame = ({ element, index }: { element: React.ReactNode; index: number }) => (
-  <div
-    className={`sf-reveal ${index > 0 ? 'mt-12' : ''}`}
-    data-reveal-delay={(index % 5) + 1}
-  >
-    {element}
-  </div>
-);
+// Scroll-reveal is intentionally opt-in: only themes that ship a reveal-enabled
+// layout (e.g. soft-graceful) animate sections. Applying `sf-reveal` globally
+// forces `transform`/`will-change` on every section, which turns each section
+// into a containing block for `position: fixed` children — breaking the mobile
+// sticky add-to-cart bar (it can no longer stick to the viewport). See
+// storefront-layout.css `.sf-reveal-in`.
+const REVEAL_ENABLED_THEMES = new Set<string>(['soft-graceful']);
+const isRevealEnabledTheme = (themeId?: string) =>
+  Boolean(themeId) && REVEAL_ENABLED_THEMES.has(String(themeId));
+
+const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
+  element,
+  index,
+}) => {
+  const { theme } = useStorefrontTheme();
+  const reveal = isRevealEnabledTheme(theme?.id);
+  return (
+    <div
+      className={reveal ? `sf-reveal ${index > 0 ? 'mt-12' : ''}` : index > 0 ? 'mt-12' : ''}
+      data-reveal-delay={reveal ? (index % 5) + 1 : undefined}
+    >
+      {element}
+    </div>
+  );
+};
 
 const DynamicStorefrontPage: React.FC = () => {
   const { theme } = useStorefrontTheme();
@@ -5351,7 +5368,7 @@ const DynamicStorefrontPage: React.FC = () => {
       pageConfig={pageConfig}
       layout={resolveStorefrontPageLayout(pageConfig)}
       runtimeText={runtimeText}
-      renderSectionFrame={renderSectionFrame}
+      renderSectionFrame={StorefrontSectionFrame}
     />
   );
 };
@@ -5805,7 +5822,7 @@ const CollectionCategoryPage: React.FC = () => {
       pageConfig={pageConfig}
       layout={resolveStorefrontPageLayout(pageConfig)}
       runtimeText={runtimeText}
-      renderSectionFrame={renderSectionFrame}
+      renderSectionFrame={StorefrontSectionFrame}
     />
   );
 };
@@ -7432,7 +7449,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
   const location = useLocation();
   const navigate = useNavigate();
   useStorefrontProductRouteScrollReset();
-  useScrollReveal();
+  useScrollReveal(isRevealEnabledTheme(theme?.id) ? { enabled: true } : { enabled: false });
   const search = useSearch();
   const canRenderConversionHosts = useDeferredStorefrontConversionHosts();
   const searchParams = useMemo(
@@ -8148,7 +8165,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       pageConfig={theme.pages.home}
       layout={resolveStorefrontPageLayout(theme.pages.home)}
       runtimeText={runtimeText}
-      renderSectionFrame={renderSectionFrame}
+      renderSectionFrame={StorefrontSectionFrame}
     />
   );
   const shopPageElement = (
@@ -8274,7 +8291,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           shopLayoutFallback,
         )}
         runtimeText={runtimeText}
-        renderSectionFrame={renderSectionFrame}
+        renderSectionFrame={StorefrontSectionFrame}
       />
     </div>
   );
@@ -8438,7 +8455,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         pageConfig={theme.pages.pdp}
         layout={resolveStorefrontPageLayout(theme.pages.pdp, "product-detail")}
         runtimeText={runtimeText}
-        renderSectionFrame={renderSectionFrame}
+        renderSectionFrame={StorefrontSectionFrame}
       />
     </div>
   );
@@ -8529,7 +8546,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         pageConfig={theme.pages.cart}
         layout={resolveStorefrontPageLayout(theme.pages.cart, "sidebar-right")}
         runtimeText={runtimeText}
-        renderSectionFrame={renderSectionFrame}
+        renderSectionFrame={StorefrontSectionFrame}
       />
     </div>
   );
@@ -8567,7 +8584,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         )}
         prioritizeSidebarOnMobile={isKhemetLuxe}
         runtimeText={runtimeText}
-        renderSectionFrame={renderSectionFrame}
+        renderSectionFrame={StorefrontSectionFrame}
       />
     </div>
   );
@@ -8579,7 +8596,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       }
       layout={resolveStorefrontPageLayout(theme.pages["thank-you"], "stack")}
       runtimeText={runtimeText}
-      renderSectionFrame={renderSectionFrame}
+      renderSectionFrame={StorefrontSectionFrame}
     />
   );
   const registrationPageElement = (
@@ -8590,7 +8607,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       }
       layout={resolveStorefrontPageLayout(theme.pages["registration"], "stack")}
       runtimeText={runtimeText}
-      renderSectionFrame={renderSectionFrame}
+      renderSectionFrame={StorefrontSectionFrame}
     />
   );
   const notFoundElement = (
