@@ -5,7 +5,7 @@ import { toast } from "sonner";
 // Side-effect import: registers the <model-viewer> custom element with
 // the browser. Must run once on the client. Without this, the JSX tag
 // below would just render as an unknown element.
-import "@google/model-viewer";
+import DentalModelViewer from "./DentalModelViewer";
 import {
   ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
   Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Upload, UploadCloud, X as XMarkIcon, XCircle,
@@ -21,7 +21,6 @@ import {
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
-import tokenManager from "../../utils/tokenManager";
 
 type UploadItem = {
   id: string;
@@ -74,15 +73,6 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
   const fileExt = (attachment.fileName || "").split(".").pop()?.toLowerCase() || "";
   const is3D = ["stl", "ply", "obj", "dcm"].includes(fileExt);
   const isPdf = fileExt === "pdf";
-
-  // model-viewer detects the 3D format from the URL extension, and blob URLs
-  // have none (they get treated as glTF/JSON and fail to parse binary STL).
-  // So for 3D files we point the viewer at the real file URL (ends in .stl/.ply)
-  // with the access token as a query param — only the /files route accepts it.
-  const modelSrc =
-    is3D && attachment.storedName
-      ? `/api/v1/dental-lab/files/${encodeURIComponent(attachment.storedName)}?token=${encodeURIComponent(tokenManager.getAccessToken() ?? "")}`
-      : null;
 
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -211,26 +201,17 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
               </button>
             </div>
             <div className="flex-1 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative min-h-[500px]">
-              {/* @ts-ignore — model-viewer is a custom element, no TS types */}
-              <model-viewer
-                src={modelSrc ?? url}
-                alt={attachment.fileName}
-                camera-controls
-                auto-rotate
-                auto-rotate-delay="1500"
-                rotation-per-second="20deg"
-                shadow-intensity="1.2"
-                exposure="0.9"
-                tone-mapping="commerce"
-                style={{ width: "100%", height: "100%", minHeight: "500px" }}
-              >
-                <div slot="progress-bar" className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+              {fileExt === "dcm" ? (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-500 text-sm p-4 text-center">
+                  ملف DICOM (DCM) لا يُعاين هنا — حمّله وافتحه في عارض DICOM المتخصص.
+                </div>
+              ) : url ? (
+                <DentalModelViewer url={url} ext={fileExt} />
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
                   جاري تحميل النموذج 3D...
                 </div>
-                <div slot="error" className="absolute inset-0 flex items-center justify-center text-red-500 text-sm p-4 text-center">
-                  فشل تحميل النموذج. تأكد إن الملف STL/PLY/OBJ صالح.
-                </div>
-              </model-viewer>
+              )}
             </div>
             <div className="p-3 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-xs text-gray-600 dark:text-gray-400 flex items-center justify-between">
               <span>اسحب لتدوير · عجلة للتقريب · نقرة مزدوجة للإعادة</span>
