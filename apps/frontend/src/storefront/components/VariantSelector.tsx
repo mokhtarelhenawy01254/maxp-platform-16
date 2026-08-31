@@ -907,7 +907,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         onClick={() => handleSelect(key, option)}
                         className={
                           isKhemetLuxeElessi && !isInlineCompact
-                            ? `flex flex-col overflow-hidden rounded-[1.35rem] border pb-2.5 transition-all duration-200 sm:w-[6.4rem] sm:min-w-[6.4rem] w-[4.5rem] min-w-[4.5rem] ${
+                            ? `flex w-[6.4rem] min-w-[6.4rem] flex-col overflow-hidden rounded-[1.35rem] border pb-2.5 transition-all duration-200 ${
                                 isSelected
                                   ? 'border-[#1f4737] bg-[#fffdfb] shadow-[0_18px_36px_-28px_rgba(31,71,55,0.28)]'
                                   : 'border-[#e0d2c5] bg-white hover:border-[#b79d8e] hover:bg-[#fffaf6]'
@@ -933,7 +933,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         <div
                           className={
                             isKhemetLuxeElessi && !isInlineCompact
-                              ? 'w-full overflow-hidden bg-[#f4eee7] sm:h-[5.2rem] h-[3.4rem]'
+                              ? 'h-[5.2rem] w-full overflow-hidden bg-[#f4eee7]'
                               : `${
                                   isInlineCompact
                                     ? 'h-10 w-10 rounded-lg'
@@ -958,7 +958,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         <span
                           className={
                             isKhemetLuxeElessi && !isInlineCompact
-                              ? 'w-full px-2 whitespace-normal text-center text-[#2d211e] sm:min-h-[2.2rem] min-h-[1rem] sm:text-[0.83rem] text-[0.70rem] sm:leading-[1.1rem] leading-[1rem] sm:font-medium font-medium'
+                              ? 'min-h-[2.2rem] w-full px-2 whitespace-normal text-center text-[0.83rem] font-medium leading-[1.1rem] text-[#2d211e]'
                               : `${
                                   isInlineCompact
                                     ? 'max-w-[3.5rem] text-[10px]'

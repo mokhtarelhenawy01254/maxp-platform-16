@@ -7501,9 +7501,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                 </StaticMotionDiv>
               ) : null}
               {!isKhemetInlineQuickOrderBuybox ? elessiLowStockNotice : null}
-              {!safeDescription ||
+              {!isKhemetInlineQuickOrderBuybox &&
+              (!safeDescription ||
               !isKhemetLuxeTheme ||
-              shouldHideDuplicateDescriptionSection ? (
+              shouldHideDuplicateDescriptionSection) ? (
                 <p className="text-sm leading-7 text-[#6f5a54]">
                   {shortDescription || descriptionPreviewText}
                 </p>
@@ -7511,7 +7512,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
               {brandSubtitle ? (
                 <p className="text-sm leading-6 text-[#8f5c44]">{brandSubtitle}</p>
               ) : null}
-              {shouldHideDuplicateDescriptionSection ? null : (
+              {shouldHideDuplicateDescriptionSection || isKhemetInlineQuickOrderBuybox ? null : (
                 <button
                   type="button"
                   onClick={() => {
