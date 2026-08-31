@@ -22,6 +22,7 @@
       "addTitle": "Add New Category",
       "editTitle": "Edit Category",
       "name": "Category Name *",
+      "nameHelp": "ℹ️ A category is a group that brings together similar products (e.g. Clothing, Electronics, Skincare) to make it easier for your customers to find your product.",
       "slug": "Unique Slug",
       "description": "Description",
       "status": "Status",

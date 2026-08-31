@@ -15828,6 +15828,7 @@ declare module 'react-i18next' {
             addTitle: string;
             editTitle: string;
             name: string;
+            nameHelp: string;
             slug: string;
             description: string;
             status: string;
@@ -16064,6 +16065,7 @@ declare module 'react-i18next' {
         category: string;
         selectCategory: string;
         loadingCategories: string;
+        categoryHelp: string;
         slugHelp: string;
         tags: string;
         activeStatus: string;

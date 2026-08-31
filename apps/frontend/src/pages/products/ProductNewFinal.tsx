@@ -1675,6 +1675,14 @@ export const ProductNewFinal: React.FC = () => {
                 getInputClassName={getInputClassName}
                 workflowLabel={workflowLabel}
                 t={t}
+                onCategoryCreated={(category) => {
+                  setCategories((prev) => {
+                    if (prev.some((c) => c.id === category.id)) {
+                      return prev;
+                    }
+                    return [...prev, category as ProductCategory];
+                  });
+                }}
               />
             )}
 
