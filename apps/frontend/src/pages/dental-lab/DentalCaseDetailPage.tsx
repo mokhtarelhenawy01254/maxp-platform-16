@@ -21,6 +21,7 @@ import {
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
+import tokenManager from "../../utils/tokenManager";
 
 type UploadItem = {
   id: string;
@@ -73,6 +74,15 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
   const fileExt = (attachment.fileName || "").split(".").pop()?.toLowerCase() || "";
   const is3D = ["stl", "ply", "obj", "dcm"].includes(fileExt);
   const isPdf = fileExt === "pdf";
+
+  // model-viewer detects the 3D format from the URL extension, and blob URLs
+  // have none (they get treated as glTF/JSON and fail to parse binary STL).
+  // So for 3D files we point the viewer at the real file URL (ends in .stl/.ply)
+  // with the access token as a query param — only the /files route accepts it.
+  const modelSrc =
+    is3D && attachment.storedName
+      ? `/api/v1/dental-lab/files/${encodeURIComponent(attachment.storedName)}?token=${encodeURIComponent(tokenManager.getAccessToken() ?? "")}`
+      : null;
 
   useEffect(() => {
     let objectUrl: string | null = null;
@@ -203,7 +213,7 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
             <div className="flex-1 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative min-h-[500px]">
               {/* @ts-ignore — model-viewer is a custom element, no TS types */}
               <model-viewer
-                src={url}
+                src={modelSrc ?? url}
                 alt={attachment.fileName}
                 camera-controls
                 auto-rotate

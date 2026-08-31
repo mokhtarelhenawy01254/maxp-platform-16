@@ -802,7 +802,10 @@ const globalAuthentication = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = (authHeader && authHeader.startsWith('Bearer '))
       ? authHeader.substring(7)
-      : req.cookies?.token;
+      : req.cookies?.token ||
+        // model-viewer fetches /dental-lab/files/<name> without an Authorization
+        // header, so allow the access token via query param — ONLY for this route.
+        (path.startsWith('/api/v1/dental-lab/files/') ? (req.query.token || null) : null);
 
     // 2. Storefront Guest Access
     const isIsolated = COMPANY_ISOLATED_ROUTES.some(ir => path.includes(ir.replace('*', '')));
