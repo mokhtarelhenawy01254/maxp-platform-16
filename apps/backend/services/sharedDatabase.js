@@ -7,6 +7,7 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env'), quiet: true });
 const tenantContext = require('./tenantContext');
+const companyCacheService = require('./companyCacheService');
 const { ensureLocalPostgres } = require('./ensureLocalPostgres');
 const { AsyncLocalStorage } = require('async_hooks');
 const transactionStorage = new AsyncLocalStorage();
@@ -127,7 +128,17 @@ function createStablePrismaClient() {
   const nodeEnv = process.env.NODE_ENV || 'development';
   const isProduction = nodeEnv === 'production';
 
-  let databaseUrl = process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  // 🔌 PgBouncer (transaction pooling) support:
+  // PG_BOUNCER_URL  → connection through PgBouncer for the runtime client
+  //                    (e.g. postgresql://appuser:pass@localhost:6432/maxp?pgbouncer=true)
+  // POSTGRES_URL    → direct Postgres connection (used for migrations + scripts)
+  // If PG_BOUNCER_URL is set, the runtime PrismaClient goes through the pooler
+  // while POSTGRES_URL stays direct — so `prisma db push`/migrate DDL is NOT
+  // routed through PgBouncer (DDL requires a direct connection).
+  const runtimeUrl = process.env.PG_BOUNCER_URL || process.env.POSTGRES_URL || process.env.DATABASE_URL;
+  const usingPgBouncer = Boolean(process.env.PG_BOUNCER_URL);
+
+  let databaseUrl = runtimeUrl;
 
   if (isProduction) {
     const isPostgres = databaseUrl?.startsWith('postgresql://') || databaseUrl?.startsWith('postgres://');
@@ -147,7 +158,8 @@ function createStablePrismaClient() {
     provider: dbInfo.provider,
     host: dbInfo.host,
     database: dbInfo.database,
-    env: nodeEnv
+    env: nodeEnv,
+    pooler: usingPgBouncer ? 'PgBouncer' : 'direct'
   });
 
   try {
@@ -161,6 +173,16 @@ function createStablePrismaClient() {
     urlWithParams.searchParams.set('connection_limit', poolLimit);
     urlWithParams.searchParams.set('pool_timeout', '30'); // Increased for stability
     urlWithParams.searchParams.set('connect_timeout', '30'); // Increased for stability
+
+    // 🔌 PgBouncer in transaction mode requires Prisma to NOT use prepared
+    // statements (named prepared statements are pinned per-connection and break
+    // transaction pooling). `pgbouncer=true` tells Prisma to disable them.
+    // NOTE: PgBouncer 1.21+ with server-side prepared statements can keep them
+    // enabled, but the conservative safe default is pgbouncer=true unless the
+    // operator opts into PG_BOUNCER_PREPARED=1.
+    if (usingPgBouncer && process.env.PG_BOUNCER_PREPARED !== '1') {
+      urlWithParams.searchParams.set('pgbouncer', 'true');
+    }
 
     let PrismaClientConstructor;
     let importError = null;
@@ -202,7 +224,27 @@ function createStablePrismaClient() {
           // This prevents circular dependencies where we need to find the company to set the RLS context
           if (!companyId || model === 'Company') {
             // ✅ OPTIMIZATION: Skip transaction for system-level or global queries
-            return await query(args);
+            const result = await query(args);
+
+            // 🧹 Company cache invalidation: أي update/upsert على شركة لازم
+            // يمسح الـ subdomain cache فورًا عشان مفيش بيانات قديمة (slug /
+            // customDomain / isActive / settings) تفضل تترد للفرونت.
+            // الشركة بينضرب منها استعلامات كتير في subdomainMiddleware،
+            // فلو اتغيرت هي أو الـ settings لازم الـ cache يتفسر على طول.
+            if (model === 'Company' && ['update', 'updateMany', 'upsert'].includes(operation)) {
+              const updatedCompanyId =
+                (result && result.id) ||
+                (args && args.where && (args.where.id || args.where.slug)) ||
+                (args && args.data && (args.data.id || args.data.slug)) ||
+                null;
+              if (updatedCompanyId) {
+                companyCacheService.invalidateCompanyCache(updatedCompanyId).catch((err) => {
+                  console.warn(`⚠️ [CompanyCache] invalidation error: ${err.message}`);
+                });
+              }
+            }
+
+            return result;
           } else {
             // Use a transaction to ensure SET and QUERY are on the same connection
             return await client.$transaction(async (tx) => {

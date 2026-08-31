@@ -1,4 +1,5 @@
 const { getSharedPrismaClientAsync } = require('../services/sharedDatabase');
+const companyCacheService = require('../services/companyCacheService');
 
 const COMPANY_SELECT = {
   id: true,
@@ -119,9 +120,12 @@ const extractSubdomainMiddleware = async (req, res, next) => {
       // هذا يغطي الحالات مثل my-store.com أو www.my-store.com
       const exactHostname = hostname.startsWith('www.') ? hostname.substring(4) : hostname;
 
-      company = await (await getPrisma()).company.findUnique({
-        where: { customDomain: exactHostname },
-        select: COMPANY_SELECT,
+      company = await companyCacheService.getCompanyLookup('customDomain', exactHostname, async () => {
+        const prisma = await getPrisma();
+        return prisma.company.findUnique({
+          where: { customDomain: exactHostname },
+          select: COMPANY_SELECT,
+        });
       });
 
       // 2. إذا لم ينجح، جرب الـ Subdomain (Slug)
@@ -130,9 +134,12 @@ const extractSubdomainMiddleware = async (req, res, next) => {
         const inferredSlug = inferSubdomainSlug(hostname, mainDomain);
 
         if (inferredSlug) {
-          company = await (await getPrisma()).company.findUnique({
-            where: { slug: inferredSlug },
-            select: COMPANY_SELECT,
+          company = await companyCacheService.getCompanyLookup('slug', inferredSlug, async () => {
+            const prisma = await getPrisma();
+            return prisma.company.findUnique({
+              where: { slug: inferredSlug },
+              select: COMPANY_SELECT,
+            });
           });
         }
       }
@@ -157,9 +164,12 @@ const extractSubdomainMiddleware = async (req, res, next) => {
           );
 
         for (const slugCandidate of [...new Set(bareSlugCandidates)]) {
-          company = await (await getPrisma()).company.findUnique({
-            where: { slug: slugCandidate },
-            select: COMPANY_SELECT,
+          company = await companyCacheService.getCompanyLookup('slug', slugCandidate, async () => {
+            const prisma = await getPrisma();
+            return prisma.company.findUnique({
+              where: { slug: slugCandidate },
+              select: COMPANY_SELECT,
+            });
           });
 
           if (company) break;
@@ -178,9 +188,12 @@ const extractSubdomainMiddleware = async (req, res, next) => {
     if (!company && req.query.companyId) {
       // محاولة البحث بالـ ID أولاً (UUID/CUID)
       try {
-        company = await (await getPrisma()).company.findUnique({
-          where: { id: req.query.companyId },
-          select: COMPANY_SELECT,
+        company = await companyCacheService.getCompanyLookup('id', req.query.companyId, async () => {
+          const prisma = await getPrisma();
+          return prisma.company.findUnique({
+            where: { id: req.query.companyId },
+            select: COMPANY_SELECT,
+          });
         });
       } catch (e) {
         // إذا فشل البحث بالـ ID (كما في حالة إرسال slug كـ ID)، سنحاول بالـ slug أدناه
@@ -188,9 +201,12 @@ const extractSubdomainMiddleware = async (req, res, next) => {
 
       // إذا لم ينجح، محاولة البحث كـ slug (مفيد جداً في بيئة التطوير)
       if (!company) {
-        company = await (await getPrisma()).company.findUnique({
-          where: { slug: req.query.companyId },
-          select: COMPANY_SELECT,
+        company = await companyCacheService.getCompanyLookup('slug', req.query.companyId, async () => {
+          const prisma = await getPrisma();
+          return prisma.company.findUnique({
+            where: { slug: req.query.companyId },
+            select: COMPANY_SELECT,
+          });
         });
       }
 
