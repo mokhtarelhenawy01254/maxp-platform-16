@@ -1951,6 +1951,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const originalPrice = activeComparePrice
     ? formatStorefrontCurrency(activeComparePrice, currency)
     : null;
+  const productComparePriceValue =
+    typeof product?.comparePrice === "number" && Number.isFinite(product.comparePrice)
+      ? product.comparePrice
+      : typeof product?.compareAtPrice === "number" && Number.isFinite(product.compareAtPrice)
+        ? product.compareAtPrice
+        : 0;
+  const productComparePriceDisplay = productComparePriceValue > 0
+    ? formatStorefrontCurrency(productComparePriceValue, currency)
+    : null;
   const discount = activeComparePrice && activeComparePrice > activePrice
     ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
     : null;
@@ -4164,9 +4173,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     <div className="flex flex-col gap-2">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span className="text-4xl font-black text-foreground">{displayPrice}</span>
-        {originalPrice && (
+        {(originalPrice || productComparePriceDisplay) && (
           <span className="text-xl font-bold text-muted-foreground line-through decoration-red-400/70 decoration-2 opacity-70">
-            {originalPrice}
+            {originalPrice || productComparePriceDisplay}
           </span>
         )}
         {discount && discount > 0 ? (
