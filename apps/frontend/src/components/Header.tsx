@@ -16,7 +16,9 @@ import {
   Cog6ToothIcon,
   MagnifyingGlassIcon,
   ChatBubbleLeftRightIcon,
+  BuildingStorefrontIcon,
 } from "@heroicons/react/24/outline";
+import { buildStoreUrl } from "../utils/storeUrl";
 
 import { useTimer } from "../contexts/TimerContext";
 import { PlayIcon, PauseIcon, StopIcon } from "@heroicons/react/24/solid";
@@ -197,6 +199,13 @@ const Header: React.FC = () => {
   const settings = getCompanySettings();
   const showSearchInHeader = settings.showOrderSearchInHeader !== false;
 
+  const storeUrl = React.useMemo(() => {
+    const slug = user?.company?.slug || company?.slug || "swan";
+    const customDomain = user?.company?.customDomain || company?.customDomain;
+    const companyId = user?.companyId || user?.company?.id || company?.id;
+    return buildStoreUrl(slug, "/shop", customDomain || undefined, companyId || undefined);
+  }, [user, company]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -289,6 +298,17 @@ const Header: React.FC = () => {
                 </div>
               </form>
             )}
+
+            {/* Visit Store Button */}
+            <a
+              href={storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              title={t("header.visitStore", "المتجر")}
+            >
+              <BuildingStorefrontIcon className="h-5 w-5" />
+            </a>
 
             {/* Global Timer */}
             <GlobalTimer />

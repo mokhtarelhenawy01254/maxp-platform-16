@@ -33,6 +33,7 @@ import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/Side
 import PageExplanations from "../common/PageExplanations";
 import { useTemplate } from "../../templates/useTemplate";
 import TemplateSlot from "../../templates/TemplateSlot";
+import { buildStoreUrl } from "../../utils/storeUrl";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
 const AppDashboardPage = React.lazy(() => import("./app-dashboard/AppDashboardPage"));
@@ -119,6 +120,13 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const hasStore = user?.company?.activeApps?.some((app) =>
     ['store', 'store-basic', 'store-pro'].includes(app),
   );
+
+  const storeUrl = useMemo(() => {
+    const slug = user?.company?.slug || "swan";
+    const customDomain = user?.company?.customDomain;
+    const companyId = user?.companyId || user?.company?.id;
+    return buildStoreUrl(slug, "/shop", customDomain || undefined, companyId || undefined);
+  }, [user]);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
   const useSuperAdminShell = shouldUseSuperAdminShell(
@@ -485,15 +493,16 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
           <div className="business-shell-utility-row">
             {hasStore && (
-              <Link
-                to="/shop"
-                reloadDocument
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="business-icon-button"
                 title={t("header.visitStore", "المتجر")}
                 aria-label={t("header.visitStore", "المتجر")}
               >
                 <BuildingStorefrontIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              </Link>
+              </a>
             )}
             {showSearchInHeader && (
               <div className="relative flex items-center">

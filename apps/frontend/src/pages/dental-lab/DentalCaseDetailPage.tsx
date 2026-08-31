@@ -2,9 +2,6 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent, type DragEv
 import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-// Side-effect import: registers the <model-viewer> custom element with
-// the browser. Must run once on the client. Without this, the JSX tag
-// below would just render as an unknown element.
 import DentalModelViewer from "./DentalModelViewer";
 import {
   ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,

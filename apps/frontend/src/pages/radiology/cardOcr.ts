@@ -1,13 +1,15 @@
-import { createWorker } from "tesseract.js";
-
 const OCR_BASE = `${import.meta.env.BASE_URL || "/"}tesseract/`;
 
-let workerPromise: Promise<Awaited<ReturnType<typeof createWorker>> | null> | null = null;
+let workerPromise: Promise<any> | null = null;
 
 async function getWorker() {
   if (!workerPromise) {
     workerPromise = (async () => {
       try {
+        const pkgName = "tesseract.js";
+        const tesseract = await import(/* @vite-ignore */ pkgName);
+        const createWorker = (tesseract as any)?.createWorker;
+        if (!createWorker) return null;
         const w = await createWorker("eng", 1, {
           workerPath: `${OCR_BASE}worker.min.js`,
           langPath: OCR_BASE,
