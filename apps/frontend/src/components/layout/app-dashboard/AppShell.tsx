@@ -243,7 +243,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
             fixed inset-y-0 z-50 lg:hidden w-72 max-w-[85vw]
             transform transition-transform duration-200 ease-in-out
             ${isRtl ? 'right-0' : 'left-0'}
-            ${isSidebarOpen ? 'translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}
+            ${isSidebarOpen ? 'app-shell-drawer--open translate-x-0' : isRtl ? 'translate-x-full' : '-translate-x-full'}
           `}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
