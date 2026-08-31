@@ -1376,7 +1376,7 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
                     <div className="flex flex-col gap-3 sm:flex-row">
                       <button
                         type="button"
-                        onClick={() => navigate("/settings/store/product-conversion")}
+                        onClick={() => navigate("/settings/store/tools")}
                         className="px-4 py-2 rounded-md text-sm font-semibold bg-white text-gray-700 border border-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-600 dark:hover:bg-gray-700"
                       >
                         {t("storeSettings.openConversionTools")}

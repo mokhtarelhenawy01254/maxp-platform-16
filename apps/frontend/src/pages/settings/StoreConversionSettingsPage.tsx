@@ -1,108 +1,13 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { NavLink } from "react-router-dom";
-import { toast } from "sonner";
-import { normalizeMarketplaceAppSettings } from "../../config/marketplaceAppSettings";
-import { useAuth } from "../../hooks/useAuthSimple";
-import { apiClient } from "../../services/apiClient";
+import { STORE_CONVERSION_APP_LABELS, STORE_CONVERSION_PAGE_MAP, STORE_CONVERSION_PAGES, type StoreConversionPageId } from "./storeConversionSettingsConfig";
 import {
-  type ManagedMarketplaceAppSlug,
-  STORE_CONVERSION_APP_LABELS,
-  STORE_CONVERSION_PAGE_MAP,
-  STORE_CONVERSION_PAGES,
-  type StoreConversionPageId,
-  type StoreConversionToolConfig,
-  type StoreConversionToolFieldConfig,
-} from "./storeConversionSettingsConfig";
-
-type JsonRecord = Record<string, unknown>;
-
-type CompanyMarketplaceApp = {
-  id: string;
-  status?: string | null;
-  settings?: Record<string, unknown> | null;
-  app?: {
-    slug?: string | null;
-    name?: string | null;
-  };
-};
-
-type ManagedAppState = {
-  app: CompanyMarketplaceApp | null;
-  settings: JsonRecord;
-};
-
-const isRecord = (value: unknown): value is JsonRecord =>
-  Boolean(value) && typeof value === "object" && !Array.isArray(value);
-
-const getDeepValue = (source: JsonRecord, path: string[]): unknown =>
-  path.reduce<unknown>((currentValue, key) => {
-    if (!isRecord(currentValue)) {
-      return undefined;
-    }
-    return currentValue[key];
-  }, source);
-
-const setDeepValue = (
-  source: JsonRecord,
-  path: string[],
-  value: unknown,
-): JsonRecord => {
-  if (path.length === 0) {
-    return source;
-  }
-
-  const [head, ...rest] = path;
-  if (!head) {
-    return source;
-  }
-
-  const current = isRecord(source[head]) ? source[head] : {};
-
-  return {
-    ...source,
-    [head]: rest.length === 0 ? value : setDeepValue(current, rest, value),
-  };
-};
-
-const isAppOperational = (app: CompanyMarketplaceApp | null) => {
-  const status = String(app?.status || "").trim().toUpperCase();
-  return Boolean(app) && !["DISABLED", "INACTIVE", "CANCELLED", "EXPIRED"].includes(status);
-};
-
-const ToggleSwitch = ({
-  label,
-  checked,
-  disabled,
-  onToggle,
-}: {
-  label: string;
-  checked: boolean;
-  disabled: boolean;
-  onToggle: () => void;
-}) => (
-  <button
-    type="button"
-    role="switch"
-    aria-label={label}
-    aria-checked={checked}
-    aria-disabled={disabled}
-    disabled={disabled}
-    onClick={onToggle}
-    className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full transition-colors ${
-      checked
-        ? "bg-emerald-600 dark:bg-emerald-500"
-        : "bg-gray-300 dark:bg-gray-700"
-    } ${disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer"}`}
-  >
-    <span
-      className={`inline-block h-5 w-5 rounded-full bg-white transition-transform ${
-        checked ? "-translate-x-1" : "translate-x-1"
-      }`}
-    />
-  </button>
-);
+  getDeepValue,
+  ToggleSwitch,
+  useConversionTools,
+} from "./useConversionTools";
 
 export default function StoreConversionSettingsPage({
   pageId,
@@ -110,67 +15,19 @@ export default function StoreConversionSettingsPage({
   pageId: StoreConversionPageId;
 }) {
   const { t } = useTranslation();
-  const { isLoading: isAuthLoading, isAuthenticated, user } = useAuth();
-
-  const getAppStatusLabel = (app: CompanyMarketplaceApp | null) => {
-    if (!app) {
-      return t("storeConversionSettings.notInstalled");
-    }
-
-    return isAppOperational(app) ? t("storeConversionSettings.ready") : t("storeConversionSettings.disabled");
-  };
   const page = STORE_CONVERSION_PAGE_MAP[pageId];
 
-  const [loading, setLoading] = useState(true);
-  const [savingToolKey, setSavingToolKey] = useState<string | null>(null);
-  const [managedApps, setManagedApps] = useState<
-    Record<ManagedMarketplaceAppSlug, ManagedAppState>
-  >({} as Record<ManagedMarketplaceAppSlug, ManagedAppState>);
-  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
-
-  const loadManagedApps = useCallback(async () => {
-    if (!isAuthenticated || !user?.companyId) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      const response = await apiClient.get("/my-apps", { _skipErrorToast: true });
-      const installedApps = Array.isArray(response?.data?.data)
-        ? (response.data.data as CompanyMarketplaceApp[])
-        : [];
-
-      const nextManagedApps = page.appSlugs.reduce<
-        Record<ManagedMarketplaceAppSlug, ManagedAppState>
-      >((accumulator, appSlug) => {
-        const matchedApp =
-          installedApps.find((entry) => entry?.app?.slug === appSlug) || null;
-
-        accumulator[appSlug] = {
-          app: matchedApp,
-          settings: normalizeMarketplaceAppSettings(appSlug, matchedApp?.settings || {}),
-        };
-
-        return accumulator;
-      }, {} as Record<ManagedMarketplaceAppSlug, ManagedAppState>);
-
-      setManagedApps(nextManagedApps);
-    } catch (error) {
-      console.error("Error loading grouped conversion settings:", error);
-      toast.error(t("storeConversionSettings.loadFailed"));
-    } finally {
-      setLoading(false);
-    }
-  }, [isAuthenticated, page.appSlugs, user?.companyId]);
-
-  useEffect(() => {
-    if (isAuthLoading) {
-      return;
-    }
-
-    void loadManagedApps();
-  }, [isAuthLoading, loadManagedApps]);
+  const {
+    loading,
+    savingToolKey,
+    lastSavedAt,
+    managedApps,
+    getAppStatusLabel,
+    getToolAvailability,
+    getToolEnabled,
+    handleToolToggle,
+    handleToolFieldSave,
+  } = useConversionTools(page.appSlugs);
 
   const sourceSummary = useMemo(
     () =>
@@ -181,7 +38,7 @@ export default function StoreConversionSettingsPage({
           return `${label}: ${getAppStatusLabel(appState?.app || null)}`;
         })
         .join(" • "),
-    [managedApps, page.appSlugs],
+    [managedApps, page.appSlugs, getAppStatusLabel],
   );
 
   const headerStatusLabel = loading
@@ -191,160 +48,6 @@ export default function StoreConversionSettingsPage({
       : lastSavedAt
         ? t("storeConversionSettings.savedAuto")
         : t("storeConversionSettings.autoSaveLabel");
-
-  const getToolAvailability = useCallback(
-    (tool: StoreConversionToolConfig) => {
-      const appState = managedApps[tool.appSlug];
-      if (!appState?.app) {
-        return {
-          available: false,
-          note: t("storeConversionSettings.requiresApp", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }),
-        };
-      }
-
-      if (!isAppOperational(appState.app)) {
-        return {
-          available: false,
-          note: t("storeConversionSettings.appDisabled", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }),
-        };
-      }
-
-      return {
-        available: true,
-        note: "",
-      };
-    },
-    [managedApps],
-  );
-
-  const getToolEnabled = useCallback(
-    (tool: StoreConversionToolConfig) => {
-      const appState = managedApps[tool.appSlug];
-      if (!appState?.app || !isAppOperational(appState.app)) {
-        return false;
-      }
-
-      return tool.readPaths.every((path) =>
-        Boolean(getDeepValue(appState.settings, path.split("."))),
-      );
-    },
-    [managedApps],
-  );
-
-  const handleToolToggle = useCallback(
-    async (tool: StoreConversionToolConfig, nextValue: boolean) => {
-      const appState = managedApps[tool.appSlug];
-      if (!appState?.app) {
-        toast.error(t("storeConversionSettings.needsAppError", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }));
-        return;
-      }
-
-      if (!isAppOperational(appState.app)) {
-        toast.error(t("storeConversionSettings.appDisabledError"));
-        return;
-      }
-
-      const writePaths = nextValue
-        ? tool.writePathsOn || tool.readPaths
-        : tool.writePathsOff || tool.readPaths;
-
-      let nextSettings = appState.settings;
-      writePaths.forEach((path) => {
-        nextSettings = setDeepValue(nextSettings, path.split("."), nextValue);
-      });
-
-      const normalizedSettings = normalizeMarketplaceAppSettings(
-        tool.appSlug,
-        nextSettings,
-      );
-
-      setSavingToolKey(tool.key);
-      setManagedApps((currentState) => ({
-        ...currentState,
-        [tool.appSlug]: {
-          app: appState.app,
-          settings: normalizedSettings,
-        },
-      }));
-
-      try {
-        await apiClient.put(`/my-apps/${appState.app.id}/settings`, {
-          settings: normalizedSettings,
-        });
-        setLastSavedAt(Date.now());
-      } catch (error) {
-        console.error("Error saving grouped conversion setting:", error);
-        toast.error(t("storeConversionSettings.saveFailed"));
-        await loadManagedApps();
-      } finally {
-        setSavingToolKey(null);
-      }
-    },
-    [loadManagedApps, managedApps],
-  );
-
-  const handleToolFieldSave = useCallback(
-    async (
-      tool: StoreConversionToolConfig,
-      field: StoreConversionToolFieldConfig,
-      rawValue: string,
-    ) => {
-      const appState = managedApps[tool.appSlug];
-      if (!appState?.app) {
-        toast.error(t("storeConversionSettings.needsAppError", { app: STORE_CONVERSION_APP_LABELS[tool.appSlug] }));
-        return;
-      }
-
-      if (!isAppOperational(appState.app)) {
-        toast.error(t("storeConversionSettings.appDisabledError"));
-        return;
-      }
-
-      const currentValue = getDeepValue(appState.settings, field.path.split("."));
-      const nextNumber = Math.max(
-        field.min ?? 0,
-        Number.isFinite(Number(rawValue)) ? Number(rawValue) : 0,
-      );
-
-      if (Number(currentValue || 0) === nextNumber) {
-        return;
-      }
-
-      const nextSettings = setDeepValue(
-        appState.settings,
-        field.path.split("."),
-        nextNumber,
-      );
-      const normalizedSettings = normalizeMarketplaceAppSettings(
-        tool.appSlug,
-        nextSettings,
-      );
-      const savingKey = `${tool.key}:${field.key}`;
-
-      setSavingToolKey(savingKey);
-      setManagedApps((currentState) => ({
-        ...currentState,
-        [tool.appSlug]: {
-          app: appState.app,
-          settings: normalizedSettings,
-        },
-      }));
-
-      try {
-        await apiClient.put(`/my-apps/${appState.app.id}/settings`, {
-          settings: normalizedSettings,
-        });
-        setLastSavedAt(Date.now());
-      } catch (error) {
-        console.error("Error saving grouped conversion field:", error);
-        toast.error(t("storeConversionSettings.saveFieldFailed"));
-        await loadManagedApps();
-      } finally {
-        setSavingToolKey(null);
-      }
-    },
-    [loadManagedApps, managedApps],
-  );
 
   return (
     <div className="max-w-5xl space-y-8" dir={getDirection()}>
@@ -400,7 +103,7 @@ export default function StoreConversionSettingsPage({
             </h2>
             {section.description ? (
               <p className="text-sm leading-7 text-gray-600 dark:text-gray-300">
-                {section.description}
+                {t(section.description, { defaultValue: section.description })}
               </p>
             ) : null}
           </div>
@@ -413,6 +116,13 @@ export default function StoreConversionSettingsPage({
               const isToolFieldSaving =
                 typeof savingToolKey === "string" &&
                 savingToolKey.startsWith(`${tool.key}:`);
+              const toolLabel = t(`storeConversionSettings.tool.${tool.key}.label`, {
+                defaultValue: tool.label,
+              });
+              const toolDescription = t(
+                `storeConversionSettings.tool.${tool.key}.benefit`,
+                { defaultValue: tool.description },
+              );
 
               return (
                 <div
@@ -421,10 +131,10 @@ export default function StoreConversionSettingsPage({
                 >
                   <div className="space-y-1">
                     <p className="text-sm font-bold text-gray-900 dark:text-white">
-                      {tool.label}
+                      {toolLabel}
                     </p>
                     <p className="text-xs leading-6 text-gray-500 dark:text-gray-400">
-                      {tool.description}
+                      {toolDescription}
                     </p>
                     {!availability.available ? (
                       <p className="text-xs font-bold text-amber-700 dark:text-amber-300">
@@ -447,11 +157,16 @@ export default function StoreConversionSettingsPage({
                               className="block rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-gray-800 dark:bg-gray-900/60"
                             >
                               <span className="block text-xs font-black text-gray-800 dark:text-gray-100">
-                                {field.label}
+                                {t(`storeConversionSettings.field.${field.key}.label`, {
+                                  defaultValue: field.label,
+                                })}
                               </span>
                               {field.description ? (
                                 <span className="mt-1 block text-[11px] leading-5 text-gray-500 dark:text-gray-400">
-                                  {field.description}
+                                  {t(
+                                    `storeConversionSettings.field.${field.key}.description`,
+                                    { defaultValue: field.description },
+                                  )}
                                 </span>
                               ) : null}
                               <div className="mt-2 flex items-center gap-2">
@@ -513,7 +228,7 @@ export default function StoreConversionSettingsPage({
                           : t("storeConversionSettings.notAvailable")}
                     </span>
                     <ToggleSwitch
-                      label={tool.label}
+                      label={toolLabel}
                       checked={enabled}
                       disabled={!availability.available || saving || isToolFieldSaving || loading}
                       onToggle={() => void handleToolToggle(tool, !enabled)}

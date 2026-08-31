@@ -674,7 +674,7 @@ export const getSidebarConfig = (
                 },
                 { to: '/settings/custom-domain', icon: Link, label: t('sidebar.customDomain') },
                 { to: '/settings/store?tab=branches', icon: Store, label: t('sidebar.storeSettings') },
-                { to: '/settings/store/product-conversion', icon: Sparkles, label: t('sidebar.conversionTools') },
+                { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.conversionTools') },
                 { to: '/settings/store/offers-bundles', icon: Gift, label: t('sidebar.offersBundles') },
                 { to: '/settings/store/growth-widgets', icon: Monitor, label: t('sidebar.growthWidgets') },
                 { to: '/settings/store/selling-modes', icon: ArrowLeftRight, label: t('sidebar.sellingModes') },

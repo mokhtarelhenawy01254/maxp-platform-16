@@ -1,0 +1,77 @@
+# Conversion Tools: Standalone Pages + Live Previews (2026-08-31)
+
+## What shipped
+
+Every conversion tool (22 tools across 4 marketplace apps) now has its own
+admin page with a live preview, replacing the "flip a blind toggle" flow.
+
+## Routing
+
+- `/settings/store/tools` — grid index of all 22 tools, grouped by the 5
+  existing sections, with live mini-previews and status badges
+  (enabled / disabled / app-not-subscribed).
+- `/settings/store/tools/:toolId` — single tool page: settings rail (right,
+  sticky, RTL) + preview stage (browser-chrome canvas with mobile/desktop
+  switcher, live-preview badge, inline save indicator).
+- Unknown `toolId` redirects to the index.
+- The 5 legacy tab routes (`/settings/store/product-conversion`, etc.) remain
+  fully functional as fallback; the sidebar entry and the StoreSettings button
+  now open the new index. Legacy routes will be converted to redirects after
+  a verification window.
+
+## Architecture
+
+- `apps/frontend/src/pages/settings/conversionToolMeta.ts` — per-tool meta
+  (lucide icon, previewKind: block|component|mock|note, displayKind:
+  pdp|global) + `findToolById` + `ALL_CONVERSION_TOOLS` derived from the
+  single source of truth `storeConversionSettingsConfig.ts`.
+- `apps/frontend/src/pages/settings/useConversionTools.tsx` — shared hook for
+  `/my-apps` load + auto-save (`setDeepValue`, `writePathsOn/Off`, app-status
+  gating). The legacy `StoreConversionSettingsPage` was refactored onto the
+  same hook; no logic duplication.
+- `apps/frontend/src/pages/settings/conversionToolPreviews.tsx` — preview
+  registry, 22/22 coverage:
+  - 7 existing storefront `ConversionBlocks` (countdown ticks live, visitor
+    counter jitters),
+  - 2 existing panels (`TrustedBadgePanel`, `BackInStockSignupCard`),
+  - 12 lightweight mock replicas,
+  - 1 interactive note demo (inactiveTab actually swaps `document.title`
+    when the merchant leaves and returns to the tab).
+- Leaf-only imports from the storefront tree (no `ConversionStack`) to keep
+  the admin chunk clean, per the store-bundle-bloat convention.
+
+## Live preview semantics
+
+Previews read from the same local (unsaved) state the auto-save writes, so
+edits appear instantly — e.g. changing the free-shipping threshold moves the
+mocked free-shipping bar before any network write.
+
+## i18n
+
+- Full ar + en `label` and `benefit` copy for all 22 tools under
+  `storeConversionSettings.tool.<key>.*`, plus field-level keys
+  (`field.freeShippingAmount.*`). Admin surface no longer shows English tool
+  names; `t(...)` uses `defaultValue` fallback to config strings.
+
+## Persistence
+
+No backend changes. Saves still go through `PUT /my-apps/:id/settings` with
+the existing `normalizeMarketplaceAppSettings` path. `general.enabled`
+side-effect preserved (enabling any tool enables its whole app; the UI now
+discloses this).
+
+## Tests
+
+`apps/frontend/src/pages/settings/__tests__/conversionTools.test.ts`
+(vitest): catalog completeness (22), `findToolById`, preview registry
+coverage 22/22, zero-threshold preview safety, ar/en translation
+completeness.
+
+## Rollout notes
+
+- Billing unit stays the 4 marketplace apps (no 22-SKU unbundling). The
+  per-tool pages are the presentation unit; freemium gating
+  (module-level entitlement) is a separate later milestone.
+- Open items: canvas currently uses generic theme vars (not the merchant's
+  real theme); legacy tab redirects deferred until the new pages are
+  verified in production.

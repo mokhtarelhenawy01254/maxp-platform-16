@@ -364,6 +364,12 @@ const StoreSellingModesSettingsPage = React.lazy(
 const StoreReviewsSocialProofSettingsPage = React.lazy(
   () => import("./pages/settings/StoreReviewsSocialProofSettingsPage"),
 );
+const ConversionToolsIndexPage = React.lazy(
+  () => import("./pages/settings/ConversionToolsIndexPage"),
+);
+const ConversionToolPage = React.lazy(
+  () => import("./pages/settings/ConversionToolPage"),
+);
 const PaymentOffersSettings = React.lazy(
   () => import("./pages/settings/PaymentOffersSettings"),
 );
@@ -5831,6 +5837,22 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <StoreReviewsSocialProofSettingsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store/tools"
+                  element={
+                    <Layout>
+                      <ConversionToolsIndexPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/settings/store/tools/:toolId"
+                  element={
+                    <Layout>
+                      <ConversionToolPage />
                     </Layout>
                   }
                 />
