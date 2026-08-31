@@ -15,7 +15,7 @@ import {
   DentalCaseHistoryEntry, DentalCaseStage, DentalCaseAttachment, DentalInvoice, DentalTechnician,
   DentalQualityCheck, DentalRefabrication, DentalCaseStatus, DentalLabCaseDetail, RefabricationStage, CreditNote,
   fetchCaseDetail, advanceCase, updateCase, uploadCaseAttachment, deleteCaseAttachment,
-  addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf,
+  addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf, downloadAllFiles,
   recordQualityCheck, flagRefabrication, resolveRefabrication,
   inferAttachmentKind,
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
@@ -1007,9 +1007,27 @@ export default function DentalCaseDetailPage() {
         <div className="space-y-6">
           <Card title={t("dentalLab.detail.files")} icon={<ImageIcon className="w-5 h-5" />}
             action={
-              <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">
-                {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}{t("dentalLab.detail.uploadFile")}
-              </button>
+              <div className="flex items-center gap-2">
+                {attachments.length > 0 && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        await downloadAllFiles(id, `${c.caseNumber}-files.zip`);
+                        toast.success("تم تجهيز ملف ZIP");
+                      } catch (e) {
+                        toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+                      }
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 border dark:border-gray-600 rounded-lg text-xs hover:bg-gray-50 dark:hover:bg-gray-700"
+                    title="تحميل كل الملفات دفعة واحدة (ZIP)"
+                  >
+                    <Download className="w-3.5 h-3.5" />تحميل الكل (ZIP)
+                  </button>
+                )}
+                <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">
+                  {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}{t("dentalLab.detail.uploadFile")}
+                </button>
+              </div>
             }
           >
             <input ref={fileInputRef} type="file" className="hidden" multiple accept={ACCEPT_ATTR} onChange={handleUpload} />

@@ -662,6 +662,18 @@ export const fetchWorkOrderPdf = async (id: string): Promise<Blob> => {
   return res.data as Blob;
 };
 
+export const downloadAllFiles = async (id: string, fileName: string): Promise<void> => {
+  const res = await apiClient.get(`/dental-lab/cases/${id}/download-all`, { responseType: "blob" });
+  const url = URL.createObjectURL(res.data as Blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+};
+
 export const recordQualityCheck = async (id: string, body: { passed: boolean; notes?: string }): Promise<DentalQualityCheck> =>
   unwrapEnvelope<DentalQualityCheck>(await apiClient.post(`/dental-lab/cases/${id}/quality-check`, body));
 

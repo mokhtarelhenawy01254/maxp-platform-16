@@ -1789,6 +1789,43 @@ const scanOverdueNotifications = async (req, res) => {
 
 // ==================== WORK ORDER PDF ====================
 
+const downloadAllAttachments = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const dentalCase = await prisma.dentalLabCase.findFirst({
+      where: { id, companyId },
+      select: { id: true, caseNumber: true },
+    });
+    if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+    const attachments = await prisma.dentalCaseAttachment.findMany({
+      where: { companyId, caseId: id },
+      select: { id: true, storedPath: true, fileName: true, kind: true },
+    });
+    if (attachments.length === 0) return res.status(404).json({ success: false, error: 'لا توجد ملفات' });
+
+    const archiver = require('archiver');
+    const archive = archiver('zip', { zlib: { level: 9 } });
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', `attachment; filename="case-${dentalCase.caseNumber}-files.zip"`);
+    archive.on('error', (err) => {
+      console.error('Error zipping dental attachments:', err);
+      res.status(500).json({ success: false, error: 'حدث خطأ في ضغط الملفات' });
+    });
+    archive.pipe(res);
+    for (const a of attachments) {
+      const filePath = path.join(dentalLabDir, a.storedPath);
+      if (fs.existsSync(filePath)) archive.file(filePath, { name: a.fileName || a.storedPath });
+    }
+    await archive.finalize();
+  } catch (error) {
+    console.error('Error downloading dental attachments:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تحميل الملفات' });
+  }
+};
+
 const getWorkOrderPdf = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
@@ -2764,6 +2801,7 @@ module.exports = {
   updateNotificationSchedule,
   scanOverdueNotifications,
   getWorkOrderPdf,
+  downloadAllAttachments,
   parseScan,
   recordQualityCheck,
   listQualityChecks,

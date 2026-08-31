@@ -27,8 +27,19 @@ router.get('/files/:name', async (req, res) => {
     }
     const filePath = path.join(dentalLabDir, name);
     if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, error: 'الملف غير موجود' });
-    res.setHeader('Content-Type', 'application/octet-stream');
-    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(attachment.fileName || name)}"`);
+
+    // نوع المحتوى حسب الامتداد: الصور و PDF تُفتح inline في المتصفح،
+    // وملفات 3D/أخرى تبقى للتحميل (المعاينة 3D عبر model-viewer من الـ blob).
+    const ext = path.extname(attachment.fileName || name).toLowerCase();
+    const inlineTypes = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.pdf']);
+    const contentTypeMap = {
+      '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+      '.webp': 'image/webp', '.gif': 'image/gif', '.pdf': 'application/pdf',
+      '.json': 'application/json', '.txt': 'text/plain',
+    };
+    const isInline = inlineTypes.has(ext);
+    res.setHeader('Content-Type', contentTypeMap[ext] || 'application/octet-stream');
+    res.setHeader('Content-Disposition', isInline ? 'inline' : `attachment; filename="${encodeURIComponent(attachment.fileName || name)}"`);
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.sendFile(filePath);
   } catch (error) {
@@ -98,6 +109,7 @@ router.post('/cases/:id/assign', verifyToken.authenticateToken, dentalRoleGuard(
 router.post('/cases/:id/attachments', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), upload.any(), controller.uploadCaseAttachment);
 router.delete('/cases/:id/attachments/:attachmentId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.deleteCaseAttachment);
 router.get('/cases/:id/work-order', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.getWorkOrderPdf);
+router.get('/cases/:id/download-all', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.downloadAllAttachments);
 router.post('/cases/:id/quality-check', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.recordQualityCheck);
 router.get('/cases/:id/quality-checks', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.listQualityChecks);
 router.post('/cases/:id/refabrication', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'TECHNICIAN']), controller.flagRefabrication);
