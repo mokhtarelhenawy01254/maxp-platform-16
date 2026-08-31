@@ -10,9 +10,12 @@ exports.getMyApps = async (req, res) => {
     const { companyId } = req.user;
 
     if (!companyId) {
-      return res.status(400).json({
-        success: false,
-        message: 'يجب تحديد الشركة لعرض التطبيقات'
+      // الحسابات من غير شركة (SUPER_ADMIN / accounts قبل اختيار شركة) مش خطأ —
+      // نرجع قائمة فاضية بدل 400 عشان الصفحة متبقاش بتفشل مع كل زيارة.
+      return res.json({
+        success: true,
+        data: [],
+        companyId: null
       });
     }
 
