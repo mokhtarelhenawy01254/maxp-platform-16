@@ -31,7 +31,9 @@ import {
   getPrimaryProductImage,
 } from "./utils/productImages";
 import { getStorefrontScope } from "../utils/storefrontApi";
+import { useIpGovernorateDetection } from "./hooks/useIpGovernorateDetection";
 import { Toaster } from "sonner";
+
 
 const StorefrontShell = React.lazy(() => import("./StorefrontShell"));
 const STOREFRONT_TOASTER_IDLE_DELAY_MS = 8000;
@@ -409,6 +411,9 @@ const DeferredStorefrontToaster: React.FC = () => {
 };
 
 const StorefrontBootstrap: React.FC = () => {
+  // Pre-select the visitor's governorate from their IP on first entry.
+  useIpGovernorateDetection();
+
   // Real-user performance monitoring (LCP/CLS/INP/TTFB) — storefront only.
   React.useEffect(() => {
     void import("../utils/webVitals").then(({ initWebVitals }) => initWebVitals());
