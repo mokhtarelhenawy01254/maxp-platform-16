@@ -644,7 +644,7 @@ export const fetchCreditNotes = async (): Promise<CreditNote[]> =>
   unwrapListEnvelope<CreditNote>(await apiClient.get("/dental-lab/credit-notes"));
 
 export const fetchInvoicePdf = async (id: string): Promise<Blob> => {
-  const res = await apiClient.get(`/dental-lab/invoices/${id}/pdf`, { responseType: "blob" });
+  const res = await apiClient.get(`/dental-lab/invoices/${id}/pdf`, { responseType: "blob", timeout: 300000 });
   return res.data as Blob;
 };
 
@@ -658,12 +658,12 @@ export const saveDoctorPricing = async (doctorId: string, prices: Record<string,
   unwrapEnvelope<Record<string, number>>(await apiClient.put(`/dental-lab/doctors/${doctorId}/pricing`, { prices }));
 
 export const fetchWorkOrderPdf = async (id: string): Promise<Blob> => {
-  const res = await apiClient.get(`/dental-lab/cases/${id}/work-order`, { responseType: "blob" });
+  const res = await apiClient.get(`/dental-lab/cases/${id}/work-order`, { responseType: "blob", timeout: 300000 });
   return res.data as Blob;
 };
 
 export const downloadAllFiles = async (id: string, fileName: string): Promise<void> => {
-  const res = await apiClient.get(`/dental-lab/cases/${id}/download-all`, { responseType: "blob" });
+  const res = await apiClient.get(`/dental-lab/cases/${id}/download-all`, { responseType: "blob", timeout: 300000 });
   const url = URL.createObjectURL(res.data as Blob);
   const a = document.createElement("a");
   a.href = url;
@@ -725,7 +725,8 @@ export const caseFileUrl = (storedName?: string): string => {
 
 export const fetchCaseFileBlob = async (storedName?: string): Promise<Blob> => {
   if (!storedName) throw new Error("مفيش ملف");
-  const res = await apiClient.get(`/dental-lab/files/${encodeURIComponent(storedName)}`, { responseType: "blob" });
+  // STL/PLY are 15MB+ and can exceed the 30s default on slow networks — use a 5 min timeout
+  const res = await apiClient.get(`/dental-lab/files/${encodeURIComponent(storedName)}`, { responseType: "blob", timeout: 300000 });
   return res.data as Blob;
 };
 
