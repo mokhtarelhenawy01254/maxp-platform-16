@@ -17517,7 +17517,117 @@
     "sectionBehavioral": "Behavioral Incentives",
     "sectionSpecialSelling": "Special Selling Methods",
     "sectionVisualContent": "Visual Content",
-    "sectionTrustProof": "Trust Proof"
+    "sectionTrustProof": "Trust Proof",
+    "savingIndicator": "Saving…",
+    "savedIndicator": "Saved",
+    "backToTools": "All tools",
+    "viewOnStore": "Live store",
+    "viewMobile": "Mobile",
+    "viewDesktop": "Desktop",
+    "livePreviewBadge": "Live preview — edits appear instantly",
+    "expectedLookCaption": "This is how the tool will look once you enable it — enable it from the settings beside.",
+    "previewMockCaption": "Approximate preview — the final look on your store follows your store theme.",
+    "toolState": "Tool state",
+    "generalEnabledNote": "Enabling this tool also turns on the whole {{app}} app.",
+    "fieldsTitle": "Tool settings",
+    "toolsIndexTitle": "Conversion tools",
+    "toolsIndexDesc": "Every tool gets its own page: understand the benefit, see it live on your store, and enable it when ready. Every change saves automatically.",
+    "field": {
+      "freeShippingAmount": {
+        "label": "Free Shipping Threshold",
+        "description": "The amount the customer needs to reach for free shipping to apply."
+      }
+    },
+    "tool": {
+      "saleCountdown": {
+        "label": "Sale Countdown Timer",
+        "benefit": "Runs a countdown timer on the product page during limited-time offers."
+      },
+      "lowStockNotice": {
+        "label": "Low Stock Notice",
+        "benefit": "Shows a low-stock alert for size or color before adding to cart."
+      },
+      "soldCounter": {
+        "label": "Sold Counter",
+        "benefit": "Displays current purchase pace above the buy section."
+      },
+      "purchaseFomo": {
+        "label": "Purchase Count & FOMO",
+        "benefit": "Shows current purchase pressure from carts or recent activity."
+      },
+      "estimatedDelivery": {
+        "label": "Estimated Delivery",
+        "benefit": "Shows the estimated delivery window on the product page."
+      },
+      "trustedBadges": {
+        "label": "Trusted Badge",
+        "benefit": "Displays payment, delivery, and return badges near the buy button."
+      },
+      "stickyAddToCart": {
+        "label": "Sticky Add to Cart bar",
+        "benefit": "Keeps the add-to-cart button visible while scrolling on the product page."
+      },
+      "backInStock": {
+        "label": "Back in Stock",
+        "benefit": "Enables back-in-stock interest collection for unavailable sizes or colors."
+      },
+      "crossSell": {
+        "label": "Cross Sell",
+        "benefit": "Runs cross-sell product suggestions in dedicated spaces."
+      },
+      "boughtTogether": {
+        "label": "Bought Together",
+        "benefit": "Shows product bundles frequently bought together on the same page."
+      },
+      "bulkSavings": {
+        "label": "Bulk Savings",
+        "benefit": "Runs quantity savings directly on the product page."
+      },
+      "buyMoreSaveMore": {
+        "label": "Buy More Save More",
+        "benefit": "Runs full quantity-break panels and mix-and-match options on the page."
+      },
+      "freeShippingBar": {
+        "label": "Free Shipping Bar",
+        "benefit": "Shows a free-shipping bar storewide, in cart, and checkout when enabled."
+      },
+      "inactiveTab": {
+        "label": "Inactive Tab",
+        "benefit": "Changes the tab title when the user navigates away from the page."
+      },
+      "exitIntentPopup": {
+        "label": "Exit Intent Popup",
+        "benefit": "Runs an exit-intent popup when the user tries to leave the store."
+      },
+      "fakeVisitorCounter": {
+        "label": "Fake Visitor",
+        "benefit": "Runs a real-time visitor counter as part of behavioral signals."
+      },
+      "fakeSalePopup": {
+        "label": "Fake Sale Popup",
+        "benefit": "Runs a live purchase-activity popup at the store level."
+      },
+      "preOrder": {
+        "label": "Pre Order",
+        "benefit": "Allows selling products before they are physically in stock."
+      },
+      "externalAffiliate": {
+        "label": "External / Affiliate Product",
+        "benefit": "Redirects the purchase flow to an external platform or link."
+      },
+      "photoReviews": {
+        "label": "Photo Review",
+        "benefit": "Allows customers to attach photos in their reviews."
+      },
+      "videoReviews": {
+        "label": "Video Review",
+        "benefit": "Allows attaching videos in reviews when writing feedback."
+      },
+      "verifiedBadge": {
+        "label": "Verified Badge",
+        "benefit": "Displays a verified-purchaser badge within reviews."
+      }
+    }
   },
   "storeFooter": {
     "footerTitle": "Footer Settings",
