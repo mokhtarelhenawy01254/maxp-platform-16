@@ -493,16 +493,15 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
           <div className="business-shell-utility-row">
             {hasStore && (
-              <a
-                href={storeUrl}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                type="button"
+                onClick={(e) => e.preventDefault()}
                 className="business-icon-button"
                 title={t("header.visitStore", "المتجر")}
                 aria-label={t("header.visitStore", "المتجر")}
               >
                 <BuildingStorefrontIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              </a>
+              </button>
             )}
             {showSearchInHeader && (
               <div className="relative flex items-center">
