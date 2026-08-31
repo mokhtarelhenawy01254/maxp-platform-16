@@ -27,16 +27,25 @@ die() { echo -e "\033[1;31m✗ $*\033[0m" >&2; exit 1; }
 PG_URL="$(grep -E '^POSTGRES_URL=' "$ENV_FILE" | tail -n1 | cut -d= -f2- | tr -d '"' | tr -d "'")"
 [ -n "$PG_URL" ] || die "POSTGRES_URL not found in $ENV_FILE"
 
-DB_USER="$(echo "$PG_URL" | sed -E 's|^[a-z]+://([^:/]+):.*|\1|')"
-DB_PASS="$(echo "$PG_URL" | sed -E 's|^[a-z]+://[^:]+:([^@]*)@.*|\1|')"
-DB_HOST="$(echo "$PG_URL" | sed -E 's|^[a-z]+://[^@]+@([^:/]+).*|\1|')"
-DB_PORT="$(echo "$PG_URL" | sed -E 's|^[a-z]+://[^@]+:([0-9]+)/.*|\1|')"
-DB_NAME="$(echo "$PG_URL" | sed -E 's|^[a-z]+://[^@]+/[^/]*/([^?]+).*|\1|')"
-DB_NAME="${DB_NAME:-maxp}"
-DB_PORT="${DB_PORT:-5432}"
-
-# URL-decode the password if it contains %XX (rare). Best effort.
-DB_PASS_DEC="$(python3 -c "import urllib.parse,sys; print(urllib.parse.unquote(sys.argv[1]))" "$DB_PASS" 2>/dev/null || echo "$DB_PASS")"
+# Parse with urlparse — sed breaks on URLs with passwords ('@' in userinfo).
+# TAB-separated so passwords containing spaces survive; re-encode for URLs.
+read -r -d '' PY_CODE <<'PY' || true
+import sys
+from urllib.parse import urlparse, unquote, quote
+u = urlparse(sys.argv[1])
+pw = unquote(u.password or "")
+print("\t".join([
+    u.username or "appuser",
+    pw,
+    u.hostname or "127.0.0.1",
+    str(u.port or 5432),
+    (u.path.lstrip("/").split("?")[0] or "maxp"),
+    quote(pw, safe=""),
+]))
+PY
+IFS=$'\t' read -r DB_USER DB_PASS_DEC DB_HOST DB_PORT DB_NAME DB_PASS < <(python3 -c "$PY_CODE" "$PG_URL") || die "Failed to parse POSTGRES_URL (is python3 available?)"
+[ -n "$DB_NAME" ] || DB_NAME="maxp"
+[ -n "$DB_PORT" ] || DB_PORT="5432"
 
 log "Postgres target: $DB_USER@$DB_HOST:$DB_PORT/$DB_NAME"
 
@@ -49,25 +58,38 @@ else
   log "pgbouncer already installed: $(pgbouncer --version | head -1)"
 fi
 
-# --- 3. Write userlist.txt (md5 hash of user:pass) -----------------------
+# --- 3. Write userlist.txt (PLAINTEXT password) ---------------------------
+# auth_type = scram-sha-256 requires the plaintext password in auth_file:
+# Postgres ≥14 stores roles as SCRAM verifiers, so md5 hashing here can never
+# authenticate (this exact mismatch caused a "password authentication failed"
+# crash loop on 2026-08-31). File is chmod 640 root:pgbouncer.
 sudo mkdir -p /etc/pgbouncer
-MD5="$(python3 -c "import hashlib,sys; print('md5'+hashlib.md5((sys.argv[1]+sys.argv[2]).encode()).hexdigest())" "$DB_USER" "$DB_PASS_DEC")"
-echo "\"$DB_USER\" \"$MD5\"" | sudo tee /etc/pgbouncer/userlist.txt >/dev/null
+echo "\"$DB_USER\" \"$DB_PASS_DEC\"" | sudo tee /etc/pgbouncer/userlist.txt >/dev/null
 
 # --- 4. Write pgbouncer.ini from the shipped template --------------------
 sudo cp "$BACKEND_DIR/deploy/pgbouncer/pgbouncer.ini" /etc/pgbouncer/pgbouncer.ini
 
-# Auto-fill database host/port/dbname into the [databases] section
-sudo python3 - "$DB_HOST" "$DB_PORT" "$DB_NAME" <<'PY'
+# Auto-fill [databases] + admin_users from the parsed credentials.
+sudo python3 - "$DB_HOST" "$DB_PORT" "$DB_NAME" "$DB_USER" <<'PY'
 import sys
-host, port, dbname = sys.argv[1], sys.argv[2], sys.argv[3]
+host, port, dbname, user = sys.argv[1:5]
+if host in ("localhost", ""):
+    host = "127.0.0.1"  # avoid ::1/IPv6 resolution surprises; matches live config
 path = "/etc/pgbouncer/pgbouncer.ini"
 src = open(path).read()
 start = src.index("[databases]")
-end = src.index("[pgbouncer]")
-new = "[databases]\n# PgBouncer maps the virtual DB to the real Postgres.\n{} = host={} port={} dbname={}\n\n".format(dbname, host, port, dbname)
-open(path, "w").write(src[:start] + new + src[end:])
-print("updated [databases] -> {} @ {}:{}".format(dbname, host, port))
+end = src.index("[pgbouncer]") if "[pgbouncer]" in src else len(src)
+new = (
+    "[databases]\n"
+    "# PgBouncer maps the virtual DB to the real Postgres.\n"
+    "{db} = host={h} port={p} dbname={db}\n\n".format(db=dbname, h=host, p=port)
+)
+src = src[:start] + new + src[end:]
+# The template ships 'appuser'; the real role may differ.
+src = src.replace("admin_users = appuser", "admin_users = " + user)
+src = src.replace("stats_users = appuser", "stats_users = " + user)
+open(path, "w").write(src)
+print("updated [databases] -> {db} @ {h}:{p}, admin_users={u}".format(db=dbname, h=host, p=port, u=user))
 PY
 
 sudo chown pgbouncer:pgbouncer /etc/pgbouncer/pgbouncer.ini /etc/pgbouncer/userlist.txt || true
