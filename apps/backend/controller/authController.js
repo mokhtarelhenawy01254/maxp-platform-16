@@ -294,6 +294,17 @@ const register = async (req, res) => {
       }
     }
 
+    // Auto-activate a Platform Partner account for the new company owner
+    try {
+      const platformPartnerService = require('../services/platformPartner.service');
+      const autoPartner = await platformPartnerService.ensurePartnerForCompanyOwner(user.id, company.name);
+      if (autoPartner) {
+        console.log(`[REGISTER] Platform Partner auto-activated for user ${user.id} (${autoPartner.partnerCode})`);
+      }
+    } catch (partnerError) {
+      console.error('[REGISTER] Failed to auto-activate platform partner:', partnerError);
+    }
+
     try {
       const employeeCount = await prisma.employee.count({
         where: { companyId: company.id }

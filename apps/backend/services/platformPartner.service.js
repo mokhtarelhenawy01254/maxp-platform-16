@@ -93,6 +93,37 @@ class PlatformPartnerService {
   }
 
   /**
+   * Auto-activates a Platform Partner for a company owner.
+   * No-op if the user is already registered as a partner.
+   */
+  async ensurePartnerForCompanyOwner(userId, companyName) {
+    const prisma = getSharedPrismaClient();
+    if (!userId) return null;
+
+    const existing = await prisma.platformPartner.findUnique({
+      where: { userId },
+    });
+    if (existing) return existing;
+
+    const prefix =
+      (companyName || "").substring(0, 3).toUpperCase().replace(/[^A-Z]/g, "") ||
+      "PRT";
+    const partnerCode = await this.generateUniquePartnerCode(prefix);
+
+    return prisma.platformPartner.create({
+      data: {
+        userId,
+        partnerCode,
+        companyName: companyName || null,
+        parentPartnerId: null,
+        status: "ACTIVE",
+        title: "PARTNER",
+        maxAllowedDepth: 1,
+      },
+    });
+  }
+
+  /**
    * Links a newly created SaaS Company to a Partner
    */
   async linkCompanyToPartner(companyId, partnerCode) {
@@ -245,7 +276,9 @@ class PlatformPartnerService {
     });
 
     if (!partner) {
-      throw new Error("Partner not found for this user");
+      const notFoundError = new Error("Partner not found for this user");
+      notFoundError.status = 404;
+      throw notFoundError;
     }
 
     // Fetch paginated collections

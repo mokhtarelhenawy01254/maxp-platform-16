@@ -220,11 +220,36 @@ const PartnerDashboard: React.FC = () => {
           toast.error(message);
         }
       } catch (error: any) {
-        const message =
+        // Ignore canceled/aborted requests (e.g. navigating away while in-flight).
+        if (
+          error?.code === "ERR_CANCELED" ||
+          error?.name === "CanceledError" ||
+          error?.name === "AbortError"
+        ) {
+          return false;
+        }
+
+        const status = error.response?.status;
+        const serverMessage = String(
           error.response?.data?.message ||
-          t("platformPartner.dashboard.errors.fetchDashboard");
-        setError(message);
-        toast.error(message);
+            error.response?.data?.error ||
+            "",
+        );
+
+        // Not registered as a Platform Partner yet → show the friendly
+        // "account required" empty state instead of an error.
+        const isNotPartner =
+          status === 404 || /partner not found/i.test(serverMessage);
+
+        if (isNotPartner) {
+          setError(null);
+        } else {
+          const message =
+            serverMessage ||
+            t("platformPartner.dashboard.errors.fetchDashboard");
+          setError(message);
+          toast.error(message);
+        }
       } finally {
         if (!background) {
           setLoading(false);

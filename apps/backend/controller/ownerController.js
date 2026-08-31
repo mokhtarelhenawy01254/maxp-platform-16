@@ -838,6 +838,17 @@ const createOwnerCompany = async (req, res) => {
         console.log(`✅ [OWNER] Company created successfully: ${result.name} (${result.id})`);
         console.log(`✅ [OWNER] User ${userId} assigned as OWNER`);
 
+        // Auto-activate a Platform Partner account for the new company owner
+        try {
+            const platformPartnerService = require('../services/platformPartner.service');
+            const autoPartner = await platformPartnerService.ensurePartnerForCompanyOwner(userId, result.name);
+            if (autoPartner) {
+                console.log(`✅ [OWNER] Platform Partner auto-activated for user ${userId} (${autoPartner.partnerCode})`);
+            }
+        } catch (partnerError) {
+            console.error('❌ [OWNER] Failed to auto-activate platform partner:', partnerError);
+        }
+
         res.status(201).json({
             success: true,
             message: 'تم إنشاء الشركة بنجاح',
