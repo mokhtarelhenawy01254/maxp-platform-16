@@ -9,6 +9,7 @@ import QuantitySelector from '../components/QuantitySelector';
 import Button from '../components/Button';
 import { useCartStore } from '../store/useCartStore';
 import { useProduct } from '../hooks/useProduct';
+import { useProductReviews } from '../hooks/useProductReviews';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { formatStorefrontCurrency } from '../utils/currency';
 import { sanitizeStorefrontHtml } from '../utils/html';
@@ -922,6 +923,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const variant = section?.variant || 'standard';
   const location = useLocation();
   const { product, isLoading, error, refetch } = useProduct(id);
+  const { reviews: reviewsForRating, averageRating: reviewsAverageRating } = useProductReviews(
+    product?.id,
+    { enabled: Boolean(product?.id) },
+  );
   const { settings: storefrontSettings } = useStorefrontSettings();
   const { trackAddToCartEvent, trackViewContentEvent } = useStorefrontFacebookTracking();
   const { theme } = useStorefrontTheme();
@@ -1960,9 +1965,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const productComparePriceDisplay = productComparePriceValue > 0
     ? formatStorefrontCurrency(productComparePriceValue, currency)
     : null;
-  const discount = activeComparePrice && activeComparePrice > activePrice
+  const discount = (activeComparePrice && activeComparePrice > activePrice
     ? Math.round(((activeComparePrice - activePrice) / activeComparePrice) * 100)
-    : null;
+    : null) ??
+    (productComparePriceValue > 0 && productComparePriceValue > activePrice
+      ? Math.round(((productComparePriceValue - activePrice) / productComparePriceValue) * 100)
+      : null);
 
   if (isGracefulInfo) {
     const gracefulOptionGroups = (() => {
@@ -4061,7 +4069,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         ? product.reviewSummary.averageRating
         : typeof product.reviewAverage === 'number'
           ? product.reviewAverage
-          : null;
+          : typeof reviewsAverageRating === 'number' && reviewsAverageRating > 0
+            ? reviewsAverageRating
+            : null;
   const commonReviewCount =
     typeof product.reviewCount === 'number'
       ? product.reviewCount
@@ -4071,7 +4081,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           ? product.ratingCount
           : typeof product.reviewSummary?.totalReviews === 'number'
             ? product.reviewSummary.totalReviews
-            : 0;
+            : reviewsForRating.length > 0
+              ? reviewsForRating.length
+              : 0;
   const commonHeader = isElessiPackTheme ? (
     <div className="space-y-3">
       <nav className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-muted-foreground/80">
