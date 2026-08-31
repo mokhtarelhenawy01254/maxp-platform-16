@@ -19,7 +19,7 @@ const { suggestDueDate } = require('../services/dentalDeliveryEstimate');
 const { getBillingPolicy, assertCreditLimit } = require('../services/dentalBillingPolicy');
 const { resolveDoctorWorkTypePrice } = require('../services/dentalPricing');
 
-const ATTACHMENT_KINDS = new Set(['SCAN', 'PHOTO', 'WORK_ORDER', 'OTHER']);
+const ATTACHMENT_KINDS = new Set(['SCAN', 'PHOTO', 'XRAY', 'PRESCRIPTION', 'WORK_ORDER', 'DESIGN_REVIEW', 'OTHER']);
 
 const getDentist = (req, res) => {
   const dentist = req.dentist;
@@ -514,41 +514,79 @@ const uploadCaseAttachment = async (req, res) => {
       select: { id: true },
     });
     if (!existing) {
-      if (req.file && req.file.path) fs.unlink(req.file.path, () => {});
+      const leftovers = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+      for (const f of leftovers) { if (f && f.path) fs.unlink(f.path, () => {}); }
       return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
     }
-    if (!req.file) return res.status(400).json({ success: false, error: 'لم يتم رفع أي ملف' });
 
-    let kind = 'SCAN';
-    if (req.body && req.body.kind) {
-      const requested = String(req.body.kind).toUpperCase();
-      if (!ATTACHMENT_KINDS.has(requested)) {
-        if (req.file && req.file.path) fs.unlink(req.file.path, () => {});
+    // يقبل رفع ملف واحد (req.file) أو متعدد (req.files)
+    const files = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+    if (files.length === 0) return res.status(400).json({ success: false, error: 'لم يتم رفع أي ملف' });
+
+    // نوع كل مرفق: req.body.kind (لكل الملفات) أو req.body.kinds (مستقل لكل ملف)
+    const normalizeKinds = (raw) => {
+      if (raw == null) return [];
+      if (Array.isArray(raw)) return raw.map((k) => String(k).toUpperCase());
+      if (typeof raw === 'object') {
+        return Object.keys(raw).sort((a, b) => Number(a) - Number(b)).map((k) => String(raw[k]).toUpperCase());
+      }
+      return [String(raw).toUpperCase()];
+    };
+    let perFileKinds = normalizeKinds(req.body?.kinds);
+    if (perFileKinds.length === 0 && req.body?.kind) {
+      perFileKinds = normalizeKinds(req.body.kind);
+    }
+    if (perFileKinds.length < files.length) {
+      const last = perFileKinds[perFileKinds.length - 1] || 'SCAN';
+      while (perFileKinds.length < files.length) perFileKinds.push(last);
+    } else if (perFileKinds.length > files.length) {
+      perFileKinds = perFileKinds.slice(0, files.length);
+    }
+    for (const k of perFileKinds) {
+      if (!ATTACHMENT_KINDS.has(k)) {
+        for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
         return res.status(400).json({ success: false, error: 'نوع المرفق غير صحيح' });
       }
-      // مراجعة التصميم (exocad HTML) لا يرفعها إلا المعمل — حماية من أي مرفق HTML ضار
-      if (requested === 'DESIGN_REVIEW') {
-        if (req.file && req.file.path) fs.unlink(req.file.path, () => {});
-        return res.status(403).json({ success: false, error: 'غير مصرح برفع مراجعة التصميم من بوابة الطبيب' });
+    }
+    // مراجعة التصميم (exocad HTML) لا يرفعها إلا المعمل — حماية من أي مرفق HTML ضار
+    if (perFileKinds.includes('DESIGN_REVIEW')) {
+      for (const f of files) { if (f && f.path) fs.unlink(f.path, () => {}); }
+      return res.status(403).json({ success: false, error: 'غير مصرح برفع مراجعة التصميم من بوابة الطبيب' });
+    }
+    const isHtmlFile = (f) => {
+      const ext = path.extname(f.originalname || f.filename || '').toLowerCase();
+      const mime = String(f.mimetype || '').toLowerCase();
+      return ext === '.html' || mime === 'text/html';
+    };
+    for (const f of files) {
+      if (isHtmlFile(f)) {
+        for (const ff of files) { if (ff && ff.path) fs.unlink(ff.path, () => {}); }
+        return res.status(400).json({ success: false, error: 'ملفات HTML غير مسموحة من بوابة الطبيب' });
       }
-      kind = requested;
     }
 
-    const attachment = await prisma.dentalCaseAttachment.create({
-      data: {
-        companyId: dentist.companyId,
-        caseId: id,
-        uploadedBy: `doctor:${dentist.id}`,
-        kind,
-        fileName: req.file.originalname || req.file.filename,
-        storedPath: req.file.filename,
-        mimeType: req.file.mimetype || null,
-        size: req.file.size || 0,
-      },
-    });
-    res.json({ success: true, data: attachment });
+    const created = [];
+    for (let i = 0; i < files.length; i++) {
+      const f = files[i];
+      const att = await prisma.dentalCaseAttachment.create({
+        data: {
+          companyId: dentist.companyId,
+          caseId: id,
+          uploadedBy: `doctor:${dentist.id}`,
+          kind: perFileKinds[i],
+          fileName: f.originalname || f.filename,
+          storedPath: f.filename,
+          mimeType: f.mimetype || null,
+          size: f.size || 0,
+        },
+      });
+      created.push(att);
+    }
+    res.json({ success: true, data: created.length === 1 ? created[0] : created, meta: { count: created.length, kinds: perFileKinds } });
   } catch (error) {
-    console.error('Error uploading dental portal attachment:', error);
+    console.error('Error uploading dental attachment:', error);
+    const leftovers = Array.isArray(req.files) ? req.files : (req.file ? [req.file] : []);
+    for (const f of leftovers) { if (f && f.path) fs.unlink(f.path, () => {}); }
     res.status(500).json({ success: false, error: 'حدث خطأ في رفع المرفق' });
   }
 };

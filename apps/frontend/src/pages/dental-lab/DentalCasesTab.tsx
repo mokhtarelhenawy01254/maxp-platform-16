@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  ArrowRightCircle, CreditCard, Eye, Loader2, Pencil, Plus, RefreshCw, ScanLine, Search, Stethoscope, Upload, UserPlus, X as XMarkIcon,
+  ArrowRightCircle, CreditCard, Eye, Loader2, Pencil, RefreshCw, ScanLine, Search, Stethoscope, Upload, UserPlus, X as XMarkIcon,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG,
@@ -566,9 +566,6 @@ export default function DentalCasesTab() {
             className="flex items-center gap-2 px-4 py-2 bg-gradient-to-l from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 text-sm font-medium shadow-sm"
           >
             <Stethoscope className="w-4 h-4" />{t("dentalLab.cases.quickOrder")}
-          </button>
-          <button onClick={() => { setEditingCase(null); setCreateOpen(true); }} className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 dark:bg-gray-800 dark:text-gray-200 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 text-sm">
-            <Plus className="w-4 h-4" />{t("dentalLab.cases.newCase")}
           </button>
         </div>
       </div>

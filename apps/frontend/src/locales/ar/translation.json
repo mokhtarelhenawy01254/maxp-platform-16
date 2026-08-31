@@ -1283,6 +1283,7 @@
       "files": "الملفات",
       "uploadFile": "رفع ملف",
       "uploading": "جاري الرفع...",
+      "uploadTotal": "التقدم الكلي",
       "uploadError": "تعذر رفع الملف",
       "noFiles": "لا توجد ملفات مرفوعة بعد",
       "invoices": "الفواتير",
