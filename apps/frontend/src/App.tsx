@@ -4479,7 +4479,7 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/orders/products-availability"
+                  path="/products/products-availability"
                   element={
                     <Layout>
                       <PermissionProtectedRoute requiredPermissions={['products.view']}>

@@ -354,6 +354,7 @@ export const getSidebarConfig = (
                 icon: ShoppingBag,
                 items: [
                     { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
+                    { to: '/products/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
                 { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
                 { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements') },
                     { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
@@ -380,7 +381,6 @@ export const getSidebarConfig = (
                     { to: '/orders', icon: Archive, label: t('sidebar.orders') },
                     { to: '/orders/manual', icon: SquarePen, label: t('sidebar.manualOrder'), hidden: !isAnyAppActive(['manual-orders-pro', 'store-pro']) },
                     { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics') },
-                    { to: '/orders/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
                 ],
             },
             {
@@ -581,7 +581,6 @@ export const getSidebarConfig = (
                 { to: '/orders/bulk-status', icon: ArrowLeftRight, label: t('sidebar.bulkStatusUpdate'), requiredPermissions: ['orders.status.change'] },
                 { to: '/orders/quick-status', icon: RefreshCcw, label: t('sidebar.quickStatusChange'), requiredPermissions: ['orders.quickstatus.view'] },
                 { to: '/orders/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics'), requiredPermissions: ['orders.stats.view'] },
-                { to: '/orders/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
                 { to: '/orders/status-summary', icon: FileBarChart, label: t('sidebar.orderStatusSummary'), requiredPermissions: ['orders.status-summary.view'] },
                 { to: '/returns/settings', icon: Cog, label: t('sidebar.returnSettings'), requiredPermissions: ['orders.return-settings.view'] },
                 { to: '/platform-integrations', icon: Zap, label: t('sidebar.platformIntegrations'), requiredPermissions: ['orders.integrations.view'] },
@@ -640,6 +639,7 @@ export const getSidebarConfig = (
             icon: ShoppingBag,
             items: [
                 { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
+                { to: '/products/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
                 { to: '/categories', icon: Tag, label: t('sidebar.categories') },
                 { to: '/settings/upsell', icon: TrendingUp, label: t('sidebar.upsellManagement') },
                 { to: '/analytics/store', icon: TrendingUp, label: t('sidebar.storeAnalytics') },
