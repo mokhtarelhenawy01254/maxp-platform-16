@@ -57,6 +57,30 @@ intermittently ("مرة تحمل ومرة لأ") and `/my-apps` showed an error 
   `/etc/cron.d/maxp-watchdog`): kills orphan test/debug Node processes and
   any `node -e` running > 48h; logs to `logs/watchdog.log`. Never touches
   `server.js` / `webhookWorker`.
+- **Auto-heal stuck HistoryImport** (`WhatsAppManager.healStuckHistoryImports`,
+  commit `3b2cf6e2`): any `whatsapp_session_history_imports` row stuck in
+  `IN_PROGRESS`/`REQUESTED` with `updatedAt` older than **1 hour** is
+  force-completed to `COMPLETED` (with an `AUTO-HEALED` note) automatically.
+  Runs from both `runHealthCheck` (every 25s, heal cooldown 10 min) and
+  `requestReconnect` (before reading import status). This prevents the root
+  driver of memory growth: a stuck import made every reconnect enable
+  `syncFullHistory=true` (re-downloading full history + profile pics → ~60%
+  sustained CPU + unbounded RSS → periodic restarts). Verified live with a
+  synthetic 2h-old `IN_PROGRESS` row → healed within 40s.
+
+## Root Cause (deeper, found 2026-08-31 re-check)
+
+The 2G cap + orphan cleanup stopped the restart storm, but re-checking showed
+RSS still growing (~100MB/min) with sustained ~60% CPU. Investigation found a
+**stuck `whatsapp_session_history_imports` row** (session
+`cmt3475qi00dljuivpaex1bev`, company العناية بالسيارات) left `IN_PROGRESS`
+since **2026-08-24** (~8 days). Every session reconnect
+(`WhatsAppManager.requestReconnect` → `syncFullHistory` derivation) saw that
+row as `IN_PROGRESS` → enabled `syncFullHistory=true` → re-downloaded full
+history + 402 profile pics every ~12 minutes → the memory/CPU growth.
+
+**Fix applied live**: the stuck row was force-completed manually, and the
+auto-heal guard above was added so this can never recur silently.
 
 ## Verification
 - `pm2 describe maxp-backend` → `max_memory_restart 2G`, process stable.
