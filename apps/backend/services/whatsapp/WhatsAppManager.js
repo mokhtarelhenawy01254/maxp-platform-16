@@ -108,6 +108,17 @@ const WHATSAPP_DISCONNECT_ALERT_COOLDOWN_MS = 10 * 60 * 1000; // 10 minutes per 
 let healthCheckTimerId = null;
 let isHealthCheckRunning = false;
 
+// 🚨 PRODUCTION-FIX (2026-08-31): حارس الـ HistoryImport العالق.
+// Import تاريخي واقف في IN_PROGRESS/REQUESTED من غير تحديث لمدة أسبوع كان
+// بيخلي كل reconnect يشغّل syncFullHistory=true (تحميل كل التاريخ + صور
+// البروفايل) → CPU ~60% ثابت + RSS بيكبر 100MB/دقيقة → الـ backend بيعمل
+// ريستارت دوري → صفحات الـ marketplace/my-apps بتقطع. الحارس ده بيمرّن أي
+// import عالق أقدم من ساعة لـ COMPLETED تلقائياً عشان الـ reconnect يبطل
+// يفعّل الـ full history sync. بيتشغل من الـ health check + قبل أي reconnect.
+const HISTORY_IMPORT_STUCK_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour without progress = stuck
+let lastHistoryImportHealRun = 0;
+const HISTORY_IMPORT_HEAL_COOLDOWN_MS = 10 * 60 * 1000; // run at most every 10 min
+
 // مسار حفظ بيانات الجلسات
 const SESSIONS_DIR = path.join(__dirname, '../../data/whatsapp-sessions');
 // مسار حفظ الوسائط
@@ -188,6 +199,16 @@ async function requestReconnect(sessionId, companyId, source, options = {}, dela
     state.reason = source;
     state.requestedAt = new Date();
     state.attempt = 0;
+
+    // 🚨 PRODUCTION-FIX (2026-08-31): قبل قراءة حالة الـ import، نمرّن أي
+    // import عالق (أقدم من ساعة) لـ COMPLETED — وإلا الـ IN_PROGRESS العالق
+    // هيخلي كل reconnect يشغّل syncFullHistory=true بلا فايدة (تحميل التاريخ
+    // المتكرر = CPU/ذاكرة عالية + ريستارت دوري).
+    try {
+        await healStuckHistoryImports();
+    } catch (healError) {
+        // لا نعطّل reconnect بسبب فشل الـ heal
+    }
 
     // استنتاج history sync من durable state
     let syncFullHistory = false;
@@ -516,6 +537,15 @@ async function runHealthCheck() {
     isHealthCheckRunning = true;
 
     try {
+        // 🚨 PRODUCTION-FIX (2026-08-31): مرّرن الـ history imports العالقة
+        // دوريًا من غير ما نستنى reconnect. بيشتغل بكفاءة عبر updateMany
+        // (بحد أقصى كل 10 دقايق).
+        try {
+            await healStuckHistoryImports();
+        } catch (healError) {
+            // لا نعطّل دورة الـ health check بسبب فشل الـ heal
+        }
+
         // Batch DB status read: 1 query instead of N findUnique per tick
         const sessionIds = Array.from(activeSessions.keys());
         let dbStatusMap = new Map();
@@ -2150,6 +2180,48 @@ function enqueueMessagingHistorySet(sessionId, companyId, history, sock) {
     }).catch(() => {});
 
     return next;
+}
+
+/**
+ * 🚨 PRODUCTION-FIX (2026-08-31): حارس الـ HistoryImport العالق.
+ * أي import واقف في IN_PROGRESS/REQUESTED من غير تحديث لمدة > ساعة بيفعّل
+ * syncFullHistory مع كل reconnect (تحميل كل التاريخ + صور البروفايل بشكل
+ * متكرر) → CPU/ذاكرة عالية → ريستارت دوري للـ backend. الحارس بيمرّنهم
+ * لـ COMPLETED تلقائياً عشان الـ reconnect يبطل يفعّل الـ full sync.
+ */
+async function healStuckHistoryImports({ force = false } = {}) {
+    const now = Date.now();
+    if (!force && now - lastHistoryImportHealRun < HISTORY_IMPORT_HEAL_COOLDOWN_MS) {
+        return { healed: 0, skippedCooldown: true };
+    }
+    lastHistoryImportHealRun = now;
+
+    try {
+        const prisma = getSharedPrismaClient();
+        const stuckCutoff = new Date(now - HISTORY_IMPORT_STUCK_THRESHOLD_MS);
+
+        const healed = await prisma.whatsAppSessionHistoryImport.updateMany({
+            where: {
+                status: { in: ['IN_PROGRESS', 'REQUESTED'] },
+                updatedAt: { lt: stuckCutoff }
+            },
+            data: {
+                status: 'COMPLETED',
+                completedAt: new Date(),
+                lastProgress: 100,
+                lastError: 'AUTO-HEALED: stuck history import older than 1h was force-completed to stop reconnect full-history-sync loop (2026-08-31 fix).',
+                updatedAt: new Date()
+            }
+        });
+
+        if (healed.count > 0) {
+            console.warn(`🩹 [WA-HEAL] Force-completed ${healed.count} stuck history import(s) older than 1h (stopped reconnect full-history-sync loop)`);
+        }
+        return { healed: healed.count, skippedCooldown: false };
+    } catch (error) {
+        console.warn(`⚠️ [WA-HEAL] Stuck history import heal failed: ${error.message}`);
+        return { healed: 0, error: error.message };
+    }
 }
 
 async function finalizeHistoryImport(sessionId, companyId) {
