@@ -22,6 +22,7 @@ import {
   ArrowPathIcon,
   CheckCircleIcon,
   ClipboardDocumentIcon,
+  PlusIcon,
 } from "@heroicons/react/24/outline";
 
 // Hooks
@@ -47,6 +48,7 @@ import { AdvancedTab } from "./components/tabs/AdvancedTab";
 import { QuantityOffersTab } from "./components/tabs/QuantityOffersTab";
 import { PresentationsTab } from "./components/tabs/PresentationsTab";
 import { ConvertToPresentationModal } from "./components/ConvertToPresentationModal";
+import { CategoryFormModal } from "../../components/category/CategoryFormModal";
 import type { ConvertPresentationResult } from "./hooks/useProductPresentations";
 import {
   hydrateVariantSettings,
@@ -380,6 +382,7 @@ export const ProductNewFinal: React.FC = () => {
   const [categories, setCategories] = useState<ProductCategory[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(false);
   const [categoriesError, setCategoriesError] = useState<string | null>(null);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [shippingClassOptions, setShippingClassOptions] = useState<
     ShippingClassOption[]
   >(DEFAULT_SHIPPING_CLASSES);
@@ -1530,10 +1533,22 @@ export const ProductNewFinal: React.FC = () => {
                   aria-hidden="true"
                 />
               </div>
-              <div className="ml-3 rtl:mr-3 rtl:ml-0">
-                <p className="text-sm text-red-700 dark:text-red-300">
-                  {error}
-                </p>
+              <div className="ml-3 rtl:mr-3 rtl:ml-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-sm text-red-700 dark:text-red-300">
+                    {error}
+                  </p>
+                  {fieldErrors.category && (
+                    <button
+                      type="button"
+                      onClick={() => setIsCategoryModalOpen(true)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium text-indigo-700 bg-indigo-50 border border-indigo-200 rounded-md hover:bg-indigo-100 dark:text-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-800 dark:hover:bg-indigo-900/50"
+                    >
+                      <PlusIcon className="w-3.5 h-3.5" />
+                      {t("categories.management.addCategory")}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -1675,14 +1690,7 @@ export const ProductNewFinal: React.FC = () => {
                 getInputClassName={getInputClassName}
                 workflowLabel={workflowLabel}
                 t={t}
-                onCategoryCreated={(category) => {
-                  setCategories((prev) => {
-                    if (prev.some((c) => c.id === category.id)) {
-                      return prev;
-                    }
-                    return [...prev, category as ProductCategory];
-                  });
-                }}
+                onAddCategoryClick={() => setIsCategoryModalOpen(true)}
               />
             )}
 
@@ -1872,6 +1880,25 @@ export const ProductNewFinal: React.FC = () => {
           onSuccess={handleConverted}
         />
       )}
+
+      <CategoryFormModal
+        open={isCategoryModalOpen}
+        editingCategory={null}
+        onClose={() => setIsCategoryModalOpen(false)}
+        onSaved={(category) => {
+          setCategories((prev) => {
+            if (prev.some((c) => c.id === category.id)) {
+              return prev;
+            }
+            return [...prev, category as ProductCategory];
+          });
+          setFormData((prev) => ({
+            ...prev,
+            category: category.id,
+          }));
+          setError(null);
+        }}
+      />
     </div>
   );
 };

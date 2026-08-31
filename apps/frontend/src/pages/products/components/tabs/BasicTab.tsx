@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React from "react";
 import { Plus } from "lucide-react";
 import { ProductFormData, Category, FieldErrors } from "../../types";
 import { TagsInput } from "../shared/TagsInput";
 import { InfoTooltip } from "../shared/InfoTooltip";
 import RichTextEditor from "../../../../components/RichTextEditor";
-import { CategoryFormModal } from "../../../../components/category/CategoryFormModal";
 
 interface BasicTabProps {
   formData: ProductFormData;
@@ -17,7 +16,7 @@ interface BasicTabProps {
   getInputClassName: (fieldName: keyof FieldErrors) => string;
   workflowLabel: string;
   t: any;
-  onCategoryCreated?: (category: Category) => void;
+  onAddCategoryClick?: () => void;
 }
 
 export const BasicTab: React.FC<BasicTabProps> = ({
@@ -31,9 +30,8 @@ export const BasicTab: React.FC<BasicTabProps> = ({
   getInputClassName,
   workflowLabel,
   t,
-  onCategoryCreated,
+  onAddCategoryClick,
 }) => {
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
@@ -125,7 +123,7 @@ export const BasicTab: React.FC<BasicTabProps> = ({
             </select>
             <button
               type="button"
-              onClick={() => setIsCategoryModalOpen(true)}
+              onClick={onAddCategoryClick}
               title={t("categories.management.addCategory")}
               aria-label={t("categories.management.addCategory")}
               className="inline-flex items-center justify-center w-9 shrink-0 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-indigo-600 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-indigo-400"
@@ -229,19 +227,6 @@ export const BasicTab: React.FC<BasicTabProps> = ({
           </div>
         </div>
       </div>
-
-      <CategoryFormModal
-        open={isCategoryModalOpen}
-        editingCategory={null}
-        onClose={() => setIsCategoryModalOpen(false)}
-        onSaved={(category) => {
-          onCategoryCreated?.(category as Category);
-          setFormData((prev) => ({
-            ...prev,
-            category: category.id,
-          }));
-        }}
-      />
     </div>
   );
 };
