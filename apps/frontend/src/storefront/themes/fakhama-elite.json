@@ -76,6 +76,10 @@
     ],
     "copyrightText": "© ٢٠٢٦ متجر فخامة للأحذية. جميع الحقوق محفوظة."
   },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+    "colors": ["354 86% 45%", "210 10% 23%", "45 100% 50%"]
+  },
   "pages": {
     "home": {
       "sections": [

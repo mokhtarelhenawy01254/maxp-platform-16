@@ -38,7 +38,7 @@
   display: flex;
   height: 100vh;
   height: 100dvh;
-  min-height: 100vh;
+  min-height: 100dvh;
   width: 100%;
   overflow: hidden;
   background-color: var(--color-background);
@@ -283,6 +283,10 @@
   min-height: 0;
   min-width: 0;
   overflow-y: auto;
+  /* Clip horizontal overflow: nested pages (e.g. marketplace themes) must never
+     create a horizontal pan on mobile touch — that breaks the vertical scroll
+     and can trigger browser edge-swipe history navigation. */
+  overflow-x: clip;
   padding: 1.5rem;
   /* Anchor absolutely-positioned descendants (e.g. sr-only labels) so they are
      clipped by this scroll container instead of escaping to the document and
@@ -325,6 +329,18 @@
     opacity: 1;
     pointer-events: auto;
   }
+}
+
+/* Keep the closed mobile drawer off-screen AND unpaintable so it can never
+   show as a ghost panel during responsive-mode toggling or mid-transition. */
+#app-shell-mobile-drawer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#app-shell-mobile-drawer.app-shell-drawer--open {
+  visibility: visible;
+  pointer-events: auto;
 }
 
 .app-card-enter {

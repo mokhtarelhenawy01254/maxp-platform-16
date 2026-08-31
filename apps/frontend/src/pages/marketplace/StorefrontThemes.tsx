@@ -310,6 +310,7 @@ function StorefrontThemeCard({
 }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
+  const [imgFailed, setImgFailed] = useState(false);
 
   const handleCopyClick = () => {
     onCopyLink(themeItem.themeId);
@@ -360,11 +361,12 @@ function StorefrontThemeCard({
     >
       {/* PREVIEW IMAGE AREA (REDUCED HEIGHT) */}
       <div className="relative aspect-[16/9] overflow-hidden bg-slate-100 dark:bg-slate-900">
-        {themeItem.preview.imageUrl ? (
+        {themeItem.preview.imageUrl && !imgFailed ? (
           <img
             src={themeItem.preview.imageUrl}
             alt={themeItem.name}
             loading="lazy"
+            onError={() => setImgFailed(true)}
             className="h-full w-full object-cover object-top transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
@@ -376,7 +378,7 @@ function StorefrontThemeCard({
         {/* STATUS BADGES OVERLAY */}
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
            {themeItem.isCurrentTheme && (
-              <span className="bg-indigo-600 text-white text-[8px] font-black px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 uppercase tracking-tighter">
+              <span className="bg-indigo-700 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow-lg flex items-center gap-1 uppercase tracking-tighter">
                 <CheckCircle2 className="size-2" /> {t_sft("storefrontThemes.activeBadge")}
               </span>
            )}
@@ -399,9 +401,9 @@ function StorefrontThemeCard({
       <div className="flex flex-col p-3 flex-1">
         <div className="flex items-start justify-between mb-1">
           <div className="text-left">
-            <h3 className="text-sm font-black text-slate-900 dark:text-white leading-tight truncate max-w-[140px] uppercase tracking-tight">
+            <h2 className="text-sm font-black text-slate-900 dark:text-white leading-tight truncate max-w-[140px] uppercase tracking-tight">
               {themeItem.name}
-            </h3>
+            </h2>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
               {themeCategory.secondary.label}
             </p>
@@ -995,7 +997,7 @@ export default function StorefrontThemes() {
           </div>
           <div>
             <h1 className="text-xl font-black text-slate-900 dark:text-white uppercase tracking-tight flex items-center gap-2">
-              {t("storefrontThemes.title")} <span className="text-[10px] bg-indigo-500/10 text-indigo-500 px-2 py-0.5 rounded-full">{t("storefrontThemes.version")}</span>
+              {t("storefrontThemes.title")} <span className="text-[10px] bg-indigo-600/10 text-indigo-700 dark:text-indigo-400 px-2 py-0.5 rounded-full">{t("storefrontThemes.version")}</span>
             </h1>
             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">{t("storefrontThemes.subtitle")}</p>
           </div>
@@ -1056,7 +1058,7 @@ export default function StorefrontThemes() {
                    className={cn(
                      "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all border",
                      filterType === type 
-                       ? "bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/20" 
+                       ? "bg-indigo-700 border-indigo-700 text-white shadow-lg shadow-indigo-500/20" 
                        : "bg-white dark:bg-slate-950 border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 hover:border-indigo-500/50"
                    )}
                  >
@@ -1066,41 +1068,45 @@ export default function StorefrontThemes() {
            </div>
         </div>
 
-        <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-2 lg:pb-0">
-           <div className="flex items-center gap-1 whitespace-nowrap">
-              <button
-                onClick={() => handlePrimaryCategorySelect("all")}
-                className={cn(
-                  "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
-                  selectedPrimaryCategoryId === "all"
-                    ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10"
-                    : "text-slate-500 dark:text-slate-400 hover:text-indigo-500"
-                )}
-              >
-                {t("storefrontThemes.allDomains")}
-              </button>
-              {categoryGroups.map((group) => (
-                <button
-                  key={group.id}
-                  onClick={() => handlePrimaryCategorySelect(group.id)}
-                  className={cn(
-                    "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                    selectedPrimaryCategoryId === group.id
-                      ? "text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10"
-                      : "text-slate-500 dark:text-slate-400 hover:text-indigo-500"
-                  )}
-                >
-                  {group.label}
-                  <span className="text-[8px] opacity-50 px-1 py-0.5 rounded-md border border-current">{group.count}</span>
-                </button>
-              ))}
+        <div className="relative">
+           <div className="flex items-center gap-4 overflow-x-auto no-scrollbar pb-2 lg:pb-0 touch-pan-x">
+              <div className="flex items-center gap-1 whitespace-nowrap">
+                 <button
+                   onClick={() => handlePrimaryCategorySelect("all")}
+                   className={cn(
+                     "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all",
+                     selectedPrimaryCategoryId === "all"
+                       ? "text-indigo-700 bg-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-300"
+                       : "text-slate-500 dark:text-slate-400 hover:text-indigo-500"
+                   )}
+                 >
+                   {t("storefrontThemes.allDomains")}
+                 </button>
+                 {categoryGroups.map((group) => (
+                   <button
+                     key={group.id}
+                     onClick={() => handlePrimaryCategorySelect(group.id)}
+                     className={cn(
+                       "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                       selectedPrimaryCategoryId === group.id
+                         ? "text-indigo-700 bg-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-300"
+                         : "text-slate-500 dark:text-slate-400 hover:text-indigo-500"
+                     )}
+                   >
+                     {group.label}
+                     <span className="text-[9px] px-1 py-0.5 rounded-md border border-current">{group.count}</span>
+                   </button>
+                 ))}
+              </div>
            </div>
+           {/* Left-edge fade hints that more categories are reachable by swiping (RTL overflow end) */}
+           <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white dark:from-slate-950 to-transparent lg:hidden" />
         </div>
       </div>
 
       {/* SUBCATEGORY SECONDARY BAR */}
       {selectedPrimaryCategory && (
-        <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 px-6 py-2 flex items-center gap-4 overflow-x-auto no-scrollbar">
+        <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-800 px-6 py-2 flex items-center gap-4 overflow-x-auto no-scrollbar touch-pan-x">
           <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest whitespace-nowrap">{t("storefrontThemes.subMatrix")}</span>
           <div className="flex items-center gap-1">
             <button
@@ -1201,8 +1207,9 @@ export default function StorefrontThemes() {
         )}
       </main>
 
-      {/* FOOTER: SYSTEM STATUS */}
-      <footer className="bg-white/50 dark:bg-slate-950/50 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 h-10 flex items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
+      {/* FOOTER: SYSTEM STATUS (hidden on mobile — its debug payload overflows the
+          viewport in RTL and creates a horizontal pan that breaks mobile scrolling) */}
+      <footer className="hidden sm:flex bg-white/50 dark:bg-slate-950/50 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 px-6 h-10 items-center justify-between text-[9px] font-black text-slate-400 uppercase tracking-widest">
          <div className="flex items-center gap-3">
             <span className="flex items-center gap-1.5"><ShieldCheck className="size-3 text-emerald-500" /> SECURE_CATALOG_SYNC</span>
             <span>•</span>
