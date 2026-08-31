@@ -4052,6 +4052,17 @@ select {
 }
 
 [data-theme="business-os-enterprise"] .business-mobile-drawer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+[data-theme="business-os-enterprise"] .business-mobile-overlay[data-open="true"] .business-mobile-drawer,
+[data-theme="business-os-enterprise"] .business-mobile-drawer[data-open="true"] {
+  visibility: visible;
+  pointer-events: auto;
+}
+
+[data-theme="business-os-enterprise"] .business-mobile-drawer {
   position: fixed;
   inset-block: 0;
   width: min(90vw, 348px);

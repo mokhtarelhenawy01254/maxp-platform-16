@@ -446,6 +446,17 @@
   transform: translateX(100%);
 }
 
+.business-mobile-drawer {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.business-mobile-overlay[data-open="true"] .business-mobile-drawer,
+.business-mobile-drawer[data-open="true"] {
+  visibility: visible;
+  pointer-events: auto;
+}
+
 .business-mobile-drawer[data-open="true"] {
   transform: translateX(0);
 }
