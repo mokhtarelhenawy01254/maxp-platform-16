@@ -23,6 +23,8 @@ import womenFashionEgData from "./women-fashion-eg.json";
 import lookAtelierEgData from "./look-atelier-eg.json";
 import khemetLuxeEgData from "./khemet-luxe-eg.json";
 import khemetLuxeV2Data from "./khemet-luxe-v2.json";
+import khemetGeneralEgData from "./khemet-general-eg.json";
+import khemetFashionEgData from "./khemet-fashion-eg.json";
 import perfumeEgData from "./perfume-eg.json";
 import pcHubEgData from "./pc-hub-eg.json";
 import roseBoutiqueEgData from "./rose-boutique-eg.json";
@@ -680,6 +682,8 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "look-atelier-eg": asStorefrontTheme(lookAtelierEgData),
   "khemet-luxe-eg": asStorefrontTheme(khemetLuxeEgData),
   "khemet-luxe-v2": asStorefrontTheme(khemetLuxeV2Data),
+  "khemet-general-eg": asStorefrontTheme(khemetGeneralEgData),
+  "khemet-fashion-eg": asStorefrontTheme(khemetFashionEgData),
   "perfume-eg": asStorefrontTheme(perfumeEgData),
   "pc-hub-eg": asStorefrontTheme(pcHubEgData),
   "rose-boutique-eg": asStorefrontTheme(roseBoutiqueEgData),

@@ -414,7 +414,7 @@ html *::after {
   --color-indigo-800: oklch(0.398 0.177 277.4);
   --color-indigo-900: oklch(0.359 0.135 278.7);
   --font-sans: "Geist Variable", "Cairo", sans-serif;
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-heading);
   --radius-lg: var(--theme-radius);
   --radius-md: calc(var(--theme-radius) - 2px);
   --radius-sm: calc(var(--theme-radius) - 4px);

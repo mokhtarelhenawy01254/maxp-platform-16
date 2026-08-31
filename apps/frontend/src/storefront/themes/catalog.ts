@@ -317,6 +317,18 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "womens-shoes",
     "أحذية حريمي بريميم",
   ),
+  "khemet-general-eg": createThemeCategoryMeta(
+    "general",
+    "متاجر عامة",
+    "general-store",
+    "متجر عام متنوع",
+  ),
+  "khemet-fashion-eg": createThemeCategoryMeta(
+    "fashion",
+    "أزياء",
+    "womens-fashion",
+    "ملابس حريمي",
+  ),
   "perfume-eg": createThemeCategoryMeta(
     "beauty",
     "جمال وعناية",
@@ -561,6 +573,10 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
     "بوتيك أحذية حريمي فاخر للسوق المصري بطابع تحريري واضح: صور أكبر، قصة قاهرة يدوية، ومسارات شراء أنيقة بدون زحمة كروت.",
   "khemet-luxe-v2":
     "نسخة بريميم 2026 من KHEMET LUXE: دليل إيجاد الحذاء المناسب، إثبات اجتماعي حي (عدد مبيعات + توصيل متوقع)، تكملات إطلالة (look-builder + bought-together)، back-in-stock و pre-order للكبسولات المحدودة، هيرو بفيديو، لوكبوك، تيك جريد، نوايا تسوق، وجورنال قصة الحرفة. أهداف الصفحة تحويل بدل ثقة.",
+  "khemet-general-eg":
+    "نسخة متجر عام من عائلة KHEMET: مسارات تسوق سريعة من أول شاشة (وصل جديد، عروض الأسبوع، الأكثر مبيعًا)، عروض واضحة بمدة مصرّحة، وثقة ظاهرة — من غير زحمة كروت.",
+  "khemet-fashion-eg":
+    "نسخة ملابس حريمي من عائلة KHEMET: لوك بوك أولًا، فئات حسب الإطلالة، تقييمات بصور من العميلات على الرئيسية، وPDP بعدّاد مبيعات وتوصيل متوقع وتبديل مقاس — هوية تحريرية أخضر ودهبي.",
   "pc-hub-eg":
     "قالب كمبيوتر وإلكترونيات مصري جاهز للبيع: السعر والمواصفات والضمان ظاهرين، مع عروض وتقسيط يقرّبوا قرار الشراء.",
   "rose-boutique-eg":
@@ -642,6 +658,10 @@ const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
     "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
   "khemet-luxe-v2":
     "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+  "khemet-general-eg":
+    "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&q=80&w=1400",
+  "khemet-fashion-eg":
+    "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&q=80&w=1400",
   "pc-hub-eg": "/assets/themes/pc-hub-eg/preview.svg",
   "rose-boutique-eg": "/assets/themes/rose-boutique-eg/preview.svg",
   "vela-fashion-eg": "/assets/themes/vela-fashion-eg/preview.png",
