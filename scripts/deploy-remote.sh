@@ -480,24 +480,24 @@ bash scripts/fix-audit-logs.sh || echo "⚠️ Audit logs fix skipped or failed,
 
 # Step 2.8: Fix Data Duplicates
 echo "🛠️ Fixing data duplicates..."
-node scripts/fix-duplicates.js || echo "⚠️ Duplicates fix failed, continuing..."
+timeout 600 node scripts/fix-duplicates.js || echo "⚠️ Duplicates fix failed, continuing..."
 
 # Step 3: Push schema to PostgreSQL database
 echo "🚀 Pushing schema to PostgreSQL..."
-"$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
+timeout 600 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
     echo "❌ Database synchronization failed"
     exit 1
 }
 
 # Step 6: Automated Seeding
 echo "🌱 Running automated seeding..."
-"$PRISMA_BIN" db seed --schema=prisma/schema || echo "⚠️ Seeding failed, continuing deployment..."
+timeout 600 "$PRISMA_BIN" db seed --schema=prisma/schema || echo "⚠️ Seeding failed, continuing deployment..."
 echo "🔐 Seeding permissions..."
-npm run seed:permissions || echo "⚠️ Permissions seeding failed, continuing deployment..."
+timeout 600 npm run seed:permissions || echo "⚠️ Permissions seeding failed, continuing deployment..."
 
 # Step 7: Create/Verify Super Admin
 echo "👑 Creating/verifying super admin user..."
-  SUPER_ADMIN_EMAIL="${SUPER_ADMIN_EMAIL:-}" SUPER_ADMIN_PASSWORD="${SUPER_ADMIN_PASSWORD:-}" npm run setup:superadmin || echo "⚠️ Super admin setup failed, continuing deployment..."
+  SUPER_ADMIN_EMAIL="${SUPER_ADMIN_EMAIL:-}" SUPER_ADMIN_PASSWORD="${SUPER_ADMIN_PASSWORD:-}" timeout 600 npm run setup:superadmin || echo "⚠️ Super admin setup failed, continuing deployment..."
 
 echo "✅ Database schema synchronized with PostgreSQL"
 
@@ -506,7 +506,7 @@ echo "✅ Database schema synchronized with PostgreSQL"
 # Skipped when the workflow already determined no catalog files changed (saves ~30s).
 if [ "${CATALOG_CHANGED:-true}" = "true" ]; then
   echo "🧩 Syncing missing marketplace catalog entries..."
-  NODE_ENV=production npm run catalog:sync-target -- --only-missing --fail-on-missing || {
+  NODE_ENV=production timeout 600 npm run catalog:sync-target -- --only-missing --fail-on-missing || {
       echo "❌ Marketplace catalog sync failed or left unresolved catalog entries"
       exit 1
   }
@@ -515,12 +515,12 @@ else
 fi
 
 echo "🧹 Repairing stale required-app references in marketplace apps..."
-NODE_ENV=production node scripts/repair_stale_marketplace_required_apps.js || {
+NODE_ENV=production timeout 600 node scripts/repair_stale_marketplace_required_apps.js || {
     echo "⚠️ Required-app reference repair had issues, continuing..."
 }
 
 echo "🧹 Deactivating deprecated marketplace apps..."
-NODE_ENV=production node scripts/deactivate_old_marketplace_apps.js || {
+NODE_ENV=production timeout 600 node scripts/deactivate_old_marketplace_apps.js || {
     echo "⚠️ Deprecated app deactivation had issues, continuing..."
 }
 
