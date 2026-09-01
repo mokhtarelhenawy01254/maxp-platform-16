@@ -657,8 +657,21 @@ export const fetchDoctorPricing = async (doctorId: string): Promise<Record<strin
 export const saveDoctorPricing = async (doctorId: string, prices: Record<string, number>): Promise<Record<string, number>> =>
   unwrapEnvelope<Record<string, number>>(await apiClient.put(`/dental-lab/doctors/${doctorId}/pricing`, { prices }));
 
+export const recordDoctorBulkPayment = async (
+  doctorId: string,
+  body: { amount: number; method?: string; note?: string }
+): Promise<{ doctorId: string; totalPaid: number; allocations: { invoiceId: string; invoiceNumber: string; amount: number }[] }> =>
+  unwrapEnvelope<{ doctorId: string; totalPaid: number; allocations: { invoiceId: string; invoiceNumber: string; amount: number }[] }>(
+    await apiClient.post(`/dental-lab/doctors/${doctorId}/bulk-payment`, body)
+  );
+
 export const fetchWorkOrderPdf = async (id: string): Promise<Blob> => {
   const res = await apiClient.get(`/dental-lab/cases/${id}/work-order`, { responseType: "blob", timeout: 300000 });
+  return res.data as Blob;
+};
+
+export const fetchPanLabelPdf = async (id: string): Promise<Blob> => {
+  const res = await apiClient.get(`/dental-lab/cases/${id}/pan-label`, { responseType: "blob", timeout: 300000 });
   return res.data as Blob;
 };
 

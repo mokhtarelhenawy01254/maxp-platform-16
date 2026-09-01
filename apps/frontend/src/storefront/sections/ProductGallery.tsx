@@ -14,6 +14,10 @@ import { buildStorefrontImageCandidates } from "../utils/productImages";
 import { getVariantAttributes } from "../utils/variants";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { STOREFRONT_BUYBOX_ID } from "../utils/pdpCheckout";
+import {
+  getStorefrontMarketplaceAppSettings,
+  isStorefrontMarketplaceAppEnabled,
+} from "../utils/marketplaceApps";
 interface ProductGalleryProps {
   section?: {
     variant?: string;
@@ -2351,38 +2355,66 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
     );
   }
 
+  const conversionEnabled = isStorefrontMarketplaceAppEnabled(
+    storefrontSettings,
+    "conversion-suite",
+  );
+  const conversionSettings = getStorefrontMarketplaceAppSettings(
+    storefrontSettings,
+    "conversion-suite",
+  );
+
+  const isWishlistEnabled =
+    storefrontSettings?.storefront?.storefrontFeatures?.wishlistEnabled !== false &&
+    storefrontSettings?.storefrontSettings?.wishlistEnabled !== false &&
+    (!conversionEnabled ||
+      (conversionSettings?.modules as Record<string, unknown> | undefined)?.productWishlist !== false);
+
+  const isComparisonEnabled =
+    storefrontSettings?.storefront?.storefrontFeatures?.comparisonEnabled !== false &&
+    storefrontSettings?.storefrontSettings?.comparisonEnabled !== false &&
+    (!conversionEnabled ||
+      (conversionSettings?.modules as Record<string, unknown> | undefined)?.productComparison !== false);
+
+  const hasOverlayContent =
+    galleryDiscountPct > 0 || isWishlistEnabled || isComparisonEnabled;
+
   const elessiOverlayActions =
-    variant === "elessi-showroom" ? (
+    variant === "elessi-showroom" && hasOverlayContent ? (
       <>
         {galleryDiscountPct > 0 ? (
           <span className="pointer-events-auto inline-flex items-center rounded-full bg-red-600 px-3 py-1.5 text-xs font-black text-white shadow-[0_12px_26px_-18px_rgba(185,28,28,0.5)]">
             {prefersArabicCopy ? `خصم ${galleryDiscountPct}%` : `${galleryDiscountPct}% OFF`}
           </span>
         ) : null}
-        <button
-          type="button"
-          onClick={handleWishlistToggle}
-          className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_12px_26px_-18px_rgba(76,44,34,0.42)] backdrop-blur transition-colors ${
-            isWishlisted
-              ? "border-[#d7b2a0] bg-[#fff2ec] text-[#b3533b]"
-              : "border-[#ead8ca] bg-white/92 text-[#6b4a3c] hover:border-[#c79f8b]"
-          }`}
-          aria-label={prefersArabicCopy ? "إضافة إلى المفضلة" : "Add to wishlist"}
-        >
-          <Heart className={`h-[18px] w-[18px] ${isWishlisted ? "fill-current" : ""}`} />
-        </button>
-        <button
-          type="button"
-          onClick={handleCompareToggle}
-          className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_12px_26px_-18px_rgba(76,44,34,0.42)] backdrop-blur transition-colors ${
-            isCompared
-              ? "border-[#d4beae] bg-[#fff5ec] text-[#8f5c44]"
-              : "border-[#ead8ca] bg-white/92 text-[#6b4a3c] hover:border-[#c79f8b]"
-          }`}
-          aria-label={prefersArabicCopy ? "إضافة إلى المقارنة" : "Add to compare"}
-        >
-          <ArrowRightLeft className="h-[18px] w-[18px]" />
-        </button>
+        {isWishlistEnabled ? (
+          <button
+            type="button"
+            onClick={handleWishlistToggle}
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_12px_26px_-18px_rgba(76,44,34,0.42)] backdrop-blur transition-colors ${
+              isWishlisted
+                ? "border-[#d7b2a0] bg-[#fff2ec] text-[#b3533b]"
+                : "border-[#ead8ca] bg-white/92 text-[#6b4a3c] hover:border-[#c79f8b]"
+            }`}
+            aria-label={prefersArabicCopy ? "إضافة إلى المفضلة" : "Add to wishlist"}
+          >
+            <Heart className={`h-[18px] w-[18px] ${isWishlisted ? "fill-current" : ""}`} />
+          </button>
+        ) : null}
+        {isComparisonEnabled ? (
+          <button
+            type="button"
+            onClick={handleCompareToggle}
+            className={`inline-flex h-11 w-11 items-center justify-center rounded-full border shadow-[0_12px_26px_-18px_rgba(76,44,34,0.42)] backdrop-blur transition-colors ${
+              isCompared
+                ? "border-[#d4beae] bg-[#fff5ec] text-[#8f5c44]"
+                : "border-[#ead8ca] bg-white/92 text-[#6b4a3c] hover:border-[#c79f8b]"
+            }`}
+            aria-label={prefersArabicCopy ? "إضافة إلى المقارنة" : "Add to compare"}
+          >
+            <ArrowRightLeft className="h-[18px] w-[18px]" />
+          </button>
+        ) : null}
       </>
     ) : null;
 
