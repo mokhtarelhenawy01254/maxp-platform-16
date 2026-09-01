@@ -247,9 +247,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       <div className="relative flex flex-1 h-[calc(100vh-4rem)] w-full overflow-hidden">
         {/* Left Studio Dock (Layers / Catalog) */}
         <div
-          className={`h-full shrink-0 border-e border-border/80 bg-card ${
-            mobileStudioTab === "layers" ? "flex flex-col w-full" : "hidden"
-          } lg:!flex lg:!flex-col lg:!w-80`}
+          className={`h-full shrink-0 border-e border-border/80 bg-card w-full lg:w-80 flex flex-col ${
+            mobileStudioTab === "layers" ? "flex" : "hidden lg:flex"
+          }`}
         >
           <StudioLayersDrawer
             sections={activeSections}
@@ -269,9 +269,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
         {/* Center Studio Stage (Interactive Live Canvas) */}
         <div
-          className={`h-full flex-1 overflow-hidden bg-muted/20 ${
-            mobileStudioTab === "canvas" ? "flex flex-col w-full" : "hidden"
-          } lg:!flex lg:!flex-col`}
+          className={`h-full flex-1 overflow-hidden bg-muted/20 flex flex-col w-full ${
+            mobileStudioTab === "canvas" ? "flex" : "hidden lg:flex"
+          }`}
         >
           <StudioCanvasStage deviceMode={deviceMode}>
             <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
@@ -324,9 +324,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
         {/* Right Studio Dock (Property Inspector) */}
         <div
-          className={`h-full shrink-0 border-s border-border/80 bg-card ${
-            mobileStudioTab === "inspector" ? "flex flex-col w-full" : "hidden"
-          } lg:!flex lg:!flex-col lg:!w-96`}
+          className={`h-full shrink-0 border-s border-border/80 bg-card w-full lg:w-96 flex flex-col ${
+            mobileStudioTab === "inspector" ? "flex" : "hidden lg:flex"
+          }`}
         >
           <StudioPropertyInspector
             selectedSectionKey={selectedSectionKey}
@@ -338,8 +338,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         </div>
       </div>
 
-      {/* 3. Mobile Bottom Studio Dock (Hidden on Desktops) */}
-      <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md lg:!hidden">
+      {/* 3. Mobile Bottom Studio Dock (Hidden on Desktops >= 1024px) */}
+      <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md lg:hidden">
         <button
           type="button"
           onClick={() => setMobileStudioTab("layers")}
