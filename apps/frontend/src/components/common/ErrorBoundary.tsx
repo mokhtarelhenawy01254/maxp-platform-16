@@ -3,6 +3,7 @@ import {
   ExclamationTriangleIcon,
   ArrowPathIcon,
 } from "@heroicons/react/24/outline";
+import { recoverFromChunkLoadError } from "../../utils/chunkLoadRecovery";
 
 interface Props {
   children: ReactNode;
@@ -34,6 +35,9 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   override componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    if (recoverFromChunkLoadError(error, "error-boundary")) {
+      return;
+    }
     console.error("ErrorBoundary caught an error:", error, errorInfo);
     this.setState({
       error,
