@@ -41,31 +41,41 @@ exports.getMyApps = async (req, res) => {
       });
     });
 
-    // Calculate usage summary for each app
-    const appsWithUsage = await Promise.all(apps.map(async (companyApp) => {
-      const usageStats = await executeWithRetry(async () => {
-        return await getSharedPrismaClient().appUsageLog.aggregate({
-          where: {
-            companyAppId: companyApp.id,
-            createdAt: {
-              gte: new Date(new Date().setDate(1)) // This month
-            }
-          },
-          _sum: {
-            totalCost: true,
-            quantity: true
-          }
-        });
-      });
+    // ONE grouped aggregate instead of one query per app: with ~45 installed
+    // apps, the per-app Promise.all herd fired 45 parallel RLS transactions
+    // over a 25-connection pool (Prisma + PgBouncer), saturating every
+    // connection and wedging this request 50s+ — which froze the whole
+    // dashboard for the biggest merchants (Swan, 2026-09-01).
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
 
+    const usageSums = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().appUsageLog.groupBy({
+        by: ['companyAppId'],
+        where: {
+          companyAppId: { in: apps.map((companyApp) => companyApp.id) },
+          createdAt: { gte: monthStart }
+        },
+        _sum: {
+          totalCost: true,
+          quantity: true
+        }
+      });
+    });
+
+    const usageByApp = new Map(usageSums.map((row) => [row.companyAppId, row._sum]));
+
+    const appsWithUsage = apps.map((companyApp) => {
+      const sums = usageByApp.get(companyApp.id) || {};
       return {
         ...companyApp,
         monthlyUsage: {
-          totalCost: usageStats._sum.totalCost || 0,
-          totalQuantity: usageStats._sum.quantity || 0
+          totalCost: sums.totalCost || 0,
+          totalQuantity: sums.quantity || 0
         }
       };
-    }));
+    });
 
     res.json({
       success: true,
