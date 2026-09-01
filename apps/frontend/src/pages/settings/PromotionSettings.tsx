@@ -15,7 +15,7 @@ import {
   Truck,
 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -63,6 +63,10 @@ type FlatShippingSettings = {
 const MAX_THRESHOLD = 100000;
 const MAX_FEE = 10000;
 const AMOUNT_TOKEN = "{amount}";
+
+/* سويتش بمقاس مريح: تجاوز مقاس shadcn الافتراضي داخل هذه الصفحة فقط (Tailwind v4 important) */
+const SWITCH_SIZE_CLASS =
+  "h-6! w-11! [&_[data-slot=switch-thumb]]:size-5! data-checked:[&_[data-slot=switch-thumb]]:translate-x-full! rtl:data-checked:[&_[data-slot=switch-thumb]]:-translate-x-full!";
 
 const formatAmount = (value: number): string =>
   Number(value || 0).toLocaleString("en-US");
@@ -118,6 +122,7 @@ function PromoSection({
             checked={switchChecked}
             onCheckedChange={onSwitchChange}
             aria-label={switchLabel}
+            className={SWITCH_SIZE_CLASS}
           />
         </div>
       </div>
@@ -185,8 +190,6 @@ const PromotionSettings: React.FC = () => {
   const stateRef = useRef({ freeShippingSettings, flatShippingSettings });
   stateRef.current = { freeShippingSettings, flatShippingSettings };
 
-  const msgRef = useRef<HTMLTextAreaElement | null>(null);
-
   /* ---------- الحفظ التلقائي الموحّد (نفس الـ API الحالي بدون تغيير في الباك إند) ---------- */
   const scheduleIdle = useCallback(() => {
     clearTimeout(saveTimersRef.current.idle);
@@ -233,8 +236,16 @@ const PromotionSettings: React.FC = () => {
   const loadSettings = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await apiClient.get("/promotion-settings");
-      const envelope = response.data as {
+      const [settingsResult, sfResult] = await Promise.allSettled([
+        apiClient.get("/promotion-settings"),
+        storefrontSettingsService.getSettings(undefined, { allowFallback: false }),
+      ]);
+
+      if (settingsResult.status === "rejected") {
+        throw settingsResult.reason;
+      }
+
+      const envelope = settingsResult.value.data as {
         success?: boolean;
         data?: {
           freeShippingEnabled?: boolean;
@@ -261,15 +272,12 @@ const PromotionSettings: React.FC = () => {
           flatShippingFee: getNumericValue(data.flatShippingFee),
         });
       }
-      try {
-        const sfRes = await storefrontSettingsService.getSettings(undefined, {
-          allowFallback: false,
-        });
-        const sfData = sfRes.data as { hideUtilityBar?: boolean };
+
+      if (sfResult.status === "fulfilled") {
+        const sfData = sfResult.value.data as { hideUtilityBar?: boolean };
         setHideUtilityBar(sfData?.hideUtilityBar === true);
-      } catch {
-        // غير مانعة — إخفاء الشريط اختياري
       }
+      // رفض نداء إخفاء الشريط غير مانع — الميزة اختيارية
       loadedRef.current = true;
     } catch (error) {
       console.error("Error fetching settings:", error);
@@ -324,7 +332,9 @@ const PromotionSettings: React.FC = () => {
   );
 
   const insertAmountToken = useCallback(() => {
-    const el = msgRef.current;
+    const el = document.getElementById(
+      "freeShippingMessage",
+    ) as HTMLTextAreaElement | null;
     if (!el) return;
     const start = el.selectionStart ?? el.value.length;
     const end = el.selectionEnd ?? start;
@@ -412,6 +422,7 @@ const PromotionSettings: React.FC = () => {
   const lockedFieldsClass = "bg-slate-50/50 cursor-not-allowed";
 
   return (
+    <>
     <SettingsPageShell>
       <SettingsPageHero
         badgeIcon={Sparkles}
@@ -465,7 +476,7 @@ const PromotionSettings: React.FC = () => {
         {/* أدوات مرتبطة: روابط حقيقية مش تابات */}
         <nav
           aria-label={t("promotionSettings.relatedToolsLabel")}
-          className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4"
+          className="flex gap-2.5 overflow-x-auto pb-1 sm:grid sm:grid-cols-2 xl:grid-cols-4"
         >
           {relatedTools.map((tool) => {
             const Icon = tool.icon;
@@ -473,7 +484,7 @@ const PromotionSettings: React.FC = () => {
               <Link
                 key={tool.to}
                 to={tool.to}
-                className="group flex items-start gap-2.5 rounded-2xl border border-slate-200/70 bg-white/85 px-3.5 py-3 transition hover:-translate-y-px hover:border-slate-300 hover:shadow-sm"
+                className="group flex min-w-[240px] shrink-0 items-start gap-2.5 rounded-2xl border border-slate-200/70 bg-white/85 px-3.5 py-3 transition hover:-translate-y-px hover:border-slate-300 hover:shadow-sm sm:min-w-0"
               >
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-200/70 transition group-hover:bg-white">
                   <Icon className="size-4" />
@@ -571,7 +582,6 @@ const PromotionSettings: React.FC = () => {
               </Label>
               <Textarea
                 id="freeShippingMessage"
-                ref={msgRef}
                 rows={3}
                 value={freeShippingSettings.freeShippingMessage}
                 onChange={(event) =>
@@ -762,15 +772,14 @@ const PromotionSettings: React.FC = () => {
             </p>
           </div>
           <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                variant="outline"
-                className="rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800"
-              >
-                <RotateCcw className="size-4" />
-                {t("promotionSettings.resetAction")}
-              </Button>
+            <AlertDialogTrigger
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "rounded-xl border-rose-200 text-rose-700 hover:bg-rose-50 hover:text-rose-800",
+              )}
+            >
+              <RotateCcw className="size-4" />
+              {t("promotionSettings.resetAction")}
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
@@ -797,6 +806,31 @@ const PromotionSettings: React.FC = () => {
         </div>
       </div>
     </SettingsPageShell>
+
+    {/* مؤشر حفظ عائم: بيبان أينما كان المستخدم في الصفحة وقت الحفظ */}
+    {saveState !== "idle" ? (
+      <div
+        aria-hidden="true"
+        className={cn(
+          "pointer-events-none fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-full border px-4 py-2 text-xs font-bold shadow-lg transition-colors",
+          saveState === "saving"
+            ? "border-amber-200 bg-amber-50/95 text-amber-800"
+            : "border-emerald-200 bg-emerald-50/95 text-emerald-800",
+        )}
+      >
+        <span className="flex items-center gap-2">
+          {saveState === "saving" ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Check className="size-3.5" />
+          )}
+          {saveState === "saving"
+            ? t("promotionSettings.saveSaving")
+            : t("promotionSettings.saveSaved")}
+        </span>
+      </div>
+    ) : null}
+    </>
   );
 };
 

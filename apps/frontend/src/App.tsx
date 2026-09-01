@@ -1657,13 +1657,39 @@ const AppContent = () => {
   }, []);
 
   useEffect(() => {
-    fetch("/api/v1/public/lp-pages", { credentials: "include" })
-      .then((r) => {
-        if (!r.ok) throw new Error("API not available");
-        return r.json();
-      })
-      .then((pages: any[]) => setActiveLpSlugs(new Set(pages.filter((p) => p.isActive).map((p) => p.slug))))
-      .catch(() => setActiveLpSlugs(null));
+    // تأجيل جلب صفحات الهبوط لوقت الخمول حتى لا تنافس طلبات الإقلاع الحرجة
+    let cancelled = false;
+    const loadLpPages = () => {
+      if (cancelled) return;
+      fetch("/api/v1/public/lp-pages", { credentials: "include" })
+        .then((r) => {
+          if (!r.ok) throw new Error("API not available");
+          return r.json();
+        })
+        .then((pages: any[]) => {
+          if (cancelled) return;
+          setActiveLpSlugs(new Set(pages.filter((p) => p.isActive).map((p) => p.slug)));
+        })
+        .catch(() => {
+          if (!cancelled) setActiveLpSlugs(null);
+        });
+    };
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      const idleId = idleWindow.requestIdleCallback(loadLpPages, { timeout: 2500 });
+      return () => {
+        cancelled = true;
+        idleWindow.cancelIdleCallback?.(idleId);
+      };
+    }
+    const fallbackTimer = window.setTimeout(loadLpPages, 1200);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(fallbackTimer);
+    };
   }, []);
 
   // Remember the last app page per user+company so they can resume it after login.
