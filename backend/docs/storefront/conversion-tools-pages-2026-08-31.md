@@ -106,3 +106,13 @@ Fixes:
   were updated to the Arabic tool/app labels that the admin surface has
   rendered since the Arabicization commit (those expectations referenced
   English names that no code path renders).
+
+## Consolidation (2026-09-01): legacy tab routes now redirect to the tools index
+
+After live verification of the standalone tool pages, the 5 legacy tab routes
+(`/settings/store/{product-conversion,offers-bundles,growth-widgets,selling-modes,reviews-social-proof}`)
+now `<Navigate replace>` to `/settings/store/tools` — the same 22 tools were
+duplicated across both surfaces, editing the same `/my-apps` settings. The
+sidebar sub-entries and the marketplace feature-map routes were collapsed to
+the single tools index. The legacy page components remain in the tree (still
+covered by component-level tests) but are no longer routed.

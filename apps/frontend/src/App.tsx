@@ -349,21 +349,6 @@ const TelegramGroups = React.lazy(
 const StoreSettings = React.lazy(
   () => import("./pages/settings/StoreSettings"),
 );
-const ProductPageConversionSettingsPage = React.lazy(
-  () => import("./pages/settings/ProductPageConversionSettingsPage"),
-);
-const StoreOffersBundlesSettingsPage = React.lazy(
-  () => import("./pages/settings/StoreOffersBundlesSettingsPage"),
-);
-const StoreGrowthWidgetsSettingsPage = React.lazy(
-  () => import("./pages/settings/StoreGrowthWidgetsSettingsPage"),
-);
-const StoreSellingModesSettingsPage = React.lazy(
-  () => import("./pages/settings/StoreSellingModesSettingsPage"),
-);
-const StoreReviewsSocialProofSettingsPage = React.lazy(
-  () => import("./pages/settings/StoreReviewsSocialProofSettingsPage"),
-);
 const ConversionToolsIndexPage = React.lazy(
   () => import("./pages/settings/ConversionToolsIndexPage"),
 );
@@ -5828,43 +5813,23 @@ const AppContent = () => {
                 />
                 <Route
                   path="/settings/store/product-conversion"
-                  element={
-                    <Layout>
-                      <ProductPageConversionSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/settings/store/tools" replace />}
                 />
                 <Route
                   path="/settings/store/offers-bundles"
-                  element={
-                    <Layout>
-                      <StoreOffersBundlesSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/settings/store/tools" replace />}
                 />
                 <Route
                   path="/settings/store/growth-widgets"
-                  element={
-                    <Layout>
-                      <StoreGrowthWidgetsSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/settings/store/tools" replace />}
                 />
                 <Route
                   path="/settings/store/selling-modes"
-                  element={
-                    <Layout>
-                      <StoreSellingModesSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/settings/store/tools" replace />}
                 />
                 <Route
                   path="/settings/store/reviews-social-proof"
-                  element={
-                    <Layout>
-                      <StoreReviewsSocialProofSettingsPage />
-                    </Layout>
-                  }
+                  element={<Navigate to="/settings/store/tools" replace />}
                 />
                 <Route
                   path="/settings/store/tools"

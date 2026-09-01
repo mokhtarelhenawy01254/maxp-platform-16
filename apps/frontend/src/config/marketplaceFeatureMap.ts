@@ -167,11 +167,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     currentGate: "conversion-suite",
     legacyGate: "store",
     routes: [
-      { path: "/settings/store/product-conversion", label: "أدوات التحويل" },
-      { path: "/settings/store/offers-bundles", label: "العروض والباقات" },
-      { path: "/settings/store/growth-widgets", label: "ودجات الموقع" },
-      { path: "/settings/store/selling-modes", label: "أوضاع البيع" },
-      { path: "/settings/store/reviews-social-proof", label: "المراجعات والثقة" },
+      { path: "/settings/store/tools", label: "أدوات التحويل" },
     ],
     action: "تم ربط مجموعة التحويل بـ conversion-suite مع fallback مؤقت على ecommerce-basic.",
   },
