@@ -1157,33 +1157,36 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
         </div>
       </div>
 
-      <div className={hideNavigation ? "block" : "flex flex-col lg:flex-row gap-8"}>
+      <div className={hideNavigation ? "block" : "space-y-6"}>
         {!hideNavigation ? (
-          <aside className="lg:w-72 flex-shrink-0">
-            <nav className="flex flex-col space-y-2 bg-gray-50/50 dark:bg-gray-800/50 p-3 rounded-2xl border border-gray-100 dark:border-gray-700/50">
-                {tabsWithCheckout.map((tab) => (
+          <div className="border-b border-gray-200 dark:border-gray-700/60 pb-1">
+            <nav className="flex space-x-2 rtl:space-x-reverse overflow-x-auto no-scrollbar py-1">
+              {tabsWithCheckout.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
                   <button
                     key={tab.id}
+                    type="button"
                     onClick={() => handleTabChange(tab.id as StoreSettingsTab)}
                     className={`
-                      w-full flex items-center gap-3 px-4 py-3.5 text-sm font-semibold rounded-xl transition-all duration-200
-                      ${activeTab === tab.id
-                        ? "bg-white dark:bg-gray-700 text-indigo-600 dark:text-indigo-400 shadow-sm ring-1 ring-gray-200 dark:ring-gray-600"
-                        : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                      flex items-center gap-2 px-4 py-2.5 text-sm font-semibold rounded-xl transition-all duration-200 whitespace-nowrap shrink-0
+                      ${
+                        isActive
+                          ? "bg-indigo-600 text-white shadow-sm shadow-indigo-200 dark:shadow-none"
+                          : "bg-gray-100/80 dark:bg-gray-800/60 text-gray-600 dark:text-gray-300 hover:bg-gray-200/80 dark:hover:bg-gray-700/80 hover:text-gray-900 dark:hover:text-white"
                       }
                     `}
                   >
-                    <div className={`p-1.5 rounded-lg ${activeTab === tab.id ? "bg-indigo-50 dark:bg-indigo-900/30" : "bg-transparent"}`}>
-                      <tab.icon className="h-5 w-5" />
-                    </div>
-                    {tab.label}
+                    <tab.icon className={`h-4 w-4 ${isActive ? "text-white" : "text-gray-500 dark:text-gray-400"}`} />
+                    <span>{tab.label}</span>
                   </button>
-                ))}
-              </nav>
-          </aside>
+                );
+              })}
+            </nav>
+          </div>
         ) : null}
 
-        <main className={hideNavigation ? "w-full" : "flex-1 min-w-0"}>
+        <main className="w-full">
           <div className="bg-white dark:bg-gray-800/80 backdrop-blur-sm rounded-3xl border border-gray-100 dark:border-gray-700/50 p-6 lg:p-8 shadow-xl shadow-gray-200/20 dark:shadow-none min-h-[600px]">
             {activeTab === "branches" ? (
               <BranchesSection

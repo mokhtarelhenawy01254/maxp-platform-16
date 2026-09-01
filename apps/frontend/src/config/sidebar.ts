@@ -673,12 +673,8 @@ export const getSidebarConfig = (
                     external: true
                 },
                 { to: '/settings/custom-domain', icon: Link, label: t('sidebar.customDomain') },
-                { to: '/settings/store?tab=branches', icon: Store, label: t('sidebar.storeSettings') },
+                { to: '/settings/store', icon: Store, label: t('sidebar.storeSettings') },
                 { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.conversionTools') },
-                { to: '/settings/store?tab=shipping', icon: Truck, label: t('sidebar.storeShipping') },
-                { to: '/settings/store?tab=footer', icon: FileText, label: t('sidebar.footerSettings') },
-                { to: '/settings/promotion', icon: Gift, label: t('sidebar.freeShippingSettings') },
-                { to: '/settings/store-promotion', icon: Gift, label: t('sidebar.storePromotion') },
                 { to: '/admin/faqs', icon: HelpCircle, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardCheck, label: t('sidebar.policies') },
                 { to: '/settings/clarity', icon: BarChart3, label: t('sidebar.microsoftClarity') },
