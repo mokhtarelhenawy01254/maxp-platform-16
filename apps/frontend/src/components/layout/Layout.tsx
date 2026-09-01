@@ -118,7 +118,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const hasEcommerce = user?.company?.activeApps?.includes('ecommerce-basic');
   const showSearchInHeader = companySettings.showOrderSearchInHeader !== false && !!hasEcommerce;
   const hasStore = user?.company?.activeApps?.some((app) =>
-    ['store', 'store-basic', 'store-pro'].includes(app),
+    ['store', 'store-basic', 'store-pro', 'ecommerce-basic', 'ecommerce-pro'].includes(app),
   );
 
   const storeUrl = useMemo(() => {
@@ -493,15 +493,16 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
           <div className="business-shell-utility-row">
             {hasStore && (
-              <button
-                type="button"
-                onClick={(e) => e.preventDefault()}
+              <a
+                href={storeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="business-icon-button"
                 title={t("header.visitStore", "المتجر")}
                 aria-label={t("header.visitStore", "المتجر")}
               >
                 <BuildingStorefrontIcon className="h-5 w-5 text-gray-700 dark:text-gray-300" />
-              </button>
+              </a>
             )}
             {showSearchInHeader && (
               <div className="relative flex items-center">

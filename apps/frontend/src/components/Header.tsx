@@ -299,15 +299,17 @@ const Header: React.FC = () => {
               </form>
             )}
 
-            {/* Visit Store Button (No action) */}
-            <button
-              type="button"
-              onClick={(e) => e.preventDefault()}
+            {/* Visit Store Button */}
+            <a
+              href={storeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
               className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
               title={t("header.visitStore", "المتجر")}
+              aria-label={t("header.visitStore", "المتجر")}
             >
               <BuildingStorefrontIcon className="h-5 w-5" />
-            </button>
+            </a>
 
             {/* Global Timer */}
             <GlobalTimer />
