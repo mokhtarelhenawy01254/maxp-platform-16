@@ -39,7 +39,7 @@ const StoreCanvasFrame = ({
   displayKind: ConversionToolDisplayKind;
   children: React.ReactNode;
 }) => (
-  <div className="flex min-h-[420px] items-start justify-center rounded-2xl border border-stone-200/80 bg-stone-100/70 p-4 dark:border-stone-800 dark:bg-stone-900/60 sm:p-6">
+  <div className="flex min-h-[240px] items-start justify-center rounded-2xl border border-stone-200/80 bg-stone-100/70 p-3 dark:border-stone-800 dark:bg-stone-900/60 sm:min-h-[420px] sm:p-6">
     <div
       className={`w-full transition-[max-width] duration-200 ease-out ${
         view === "mobile" ? "max-w-[420px]" : "max-w-full"

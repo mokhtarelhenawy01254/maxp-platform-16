@@ -40,7 +40,7 @@ const ToolCard = ({
     to={`/settings/store/tools/${tool.key}`}
     className="group overflow-hidden rounded-xl border border-gray-200 bg-white transition-all duration-200 ease-out hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-sm dark:border-gray-800 dark:bg-gray-950 dark:hover:border-gray-700"
   >
-    <div className="relative h-32 overflow-hidden border-b border-gray-100 bg-stone-50">
+    <div className="relative h-24 overflow-hidden border-b border-gray-100 bg-stone-50 md:h-32">
       <div className="absolute right-0 top-0 w-[139%] origin-top-right scale-[0.72] p-3">
         {preview}
       </div>
