@@ -45,6 +45,8 @@ export const DEFAULT_CONVERSION_SUITE_SETTINGS = {
     backInStock: true,
     purchaseFomo: false,
     inactiveTab: false,
+    productWishlist: true,
+    productComparison: true,
   },
   ui: {
     pdpVariant: "balanced",
@@ -153,6 +155,8 @@ const CONVERSION_SUITE_PRESET_OVERRIDES: Record<string, JsonRecord> = {
       backInStock: true,
       purchaseFomo: false,
       inactiveTab: false,
+      productWishlist: true,
+      productComparison: true,
     },
     ui: {
       pdpVariant: "minimal",
@@ -233,6 +237,8 @@ const CONVERSION_SUITE_PRESET_OVERRIDES: Record<string, JsonRecord> = {
       backInStock: true,
       purchaseFomo: true,
       inactiveTab: true,
+      productWishlist: true,
+      productComparison: true,
     },
     ui: {
       pdpVariant: "editorial",

@@ -259,10 +259,14 @@ async function sendDentalNotification({ companyId, eventType, caseRow, doctor })
 
 async function loadCaseForNotification(caseId) {
   const prisma = getSharedPrismaClient();
-  const dentalCase = await prisma.dentalLabCase.findUnique({
+  if (!prisma || !prisma.dentalLabCase) return null;
+  const finder = typeof prisma.dentalLabCase.findUnique === 'function'
+    ? prisma.dentalLabCase.findUnique.bind(prisma.dentalLabCase)
+    : prisma.dentalLabCase.findFirst.bind(prisma.dentalLabCase);
+  const dentalCase = await finder({
     where: { id: caseId },
     include: { doctor: { select: { id: true, name: true, phone: true } } },
-  });
+  }).catch(() => null);
   if (!dentalCase) return null;
   return { caseRow: dentalCase, doctor: dentalCase.doctor || null };
 }
@@ -391,17 +395,28 @@ async function runDunningCheck(companyId) {
     });
 
     const sentState = (merged.dunningSent && typeof merged.dunningSent === 'object' ? merged.dunningSent : {});
-    const sentIds = Array.isArray(sentState.ids) ? sentState.ids : [];
-    const sentSet = new Set(sentIds);
+    const sentMap = sentState.map && typeof sentState.map === 'object' ? { ...sentState.map } : {};
+    // Backward compatibility with legacy array
+    if (Array.isArray(sentState.ids)) {
+      for (const id of sentState.ids) {
+        if (!sentMap[id]) sentMap[id] = Date.now();
+      }
+    }
+
+    const intervalMs = agingDays * 86400000;
+    const now = Date.now();
 
     let sent = 0;
     let skipped = 0;
-    const newlySent = [];
     for (const inv of invoices || []) {
       const remaining = Number(inv.remaining) || 0;
       const overdue = inv.dueDate && new Date(inv.dueDate) < cutoff;
       if (remaining <= 0 || !overdue) { skipped++; continue; }
-      if (sentSet.has(inv.id)) { skipped++; continue; }
+
+      // إذا تم إرسال تذكير مؤخراً (خلال فترة agingDays)، تخطّ الإرسال
+      const lastSentAt = sentMap[inv.id] ? Number(sentMap[inv.id]) : 0;
+      if (lastSentAt > 0 && (now - lastSentAt) < intervalMs) { skipped++; continue; }
+
       const phone = inv.doctor && inv.doctor.phone;
       if (!phone) { skipped++; continue; }
 
@@ -427,11 +442,12 @@ async function runDunningCheck(companyId) {
       });
       if (result && result.success) {
         sent++;
-        newlySent.push(inv.id);
+        sentMap[inv.id] = now;
       }
     }
-    if (newlySent.length > 0) {
-      const next = { ids: [...sentSet, ...newlySent] };
+
+    if (sent > 0) {
+      const next = { map: sentMap, lastRun: now };
       await prisma.dentalSetting.upsert({
         where: { companyId_key: { companyId, key: 'dunningSent' } },
         update: { value: next },

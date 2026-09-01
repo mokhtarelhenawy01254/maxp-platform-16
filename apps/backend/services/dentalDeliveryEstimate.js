@@ -48,11 +48,36 @@ async function estimateLeadDays(prisma, companyId, workTypeId) {
   return { days, source: 'history', sampleSize };
 }
 
-async function suggestDueDate(prisma, companyId, workTypeId, base = new Date()) {
+/**
+ * يقترح تاريخ استحقاق ذكي مع مراعاة أيام العمل (استثناء الجمعة افتراضياً) والأولوية (URGENT / STAT).
+ */
+async function suggestDueDate(prisma, companyId, workTypeId, base = new Date(), options = {}) {
   const estimate = await estimateLeadDays(prisma, companyId, workTypeId);
-  const due = new Date(base);
-  due.setDate(due.getDate() + Math.max(1, Math.round(estimate.days)));
-  return due;
+  let days = Math.max(1, Math.round(estimate.days));
+
+  // مراعاة درجة الأولوية
+  const priority = typeof options === 'string' ? options.toUpperCase() : String(options?.priority || '').toUpperCase();
+  if (priority === 'STAT') {
+    days = Math.max(1, Math.round(days * 0.25));
+  } else if (priority === 'URGENT') {
+    days = Math.max(1, Math.round(days * 0.5));
+  }
+
+  const baseDate = base instanceof Date && !Number.isNaN(base.getTime()) ? new Date(base) : new Date();
+  const current = new Date(baseDate);
+
+  // تخطي عطلة نهاية الأسبوع (الجمعة = 5)
+  let addedWorkingDays = 0;
+  while (addedWorkingDays < days) {
+    current.setDate(current.getDate() + 1);
+    const dayOfWeek = current.getDay();
+    // 5 = Friday
+    if (dayOfWeek !== 5) {
+      addedWorkingDays++;
+    }
+  }
+
+  return current;
 }
 
 module.exports = { estimateLeadDays, suggestDueDate };

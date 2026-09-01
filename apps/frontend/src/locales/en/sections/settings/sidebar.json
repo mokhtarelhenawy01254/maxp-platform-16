@@ -695,5 +695,6 @@
   "newArticle": "New Article",
   "orderAutomation": "Order Automation",
   "codDeposit": "COD Deposit",
-  "orderStatusTemplates": "WhatsApp Status Templates"
+  "orderStatusTemplates": "WhatsApp Status Templates",
+  "upsellManagement": "Upsell Management"
 }

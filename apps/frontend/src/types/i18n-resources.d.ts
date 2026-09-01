@@ -13615,7 +13615,20 @@ declare module 'react-i18next' {
         add: string;
         allActivities: string;
         statusChanges: string;
+        productChanges: string;
+        customerChanges: string;
         notes: string;
+        noActivitiesInCategory: string;
+        statusChangeTo: string;
+        statusReasonLine: string;
+        modificationDetail: string;
+        cancellationReasonLine: string;
+        orderModified: string;
+        orderTrashed: string;
+        user: string;
+        system: string;
+        scheduledDeliveryWithNotes: string;
+        scheduledDelivery: string;
         save: string;
         edited: string;
         editNote: string;
@@ -17356,6 +17369,7 @@ declare module 'react-i18next' {
         orderAutomation: string;
         codDeposit: string;
         orderStatusTemplates: string;
+        upsellManagement: string;
       };
       storeBranches: {
         branchesTitle: string;

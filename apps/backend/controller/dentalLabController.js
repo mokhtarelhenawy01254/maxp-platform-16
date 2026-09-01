@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const path = require('path');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
@@ -253,6 +253,13 @@ const createDoctor = async (req, res) => {
     const creditResult = toNonNegativeNumber(body.creditLimit, 0);
     if (!creditResult.valid) return res.status(400).json({ success: false, error: 'حد الائتمان غير صحيح' });
 
+    const bcrypt = require('bcryptjs');
+    let hashedPin = null;
+    if (body.portalPin) {
+      const pinStr = String(body.portalPin);
+      hashedPin = bcrypt.hashSync(pinStr, 10);
+    }
+
     const prisma = getSharedPrismaClient();
     const doctor = await prisma.dentalLabDoctor.create({
       data: {
@@ -261,7 +268,7 @@ const createDoctor = async (req, res) => {
         phone: body.phone ? String(body.phone) : null,
         clinicName: body.clinicName ? String(body.clinicName) : null,
         governorate: body.governorate ? String(body.governorate) : null,
-        portalPin: body.portalPin ? String(body.portalPin) : null,
+        portalPin: hashedPin,
         creditLimit: creditResult.value,
         notes: body.notes ? String(body.notes) : null,
         isActive: normalizeBool(body.isActive, true),
@@ -273,6 +280,7 @@ const createDoctor = async (req, res) => {
     res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الطبيب' });
   }
 };
+
 
 const DOCTOR_UPDATE_FIELDS = ['name', 'phone', 'clinicName', 'governorate', 'portalPin', 'creditLimit', 'notes', 'isActive'];
 
@@ -296,7 +304,14 @@ const updateDoctor = async (req, res) => {
       data.name = name;
     }
     if ('phone' in data) data.phone = data.phone ? String(data.phone) : null;
-    if ('portalPin' in data) data.portalPin = data.portalPin ? String(data.portalPin) : null;
+    if ('portalPin' in data) {
+      if (data.portalPin) {
+        const bcrypt = require('bcryptjs');
+        data.portalPin = bcrypt.hashSync(String(data.portalPin), 10);
+      } else {
+        data.portalPin = null;
+      }
+    }
     if ('creditLimit' in data) {
       const creditResult = toNonNegativeNumber(data.creditLimit, 0);
       if (!creditResult.valid) return res.status(400).json({ success: false, error: 'حد الائتمان غير صحيح' });
@@ -2549,6 +2564,7 @@ const getMyWage = async (req, res) => {
     if (!technician) {
       return res.json({ success: true, data: { technician: null, rate: 0, completedStages: 0, totalWage: 0 } });
     }
+    const { computeTechnicianEarnings, getTechnicianWageDefaults } = require('../services/dentalPricing');
     const [all, thisMonth] = await Promise.all([
       computeTechnicianEarnings(prisma, companyId, { technicianId: technician.id }),
       computeTechnicianEarnings(prisma, companyId, {
@@ -2755,13 +2771,139 @@ const getInvoicePaymentLink = async (req, res) => {
         provider: gateway,
         amount: invoice.remaining,
         invoiceNumber: invoice.invoiceNumber,
-        // في الإنتاج: يولّد هنا رابط Checkout من مزود البوابة (Paymob/Stripe) بمفاتيح المعمل
         checkoutUrl: null,
       },
     });
   } catch (error) {
     console.error('Error fetching invoice payment link:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب رابط الدفع' });
+  }
+};
+
+const getPanLabelPdf = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const dentalCase = await prisma.dentalLabCase.findFirst({
+      where: { id, companyId },
+      include: {
+        doctor: { select: { id: true, name: true } },
+        workType: { select: { id: true, name: true } },
+      },
+    });
+    if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+
+    const [settingsRows, company] = await Promise.all([
+      prisma.dentalSetting.findMany({ where: { companyId } }),
+      prisma.company.findFirst({ where: { id: companyId } }),
+    ]);
+    const settings = mergeSettings(settingsRows);
+    const workOrderHeader = settings.workOrderHeader || {};
+
+    const { generatePanLabelPdf } = require('../services/dentalWorkOrderService');
+    const { buffer, caseNumber } = await generatePanLabelPdf({ company, caseRow: dentalCase, workOrderHeader });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="pan-label-${caseNumber}.pdf"`);
+    res.send(buffer);
+  } catch (error) {
+    console.error('Error generating dental pan label PDF:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء ملصق العلبة' });
+  }
+};
+
+const recordDoctorBulkPayment = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id: doctorId } = req.params;
+    const body = req.body || {};
+    const amountResult = toPositiveNumber(body.amount);
+    if (!amountResult.valid) return res.status(400).json({ success: false, error: 'مبلغ الدفعة غير صحيح' });
+    let method = body.method ? String(body.method).toUpperCase() : 'OTHER';
+    if (!PAYMENT_METHODS.has(method)) method = 'OTHER';
+
+    const prisma = getSharedPrismaClient();
+    const doctor = await prisma.dentalLabDoctor.findFirst({ where: { id: doctorId, companyId } });
+    if (!doctor) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
+
+    const openInvoices = await prisma.dentalInvoice.findMany({
+      where: { companyId, doctorId, status: { in: ['OPEN', 'PARTIAL'] } },
+      orderBy: { createdAt: 'asc' },
+      include: { payments: true },
+    });
+
+    if (openInvoices.length === 0) {
+      return res.status(400).json({ success: false, error: 'لا توجد فواتير مفتوحة لهذا الطبيب' });
+    }
+
+    const totalRemaining = round2(openInvoices.reduce((s, inv) => s + (Number(inv.remaining) || 0), 0));
+    if (amountResult.value > totalRemaining) {
+      return res.status(400).json({
+        success: false,
+        error: `مبلغ الدفعة (${amountResult.value}) أكبر من إجمالي المتبقي على فواتير الطبيب (${totalRemaining})`,
+      });
+    }
+
+    let remainingToDistribute = amountResult.value;
+    const paymentAllocations = [];
+    const affectedCaseIds = new Set();
+
+    await prisma.$transaction(async (tx) => {
+      for (const inv of openInvoices) {
+        if (remainingToDistribute <= 0) break;
+        const invRemaining = round2(Number(inv.remaining) || 0);
+        if (invRemaining <= 0) continue;
+
+        const allocatedAmount = round2(Math.min(remainingToDistribute, invRemaining));
+        remainingToDistribute = round2(remainingToDistribute - allocatedAmount);
+
+        await tx.dentalPayment.create({
+          data: {
+            companyId,
+            invoiceId: inv.id,
+            amount: allocatedAmount,
+            method,
+            note: body.note ? `${String(body.note).trim()} (دفعة مجمعة)` : 'دفعة مجمعة على حساب الطبيب',
+            paidBy: req.user?.id || req.user?.email || null,
+          },
+        });
+
+        const newPaid = round2((Number(inv.paid) || 0) + allocatedAmount);
+        const newRemaining = round2(Math.max(0, (Number(inv.total) || 0) - newPaid));
+        const newStatus = deriveInvoiceStatus(Number(inv.total) || 0, newPaid);
+
+        await tx.dentalInvoice.update({
+          where: { id: inv.id },
+          data: { paid: newPaid, remaining: newRemaining, status: newStatus },
+        });
+
+        paymentAllocations.push({ invoiceId: inv.id, invoiceNumber: inv.invoiceNumber, amount: allocatedAmount });
+        if (inv.caseId) affectedCaseIds.add(inv.caseId);
+      }
+    });
+
+    for (const caseId of affectedCaseIds) {
+      await syncCasePayments(prisma, companyId, caseId, {
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: adminDisplayName(req),
+        reason: 'تسوية دفعة مجمعة على حساب الطبيب',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        doctorId,
+        totalPaid: amountResult.value,
+        allocations: paymentAllocations,
+      },
+    });
+  } catch (error) {
+    console.error('Error recording doctor bulk payment:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة المجمعة' });
   }
 };
 
@@ -2824,6 +2966,8 @@ getOverdueReport,
   getDoctorPricing,
   setDoctorPricing,
   getInvoicePaymentLink,
+  getPanLabelPdf,
+  recordDoctorBulkPayment,
 };
 
 // DEPLOY_YML_FIX_TEST: 2026-08-30T18:23:37.0993262+03:00

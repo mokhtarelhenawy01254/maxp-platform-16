@@ -345,6 +345,7 @@ const policyCrudRoutes = require("./routes/policy");
 const productReviewRoutes = require("./routes/productReviewRoutes");
 const publicProductReviewRoutes = require("./routes/publicProductReviewRoutes");
 const productLandingPagesRoutes = require("./routes/productLandingPagesRoutes");
+const funnelRoutes = require("./routes/funnelRoutes");
 const productRoutes = require("./routes/productRoutes");
 const projectRoutes = require("./routes/projectRoutes");
 const proxyRoutes = require("./routes/proxyRoutes");

@@ -1,4 +1,4 @@
-﻿const express = require('express');
+const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
@@ -83,6 +83,7 @@ router.get('/design-review/:name', async (req, res) => {
 // Doctors
 router.get('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.listDoctors);
 router.post('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.createDoctor);
+router.post('/doctors/:id/bulk-payment', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.recordDoctorBulkPayment);
 router.put('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateDoctor);
 router.delete('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteDoctor);
 
@@ -109,6 +110,7 @@ router.post('/cases/:id/assign', verifyToken.authenticateToken, dentalRoleGuard(
 router.post('/cases/:id/attachments', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), upload.any(), controller.uploadCaseAttachment);
 router.delete('/cases/:id/attachments/:attachmentId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.deleteCaseAttachment);
 router.get('/cases/:id/work-order', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.getWorkOrderPdf);
+router.get('/cases/:id/pan-label', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.getPanLabelPdf);
 router.get('/cases/:id/download-all', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.downloadAllAttachments);
 router.post('/cases/:id/quality-check', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.recordQualityCheck);
 router.get('/cases/:id/quality-checks', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.listQualityChecks);

@@ -1642,7 +1642,7 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
                           effectiveTrackedOrder.status,
                         )}`}
                       >
-                        {getOrderStatusText(effectiveTrackedOrder.status, t, prefersArabicCopy)}
+                        {getOrderStatusText(effectiveTrackedOrder.status, undefined, prefersArabicCopy)}
                       </span>
                     </div>
 

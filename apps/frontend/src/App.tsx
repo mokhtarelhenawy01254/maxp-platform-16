@@ -167,6 +167,8 @@ const ProductNewFinal = React.lazy(
 const ArticlesList = React.lazy(() => import("./pages/articles/ArticlesList"));
 const ArticleEditor = React.lazy(() => import("./pages/articles/ArticleEditor"));
 const StorefrontArticlePage = React.lazy(() => import("./storefront/pages/StorefrontArticlePage"));
+const FunnelCodSalesPage = React.lazy(() => import("./storefront/pages/FunnelCodSalesPage"));
+const FunnelWizardPage = React.lazy(() => import("./pages/advertising/FunnelWizardPage"));
 const AffiliateSystemSettings = React.lazy(
   () => import("./pages/affiliates/AffiliateSystemSettings"),
 );
@@ -2052,6 +2054,8 @@ const AppContent = () => {
               element={<PlatformLandingPreviewPage />}
             />
             <Route path="/store/articles/:slug" element={<StorefrontArticlePage />} />
+            {/* Phase 3 — COD Sales Landing (#3 of 4 product display shapes) */}
+            <Route path="/funnel/:slug" element={<FunnelCodSalesPage />} />
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
             <Route path="/shop" element={<StorefrontShell />} />
@@ -3484,6 +3488,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ProductLandingPages />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/funnel-wizard"
+                  element={
+                    <Layout>
+                      <FunnelWizardPage />
                     </Layout>
                   }
                 />
@@ -5478,6 +5490,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <ProductLandingPages />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/funnel-wizard"
+                  element={
+                    <Layout>
+                      <FunnelWizardPage />
                     </Layout>
                   }
                 />

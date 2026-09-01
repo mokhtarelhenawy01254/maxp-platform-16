@@ -697,5 +697,6 @@
   "newArticle": "مقال جديد",
   "orderAutomation": "أتمتة الطلبات",
   "codDeposit": "الدفعة المقدمة COD",
-  "orderStatusTemplates": "قوالب الواتساب للحالات"
+  "orderStatusTemplates": "قوالب الواتساب للحالات",
+  "upsellManagement": "عروض الـ Upsell"
 }

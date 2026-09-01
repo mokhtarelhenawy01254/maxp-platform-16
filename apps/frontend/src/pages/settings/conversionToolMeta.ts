@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react";
 import {
   AlarmClock,
+  ArrowRightLeft,
   BadgeCheck,
   BellRing,
   CalendarClock,
@@ -10,6 +11,7 @@ import {
   ExternalLink,
   Flame,
   Gift,
+  Heart,
   Hourglass,
   Layers,
   Megaphone,
@@ -68,6 +70,8 @@ export const CONVERSION_TOOL_META: Record<string, ConversionToolMeta> = {
   photoReviews: { icon: Camera, previewKind: "mock", displayKind: "pdp" },
   videoReviews: { icon: Video, previewKind: "mock", displayKind: "pdp" },
   verifiedBadge: { icon: BadgeCheck, previewKind: "mock", displayKind: "pdp" },
+  productWishlist: { icon: Heart, previewKind: "component", displayKind: "pdp" },
+  productComparison: { icon: ArrowRightLeft, previewKind: "component", displayKind: "pdp" },
 };
 
 const FALLBACK_META: ConversionToolMeta = {

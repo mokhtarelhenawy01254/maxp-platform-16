@@ -19,10 +19,15 @@ const verifyDomainDNS = async (domain, expectedTarget) => {
 
         const records = await dns.resolveCname(cleanDomain);
 
+        const allowedTargets = [
+            expectedTarget.toLowerCase().replace(/\.$/, ''),
+            'maxp.online',
+            'mokhtarelhenawy.online'
+        ];
+
         const isMatch = records.some(record => {
-            const normalizedRecord = record.toLowerCase().replace(/\.$/, ''); // Remove trailing dot
-            const normalizedTarget = expectedTarget.toLowerCase().replace(/\.$/, '');
-            return normalizedRecord === normalizedTarget;
+            const normalizedRecord = record.toLowerCase().replace(/\.$/, '');
+            return allowedTargets.includes(normalizedRecord);
         });
 
         if (isMatch) {

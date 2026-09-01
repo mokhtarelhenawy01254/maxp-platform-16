@@ -59,9 +59,11 @@ import { useSearch, type UseSearchResult } from "../../hooks/useSearch";
 import { useStorefrontProductRouteScrollReset } from "../../hooks/useStorefrontProductRouteScrollReset";
 import { useScrollReveal } from "../../hooks/useScrollReveal";
 import { useStorefrontVisitTracking } from "../../hooks/useStorefrontVisitTracking";
-import { captureStorefrontAttribution } from "../../utils/orderAttribution";
-import { shouldStorefrontForceDocumentNavigation } from "../../utils/navigationGuards";
-import { isKhemetLuxeTheme } from "../../utils/navigationGuards";
+import {
+  shouldStorefrontForceDocumentNavigation,
+  shouldStorefrontForceDocumentNavigation as shouldStorefrontHeaderForceDocumentNavigation,
+  isKhemetLuxeTheme,
+} from "../../utils/navigationGuards";
 import { resolveCatalogCategoryBySlug } from "../../utils/catalogCategories";
 import { resolveLegacyProductSlugAlias } from "../../utils/productSlugAliases";
 import { createStorefrontThemeTextReplacer } from "../../utils/runtimeBrandText";

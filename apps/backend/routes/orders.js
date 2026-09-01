@@ -6541,6 +6541,7 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
 
     // --- LOG MODIFICATION ---
     try {
+      const diffDetails = result.diffDetails || [];
       const changedFields = result.updatedFields || [];
       const fieldLabels = {
         shippingAddress: 'العنوان',
@@ -6557,7 +6558,9 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         .filter(Boolean);
 
       let reason = 'تعديل البيانات الأساسية للطلب';
-      if (mappedFields.length > 0) {
+      if (diffDetails.length > 0) {
+        reason = `تعديل بيانات العميل والشحن:\n• ${diffDetails.join('\n• ')}`;
+      } else if (mappedFields.length > 0) {
         reason = `تعديل: ${mappedFields.join('، ')}`;
       } else if (changedFields.length === 0) {
         reason = null;
@@ -6578,19 +6581,23 @@ router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
                 status: order.status,
                 oldStatus: order.status,
                 reason,
-                changedBy: req.user.id,
+                changedBy: req.user?.id || 'SYSTEM',
                 userName: userName || 'النظام',
               },
             });
           }
         } else if (result.orderType === 'guest') {
+          const guest = await getSharedPrismaClient().guestOrder.findUnique({
+            where: { id: result.orderId },
+            select: { id: true, status: true },
+          });
           await getSharedPrismaClient().orderStatusHistory.create({
             data: {
               guestOrderId: result.orderId,
-              status: 'PENDING',
-              oldStatus: 'PENDING',
+              status: guest?.status || 'PENDING',
+              oldStatus: guest?.status || 'PENDING',
               reason,
-              changedBy: req.user.id,
+              changedBy: req.user?.id || 'SYSTEM',
               userName: userName || 'النظام',
             },
           });
@@ -6626,8 +6633,6 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
 
     if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
 
-
-
     // ✅ Validation: Check items
     const itemsValidation = validateOrderItems(items);
     if (!itemsValidation.isValid) {
@@ -6652,6 +6657,26 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
       // الحالة الحالية غير مسموح تعديل بياناتها، نرفض.
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(getSharedPrismaClient(), companyId, regularOrder.status);
+
+      const { computeOrderItemsDiff } = require('../utils/orderDiffHelper');
+      const oldOrderItems = await getSharedPrismaClient().orderItem.findMany({
+        where: { orderId: regularOrder.id }
+      });
+      const oldTotals = {
+        total: Number(regularOrder.total) || 0,
+        subtotal: Number(regularOrder.subtotal) || 0,
+        shipping: Number(regularOrder.shipping) || 0,
+      };
+      const newTotals = {
+        total: Number(total) || 0,
+        subtotal: Number(subtotal) || 0,
+        shipping: Number(shipping) || 0,
+      };
+      const itemDiffs = computeOrderItemsDiff(oldOrderItems, items, oldTotals, newTotals);
+      let itemsReason = 'تعديل منتجات الطلب';
+      if (itemDiffs.length > 0) {
+        itemsReason = `تعديل منتجات الطلب:\n• ${itemDiffs.join('\n• ')}`;
+      }
 
       // Transaction: Delete old items, Create new items, Update totals
       await getSharedPrismaClient().$transaction(async (prisma) => {
@@ -6732,9 +6757,9 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
             orderId: regularOrder.id,
             status: regularOrder.status,
             oldStatus: regularOrder.status,
-            reason: 'تعديل منتجات الطلب',
-            changedBy: req.user.id,
-            userName: req.user ? `${req.user.firstName} ${req.user.lastName}` : 'النظام'
+            reason: itemsReason,
+            changedBy: req.user?.id || 'SYSTEM',
+            userName: req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : 'النظام'
           }
         });
       } catch (logError) {
@@ -6761,6 +6786,24 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
         ? Number(total)
         : Math.max(0, nextSubtotal + nextShipping);
 
+      const { computeOrderItemsDiff, parseJsonObject } = require('../utils/orderDiffHelper');
+      const oldGuestItems = parseJsonObject(guestOrder.items, []);
+      const oldGuestTotals = {
+        total: Number(guestOrder.finalTotal ?? guestOrder.total) || 0,
+        subtotal: Number(guestOrder.total) || 0,
+        shipping: Number(guestOrder.shippingCost) || 0,
+      };
+      const newGuestTotals = {
+        total: nextFinalTotal,
+        subtotal: nextSubtotal,
+        shipping: nextShipping,
+      };
+      const guestItemDiffs = computeOrderItemsDiff(oldGuestItems, items, oldGuestTotals, newGuestTotals);
+      let guestItemsReason = 'تعديل منتجات الطلب';
+      if (guestItemDiffs.length > 0) {
+        guestItemsReason = `تعديل منتجات الطلب:\n• ${guestItemDiffs.join('\n• ')}`;
+      }
+
       // Guest Order stores items as JSON, much easier
       await getSharedPrismaClient().guestOrder.update({
         where: { id: guestOrder.id },
@@ -6782,6 +6825,23 @@ router.put('/simple/:orderNumber/items', verifyToken.authenticateToken, async (r
           _refetch: true
         });
       }
+
+      // --- LOG MODIFICATION FOR GUEST ORDER ---
+      try {
+        await getSharedPrismaClient().orderStatusHistory.create({
+          data: {
+            guestOrderId: guestOrder.id,
+            status: guestOrder.status || 'PENDING',
+            oldStatus: guestOrder.status || 'PENDING',
+            reason: guestItemsReason,
+            changedBy: req.user?.id || 'SYSTEM',
+            userName: req.user ? `${req.user.firstName || ''} ${req.user.lastName || ''}`.trim() : 'النظام'
+          }
+        });
+      } catch (logError) {
+        console.error('❌ [ORDER-UPDATE] Error logging guest items modification:', logError);
+      }
+      // ------------------------
 
       return res.json({ success: true, message: 'Order items updated successfully' });
     }

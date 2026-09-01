@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ArrowRightLeft,
   BadgeCheck,
   Camera,
   Check,
+  Heart,
   Play,
   ShoppingCart,
   ShoppingBag,
@@ -542,6 +544,90 @@ const InactiveTabDemo = () => {
   );
 };
 
+const ProductWishlistPreview = () => {
+  const [wishlisted, setWishlisted] = useState(true);
+
+  return (
+    <div className="space-y-3">
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+        <div className="aspect-[4/3] w-full bg-gradient-to-br from-stone-100 via-stone-50 to-stone-200 p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="rounded-full bg-red-600 px-2.5 py-1 text-[10px] font-black text-white shadow-sm">
+              خصم 20%
+            </span>
+            <button
+              type="button"
+              onClick={() => setWishlisted((prev) => !prev)}
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-sm transition-all ${
+                wishlisted
+                  ? "border-[#d7b2a0] bg-[#fff2ec] text-[#b3533b] scale-105"
+                  : "border-gray-200 bg-white/95 text-gray-400 hover:text-gray-700"
+              }`}
+              aria-label="Wishlist button"
+            >
+              <Heart className={`h-4 w-4 ${wishlisted ? "fill-current" : ""}`} />
+            </button>
+          </div>
+          <div className="flex items-center justify-between rounded-xl bg-white/90 p-2.5 backdrop-blur-sm border border-gray-200/80">
+            <div>
+              <p className="text-xs font-black text-gray-900">سنيكرز سبورت بلاتفورم</p>
+              <p className="text-[11px] font-bold text-gray-500">1,250 ج.م</p>
+            </div>
+            <span className="text-[10px] font-bold text-stone-600 bg-stone-100 px-2 py-1 rounded-md">
+              {wishlisted ? "مضاف للمفضلة ❤️" : "اضغط للقلب 🤍"}
+            </span>
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] leading-5 text-gray-500 text-center">
+        زر القلب يظهر مباشرة فوق صور المنتج في المعرض وعلى بطاقات المنتجات بالمتجر لتسهيل حفظ المنتجات المفضلة.
+      </p>
+    </div>
+  );
+};
+
+const ProductComparisonPreview = () => {
+  const [compared, setCompared] = useState(true);
+
+  return (
+    <div className="space-y-3">
+      <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-gray-50">
+        <div className="aspect-[4/3] w-full bg-gradient-to-br from-stone-100 via-stone-50 to-stone-200 p-4 flex flex-col justify-between">
+          <div className="flex items-center justify-between">
+            <span className="rounded-full bg-black/70 px-2.5 py-1 text-[10px] font-black text-white">
+              معرض الصور
+            </span>
+            <button
+              type="button"
+              onClick={() => setCompared((prev) => !prev)}
+              className={`inline-flex h-10 w-10 items-center justify-center rounded-full border shadow-sm transition-all ${
+                compared
+                  ? "border-[#d4beae] bg-[#fff5ec] text-[#8f5c44] scale-105"
+                  : "border-gray-200 bg-white/95 text-gray-400 hover:text-gray-700"
+              }`}
+              aria-label="Compare button"
+            >
+              <ArrowRightLeft className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="flex items-center justify-between rounded-xl bg-white/90 p-2.5 backdrop-blur-sm border border-gray-200/80">
+            <div>
+              <p className="text-xs font-black text-gray-900">سنيكرز سبورت بلاتفورم</p>
+              <p className="text-[11px] font-bold text-gray-500">1,250 ج.م</p>
+            </div>
+            <span className="text-[10px] font-bold text-stone-600 bg-stone-100 px-2 py-1 rounded-md">
+              {compared ? "محدد للمقارنة ⇄" : "اضغط للمقارنة"}
+            </span>
+          </div>
+        </div>
+      </div>
+      <p className="text-[11px] leading-5 text-gray-500 text-center">
+        زر المقارنة يتيح للعميل وضع المنتج في قائمة المقارنة للمفاضلة بين الخصائص والمواصفات بسهولة.
+      </p>
+    </div>
+  );
+};
+
 /* ── الـ registry ───────────────────────────────────────────── */
 
 type ToolPreviewRenderer = (context: ConversionToolPreviewContext) => React.ReactNode;
@@ -556,6 +642,8 @@ export const CONVERSION_TOOL_PREVIEWS: Record<string, ToolPreviewRenderer> = {
   preOrder: () => <PreOrderPreview />,
   trustedBadges: () => <TrustedBadgesPreview />,
   backInStock: () => <BackInStockPreview />,
+  productWishlist: () => <ProductWishlistPreview />,
+  productComparison: () => <ProductComparisonPreview />,
   stickyAddToCart: () => <StickyAddToCartPreview />,
   crossSell: () => <CrossSellPreview />,
   boughtTogether: () => <BoughtTogetherPreview />,

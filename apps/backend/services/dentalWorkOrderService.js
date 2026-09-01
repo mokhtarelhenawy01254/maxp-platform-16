@@ -174,7 +174,7 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
   });
 }
 
-module.exports = { generateWorkOrderPdf, generateInvoicePdf };
+module.exports = { generateWorkOrderPdf, generateInvoicePdf, generatePanLabelPdf };
 
 /**
  * فاتورة PDF للعميل (الطبيب) من بيانات الفاتورة + الحالة المرتبطة + ترويسة المعمل.
@@ -255,5 +255,74 @@ function generateInvoicePdf({ company, invoice, dentalCase, workOrderHeader }) {
     } catch (e) {
       reject(e);
     }
+  });
+}
+
+/**
+ * ملصق باركود حراري مدمج لعلبة الشغل (Job Pan Label) للطابعات الحرارية (80x50 مم).
+ */
+async function generatePanLabelPdf({ company, caseRow, workOrderHeader }) {
+  const c = caseRow || {};
+  const header = workOrderHeader || {};
+  const labName = header.labName || (company && company.name) || 'معمل الأسنان';
+  const caseNumber = c.caseNumber || '—';
+
+  const qrText = `MAXP-CASE-${caseNumber}::${c.id || ''}`;
+  let qrBuffer = null;
+  try {
+    qrBuffer = await QRCode.toBuffer(qrText, { type: 'png', width: 80, margin: 1 });
+  } catch (error) {
+    console.error('Error generating pan label QR:', error);
+  }
+
+  return new Promise((resolve, reject) => {
+    // 80mm x 50mm in PDF points (1mm ~ 2.83465 pt) => 226.8 x 141.7 pt
+    const doc = new PDFDocument({ size: [226.8, 141.7], margin: 6 });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve({ buffer: Buffer.concat(chunks), caseNumber }));
+    doc.on('error', reject);
+
+    doc.registerFont('Noto', FONT);
+    doc.font('Noto');
+
+    const w = 226.8 - 12;
+    const h = 141.7 - 12;
+
+    // Outer border
+    doc.rect(6, 6, w, h).strokeColor('#1e40af').lineWidth(1.5).stroke();
+
+    // Header bar
+    doc.rect(6, 6, w, 20).fill('#1e40af');
+    doc.fontSize(8).fillColor('#ffffff').text(AR(labName), 10, 10, { width: w - 8, align: 'right' });
+    doc.fontSize(9).fillColor('#ffffff').text(caseNumber, 10, 10, { width: w - 8, align: 'left' });
+
+    // QR code on left
+    if (qrBuffer) {
+      doc.image(qrBuffer, 10, 32, { width: 62, height: 62 });
+    }
+
+    // Details on right
+    const rightX = 76;
+    const rightW = w - 74;
+    let y = 30;
+
+    const printLine = (label, val, bold = false) => {
+      if (!val || val === '—') return;
+      doc.fontSize(7).fillColor('#4b5563').text(AR(label + ':'), rightX, y, { width: 32, align: 'right' });
+      doc.fontSize(bold ? 8 : 7.5).fillColor('#111827').text(AR(val), rightX + 34, y, { width: rightW - 34, align: 'right' });
+      y += 12;
+    };
+
+    printLine('الطبيب', c.doctorName || (c.doctor && c.doctor.name) || '—', true);
+    printLine('المريض', c.patientName || '—');
+    printLine('الشغل', c.workTypeName || '—');
+    printLine('الأسنان', [c.teeth, c.shade && `(${c.shade})`].filter(Boolean).join(' '));
+
+    const priorityStr = c.priority && c.priority !== 'NORMAL' ? `[${PRIORITY_LABEL[c.priority] || c.priority}] ` : '';
+    const dueStr = c.dueDate ? new Date(c.dueDate).toLocaleDateString('ar-EG') : '—';
+    printLine('التسليم', priorityStr + dueStr, Boolean(priorityStr));
+
+    doc.end();
   });
 }

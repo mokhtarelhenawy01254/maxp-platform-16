@@ -1,4 +1,5 @@
 const { validateEgyptianPhone } = require('../utils/orderValidation');
+const { computeCustomerDetailsDiff } = require('../utils/orderDiffHelper');
 
 function getSharedDatabase() {
   return require('./sharedDatabase');
@@ -278,12 +279,13 @@ class OrderDetailsUpdateService {
     }
   }
 
-  buildRegularResult(updatedOrder, metadata, shippingAddress, updatedFields, turboSync) {
+  buildRegularResult(updatedOrder, metadata, shippingAddress, updatedFields, turboSync, diffDetails = []) {
     return {
       orderType: 'regular',
       orderId: updatedOrder.id,
       orderNumber: updatedOrder.orderNumber,
       updatedFields,
+      diffDetails,
       shippingAddress,
       notes: updatedOrder.notes || null,
       customerName: updatedOrder.customerName || null,
@@ -306,12 +308,13 @@ class OrderDetailsUpdateService {
     };
   }
 
-  buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields) {
+  buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields, diffDetails = []) {
     return {
       orderType: 'guest',
       orderId: updatedOrder.id,
       orderNumber: updatedOrder.orderNumber,
       updatedFields,
+      diffDetails,
       shippingAddress,
       notes: updatedOrder.notes || null,
       customerName: updatedOrder.guestName || null,
@@ -357,6 +360,7 @@ class OrderDetailsUpdateService {
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(prisma, companyId, regularOrder.status);
 
+      const diffDetails = computeCustomerDetailsDiff(regularOrder, input);
       const { metadata, shippingAddress, updateData } = this.buildRegularUpdateData(regularOrder, input);
       const updatedOrder = await prisma.order.update({
         where: { id: regularOrder.id },
@@ -379,7 +383,7 @@ class OrderDetailsUpdateService {
       });
       const turboSync = await this.syncTurboForRegularOrder(updatedOrder, companyId, updatedOrder.orderNumber);
 
-      return this.buildRegularResult(updatedOrder, metadata, shippingAddress, updatedFields, turboSync);
+      return this.buildRegularResult(updatedOrder, metadata, shippingAddress, updatedFields, turboSync, diffDetails);
     }
 
     const guestOrder = await this.findGuestOrder(orderIdentifier, companyId);
@@ -388,13 +392,14 @@ class OrderDetailsUpdateService {
       const { assertOrderStatusEditable } = require('../utils/orderStatusLock');
       await assertOrderStatusEditable(prisma, companyId, guestOrder.status);
 
+      const diffDetails = computeCustomerDetailsDiff(guestOrder, input);
       const { metadata, shippingAddress, updateData } = this.buildGuestUpdateData(guestOrder, input);
       const updatedOrder = await prisma.guestOrder.update({
         where: { id: guestOrder.id },
         data: updateData,
       });
 
-      return this.buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields);
+      return this.buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields, diffDetails);
     }
 
     const error = new Error('Order not found');

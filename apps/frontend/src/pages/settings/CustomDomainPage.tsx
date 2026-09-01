@@ -33,6 +33,15 @@ const CustomDomainPage: React.FC = () => {
   } | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
 
+  const cnameTarget =
+    typeof window !== "undefined" && window.location.hostname
+      ? (window.location.hostname.includes("maxp.online")
+          ? "maxp.online"
+          : window.location.hostname.includes("mokhtarelhenawy.online")
+            ? "mokhtarelhenawy.online"
+            : window.location.hostname.replace(/^(app|dashboard|admin)\./, ""))
+      : "maxp.online";
+
   useEffect(() => {
     fetchCompanyData();
   }, []);
@@ -198,45 +207,48 @@ const CustomDomainPage: React.FC = () => {
               {t("customDomain.dnsStepDesc")}
             </p>
 
-            {/* MOB-011: stacked record block instead of a horizontal table —
-                the VALUE column was clipped inside a 226px scroll box on mobile */}
+            {/* Step 2: DNS Configuration */}
             <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <span className="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-bold">
-                  CNAME
-                </span>
-                <span className="text-sm text-gray-900 dark:text-white">
-                  {t("customDomain.dnsHostValue")}
-                </span>
-              </div>
-              <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <code
-                  dir="ltr"
-                  className="min-w-0 flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-lg text-sm font-mono text-gray-900 dark:text-white break-all"
-                >
-                  mokhtarelhenawy.online
-                </code>
-                <button
-                  type="button"
-                  aria-label={
-                    copied === "cname"
+              <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 sm:p-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <span className="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm font-bold uppercase tracking-wider">
+                      CNAME
+                    </span>
+                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {t("customDomain.dnsHostValue")}
+                    </span>
+                  </div>
+
+                  <div className="flex-1 min-w-0 w-full">
+                    <code
+                      dir="ltr"
+                      className="block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm font-mono text-gray-900 dark:text-white truncate text-left select-all"
+                    >
+                      {cnameTarget}
+                    </code>
+                  </div>
+
+                  <button
+                    type="button"
+                    aria-label={
+                      copied === "cname"
+                        ? t("customDomain.cnameCopied")
+                        : t("customDomain.copyCname")
+                    }
+                    onClick={() => copyToClipboard(cnameTarget, "cname")}
+                    className="inline-flex items-center justify-center gap-1.5 min-h-10 w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs sm:text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors shrink-0 shadow-sm"
+                  >
+                    {copied === "cname" ? (
+                      <ClipboardDocumentCheckIcon className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <ClipboardIcon className="h-4 w-4" />
+                    )}
+                    {copied === "cname"
                       ? t("customDomain.cnameCopied")
-                      : t("customDomain.copyCname")
-                  }
-                  onClick={() =>
-                    copyToClipboard("mokhtarelhenawy.online", "cname")
-                  }
-                  className="inline-flex items-center justify-center gap-1.5 min-h-11 w-full sm:w-auto px-4 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors shrink-0"
-                >
-                  {copied === "cname" ? (
-                    <ClipboardDocumentCheckIcon className="h-5 w-5" />
-                  ) : (
-                    <ClipboardIcon className="h-5 w-5" />
-                  )}
-                  {copied === "cname"
-                    ? t("customDomain.cnameCopied")
-                    : t("customDomain.copyCname")}
-                </button>
+                      : t("customDomain.copyCname")}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -274,7 +286,7 @@ const CustomDomainPage: React.FC = () => {
                   </span>
                 )}
                 {editingDomain ? (
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       id="custom-domain-input"
                       name="customDomain"
@@ -283,24 +295,26 @@ const CustomDomainPage: React.FC = () => {
                       value={customDomain}
                       onChange={(e) => setCustomDomain(e.target.value)}
                       placeholder="example.com"
-                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white outline-none"
+                      className="flex-1 min-w-0 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:text-white outline-none text-sm"
                     />
-                    <button
-                      onClick={handleCustomDomainSave}
-                      disabled={savingDomain}
-                      className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg disabled:opacity-50 transition-colors"
-                    >
-                      {savingDomain ? t("customDomain.saving") : t("customDomain.save")}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setEditingDomain(false);
-                        setCustomDomain(company?.customDomain || "");
-                      }}
-                      className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                    >
-                      {t("customDomain.cancel")}
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleCustomDomainSave}
+                        disabled={savingDomain}
+                        className="flex-1 sm:flex-initial px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg disabled:opacity-50 transition-colors whitespace-nowrap"
+                      >
+                        {savingDomain ? t("customDomain.saving") : t("customDomain.save")}
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingDomain(false);
+                          setCustomDomain(company?.customDomain || "");
+                        }}
+                        className="flex-1 sm:flex-initial px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors whitespace-nowrap"
+                      >
+                        {t("customDomain.cancel")}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <div className="flex items-center justify-between py-3">

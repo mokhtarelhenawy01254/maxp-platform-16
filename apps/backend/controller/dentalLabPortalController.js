@@ -61,7 +61,16 @@ const portalLogin = async (req, res) => {
     if (!dentist) {
       return res.status(401).json({ success: false, error: 'رقم الهاتف أو الرقم السري غير صحيح' });
     }
-    if (dentist.portalPin !== pin) {
+    const bcrypt = require('bcryptjs');
+    let pinValid = false;
+    if (dentist.portalPin) {
+      if (dentist.portalPin.startsWith('$2a$') || dentist.portalPin.startsWith('$2b$')) {
+        try { pinValid = bcrypt.compareSync(pin, dentist.portalPin); } catch (_) { pinValid = false; }
+      } else {
+        pinValid = dentist.portalPin === pin;
+      }
+    }
+    if (!pinValid) {
       return res.status(401).json({ success: false, error: 'رقم الهاتف أو الرقم السري غير صحيح' });
     }
 

@@ -18,9 +18,18 @@ const getTechnicianWageDefaults = async (prisma, companyId) => {
   return { defaultPerStage: Number(w.defaultPerStage) || 0 };
 };
 
+const parseUnitCount = (teethStr) => {
+  if (!teethStr || typeof teethStr !== 'string') return 1;
+  const cleaned = teethStr.trim();
+  if (!cleaned) return 1;
+  const parts = cleaned.split(/[,;\s]+/).map((s) => s.trim()).filter(Boolean);
+  const validUnits = parts.filter((p) => /^[0-9A-Za-z#]+$/.test(p));
+  return Math.max(1, validUnits.length > 0 ? validUnits.length : (parts.length || 1));
+};
+
 /**
  * أجور الفنيين عن المراحل المكتملة (status=DONE) المسندة إليهم.
- * المعدل: wagePerStage للفني، أو المعدل الافتراضي من الإعدادات.
+ * المعدل: wagePerStage للفني، أو المعدل الافتراضي من الإعدادات، مضروباً بعدد وحدات الشغل.
  */
 const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from, to } = {}) => {
   const db = prisma || getSharedPrismaClient();
@@ -36,7 +45,13 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
       where.completedAt.lte = getEndOfDayInTimezone(toDate);
     }
   }
-  const stages = await db.dentalCaseStage.findMany({ where, select: { assigneeId: true } });
+  const stages = await db.dentalCaseStage.findMany({
+    where,
+    select: {
+      assigneeId: true,
+      case: { select: { teeth: true } },
+    },
+  });
   const defaults = await getTechnicianWageDefaults(db, companyId);
   const techIds = [...new Set(stages.map((s) => s.assigneeId).filter(Boolean))];
   const techs = techIds.length
@@ -50,9 +65,12 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
   const agg = {};
   for (const s of stages) {
     const id = s.assigneeId;
-    if (!agg[id]) agg[id] = { technicianId: id, name: nameById.get(id) || 'غير محدد', completedStages: 0, wage: 0 };
+    const units = s.case && s.case.teeth ? parseUnitCount(s.case.teeth) : 1;
+    const rate = rateById.get(id) || 0;
+    if (!agg[id]) agg[id] = { technicianId: id, name: nameById.get(id) || 'غير محدد', completedStages: 0, completedUnits: 0, wage: 0 };
     agg[id].completedStages += 1;
-    agg[id].wage += rateById.get(id) || 0;
+    agg[id].completedUnits += units;
+    agg[id].wage += rate * units;
   }
   const result = Object.values(agg);
   for (const r of result) r.wage = round2(r.wage);

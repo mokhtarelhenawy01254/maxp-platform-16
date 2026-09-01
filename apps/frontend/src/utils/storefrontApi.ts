@@ -326,6 +326,45 @@ export const storefrontApi = {
     );
   },
 
+  /**
+   * Fetch a public COD-Sales funnel page by slug. Returns the funnel config,
+   * the linked product, and the company context. Used by FunnelCodSalesPage.
+   */
+  getFunnel: async (
+    slug: string,
+    options: { companyId?: string | null; previewToken?: string | null } = {},
+  ) => {
+    const normalizedSlug = String(slug || "").trim();
+    if (!normalizedSlug) {
+      throw new Error("Funnel slug is required");
+    }
+    const params = new URLSearchParams();
+    if (options.companyId) params.set("companyId", options.companyId);
+    if (options.previewToken) params.set("previewToken", options.previewToken);
+    const query = params.toString();
+    return storefrontFetch(
+      `/funnels/public/${encodeURIComponent(normalizedSlug)}${query ? `?${query}` : ""}`,
+    );
+  },
+
+  /**
+   * Track an order placed on a COD-Sales funnel. Sends a conversion event
+   * tied to the funnel slug for analytics + order creation.
+   */
+  trackFunnelOrder: async (
+    slug: string,
+    payload: Record<string, unknown> = {},
+  ) => {
+    const normalizedSlug = String(slug || "").trim();
+    if (!normalizedSlug) {
+      throw new Error("Funnel slug is required");
+    }
+    return storefrontFetch(
+      `/funnels/public/${encodeURIComponent(normalizedSlug)}/order`,
+      withJsonBody("POST", payload),
+    );
+  },
+
   getTemplate: async (_layout?: string) => {
     return {
       success: false,
