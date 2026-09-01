@@ -261,34 +261,37 @@ const OrderSettings: React.FC = () => {
       </div>
 
       <div className="w-full px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex gap-6">
-          {/* Sidebar Tabs */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden sticky top-6">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-col lg:flex-row gap-6">
+          {/* Sidebar Tabs — full-width pill bar on mobile, vertical sidebar on desktop */}
+          <div className="lg:w-64 flex-shrink-0">
+            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden lg:sticky lg:top-6">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700 hidden lg:block">
                 <h2 className="font-semibold text-gray-900 dark:text-white">
                   {t('orderSettings.k_140')}
                 </h2>
               </div>
-              <nav className="p-2">
+              <nav
+                aria-label={t('orderSettings.k_140')}
+                className="p-2 flex lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible no-scrollbar"
+              >
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => handleTabChange(tab.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-colors ${activeTab === tab.id
-                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+                    className={`flex-shrink-0 lg:w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-colors whitespace-nowrap lg:whitespace-normal ${activeTab === tab.id
+                      ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/50"
+                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent"
                       }`}
                   >
                     <tab.icon
-                      className={`w-5 h-5 ${activeTab === tab.id
+                      className={`w-5 h-5 flex-shrink-0 ${activeTab === tab.id
                         ? "text-blue-600 dark:text-blue-400"
                         : "text-gray-400"
                         }`}
                     />
-                    <div className="flex-1">
-                      <div className="font-medium">{tab.label}</div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex-1 min-w-0 text-right">
+                      <div className="font-medium text-sm">{tab.label}</div>
+                      <div className="hidden lg:block text-xs text-gray-500 dark:text-gray-400">
                         {tab.description}
                       </div>
                     </div>
