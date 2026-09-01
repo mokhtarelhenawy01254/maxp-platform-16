@@ -30,6 +30,23 @@ interface StorefrontStudioShellProps {
   onChange: (nextTokens: Record<string, unknown>) => void;
 }
 
+function useIsMobile(breakpoint = 1024): boolean {
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.innerWidth < breakpoint;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < breakpoint);
+    };
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, [breakpoint]);
+
+  return isMobile;
+}
+
 const getSectionKey = (section: any, index: number): string => {
   if (typeof section === "string") return `${section}-${index}`;
   return section?.key || `${section?.type || "section"}-${index}`;
@@ -47,6 +64,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   onOpenPreview,
   onChange,
 }) => {
+  const isMobile = useIsMobile(1024);
   const [activePageKey, setActivePageKey] = useState<string>("home");
   const [deviceMode, setDeviceMode] = useState<StudioDeviceMode>("desktop");
   const [leftPanelTab, setLeftPanelTab] = useState<StudioLeftPanelTab>("layers");
@@ -243,134 +261,130 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onOpenPreview={onOpenPreview}
       />
 
-      {/* 2. Studio 3-Dock Workspace */}
+      {/* 2. Studio Workspace */}
       <div className="relative flex flex-1 h-[calc(100vh-4rem)] w-full overflow-hidden">
         {/* Left Studio Dock (Layers / Catalog) */}
-        <div
-          className={`h-full shrink-0 border-e border-border/80 bg-card ${
-            mobileStudioTab === "layers" ? "flex flex-col w-full" : "hidden"
-          } md:flex md:flex-col md:w-80`}
-        >
-          <StudioLayersDrawer
-            sections={activeSections}
-            selectedSectionKey={selectedSectionKey}
-            leftPanelTab={leftPanelTab}
-            onSelectSection={(key) => {
-              setSelectedSectionKey(key);
-              setMobileStudioTab("inspector");
-            }}
-            onMoveSection={handleMoveSection}
-            onDuplicateSection={handleDuplicateSection}
-            onDeleteSection={handleDeleteSection}
-            onOpenSectionCatalog={() => setShowCatalogModal(true)}
-            onTabChange={setLeftPanelTab}
-          />
-        </div>
+        {(!isMobile || mobileStudioTab === "layers") && (
+          <div className="h-full shrink-0 border-e border-border/80 bg-card w-full md:w-80 flex flex-col">
+            <StudioLayersDrawer
+              sections={activeSections}
+              selectedSectionKey={selectedSectionKey}
+              leftPanelTab={leftPanelTab}
+              onSelectSection={(key) => {
+                setSelectedSectionKey(key);
+                if (isMobile) setMobileStudioTab("inspector");
+              }}
+              onMoveSection={handleMoveSection}
+              onDuplicateSection={handleDuplicateSection}
+              onDeleteSection={handleDeleteSection}
+              onOpenSectionCatalog={() => setShowCatalogModal(true)}
+              onTabChange={setLeftPanelTab}
+            />
+          </div>
+        )}
 
         {/* Center Studio Stage (Interactive Live Canvas) */}
-        <div
-          className={`h-full flex-1 overflow-hidden bg-muted/20 ${
-            mobileStudioTab === "canvas" ? "flex flex-col w-full" : "hidden"
-          } md:flex md:flex-col`}
-        >
-          <StudioCanvasStage deviceMode={deviceMode}>
-            <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
-              <div className="min-h-screen bg-background">
-                <PageComposer
-                  pageConfig={activePageConfig}
-                  layout={activePageConfig.layoutHint || "stack"}
-                  renderSectionFrame={({ element, index, sectionEntry, sectionId, componentKey }) => {
-                    const stableSectionKey = getSectionKey(sectionEntry, index);
-                    const selected = stableSectionKey === selectedSectionKey;
-                    const sectionLabel =
-                      getStorefrontSectionManifest(typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type)?.label ||
-                      getStorefrontSectionManifest(componentKey)?.label ||
-                      getStorefrontSectionLabel(sectionId);
+        {(!isMobile || mobileStudioTab === "canvas") && (
+          <div className="h-full flex-1 overflow-hidden bg-muted/20 flex flex-col w-full">
+            <StudioCanvasStage deviceMode={deviceMode}>
+              <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
+                <div className="min-h-screen bg-background">
+                  <PageComposer
+                    pageConfig={activePageConfig}
+                    layout={activePageConfig.layoutHint || "stack"}
+                    renderSectionFrame={({ element, index, sectionEntry, sectionId, componentKey }) => {
+                      const stableSectionKey = getSectionKey(sectionEntry, index);
+                      const selected = stableSectionKey === selectedSectionKey;
+                      const sectionLabel =
+                        getStorefrontSectionManifest(typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type)?.label ||
+                        getStorefrontSectionManifest(componentKey)?.label ||
+                        getStorefrontSectionLabel(sectionId);
 
-                    return (
-                      <div
-                        key={`${stableSectionKey}-${index}`}
-                        className="group relative cursor-pointer"
-                        onClick={() => {
-                          setSelectedSectionKey(stableSectionKey);
-                          setMobileStudioTab("inspector");
-                        }}
-                      >
+                      return (
                         <div
-                          className={`pointer-events-none absolute inset-0 z-30 rounded-2xl border-2 transition-all ${
-                            selected
-                              ? "border-primary bg-primary/[0.04] shadow-[0_0_0_3px_rgba(59,130,246,0.25)]"
-                              : "border-transparent group-hover:border-primary/40 group-hover:bg-primary/[0.015]"
-                          }`}
+                          key={`${stableSectionKey}-${index}`}
+                          className="group relative cursor-pointer"
+                          onClick={() => {
+                            setSelectedSectionKey(stableSectionKey);
+                            if (isMobile) setMobileStudioTab("inspector");
+                          }}
                         >
-                          {selected ? (
-                            <span className="absolute top-2 start-2 rounded-md bg-primary px-2.5 py-1 text-[10px] font-black text-primary-foreground shadow">
-                              {sectionLabel} (محدد للتعديل)
-                            </span>
-                          ) : null}
-                        </div>
+                          <div
+                            className={`pointer-events-none absolute inset-0 z-30 rounded-2xl border-2 transition-all ${
+                              selected
+                                ? "border-primary bg-primary/[0.04] shadow-[0_0_0_3px_rgba(59,130,246,0.25)]"
+                                : "border-transparent group-hover:border-primary/40 group-hover:bg-primary/[0.015]"
+                            }`}
+                          >
+                            {selected ? (
+                              <span className="absolute top-2 start-2 rounded-md bg-primary px-2.5 py-1 text-[10px] font-black text-primary-foreground shadow">
+                                {sectionLabel} (محدد للتعديل)
+                              </span>
+                            ) : null}
+                          </div>
 
-                        <div className="relative z-10 select-none [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_select]:pointer-events-none">
-                          {element}
+                          <div className="relative z-10 select-none [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_select]:pointer-events-none">
+                            {element}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  }}
-                />
-              </div>
-            </StorefrontThemeProvider>
-          </StudioCanvasStage>
-        </div>
+                      );
+                    }}
+                  />
+                </div>
+              </StorefrontThemeProvider>
+            </StudioCanvasStage>
+          </div>
+        )}
 
         {/* Right Studio Dock (Property Inspector) */}
-        <div
-          className={`h-full shrink-0 border-s border-border/80 bg-card ${
-            mobileStudioTab === "inspector" ? "flex flex-col w-full" : "hidden"
-          } md:flex md:flex-col md:w-80 lg:w-96`}
-        >
-          <StudioPropertyInspector
-            selectedSectionKey={selectedSectionKey}
-            sectionConfig={selectedSectionConfig}
-            onClose={() => setSelectedSectionKey("")}
-            onUpdateField={handleUpdateSectionField}
-            onOpenImagePicker={() => setShowImagePickerModal(true)}
-          />
-        </div>
+        {(!isMobile || mobileStudioTab === "inspector") && (
+          <div className="h-full shrink-0 border-s border-border/80 bg-card w-full md:w-80 lg:w-96 flex flex-col">
+            <StudioPropertyInspector
+              selectedSectionKey={selectedSectionKey}
+              sectionConfig={selectedSectionConfig}
+              onClose={() => setSelectedSectionKey("")}
+              onUpdateField={handleUpdateSectionField}
+              onOpenImagePicker={() => setShowImagePickerModal(true)}
+            />
+          </div>
+        )}
       </div>
 
-      {/* 3. Mobile Bottom Studio Dock (Phones) */}
-      <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md md:hidden">
-        <button
-          type="button"
-          onClick={() => setMobileStudioTab("layers")}
-          className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-[10px] font-bold ${
-            mobileStudioTab === "layers" ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <Squares2X2Icon className="h-4 w-4" />
-          <span>الهيكل ({activeSections.length})</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileStudioTab("canvas")}
-          className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-[10px] font-bold ${
-            mobileStudioTab === "canvas" ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <EyeIcon className="h-4 w-4" />
-          <span>المعاينة</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setMobileStudioTab("inspector")}
-          className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-[10px] font-bold ${
-            mobileStudioTab === "inspector" ? "text-primary" : "text-muted-foreground"
-          }`}
-        >
-          <AdjustmentsHorizontalIcon className="h-4 w-4" />
-          <span>الخصائص {selectedSectionKey ? "•" : ""}</span>
-        </button>
-      </div>
+      {/* 3. Mobile Bottom Studio Dock (Phones & Small Tablets ONLY) */}
+      {isMobile && (
+        <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md">
+          <button
+            type="button"
+            onClick={() => setMobileStudioTab("layers")}
+            className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-[10px] font-bold ${
+              mobileStudioTab === "layers" ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <Squares2X2Icon className="h-4 w-4" />
+            <span>الهيكل ({activeSections.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileStudioTab("canvas")}
+            className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-[10px] font-bold ${
+              mobileStudioTab === "canvas" ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <EyeIcon className="h-4 w-4" />
+            <span>المعاينة</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileStudioTab("inspector")}
+            className={`flex flex-1 flex-col items-center justify-center gap-0.5 rounded-xl py-1 text-[10px] font-bold ${
+              mobileStudioTab === "inspector" ? "text-primary" : "text-muted-foreground"
+            }`}
+          >
+            <AdjustmentsHorizontalIcon className="h-4 w-4" />
+            <span>الخصائص {selectedSectionKey ? "•" : ""}</span>
+          </button>
+        </div>
+      )}
 
       {/* 4. Section Catalog Modal */}
       <StudioSectionCatalogModal
