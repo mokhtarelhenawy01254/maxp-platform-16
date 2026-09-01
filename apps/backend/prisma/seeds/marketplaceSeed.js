@@ -1630,8 +1630,8 @@ async function seedMarketplace() {
       'whatsapp-analytics',
       'facebook-catalog',
       'facebook-integration',
-      // Store plan merge (2026): legacy overlapping store apps replaced by متجر بلس / متجر برو
-      'store',
+      // Store plan merge (2026): legacy overlapping store apps replaced by متجر بلس / متجر برو.
+      // NOTE: `store` (PAY_PER_USE — 2 EGP/order) is a permanent app and stays published.
       'ecommerce-pro',
     ];
     const { count } = await prisma.marketplaceApp.updateMany({
