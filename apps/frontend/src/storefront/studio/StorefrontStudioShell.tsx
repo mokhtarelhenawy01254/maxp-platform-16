@@ -14,6 +14,7 @@ import { PageComposer } from "../engine/PageComposer";
 import { StorefrontThemeProvider } from "../engine/ThemeProvider";
 import { resolveStorefrontTheme, type StorefrontThemeInput } from "../engine/themeResolver";
 import { STOREFRONT_THEME_PRESETS } from "../themes";
+import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
 
 interface StorefrontStudioShellProps {
@@ -28,6 +29,11 @@ interface StorefrontStudioShellProps {
   onOpenPreview: () => void;
   onChange: (nextTokens: Record<string, unknown>) => void;
 }
+
+const getSectionKey = (section: any, index: number): string => {
+  if (typeof section === "string") return `${section}-${index}`;
+  return section?.key || `${section?.type || "section"}-${index}`;
+};
 
 export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   themeId,
@@ -70,7 +76,11 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   }, [themeId, designTokens]);
 
   const activePageConfig = useMemo(() => {
-    return previewTheme.pages[activePageKey] || previewTheme.pages["home"] || { sections: [] };
+    const page = previewTheme.pages[activePageKey] || previewTheme.pages["home"] || { sections: [] };
+    return {
+      ...page,
+      sections: page.sections || [],
+    };
   }, [previewTheme, activePageKey]);
 
   const activeSections = useMemo(() => {
@@ -80,7 +90,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const selectedSectionConfig = useMemo(() => {
     if (!selectedSectionKey) return null;
     return activeSections.find((s: any, idx: number) => {
-      const key = typeof s === "string" ? `${s}-${idx}` : s.key || `${s.type}-${idx}`;
+      const key = getSectionKey(s, idx);
       return key === selectedSectionKey;
     }) || null;
   }, [activeSections, selectedSectionKey]);
@@ -135,7 +145,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
   const handleDeleteSection = (keyToDelete: string) => {
     const nextSections = activeSections.filter((s: any, idx: number) => {
-      const key = typeof s === "string" ? `${s}-${idx}` : s.key || `${s.type}-${idx}`;
+      const key = getSectionKey(s, idx);
       return key !== keyToDelete;
     });
 
@@ -184,7 +194,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     if (!selectedSectionKey) return;
 
     const nextSections = activeSections.map((s: any, idx: number) => {
-      const key = typeof s === "string" ? `${s}-${idx}` : s.key || `${s.type}-${idx}`;
+      const key = getSectionKey(s, idx);
       if (key !== selectedSectionKey) return s;
 
       const base = typeof s === "string" ? { type: s } : { ...s };
@@ -256,7 +266,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           />
         </div>
 
-        {/* Center Studio Stage (Interactive Canvas) */}
+        {/* Center Studio Stage (Interactive Live Canvas) */}
         <div
           className={`flex-1 overflow-hidden ${
             mobileStudioTab === "canvas" ? "block" : "hidden md:block"
@@ -266,9 +276,45 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
               <div className="min-h-screen bg-background">
                 <PageComposer
-                  pageKey={activePageKey}
-                  page={activePageConfig}
-                  theme={previewTheme}
+                  pageConfig={activePageConfig}
+                  layout={activePageConfig.layoutHint || "stack"}
+                  renderSectionFrame={({ element, index, sectionEntry, sectionId, componentKey }) => {
+                    const stableSectionKey = getSectionKey(sectionEntry, index);
+                    const selected = stableSectionKey === selectedSectionKey;
+                    const sectionLabel =
+                      getStorefrontSectionManifest(typeof sectionEntry === "string" ? sectionEntry : sectionEntry?.type)?.label ||
+                      getStorefrontSectionManifest(componentKey)?.label ||
+                      getStorefrontSectionLabel(sectionId);
+
+                    return (
+                      <div
+                        key={`${stableSectionKey}-${index}`}
+                        className="group relative cursor-pointer"
+                        onClick={() => {
+                          setSelectedSectionKey(stableSectionKey);
+                          setMobileStudioTab("inspector");
+                        }}
+                      >
+                        <div
+                          className={`pointer-events-none absolute inset-0 z-30 rounded-2xl border-2 transition-all ${
+                            selected
+                              ? "border-primary bg-primary/[0.04] shadow-[0_0_0_3px_rgba(59,130,246,0.25)]"
+                              : "border-transparent group-hover:border-primary/40 group-hover:bg-primary/[0.015]"
+                          }`}
+                        >
+                          {selected ? (
+                            <span className="absolute top-2 start-2 rounded-md bg-primary px-2.5 py-1 text-[10px] font-black text-primary-foreground shadow">
+                              {sectionLabel} (محدد للتعديل)
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="relative z-10 select-none [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_select]:pointer-events-none">
+                          {element}
+                        </div>
+                      </div>
+                    );
+                  }}
                 />
               </div>
             </StorefrontThemeProvider>
