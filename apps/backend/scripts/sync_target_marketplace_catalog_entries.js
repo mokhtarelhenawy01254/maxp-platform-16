@@ -461,6 +461,12 @@ if (require.main === module) {
     })
     .finally(async () => {
       await closeSharedDatabase().catch(() => {});
+      // sharedDatabase keeps its handles open for the long-running server, so
+      // after closeSharedDatabase the CLI process still idles in ep_poll
+      // forever (zero CPU, no sockets) and wedged the 2026-09-01 deploy for
+      // 20+ min after printing its summary. Exit explicitly, preserving the
+      // exitCode set by the failure paths above.
+      process.exit(process.exitCode || 0);
     });
 }
 
