@@ -8,10 +8,12 @@ import {
   Eye,
   Loader2,
   Palette,
+  Plus,
   Search,
   ShoppingCart,
   Sparkles,
   Wallet,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -488,6 +490,20 @@ export default function StorefrontThemes() {
   const [loading, setLoading] = useState(true);
   const [processingThemeId, setProcessingThemeId] = useState("");
   const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [customCategories, setCustomCategories] = useState<
+    ThemeCategoryGroup[]
+  >(() => {
+    try {
+      const raw = window.localStorage.getItem(
+        "storefront-themes-custom-categories",
+      );
+      return raw ? (JSON.parse(raw) as ThemeCategoryGroup[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [addingCategory, setAddingCategory] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
   const [previewStoreTarget, setPreviewStoreTarget] = useState(
     getCurrentPreviewStoreTarget,
   );
@@ -645,17 +661,28 @@ export default function StorefrontThemes() {
       });
   }, [themes]);
 
+  const displayCategoryGroups = useMemo<ThemeCategoryGroup[]>(() => {
+    const existingIds = new Set(categoryGroups.map((group) => group.id));
+    const customGroups = customCategories.filter(
+      (group) => !existingIds.has(group.id),
+    );
+    return [...categoryGroups, ...customGroups];
+  }, [categoryGroups, customCategories]);
+
   const selectedPrimaryCategoryId =
     rawSelectedPrimaryCategoryId === "all" ||
-    categoryGroups.some((group) => group.id === rawSelectedPrimaryCategoryId)
+    displayCategoryGroups.some(
+      (group) => group.id === rawSelectedPrimaryCategoryId,
+    )
       ? rawSelectedPrimaryCategoryId
       : "all";
 
   const selectedPrimaryCategory = useMemo(
     () =>
-      categoryGroups.find((group) => group.id === selectedPrimaryCategoryId) ||
-      null,
-    [categoryGroups, selectedPrimaryCategoryId],
+      displayCategoryGroups.find(
+        (group) => group.id === selectedPrimaryCategoryId,
+      ) || null,
+    [displayCategoryGroups, selectedPrimaryCategoryId],
   );
 
   const selectedSecondaryCategoryId =
@@ -842,6 +869,53 @@ export default function StorefrontThemes() {
     secondaryCategoryId: string,
   ) => {
     updateCategorySearchParams(primaryCategoryId, secondaryCategoryId);
+  };
+
+  const handleAddCategory = () => {
+    const label = newCategoryName.trim();
+    if (!label) {
+      return;
+    }
+
+    const next = [
+      ...customCategories,
+      {
+        id: `custom-${Date.now()}`,
+        label,
+        count: 0,
+        subcategories: [],
+      },
+    ];
+    setCustomCategories(next);
+    try {
+      window.localStorage.setItem(
+        "storefront-themes-custom-categories",
+        JSON.stringify(next),
+      );
+    } catch {
+      // localStorage unavailable — keep the category for this session only.
+    }
+    setNewCategoryName("");
+    setAddingCategory(false);
+    updateCategorySearchParams(next[next.length - 1].id, "all");
+  };
+
+  const handleRemoveCategory = (categoryId: string) => {
+    const next = customCategories.filter(
+      (group) => group.id !== categoryId,
+    );
+    setCustomCategories(next);
+    try {
+      window.localStorage.setItem(
+        "storefront-themes-custom-categories",
+        JSON.stringify(next),
+      );
+    } catch {
+      // ignore storage failures
+    }
+    if (selectedPrimaryCategoryId === categoryId) {
+      updateCategorySearchParams("all", "all");
+    }
   };
 
   const handlePurchase = async (theme: StorefrontThemeCatalogItem) => {
@@ -1082,22 +1156,91 @@ export default function StorefrontThemes() {
                  >
                    {t("storefrontThemes.allDomains")}
                  </button>
-                 {categoryGroups.map((group) => (
-                   <button
-                     key={group.id}
-                     onClick={() => handlePrimaryCategorySelect(group.id)}
-                     className={cn(
-                       "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
-                       selectedPrimaryCategoryId === group.id
-                         ? "text-indigo-700 bg-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-300"
-                         : "text-slate-500 dark:text-slate-400 hover:text-indigo-500"
-                     )}
-                   >
-                     {group.label}
-                     <span className="text-[9px] px-1 py-0.5 rounded-md border border-current">{group.count}</span>
-                   </button>
-                 ))}
-              </div>
+{displayCategoryGroups.map((group) => (
+                    <button
+                      key={group.id}
+                      onClick={() => handlePrimaryCategorySelect(group.id)}
+                      className={cn(
+                        "px-3 h-8 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-2",
+                        selectedPrimaryCategoryId === group.id
+                          ? "text-indigo-700 bg-indigo-100 dark:bg-indigo-500/20 dark:text-indigo-300"
+                          : "text-slate-500 dark:text-slate-400 hover:text-indigo-500"
+                      )}
+                    >
+                      {group.label}
+                      {group.count > 0 && (
+                        <span className="text-[9px] px-1 py-0.5 rounded-md border border-current">{group.count}</span>
+                      )}
+                      {group.id.startsWith("custom-") && (
+                        <span
+                          role="button"
+                          tabIndex={-1}
+                          aria-label={t("storefrontThemes.removeCategory", {
+                            name: group.label,
+                          })}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleRemoveCategory(group.id);
+                          }}
+                          className="flex items-center justify-center size-4 rounded-full bg-slate-200/70 dark:bg-slate-700/70 text-slate-500 dark:text-slate-300 hover:bg-red-100 dark:hover:bg-red-500/30 hover:text-red-500 transition-colors"
+                        >
+                          <X className="size-2.5" />
+                        </span>
+                      )}
+                    </button>
+                  ))}
+
+                  {addingCategory ? (
+                    <span className="inline-flex items-center gap-1.5 h-8 pr-1">
+                      <input
+                        autoFocus
+                        type="text"
+                        value={newCategoryName}
+                        onChange={(event) => setNewCategoryName(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            handleAddCategory();
+                          }
+                          if (event.key === "Escape") {
+                            setAddingCategory(false);
+                            setNewCategoryName("");
+                          }
+                        }}
+                        placeholder={t("storefrontThemes.newCategoryPlaceholder")}
+                        className="h-8 w-36 rounded-lg border border-indigo-400 bg-white dark:bg-slate-950 px-2.5 text-[11px] font-bold text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddCategory}
+                        aria-label={t("storefrontThemes.confirmAddCategory")}
+                        className="flex items-center justify-center size-7 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
+                      >
+                        <Check className="size-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAddingCategory(false);
+                          setNewCategoryName("");
+                        }}
+                        aria-label={t("storefrontThemes.cancelAddCategory")}
+                        className="flex items-center justify-center size-7 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      >
+                        <X className="size-3.5" />
+                      </button>
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setAddingCategory(true)}
+                      aria-label={t("storefrontThemes.addCategory")}
+                      className="flex items-center gap-1 h-8 px-2.5 rounded-lg text-[10px] font-black uppercase tracking-widest border border-dashed border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-indigo-500/60 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all"
+                    >
+                      <Plus className="size-3.5" />
+                      {t("storefrontThemes.addCategory")}
+                    </button>
+                  )}
+               </div>
            </div>
            {/* Left-edge fade hints that more categories are reachable by swiping (RTL overflow end) */}
            <div className="pointer-events-none absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-white dark:from-slate-950 to-transparent lg:hidden" />

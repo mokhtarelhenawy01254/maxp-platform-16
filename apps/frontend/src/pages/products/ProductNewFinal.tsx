@@ -49,6 +49,7 @@ import { QuantityOffersTab } from "./components/tabs/QuantityOffersTab";
 import { PresentationsTab } from "./components/tabs/PresentationsTab";
 import { ConvertToPresentationModal } from "./components/ConvertToPresentationModal";
 import { CategoryFormModal } from "../../components/category/CategoryFormModal";
+import type { FieldErrors } from "./types";
 import type { ConvertPresentationResult } from "./hooks/useProductPresentations";
 import {
   hydrateVariantSettings,
@@ -411,8 +412,13 @@ export const ProductNewFinal: React.FC = () => {
 
   // Tag State
   // Initialize Custom Hooks
-  const { formData, setFormData, fieldErrors, handleInputChange } =
-    useProductForm();
+  const {
+    formData,
+    setFormData,
+    fieldErrors,
+    setFieldErrors,
+    handleInputChange,
+  } = useProductForm();
 
   const {
     uploadedImages,
@@ -1001,6 +1007,7 @@ export const ProductNewFinal: React.FC = () => {
 
       if (Object.keys(errors).length > 0) {
         setError(Object.values(errors)[0] || null);
+        setFieldErrors(errors as FieldErrors);
         if (errors["name"] || errors["category"]) changeTab("basic");
         else if (
           errors["price"] ||
@@ -1013,9 +1020,10 @@ export const ProductNewFinal: React.FC = () => {
       }
 
       setError(null);
+      setFieldErrors({});
       return true;
     },
-    [formData, setError, t],
+    [formData, setError, setFieldErrors, t],
   );
 
   const buildCombinedMetadata = useCallback(

@@ -5393,6 +5393,11 @@ declare module 'react-i18next' {
         copyError: string;
         previewBlocked: string;
         previewNoCompany: string;
+        addCategory: string;
+        newCategoryPlaceholder: string;
+        confirmAddCategory: string;
+        cancelAddCategory: string;
+        removeCategory: string;
       };
       StorefrontVisualEditorPage: {
         success_save_ddb7: string;

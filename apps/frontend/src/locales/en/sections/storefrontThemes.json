@@ -40,5 +40,10 @@
   "copySuccess": "Preview link copied!",
   "copyError": "Failed to copy link — try again",
   "previewBlocked": "Browser blocked the preview tab. Allow popups and try again.",
-  "previewNoCompany": "Could not identify company for preview"
+  "previewNoCompany": "Could not identify company for preview",
+  "addCategory": "Add category",
+  "newCategoryPlaceholder": "New category name",
+  "confirmAddCategory": "Add category",
+  "cancelAddCategory": "Cancel",
+  "removeCategory": "Remove {{name}}"
 }
