@@ -55,7 +55,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
   const [mobileStudioTab, setMobileStudioTab] = useState<"canvas" | "layers" | "inspector">("canvas");
 
-  // Keyboard Shortcuts (Ctrl+S, Ctrl+Z)
+  // Keyboard Shortcuts (Ctrl+S)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "s") {
@@ -222,7 +222,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const themeName = STOREFRONT_THEME_PRESETS[themeId]?.name || themeId;
 
   return (
-    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground" dir="rtl">
+    <div className="fixed inset-0 z-[100] flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground" dir="rtl">
       {/* 1. Studio Top Bar */}
       <StudioTopBar
         storeName={storeName}
@@ -243,12 +243,12 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onOpenPreview={onOpenPreview}
       />
 
-      {/* 2. Studio Workspace Grid */}
-      <div className="relative flex flex-1 overflow-hidden">
+      {/* 2. Studio 3-Dock Workspace */}
+      <div className="relative flex flex-1 h-[calc(100vh-4rem)] w-full overflow-hidden">
         {/* Left Studio Dock (Layers / Catalog) */}
         <div
-          className={`w-full shrink-0 border-e border-border/80 md:w-80 lg:w-80 ${
-            mobileStudioTab === "layers" ? "block" : "hidden md:block"
+          className={`h-full shrink-0 border-e border-border/80 bg-card md:w-80 lg:w-80 ${
+            mobileStudioTab === "layers" ? "flex flex-col w-full" : "hidden md:flex md:flex-col"
           }`}
         >
           <StudioLayersDrawer
@@ -269,8 +269,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
         {/* Center Studio Stage (Interactive Live Canvas) */}
         <div
-          className={`flex-1 overflow-hidden ${
-            mobileStudioTab === "canvas" ? "block" : "hidden md:block"
+          className={`h-full flex-1 overflow-hidden bg-muted/20 ${
+            mobileStudioTab === "canvas" ? "flex flex-col w-full" : "hidden md:flex md:flex-col"
           }`}
         >
           <StudioCanvasStage deviceMode={deviceMode}>
@@ -324,8 +324,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
         {/* Right Studio Dock (Property Inspector) */}
         <div
-          className={`w-full shrink-0 border-s border-border/80 md:w-80 lg:w-96 ${
-            mobileStudioTab === "inspector" ? "block" : "hidden md:block"
+          className={`h-full shrink-0 border-s border-border/80 bg-card md:w-80 lg:w-96 ${
+            mobileStudioTab === "inspector" ? "flex flex-col w-full" : "hidden md:flex md:flex-col"
           }`}
         >
           <StudioPropertyInspector
@@ -338,7 +338,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         </div>
       </div>
 
-      {/* 3. Mobile Bottom Studio Dock (Phones / Small Tablets) */}
+      {/* 3. Mobile Bottom Studio Dock (Phones) */}
       <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md md:hidden">
         <button
           type="button"
