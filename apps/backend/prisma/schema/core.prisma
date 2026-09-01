@@ -52,6 +52,10 @@ model Company {
   registration_user_agent         String?
   registration_device_type        String?
   registration_device_fingerprint String?
+  // --- Company-level free trial (تفعيل تجريبي) ---
+  trialModeEnabled                Boolean                          @default(false)
+  trialStartedAt                  DateTime?
+  trialEndsAt                     DateTime?
   merchants                       Merchant[]
   shipments                       Shipment[]
   projects                        Project[]

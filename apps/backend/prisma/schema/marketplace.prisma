@@ -51,6 +51,7 @@ model CompanyApp {
   validUntil    DateTime?
   settings      Json?
   nextBillingAt DateTime?
+  installedInTrial Boolean      @default(false) // اُثبّت أثناء فترة التجربة المجانية للشركة
   totalSpent    Decimal        @default(0) @db.Decimal(10, 2)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

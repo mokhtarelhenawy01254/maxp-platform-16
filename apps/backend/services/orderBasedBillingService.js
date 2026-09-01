@@ -1,4 +1,5 @@
 const { getSharedPrismaClient, executeWithRetry } = require('./sharedDatabase');
+const { isCompanyTrialActive } = require('./companyTrialService');
 
 const ACTIVE_STATUSES = ['ACTIVE', 'TRIAL'];
 
@@ -106,6 +107,33 @@ async function billOrderPpuApps({ companyId, orderNumber, orderTotal, itemsCount
 
     if (apps.length === 0) {
       return { billed: false, reason: 'no-ppu-apps', deductions: [] };
+    }
+
+    // 🆓 داخل الفترة التجريبية (تفعيل تجريبي): نسجّل الاستخدام فقط (appUsageLog)
+    // بدون أي خصم من المحفظة، ويُحصَّل الاستهلاك لاحقاً عند انتهاء التجربة حسب الاستهلاك.
+    const isTrialActive = await isCompanyTrialActive(prisma, companyId);
+    if (isTrialActive) {
+      for (const item of apps) {
+        await prisma.appUsageLog.create({
+          data: {
+            companyAppId: item.companyAppId,
+            feature: 'order_billing',
+            quantity: item.quantity,
+            totalCost: item.cost,
+            metadata: {
+              orderNumber,
+              orderTotal,
+              itemsCount,
+              ppuBillingMethod: item.method,
+              appSlug: item.appSlug,
+              appName: item.appName,
+              trial: true,
+            },
+          },
+        });
+      }
+      console.log(`🎟️ [PPU-BILLING] Recorded ${apps.length} app usage during trial for company ${companyId} (order #${orderNumber})`);
+      return { billed: false, reason: 'trial', deductions: [], trial: true };
     }
 
     let wallet = await prisma.companyWallet.findUnique({ where: { companyId } });

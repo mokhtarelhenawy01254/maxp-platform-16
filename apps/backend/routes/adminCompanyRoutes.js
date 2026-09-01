@@ -50,4 +50,7 @@ router.delete('/:companyId/users/:userId', verifyToken.authenticateToken, verify
 // Toggle company feature flag (e.g. aiToolsEnabled)
 router.put('/:companyId/features', verifyToken.authenticateToken, verifyToken.requireSuperAdmin, adminCompnayController.toggleCompanyFeature);
 
+// Company free-trial (تفعيل تجريبي): activate / deactivate / status
+router.post('/:companyId/trial', verifyToken.authenticateToken, verifyToken.requireSuperAdmin, adminCompnayController.setCompanyTrial);
+
 module.exports = router;

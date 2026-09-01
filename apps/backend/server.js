@@ -1317,6 +1317,15 @@ try {
   console.error("❌ [ORDER-STATUS-AUTO-CHANGE-CRON] Failed to start order status auto-change cron:", error);
 }
 
+// Start Trial expiry cron (company free-trial end)
+try {
+  const { startTrialExpiryCron } = require("./cron/trialExpiryCron");
+  startTrialExpiryCron();
+  console.log("✅ [TRIAL-EXPIRY-CRON] Trial expiry cron started (runs every 30 min)");
+} catch (error) {
+  console.error("❌ [TRIAL-EXPIRY-CRON] Failed to start trial expiry cron:", error);
+}
+
 // Start Auto-Discount voucher expiry conversion cron
 try {
   const { startAutoDiscountVoucherCron } = require("./cron/autoDiscountVoucherCron");

@@ -224,7 +224,9 @@ async function ensureCompanyAppInstalled(tx, {
   visited = new Set(),
   autoInstalledApps = [],
   allowAlreadyInstalled = true,
-  recordAutoInstall = false
+  recordAutoInstall = false,
+  inTrial = false,
+  inTrialEndsAt = null
 }) {
   const normalizedSlug = String(app?.slug || '').trim();
   if (!normalizedSlug) {
@@ -265,7 +267,9 @@ async function ensureCompanyAppInstalled(tx, {
         visited,
         autoInstalledApps,
         allowAlreadyInstalled: true,
-        recordAutoInstall: true
+        recordAutoInstall: true,
+        inTrial,
+        inTrialEndsAt
       });
     }
   }
@@ -291,7 +295,11 @@ async function ensureCompanyAppInstalled(tx, {
     return autoInstalledApps;
   }
 
-  const validUntil = requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
+  const validUntil = !inTrial && requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
+  const resolvedStatus = inTrial ? 'TRIAL' : 'ACTIVE';
+  const resolvedTrialEnds = inTrial
+    ? (inTrialEndsAt ? new Date(inTrialEndsAt) : existing?.trialEndsAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
+    : existing?.trialEndsAt || null;
   const installedSettings = buildInstalledMarketplaceAppSettings(
     app.slug,
     existing?.settings,
@@ -307,8 +315,10 @@ async function ensureCompanyAppInstalled(tx, {
       where: { id: existing.id },
       data: {
         activePricingModel: requestedPricingModel,
-        status: 'ACTIVE',
+        status: inTrial ? 'TRIAL' : 'ACTIVE',
         validUntil,
+        trialEndsAt: resolvedTrialEnds,
+        installedInTrial: inTrial,
         settings: installedSettings,
         updatedAt: new Date()
       }
@@ -320,10 +330,12 @@ async function ensureCompanyAppInstalled(tx, {
         companyId,
         appId: app.id,
         activePricingModel: requestedPricingModel,
-        status: 'ACTIVE',
+        status: resolvedStatus,
         validUntil,
+        trialEndsAt: resolvedTrialEnds,
+        installedInTrial: inTrial,
         settings: installedSettings,
-        nextBillingAt: requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
+        nextBillingAt: !inTrial && requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
       }
     });
 
@@ -1424,6 +1436,21 @@ exports.installApp = async (req, res) => {
       pricingModel,
       normalizePricingModel(app.pricingModel, 'SUBSCRIPTION')
     );
+
+    // 🆓 Company-level free trial (تفعيل تجريبي): لو الشركة في فترة تجربة مجانية
+    // فعّالة لكل التطبيقات → التثبيت مجاني بدون خصم من المحفظة أو فحص الرصيد.
+    const trialCompany = await executeWithRetry(async () => {
+      return await getSharedPrismaClient().company.findUnique({
+        where: { id: companyId },
+        select: { trialModeEnabled: true, trialEndsAt: true }
+      });
+    });
+    const isTrialActive = Boolean(
+      trialCompany?.trialModeEnabled &&
+      trialCompany?.trialEndsAt &&
+      new Date(trialCompany.trialEndsAt) > new Date()
+    );
+
     const installationResult = await executeWithRetry(async () => {
       return await getSharedPrismaClient().$transaction(async (tx) => {
         const autoInstalledApps = [];
@@ -1432,7 +1459,9 @@ exports.installApp = async (req, res) => {
           app,
           pricingModel: requestedPricingModel,
           autoInstalledApps,
-          allowAlreadyInstalled: false
+          allowAlreadyInstalled: false,
+          inTrial: isTrialActive,
+          inTrialEndsAt: isTrialActive ? trialCompany.trialEndsAt : null
         });
 
         const appInst = await tx.companyApp.findUnique({
@@ -1463,18 +1492,21 @@ exports.installApp = async (req, res) => {
               ? Number(app.unitPrice || 0)
               : 0;
 
-        if (cost > 0 && Number(wallet.balance) < cost) {
+        // أثناء التجربة المجانية: لا يُخصم أي مبلغ (التثبيت مجاني بالكامل)
+        const effectiveCost = isTrialActive ? 0 : cost;
+
+        if (effectiveCost > 0 && Number(wallet.balance) < effectiveCost) {
           throw new Error(
-            `رصيد المحفظة غير كافٍ. المطلوب: ${cost} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`
+            `رصيد المحفظة غير كافٍ. المطلوب: ${effectiveCost} ${wallet.currency}، المتوفر: ${wallet.balance} ${wallet.currency}`
           );
         }
 
-        if (cost > 0) {
+        if (effectiveCost > 0) {
           await tx.companyWallet.update({
             where: { companyId },
             data: {
-              balance: { decrement: cost },
-              totalSpent: { increment: cost }
+              balance: { decrement: effectiveCost },
+              totalSpent: { increment: effectiveCost }
             }
           });
 
@@ -1483,7 +1515,7 @@ exports.installApp = async (req, res) => {
               id: uuidv4(),
               walletId: wallet.id,
               type: 'PAYMENT',
-              amount: cost,
+              amount: effectiveCost,
               description: `تفعيل ${app.name}${requestedPricingModel === 'SUBSCRIPTION' ? ' (اشتراك شهري)' : ' (وحدة)'}`,
               referenceId: `APP_${app.slug}_${Date.now()}`
             }
@@ -1499,7 +1531,9 @@ exports.installApp = async (req, res) => {
 
     res.json({
       success: true,
-      message: `ØªÙ… ØªÙØ¹ÙŠÙ„ ${app.name} Ø¨Ù†Ø¬Ø§Ø­! ðŸŽ‰\nØªØ¬Ø±Ø¨Ø© Ù…Ø¬Ø§Ù†ÙŠØ© Ù„Ù…Ø¯Ø© ${app.trialDays} ÙŠÙˆÙ…`,
+      message: isTrialActive
+        ? `تم تفعيل ${app.name} بنجاح داخل الفترة التجريبية المجانية!`
+        : `تم تفعيل ${app.name} بنجاح!`,
       data: {
         ...installationResult.installation,
         app: {
@@ -1507,7 +1541,8 @@ exports.installApp = async (req, res) => {
           slug: app.slug,
           icon: app.icon
         },
-        autoInstalledRequiredApps: installationResult.autoInstalledApps
+        autoInstalledRequiredApps: installationResult.autoInstalledApps,
+        trial: isTrialActive
       }
     });
   } catch (error) {

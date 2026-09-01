@@ -95,6 +95,10 @@ interface UseCompanyDetailsReturn {
   setAddEmployeeForm: Dispatch<SetStateAction<EmployeeForm>>; addEmployeeErrors: any; handleAddEmployee: () => Promise<void>;
   topUpOpen: boolean; setTopUpOpen: Dispatch<SetStateAction<boolean>>; topUpLoading: boolean; topUpForm: TopUpForm; setTopUpForm: Dispatch<SetStateAction<TopUpForm>>;
   topUpErrors: any; topUpAmountPreview: number; topUpBonusPreview: number; handleTopUpWallet: () => Promise<void>;
+  trialOpen: boolean; setTrialOpen: Dispatch<SetStateAction<boolean>>; trialDuration: string; setTrialDuration: Dispatch<SetStateAction<string>>;
+  trialSaving: boolean; trialDeactivating: boolean;
+  openTrialModal: () => void; handleActivateTrial: () => Promise<void>; handleDeactivateTrial: () => Promise<void>;
+  trialActive: boolean; trialEndsAt: string | null; trialStartedAt: string | null; trialDaysRemaining: number;
   handleUpdateUserRole: (userId: string, role: string) => Promise<void>;
   handleToggleUserStatus: (userId: string) => Promise<void>;
   handleDeleteUser: (userId: string) => Promise<void>;
@@ -147,6 +151,11 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [topUpLoading, setTopUpLoading] = useState(false);
   const [topUpForm, setTopUpForm] = useState<TopUpForm>({ amount: "", bonus: "", notes: "" });
   const [topUpErrors, setTopUpErrors] = useState<any>({});
+
+  const [trialOpen, setTrialOpen] = useState(false);
+  const [trialDuration, setTrialDuration] = useState("14");
+  const [trialSaving, setTrialSaving] = useState(false);
+  const [trialDeactivating, setTrialDeactivating] = useState(false);
 
   const [activationLoading, setActivationLoading] = useState(true);
   const [activationError, setActivationError] = useState("");
@@ -408,6 +417,44 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     finally { setTopUpLoading(false); }
   };
 
+  const openTrialModal = (): void => {
+    setTrialDuration(company?.trialModeEnabled ? "" : "14");
+    setTrialOpen(true);
+  };
+
+  const handleActivateTrial = async (): Promise<void> => {
+    if (!companyId) return;
+    const days = Number(trialDuration);
+    if (!Number.isFinite(days) || days <= 0) { toast.error("حدد مدة الفترة التجريبية بالأيام (رقم أكبر من صفر)"); return; }
+    try {
+      setTrialSaving(true);
+      const response: any = await apiClient.post(`/admin/companies/${companyId}/trial`, { action: "activate", durationDays: days });
+      if (response.data?.success) { toast.success(response.data.message || `تم تفعيل الفترة التجريبية لمدة ${days} يوم`); setTrialOpen(false); void refreshCompanyWorkspace({ background: true }); }
+      else toast.error(response.data?.message || "فشل في تفعيل الفترة التجريبية");
+    } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في تفعيل الفترة التجريبية")); }
+    finally { setTrialSaving(false); }
+  };
+
+  const handleDeactivateTrial = async (): Promise<void> => {
+    if (!companyId) return;
+    try {
+      setTrialDeactivating(true);
+      const response: any = await apiClient.post(`/admin/companies/${companyId}/trial`, { action: "deactivate" });
+      if (response.data?.success) { toast.success(response.data.message || "تم إيقاف الفترة التجريبية وتجميد التطبيقات"); setTrialOpen(false); void refreshCompanyWorkspace({ background: true }); }
+      else toast.error(response.data?.message || "فشل في إيقاف الفترة التجريبية");
+    } catch (nextError) { toast.error(extractErrorMessage(nextError, "فشل في إيقاف الفترة التجريبية")); }
+    finally { setTrialDeactivating(false); }
+  };
+
+  const trialActive = Boolean(company?.trialModeEnabled);
+  const trialEndsAt = company?.trialEndsAt || null;
+  const trialStartedAt = company?.trialStartedAt || null;
+  const trialDaysRemaining = useMemo(() => {
+    if (!trialActive || !trialEndsAt) return 0;
+    const ms = new Date(trialEndsAt).getTime() - Date.now();
+    return ms > 0 ? Math.ceil(ms / (24 * 60 * 60 * 1000)) : 0;
+  }, [trialActive, trialEndsAt]);
+
   const refreshReviewAndCatalog = async (): Promise<void> => { await Promise.all([refreshCompanyWorkspace({ background: true }), refreshActivationCatalog()]); };
 
   // ponytail: resolvedPlanCatalog and currentPlanType removed — plan tiers deleted
@@ -549,8 +596,11 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
     handleSaveCompany, transferOpen, setTransferOpen, transferLoading, changeOwnerTargetUserId, setChangeOwnerTargetUserId,
     handleTransferOwnership, addEmployeeOpen, setAddEmployeeOpen, employeeLoading, addEmployeeForm, setAddEmployeeForm,
     addEmployeeErrors, handleAddEmployee, topUpOpen, setTopUpOpen, topUpLoading, topUpForm, setTopUpForm, topUpErrors,
-    topUpAmountPreview, topUpBonusPreview, handleTopUpWallet,
-    handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
+  topUpAmountPreview, topUpBonusPreview, handleTopUpWallet,
+  trialOpen, setTrialOpen, trialDuration, setTrialDuration, trialSaving, trialDeactivating,
+  openTrialModal, handleActivateTrial, handleDeactivateTrial,
+  trialActive, trialEndsAt, trialStartedAt, trialDaysRemaining,
+  handleUpdateUserRole, handleToggleUserStatus, handleDeleteUser,
     deleteConfirmUserId, setDeleteConfirmUserId, deleteUserLoading,
     handleCancelSubscription, handleRetryPayment,
     companyTickets, ticketsLoading,

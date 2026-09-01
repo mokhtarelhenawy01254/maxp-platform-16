@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, ArrowLeftRight, CheckCircle2, Loader2, LogIn, MessageSquare, RefreshCw, Sparkles, UserPlus, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowLeftRight, CheckCircle2, Loader2, LogIn, MessageSquare, RefreshCw, Sparkles, Timer, UserPlus, Wallet } from "lucide-react";
 import { useCallback, useState, type ChangeEvent } from "react";
 import { cn } from "../../lib/utils";
 import i18n from "../../i18n";
@@ -59,6 +59,9 @@ const SuperAdminCompanyDetails = () => {
     addEmployeeOpen, setAddEmployeeOpen, employeeLoading, addEmployeeForm, setAddEmployeeForm,
     addEmployeeErrors, handleAddEmployee, topUpOpen, setTopUpOpen, topUpLoading, topUpForm, setTopUpForm, topUpErrors,
     topUpAmountPreview, topUpBonusPreview, handleTopUpWallet,
+    trialOpen, setTrialOpen, trialDuration, setTrialDuration, trialSaving, trialDeactivating,
+    openTrialModal, handleActivateTrial, handleDeactivateTrial,
+    trialActive, trialEndsAt, trialStartedAt, trialDaysRemaining,
   } = useCompanyDetails();
   const [activeTab, setActiveTab] = useState("general");
   const [linkOpen, setLinkOpen] = useState(false);
@@ -122,6 +125,9 @@ const SuperAdminCompanyDetails = () => {
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openEditModal} disabled={!company}>
                   <Sparkles className="size-4" /> تعديل الشركة
+                </Button>
+                <Button type="button" variant={trialActive ? "outline" : "default"} className="h-11 rounded-2xl" onClick={openTrialModal} disabled={!company}>
+                  <Timer className="size-4" /> {trialActive ? "الفترة التجريبية" : "تفعيل تجريبي"}
                 </Button>
                 <Button type="button" className="h-11 rounded-2xl" onClick={openTopUpModal} disabled={!company}>
                   <Wallet className="size-4" /> شحن المحفظة
@@ -382,6 +388,59 @@ const SuperAdminCompanyDetails = () => {
           <MiniStat label="القيمة النهائية" value={formatCurrency((review?.wallet?.balance || 0) + topUpAmountPreview + topUpBonusPreview, reviewCurrency)} helper="رصيد تقديري بعد الشحن" valueClassName="text-emerald-700 dark:text-emerald-300" />
         </div>
       </ResponsiveOverlay>
+      <ResponsiveOverlay mobile={isMobile} open={trialOpen} onOpenChange={setTrialOpen}
+        title={`الفترة التجريبية ${company?.name || "الشركة"}`} description="افتح فترة مجانية للشركة تثبّت فيها أي أداة من الماركت بلس بلا خصم من المحفظة، ثم تُجمَّد الأدوات بعد انتهائها ويُحصَّل الاستهلاك حسب الاستخدام."
+        bodyClassName="space-y-4"
+        footer={
+          trialActive ? (
+            <div className="flex w-full justify-between gap-3">
+              <Button type="button" variant="destructive" className="h-11 rounded-2xl" onClick={() => void handleDeactivateTrial()} disabled={trialDeactivating}>
+                {trialDeactivating ? <Loader2 className="size-4 animate-spin" /> : <Timer className="size-4" />}
+                إيقاف التجربة وتجميد الأدوات
+              </Button>
+              <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setTrialOpen(false)}>إغلاق</Button>
+            </div>
+          ) : (
+            <div className="flex w-full justify-end gap-3">
+              <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => setTrialOpen(false)} disabled={trialSaving}>إلغاء</Button>
+              <Button type="button" className="h-11 rounded-2xl" onClick={() => void handleActivateTrial()} disabled={trialSaving}>
+                {trialSaving ? <Loader2 className="size-4 animate-spin" /> : <Timer className="size-4" />}
+                تفعيل التجربة
+              </Button>
+            </div>
+          )
+        }
+      >
+        {trialActive ? (
+          <Alert className="rounded-xl border-emerald-200 bg-emerald-50/90 text-emerald-900 dark:border-emerald-800/70 dark:bg-emerald-950/30 dark:text-emerald-100">
+            <CheckCircle2 className="size-4" />
+            <AlertTitle>الفترة التجريبية مفعّلة</AlertTitle>
+            <AlertDescription>بدأت {trialStartedAt ? new Date(trialStartedAt).toLocaleDateString("ar-EG") : "—"} وتنتهي {trialEndsAt ? new Date(trialEndsAt).toLocaleDateString("ar-EG") : "—"} ({trialDaysRemaining} يوم متبقي). كل أدوات الماركت بلس متاحة مجانًا الآن.</AlertDescription>
+          </Alert>
+        ) : (
+          <>
+            <Alert className="rounded-xl border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-800/60 dark:bg-amber-950/30 dark:text-amber-100">
+              <AlertTriangle className="size-4" />
+              <AlertTitle>فترة مجانية (تفعيل تجريبي)</AlertTitle>
+              <AlertDescription>خلالها تستطيع الشركة تثبيت أي أداة من الماركت بلس مجانًا. عند انتهاء المدة تُجمَّد الأدوات تلقائيًا ويُحصَّل الاستهلاك حسب الاستخدام من المحفظة.</AlertDescription>
+            </Alert>
+            <div className="space-y-3">
+              <FormField label="مدة التجربة (أيام)" required>
+                <Input type="number" min="1" step="1" value={trialDuration} onChange={(event: ChangeEvent<HTMLInputElement>) => setTrialDuration(event.target.value)} className="h-11 rounded-2xl" placeholder="مثال: 14" />
+              </FormField>
+              <div className="flex flex-wrap gap-2">
+                {[7, 14, 30, 60, 90].map((days) => (
+                  <Button key={days} type="button" variant={trialDuration === String(days) ? "default" : "outline"} size="sm" className="h-9 rounded-lg px-4 text-xs font-black"
+                    onClick={() => setTrialDuration(String(days))}>
+                    {days} يوم
+                  </Button>
+                ))}
+              </div>
+            </div>
+          </>
+        )}
+      </ResponsiveOverlay>
+
       <Dialog open={linkOpen} onOpenChange={setLinkOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

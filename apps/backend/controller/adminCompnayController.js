@@ -2190,6 +2190,82 @@ const toggleCompanyFeature = async (req, res) => {
     }
 };
 
+const setCompanyTrial = async (req, res) => {
+    try {
+        const { companyId } = req.params;
+        const { action } = req.body || {};
+        const durationDays = Number(req.body?.durationDays);
+
+        const prisma = getSharedPrismaClient();
+        const company = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: { id: true, name: true, trialModeEnabled: true, trialEndsAt: true },
+        });
+
+        if (!company) {
+            return res.status(404).json({ success: false, message: 'الشركة غير موجودة' });
+        }
+
+        if (action === 'activate') {
+            if (!Number.isFinite(durationDays) || durationDays <= 0) {
+                return res.status(400).json({ success: false, message: 'حدد مدة الفترة التجريبية بالأيام (رقم أكبر من صفر)' });
+            }
+
+            const now = new Date();
+            const endsAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
+
+            await prisma.company.update({
+                where: { id: companyId },
+                data: { trialModeEnabled: true, trialStartedAt: now, trialEndsAt: endsAt },
+            });
+
+            return res.json({
+                success: true,
+                message: `تم تفعيل الفترة التجريبية المجانية لـ ${company.name} لمدة ${durationDays} يوم`,
+                data: { trialModeEnabled: true, trialStartedAt: now.toISOString(), trialEndsAt: endsAt.toISOString(), days: durationDays },
+            });
+        }
+
+        if (action === 'deactivate') {
+            await prisma.company.update({
+                where: { id: companyId },
+                data: { trialModeEnabled: false },
+            });
+
+            // تجميد التطبيقات المثبتة أثناء التجربة وفوترة الاستهلاك فوراً
+            let frozen = 0;
+            try {
+                const { expireCompanyTrial } = require('../services/companyTrialService');
+                const result = await expireCompanyTrial(companyId);
+                frozen = result.frozen || 0;
+            } catch (expireError) {
+                console.error('[TRIAL-DEACTIVATE] Error expiring trial:', expireError.message);
+            }
+
+            return res.json({
+                success: true,
+                message: `تم إيقاف الفترة التجريبية وتجميد ${frozen} من التطبيقات`,
+                data: { trialModeEnabled: false, frozen },
+            });
+        }
+
+        if (action === 'status') {
+            return res.json({
+                success: true,
+                data: {
+                    trialModeEnabled: company.trialModeEnabled,
+                    trialEndsAt: company.trialEndsAt || null,
+                },
+            });
+        }
+
+        return res.status(400).json({ success: false, message: 'action غير صالح (activate / deactivate / status)' });
+    } catch (error) {
+        console.error('Error setting company trial:', error);
+        return res.status(500).json({ success: false, message: 'فشل في تحديث الفترة التجريبية', error: error.message });
+    }
+};
+
 module.exports = {
     getAllCompanies,
     getCompanyDetails,
@@ -2206,5 +2282,6 @@ module.exports = {
     bulkUpdateCompanyStatus,
     forceTransferOwnership,
     addEmployeeToCompany,
-    toggleCompanyFeature
+    toggleCompanyFeature,
+    setCompanyTrial
 };

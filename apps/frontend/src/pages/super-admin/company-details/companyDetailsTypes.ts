@@ -9,6 +9,9 @@ export interface CompanyData {
   isActive: boolean;
   slug?: string;
   createdAt?: string;
+  trialModeEnabled?: boolean;
+  trialStartedAt?: string | null;
+  trialEndsAt?: string | null;
   _count?: { users?: number; customers?: number; facebookPages?: number };
 }
 
