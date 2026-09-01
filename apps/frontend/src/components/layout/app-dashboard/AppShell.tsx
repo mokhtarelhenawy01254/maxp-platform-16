@@ -191,7 +191,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
         {t('appDashboard.skipToContent')}
       </a>
 
-      {showMobileHeader && (
+      {showMobileHeader && !isChat && (
         <header className="app-shell-mobile-header lg:hidden">
           <button
             ref={mobileMenuToggleRef}

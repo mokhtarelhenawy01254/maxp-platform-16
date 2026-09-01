@@ -44,7 +44,7 @@ describe("AppShell mobile navigation", () => {
 
   it("renders a mobile header whose button opens the app menu drawer", async () => {
     render(
-      <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
+      <MemoryRouter initialEntries={["/apps/whatsapp/settings"]}>
         <Routes>
           <Route
             path="/apps/:appId/*"
@@ -77,7 +77,7 @@ describe("AppShell mobile navigation", () => {
 
   it("renders the sidebar inside the mobile drawer with a fixed width so it is visible when open", async () => {
     render(
-      <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
+      <MemoryRouter initialEntries={["/apps/whatsapp/settings"]}>
         <Routes>
           <Route
             path="/apps/:appId/*"
@@ -108,7 +108,7 @@ describe("AppShell mobile navigation", () => {
 
   it("closes the drawer on Escape and restores focus to the toggle", async () => {
     render(
-      <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
+      <MemoryRouter initialEntries={["/apps/whatsapp/settings"]}>
         <Routes>
           <Route
             path="/apps/:appId/*"
@@ -141,7 +141,7 @@ describe("AppShell mobile navigation", () => {
     expect(openButton).toHaveFocus();
   });
 
-  it("hides AdminBottomNav on chat/conversation routes", () => {
+  it("hides header and AdminBottomNav on chat/conversation routes", () => {
     render(
       <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
         <Routes>
@@ -157,24 +157,21 @@ describe("AppShell mobile navigation", () => {
       </MemoryRouter>,
     );
 
+    const headerToggle = screen.queryByRole("button", { name: /openAppMenu/ });
+    expect(headerToggle).not.toBeInTheDocument();
+
     const bottomNav = screen.queryByRole("navigation", { name: /التنقل السفلي للتاجر/ });
     expect(bottomNav).not.toBeInTheDocument();
   });
 
-  it("renders AdminBottomNav on non-chat routes", () => {
-    const ordersSection: SidebarSection = {
-      id: "orders",
-      title: "Orders",
-      items: [{ to: "/apps/orders/list", label: "All Orders" }],
-    };
-
+  it("renders header and AdminBottomNav on non-chat routes", () => {
     render(
-      <MemoryRouter initialEntries={["/apps/orders/list"]}>
+      <MemoryRouter initialEntries={["/apps/whatsapp/settings"]}>
         <Routes>
           <Route
             path="/apps/:appId/*"
             element={
-              <AppShell allSections={[ordersSection]}>
+              <AppShell allSections={[whatsappSection]}>
                 <div>App content</div>
               </AppShell>
             }
@@ -182,6 +179,9 @@ describe("AppShell mobile navigation", () => {
         </Routes>
       </MemoryRouter>,
     );
+
+    const headerToggle = screen.getByRole("button", { name: /openAppMenu/ });
+    expect(headerToggle).toBeInTheDocument();
 
     const bottomNav = screen.getByRole("navigation", { name: /التنقل السفلي للتاجر/ });
     expect(bottomNav).toBeInTheDocument();

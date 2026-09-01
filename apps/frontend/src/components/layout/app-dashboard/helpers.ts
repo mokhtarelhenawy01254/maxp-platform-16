@@ -27,19 +27,26 @@ const CHAT_ROUTE_PREFIXES = [
   '/apps/inbox',
 ];
 
-const CHAT_APP_IDS = new Set([
-  'whatsapp',
-  'facebook',
-  'facebook-inbox',
-  'instagram',
-  'instagram-inbox',
-  'telegram',
-  'tiktok',
-  'tiktok-inbox',
-  'unified-inbox',
-  'messenger',
-  'inbox',
-]);
+const NON_CHAT_SUBPATHS = [
+  '/settings',
+  '/templates',
+  '/meta-templates',
+  '/template-broadcast',
+  '/lead-followup',
+  '/cloud-connect',
+  '/employee-analytics',
+  '/conversation-analytics',
+  '/notification-logs',
+  '/customer-journey',
+  '/connections',
+  '/analytics',
+  '/posts',
+  '/comments',
+  '/post-creator',
+  '/post-manager',
+  '/stats',
+  '/prediction',
+];
 
 export const isChatRoute = (
   pathname?: string,
@@ -48,15 +55,18 @@ export const isChatRoute = (
 ): boolean => {
   const norm = (pathname || '').split('?')[0].toLowerCase().replace(/\/+$/, '') || '/';
 
+  // If on a non-chat management page (e.g. /whatsapp/settings, /whatsapp/templates, etc.), not a chat
+  if (NON_CHAT_SUBPATHS.some((subpath) => norm.includes(subpath))) {
+    return false;
+  }
+
+  // Check against known chat route prefixes
   if (CHAT_ROUTE_PREFIXES.some((prefix) => norm === prefix || norm.startsWith(`${prefix}/`))) {
     return true;
   }
 
-  if (appId && CHAT_APP_IDS.has(appId.toLowerCase())) {
-    return true;
-  }
-
-  if (appCategory === 'communication') {
+  // Check appId if category is communication
+  if (appId && ['whatsapp', 'facebook', 'facebook-inbox', 'instagram', 'instagram-inbox', 'telegram', 'tiktok', 'tiktok-inbox', 'unified-inbox', 'messenger', 'inbox'].includes(appId.toLowerCase())) {
     return true;
   }
 
