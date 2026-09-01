@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Bars3Icon,
   ChevronDownIcon,
@@ -13,6 +13,9 @@ import {
   MegaphoneIcon,
   ChatBubbleLeftRightIcon,
   LinkIcon,
+  ShoppingBagIcon,
+  CreditCardIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioLeftPanelTab } from "./StudioTypes";
@@ -69,6 +72,21 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
         { label: "العروض والتخفيضات", url: "/shop?discount=true" },
         { label: "تواصل معنا", url: "/contact" },
       ];
+
+  // PDP 1-Click Fast COD Buybox Settings
+  const pdpQuickOrder = (designTokens?.pdpQuickOrder as any) || {
+    enabled: true,
+    surfaceMode: "merged-buybox",
+    showQuantityOffers: true,
+    showGovernorateSelector: true,
+  };
+
+  // Checkout Fields Settings
+  const checkoutSettings = (designTokens?.checkoutSettings as any) || {
+    hideZipCode: true,
+    hideCompany: true,
+    autoGovernorates: true,
+  };
 
   const updateTokens = (patch: Record<string, unknown>) => {
     if (onUpdateThemeTokens) {
@@ -245,9 +263,100 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
           </div>
         </div>
       ) : (
-        /* Global Theme Tokens Tab */
+        /* Global Theme & E-commerce Settings Tab */
         <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs [scrollbar-width:none]">
-          {/* Brand Colors */}
+          {/* 1. 1-Click Fast COD Buybox on Product Page */}
+          <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-foreground flex items-center gap-1.5">
+                <ShoppingBagIcon className="h-4 w-4 text-primary" />
+                <span>الشراء الفوري COD بصفحة المنتج</span>
+              </h3>
+              <input
+                type="checkbox"
+                checked={pdpQuickOrder.enabled}
+                onChange={(e) => {
+                  updateTokens({
+                    pdpQuickOrder: { ...pdpQuickOrder, enabled: e.target.checked },
+                  });
+                }}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground leading-relaxed">
+              نموذج طلب فوري (الاسم + الهاتف + المحافظة) في صفحة المنتج بدون المرور بالسلة لمضاعفة المبيعات.
+            </p>
+            {pdpQuickOrder.enabled && (
+              <div className="space-y-2 pt-1 border-t border-border/60">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pdpQuickOrder.showQuantityOffers}
+                    onChange={(e) => {
+                      updateTokens({
+                        pdpQuickOrder: { ...pdpQuickOrder, showQuantityOffers: e.target.checked },
+                      });
+                    }}
+                    className="h-3.5 w-3.5 rounded border-border text-primary"
+                  />
+                  <span className="text-[11px] font-bold text-foreground">عرض باقات التوفير التراكمية (اشتري 2 بخصم)</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={pdpQuickOrder.showGovernorateSelector}
+                    onChange={(e) => {
+                      updateTokens({
+                        pdpQuickOrder: { ...pdpQuickOrder, showGovernorateSelector: e.target.checked },
+                      });
+                    }}
+                    className="h-3.5 w-3.5 rounded border-border text-primary"
+                  />
+                  <span className="text-[11px] font-bold text-foreground">قائمة المحافظات بحساب الشحن التلقائي</span>
+                </label>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Simplified Checkout Fields */}
+          <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-foreground flex items-center gap-1.5">
+                <CreditCardIcon className="h-4 w-4 text-emerald-600" />
+                <span>تبسيط حقول صفحة الدفع</span>
+              </h3>
+            </div>
+            <div className="space-y-2">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={checkoutSettings.hideZipCode}
+                  onChange={(e) => {
+                    updateTokens({
+                      checkoutSettings: { ...checkoutSettings, hideZipCode: e.target.checked },
+                    });
+                  }}
+                  className="h-3.5 w-3.5 rounded border-border text-emerald-600"
+                />
+                <span className="text-[11px] font-bold text-foreground">إخفاء الرمز البريدي (Zip Code)</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={checkoutSettings.hideCompany}
+                  onChange={(e) => {
+                    updateTokens({
+                      checkoutSettings: { ...checkoutSettings, hideCompany: e.target.checked },
+                    });
+                  }}
+                  className="h-3.5 w-3.5 rounded border-border text-emerald-600"
+                />
+                <span className="text-[11px] font-bold text-foreground">إخفاء حقل اسم الشركة الإضافي</span>
+              </label>
+            </div>
+          </div>
+
+          {/* 3. Brand Colors */}
           <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
             <h3 className="font-black text-foreground flex items-center gap-1.5">
               <SwatchIcon className="h-4 w-4 text-primary" />
@@ -282,7 +391,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
             </div>
           </div>
 
-          {/* Typography */}
+          {/* 4. Typography */}
           <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
             <h3 className="font-black text-foreground">الخط العربي للمتجر</h3>
             <select
@@ -301,7 +410,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
             </select>
           </div>
 
-          {/* Header Navigation Menu Links Builder */}
+          {/* 5. Header Navigation Menu Links */}
           <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-foreground flex items-center gap-1.5">
@@ -352,7 +461,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
             </div>
           </div>
 
-          {/* Announcement Bar */}
+          {/* 6. Announcement Bar */}
           <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-foreground flex items-center gap-1.5">
@@ -390,7 +499,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
             )}
           </div>
 
-          {/* Floating WhatsApp Widget */}
+          {/* 7. Floating WhatsApp Widget */}
           <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="font-black text-foreground flex items-center gap-1.5">
@@ -446,7 +555,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
             )}
           </div>
 
-          {/* Landing Page Mode (Ad Campaigns) */}
+          {/* 8. Landing Page Mode */}
           <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-4 space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
