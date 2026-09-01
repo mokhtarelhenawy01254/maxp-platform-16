@@ -56,7 +56,8 @@ const StoreCanvasFrame = ({
           متجر-التاجر.maxp.online
         </span>
       </div>
-      <div className="space-y-4 rounded-b-xl border border-t-0 border-gray-200 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-950 sm:p-5">
+      {/* عالم المتجر فاتح دائمًا — النافذة لا تتبع وضع اللوحة */}
+      <div className="space-y-4 rounded-b-xl border border-t-0 border-gray-200 bg-white p-4 text-gray-900 shadow-sm sm:p-5">
         {displayKind === "pdp" ? (
           <div className="flex items-center justify-between border-b border-gray-100 pb-3 dark:border-gray-900">
             <span className="text-xs font-black text-gray-900 dark:text-white">

@@ -29,6 +29,35 @@ export const ConversionToolPreviewProvider: React.FC<{ children: React.ReactNode
   <StorefrontThemeProvider scoped>{children}</StorefrontThemeProvider>
 );
 
+/**
+ * "نافذة المتجر" — المعاينة تمثل Storefront التاجر وهي فاتحة بطبيعتها،
+ * فبنثبت التوكنات الفاتحة جواها مهما كان وضع اللوحة (دارك/لايت).
+ * كمان بتعزل توكنات shadcn المتغيرة مع .dark عن مكوّنات المتجر.
+ */
+const LIGHT_PREVIEW_TOKENS = {
+  "--primary": "#4f46e5",
+  "--primary-foreground": "#ffffff",
+  "--background": "#ffffff",
+  "--foreground": "#111827",
+  "--muted": "#f3f4f6",
+  "--muted-foreground": "#6b7280",
+  "--card": "#ffffff",
+  "--border": "#e5e7eb",
+  "--radius": "0.75rem",
+} as React.CSSProperties;
+
+export const LightPreviewScope: React.FC<{ children: React.ReactNode; className?: string }> = ({
+  children,
+  className = "",
+}) => (
+  <div
+    style={LIGHT_PREVIEW_TOKENS}
+    className={`bg-white text-gray-900 ${className}`}
+  >
+    {children}
+  </div>
+);
+
 export interface ConversionToolPreviewContext {
   /** قيم إعدادات التطبيق (بما فيها التعديلات غير المحفوظة) — المعاينة تقرأ منها لحظيًا */
   settings: JsonRecord;
@@ -531,7 +560,17 @@ export const CONVERSION_TOOL_PREVIEWS: Record<string, ToolPreviewRenderer> = {
 export const renderConversionToolPreview = (
   toolKey: string,
   context: ConversionToolPreviewContext,
-): React.ReactNode => CONVERSION_TOOL_PREVIEWS[toolKey]?.(context) || null;
+): React.ReactNode => {
+  const renderer = CONVERSION_TOOL_PREVIEWS[toolKey];
+  if (!renderer) {
+    return null;
+  }
+  return (
+    <LightPreviewScope className="rounded-xl p-1">
+      {renderer(context)}
+    </LightPreviewScope>
+  );
+};
 
 /** نسخة مصغّرة لكارت الفهرس — نفس المعاينة داخل حاوية مصغرة ثابتة */
 export const renderConversionToolMiniPreview = (toolKey: string): React.ReactNode => {
@@ -542,7 +581,9 @@ export const renderConversionToolMiniPreview = (toolKey: string): React.ReactNod
 
   return (
     <div className="pointer-events-none w-full select-none" aria-hidden="true">
-      {renderer({ settings: { thresholds: { freeShippingAmount: 750 } } })}
+      <LightPreviewScope className="rounded-xl p-2">
+        {renderer({ settings: { thresholds: { freeShippingAmount: 750 } } })}
+      </LightPreviewScope>
     </div>
   );
 };
