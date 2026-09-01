@@ -510,7 +510,8 @@ async function initializeSharedDatabase() {
 }
 
 function startHealthMonitoring() {
-  setInterval(async () => {
+  if (connectionManager.healthCheckInterval) return;
+  const interval = setInterval(async () => {
     if (!isInitialized || connectionManager.isConnecting) return;
     if (Date.now() - connectionManager.lastSuccessfulQuery < 60000) return;
 
@@ -520,6 +521,11 @@ function startHealthMonitoring() {
       isInitialized = false;
     }
   }, HEALTH_CHECK_INTERVAL);
+
+  if (interval && typeof interval.unref === 'function') {
+    interval.unref();
+  }
+  connectionManager.healthCheckInterval = interval;
 }
 
 /**
@@ -749,6 +755,10 @@ module.exports = {
   initializeSharedDatabase,
   closeSharedDatabase: async () => {
     isShuttingDown = true;
+    if (connectionManager.healthCheckInterval) {
+      clearInterval(connectionManager.healthCheckInterval);
+      connectionManager.healthCheckInterval = null;
+    }
     await disconnectSharedPrismaInstance();
   },
   safeQuery: (op, priority = 0) => executeWithQueue(op, priority),
