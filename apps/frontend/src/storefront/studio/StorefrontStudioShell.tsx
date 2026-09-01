@@ -70,6 +70,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const previewTheme = useMemo(() => {
     const baseTheme = STOREFRONT_THEME_PRESETS[themeId] || STOREFRONT_THEME_PRESETS["modern-minimal"];
     return resolveStorefrontTheme({
+      themeId,
       theme: baseTheme,
       designTokens,
     });
@@ -221,7 +222,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const themeName = STOREFRONT_THEME_PRESETS[themeId]?.name || themeId;
 
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground" dir="rtl">
+    <div className="fixed inset-0 z-50 flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground" dir="rtl">
       {/* 1. Studio Top Bar */}
       <StudioTopBar
         storeName={storeName}
@@ -246,7 +247,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       <div className="relative flex flex-1 overflow-hidden">
         {/* Left Studio Dock (Layers / Catalog) */}
         <div
-          className={`w-full shrink-0 border-e border-border/80 md:w-72 lg:w-80 ${
+          className={`w-full shrink-0 border-e border-border/80 md:w-80 lg:w-80 ${
             mobileStudioTab === "layers" ? "block" : "hidden md:block"
           }`}
         >
