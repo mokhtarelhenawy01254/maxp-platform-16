@@ -140,7 +140,7 @@ export default function ConversionToolPage() {
   );
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6" dir={getDirection()}>
+    <div className="conversion-admin-scope mx-auto max-w-7xl space-y-6" dir={getDirection()}>
       {/* الرأس: مسار رجوع + فتح المتجر */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm">

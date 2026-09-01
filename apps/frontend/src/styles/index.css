@@ -6659,3 +6659,12 @@ select {
     width: min(54vw, 580px);
   }
 }
+
+/* صفحات أدوات التحويل في اللوحة: تحييد غلاف محرك المتجر
+   (StorefrontThemeProvider بيرندر min-h-screen bg-background text-foreground
+   جوه اللوحة فبيكسر الدارك مود وبيرفع ارتفاع الصفحة) */
+.conversion-admin-scope .storefront-container {
+  min-height: 0 !important;
+  background: transparent !important;
+  color: inherit !important;
+}

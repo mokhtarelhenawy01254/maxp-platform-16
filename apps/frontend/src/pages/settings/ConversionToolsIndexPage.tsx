@@ -109,7 +109,7 @@ export default function ConversionToolsIndexPage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl space-y-10" dir={getDirection()}>
+    <div className="conversion-admin-scope mx-auto max-w-7xl space-y-10" dir={getDirection()}>
       <header className="max-w-3xl space-y-2">
         <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
           {t("storeConversionSettings.toolsIndexTitle")}
