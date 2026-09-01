@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Bars3Icon, ArrowUturnLeftIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import AppSidebar from './AppSidebar';
 import AdminBottomNav from './AdminBottomNav';
-import { sectionHasVisibleItems } from './helpers';
+import { sectionHasVisibleItems, isChatRoute } from './helpers';
 import { getAppById, APP_REGISTRY } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
 import type { SidebarItem, SidebarSection } from '../../../types/layout';
@@ -180,8 +180,10 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
     }
   };
 
+  const isChat = isChatRoute(location.pathname, appId, app?.category);
+
   return (
-    <div className="app-shell-root">
+    <div className={`app-shell-root${isChat ? ' app-shell-root--no-bottom-nav' : ''}`}>
       <a
         href="#app-shell-main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:z-[100] focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white focus:rounded-lg"
@@ -262,7 +264,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
         </div>
 
         <div id="app-shell-main-content" className="app-shell-main">
-          <div className="app-shell-content">
+          <div className={`app-shell-content${isChat ? ' app-shell-content--no-bottom-nav' : ''}`}>
             {isOnLandingPath && firstVisibleItemPath ? (
               <div className="flex min-h-[60vh] items-center justify-center" role="status">
                 <div
@@ -287,7 +289,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
           </div>
         </div>
 
-        <AdminBottomNav />
+        {!isChat && <AdminBottomNav />}
       </div>
     </div>
   );

@@ -288,6 +288,11 @@
   .app-shell-content {
     padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
   }
+
+  .app-shell-root--no-bottom-nav .app-shell-content,
+  .app-shell-content.app-shell-content--no-bottom-nav {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
 }
 
 .app-shell-header {

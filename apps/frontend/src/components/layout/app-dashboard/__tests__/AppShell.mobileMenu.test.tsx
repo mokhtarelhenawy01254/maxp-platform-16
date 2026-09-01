@@ -140,4 +140,50 @@ describe("AppShell mobile navigation", () => {
     });
     expect(openButton).toHaveFocus();
   });
+
+  it("hides AdminBottomNav on chat/conversation routes", () => {
+    render(
+      <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
+        <Routes>
+          <Route
+            path="/apps/:appId/*"
+            element={
+              <AppShell allSections={[whatsappSection]}>
+                <div>App content</div>
+              </AppShell>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const bottomNav = screen.queryByRole("navigation", { name: /التنقل السفلي للتاجر/ });
+    expect(bottomNav).not.toBeInTheDocument();
+  });
+
+  it("renders AdminBottomNav on non-chat routes", () => {
+    const ordersSection: SidebarSection = {
+      id: "orders",
+      title: "Orders",
+      items: [{ to: "/apps/orders/list", label: "All Orders" }],
+    };
+
+    render(
+      <MemoryRouter initialEntries={["/apps/orders/list"]}>
+        <Routes>
+          <Route
+            path="/apps/:appId/*"
+            element={
+              <AppShell allSections={[ordersSection]}>
+                <div>App content</div>
+              </AppShell>
+            }
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    const bottomNav = screen.getByRole("navigation", { name: /التنقل السفلي للتاجر/ });
+    expect(bottomNav).toBeInTheDocument();
+  });
 });
