@@ -209,6 +209,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
               <img
                 src={getImageUrl(product.mainImage || product.images[0]) || ""}
                 alt={product.name}
+                loading="lazy"
+                decoding="async"
                 className="h-20 w-20 rounded-lg object-cover shadow-sm border border-gray-100 dark:border-gray-600"
                 onError={() => setImageError(true)}
               />
@@ -379,4 +381,4 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
   );
 };
 
-export default ProductTableRow;
+export default React.memo(ProductTableRow);

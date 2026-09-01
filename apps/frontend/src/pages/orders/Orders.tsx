@@ -9,6 +9,7 @@ import { format, subDays } from "date-fns";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
 import { getOrderStatusDisplay, getStatusDisplay } from "../../utils/statusRegistry";
 import {
   AFFILIATE_OPERATION_APP_SLUGS,
@@ -2521,9 +2522,29 @@ const Orders: React.FC = () => {
 
       notes = cancellationReason.trim();
       if (!notes) {
-        alert(t("orders.cancellationReasonRequired"));
+        toast.error(t("orders.cancellationReasonRequired"));
         return;
       }
+    }
+
+    // Snapshot previous state for optimistic rollback
+    const previousOrders = [...orders];
+    const previousSelectedOrder = selectedOrder ? { ...selectedOrder } : null;
+    const displayStatus = normalizeOrderStatus(normalizedStatus);
+
+    // 1. Optimistic Update (Immediate UI response 0ms)
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.orderNumber === orderNumber
+          ? { ...order, status: displayStatus }
+          : order,
+      ),
+    );
+    if (selectedOrder && selectedOrder.orderNumber === orderNumber) {
+      setSelectedOrder({
+        ...selectedOrder,
+        status: displayStatus,
+      });
     }
 
     try {
@@ -2535,28 +2556,19 @@ const Orders: React.FC = () => {
         },
       );
       const data = response.data;
-      if (data.success) {
-        const displayStatus = normalizeOrderStatus(normalizedStatus);
-        setOrders(
-          orders.map((order) =>
-            order.orderNumber === orderNumber
-              ? { ...order, status: displayStatus }
-              : order,
-          ),
-        );
-        if (selectedOrder && selectedOrder.orderNumber === orderNumber) {
-          setSelectedOrder({
-            ...selectedOrder,
-            status: displayStatus,
-          });
-        }
-      } else {
-        alert(data.message || t("orders.statusUpdateFailed"));
+      if (!data.success) {
+        // Rollback
+        setOrders(previousOrders);
+        if (previousSelectedOrder) setSelectedOrder(previousSelectedOrder);
+        toast.error(data.message || t("orders.statusUpdateFailed"));
       }
     } catch (error: unknown) {
       console.error("Error updating status:", error);
+      // Rollback
+      setOrders(previousOrders);
+      if (previousSelectedOrder) setSelectedOrder(previousSelectedOrder);
       const errorMessage = getApiErrorMessage(error, t("orders.updateError"));
-      alert(t("orders.statusUpdateFailedMsg", { error: errorMessage }));
+      toast.error(t("orders.statusUpdateFailedMsg", { error: errorMessage }));
     }
   };
 
@@ -2564,6 +2576,26 @@ const Orders: React.FC = () => {
     orderNumber: string,
     newStatus: string,
   ) => {
+    // Snapshot previous state for optimistic rollback
+    const previousOrders = [...orders];
+    const previousSelectedOrder = selectedOrder ? { ...selectedOrder } : null;
+    const normalizedStatus = normalizePaymentStatus(newStatus, false);
+
+    // 1. Optimistic Update (Immediate UI response 0ms)
+    setOrders((prev) =>
+      prev.map((order) =>
+        order.orderNumber === orderNumber
+          ? { ...order, paymentStatus: normalizedStatus }
+          : order,
+      ),
+    );
+    if (selectedOrder && selectedOrder.orderNumber === orderNumber) {
+      setSelectedOrder({
+        ...selectedOrder,
+        paymentStatus: normalizedStatus,
+      });
+    }
+
     try {
       const response = await apiClient.post(
         `/orders-new/simple/${orderNumber}/payment-status`,
@@ -2572,31 +2604,22 @@ const Orders: React.FC = () => {
         },
       );
       const data = response.data;
-      if (data.success) {
-        const normalizedStatus = normalizePaymentStatus(newStatus, false);
-        setOrders(
-          orders.map((order) =>
-            order.orderNumber === orderNumber
-              ? { ...order, paymentStatus: normalizedStatus }
-              : order,
-          ),
-        );
-        if (selectedOrder && selectedOrder.orderNumber === orderNumber) {
-          setSelectedOrder({
-            ...selectedOrder,
-            paymentStatus: normalizedStatus,
-          });
-        }
-      } else {
-        alert(data.message || t("orders.paymentStatusUpdateFailed"));
+      if (!data.success) {
+        // Rollback
+        setOrders(previousOrders);
+        if (previousSelectedOrder) setSelectedOrder(previousSelectedOrder);
+        toast.error(data.message || t("orders.paymentStatusUpdateFailed"));
       }
     } catch (error: unknown) {
       console.error("Error updating payment status:", error);
+      // Rollback
+      setOrders(previousOrders);
+      if (previousSelectedOrder) setSelectedOrder(previousSelectedOrder);
       const errorMessage = getApiErrorMessage(
         error,
         t("orders.paymentUpdateError"),
       );
-      alert(t("orders.paymentUpdateFailedMsg", { error: errorMessage }));
+      toast.error(t("orders.paymentUpdateFailedMsg", { error: errorMessage }));
     }
   };
 

@@ -71,10 +71,24 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
 
+  const [localSearch, setLocalSearch] = React.useState(filters.search);
+
+  React.useEffect(() => {
+    setLocalSearch(filters.search);
+  }, [filters.search]);
+
+  React.useEffect(() => {
+    if (localSearch === filters.search) return;
+    const timer = setTimeout(() => {
+      onFilterChange("search", localSearch);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [localSearch, filters.search, onFilterChange]);
+
   // Smart order-code detection: when the typed value looks like an order
   // code (ORD-… or a long numeric code), offer one-press navigation to the
   // order details instead of filtering the list.
-  const trimmedSearch = filters.search.trim();
+  const trimmedSearch = localSearch.trim();
   const looksLikeOrderCode =
     /^ORD-/i.test(trimmedSearch) || /^\d{6,}$/.test(trimmedSearch);
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -259,8 +273,8 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                 type="text"
                 aria-label={String(t("orders.searchPlaceholderUnified"))}
                 placeholder={t("orders.searchPlaceholderUnified")}
-                value={filters.search}
-                onChange={(e) => onFilterChange("search", e.target.value)}
+                value={localSearch}
+                onChange={(e) => setLocalSearch(e.target.value)}
                 onKeyDown={handleSearchKeyDown}
                 className={`${fieldClassName} pr-10`}
               />
