@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { normalizeMarketplaceAppSettings } from "../../config/marketplaceAppSettings";
@@ -53,7 +53,8 @@ export const setDeepValue = (
     return source;
   }
 
-  const current = isRecord(source[head]) ? source[head] : {};
+  const raw = source[head];
+  const current = isRecord(raw) ? raw : {};
 
   return {
     ...source,
@@ -122,7 +123,9 @@ export function useConversionTools(appSlugs: ManagedMarketplaceAppSlug[]) {
 
     try {
       setLoading(true);
-      const response = await apiClient.get("/my-apps", { _skipErrorToast: true });
+      const response = (await apiClient.get("/my-apps", { _skipErrorToast: true })) as {
+        data?: { data?: unknown };
+      };
       const installedApps = Array.isArray(response?.data?.data)
         ? (response.data.data as CompanyMarketplaceApp[])
         : [];

@@ -146,7 +146,7 @@ export default function ConversionToolsIndexPage() {
                 </p>
               </div>
               <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {pageTools.map(({ tool, meta }) => {
+                {pageTools.map(({ tool }) => {
                   const available = isToolAvailable(tool);
                   return (
                     <ToolCard
@@ -160,8 +160,8 @@ export default function ConversionToolsIndexPage() {
                         { defaultValue: tool.description },
                       )}
                       enabled={available && getToolEnabled(tool)}
-                      enabledLabel={t("storeConversionSettings.enabled")}
-                      disabledLabel={t("storeConversionSettings.disabledLabel")}
+                      enabledLabel={t("storeConversionSettings.enabled") as string}
+                      disabledLabel={t("storeConversionSettings.disabledLabel") as string}
                       available={available}
                       preview={renderConversionToolMiniPreview(tool.key)}
                     />

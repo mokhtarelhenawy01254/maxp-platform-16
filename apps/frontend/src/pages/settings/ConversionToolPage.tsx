@@ -1,13 +1,14 @@
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import {
   ArrowRight,
   Check,
   ExternalLink,
   Info,
   Monitor,
+  ShoppingBag,
   Smartphone,
 } from "lucide-react";
 import { useAuth } from "../../hooks/useAuthSimple";

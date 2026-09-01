@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { NavLink } from "react-router-dom";
@@ -54,14 +54,14 @@ export default function StoreConversionSettingsPage({
       <header className="space-y-4 border-b border-gray-200 pb-6 dark:border-gray-800">
         <div className="space-y-2">
           <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-700 dark:text-indigo-300">
-            {t("storeConversionSettings.pageHeader")}
+            {t("storeConversionSettings.pageHeader") as string}
           </p>
           <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-            {t(page.title)}
+            {t(page.title) as string}
           </h1>
         </div>
         <p className="max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300">
-          {t(page.description)}
+          {t(page.description) as string}
         </p>
         <div className="space-y-1 text-xs text-gray-500 dark:text-gray-400">
           <p>{headerStatusLabel}</p>
@@ -86,7 +86,7 @@ export default function StoreConversionSettingsPage({
                 }`
               }
             >
-              {t(entry.navLabel)}
+              {t(entry.navLabel) as string}
             </NavLink>
           ))}
         </div>
@@ -99,7 +99,7 @@ export default function StoreConversionSettingsPage({
         >
           <div className="space-y-2">
             <h2 className="text-xl font-black text-gray-900 dark:text-white">
-              {t(section.title)}
+              {t(section.title) as string}
             </h2>
             {section.description ? (
               <p className="text-sm leading-7 text-gray-600 dark:text-gray-300">
