@@ -357,23 +357,23 @@ const OrderStatusManager: React.FC = () => {
   // ═══════════════════════════════════════════════════════════════
 
   return (
-    <div className="p-6 w-full dark:text-white" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div className="p-4 sm:p-6 w-full dark:text-white" dir="rtl">
+      {/* Header — stack on mobile, side-by-side on desktop */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-            <Tag className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <Tag className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400" />
             إدارة حالات الطلبات
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 mt-1">
             إدارة وتخصيص حالات الطلبات والدفع
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 w-full sm:w-auto">
           <button
             onClick={initializeDefaults}
             disabled={syncing}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm"
             title="تهيئة جميع الحالات الافتراضية (الطلبات، الدفع، الشحن، التجهيز)"
           >
             {syncing ? (
@@ -385,7 +385,7 @@ const OrderStatusManager: React.FC = () => {
           </button>
           <button
             onClick={() => setShowAddModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            className="flex-1 sm:flex-initial flex items-center justify-center gap-2 px-3 sm:px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
           >
             <Plus className="w-4 h-4" />
             إضافة حالة
@@ -393,11 +393,11 @@ const OrderStatusManager: React.FC = () => {
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6">
+      {/* Tabs — horizontal scroll on mobile, wrap on desktop */}
+      <div className="flex gap-2 mb-6 overflow-x-auto sm:flex-wrap no-scrollbar -mx-4 sm:mx-0 px-4 sm:px-0">
         <button
           onClick={() => setActiveTab("order")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${activeTab === "order"
+          className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === "order"
             ? "bg-blue-600 text-white"
             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
@@ -407,7 +407,7 @@ const OrderStatusManager: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("payment")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${activeTab === "payment"
+          className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === "payment"
             ? "bg-blue-600 text-white"
             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
@@ -417,7 +417,7 @@ const OrderStatusManager: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("shipping")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${activeTab === "shipping"
+          className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === "shipping"
             ? "bg-blue-600 text-white"
             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
@@ -427,7 +427,7 @@ const OrderStatusManager: React.FC = () => {
         </button>
         <button
           onClick={() => setActiveTab("preparation")}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${activeTab === "preparation"
+          className={`flex-shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg transition-colors whitespace-nowrap ${activeTab === "preparation"
             ? "bg-blue-600 text-white"
             : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-600"
             }`}
@@ -492,7 +492,7 @@ const OrderStatusManager: React.FC = () => {
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         اللون
                       </label>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2">
                         {PRESET_COLORS.map((color) => (
                           <button
                             key={color}
@@ -597,12 +597,13 @@ const OrderStatusManager: React.FC = () => {
               ) : (
                 // View Mode
                 <div>
-                  <div className="flex items-center gap-4">
-                  <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="hidden sm:flex flex-col gap-1 flex-shrink-0">
                     <button
                       onClick={() => moveStatus(index, "up")}
                       disabled={index === 0}
                       className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30"
+                      title="نقل للأعلى"
                     >
                       <ChevronUp className="w-4 h-4" />
                     </button>
@@ -610,13 +611,14 @@ const OrderStatusManager: React.FC = () => {
                       onClick={() => moveStatus(index, "down")}
                       disabled={index === filteredStatuses.length - 1}
                       className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 disabled:opacity-30"
+                      title="نقل للأسفل"
                     >
                       <ChevronDown className="w-4 h-4" />
                     </button>
                   </div>
 
                   <div
-                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white"
+                    className="w-10 h-10 rounded-lg flex items-center justify-center text-white flex-shrink-0"
                     style={{ backgroundColor: status.color }}
                   >
                     {ICON_MAP[status.icon || "Tag"] || (
@@ -624,8 +626,8 @@ const OrderStatusManager: React.FC = () => {
                     )}
                   </div>
 
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="font-semibold text-gray-900 dark:text-white">
                         {status.name}
                       </span>
@@ -638,7 +640,7 @@ const OrderStatusManager: React.FC = () => {
                         {status.code}
                       </span>
                     </div>
-                    <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    <div className="flex items-center gap-2 sm:gap-3 mt-1 flex-wrap text-sm text-gray-500 dark:text-gray-400">
                       <span
                         className={`px-2 py-0.5 rounded text-xs ${status.source === "system"
                           ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"
@@ -688,16 +690,18 @@ const OrderStatusManager: React.FC = () => {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => setEditingStatus(status)}
                       className="p-2 text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
+                      title="تعديل"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
                     <button
                       onClick={() => deleteStatus(status.id)}
                       className="p-2 text-gray-500 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg"
+                      title="حذف"
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
@@ -861,17 +865,19 @@ const OrderStatusManager: React.FC = () => {
                   اللون
                 </label>
                 <div className="flex gap-2">
-                  {PRESET_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => setNewStatus({ ...newStatus, color })}
-                      className={`w-8 h-8 rounded-full border-2 ${newStatus.color === color
-                        ? "border-gray-900 dark:border-white"
-                        : "border-transparent"
-                        }`}
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
+                  <div className="flex flex-wrap gap-2">
+                    {PRESET_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => setNewStatus({ ...newStatus, color })}
+                        className={`w-8 h-8 rounded-full border-2 ${newStatus.color === color
+                          ? "border-gray-900 dark:border-white"
+                          : "border-transparent"
+                          }`}
+                        style={{ backgroundColor: color }}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
 
