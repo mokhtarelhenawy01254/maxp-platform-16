@@ -116,3 +116,19 @@ duplicated across both surfaces, editing the same `/my-apps` settings. The
 sidebar sub-entries and the marketplace feature-map routes were collapsed to
 the single tools index. The legacy page components remain in the tree (still
 covered by component-level tests) but are no longer routed.
+
+## Real-theme canvas + mobile pass (2026-09-01)
+
+- The preview canvas now resolves the merchant's actual storefront theme:
+  both pages fetch `storefrontSettingsService.getSettings()`, extract
+  `themeId` (direct or `designTokens.themeId`), and pass it as
+  `initialTheme` to the single `ConversionToolPreviewProvider`. The engine
+  applies the theme tokens inside the preview world; `LightPreviewScope`
+  switches from pinned fallback tokens to theme tokens automatically
+  (`pinned` vs `theme` mode). Caption becomes "بثيم متجرك الحالي" when the
+  theme resolved, generic otherwise.
+- Mobile pass (skill: maxp-mobile-design-review, 390px, live production):
+  zero horizontal overflow on index and tool page; MOB-020 (index card
+  preview dead space) and MOB-021 (canvas empty frame on phones) fixed with
+  responsive heights; MOB-022 logged as intentional (scaled preview
+  thumbnail is illustrative, not reading content).

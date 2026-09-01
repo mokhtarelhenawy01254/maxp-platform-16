@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
@@ -22,6 +22,8 @@ import {
   ConversionToolPreviewProvider,
   renderConversionToolPreview,
 } from "./conversionToolPreviews";
+import type { StorefrontThemeInput } from "../../storefront/engine/themeResolver";
+import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 import {
   getDeepValue,
   ToggleSwitch,
@@ -78,6 +80,30 @@ export default function ConversionToolPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [canvasView, setCanvasView] = useState<CanvasView>("mobile");
+  const [merchantTheme, setMerchantTheme] = useState<StorefrontThemeInput | undefined>();
+
+  useEffect(() => {
+    let active = true;
+    storefrontSettingsService
+      .getSettings()
+      .then((response) => {
+        if (!active) return;
+        const settings = response?.data as Record<string, unknown> | undefined;
+        const themeId =
+          (typeof settings?.themeId === "string" && settings.themeId.trim()) ||
+          (() => {
+            const tokens = settings?.designTokens as Record<string, unknown> | undefined;
+            return typeof tokens?.themeId === "string" ? tokens.themeId.trim() : "";
+          })();
+        if (themeId) {
+          setMerchantTheme({ themeId } as StorefrontThemeInput);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const entry = findToolById(toolId);
   const tool = entry?.tool;
@@ -323,14 +349,18 @@ export default function ConversionToolPage() {
             </div>
           ) : (
             <StoreCanvasFrame view={canvasView} displayKind={meta.displayKind}>
-              <ConversionToolPreviewProvider>
+              <ConversionToolPreviewProvider initialTheme={merchantTheme}>
                 {renderConversionToolPreview(tool.key, { settings })}
               </ConversionToolPreviewProvider>
             </StoreCanvasFrame>
           )}
 
           <p className="text-[11px] font-bold text-gray-400 dark:text-gray-500">
-            {t("storeConversionSettings.previewMockCaption")}
+            {t(
+            merchantTheme
+              ? "storeConversionSettings.previewRealThemeCaption"
+              : "storeConversionSettings.previewMockCaption"
+          )}
           </p>
         </section>
       </div>

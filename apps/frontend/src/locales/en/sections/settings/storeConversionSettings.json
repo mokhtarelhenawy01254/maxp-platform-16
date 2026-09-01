@@ -153,5 +153,6 @@
       "label": "Free Shipping Threshold",
       "description": "The amount the customer needs to reach for free shipping to apply."
     }
-  }
+  },
+  "previewRealThemeCaption": "Approximate preview using your current store theme — the final look follows your theme settings."
 }

@@ -22,11 +22,22 @@ import PurchaseFomoBlock from "../../storefront/sections/ConversionBlocks/Purcha
 import SoldCounterBlock from "../../storefront/sections/ConversionBlocks/SoldCounterBlock";
 import TrustedBadgePanel from "../../storefront/components/TrustedBadgePanel";
 import { StorefrontThemeProvider } from "../../storefront/engine/ThemeProvider";
+import type { StorefrontThemeInput } from "../../storefront/engine/themeResolver";
 import BackInStockSignupCard from "../../storefront/components/BackInStockSignupCard";
 
 /** مكوّنات المتجر المستوردة تستهلك سياق ثيم المتجر — الغلاف ده إلزامي حول أي معاينة */
-export const ConversionToolPreviewProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <StorefrontThemeProvider scoped>{children}</StorefrontThemeProvider>
+const PreviewTokensMode = React.createContext<"pinned" | "theme">("pinned");
+
+/** بثيم التاجر: المحرك يطبق توكنات ثيمه؛ بدونه: توكنات فاتحة مثبتة */
+export const ConversionToolPreviewProvider: React.FC<{
+  children: React.ReactNode;
+  initialTheme?: StorefrontThemeInput;
+}> = ({ children, initialTheme }) => (
+  <StorefrontThemeProvider initialTheme={initialTheme} scoped>
+    <PreviewTokensMode.Provider value={initialTheme ? "theme" : "pinned"}>
+      {children}
+    </PreviewTokensMode.Provider>
+  </StorefrontThemeProvider>
 );
 
 /**
@@ -49,14 +60,17 @@ const LIGHT_PREVIEW_TOKENS = {
 export const LightPreviewScope: React.FC<{ children: React.ReactNode; className?: string }> = ({
   children,
   className = "",
-}) => (
-  <div
-    style={LIGHT_PREVIEW_TOKENS}
-    className={`bg-white text-gray-900 ${className}`}
-  >
-    {children}
-  </div>
-);
+}) => {
+  const mode = React.useContext(PreviewTokensMode);
+  return (
+    <div
+      style={mode === "pinned" ? LIGHT_PREVIEW_TOKENS : undefined}
+      className={`bg-white text-gray-900 ${className}`}
+    >
+      {children}
+    </div>
+  );
+};
 
 export interface ConversionToolPreviewContext {
   /** قيم إعدادات التطبيق (بما فيها التعديلات غير المحفوظة) — المعاينة تقرأ منها لحظيًا */

@@ -1,10 +1,12 @@
-import { useMemo, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { ALL_CONVERSION_TOOLS } from "./conversionToolMeta";
 import { ConversionToolPreviewProvider } from "./conversionToolPreviews";
+import type { StorefrontThemeInput } from "../../storefront/engine/themeResolver";
+import { storefrontSettingsService } from "../../services/storefrontSettingsService";
 import { renderConversionToolMiniPreview } from "./conversionToolPreviews";
 import {
   isAppOperational,
@@ -102,6 +104,30 @@ export default function ConversionToolsIndexPage() {
     [],
   );
   const { loading, managedApps, getToolEnabled } = useConversionTools(appSlugs);
+  const [merchantTheme, setMerchantTheme] = useState<StorefrontThemeInput | undefined>();
+
+  useEffect(() => {
+    let active = true;
+    storefrontSettingsService
+      .getSettings()
+      .then((response) => {
+        if (!active) return;
+        const settings = response?.data as Record<string, unknown> | undefined;
+        const themeId =
+          (typeof settings?.themeId === "string" && settings.themeId.trim()) ||
+          (() => {
+            const tokens = settings?.designTokens as Record<string, unknown> | undefined;
+            return typeof tokens?.themeId === "string" ? tokens.themeId.trim() : "";
+          })();
+        if (themeId) {
+          setMerchantTheme({ themeId } as StorefrontThemeInput);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const isToolAvailable = (tool: StoreConversionToolConfig) => {
     const appState = managedApps[tool.appSlug];
@@ -129,7 +155,7 @@ export default function ConversionToolsIndexPage() {
           ))}
         </div>
       ) : (
-        <ConversionToolPreviewProvider>
+        <ConversionToolPreviewProvider initialTheme={merchantTheme}>
         {STORE_CONVERSION_PAGES.map((page) => {
           const pageTools = ALL_CONVERSION_TOOLS.filter(
             (entry) => entry.page.id === page.id,
