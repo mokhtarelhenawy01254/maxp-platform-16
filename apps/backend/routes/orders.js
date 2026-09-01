@@ -2736,6 +2736,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       } else if (incompleteFilterStatus === 'lost') {
         cartAnd.push(cartLostClause);
       }
+      // فقط السلال غير المكتملة اللي فيها رقم تلفون فعلي (غير فارغ) تظهر في القائمة
+      // — نفس منطق فلتر hasPhone الموجود في /incomplete
+      const PHONE_KEYS = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+      const phoneKeyClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}"` } })) };
+      const emptyPhoneClause = { OR: PHONE_KEYS.map((k) => ({ checkoutData: { contains: `"${k}":""` } })) };
+      cartAnd.push({ AND: [phoneKeyClause, { NOT: emptyPhoneClause }] });
       if (search) {
         const searchTerms = String(search).trim();
         if (searchTerms) {

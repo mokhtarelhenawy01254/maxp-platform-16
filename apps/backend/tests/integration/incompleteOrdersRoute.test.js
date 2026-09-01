@@ -242,6 +242,13 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     withPhoneCartId = `with-phone-${unique}`;
     emptyPhoneCartId = `empty-phone-${unique}`;
 
+    await prisma.orderInvoiceSettings.create({
+      data: {
+        companyId: company.id,
+        showIncompleteCartsInOrders: true,
+      },
+    });
+
     const appRecord = await prisma.marketplaceApp.upsert({
       where: { slug: 'campaign-attribution' },
       update: { isActive: true },
@@ -317,6 +324,9 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
       await prisma.companyApp.deleteMany({
         where: { companyId: company?.id },
       });
+      await prisma.orderInvoiceSettings.deleteMany({
+        where: { companyId: company?.id },
+      });
       await prisma.guestCart.deleteMany({
         where: { companyId: company?.id },
       });
@@ -349,6 +359,18 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     const ids = (response.body.data || []).map((c) => c.cartId);
     expect(ids).toContain(emptyPhoneCartId);
     expect(ids).not.toContain(withPhoneCartId);
+  });
+
+  test('GET /simple includes only incomplete carts that carry a phone when showIncompleteCartsInOrders is on', async () => {
+    const response = await request(app).get('/api/v1/orders-new/simple');
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.meta.showIncompleteCartsInOrders).toBe(true);
+
+    const ids = (response.body.data || []).map((o) => o.orderNumber || o.id);
+    expect(ids).toContain(withPhoneCartId);
+    expect(ids).not.toContain(emptyPhoneCartId);
   });
 
   test('POST /incomplete/:cartId/convert records a CartConversionLog with the employee', async () => {
