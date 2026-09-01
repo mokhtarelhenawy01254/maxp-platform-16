@@ -1064,7 +1064,7 @@ export default function StorefrontThemes() {
   return (
     <div className="min-h-screen -m-4 md:-m-6 bg-slate-50 dark:bg-slate-950/50 flex flex-col" dir="rtl">
       {/* ELITE SMART HEADER */}
-      <header className="sticky top-0 z-20 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-3">
+      <header className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <div className="size-9 sm:size-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/20 shrink-0">
              <Palette className="size-5 sm:size-6" />
