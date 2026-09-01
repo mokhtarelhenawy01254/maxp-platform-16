@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Bars3Icon,
   ChevronDownIcon,
@@ -12,6 +12,7 @@ import {
   RocketLaunchIcon,
   MegaphoneIcon,
   ChatBubbleLeftRightIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioLeftPanelTab } from "./StudioTypes";
@@ -51,8 +52,6 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   const announcement = (designTokens?.announcement as any) || {
     enabled: true,
     text: "🔥 شحن مجاني للطلبات فوق 500 جنيه • دفع عند الاستلام",
-    bgColor: "#0f172a",
-    textColor: "#ffffff",
   };
 
   const whatsapp = (designTokens?.whatsapp as any) || {
@@ -61,6 +60,16 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
     message: "مرحباً، أود الاستفسار عن منتجات المتجر",
   };
 
+  // Header Navigation Menu Links
+  const menuLinks: Array<{ label: string; url: string }> = Array.isArray((designTokens?.navigation as any)?.menu)
+    ? (designTokens?.navigation as any).menu
+    : [
+        { label: "الرئيسية", url: "/" },
+        { label: "كل المنتجات", url: "/shop" },
+        { label: "العروض والتخفيضات", url: "/shop?discount=true" },
+        { label: "تواصل معنا", url: "/contact" },
+      ];
+
   const updateTokens = (patch: Record<string, unknown>) => {
     if (onUpdateThemeTokens) {
       onUpdateThemeTokens({
@@ -68,6 +77,40 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
         ...patch,
       });
     }
+  };
+
+  const handleUpdateMenuLink = (index: number, field: "label" | "url", val: string) => {
+    const nextMenu = [...menuLinks];
+    nextMenu[index] = {
+      ...nextMenu[index],
+      [field]: val,
+    };
+    updateTokens({
+      navigation: {
+        ...(designTokens?.navigation as any || {}),
+        menu: nextMenu,
+      },
+    });
+  };
+
+  const handleAddMenuLink = () => {
+    const nextMenu = [...menuLinks, { label: "رابط جديد", url: "/shop" }];
+    updateTokens({
+      navigation: {
+        ...(designTokens?.navigation as any || {}),
+        menu: nextMenu,
+      },
+    });
+  };
+
+  const handleDeleteMenuLink = (index: number) => {
+    const nextMenu = menuLinks.filter((_, idx) => idx !== index);
+    updateTokens({
+      navigation: {
+        ...(designTokens?.navigation as any || {}),
+        menu: nextMenu,
+      },
+    });
   };
 
   return (
@@ -256,6 +299,57 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
               <option value="Tajawal">خط تجوال (Tajawal - ناعم للمنتجات)</option>
               <option value="IBM Plex Sans Arabic">خط آي بي إم (IBM Plex Sans Arabic)</option>
             </select>
+          </div>
+
+          {/* Header Navigation Menu Links Builder */}
+          <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-foreground flex items-center gap-1.5">
+                <LinkIcon className="h-4 w-4 text-primary" />
+                <span>روابط القائمة العلوية (الهيدر)</span>
+              </h3>
+              <button
+                type="button"
+                onClick={handleAddMenuLink}
+                className="flex items-center gap-1 rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary hover:bg-primary/20"
+              >
+                <PlusIcon className="h-3 w-3" />
+                <span>إضافة رابط</span>
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              {menuLinks.map((link, idx) => (
+                <div key={idx} className="flex items-center gap-2 rounded-xl border border-border bg-card p-2">
+                  <div className="grid grid-cols-2 gap-1.5 flex-1">
+                    <input
+                      type="text"
+                      value={link.label}
+                      onChange={(e) => handleUpdateMenuLink(idx, "label", e.target.value)}
+                      placeholder="اسم الرابط"
+                      className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground focus:border-primary focus:outline-none"
+                    />
+                    <input
+                      type="text"
+                      value={link.url}
+                      onChange={(e) => handleUpdateMenuLink(idx, "url", e.target.value)}
+                      placeholder="/shop"
+                      className="rounded-lg border border-border bg-background px-2 py-1 text-xs text-foreground font-mono focus:border-primary focus:outline-none"
+                    />
+                  </div>
+                  {menuLinks.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteMenuLink(idx)}
+                      className="rounded-lg p-1 text-destructive hover:bg-destructive/10"
+                      title="حذف الرابط"
+                    >
+                      <TrashIcon className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Announcement Bar */}

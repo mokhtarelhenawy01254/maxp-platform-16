@@ -2,7 +2,7 @@
 
 export type StudioLeftPanelTab = "layers" | "theme" | "pages";
 
-export type StudioInspectorTab = "content" | "style" | "commerce" | "visibility";
+export type StudioInspectorTab = "content" | "style" | "visibility";
 
 export type StudioZoomLevel = 0.5 | 0.75 | 1 | 1.25;
 
@@ -49,7 +49,7 @@ export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
     title: "العروض والمؤقتات الترويجية",
     icon: "🔥",
     description: "أشرطة الخصم، مؤقتات العد التنازلي، وباقات التوفير",
-    types: ["sale-countdown", "promotion-banner", "deal-of-the-day", "coupon-strip", "offer-bento"],
+    types: ["sale-countdown", "promotion-banner", "deal-of-the-day", "coupon-strip", "offer-bento", "shoppable-reels", "flash-sale-timer"],
   },
   {
     id: "trust",

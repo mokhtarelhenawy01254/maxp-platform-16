@@ -31,6 +31,7 @@ interface StorefrontStudioShellProps {
   saving: boolean;
   previewUrl?: string;
   onSave: () => void;
+  onDiscard?: () => void;
   onBack: () => void;
   onOpenPreview: () => void;
   onChange: (nextTokens: Record<string, unknown>) => void;
@@ -49,6 +50,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   saving,
   previewUrl,
   onSave,
+  onDiscard,
   onBack,
   onOpenPreview,
   onChange,
@@ -305,6 +307,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         onDeviceChange={setDeviceMode}
         onUndo={undo}
         onRedo={redo}
+        onDiscard={onDiscard}
         onSave={onSave}
         onOpenPreview={onOpenPreview}
       />

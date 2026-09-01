@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -29,6 +29,7 @@ interface StudioTopBarProps {
   onDeviceChange: (mode: StudioDeviceMode) => void;
   onUndo: () => void;
   onRedo: () => void;
+  onDiscard?: () => void;
   onSave: () => void;
   onOpenPreview: () => void;
 }
@@ -48,6 +49,7 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
   onDeviceChange,
   onUndo,
   onRedo,
+  onDiscard,
   onSave,
   onOpenPreview,
 }) => {
@@ -60,55 +62,42 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
         <button
           type="button"
           onClick={onBack}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-border bg-card text-muted-foreground transition-all hover:bg-accent hover:text-foreground active:scale-95"
-          title="العودة للإعدادات"
+          className="rounded-xl border border-border p-2 text-muted-foreground transition-all hover:bg-muted hover:text-foreground"
+          title="العودة لإعدادات المتجر"
         >
           <ArrowLeftIcon className="h-4 w-4 rtl:rotate-180" />
         </button>
 
-        <div className="hidden items-center gap-2 md:flex">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-            <PaintBrushIcon className="h-4 w-4" />
+        <div className="hidden sm:block">
+          <div className="flex items-center gap-2">
+            <span className="font-black text-foreground text-xs sm:text-sm">{storeName}</span>
+            <span className="rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-black uppercase text-primary tracking-wider">
+              {themeName}
+            </span>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-black text-foreground">{storeName}</span>
-              <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-bold text-muted-foreground">
-                {themeName}
-              </span>
-            </div>
-            <p className="text-[10px] text-muted-foreground">استوديو التصميم البصري 2026</p>
-          </div>
+          <p className="text-[10px] text-muted-foreground">استوديو التصميم البصري 2026</p>
         </div>
       </div>
 
-      {/* Center: Page Selector & Device Switcher */}
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* Page Switcher Dropdown / Pills */}
-        <div className="flex items-center rounded-xl border border-border/80 bg-muted/40 p-1">
-          {STUDIO_PAGES.map((page) => {
-            const isActive = activePageKey === page.id;
-            return (
-              <button
-                key={page.id}
-                type="button"
-                onClick={() => onPageChange(page.id)}
-                className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-bold transition-all sm:px-3 sm:py-1.5 ${
-                  isActive
-                    ? "bg-card text-foreground shadow-sm ring-1 ring-border/50"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-                title={page.description}
-              >
-                <span>{page.icon}</span>
-                <span className="hidden md:inline">{page.label}</span>
-              </button>
-            );
-          })}
+      {/* Center: Page Switcher & Responsive Device Selector */}
+      <div className="flex items-center gap-2">
+        {/* Page Switcher Dropdown */}
+        <div className="relative">
+          <select
+            value={activePageKey}
+            onChange={(e) => onPageChange(e.target.value)}
+            className="h-9 cursor-pointer appearance-none rounded-xl border border-border bg-card pe-8 ps-3 text-xs font-bold text-foreground shadow-sm focus:border-primary focus:outline-none"
+          >
+            {STUDIO_PAGES.map((page) => (
+              <option key={page.id} value={page.id}>
+                {page.icon} {page.label}
+              </option>
+            ))}
+          </select>
         </div>
 
         {/* Device Switcher (Desktop / Tablet / Mobile) */}
-        <div className="hidden items-center rounded-xl border border-border/80 bg-muted/40 p-1 sm:flex">
+        <div className="flex items-center rounded-xl border border-border bg-muted/40 p-0.5">
           <button
             type="button"
             onClick={() => onDeviceChange("desktop")}
@@ -148,7 +137,7 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
         </div>
       </div>
 
-      {/* Right: History, Preview, and Save Button */}
+      {/* Right: History, Discard, Preview, and Save Button */}
       <div className="flex items-center gap-2">
         {/* Undo / Redo */}
         <div className="hidden items-center gap-1 sm:flex">
@@ -171,6 +160,18 @@ export const StudioTopBar: React.FC<StudioTopBarProps> = ({
             <ArrowUturnRightIcon className="h-3.5 w-3.5 rtl:rotate-180" />
           </button>
         </div>
+
+        {/* Discard Changes Button (Visible only when changes are pending) */}
+        {hasPendingChanges && onDiscard && (
+          <button
+            type="button"
+            onClick={onDiscard}
+            className="hidden sm:inline-flex h-9 items-center rounded-xl border border-destructive/30 bg-destructive/5 px-3 text-xs font-bold text-destructive transition-all hover:bg-destructive/15 active:scale-95"
+            title="تجاهل كافة التعديلات غير المحفوظة"
+          >
+            تجاهل التعديلات
+          </button>
+        )}
 
         {/* Live Preview Button */}
         {previewUrl ? (

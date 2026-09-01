@@ -1,4 +1,4 @@
-﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import i18n from "../../i18n";
@@ -142,6 +142,19 @@ const StorefrontVisualEditorPage: React.FC = () => {
     }
   };
 
+  const handleDiscard = async () => {
+    setLoading(true);
+    try {
+      const fresh = await storefrontSettingsService.getSettings();
+      setStorefrontSettings(fresh);
+      toast.info("تم إلغاء التعديلات والعودة للنسخة المحفوظة 🔄");
+    } catch {
+      window.location.reload();
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleOpenPreview = () => {
     if (!storefrontPreviewUrl) return;
     openUrlInNewTab(storefrontPreviewUrl);
@@ -169,6 +182,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
       saving={saving}
       previewUrl={storefrontPreviewUrl || undefined}
       onSave={handleSave}
+      onDiscard={handleDiscard}
       onBack={() => navigate("/settings/store")}
       onOpenPreview={handleOpenPreview}
       onChange={(nextDesignTokens) => {

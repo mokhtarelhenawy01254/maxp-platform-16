@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import {
   AdjustmentsHorizontalIcon,
-  ChartBarIcon,
   EyeIcon,
   PaintBrushIcon,
   PhotoIcon,
@@ -12,6 +11,7 @@ import {
   TrashIcon,
   XMarkIcon,
   ListBulletIcon,
+  LinkIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import type { StudioInspectorTab } from "./StudioTypes";
@@ -33,6 +33,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
 }) => {
   const [activeTab, setActiveTab] = useState<StudioInspectorTab>("content");
   const [activeSubItemIndex, setActiveSubItemIndex] = useState<number | null>(0);
+  const [showDirectUrlInput, setShowDirectUrlInput] = useState<boolean>(false);
 
   if (!selectedSectionKey || !sectionConfig) {
     return (
@@ -52,7 +53,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   const label = getStorefrontSectionLabel(sectionType);
   const manifest = getStorefrontSectionManifest(sectionType);
 
-  // Extract flattened settings for easy reading
+  // Flatten settings
   const settings = (typeof sectionConfig === "object" && sectionConfig !== null)
     ? { ...(sectionConfig.settings || {}), ...sectionConfig }
     : {};
@@ -76,15 +77,11 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   const textColor = getVal("textColor") || "#0f172a";
   const spacing = getVal("spacing", "normal");
   const align = getVal("align", "right");
-  const pixelEvent = getVal("pixelEvent", "InitiateCheckout");
-  const badgeText = getVal("badgeText", "");
-  const stockCount = getVal("stockCount", "");
 
   // Product specific settings
   const productSource = getVal("productSource", "all");
   const productColumns = getVal("columns", "4");
   const showQuickBuy = settings["showQuickBuy"] !== false;
-  const showDiscountBadge = settings["showDiscountBadge"] !== false;
 
   // Sub-items array for repeaters
   const items: any[] = Array.isArray(settings.items)
@@ -181,55 +178,43 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
         </button>
       </div>
 
-      {/* 2. Tabs Switcher */}
-      <div className="flex border-b border-border/80 p-1.5 gap-1 bg-background/50 overflow-x-auto [scrollbar-width:none]">
+      {/* 2. Tabs Switcher (Content / Style / Visibility) */}
+      <div className="flex border-b border-border/80 p-1.5 gap-1 bg-background/50">
         <button
           type="button"
           onClick={() => setActiveTab("content")}
-          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
+          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-2 text-xs font-bold transition-all ${
             activeTab === "content"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
           }`}
         >
-          <SparklesIcon className="h-3.5 w-3.5" />
+          <SparklesIcon className="h-4 w-4" />
           <span>المحتوى</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("style")}
-          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
+          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-2 text-xs font-bold transition-all ${
             activeTab === "style"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
           }`}
         >
-          <PaintBrushIcon className="h-3.5 w-3.5" />
-          <span>المظهر</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab("commerce")}
-          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
-            activeTab === "commerce"
-              ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
-              : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-          }`}
-        >
-          <ChartBarIcon className="h-3.5 w-3.5" />
-          <span>التجارة</span>
+          <PaintBrushIcon className="h-4 w-4" />
+          <span>المظهر والمسافات</span>
         </button>
         <button
           type="button"
           onClick={() => setActiveTab("visibility")}
-          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
+          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-2 text-xs font-bold transition-all ${
             activeTab === "visibility"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
           }`}
         >
-          <EyeIcon className="h-3.5 w-3.5" />
-          <span>الظهور</span>
+          <EyeIcon className="h-4 w-4" />
+          <span>الظهور والأجهزة</span>
         </button>
       </div>
 
@@ -445,7 +430,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                       />
                     </div>
 
-                    {/* Optional Badge / Discount text */}
+                    {/* Optional Badge / Link */}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <label className="block text-[10px] font-bold text-muted-foreground mb-1">
@@ -483,11 +468,35 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
               </div>
             )}
 
-            {/* Image Upload / Media Library */}
-            <div>
-              <label className="block text-[11px] font-bold text-foreground mb-1.5">
-                صورة القسم أو الخلفية
-              </label>
+            {/* Image Upload & Direct URL Selector */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="block text-[11px] font-bold text-foreground">
+                  صورة القسم أو الخلفية
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowDirectUrlInput(!showDirectUrlInput)}
+                  className="text-[10px] font-bold text-primary hover:underline flex items-center gap-1"
+                >
+                  <LinkIcon className="h-3 w-3" />
+                  <span>{showDirectUrlInput ? "إغلاق الرابط" : "لصق رابط مباشر"}</span>
+                </button>
+              </div>
+
+              {showDirectUrlInput && (
+                <input
+                  type="text"
+                  value={currentImage}
+                  onChange={(e) => {
+                    onUpdateField("image", e.target.value);
+                    onUpdateField("backgroundImage", e.target.value);
+                  }}
+                  placeholder="https://example.com/banner.jpg"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground font-mono focus:border-primary focus:outline-none"
+                />
+              )}
+
               {currentImage ? (
                 <div className="relative mb-2 overflow-hidden rounded-xl border border-border group">
                   <img
@@ -528,7 +537,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-xs font-bold text-foreground">
-                      {currentImage ? "اختيار صورة بديلة" : "اختيار أو رفع صورة"}
+                      {currentImage ? "اختيار صورة بديلة من المكتبة" : "اختيار أو رفع صورة"}
                     </p>
                     <p className="truncate text-[10px] text-muted-foreground">مكتبة وسائط المتجر والمنتجات</p>
                   </div>
@@ -717,56 +726,6 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                   onChange={(e) => onUpdateField("textColor", e.target.value)}
                   placeholder="#0f172a"
                   className="flex-1 rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground font-mono"
-                />
-              </div>
-            </div>
-          </div>
-        ) : activeTab === "commerce" ? (
-          <div className="space-y-4">
-            <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-3 space-y-3">
-              <span className="block text-[11px] font-black text-primary">تتبع بكسل الحملات (Ad Pixels Event)</span>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">
-                عند النقر على زر الإجراء في هذا القسم، سيتم إرسال هذا الحدث فوراً لبيكسل Meta و TikTok و Snapchat.
-              </p>
-              <select
-                value={pixelEvent}
-                onChange={(e) => onUpdateField("pixelEvent", e.target.value)}
-                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:border-primary focus:outline-none"
-              >
-                <option value="InitiateCheckout">بدء الدفع (InitiateCheckout)</option>
-                <option value="AddToCart">إضافة للسلة (AddToCart)</option>
-                <option value="ViewContent">مشاهدة محتوى (ViewContent)</option>
-                <option value="Lead">تسجيل اهتمام / ليد (Lead)</option>
-                <option value="Purchase">شراء مباشر (Purchase)</option>
-              </select>
-            </div>
-
-            {/* Urgency & Stock Badge */}
-            <div className="rounded-2xl border border-border bg-background/50 p-3 space-y-3">
-              <span className="block text-[11px] font-bold text-foreground">شارات التحفيز والمخزون المتبقي (FOMO)</span>
-              <div>
-                <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                  نص شارة العرض (Badge)
-                </label>
-                <input
-                  type="text"
-                  value={badgeText}
-                  onChange={(e) => onUpdateField("badgeText", e.target.value)}
-                  placeholder="مثال: شحن مجاني اليوم فقط • دفع عند الاستلام"
-                  className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-bold text-muted-foreground mb-1">
-                  تنبيه المخزون المتبقي (اختياري)
-                </label>
-                <input
-                  type="text"
-                  value={stockCount}
-                  onChange={(e) => onUpdateField("stockCount", e.target.value)}
-                  placeholder="مثال: متبقي 3 قطع فقط في المستودع"
-                  className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
                 />
               </div>
             </div>
