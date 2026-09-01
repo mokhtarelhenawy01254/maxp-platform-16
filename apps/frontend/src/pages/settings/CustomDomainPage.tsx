@@ -132,7 +132,7 @@ const CustomDomainPage: React.FC = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8" dir={getDirection()}>
+    <div className="max-w-4xl mx-auto py-6 sm:px-4 sm:py-8" dir={getDirection()}>
       {/* Header Section */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-2">

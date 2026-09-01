@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeftIcon,
   ArrowPathIcon,
@@ -134,7 +134,13 @@ const StorefrontVisualEditorPage: React.FC = () => {
     }
   }, [loadSettings]);
 
-  const activeStorefrontThemeId = resolveStorefrontThemeId(storefrontSettings);
+  const [searchParams] = useSearchParams();
+  const queryThemeId = searchParams.get("theme")?.trim();
+
+  const activeStorefrontThemeId =
+    queryThemeId && STOREFRONT_THEME_PRESETS[queryThemeId]
+      ? queryThemeId
+      : resolveStorefrontThemeId(storefrontSettings);
   const currentThemeName =
     STOREFRONT_THEME_PRESETS[activeStorefrontThemeId]?.name || activeStorefrontThemeId;
   const currentContentSignature = getStorefrontContentSignature(storefrontSettings);
@@ -606,8 +612,9 @@ const StorefrontVisualEditorPage: React.FC = () => {
           {storefrontPreviewUrl ? (
             <button
               type="button"
-              onClick={handleOpenLivePreview}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-700 shadow-sm active:scale-95 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              onClick={handleOpenPreview}
+              disabled={!canOpenPreview}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-700 shadow-sm active:scale-95 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
               title="معاينة المتجر"
             >
               <ArrowTopRightOnSquareIcon className="h-5 w-5" />
@@ -616,7 +623,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
 
           <button
             type="button"
-            onClick={() => void handleSave()}
+            onClick={handleSave}
             disabled={saving || hasBlockingValidationErrors}
             className="inline-flex h-11 items-center gap-2 rounded-2xl bg-gray-900 px-5 text-sm font-bold text-white shadow-md active:scale-95 disabled:opacity-50 dark:bg-white dark:text-gray-900"
           >

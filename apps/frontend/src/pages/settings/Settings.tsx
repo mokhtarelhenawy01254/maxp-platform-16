@@ -104,7 +104,9 @@ const Settings: React.FC = () => {
 
       </div>
 
-      <div className="rounded-3xl border border-border bg-card">
+      {/* MOB-015: the big settings card is desktop-only — on mobile the tab
+          content renders flat (depth-1 rule: no box-in-box under 768px). */}
+      <div className="md:rounded-3xl md:border md:border-border md:bg-card">
         <ActiveComponent />
       </div>
     </div>
