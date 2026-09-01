@@ -96,8 +96,8 @@ export default function MainDashboardPage() {
   }, [period, customStart, customEnd]);
 
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardData(dateParams);
-  const live = useDashboardLiveSync(!isLoading && !isError);
-  const { data: widgetAppData } = useWidgetData(!isLoading && !isError);
+  const live = useDashboardLiveSync(!isError);
+  const { data: widgetAppData } = useWidgetData(!isError);
 
   const dashboard = data?.data;
   const isEmpty = !isLoading && !isError && isNewCompany(dashboard);

@@ -167,7 +167,7 @@ const invalidateCompanySettingsCache = (companyId) => {
 
   return globalCache.deleteMatching((key) =>
     settingsRoutes.some((route) => key.includes(route)) &&
-    key.endsWith(`_${companyId}`)
+    (key.endsWith(`_${companyId}`) || key.includes(`_${companyId}`))
   );
 };
 
@@ -181,7 +181,7 @@ const invalidateCompanyDashboardCache = (companyId) => {
 
   return globalCache.deleteMatching((key) =>
     dashboardRoutes.some((route) => key.includes(route)) &&
-    key.endsWith(`_${companyId}`)
+    (key.endsWith(`_${companyId}`) || key.includes(`_${companyId}`))
   );
 };
 
@@ -202,7 +202,17 @@ const cacheMiddleware = (ttl = 300000) => {
       req.user?.effectiveCompanyId ||
       req.headers['x-company-id'] ||
       'no_company';
-    const cacheKey = `${req.originalUrl}_${userId}_${companyId}`;
+
+    // For company-scoped routes (dashboard, widget-data, settings), cache per company
+    // so all team members/admins within the company share instant cache HITs.
+    const isCompanyScoped =
+      req.originalUrl.includes('/company-dashboard') ||
+      req.originalUrl.includes('/company/dashboard') ||
+      req.originalUrl.includes('/companies/current');
+
+    const cacheKey = isCompanyScoped
+      ? `${req.originalUrl}_company_${companyId}`
+      : `${req.originalUrl}_${userId}_${companyId}`;
 
     // Check cache
     const cachedResponse = globalCache.get(cacheKey);

@@ -1594,6 +1594,11 @@ const LoadingFallback = () => <PageSkeleton />;
 if (typeof window !== "undefined") {
   const p = (window as unknown as Record<string, Record<string, () => Promise<unknown>>>).__MAXP_ROUTE_PREFETCH__ = {};
 
+  p["/dashboard"] = () => import("./pages/dashboard/MainDashboardPage");
+  p["/company-dashboard"] = () => import("./pages/dashboard/MainDashboardPage");
+  p["/merchant-portal"] = () => import("./pages/merchant-portal/MerchantPortalDashboard");
+  p["/merchant-portal/dashboard"] = () => import("./pages/merchant-portal/MerchantPortalDashboard");
+  p["/merchant-portal/commissions"] = () => import("./pages/merchant-portal/MerchantPortalDashboard");
   p["/customers"] = () => import("./pages/customers/CustomerList");
   p["/customers/segments"] = () => import("./pages/customers/CustomerSegments");
   p["/customers/auto-discount"] = () => import("./pages/customers/CustomerAutoDiscount");
@@ -1603,6 +1608,12 @@ if (typeof window !== "undefined") {
   p["/customers/product-offers"] = () => import("./pages/customers/ProductOffers");
   p["/orders"] = () => import("./pages/orders/Orders");
   p["/products"] = () => import("./pages/products/Products");
+  p["/analytics"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
+  p["/analytics/orders"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
+  p["/analytics/store"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
+  p["/whatsapp"] = () => import("./pages/whatsapp-inbox/WhatsAppChat");
+  p["/pos"] = () => import("./pages/pos/PosPage");
+  p["/tickets"] = () => import("./pages/tickets/Tickets");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
   p["/affiliates"] = () => import("./pages/affiliates/AffiliateDashboard");
   p["/hr"] = () => import("./pages/hr/HRDashboard");

@@ -924,6 +924,7 @@ const getWidgetData = async (req, res) => {
             include: { app: true }
         });
         const slugs = new Set(activeInstalls.map(i => i.app.slug));
+        const hasAll = slugs.size === 0;
 
         const today = new Date(); today.setHours(0, 0, 0, 0);
         const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
@@ -931,113 +932,169 @@ const getWidgetData = async (req, res) => {
 
         const data = {};
 
-        async function q(label, fn) {
-            try { data[label] = await fn(); } catch (_) { /* model may not exist */ }
+        const tasks = [];
+
+        if (hasAll || slugs.has('whatsapp-business') || slugs.has('whatsapp')) {
+            tasks.push((async () => {
+                try {
+                    const [conversations, unread, sessions] = await Promise.all([
+                        prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', status: { not: 'CLOSED' } } }),
+                        prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', isRead: false } }),
+                        prisma.whatsAppSession.count({ where: { companyId, status: 'CONNECTED' } }),
+                    ]);
+                    data.whatsapp = { conversations, unread, sessions };
+                } catch (_) {}
+            })());
         }
 
-        await q('whatsapp', async () => {
-            const [conversations, unread, sessions] = await Promise.all([
-                prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', status: { not: 'CLOSED' } } }),
-                prisma.conversation.count({ where: { companyId, channel: 'WHATSAPP', isRead: false } }),
-                prisma.whatsAppSession.count({ where: { companyId, status: 'CONNECTED' } }),
-            ]);
-            return { conversations, unread, sessions };
-        });
+        if (hasAll || slugs.has('ai-chat-basic') || slugs.has('ai')) {
+            tasks.push((async () => {
+                try {
+                    const [interactionsToday, sessions] = await Promise.all([
+                        prisma.aiInteraction.count({ where: { companyId, createdAt: { gte: today } } }),
+                        prisma.aiSandboxSession.count({ where: { companyId, isDeleted: false } }),
+                    ]);
+                    data.ai = { interactionsToday, sessions };
+                } catch (_) {}
+            })());
+        }
 
-        await q('ai', async () => {
-            const [interactionsToday, sessions] = await Promise.all([
-                prisma.aiInteraction.count({ where: { companyId, createdAt: { gte: today } } }),
-                prisma.aiSandboxSession.count({ where: { companyId, isDeleted: false } }),
-            ]);
-            return { interactionsToday, sessions };
-        });
+        if (hasAll || slugs.has('hr') || slugs.has('hr-payroll')) {
+            tasks.push((async () => {
+                try {
+                    const [active, present, onLeave] = await Promise.all([
+                        prisma.employee.count({ where: { companyId, status: 'ACTIVE' } }),
+                        prisma.attendance.count({ where: { companyId, date: today, checkIn: { not: null } } }),
+                        prisma.leaveRequest.count({ where: { companyId, status: 'APPROVED', startDate: { lte: today }, endDate: { gte: today } } }),
+                    ]);
+                    data.hr = { activeEmployees: active, presentToday: present, onLeave };
+                } catch (_) {}
+            })());
+        }
 
-        await q('hr', async () => {
-            const [active, present, onLeave] = await Promise.all([
-                prisma.employee.count({ where: { companyId, status: 'ACTIVE' } }),
-                prisma.attendance.count({ where: { companyId, date: today, checkIn: { not: null } } }),
-                prisma.leaveRequest.count({ where: { companyId, status: 'APPROVED', startDate: { lte: today }, endDate: { gte: today } } }),
-            ]);
-            return { activeEmployees: active, presentToday: present, onLeave };
-        });
+        if (hasAll || slugs.has('facebook-ads-pro') || slugs.has('marketing')) {
+            tasks.push((async () => {
+                try {
+                    const [total, active] = await Promise.all([
+                        prisma.facebookCampaign.count({ where: { companyId } }),
+                        prisma.facebookCampaign.count({ where: { companyId, status: 'ACTIVE' } }),
+                    ]);
+                    data.marketing = { campaigns: total, activeCampaigns: active };
+                } catch (_) {}
+            })());
+        }
 
-        await q('marketing', async () => {
-            const [total, active] = await Promise.all([
-                prisma.facebookCampaign.count({ where: { companyId } }),
-                prisma.facebookCampaign.count({ where: { companyId, status: 'ACTIVE' } }),
-            ]);
-            return { campaigns: total, activeCampaigns: active };
-        });
+        if (hasAll || slugs.has('medical') || slugs.has('clinic')) {
+            tasks.push((async () => {
+                try {
+                    const todayAppts = await prisma.appointment.count({
+                        where: { companyId, appointmentDate: today, status: { in: ['pending', 'confirmed'] } }
+                    });
+                    data.medical = { appointmentsToday: todayAppts };
+                } catch (_) {}
+            })());
+        }
 
-        await q('medical', async () => {
-            const todayAppts = await prisma.appointment.count({
-                where: { companyId, appointmentDate: today, status: { in: ['pending', 'confirmed'] } }
-            });
-            return { appointmentsToday: todayAppts };
-        });
+        if (hasAll || slugs.has('education') || slugs.has('courses')) {
+            tasks.push((async () => {
+                try {
+                    const [students, sessionsToday] = await Promise.all([
+                        prisma.educationStudent.count({ where: { companyId, isActive: true } }),
+                        prisma.educationSession.count({ where: { companyId, scheduledAt: { gte: today, lt: tomorrow } } }),
+                    ]);
+                    data.education = { activeStudents: students, sessionsToday };
+                } catch (_) {}
+            })());
+        }
 
-        await q('education', async () => {
-            const [students, sessionsToday] = await Promise.all([
-                prisma.educationStudent.count({ where: { companyId, isActive: true } }),
-                prisma.educationSession.count({ where: { companyId, scheduledAt: { gte: today, lt: tomorrow } } }),
-            ]);
-            return { activeStudents: students, sessionsToday };
-        });
+        if (hasAll || slugs.has('hotel') || slugs.has('hospitality')) {
+            tasks.push((async () => {
+                try {
+                    const [checkedIn, occupied, available] = await Promise.all([
+                        prisma.hotelReservation.count({ where: { companyId, status: 'CHECKED_IN' } }),
+                        prisma.hotelRoom.count({ where: { companyId, status: 'OCCUPIED' } }),
+                        prisma.hotelRoom.count({ where: { companyId, status: 'AVAILABLE' } }),
+                    ]);
+                    data.hotel = { checkedIn, occupiedRooms: occupied, availableRooms: available };
+                } catch (_) {}
+            })());
+        }
 
-        await q('hotel', async () => {
-            const [checkedIn, occupied, available] = await Promise.all([
-                prisma.hotelReservation.count({ where: { companyId, status: 'CHECKED_IN' } }),
-                prisma.hotelRoom.count({ where: { companyId, status: 'OCCUPIED' } }),
-                prisma.hotelRoom.count({ where: { companyId, status: 'AVAILABLE' } }),
-            ]);
-            return { checkedIn, occupiedRooms: occupied, availableRooms: available };
-        });
+        if (hasAll || slugs.has('booking') || slugs.has('appointments')) {
+            tasks.push((async () => {
+                try {
+                    const todayAppts = await prisma.appointment.count({
+                        where: { companyId, appointmentDate: today, status: { in: ['pending', 'confirmed'] } }
+                    });
+                    data.booking = { appointmentsToday: todayAppts };
+                } catch (_) {}
+            })());
+        }
 
-        await q('booking', async () => {
-            const todayAppts = await prisma.appointment.count({
-                where: { companyId, appointmentDate: today, status: { in: ['pending', 'confirmed'] } }
-            });
-            return { appointmentsToday: todayAppts };
-        });
+        if (hasAll || slugs.has('procurement') || slugs.has('purchasing')) {
+            tasks.push((async () => {
+                try {
+                    const [pending, suppliers] = await Promise.all([
+                        prisma.purchaseOrder.count({ where: { companyId, status: { in: ['PENDING', 'ORDERED'] } } }),
+                        prisma.supplier.count({ where: { companyId, isActive: true } }),
+                    ]);
+                    data.procurement = { pendingOrders: pending, activeSuppliers: suppliers };
+                } catch (_) {}
+            })());
+        }
 
-        await q('procurement', async () => {
-            const [pending, suppliers] = await Promise.all([
-                prisma.purchaseOrder.count({ where: { companyId, status: { in: ['PENDING', 'ORDERED'] } } }),
-                prisma.supplier.count({ where: { companyId, isActive: true } }),
-            ]);
-            return { pendingOrders: pending, activeSuppliers: suppliers };
-        });
+        if (hasAll || slugs.has('wholesale') || slugs.has('b2b')) {
+            tasks.push((async () => {
+                try {
+                    const customers = await prisma.wholesaleCustomer.count({ where: { companyId, isActive: true } });
+                    data.wholesale = { activeCustomers: customers };
+                } catch (_) {}
+            })());
+        }
 
-        await q('wholesale', async () => {
-            const customers = await prisma.wholesaleCustomer.count({ where: { companyId, isActive: true } });
-            return { activeCustomers: customers };
-        });
+        if (hasAll || slugs.has('affiliate') || slugs.has('affiliates')) {
+            tasks.push((async () => {
+                try {
+                    const [affiliates, pendingCommissions] = await Promise.all([
+                        prisma.affiliate.count({ where: { companyId, status: 'ACTIVE' } }),
+                        prisma.commission.count({ where: { companyId, status: 'PENDING' } }),
+                    ]);
+                    data.affiliate = { activeAffiliates: affiliates, pendingCommissions };
+                } catch (_) {}
+            })());
+        }
 
-        await q('affiliate', async () => {
-            const [affiliates, pendingCommissions] = await Promise.all([
-                prisma.affiliate.count({ where: { companyId, status: 'ACTIVE' } }),
-                prisma.commission.count({ where: { companyId, status: 'PENDING' } }),
-            ]);
-            return { activeAffiliates: affiliates, pendingCommissions };
-        });
+        if (hasAll || slugs.has('competitors') || slugs.has('market-research')) {
+            tasks.push((async () => {
+                try {
+                    const tracked = await prisma.competitor.count({ where: { companyId, isActive: true } });
+                    data.competitors = { tracked };
+                } catch (_) {}
+            })());
+        }
 
-        await q('competitors', async () => {
-            const tracked = await prisma.competitor.count({ where: { companyId, isActive: true } });
-            return { tracked };
-        });
+        if (hasAll || slugs.has('tasks') || slugs.has('workspace')) {
+            tasks.push((async () => {
+                try {
+                    const [open, completedWeek] = await Promise.all([
+                        prisma.task.count({ where: { companyId, status: { not: 'COMPLETED' }, parentTaskId: null } }),
+                        prisma.task.count({ where: { companyId, status: 'COMPLETED', completedDate: { gte: weekAgo } } }),
+                    ]);
+                    data.tasks = { openTasks: open, completedThisWeek: completedWeek };
+                } catch (_) {}
+            })());
+        }
 
-        await q('tasks', async () => {
-            const [open, completedWeek] = await Promise.all([
-                prisma.task.count({ where: { companyId, status: { not: 'COMPLETED' }, parentTaskId: null } }),
-                prisma.task.count({ where: { companyId, status: 'COMPLETED', completedDate: { gte: weekAgo } } }),
-            ]);
-            return { openTasks: open, completedThisWeek: completedWeek };
-        });
+        if (hasAll || slugs.has('telegram') || slugs.has('telegram-bot')) {
+            tasks.push((async () => {
+                try {
+                    const groups = await prisma.telegramGroup.count({ where: { companyId, managedByUs: true } });
+                    data.telegram = { groups };
+                } catch (_) {}
+            })());
+        }
 
-        await q('telegram', async () => {
-            const groups = await prisma.telegramGroup.count({ where: { companyId, managedByUs: true } });
-            return { groups };
-        });
+        await Promise.allSettled(tasks);
 
         return res.json({ success: true, data });
     } catch (error) {

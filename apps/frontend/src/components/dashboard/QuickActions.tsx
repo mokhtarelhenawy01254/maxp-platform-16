@@ -13,6 +13,7 @@ import {
   LinkIcon,
 } from "@heroicons/react/24/outline";
 import { cn } from "../../lib/utils";
+import { useRoutePrefetch } from "../../hooks/useRoutePrefetch";
 
 interface QuickAction {
   key: string;
@@ -47,6 +48,7 @@ interface QuickActionsProps {
 export function QuickActions({ activeApps = [], badges = {} }: QuickActionsProps) {
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const prefetch = useRoutePrefetch();
   const activeLower = activeApps.map((a) => a.toLowerCase());
 
   const filterActions = (actions: QuickAction[]) =>
@@ -68,6 +70,8 @@ export function QuickActions({ activeApps = [], badges = {} }: QuickActionsProps
               key={action.key}
               type="button"
               onClick={() => navigate(action.path)}
+              onMouseEnter={() => prefetch(action.path)}
+              onFocus={() => prefetch(action.path)}
               className={cn(
                 "inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium",
                 "text-muted-foreground hover:text-foreground transition-colors",
@@ -98,6 +102,8 @@ export function QuickActions({ activeApps = [], badges = {} }: QuickActionsProps
                 key={action.key}
                 type="button"
                 onClick={() => navigate(action.path)}
+                onMouseEnter={() => prefetch(action.path)}
+                onFocus={() => prefetch(action.path)}
                 className="inline-flex items-center gap-1 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 <action.icon className="w-3 h-3" />
