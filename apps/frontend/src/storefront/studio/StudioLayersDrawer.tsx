@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import {
   Bars3Icon,
   ChevronDownIcon,
@@ -10,8 +10,10 @@ import {
   TrashIcon,
   SwatchIcon,
   RocketLaunchIcon,
+  MegaphoneIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
-import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
+import { getStorefrontSectionLabel } from "../sections/manifest";
 import type { StudioLeftPanelTab } from "./StudioTypes";
 
 interface StudioLayersDrawerProps {
@@ -45,6 +47,29 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
   const fontFamily = (designTokens?.typography as any)?.fontFamily || "Cairo";
   const isLandingMode = Boolean(designTokens?.landingPageMode);
 
+  // Announcement Bar & WhatsApp
+  const announcement = (designTokens?.announcement as any) || {
+    enabled: true,
+    text: "🔥 شحن مجاني للطلبات فوق 500 جنيه • دفع عند الاستلام",
+    bgColor: "#0f172a",
+    textColor: "#ffffff",
+  };
+
+  const whatsapp = (designTokens?.whatsapp as any) || {
+    enabled: true,
+    phone: "01000000000",
+    message: "مرحباً، أود الاستفسار عن منتجات المتجر",
+  };
+
+  const updateTokens = (patch: Record<string, unknown>) => {
+    if (onUpdateThemeTokens) {
+      onUpdateThemeTokens({
+        ...designTokens,
+        ...patch,
+      });
+    }
+  };
+
   return (
     <aside className="flex h-full w-full flex-col border-e border-border/80 bg-card/95 backdrop-blur-md">
       {/* Tab Switcher (Layers vs Theme) */}
@@ -71,7 +96,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
           }`}
         >
           <PaintBrushIcon className="h-4 w-4" />
-          <span>أنماط القالب</span>
+          <span>أنماط وعناصر المتجر</span>
         </button>
       </div>
 
@@ -179,6 +204,7 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
       ) : (
         /* Global Theme Tokens Tab */
         <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs [scrollbar-width:none]">
+          {/* Brand Colors */}
           <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
             <h3 className="font-black text-foreground flex items-center gap-1.5">
               <SwatchIcon className="h-4 w-4 text-primary" />
@@ -193,12 +219,9 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
                   type="color"
                   value={primaryColor}
                   onChange={(e) => {
-                    if (onUpdateThemeTokens) {
-                      onUpdateThemeTokens({
-                        ...designTokens,
-                        colors: { ...(designTokens?.colors as any || {}), primary: e.target.value },
-                      });
-                    }
+                    updateTokens({
+                      colors: { ...(designTokens?.colors as any || {}), primary: e.target.value },
+                    });
                   }}
                   className="h-9 w-12 cursor-pointer rounded-lg border border-border bg-transparent p-1"
                 />
@@ -206,12 +229,9 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
                   type="text"
                   value={primaryColor}
                   onChange={(e) => {
-                    if (onUpdateThemeTokens) {
-                      onUpdateThemeTokens({
-                        ...designTokens,
-                        colors: { ...(designTokens?.colors as any || {}), primary: e.target.value },
-                      });
-                    }
+                    updateTokens({
+                      colors: { ...(designTokens?.colors as any || {}), primary: e.target.value },
+                    });
                   }}
                   className="flex-1 rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground font-mono"
                 />
@@ -225,12 +245,9 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
             <select
               value={fontFamily}
               onChange={(e) => {
-                if (onUpdateThemeTokens) {
-                  onUpdateThemeTokens({
-                    ...designTokens,
-                    typography: { ...(designTokens?.typography as any || {}), fontFamily: e.target.value },
-                  });
-                }
+                updateTokens({
+                  typography: { ...(designTokens?.typography as any || {}), fontFamily: e.target.value },
+                });
               }}
               className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:border-primary focus:outline-none"
             >
@@ -239,6 +256,100 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
               <option value="Tajawal">خط تجوال (Tajawal - ناعم للمنتجات)</option>
               <option value="IBM Plex Sans Arabic">خط آي بي إم (IBM Plex Sans Arabic)</option>
             </select>
+          </div>
+
+          {/* Announcement Bar */}
+          <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-foreground flex items-center gap-1.5">
+                <MegaphoneIcon className="h-4 w-4 text-primary" />
+                <span>شريط الإعلانات العلوي</span>
+              </h3>
+              <input
+                type="checkbox"
+                checked={announcement.enabled}
+                onChange={(e) => {
+                  updateTokens({
+                    announcement: { ...announcement, enabled: e.target.checked },
+                  });
+                }}
+                className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
+              />
+            </div>
+            {announcement.enabled && (
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                  نص العرض الترويجي
+                </label>
+                <input
+                  type="text"
+                  value={announcement.text}
+                  onChange={(e) => {
+                    updateTokens({
+                      announcement: { ...announcement, text: e.target.value },
+                    });
+                  }}
+                  placeholder="مثال: خصم 20% لفترة محدودة..."
+                  className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Floating WhatsApp Widget */}
+          <div className="rounded-2xl border border-border/80 bg-background/50 p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-foreground flex items-center gap-1.5">
+                <ChatBubbleLeftRightIcon className="h-4 w-4 text-emerald-500" />
+                <span>زر الواتساب العائم</span>
+              </h3>
+              <input
+                type="checkbox"
+                checked={whatsapp.enabled}
+                onChange={(e) => {
+                  updateTokens({
+                    whatsapp: { ...whatsapp, enabled: e.target.checked },
+                  });
+                }}
+                className="h-4 w-4 rounded border-border text-emerald-600 focus:ring-emerald-500 cursor-pointer"
+              />
+            </div>
+            {whatsapp.enabled && (
+              <div className="space-y-2">
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                    رقم الواتساب
+                  </label>
+                  <input
+                    type="text"
+                    value={whatsapp.phone}
+                    onChange={(e) => {
+                      updateTokens({
+                        whatsapp: { ...whatsapp, phone: e.target.value },
+                      });
+                    }}
+                    placeholder="01xxxxxxxxx"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground font-mono focus:border-primary focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                    رسالة الترحيب المسبقة
+                  </label>
+                  <input
+                    type="text"
+                    value={whatsapp.message}
+                    onChange={(e) => {
+                      updateTokens({
+                        whatsapp: { ...whatsapp, message: e.target.value },
+                      });
+                    }}
+                    placeholder="مرحباً، أود الاستفسار عن منتج..."
+                    className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                  />
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Landing Page Mode (Ad Campaigns) */}
@@ -252,12 +363,9 @@ export const StudioLayersDrawer: React.FC<StudioLayersDrawerProps> = ({
                 type="checkbox"
                 checked={isLandingMode}
                 onChange={(e) => {
-                  if (onUpdateThemeTokens) {
-                    onUpdateThemeTokens({
-                      ...designTokens,
-                      landingPageMode: e.target.checked,
-                    });
-                  }
+                  updateTokens({
+                    landingPageMode: e.target.checked,
+                  });
                 }}
                 className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer"
               />

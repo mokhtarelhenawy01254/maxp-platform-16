@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import {
   AdjustmentsHorizontalIcon,
   ChevronDownIcon,
@@ -7,6 +7,7 @@ import {
   EyeIcon,
   Squares2X2Icon,
   TrashIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import { StudioTopBar } from "./StudioTopBar";
 import { StudioLayersDrawer } from "./StudioLayersDrawer";
@@ -20,6 +21,7 @@ import { resolveStorefrontTheme, type StorefrontThemeInput } from "../engine/the
 import { STOREFRONT_THEME_PRESETS } from "../themes";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import StorefrontImagePickerModal from "../../components/store/StorefrontImagePickerModal";
+import { useStudioHistory } from "./hooks/useStudioHistory";
 
 interface StorefrontStudioShellProps {
   themeId: string;
@@ -41,7 +43,7 @@ const getSectionKey = (section: any, index: number): string => {
 
 export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   themeId,
-  designTokens,
+  designTokens: externalDesignTokens,
   storeName = "متجري",
   hasPendingChanges,
   saving,
@@ -59,26 +61,57 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
   const [showImagePickerModal, setShowImagePickerModal] = useState<boolean>(false);
   const [mobileStudioTab, setMobileStudioTab] = useState<"canvas" | "layers" | "inspector">("canvas");
 
-  // Keyboard Shortcuts (Ctrl+S)
+  // History State for Undo / Redo
+  const {
+    state: currentDesignTokens,
+    set: setDesignTokensWithHistory,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useStudioHistory<Record<string, unknown>>(externalDesignTokens, { maxHistory: 30 });
+
+  const handleDesignTokensChange = useCallback(
+    (next: Record<string, unknown>) => {
+      setDesignTokensWithHistory(next);
+      onChange(next);
+    },
+    [setDesignTokensWithHistory, onChange]
+  );
+
+  // Keyboard Shortcuts (Ctrl+S, Ctrl+Z, Ctrl+Y / Ctrl+Shift+Z)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        onSave();
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "s" || e.key === "S") {
+          e.preventDefault();
+          onSave();
+        } else if (e.key === "z" || e.key === "Z") {
+          if (e.shiftKey) {
+            e.preventDefault();
+            if (canRedo) redo();
+          } else {
+            e.preventDefault();
+            if (canUndo) undo();
+          }
+        } else if (e.key === "y" || e.key === "Y") {
+          e.preventDefault();
+          if (canRedo) redo();
+        }
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onSave]);
+  }, [onSave, undo, redo, canUndo, canRedo]);
 
   const previewTheme = useMemo(() => {
     const baseTheme = STOREFRONT_THEME_PRESETS[themeId] || STOREFRONT_THEME_PRESETS["modern-minimal"];
     return resolveStorefrontTheme({
       themeId,
       theme: baseTheme,
-      designTokens,
+      designTokens: currentDesignTokens,
     });
-  }, [themeId, designTokens]);
+  }, [themeId, currentDesignTokens]);
 
   const activePageConfig = useMemo(() => {
     const page = previewTheme.pages[activePageKey] || previewTheme.pages["home"] || { sections: [] };
@@ -117,15 +150,15 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     nextSections.splice(targetIndex, 0, moved);
 
     const nextPages = {
-      ...(designTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
       },
     };
 
-    onChange({
-      ...designTokens,
+    handleDesignTokensChange({
+      ...currentDesignTokens,
       pages: nextPages,
     });
   };
@@ -142,15 +175,15 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     nextSections.splice(index + 1, 0, cloned);
 
     const nextPages = {
-      ...(designTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
       },
     };
 
-    onChange({
-      ...designTokens,
+    handleDesignTokensChange({
+      ...currentDesignTokens,
       pages: nextPages,
     });
   };
@@ -166,15 +199,15 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     }
 
     const nextPages = {
-      ...(designTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
       },
     };
 
-    onChange({
-      ...designTokens,
+    handleDesignTokensChange({
+      ...currentDesignTokens,
       pages: nextPages,
     });
   };
@@ -191,7 +224,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     ];
 
     const nextPages = {
-      ...(designTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
@@ -200,8 +233,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
     setSelectedSectionKey(newKey);
 
-    onChange({
-      ...designTokens,
+    handleDesignTokensChange({
+      ...currentDesignTokens,
       pages: nextPages,
     });
   };
@@ -226,20 +259,30 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     });
 
     const nextPages = {
-      ...(designTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
       },
     };
 
-    onChange({
-      ...designTokens,
+    handleDesignTokensChange({
+      ...currentDesignTokens,
       pages: nextPages,
     });
   };
 
   const themeName = STOREFRONT_THEME_PRESETS[themeId]?.name || themeId;
+
+  // Announcement Bar & WhatsApp data
+  const announcement = (currentDesignTokens?.announcement as any) || {
+    enabled: true,
+    text: "🔥 شحن مجاني للطلبات فوق 500 جنيه • دفع عند الاستلام",
+  };
+  const whatsapp = (currentDesignTokens?.whatsapp as any) || {
+    enabled: true,
+    phone: "01000000000",
+  };
 
   return (
     <div className="fixed inset-0 z-[100] flex h-screen w-screen flex-col overflow-hidden bg-background text-foreground" dir="rtl">
@@ -250,8 +293,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         activePageKey={activePageKey}
         deviceMode={deviceMode}
         hasPendingChanges={hasPendingChanges}
-        canUndo={false}
-        canRedo={false}
+        canUndo={canUndo}
+        canRedo={canRedo}
         saving={saving}
         previewUrl={previewUrl}
         onBack={onBack}
@@ -260,8 +303,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
           setSelectedSectionKey("");
         }}
         onDeviceChange={setDeviceMode}
-        onUndo={() => {}}
-        onRedo={() => {}}
+        onUndo={undo}
+        onRedo={redo}
         onSave={onSave}
         onOpenPreview={onOpenPreview}
       />
@@ -278,7 +321,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             sections={activeSections}
             selectedSectionKey={selectedSectionKey}
             leftPanelTab={leftPanelTab}
-            designTokens={designTokens}
+            designTokens={currentDesignTokens}
             onSelectSection={(key) => {
               setSelectedSectionKey(key);
               setMobileStudioTab("inspector");
@@ -288,7 +331,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             onDeleteSection={handleDeleteSection}
             onOpenSectionCatalog={() => setShowCatalogModal(true)}
             onTabChange={setLeftPanelTab}
-            onUpdateThemeTokens={onChange}
+            onUpdateThemeTokens={handleDesignTokensChange}
           />
         </div>
 
@@ -300,7 +343,14 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         >
           <StudioCanvasStage deviceMode={deviceMode}>
             <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
-              <div className="min-h-screen bg-background">
+              <div className="relative min-h-screen bg-background">
+                {/* Announcement Bar Overlay */}
+                {announcement.enabled && announcement.text && (
+                  <div className="bg-slate-900 px-3 py-1.5 text-center text-[11px] font-bold text-white shadow-sm flex items-center justify-center gap-2">
+                    <span>{announcement.text}</span>
+                  </div>
+                )}
+
                 <PageComposer
                   pageConfig={activePageConfig}
                   layout={activePageConfig.layoutHint || "stack"}
@@ -330,7 +380,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           }`}
                         />
 
-                        {/* On-Canvas Floating Action Toolbar (Elementor/Framer Style) */}
+                        {/* On-Canvas Floating Action Toolbar */}
                         {selected && (
                           <div
                             className="absolute top-2 start-2 z-40 flex items-center gap-1 rounded-xl border border-border/80 bg-background/95 p-1 shadow-xl backdrop-blur-md"
@@ -384,6 +434,13 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                     );
                   }}
                 />
+
+                {/* Floating WhatsApp Live Button */}
+                {whatsapp.enabled && (
+                  <div className="fixed bottom-6 end-6 z-40 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white shadow-2xl hover:scale-105 transition-transform pointer-events-none">
+                    <ChatBubbleLeftRightIcon className="h-6 w-6" />
+                  </div>
+                )}
               </div>
             </StorefrontThemeProvider>
           </StudioCanvasStage>
@@ -405,7 +462,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         </div>
       </div>
 
-      {/* 3. Mobile Bottom Studio Dock (Hidden on Desktops >= 768px) */}
+      {/* 3. Mobile Bottom Studio Dock */}
       <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md md:!hidden">
         <button
           type="button"

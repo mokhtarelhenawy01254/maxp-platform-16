@@ -1,15 +1,17 @@
-﻿import React, { useState } from "react";
+import React, { useState } from "react";
 import {
   AdjustmentsHorizontalIcon,
   ChartBarIcon,
-  ChevronUpDownIcon,
   EyeIcon,
   PaintBrushIcon,
   PhotoIcon,
+  PlusIcon,
   RectangleGroupIcon,
   SparklesIcon,
   SwatchIcon,
+  TrashIcon,
   XMarkIcon,
+  ListBulletIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import type { StudioInspectorTab } from "./StudioTypes";
@@ -30,6 +32,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   onOpenImagePicker,
 }) => {
   const [activeTab, setActiveTab] = useState<StudioInspectorTab>("content");
+  const [activeSubItemIndex, setActiveSubItemIndex] = useState<number | null>(0);
 
   if (!selectedSectionKey || !sectionConfig) {
     return (
@@ -77,6 +80,83 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   const badgeText = getVal("badgeText", "");
   const stockCount = getVal("stockCount", "");
 
+  // Product specific settings
+  const productSource = getVal("productSource", "all");
+  const productColumns = getVal("columns", "4");
+  const showQuickBuy = settings["showQuickBuy"] !== false;
+  const showDiscountBadge = settings["showDiscountBadge"] !== false;
+
+  // Sub-items array for repeaters
+  const items: any[] = Array.isArray(settings.items)
+    ? settings.items
+    : Array.isArray(settings.features)
+    ? settings.features
+    : Array.isArray(settings.cards)
+    ? settings.cards
+    : Array.isArray(settings.questions)
+    ? settings.questions
+    : Array.isArray(settings.reviews)
+    ? settings.reviews
+    : [];
+
+  const hasRepeatableItems = items.length > 0 || [
+    "features-bar",
+    "trust-badges",
+    "offer-bento",
+    "faq-accordion",
+    "customer-reviews",
+    "featured-collections",
+    "category-grid",
+  ].includes(sectionType);
+
+  const handleUpdateItem = (index: number, field: string, val: any) => {
+    const nextItems = [...items];
+    nextItems[index] = {
+      ...(nextItems[index] || {}),
+      [field]: val,
+    };
+    onUpdateField("items", nextItems);
+    onUpdateField("features", nextItems);
+    onUpdateField("cards", nextItems);
+    onUpdateField("questions", nextItems);
+    onUpdateField("reviews", nextItems);
+  };
+
+  const handleAddItem = () => {
+    const newItem = {
+      title: "عنصر جديد",
+      subtitle: "وصف تفصيلي للعنصر...",
+      description: "وصف تفصيلي...",
+      icon: "✨",
+      question: "سؤال جديد؟",
+      answer: "إجابة توضيحية للعميل...",
+      name: "اسم العميل",
+      rating: 5,
+      comment: "تجربة ممتازة ومنتج رائع!",
+      badge: "عرض خاص",
+      link: "/collections",
+    };
+    const nextItems = [...items, newItem];
+    onUpdateField("items", nextItems);
+    onUpdateField("features", nextItems);
+    onUpdateField("cards", nextItems);
+    onUpdateField("questions", nextItems);
+    onUpdateField("reviews", nextItems);
+    setActiveSubItemIndex(nextItems.length - 1);
+  };
+
+  const handleDeleteItem = (index: number) => {
+    const nextItems = items.filter((_, idx) => idx !== index);
+    onUpdateField("items", nextItems);
+    onUpdateField("features", nextItems);
+    onUpdateField("cards", nextItems);
+    onUpdateField("questions", nextItems);
+    onUpdateField("reviews", nextItems);
+    if (activeSubItemIndex === index) {
+      setActiveSubItemIndex(nextItems.length > 0 ? 0 : null);
+    }
+  };
+
   return (
     <aside className="flex h-full w-full flex-col border-s border-border/80 bg-card/95 backdrop-blur-md">
       {/* 1. Inspector Header */}
@@ -101,7 +181,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
         </button>
       </div>
 
-      {/* 2. Tabs Switcher (Content / Style / Commerce / Visibility) */}
+      {/* 2. Tabs Switcher */}
       <div className="flex border-b border-border/80 p-1.5 gap-1 bg-background/50 overflow-x-auto [scrollbar-width:none]">
         <button
           type="button"
@@ -157,7 +237,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
       <div className="flex-1 overflow-y-auto p-4 space-y-4 text-xs [scrollbar-width:none]">
         {activeTab === "content" ? (
           <div className="space-y-4">
-            {/* Variant Selector (if available) */}
+            {/* Variant Selector */}
             {manifest?.variants && manifest.variants.length > 1 && (
               <div>
                 <label className="block text-[11px] font-bold text-foreground mb-1.5 flex items-center gap-1">
@@ -175,6 +255,57 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                     </option>
                   ))}
                 </select>
+              </div>
+            )}
+
+            {/* Product Specific Controls */}
+            {["featured-products", "product-grid", "flash-sale"].includes(sectionType) && (
+              <div className="rounded-2xl border border-border/80 bg-background/50 p-3 space-y-3">
+                <span className="block text-[11px] font-black text-primary">إعدادات شبكة المنتجات</span>
+                <div>
+                  <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                    مصدر المنتجات
+                  </label>
+                  <select
+                    value={productSource}
+                    onChange={(e) => onUpdateField("productSource", e.target.value)}
+                    className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                  >
+                    <option value="all">جميع المنتجات (الأحدث)</option>
+                    <option value="best-sellers">الأكثر مبيعاً</option>
+                    <option value="featured">المنتجات المميزة فقط</option>
+                    <option value="discounted">منتجات العروض والتخفيضات</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                      عدد الأعمدة (الكمبيوتر)
+                    </label>
+                    <select
+                      value={productColumns}
+                      onChange={(e) => onUpdateField("columns", e.target.value)}
+                      className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                    >
+                      <option value="2">عمودين (2)</option>
+                      <option value="3">3 أعمدة</option>
+                      <option value="4">4 أعمدة</option>
+                    </select>
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <label className="flex items-center gap-2 cursor-pointer pb-2">
+                      <input
+                        type="checkbox"
+                        checked={showQuickBuy}
+                        onChange={(e) => onUpdateField("showQuickBuy", e.target.checked)}
+                        className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                      />
+                      <span className="text-[10px] font-bold text-foreground">زر شراء سريع</span>
+                    </label>
+                  </div>
+                </div>
               </div>
             )}
 
@@ -225,6 +356,132 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                 className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary resize-none"
               />
             </div>
+
+            {/* Repeatable Sub-Items Section (Repeaters) */}
+            {hasRepeatableItems && (
+              <div className="rounded-2xl border border-border/80 bg-background/50 p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <ListBulletIcon className="h-4 w-4 text-primary" />
+                    <span className="font-black text-foreground">العناصر والكروت الفرعية ({items.length})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    className="flex items-center gap-1 rounded-lg bg-primary/10 px-2.5 py-1 text-[10px] font-bold text-primary hover:bg-primary/20"
+                  >
+                    <PlusIcon className="h-3 w-3" />
+                    <span>إضافة عنصر</span>
+                  </button>
+                </div>
+
+                {/* Sub items tabs/pills */}
+                <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:none]">
+                  {items.map((item, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveSubItemIndex(idx)}
+                      className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-[10px] font-bold transition-all shrink-0 ${
+                        activeSubItemIndex === idx
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+                      }`}
+                    >
+                      <span>{item.title || item.question || item.name || `عنصر ${idx + 1}`}</span>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Active Sub-item Form */}
+                {activeSubItemIndex !== null && items[activeSubItemIndex] && (
+                  <div className="rounded-xl border border-border bg-card p-3 space-y-2.5 text-xs">
+                    <div className="flex items-center justify-between border-b border-border/60 pb-2">
+                      <span className="font-bold text-foreground">
+                        تعديل: {items[activeSubItemIndex].title || items[activeSubItemIndex].question || `عنصر ${activeSubItemIndex + 1}`}
+                      </span>
+                      {items.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteItem(activeSubItemIndex)}
+                          className="text-[10px] font-bold text-destructive hover:underline flex items-center gap-1"
+                        >
+                          <TrashIcon className="h-3 w-3" />
+                          <span>حذف هذا العنصر</span>
+                        </button>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                        العنوان / السؤال
+                      </label>
+                      <input
+                        type="text"
+                        value={items[activeSubItemIndex].title || items[activeSubItemIndex].question || items[activeSubItemIndex].name || ""}
+                        onChange={(e) => {
+                          handleUpdateItem(activeSubItemIndex, "title", e.target.value);
+                          handleUpdateItem(activeSubItemIndex, "question", e.target.value);
+                          handleUpdateItem(activeSubItemIndex, "name", e.target.value);
+                        }}
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                        الوصف / الإجابة / الرأي
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={items[activeSubItemIndex].subtitle || items[activeSubItemIndex].description || items[activeSubItemIndex].answer || items[activeSubItemIndex].comment || ""}
+                        onChange={(e) => {
+                          handleUpdateItem(activeSubItemIndex, "subtitle", e.target.value);
+                          handleUpdateItem(activeSubItemIndex, "description", e.target.value);
+                          handleUpdateItem(activeSubItemIndex, "answer", e.target.value);
+                          handleUpdateItem(activeSubItemIndex, "comment", e.target.value);
+                        }}
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none resize-none"
+                      />
+                    </div>
+
+                    {/* Optional Badge / Discount text */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                          شارة أو أيقونة
+                        </label>
+                        <input
+                          type="text"
+                          value={items[activeSubItemIndex].badge || items[activeSubItemIndex].icon || ""}
+                          onChange={(e) => {
+                            handleUpdateItem(activeSubItemIndex, "badge", e.target.value);
+                            handleUpdateItem(activeSubItemIndex, "icon", e.target.value);
+                          }}
+                          placeholder="مثال: 🔥 خصم 20%"
+                          className="w-full rounded-lg border border-border bg-background px-2 py-1 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                          الرابط
+                        </label>
+                        <input
+                          type="text"
+                          value={items[activeSubItemIndex].link || items[activeSubItemIndex].href || ""}
+                          onChange={(e) => {
+                            handleUpdateItem(activeSubItemIndex, "link", e.target.value);
+                            handleUpdateItem(activeSubItemIndex, "href", e.target.value);
+                          }}
+                          placeholder="/collections"
+                          className="w-full rounded-lg border border-border bg-background px-2 py-1 text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Image Upload / Media Library */}
             <div>
@@ -465,7 +722,6 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
             </div>
           </div>
         ) : activeTab === "commerce" ? (
-          /* Commerce, Urgency & Ad Tracking Tab */
           <div className="space-y-4">
             <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-3 space-y-3">
               <span className="block text-[11px] font-black text-primary">تتبع بكسل الحملات (Ad Pixels Event)</span>
@@ -516,7 +772,6 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
             </div>
           </div>
         ) : (
-          /* Visibility Tab */
           <div className="space-y-4">
             <div className="rounded-2xl border border-border bg-background/50 p-3 space-y-3">
               <div className="flex items-center justify-between">

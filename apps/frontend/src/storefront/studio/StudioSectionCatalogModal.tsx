@@ -4,6 +4,8 @@ import {
   PlusIcon,
   SparklesIcon,
   XMarkIcon,
+  BoltIcon,
+  FilmIcon,
 } from "@heroicons/react/24/outline";
 import { STUDIO_SECTION_CATEGORIES } from "./StudioTypes";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest, STOREFRONT_SECTION_MANIFEST } from "../sections/manifest";
@@ -23,12 +25,33 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
   const [searchQuery, setSearchQuery] = useState("");
 
   const availableSections = useMemo(() => {
-    return Object.entries(STOREFRONT_SECTION_MANIFEST).map(([type, manifest]) => ({
+    const base = Object.entries(STOREFRONT_SECTION_MANIFEST).map(([type, manifest]) => ({
       type,
       label: getStorefrontSectionLabel(type),
       note: manifest.note || "قسم جاهز وقابل للتخصيص الكامل.",
       icon: (manifest as any).icon || "📦",
+      is2026: false,
     }));
+
+    // Add 2026 conversion sections if not present
+    const modernSections = [
+      {
+        type: "shoppable-reels",
+        label: "فيديوهات ريلز للشراء الفوري (Shoppable Reels)",
+        note: "عرض فيديوهات ريلز وتيك توك مع نافذة شراء مباشرة للمنتج أثناء المشاهدة.",
+        icon: "🎬",
+        is2026: true,
+      },
+      {
+        type: "flash-sale-timer",
+        label: "مؤقت الفلاش سيل التنازلي (Urgency Timer)",
+        note: "عداد تنازلي لعروض الساعات الأخيرة مع شريط المخزون المتبقي لرفع التحويل.",
+        icon: "⚡",
+        is2026: true,
+      },
+    ];
+
+    return [...modernSections, ...base];
   }, []);
 
   const filteredSections = useMemo(() => {
@@ -64,7 +87,7 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
               <SparklesIcon className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-base font-black text-foreground">مكتبة الأقسام الجاهزة</h2>
+              <h2 className="text-base font-black text-foreground">مكتبة الأقسام الجاهزة 2026</h2>
               <p className="text-xs text-muted-foreground">اختر قسماً جاهزاً لإضافته إلى صفحتك بلمسة واحدة</p>
             </div>
           </div>
@@ -85,7 +108,7 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
+              className="rounded-xl p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >
               <XMarkIcon className="h-5 w-5" />
             </button>
@@ -95,7 +118,7 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
         {/* Body (Categories Sidebar + Sections Grid) */}
         <div className="flex flex-1 overflow-hidden">
           {/* Categories Sidebar */}
-          <aside className="w-56 border-e border-border/80 bg-muted/20 p-3 space-y-1 overflow-y-auto">
+          <aside className="w-60 border-e border-border/80 bg-muted/20 p-3 space-y-1 overflow-y-auto">
             {STUDIO_SECTION_CATEGORIES.map((category) => {
               const isActive = selectedCategory === category.id && !searchQuery;
               return (
@@ -122,49 +145,49 @@ export const StudioSectionCatalogModal: React.FC<StudioSectionCatalogModalProps>
           </aside>
 
           {/* Sections Grid */}
-          <main className="flex-1 overflow-y-auto p-6">
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <main className="flex-1 overflow-y-auto p-6 [scrollbar-width:none]">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-2">
               {filteredSections.map((section) => (
                 <div
                   key={section.type}
-                  className="group relative flex flex-col justify-between rounded-3xl border border-border/80 bg-background/50 p-5 transition-all hover:border-primary hover:shadow-lg hover:-translate-y-0.5"
+                  className="group relative flex flex-col justify-between rounded-2xl border border-border/80 bg-background/50 p-4 transition-all hover:border-primary/50 hover:bg-card hover:shadow-lg"
                 >
-                  <div className="space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <span className="text-2xl">{section.icon}</span>
-                      <span className="rounded-full bg-muted px-2.5 py-0.5 text-[10px] font-bold text-muted-foreground">
-                        {section.type}
-                      </span>
+                  <div>
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">{section.icon}</span>
+                        <h3 className="text-xs font-black text-foreground">{section.label}</h3>
+                      </div>
+                      {section.is2026 && (
+                        <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[9px] font-black text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                          ✨ جديد 2026
+                        </span>
+                      )}
                     </div>
-                    <h3 className="text-sm font-black text-foreground group-hover:text-primary transition-colors">
-                      {section.label}
-                    </h3>
-                    <p className="text-xs leading-relaxed text-muted-foreground line-clamp-3">
+                    <p className="text-[11px] leading-relaxed text-muted-foreground">
                       {section.note}
                     </p>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onAddSection(section.type);
-                      onClose();
-                    }}
-                    className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-secondary py-2.5 text-xs font-bold text-foreground transition-all hover:bg-primary hover:text-primary-foreground active:scale-98"
-                  >
-                    <PlusIcon className="h-4 w-4" />
-                    <span>إضافة إلى الصفحة</span>
-                  </button>
+                  <div className="mt-4 flex items-center justify-between border-t border-border/60 pt-3">
+                    <span className="font-mono text-[10px] text-muted-foreground">
+                      {section.type}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onAddSection(section.type);
+                        onClose();
+                      }}
+                      className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground shadow transition-all hover:bg-primary/90 active:scale-95"
+                    >
+                      <PlusIcon className="h-3.5 w-3.5" />
+                      <span>إدراج بالصفحة</span>
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
-
-            {filteredSections.length === 0 ? (
-              <div className="flex h-64 flex-col items-center justify-center text-center">
-                <p className="text-sm font-bold text-muted-foreground">لم يتم العثور على أقسام مطابقة</p>
-                <p className="mt-1 text-xs text-muted-foreground/60">جرب البحث بكلمة أخرى أو اختر تصنيفاً مختلفاً</p>
-              </div>
-            ) : null}
           </main>
         </div>
       </div>
