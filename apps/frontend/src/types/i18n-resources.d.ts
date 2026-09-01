@@ -17625,6 +17625,7 @@ declare module 'react-i18next' {
             description: string;
           };
         };
+        previewRealThemeCaption: string;
       };
       storeFooter: {
         footerTitle: string;

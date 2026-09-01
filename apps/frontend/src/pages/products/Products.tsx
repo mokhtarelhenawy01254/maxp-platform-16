@@ -19,6 +19,7 @@ import ProductsPagination from "./components/ProductsPagination";
 import ProductsTable from "./components/ProductsTable";
 import ProductsEmptyState from "./components/ProductsEmptyState";
 import { BulkConvertModal } from "./components/BulkConvertModal";
+import ProductMobileCard from "./components/ProductMobileCard";
 
 // Hooks & Types
 import { useProducts } from "./hooks/useProducts";
@@ -129,7 +130,7 @@ const Products: React.FC = () => {
       const count = await handleBulkDelete();
       if (count) toast.success(`تم حذف ${count} منتج بنجاح`);
     } catch (err) {
-      tToast.error("products.error_error_1879");
+      toast.error("فشل حذف المنتجات المحددة");
     }
   };
 
@@ -184,9 +185,9 @@ const Products: React.FC = () => {
       const messages: Record<string, string> = {
         save_draft: "تم حفظ المنتج كمسودة",
         submit_review: "تم إرسال المنتج للمراجعة",
-        approve: "تم اعتماد المنتج",
+        approve: "تم اعتماد المنتج بنجاح",
         reject: "تم رفض المنتج",
-        publish: "تم نشر المنتج",
+        publish: "تم نشر المنتج بنجاح",
         unpublish: "تم إلغاء نشر المنتج",
       };
       toast.success(messages[action] || "تم تحديث حالة المنتج");
@@ -198,10 +199,10 @@ const Products: React.FC = () => {
   const onSaveQuickEdit = async (id: string) => {
     try {
       const success = await saveQuickEdit(id);
-      if (success) tToast.success("products.success_update_fdb7");
-      else tToast.error("products.failed_update_9e0f");
+      if (success) toast.success("تم تحديث المنتج بنجاح");
+      else toast.error("فشل تحديث المنتج");
     } catch (err) {
-      tToast.error("products.error_error_ea72");
+      toast.error("حدث خطأ أثناء حفظ التعديل السريع");
     }
   };
 
@@ -209,7 +210,7 @@ const Products: React.FC = () => {
     try {
       const success = await handleDuplicate(product);
       if (success) toast.success(`✅ تم نسخ المنتج "${product.name}" بنجاح`);
-      else tToast.error("products.msg_70a7");
+      else toast.error("فشل نسخ المنتج");
     } catch (err: any) {
       toast.error(`❌ ${err?.response?.data?.error || err?.response?.data?.message || "حدث خطأ غير متوقع"}`);
     }
@@ -222,12 +223,11 @@ const Products: React.FC = () => {
         toast.success(`تم حذف ${result.deletedProductsCount || 0} منتج و ${result.deletedVariantsCount || 0} متغير بنجاح`);
       }
     } catch (err: any) {
-      toast.error(err.message || i18n.t("products.error_error_e01c"));
+      toast.error(err.message || "حدث خطأ أثناء حذف المنتجات");
     }
   };
 
   const handleExport = async () => {
-    // This logic is mostly API-bound, kept here for UI orchestration
     try {
       const { apiClient } = await import("../../services/apiClient");
       const r = await apiClient.get("products/export", { params: { format: "csv" }, responseType: "blob" });
@@ -241,10 +241,10 @@ const Products: React.FC = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
-        tToast.success("products.msg_bd2e");
+        toast.success("تم تصدير ملف المنتجات بنجاح");
       }
     } catch {
-      tToast.error("products.msg_0437");
+      toast.error("فشل تصدير ملف المنتجات");
     }
   };
 
@@ -277,7 +277,7 @@ const Products: React.FC = () => {
       setShowImportModal(false);
       toast.success(`تم استيراد ${count} منتج بنجاح`);
     } catch (err) {
-      tToast.error("products.error_error_7d31");
+      toast.error("فشل استيراد ملف المنتجات");
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
@@ -345,39 +345,79 @@ const Products: React.FC = () => {
       )}
 
       {!isLoading && !error && products.length > 0 && viewMode === "table" && (
-        <ProductsTable
-          products={paginatedProducts}
-          selectedProducts={selectedProducts}
-          selectAll={selectAll}
-          onSelectAll={handleSelectAll}
-          onSelectProduct={handleSelectProduct}
-          sortField={sortField}
-          sortDirection={sortDirection}
-          onSort={handleSort}
-          formatPrice={formatPrice}
-          formatDate={formatDate}
-          getStorefrontUrl={getStorefrontUrl}
-          prepareStorefrontContext={prepareStorefrontContext}
-          editingProductId={editingProduct}
-          editPrice={editPrice}
-          editStock={editStock}
-          editSku={editSku}
-          onEditPriceChange={setEditPrice}
-          onEditStockChange={setEditStock}
-          onEditSkuChange={setEditSku}
-          onSaveQuickEdit={onSaveQuickEdit}
-          onCancelQuickEdit={cancelQuickEdit}
-          onStartQuickEdit={startQuickEdit}
-          onDuplicate={onDuplicate}
-          duplicatingProductId={duplicatingProductId}
-          workflowLoadingId={workflowLoadingId}
-          onWorkflowAction={onWorkflowAction}
-          canManageWorkflow={isAdmin}
-          canSubmitReviewWorkflow={canSubmitProductReview}
-          canSelectProducts={canSelectProducts}
-          canDeleteProducts={isAdmin}
-          onDelete={handleDelete}
-        />
+        <>
+          {/* Mobile Card List (< sm:) */}
+          <div className="block sm:hidden space-y-3">
+            {paginatedProducts.map((product) => (
+              <ProductMobileCard
+                key={product.id}
+                product={product}
+                selected={selectedProducts.has(product.id)}
+                onSelect={handleSelectProduct}
+                canSelect={canSelectProducts}
+                formatPrice={formatPrice}
+                formatDate={formatDate}
+                getStorefrontUrl={getStorefrontUrl}
+                prepareStorefrontContext={prepareStorefrontContext}
+                isEditing={editingProduct === product.id}
+                editPrice={editPrice}
+                editStock={editStock}
+                editSku={editSku}
+                onEditPriceChange={setEditPrice}
+                onEditStockChange={setEditStock}
+                onEditSkuChange={setEditSku}
+                onSaveQuickEdit={onSaveQuickEdit}
+                onCancelQuickEdit={cancelQuickEdit}
+                onStartQuickEdit={startQuickEdit}
+                onDuplicate={onDuplicate}
+                duplicatingProductId={duplicatingProductId}
+                workflowLoadingId={workflowLoadingId}
+                onWorkflowAction={onWorkflowAction}
+                canManageWorkflow={isAdmin}
+                canSubmitReviewWorkflow={canSubmitProductReview}
+                canDelete={isAdmin}
+                onDelete={handleDelete}
+              />
+            ))}
+          </div>
+
+          {/* Desktop & Tablet Table (sm: and above) */}
+          <div className="hidden sm:block">
+            <ProductsTable
+              products={paginatedProducts}
+              selectedProducts={selectedProducts}
+              selectAll={selectAll}
+              onSelectAll={handleSelectAll}
+              onSelectProduct={handleSelectProduct}
+              sortField={sortField}
+              sortDirection={sortDirection}
+              onSort={handleSort}
+              formatPrice={formatPrice}
+              formatDate={formatDate}
+              getStorefrontUrl={getStorefrontUrl}
+              prepareStorefrontContext={prepareStorefrontContext}
+              editingProductId={editingProduct}
+              editPrice={editPrice}
+              editStock={editStock}
+              editSku={editSku}
+              onEditPriceChange={setEditPrice}
+              onEditStockChange={setEditStock}
+              onEditSkuChange={setEditSku}
+              onSaveQuickEdit={onSaveQuickEdit}
+              onCancelQuickEdit={cancelQuickEdit}
+              onStartQuickEdit={startQuickEdit}
+              onDuplicate={onDuplicate}
+              duplicatingProductId={duplicatingProductId}
+              workflowLoadingId={workflowLoadingId}
+              onWorkflowAction={onWorkflowAction}
+              canManageWorkflow={isAdmin}
+              canSubmitReviewWorkflow={canSubmitProductReview}
+              canSelectProducts={canSelectProducts}
+              canDeleteProducts={isAdmin}
+              onDelete={handleDelete}
+            />
+          </div>
+        </>
       )}
 
       {!isLoading && !error && products.length > 0 && viewMode === "grid" && (

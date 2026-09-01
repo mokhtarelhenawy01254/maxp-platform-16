@@ -9,7 +9,9 @@ import {
   MinusIcon,
   ArrowPathIcon,
   EyeIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
+import { toast } from "sonner";
 import { companyAwareApi } from "../../services/companyAwareApi";
 import CreateInventoryProductDialog from "./components/CreateInventoryProductDialog";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -287,7 +289,7 @@ const Inventory: React.FC = () => {
         !stockUpdate.warehouseId ||
         stockUpdate.quantity <= 0
       ) {
-        alert(i18n.t("Inventory.msg_aec8"));
+        toast.error("يرجى اختيار المنتج والمستودع وتحديد كمية صالحة");
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
@@ -311,20 +313,20 @@ const Inventory: React.FC = () => {
           expiryDate: "",
           isApproved: true,
         });
-        alert(response.data.message || i18n.t("Inventory.success_update_9a49"));
+        toast.success(response.data.message || "تم تحديث المخزون بنجاح");
       } else {
-        alert(response.data.message || i18n.t("Inventory.failed_update_ff8a"));
+        toast.error(response.data.message || "فشل تحديث المخزون");
       }
     } catch (error: unknown) {
       console.error("Error updating stock:", error);
-      alert(getErrorMessage(error, i18n.t("Inventory.failed_update_ff8a")));
+      toast.error(getErrorMessage(error, "فشل تحديث المخزون"));
     }
   };
 
   const handleInventoryProductCreated = async (product: { id: string; name?: string }) => {
     await fetchInventory();
     await fetchAlerts();
-    alert(`تم إضافة "${product.name || "المنتج"}" وإرساله للمراجعة`);
+    toast.success(`تم إضافة "${product.name || "المنتج"}" وإرساله للمراجعة بنجاح`);
   };
 
   const downloadCSV = () => {
@@ -368,6 +370,7 @@ const Inventory: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    toast.success("تم تصدير ملف المخزون بنجاح");
   };
   const transferStock = async () => {
     try {
@@ -376,7 +379,7 @@ const Inventory: React.FC = () => {
         !transferData.toWarehouseId ||
         transferData.quantity <= 0
       ) {
-        alert(i18n.t("Inventory.msg_aec8"));
+        toast.error("يرجى اختيار مستودع المصدر ومستودع الوجهة وتحديد كمية صالحة");
         return;
       }
       const response = await companyAwareApi.post<StockMutationResponse>(
@@ -394,10 +397,10 @@ const Inventory: React.FC = () => {
           notes: "",
           batchNumber: "",
         });
-        alert(i18n.t("Inventory.msg_7ffe"));
+        toast.success("تم تحويل المخزون بنجاح");
       }
     } catch (error: unknown) {
-      alert(getErrorMessage(error, i18n.t("Inventory.msg_68e2")));
+      toast.error(getErrorMessage(error, "فشل تحويل المخزون"));
     }
   };
 
@@ -674,11 +677,133 @@ const Inventory: React.FC = () => {
         </div>
       </div>
 
-      {/* Inventory Table */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden border border-transparent dark:border-gray-700">
-        <div className="overflow-x-auto">
+      {/* Inventory Mobile Cards & Desktop Table */}
+      <div className="bg-white/90 dark:bg-gray-800/90 shadow-sm rounded-xl overflow-hidden border border-gray-200/70 dark:border-gray-700/60">
+        {/* Mobile View (< sm:) */}
+        <div className="block sm:hidden divide-y divide-gray-100 dark:divide-gray-700/60 p-3 space-y-3">
+          {inventory.map((item) => {
+            const stockStatus = getStockStatus(item);
+            return (
+              <div
+                key={item.id}
+                className="bg-white dark:bg-gray-800/90 rounded-xl p-3.5 border border-gray-200/80 dark:border-gray-700/60 space-y-2.5 shadow-xs"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-sm font-bold text-gray-900 dark:text-white line-clamp-1">
+                      {item.productName}
+                    </h3>
+                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                      {item.sku && <span dir="ltr" className="font-mono text-[11px]">{item.sku}</span>}
+                      <span>•</span>
+                      <span>{item.warehouseName}</span>
+                    </div>
+                  </div>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${stockStatus.color}`}
+                  >
+                    {stockStatus.status}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 bg-gray-50 dark:bg-gray-700/40 p-2.5 rounded-lg text-center">
+                  <div>
+                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">الإجمالي</span>
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">{item.quantity}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">المتاح</span>
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{item.available}</span>
+                  </div>
+                  <div>
+                    <span className="block text-[11px] text-gray-500 dark:text-gray-400">التكلفة</span>
+                    <span className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{formatPrice(item.price)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 text-xs">
+                  <span className="text-gray-400 dark:text-gray-500 text-[11px]">
+                    {item.batchNumber ? `دفعة: ${item.batchNumber}` : "بدون دفعة"}
+                  </span>
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedItem(item);
+                        setShowItemModal(true);
+                      }}
+                      className="p-1.5 rounded-lg text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30"
+                      title="تفاصيل"
+                    >
+                      <EyeIcon className="h-4.5 w-4.5" />
+                    </button>
+                    {item.canEditStock !== false && (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTransferData({
+                              ...transferData,
+                              productId: item.productId,
+                              fromWarehouseId: item.warehouseId,
+                              batchNumber: item.batchNumber || "",
+                            });
+                            setShowTransferModal(true);
+                          }}
+                          className="p-1.5 rounded-lg text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30"
+                          title="نقل"
+                        >
+                          <ArrowPathIcon className="h-4.5 w-4.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStockUpdate({
+                              ...stockUpdate,
+                              productId: item.productId,
+                              warehouseId: item.warehouseId,
+                              batchNumber: item.batchNumber || "",
+                              type: "IN",
+                              reason: "PURCHASE",
+                            });
+                            setShowStockUpdateModal(true);
+                          }}
+                          className="p-1.5 rounded-lg text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30"
+                          title="توريد"
+                        >
+                          <PlusIcon className="h-4.5 w-4.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setStockUpdate({
+                              ...stockUpdate,
+                              productId: item.productId,
+                              warehouseId: item.warehouseId,
+                              batchNumber: item.batchNumber || "",
+                              type: "OUT",
+                              reason: "SALE",
+                            });
+                            setShowStockUpdateModal(true);
+                          }}
+                          className="p-1.5 rounded-lg text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/30"
+                          title="صرف"
+                        >
+                          <MinusIcon className="h-4.5 w-4.5" />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Desktop Table (sm: and above) */}
+        <div className="hidden sm:block overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-900">
+            <thead className="bg-gray-50/80 dark:bg-gray-900/80">
               <tr>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   المنتج / SKU
@@ -706,7 +831,7 @@ const Inventory: React.FC = () => {
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className="bg-white/60 dark:bg-gray-800/60 divide-y divide-gray-200 dark:divide-gray-700">
               {inventory.map((item) => {
                 const stockStatus = getStockStatus(item);
 
@@ -716,7 +841,7 @@ const Inventory: React.FC = () => {
                     className="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="text-sm font-semibold text-gray-900 dark:text-white">
                         {item.productName}
                       </div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">
@@ -734,7 +859,7 @@ const Inventory: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                       <div>{item.batchNumber || "---"}</div>
                       {item.expiryDate && (
-                        <div className="text-xs text-red-500">
+                        <div className="text-xs text-rose-500">
                           {formatDate(item.expiryDate)}
                         </div>
                       )}
@@ -742,7 +867,7 @@ const Inventory: React.FC = () => {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 font-bold">
                       {item.quantity}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-emerald-600 dark:text-emerald-400 font-semibold">
                       {item.available}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -756,13 +881,14 @@ const Inventory: React.FC = () => {
                       {formatPrice(item.price)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2 space-x-reverse">
+                      <div className="flex items-center space-x-2 space-x-reverse">
                         <button
+                          type="button"
                           onClick={() => {
                             setSelectedItem(item);
                             setShowItemModal(true);
                           }}
-                          className="p-1 text-indigo-600 hover:text-indigo-900 transition-colors"
+                          className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                           title="عرض التفاصيل"
                         >
                           <EyeIcon className="h-5 w-5" />
@@ -770,6 +896,7 @@ const Inventory: React.FC = () => {
                         {item.canEditStock !== false && (
                           <>
                             <button
+                              type="button"
                               onClick={() => {
                                 setTransferData({
                                   ...transferData,
@@ -779,12 +906,13 @@ const Inventory: React.FC = () => {
                                 });
                                 setShowTransferModal(true);
                               }}
-                              className="p-1 text-orange-600 hover:text-orange-900 transition-colors"
+                              className="p-1.5 text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                               title="نقل مخزن"
                             >
                               <ArrowPathIcon className="h-5 w-5" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => {
                                 setStockUpdate({
                                   ...stockUpdate,
@@ -796,12 +924,13 @@ const Inventory: React.FC = () => {
                                 });
                                 setShowStockUpdateModal(true);
                               }}
-                              className="p-1 text-green-600 hover:text-green-900 transition-colors"
+                              className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                               title="توريد"
                             >
                               <PlusIcon className="h-5 w-5" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => {
                                 setStockUpdate({
                                   ...stockUpdate,
@@ -813,7 +942,7 @@ const Inventory: React.FC = () => {
                                 });
                                 setShowStockUpdateModal(true);
                               }}
-                              className="p-1 text-red-600 hover:text-red-900 transition-colors"
+                              className="p-1.5 text-rose-600 dark:text-rose-400 hover:text-rose-800 dark:hover:text-rose-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                               title="صرف"
                             >
                               <MinusIcon className="h-5 w-5" />
@@ -830,13 +959,13 @@ const Inventory: React.FC = () => {
         </div>
 
         {inventory.length === 0 && (
-          <div className="text-center py-20">
+          <div className="text-center py-16">
             <CubeIcon className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">
-              لا توجد منتجات حالياً
+            <h3 className="mt-2 text-base font-bold text-gray-900 dark:text-white">
+              لا توجد بيانات مخزون حالياً
             </h3>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              ابدأ بإضافة منتجاتك في قسم المنتجات أولاً.
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              ابدأ بإضافة منتجاتك أو سجل كميات المخزون المتاحة.
             </p>
           </div>
         )}
@@ -844,87 +973,81 @@ const Inventory: React.FC = () => {
 
       {/* Item Details Modal */}
       {showItemModal && selectedItem && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  تفاصيل المخزون - {selectedItem.productName}
-                </h3>
-                <button
-                  onClick={() => setShowItemModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 w-full max-w-lg border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                تفاصيل المخزون - {selectedItem.productName}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowItemModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <h4 className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  معلومات المنتج
+                </h4>
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3.5 rounded-xl space-y-1.5 text-sm">
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <strong className="text-gray-900 dark:text-white">اسم المنتج:</strong> {selectedItem.productName}
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <strong className="text-gray-900 dark:text-white">SKU:</strong> <span dir="ltr" className="font-mono">{selectedItem.sku || "—"}</span>
+                  </p>
+                  <p className="text-gray-700 dark:text-gray-300">
+                    <strong className="text-gray-900 dark:text-white">السعر:</strong> {formatPrice(selectedItem.price)}
+                  </p>
+                </div>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    معلومات المنتج
-                  </h4>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <p>
-                      <strong>اسم المنتج:</strong> {selectedItem.productName}
-                    </p>
-                    <p>
-                      <strong>SKU:</strong> {selectedItem.sku}
-                    </p>
-                    <p>
-                      <strong>السعر:</strong> {formatPrice(selectedItem.price)}
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">
-                    حالة المخزون
-                  </h4>
-                  <div className="bg-gray-50 p-3 rounded">
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                      <div>
-                        <p>
-                          <strong>المستودع:</strong>{" "}
-                          {selectedItem.warehouseName}
-                        </p>
-                        <p>
-                          <strong>رقم الدفعة:</strong>{" "}
-                          {selectedItem.batchNumber || "بدون"}
-                        </p>
-                        <p>
-                          <strong>تاريخ الصلاحية:</strong>{" "}
-                          {selectedItem.expiryDate
-                            ? formatDate(selectedItem.expiryDate)
-                            : "---"}
-                        </p>
-                      </div>
-                      <div>
-                        <p>
-                          <strong>الكمية الإجمالية:</strong>{" "}
-                          {selectedItem.quantity}
-                        </p>
-                        <p>
-                          <strong>المتاح للبيع:</strong>{" "}
-                          {selectedItem.available}
-                        </p>
-                        <p>
-                          <strong>المحجوز:</strong> {selectedItem.reserved}
-                        </p>
-                      </div>
+              <div>
+                <h4 className="font-semibold text-xs text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-2">
+                  حالة المخزون
+                </h4>
+                <div className="bg-gray-50 dark:bg-gray-700/50 p-3.5 rounded-xl">
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div className="space-y-1.5 text-gray-700 dark:text-gray-300">
+                      <p>
+                        <strong className="text-gray-900 dark:text-white">المستودع:</strong> {selectedItem.warehouseName}
+                      </p>
+                      <p>
+                        <strong className="text-gray-900 dark:text-white">رقم الدفعة:</strong> {selectedItem.batchNumber || "بدون"}
+                      </p>
+                      <p>
+                        <strong className="text-gray-900 dark:text-white">تاريخ الصلاحية:</strong>{" "}
+                        {selectedItem.expiryDate ? formatDate(selectedItem.expiryDate) : "---"}
+                      </p>
+                    </div>
+                    <div className="space-y-1.5 text-gray-700 dark:text-gray-300">
+                      <p>
+                        <strong className="text-gray-900 dark:text-white">الكمية الإجمالية:</strong> {selectedItem.quantity}
+                      </p>
+                      <p>
+                        <strong className="text-gray-900 dark:text-white">المتاح للبيع:</strong> {selectedItem.available}
+                      </p>
+                      <p>
+                        <strong className="text-gray-900 dark:text-white">المحجوز:</strong> {selectedItem.reserved}
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
+            </div>
 
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => setShowItemModal(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  إغلاق
-                </button>
-              </div>
+            <div className="flex justify-end mt-6">
+              <button
+                type="button"
+                onClick={() => setShowItemModal(false)}
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors"
+              >
+                إغلاق
+              </button>
             </div>
           </div>
         </div>
@@ -940,240 +1063,241 @@ const Inventory: React.FC = () => {
 
       {/* Stock Update Modal */}
       {showStockUpdateModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  تحديث المخزون
-                </h3>
-                <button
-                  onClick={() => setShowStockUpdateModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 w-full max-w-lg border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                تحديث المخزون
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowStockUpdateModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  المنتج *
+                </label>
+                <select
+                  value={stockUpdate.productId}
+                  onChange={(e) =>
+                    setStockUpdate({
+                      ...stockUpdate,
+                      productId: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                 >
-                  ✕
-                </button>
+                  <option value="">اختر المنتج</option>
+                  {inventoryProductOptions.map((item) => (
+                    <option key={item.productId} value={item.productId}>
+                      {item.productName}
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    المنتج
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    المستودع *
                   </label>
                   <select
-                    value={stockUpdate.productId}
+                    value={stockUpdate.warehouseId}
                     onChange={(e) =>
                       setStockUpdate({
                         ...stockUpdate,
-                        productId: e.target.value,
+                        warehouseId: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    disabled={warehouses.length === 0}
                   >
-                    <option value="">اختر المنتج</option>
-                    {inventoryProductOptions.map((item) => (
-                      <option key={item.productId} value={item.productId}>
-                        {item.productName}
-                      </option>
-                    ))}
+                    {warehouses.length === 0 ? (
+                      <option value="">لا توجد مخازن متاحة</option>
+                    ) : (
+                      warehouses.map((warehouse) => (
+                        <option key={warehouse.id} value={warehouse.id}>
+                          {warehouse.name}
+                        </option>
+                      ))
+                    )}
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      المستودع
-                    </label>
-                    <select
-                      value={stockUpdate.warehouseId}
-                      onChange={(e) =>
-                        setStockUpdate({
-                          ...stockUpdate,
-                          warehouseId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      disabled={warehouses.length === 0}
-                    >
-                      {warehouses.length === 0 ? (
-                        <option value="">لا توجد مخازن متاحة</option>
-                      ) : (
-                        warehouses.map((warehouse) => (
-                          <option key={warehouse.id} value={warehouse.id}>
-                            {warehouse.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      نوع الحركة
-                    </label>
-                    <select
-                      value={stockUpdate.type}
-                      onChange={(e) =>
-                        setStockUpdate({
-                          ...stockUpdate,
-                          type: e.target.value as StockMovementType,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="IN">إدخال</option>
-                      <option value="OUT">إخراج</option>
-                      <option value="ADJUSTMENT_IN">تعديل إضافة</option>
-                      <option value="ADJUSTMENT_OUT">تعديل سحب</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      الكمية
-                    </label>
-                    <input
-                      type="number"
-                      value={stockUpdate.quantity}
-                      onChange={(e) =>
-                        setStockUpdate({
-                          ...stockUpdate,
-                          quantity: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      min="0"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      السبب
-                    </label>
-                    <select
-                      value={stockUpdate.reason}
-                      onChange={(e) =>
-                        setStockUpdate({
-                          ...stockUpdate,
-                          reason: e.target.value as StockMovementReason,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                      <option value="PURCHASE">شراء</option>
-                      <option value="SALE">بيع</option>
-                      <option value="ADJUSTMENT">تعديل</option>
-                      <option value="DAMAGE">تلف</option>
-                      <option value="RETURN">مرتجع</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      رقم الدفعة (Batch)
-                    </label>
-                    <input
-                      type="text"
-                      value={stockUpdate.batchNumber}
-                      onChange={(e) =>
-                        setStockUpdate({
-                          ...stockUpdate,
-                          batchNumber: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      placeholder="رقم الدفعة أو Lot"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      تاريخ الصلاحية
-                    </label>
-                    <input
-                      type="date"
-                      value={stockUpdate.expiryDate}
-                      onChange={(e) =>
-                        setStockUpdate({
-                          ...stockUpdate,
-                          expiryDate: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                </div>
-
                 <div>
-                  <label className="flex items-center cursor-pointer bg-blue-50 p-2 rounded border border-blue-200">
-                    <input
-                      type="checkbox"
-                      checked={!stockUpdate.isApproved}
-                      onChange={(e) =>
-                        setStockUpdate({
-                          ...stockUpdate,
-                          isApproved: !e.target.checked,
-                        })
-                      }
-                      className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                    />
-                    <span className="mr-2 text-sm font-medium text-blue-800">
-                      يتطلب موافقة المدير (مسودة)
-                    </span>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    نوع الحركة
                   </label>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    المرجع
-                  </label>
-                  <input
-                    type="text"
-                    value={stockUpdate.reference}
+                  <select
+                    value={stockUpdate.type}
                     onChange={(e) =>
                       setStockUpdate({
                         ...stockUpdate,
-                        reference: e.target.value,
+                        type: e.target.value as StockMovementType,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    placeholder="رقم الطلب أو المرجع"
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="IN">إدخال (توريد)</option>
+                    <option value="OUT">إخراج (صرف)</option>
+                    <option value="ADJUSTMENT_IN">تعديل إضافة</option>
+                    <option value="ADJUSTMENT_OUT">تعديل سحب</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    الكمية *
+                  </label>
+                  <input
+                    type="number"
+                    value={stockUpdate.quantity}
+                    onChange={(e) =>
+                      setStockUpdate({
+                        ...stockUpdate,
+                        quantity: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    min="0"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ملاحظات
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    السبب
                   </label>
-                  <textarea
-                    value={stockUpdate.notes}
+                  <select
+                    value={stockUpdate.reason}
                     onChange={(e) =>
-                      setStockUpdate({ ...stockUpdate, notes: e.target.value })
+                      setStockUpdate({
+                        ...stockUpdate,
+                        reason: e.target.value as StockMovementReason,
+                      })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    rows={3}
-                    placeholder="ملاحظات إضافية..."
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="PURCHASE">شراء</option>
+                    <option value="SALE">بيع</option>
+                    <option value="ADJUSTMENT">تعديل</option>
+                    <option value="DAMAGE">تلف</option>
+                    <option value="RETURN">مرتجع</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    رقم الدفعة (Batch)
+                  </label>
+                  <input
+                    type="text"
+                    value={stockUpdate.batchNumber}
+                    onChange={(e) =>
+                      setStockUpdate({
+                        ...stockUpdate,
+                        batchNumber: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    placeholder="رقم الدفعة أو Lot"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    تاريخ الصلاحية
+                  </label>
+                  <input
+                    type="date"
+                    value={stockUpdate.expiryDate}
+                    onChange={(e) =>
+                      setStockUpdate({
+                        ...stockUpdate,
+                        expiryDate: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2 space-x-reverse mt-6">
-                <button
-                  onClick={() => setShowStockUpdateModal(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={updateStock}
-                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
-                >
-                  تحديث المخزون
-                </button>
+              <div>
+                <label className="flex items-center cursor-pointer bg-blue-50 dark:bg-blue-900/30 p-2.5 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <input
+                    type="checkbox"
+                    checked={!stockUpdate.isApproved}
+                    onChange={(e) =>
+                      setStockUpdate({
+                        ...stockUpdate,
+                        isApproved: !e.target.checked,
+                      })
+                    }
+                    className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500 dark:bg-gray-700"
+                  />
+                  <span className="mr-2 text-xs font-semibold text-blue-800 dark:text-blue-300">
+                    يتطلب موافقة المدير (حفظ كمسودة)
+                  </span>
+                </label>
               </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  المرجع
+                </label>
+                <input
+                  type="text"
+                  value={stockUpdate.reference}
+                  onChange={(e) =>
+                    setStockUpdate({
+                      ...stockUpdate,
+                      reference: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  placeholder="رقم الطلب أو إذن الاستلام"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  ملاحظات
+                </label>
+                <textarea
+                  value={stockUpdate.notes}
+                  onChange={(e) =>
+                    setStockUpdate({ ...stockUpdate, notes: e.target.value })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  rows={2}
+                  placeholder="ملاحظات إضافية..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowStockUpdateModal(false)}
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={updateStock}
+                className="px-5 py-2 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 shadow-sm transition-all"
+              >
+                تحديث المخزون
+              </button>
             </div>
           </div>
         </div>
@@ -1181,136 +1305,137 @@ const Inventory: React.FC = () => {
 
       {/* Transfer Modal */}
       {showTransferModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 shadow-lg rounded-md bg-white">
-            <div className="mt-3">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  نقل مخزون بين المستودعات
-                </h3>
-                <button
-                  onClick={() => setShowTransferModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-5 sm:p-6 w-full max-w-lg border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between mb-4 border-b border-gray-100 dark:border-gray-700 pb-3">
+              <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+                نقل مخزون بين المستودعات
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(false)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 p-1"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3.5">
+              <div className="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-xl text-xs text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                سيتم نقل الكمية المحددة من مستودع المصدر إلى مستودع الوجهة بشكل مباشر.
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-blue-50 p-3 rounded text-sm text-blue-800">
-                  سيتم نقل الكمية المحددة من مستودع المصدر إلى مستودع الوجهة
-                  بشكل مباشر.
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      من مستودع
-                    </label>
-                    <input
-                      type="text"
-                      value={
-                        inventory.find(
-                          (i) => i.warehouseId === transferData.fromWarehouseId,
-                        )?.warehouseName || ""
-                      }
-                      disabled
-                      className="w-full px-3 py-2 border bg-gray-100 rounded-md"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      إلى مستودع
-                    </label>
-                    <select
-                      value={transferData.toWarehouseId}
-                      onChange={(e) =>
-                        setTransferData({
-                          ...transferData,
-                          toWarehouseId: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    >
-                      <option value="">اختر الوجهة</option>
-                      {warehouses.map((wh) => (
-                        <option key={wh.id} value={wh.id}>
-                          {wh.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      الكمية
-                    </label>
-                    <input
-                      type="number"
-                      value={transferData.quantity}
-                      onChange={(e) =>
-                        setTransferData({
-                          ...transferData,
-                          quantity: parseInt(e.target.value) || 0,
-                        })
-                      }
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      max={
-                        inventory.find(
-                          (i) =>
-                            i.productId === transferData.productId &&
-                            i.warehouseId === transferData.fromWarehouseId,
-                        )?.available || 0
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      الدفعة (Batch)
-                    </label>
-                    <input
-                      type="text"
-                      value={transferData.batchNumber}
-                      disabled
-                      className="w-full px-3 py-2 border bg-gray-100 rounded-md"
-                    />
-                  </div>
-                </div>
-
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    ملاحظات التحويل
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    من مستودع
                   </label>
-                  <textarea
-                    value={transferData.notes}
+                  <input
+                    type="text"
+                    value={
+                      inventory.find(
+                        (i) => i.warehouseId === transferData.fromWarehouseId,
+                      )?.warehouseName || ""
+                    }
+                    disabled
+                    className="w-full px-3 py-2 text-sm border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    إلى مستودع *
+                  </label>
+                  <select
+                    value={transferData.toWarehouseId}
                     onChange={(e) =>
                       setTransferData({
                         ...transferData,
-                        notes: e.target.value,
+                        toWarehouseId: e.target.value,
                       })
                     }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    rows={2}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  >
+                    <option value="">اختر الوجهة</option>
+                    {warehouses.map((wh) => (
+                      <option key={wh.id} value={wh.id}>
+                        {wh.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    الكمية *
+                  </label>
+                  <input
+                    type="number"
+                    value={transferData.quantity}
+                    onChange={(e) =>
+                      setTransferData({
+                        ...transferData,
+                        quantity: parseInt(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                    max={
+                      inventory.find(
+                        (i) =>
+                          i.productId === transferData.productId &&
+                          i.warehouseId === transferData.fromWarehouseId,
+                      )?.available || 0
+                    }
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    الدفعة (Batch)
+                  </label>
+                  <input
+                    type="text"
+                    value={transferData.batchNumber}
+                    disabled
+                    className="w-full px-3 py-2 text-sm border bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 rounded-lg"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end space-x-2 space-x-reverse mt-6">
-                <button
-                  onClick={() => setShowTransferModal(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md"
-                >
-                  إلغاء
-                </button>
-                <button
-                  onClick={transferStock}
-                  className="px-4 py-2 bg-orange-600 text-white rounded-md hover:bg-orange-700 shadow-sm transition-all"
-                >
-                  بدء النقل
-                </button>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  ملاحظات التحويل
+                </label>
+                <textarea
+                  value={transferData.notes}
+                  onChange={(e) =>
+                    setTransferData({
+                      ...transferData,
+                      notes: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  rows={2}
+                  placeholder="ملاحظات التحويل..."
+                />
               </div>
+            </div>
+
+            <div className="flex justify-end gap-2 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowTransferModal(false)}
+                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={transferStock}
+                className="px-5 py-2 bg-orange-600 text-white rounded-lg text-sm font-bold hover:bg-orange-700 shadow-sm transition-all"
+              >
+                بدء النقل
+              </button>
             </div>
           </div>
         </div>
