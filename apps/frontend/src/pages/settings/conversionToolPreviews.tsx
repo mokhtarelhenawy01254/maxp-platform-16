@@ -21,7 +21,13 @@ import PreOrderBlock from "../../storefront/sections/ConversionBlocks/PreOrderBl
 import PurchaseFomoBlock from "../../storefront/sections/ConversionBlocks/PurchaseFomoBlock";
 import SoldCounterBlock from "../../storefront/sections/ConversionBlocks/SoldCounterBlock";
 import TrustedBadgePanel from "../../storefront/components/TrustedBadgePanel";
+import { StorefrontThemeProvider } from "../../storefront/engine/ThemeProvider";
 import BackInStockSignupCard from "../../storefront/components/BackInStockSignupCard";
+
+/** مكوّنات المتجر المستوردة تستهلك سياق ثيم المتجر — الغلاف ده إلزامي حول أي معاينة */
+export const ConversionToolPreviewProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <StorefrontThemeProvider scoped>{children}</StorefrontThemeProvider>
+);
 
 export interface ConversionToolPreviewContext {
   /** قيم إعدادات التطبيق (بما فيها التعديلات غير المحفوظة) — المعاينة تقرأ منها لحظيًا */

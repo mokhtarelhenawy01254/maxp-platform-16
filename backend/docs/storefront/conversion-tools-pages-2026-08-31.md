@@ -75,3 +75,34 @@ completeness.
 - Open items: canvas currently uses generic theme vars (not the merchant's
   real theme); legacy tab redirects deferred until the new pages are
   verified in production.
+
+## Hotfix (2026-09-01): theme context + i18n sections + test alignment
+
+Production verification found the tool/index pages crashing with
+`useStorefrontTheme must be used within a StorefrontThemeProvider` — the
+imported storefront blocks (ConversionBlocks, TrustedBadgePanel,
+BackInStockSignupCard) consume the storefront theme context that does not
+exist inside the admin tree.
+
+Fixes:
+
+- `ConversionToolPreviewProvider` (wraps `StorefrontThemeProvider`, scoped)
+  now wraps every preview: once around the tool-page canvas and once around
+  the whole index grid. Theme resolution is registry-based with a fallback,
+  so no auth/API dependency is added to the admin.
+- The tool translations were initially added directly to
+  `locales/{ar,en}/translation.json`, which is a build artifact regenerated
+  by `scripts/merge-translations.js` from `locales/*/sections/**` — a local
+  merge silently wiped them. The canonical source is now
+  `locales/{ar,en}/sections/settings/storeConversionSettings.json`
+  (shared keys + `tool.<key>.label/benefit` + `field.freeShippingAmount.*`
+  for all 22 tools), and `translation.json` was regenerated via
+  `npm run i18n:merge`.
+- Test alignment: previews now have a render regression suite
+  (`conversionToolPreviews.render.test.tsx`, renders all 22 previews inside
+  the provider — this is the test that would have caught the crash).
+  StoreSettings checkout-tab expectation updated to the new
+  `/settings/store/tools` entry point, and the legacy grouped-pages tests
+  were updated to the Arabic tool/app labels that the admin surface has
+  rendered since the Arabicization commit (those expectations referenced
+  English names that no code path renders).

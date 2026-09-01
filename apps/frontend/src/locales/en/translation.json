@@ -1283,7 +1283,6 @@
       "files": "Files",
       "uploadFile": "Upload file",
       "uploading": "Uploading...",
-      "uploadTotal": "Total progress",
       "uploadError": "Failed to upload the file",
       "noFiles": "No files uploaded yet",
       "invoices": "Invoices",
@@ -3664,7 +3663,7 @@
     "variants": "Variants"
   },
   "productAvailability": {
-    "title": "Product Availability Matrix",
+    "title": "Available Stock",
     "subtitle": "All store products in one grid: inventory tracking, pre-orders, and available quantities",
     "export": "Export Excel / CSV",
     "refresh": "Refresh",
@@ -17019,7 +17018,7 @@
     "productCatalogs": "Product Catalogs",
     "productDisplay": "Product Display",
     "productReviews": "Product Reviews",
-    "productsAvailability": "Product Availability Matrix",
+    "productsAvailability": "Available Stock",
     "productStudio": "Product Studio",
     "productTracking": "Product Selection Tracking",
     "products": "Products",
@@ -17532,12 +17531,6 @@
     "fieldsTitle": "Tool settings",
     "toolsIndexTitle": "Conversion tools",
     "toolsIndexDesc": "Every tool gets its own page: understand the benefit, see it live on your store, and enable it when ready. Every change saves automatically.",
-    "field": {
-      "freeShippingAmount": {
-        "label": "Free Shipping Threshold",
-        "description": "The amount the customer needs to reach for free shipping to apply."
-      }
-    },
     "tool": {
       "saleCountdown": {
         "label": "Sale Countdown Timer",
@@ -17626,6 +17619,12 @@
       "verifiedBadge": {
         "label": "Verified Badge",
         "benefit": "Displays a verified-purchaser badge within reviews."
+      }
+    },
+    "field": {
+      "freeShippingAmount": {
+        "label": "Free Shipping Threshold",
+        "description": "The amount the customer needs to reach for free shipping to apply."
       }
     }
   },

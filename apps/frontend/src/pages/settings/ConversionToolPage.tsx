@@ -17,7 +17,10 @@ import {
   findToolById,
   type ConversionToolDisplayKind,
 } from "./conversionToolMeta";
-import { renderConversionToolPreview } from "./conversionToolPreviews";
+import {
+  ConversionToolPreviewProvider,
+  renderConversionToolPreview,
+} from "./conversionToolPreviews";
 import {
   getDeepValue,
   ToggleSwitch,
@@ -318,7 +321,9 @@ export default function ConversionToolPage() {
             </div>
           ) : (
             <StoreCanvasFrame view={canvasView} displayKind={meta.displayKind}>
-              {renderConversionToolPreview(tool.key, { settings })}
+              <ConversionToolPreviewProvider>
+                {renderConversionToolPreview(tool.key, { settings })}
+              </ConversionToolPreviewProvider>
             </StoreCanvasFrame>
           )}
 

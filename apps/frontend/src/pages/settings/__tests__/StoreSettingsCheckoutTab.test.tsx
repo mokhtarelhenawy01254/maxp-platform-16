@@ -160,6 +160,6 @@ describe("StoreSettings checkout tab", () => {
       screen.getByRole("button", { name: "فتح أدوات التحويل" }),
     );
 
-    expect(mockNavigate).toHaveBeenCalledWith("/settings/store/product-conversion");
+    expect(mockNavigate).toHaveBeenCalledWith("/settings/store/tools");
   });
 });

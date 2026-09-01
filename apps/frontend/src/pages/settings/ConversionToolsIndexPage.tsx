@@ -4,6 +4,7 @@ import { getDirection } from "../../i18n";
 import { Link } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { ALL_CONVERSION_TOOLS } from "./conversionToolMeta";
+import { ConversionToolPreviewProvider } from "./conversionToolPreviews";
 import { renderConversionToolMiniPreview } from "./conversionToolPreviews";
 import {
   isAppOperational,
@@ -128,7 +129,8 @@ export default function ConversionToolsIndexPage() {
           ))}
         </div>
       ) : (
-        STORE_CONVERSION_PAGES.map((page) => {
+        <ConversionToolPreviewProvider>
+        {STORE_CONVERSION_PAGES.map((page) => {
           const pageTools = ALL_CONVERSION_TOOLS.filter(
             (entry) => entry.page.id === page.id,
           );
@@ -168,7 +170,8 @@ export default function ConversionToolsIndexPage() {
               </div>
             </section>
           );
-        })
+        })}
+        </ConversionToolPreviewProvider>
       )}
     </div>
   );

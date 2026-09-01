@@ -96,11 +96,11 @@ describe("ProductPageConversionSettingsPage", () => {
     await screen.findByRole("heading", { name: "تحويلات صفحة المنتج" });
 
     expect(screen.getByText("كل تغيير هنا يُحفظ تلقائيًا")).toBeTruthy();
-    expect(screen.getByText("Sale Countdown Timer")).toBeTruthy();
-    expect(screen.getByText("Trusted Badge")).toBeTruthy();
+    expect(screen.getByText("مؤقّت العروض")).toBeTruthy();
+    expect(screen.getByText("شارات الثقة")).toBeTruthy();
     expect(screen.queryByText("ليس بعد. الصفحة الآن تعمل كصفحة تنظيم ونطاق فقط")).toBeNull();
 
-    fireEvent.click(screen.getByRole("switch", { name: "Sold Counter" }));
+    fireEvent.click(screen.getByRole("switch", { name: "عدّاد المباع" }));
 
     await waitFor(() => {
       expect(mockApiPut).toHaveBeenCalledWith("/my-apps/suite-1/settings", {
@@ -126,11 +126,11 @@ describe("ProductPageConversionSettingsPage", () => {
     render(<ProductPageConversionSettingsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("Conversion Suite: غير مثبت")).toBeTruthy();
+      expect(screen.getByText("أدوات رفع التحويل: غير مثبت")).toBeTruthy();
     });
 
     expect(
-      screen.getAllByText("يتطلب تفعيل Conversion Suite.").length,
+      screen.getAllByText("يتطلب تفعيل أدوات رفع التحويل.").length,
     ).toBeGreaterThan(0);
   });
 });

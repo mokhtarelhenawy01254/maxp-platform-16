@@ -151,15 +151,15 @@ const CustomDomainPage: React.FC = () => {
       <div className="space-y-6">
         {/* Step 1: Explanation & Requirements */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
+          <div className="p-4 sm:p-6">
+            <h2 className="w-full text-start text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <span className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
                 1
               </span>
               {t("customDomain.step1Title")}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+              <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
                 <ShieldCheckIcon className="h-5 w-5 text-green-500 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -170,7 +170,7 @@ const CustomDomainPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+              <div className="flex items-start gap-3 py-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
                 <ArrowsRightLeftIcon className="h-5 w-5 text-blue-500 shrink-0" />
                 <div>
                   <p className="text-sm font-medium text-gray-900 dark:text-white">
@@ -187,9 +187,9 @@ const CustomDomainPage: React.FC = () => {
 
         {/* Step 2: DNS Configuration */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
+          <div className="p-4 sm:p-6">
+            <h2 className="w-full text-start text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <span className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
                 2
               </span>
               {t("customDomain.step2Title")}
@@ -198,56 +198,46 @@ const CustomDomainPage: React.FC = () => {
               {t("customDomain.dnsStepDesc")}
             </p>
 
-            <div className="overflow-x-auto border border-gray-100 dark:border-gray-700 rounded-lg">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-900/50">
-                  <tr>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("customDomain.dnsType")}
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("customDomain.dnsHost")}
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {t("customDomain.dnsValue")}
-                    </th>
-                    <th className="px-4 py-3"></th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                  <tr>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm font-bold text-indigo-600 dark:text-indigo-400">
-                      CNAME
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      {t("customDomain.dnsHostValue")}
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
-                      mokhtarelhenawy.online
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap text-left text-sm font-medium">
-                      <button
-                        type="button"
-                        aria-label={
-                          copied === "cname"
-                            ? t("customDomain.cnameCopied")
-                            : t("customDomain.copyCname")
-                        }
-                        onClick={() =>
-                          copyToClipboard("mokhtarelhenawy.online", "cname")
-                        }
-                        className="text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                      >
-                        {copied === "cname" ? (
-                          <ClipboardDocumentCheckIcon className="h-5 w-5" />
-                        ) : (
-                          <ClipboardIcon className="h-5 w-5" />
-                        )}
-                      </button>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+            {/* MOB-011: stacked record block instead of a horizontal table —
+                the VALUE column was clipped inside a 226px scroll box on mobile */}
+            <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-bold">
+                  CNAME
+                </span>
+                <span className="text-sm text-gray-900 dark:text-white">
+                  {t("customDomain.dnsHostValue")}
+                </span>
+              </div>
+              <div className="mt-3 flex items-center justify-between gap-3">
+                <code
+                  dir="ltr"
+                  className="min-w-0 flex-1 px-3 py-2.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-lg text-sm font-mono text-gray-900 dark:text-white break-all"
+                >
+                  mokhtarelhenawy.online
+                </code>
+                <button
+                  type="button"
+                  aria-label={
+                    copied === "cname"
+                      ? t("customDomain.cnameCopied")
+                      : t("customDomain.copyCname")
+                  }
+                  onClick={() =>
+                    copyToClipboard("mokhtarelhenawy.online", "cname")
+                  }
+                  className="inline-flex items-center gap-1.5 min-h-11 px-4 rounded-lg border border-gray-200 dark:border-gray-600 text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors shrink-0"
+                >
+                  {copied === "cname" ? (
+                    <ClipboardDocumentCheckIcon className="h-5 w-5" />
+                  ) : (
+                    <ClipboardIcon className="h-5 w-5" />
+                  )}
+                  {copied === "cname"
+                    ? t("customDomain.cnameCopied")
+                    : t("customDomain.copyCname")}
+                </button>
+              </div>
             </div>
 
             <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg flex gap-3">
@@ -261,9 +251,9 @@ const CustomDomainPage: React.FC = () => {
 
         {/* Step 3: Domain Addition & Verification */}
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-              <span className="flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
+          <div className="p-4 sm:p-6">
+            <h2 className="w-full text-start text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+              <span className="shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-xs">
                 3
               </span>
               {t("customDomain.step3Title")}
@@ -313,7 +303,7 @@ const CustomDomainPage: React.FC = () => {
                     </button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-100 dark:border-gray-700">
+                  <div className="flex items-center justify-between py-3">
                     <div>
                       <p className="text-sm text-gray-500 dark:text-gray-400 mb-1">
                         {t("customDomain.currentDomain")}
@@ -394,18 +384,30 @@ const CustomDomainPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Helpful Tips */}
+        {/* Helpful Tips — MOB-014: restrained card instead of loud purple gradient */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-6 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl text-white shadow-lg">
-            <h3 className="font-bold flex items-center gap-2 mb-3">
-              <InformationCircleIcon className="h-5 w-5" />
+          <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-200 dark:border-gray-700">
+            <h3 className="font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-3">
+              <InformationCircleIcon className="h-5 w-5 text-indigo-500" />
               {t("customDomain.whyCustomDomain")}
             </h3>
-            <ul className="text-xs space-y-2 opacity-90">
-              <li>{t("customDomain.whyList1")}</li>
-              <li>{t("customDomain.whyList2")}</li>
-              <li>{t("customDomain.whyList3")}</li>
-              <li>{t("customDomain.whyList4")}</li>
+            <ul className="text-xs text-gray-600 dark:text-gray-400 space-y-2">
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0" />
+                {t("customDomain.whyList1")}
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0" />
+                {t("customDomain.whyList2")}
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0" />
+                {t("customDomain.whyList3")}
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-indigo-400 shrink-0" />
+                {t("customDomain.whyList4")}
+              </li>
             </ul>
           </div>
 

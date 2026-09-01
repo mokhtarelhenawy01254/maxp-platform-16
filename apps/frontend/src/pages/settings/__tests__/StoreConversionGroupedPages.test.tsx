@@ -90,10 +90,10 @@ describe("Store conversion grouped pages", () => {
 
     await screen.findByRole("heading", { name: "ودجات الموقع" });
 
-    expect(screen.getByText("Free Shipping Bar")).toBeTruthy();
+    expect(screen.getByText("شريط الشحن المجاني")).toBeTruthy();
     expect(screen.getByLabelText(/حد الشحن المجاني/)).toBeTruthy();
-    expect(screen.getByText("Exit Intent Popup")).toBeTruthy();
-    expect(screen.getByText("Fake Sale Popup")).toBeTruthy();
+    expect(screen.getByText("نافذة الخروج")).toBeTruthy();
+    expect(screen.getByText("إشعارات المبيعات الحية")).toBeTruthy();
   });
 
   it("renders the reviews page and explains when UGC Reviews Pro is missing", async () => {
@@ -106,11 +106,11 @@ describe("Store conversion grouped pages", () => {
     render(<StoreReviewsSocialProofSettingsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("UGC Reviews Pro: غير مثبت")).toBeTruthy();
+      expect(screen.getByText("تقييمات العملاء: غير مثبت")).toBeTruthy();
     });
 
-    expect(screen.getByText("Photo Review")).toBeTruthy();
-    expect(screen.getByText("Video Review")).toBeTruthy();
-    expect(screen.getAllByText("يتطلب تفعيل UGC Reviews Pro.").length).toBeGreaterThan(0);
+    expect(screen.getByText("تقييم بالصور")).toBeTruthy();
+    expect(screen.getByText("تقييم بالفيديو")).toBeTruthy();
+    expect(screen.getAllByText("يتطلب تفعيل تقييمات العملاء.").length).toBeGreaterThan(0);
   });
 });
