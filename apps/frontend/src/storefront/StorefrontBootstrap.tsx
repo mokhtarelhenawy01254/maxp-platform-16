@@ -254,11 +254,39 @@ export const prefetchStorefrontBootstrapData = async (): Promise<void> => {
     previewSource,
   );
 
-  await queryClient.prefetchQuery({
+  const productPathKey = resolveStorefrontProductPathKey();
+  const isPreviewMode = resolveStorefrontProductPreviewMode();
+  const productQueryKey = productPathKey
+    ? getStorefrontProductQueryKey(
+        productPathKey,
+        initialStorefrontScope,
+        isPreviewMode,
+        themeCatalogPreviewKey,
+      )
+    : null;
+
+  // Run settings prefetch and product prefetch concurrently
+  const settingsPromise = queryClient.prefetchQuery({
     queryKey: initialSettingsQueryKey,
     queryFn: () => fetchStorefrontSettings(previewThemeId, previewSource),
     staleTime: 5 * 60 * 1000,
   });
+
+  const productPromise = productPathKey && productQueryKey
+    ? queryClient.prefetchQuery({
+        queryKey: productQueryKey,
+        queryFn: () => fetchStorefrontProduct(productPathKey, isPreviewMode),
+        staleTime: 60 * 1000,
+      }).then(() => {
+        const product = queryClient.getQueryData<Product>(productQueryKey);
+        const primaryImage = getPrimaryProductImage(product);
+        if (primaryImage) {
+          primeImagePreload(primaryImage);
+        }
+      })
+    : Promise.resolve();
+
+  await Promise.all([settingsPromise, productPromise]);
 
   const resolvedStorefrontScope = getStorefrontScope();
   if (resolvedStorefrontScope !== initialStorefrontScope) {
@@ -272,6 +300,20 @@ export const prefetchStorefrontBootstrapData = async (): Promise<void> => {
         ),
         prefetchedSettings,
       );
+    }
+    if (productPathKey && productQueryKey) {
+      const prefetchedProduct = queryClient.getQueryData(productQueryKey);
+      if (prefetchedProduct) {
+        queryClient.setQueryData(
+          getStorefrontProductQueryKey(
+            productPathKey,
+            resolvedStorefrontScope,
+            isPreviewMode,
+            themeCatalogPreviewKey,
+          ),
+          prefetchedProduct,
+        );
+      }
     }
   }
 
@@ -310,31 +352,10 @@ export const prefetchStorefrontBootstrapData = async (): Promise<void> => {
     const primaryCatalogImage = getPrimaryProductImage(
       productsResponse?.data?.[0],
     );
-    primeCatalogImagePreload(primaryCatalogImage);
+    if (primaryCatalogImage) {
+      primeCatalogImagePreload(primaryCatalogImage);
+    }
   }
-
-  const productPathKey = resolveStorefrontProductPathKey();
-  if (!productPathKey) {
-    return;
-  }
-
-  const isPreviewMode = resolveStorefrontProductPreviewMode();
-  const productQueryKey = getStorefrontProductQueryKey(
-    productPathKey,
-    resolvedStorefrontScope,
-    isPreviewMode,
-    themeCatalogPreviewKey,
-  );
-
-  await queryClient.prefetchQuery({
-    queryKey: productQueryKey,
-    queryFn: () => fetchStorefrontProduct(productPathKey, isPreviewMode),
-    staleTime: 60 * 1000,
-  });
-
-  const product = queryClient.getQueryData<Product>(productQueryKey);
-  const primaryImage = getPrimaryProductImage(product);
-  primeImagePreload(primaryImage);
 };
 
 const StorefrontAppToaster: React.FC = () => (

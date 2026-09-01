@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import i18n from "../../i18n";
-import { tToast } from "../../utils/i18n-toast";
-
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
 import { buildCheckoutOrderPayload } from "../hooks/useCheckout";
@@ -794,7 +791,7 @@ const ProductImageLandingPage: React.FC = () => {
         location.search,
       );
 
-      tToast.success("ProductImageLandingPage.success_send_29d8");
+      toast.success("تم إرسال طلبك بنجاح!");
       const purchaseTracking = {
         eventId: pixelEventId,
         orderNumber: String(orderId),
@@ -848,7 +845,7 @@ const ProductImageLandingPage: React.FC = () => {
     return (
       <section className="product-image-landing product-image-landing--empty" dir="rtl">
         <div className="pil-empty-panel">
-          <p>{landingError || i18n.t("ProductImageLandingPage.msg_648c")}</p>
+          <p>{landingError || "فشل تحميل المنتج"}</p>
           <Link to={buildStorefrontPath(location.pathname, `/product/${id || ""}`, location.search)}>
             العودة لصفحة المنتج
           </Link>

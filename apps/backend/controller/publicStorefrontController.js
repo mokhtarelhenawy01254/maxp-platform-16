@@ -420,6 +420,7 @@ exports.getStorefrontSettings = async (req, res) => {
     try {
       const cached = await redisCacheService.get(cacheKey);
       if (cached) {
+        res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
         return res.json(cached);
       }
     } catch (err) {
@@ -547,6 +548,7 @@ exports.getStorefrontSettings = async (req, res) => {
       console.error('⚠️ [REDIS] error setting storefront settings cache:', err);
     }
 
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
     return res.json(responseData);
   } catch (error) {
     console.error('❌ [PUBLIC-STOREFRONT] Error fetching settings:', error);

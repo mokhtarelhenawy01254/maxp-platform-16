@@ -33,7 +33,6 @@ import {
   hasMarkedPurchaseTracked,
   markPurchaseTracked,
 } from '../utils/purchaseTrackingStorage';
-import { useTranslation } from 'react-i18next';
 import { getStatusDisplay } from '../../utils/statusRegistry';
 
 interface PurchaseTrackingItem {
@@ -421,7 +420,6 @@ const OrderConfirmation: React.FC<OrderConfirmationProps> = ({ section, settings
     settings: storefrontSettings,
     isLoading: storefrontSettingsLoading,
   } = useStorefrontSettings();
-  const { t } = useTranslation();
   const prefersArabicCopy = theme.direction === 'rtl';
   const isBiteRush = theme.id === 'restaurant-demo';
   const variant = normalizeOrderConfirmationVariant(section?.variant);

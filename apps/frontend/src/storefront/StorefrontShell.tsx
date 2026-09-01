@@ -72,7 +72,6 @@ import {
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
 import ReturnsPage from "./pages/ReturnsPage";
 import { useStorePage } from "../hooks/useStorePage";
-import i18n from "../i18n";
 import { footerSettingsService, type FooterSettings } from "../services/footerSettingsService";
 
 import "./styles/storefront-layout.css";
@@ -3848,21 +3847,21 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
     const rows: Array<{ label: string; value: string; href?: string }> = [];
     if (footerSettings?.phone && footerSettings.showPhone) {
       rows.push({
-        label: i18n.t('common.phone'),
+        label: theme.direction === 'rtl' ? 'الهاتف' : 'Phone',
         value: footerSettings.phone,
         href: `tel:${footerSettings.phone}`,
       });
     }
     if (footerSettings?.email && footerSettings.showEmail) {
       rows.push({
-        label: i18n.t('common.email'),
+        label: theme.direction === 'rtl' ? 'البريد الإلكتروني' : 'Email',
         value: footerSettings.email,
         href: `mailto:${footerSettings.email}`,
       });
     }
     if (footerSettings?.address && footerSettings.showAddress) {
       rows.push({
-        label: i18n.t('common.address'),
+        label: theme.direction === 'rtl' ? 'العنوان' : 'Address',
         value: footerSettings.address,
       });
     }
@@ -5089,7 +5088,7 @@ const DynamicStorefrontPage: React.FC = () => {
             {dbPage.title}
           </h1>
           <p className="text-xs text-muted-foreground mt-2">
-            {i18n.t("storePages.lastUpdated")}:{" "}
+            {theme.direction === "rtl" ? "آخر تحديث" : "Last updated"}:{" "}
             {new Date(dbPage.updatedAt).toLocaleDateString(theme.direction === "rtl" ? "ar-EG" : "en-US", {
               year: 'numeric',
               month: 'long',

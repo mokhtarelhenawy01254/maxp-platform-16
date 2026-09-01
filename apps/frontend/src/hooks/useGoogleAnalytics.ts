@@ -24,10 +24,38 @@ export const useGoogleAnalytics = (settings?: StorefrontSettings | null) => {
     if (!gaEnabled && !adsEnabled) return;
     if (gtmActive) return;
 
-    loadGoogleAnalytics(
-      settings?.googleAnalyticsMeasurementId,
-      settings?.googleAdsConversionId,
-    );
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (cb: () => void, options?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    let cancelled = false;
+    let idleId: number | undefined;
+    let timeoutId: number | undefined;
+
+    const runLoad = () => {
+      if (cancelled) return;
+      loadGoogleAnalytics(
+        settings?.googleAnalyticsMeasurementId,
+        settings?.googleAdsConversionId,
+      );
+    };
+
+    if (typeof idleWindow.requestIdleCallback === "function") {
+      idleId = idleWindow.requestIdleCallback(runLoad, { timeout: 3000 });
+    } else {
+      timeoutId = window.setTimeout(runLoad, 1500);
+    }
+
+    return () => {
+      cancelled = true;
+      if (idleId !== undefined && typeof idleWindow.cancelIdleCallback === "function") {
+        idleWindow.cancelIdleCallback(idleId);
+      }
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, [
     gaEnabled,
     adsEnabled,

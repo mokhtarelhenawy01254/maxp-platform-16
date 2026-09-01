@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useTranslation } from 'react-i18next';
 import { apiClient } from '../../services/apiClient';
 import VariantSelector from '../components/VariantSelector';
 import QuantitySelector from '../components/QuantitySelector';
@@ -788,7 +787,6 @@ const PlayfulStory = ({
 PlayfulStory.displayName = 'PlayfulStory';
 
 const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSettings }) => {
-  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const variant = section?.variant || 'standard';
   const location = useLocation();

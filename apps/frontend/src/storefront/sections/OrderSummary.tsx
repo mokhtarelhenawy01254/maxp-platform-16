@@ -1,7 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
 import Button from "../components/Button";
 import StorefrontProductImage from "../components/StorefrontProductImage";
 import QuantitySelector from "../components/QuantitySelector";
@@ -993,7 +992,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
 
     if (!normalizedCouponCode) {
       clearAppliedCoupon();
-      tToast.error("OrderSummary.msg_c088");
+      toast.error(theme.direction === "rtl" ? "يرجى إدخال كود الخصم" : "Please enter a coupon code");
       return;
     }
 

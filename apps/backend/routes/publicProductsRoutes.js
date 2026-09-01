@@ -1571,6 +1571,7 @@ router.get('/', async (req, res) => {
       products.map((product) => product.id),
     );
 
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
     res.json({
       success: true,
       data: products.map((product) =>
@@ -1609,6 +1610,7 @@ router.get('/categories', async (req, res) => {
       },
     });
 
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
     res.json({
       success: true,
       data: categories,
@@ -1933,6 +1935,7 @@ router.get('/:id', async (req, res) => {
       amazonBuyUrl,
     });
 
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
     res.json({
       success: true,
       data: applyAffiliatePricing(formattedProduct, affiliatePricing),
