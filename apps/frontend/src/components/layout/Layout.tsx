@@ -7,6 +7,9 @@ import {
   XMarkIcon,
   UsersIcon,
   BuildingStorefrontIcon,
+  UserCircleIcon,
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
 import "../../styles/hr-theme.css";
 import { useTranslation } from "react-i18next";
@@ -406,35 +409,65 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             className="fixed inset-0 z-40"
             onClick={() => setIsProfileMenuOpen(false)}
           />
-          <div className="business-shell-menu absolute ltr:right-0 rtl:left-0 mt-3 w-56 z-50">
-            <div className="business-shell-menu-header">
-              <p>{user?.company?.name || "Max P Business OS"}</p>
-              <span>{user?.email || "operator@company.com"}</span>
+          <div
+            className={`business-shell-menu absolute mt-2 w-64 max-w-[calc(100vw-1.5rem)] z-50 rounded-2xl shadow-2xl border border-gray-200/90 dark:border-gray-700/80 bg-white dark:bg-gray-900 p-2 ${
+              i18n.dir() === 'rtl' ? 'right-0' : 'left-0 sm:right-0 sm:left-auto'
+            }`}
+            style={{
+              maxHeight: 'calc(100vh - 4.5rem)',
+              overflowY: 'auto'
+            }}
+          >
+            <div className="p-3 border-b border-gray-100 dark:border-gray-800 mb-1">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold text-sm flex items-center justify-center shrink-0 shadow-sm">
+                  {initials || "MP"}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                    {user?.firstName ? `${user.firstName} ${user?.lastName || ''}`.trim() : (user?.company?.name || "Max P User")}
+                  </p>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                    {user?.email || "operator@company.com"}
+                  </span>
+                  {user?.company?.name ? (
+                    <span className="inline-block mt-0.5 text-[10px] text-primary-600 dark:text-primary-400 font-semibold truncate">
+                      🏢 {user.company.name}
+                    </span>
+                  ) : null}
+                </div>
+              </div>
             </div>
-            <div className="business-shell-menu-links">
+
+            <div className="space-y-1">
               <Link
                 to="/profile"
-                className="business-shell-menu-link"
+                className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors no-underline"
                 onClick={() => setIsProfileMenuOpen(false)}
               >
-                {t("sidebar.profile")}
+                <UserCircleIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" />
+                <span>{t("sidebar.profile")}</span>
               </Link>
               {!isExternalPortalUser ? (
                 <Link
                   to="/settings"
-                  className="business-shell-menu-link"
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors no-underline"
                   onClick={() => setIsProfileMenuOpen(false)}
                 >
-                  {t("sidebar.settings")}
+                  <Cog6ToothIcon className="h-4 w-4 text-gray-500 dark:text-gray-400 shrink-0" />
+                  <span>{t("sidebar.settings")}</span>
                 </Link>
               ) : null}
               <button
                 type="button"
-                onClick={handleLogout}
-                className="business-shell-menu-link"
-                data-variant="danger"
+                onClick={() => {
+                  setIsProfileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/40 transition-colors text-start"
               >
-                {t("sidebar.logout")}
+                <ArrowRightOnRectangleIcon className="h-4 w-4 text-red-500 shrink-0" />
+                <span>{t("sidebar.logout")}</span>
               </button>
             </div>
           </div>

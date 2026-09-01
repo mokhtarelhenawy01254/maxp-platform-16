@@ -3969,19 +3969,27 @@ select {
   }
 }
 
-[data-theme="business-os-enterprise"] .business-shell-menu,
+[data-theme="business-os-enterprise"] .business-shell-menu {
+  background: var(--color-card, #ffffff);
+  border: 1px solid var(--shell-overlay-border);
+  box-shadow: 0 20px 50px -20px rgba(0, 0, 0, 0.25);
+  border-radius: 20px;
+  position: absolute;
+  z-index: 80;
+  padding: 0.5rem;
+}
+
+.dark [data-theme="business-os-enterprise"] .business-shell-menu {
+  background: var(--color-card, #0f1729);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
 [data-theme="business-os-enterprise"] .business-horizontal-menu {
   background: var(--shell-overlay-bg);
   border: 1px solid var(--shell-overlay-border);
   box-shadow: var(--shell-overlay-shadow);
   backdrop-filter: blur(20px);
   border-radius: 20px;
-}
-
-[data-theme="business-os-enterprise"] .business-shell-menu {
-  position: absolute;
-  z-index: 80;
-  padding: 0.5rem;
 }
 
 [data-theme="business-os-enterprise"] .business-shell-menu-header,
