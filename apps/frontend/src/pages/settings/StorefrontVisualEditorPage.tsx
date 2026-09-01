@@ -588,6 +588,47 @@ const StorefrontVisualEditorPage: React.FC = () => {
         onSelectImage={handleSelectHeroImage}
         selectedUrl={getStorefrontHomeContentDraft(storefrontSettings?.designTokens).hero.backgroundImage}
       />
+
+      {/* Floating Bottom Sticky Action Bar on Mobile/Tablet */}
+      <div className="fixed bottom-4 inset-x-4 z-50 flex items-center justify-between gap-2 rounded-3xl border border-white/40 bg-white/90 p-2.5 shadow-[0_20px_50px_rgba(0,0,0,0.3)] backdrop-blur-xl dark:border-gray-700/50 dark:bg-gray-900/90 xl:hidden">
+        <div className="flex items-center gap-2 pr-2">
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${
+              hasPendingChanges ? "bg-amber-500 animate-pulse" : "bg-emerald-500"
+            }`}
+          />
+          <span className="text-xs font-bold text-gray-700 dark:text-gray-200">
+            {hasPendingChanges ? "تعديلات غير محفوظة" : "محفوظ"}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          {storefrontPreviewUrl ? (
+            <button
+              type="button"
+              onClick={handleOpenLivePreview}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-700 shadow-sm active:scale-95 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              title="معاينة المتجر"
+            >
+              <ArrowTopRightOnSquareIcon className="h-5 w-5" />
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => void handleSave()}
+            disabled={saving || hasBlockingValidationErrors}
+            className="inline-flex h-11 items-center gap-2 rounded-2xl bg-gray-900 px-5 text-sm font-bold text-white shadow-md active:scale-95 disabled:opacity-50 dark:bg-white dark:text-gray-900"
+          >
+            {saving ? (
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+            ) : (
+              <CheckCircleIcon className="h-5 w-5" />
+            )}
+            <span>{saving ? "جاري الحفظ..." : "حفظ"}</span>
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

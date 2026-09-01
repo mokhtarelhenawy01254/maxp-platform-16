@@ -164,6 +164,16 @@ export const getStorefrontSectionFieldDisplayValue = (
     return value;
   }
 
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>;
+    if (typeof record.ar === "string" && record.ar.trim()) {
+      return record.ar;
+    }
+    if (typeof record.en === "string" && record.en.trim()) {
+      return record.en;
+    }
+  }
+
   const serializer = STRUCTURED_FIELD_SERIALIZERS[fieldKey];
   return serializer?.(value) || "";
 };

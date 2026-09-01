@@ -4,105 +4,23 @@ import StorefrontProductImage from "../components/StorefrontProductImage";
 import { buildStorefrontPath } from "../utils/paths";
 import { resolveSectionVariant } from "../variants";
 
-const isExternalHref = (href: string) =>
-  /^(https?:\/\/|mailto:|tel:)/i.test(href);
+import {
+  renderHeroAction,
+  isExternalHref,
+} from "./hero-banner/heroActions";
 
-interface HeroSticker {
-  label: string;
-  position?: "left-mid" | "left-bottom" | "right-mid" | "right-bottom";
-  tone?: "primary" | "outline" | "default";
-}
-
-interface HeroFloatingCard {
-  badge?: string;
-  title?: string;
-  value?: string;
-  description?: string;
-  tone?: "indigo" | "glass" | "default";
-}
-
-interface HeroBannerHighlight {
-  label: string;
-  value: string;
-}
+import type {
+  HeroSticker,
+  HeroFloatingCard,
+  HeroBannerHighlight,
+  HeroSlide,
+  HeroVariantProps,
+} from "./hero-banner/heroTypes";
 
 interface HeroBannerProps {
   section: any;
   settings: any;
 }
-
-interface HeroSlide {
-  image?: string;
-  imageUrl?: string;
-  backgroundImage?: string;
-  alt?: string;
-  title?: string;
-  subtitle?: string;
-  eyebrow?: string;
-  ctaText?: string;
-  ctaLink?: string;
-  secondaryCtaText?: string;
-  secondaryCtaLink?: string;
-}
-
-interface HeroVariantProps {
-  title: string;
-  subtitle: string;
-  ctaText: string;
-  primaryHref: string;
-  secondaryCtaText: string;
-  secondaryHref: string;
-  backgroundImage: string;
-  eyebrow?: string;
-  highlights: HeroBannerHighlight[];
-  floatingCards: HeroFloatingCard[];
-  stickers: HeroSticker[];
-  contentAlign?: "left" | "center";
-  panel: {
-    image?: string;
-    title?: string;
-    subtitle?: string;
-    note?: string;
-    metricLabel?: string;
-    metricValue?: string;
-    eyebrow?: string;
-  };
-  primaryActionClassName?: string;
-  secondaryActionClassName?: string;
-  slides?: HeroSlide[];
-  compact?: boolean;
-}
-
-const renderHeroAction = (
-  href: string | null | undefined,
-  label: string | undefined,
-  className: string,
-) => {
-  if (!href || !label?.trim()) return null;
-  if (href.startsWith("#")) {
-    return (
-      <a
-        href={href}
-        onClick={(e) => {
-          e.preventDefault();
-          document.querySelector(href)?.scrollIntoView({ behavior: "smooth" });
-        }}
-        className={className}
-      >
-        {label}
-      </a>
-    );
-  }
-  return isExternalHref(href) ? (
-    <a href={href} target="_blank" rel="noreferrer" className={className}>
-      {label}
-    </a>
-  ) : (
-    <Link to={href} className={className}>
-      {label}
-    </Link>
-  );
-};
 
 function ButcherCounterHero(props: HeroVariantProps) {
   const leadImage = props.backgroundImage || props.panel.image;

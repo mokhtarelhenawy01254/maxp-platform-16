@@ -2118,3 +2118,10 @@ export const getStorefrontThemePreset = (
     applyStorefrontThemeExperienceOverrides(cloneStorefrontTheme(preset)),
   );
 };
+
+export {
+  loadStorefrontThemeAsync,
+  preloadStorefrontTheme,
+  type ThemeLoaderFn,
+} from "./themeLoaders";
+

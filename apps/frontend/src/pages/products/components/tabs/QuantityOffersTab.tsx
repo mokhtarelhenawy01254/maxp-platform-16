@@ -75,17 +75,17 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
   };
 
   return (
-    <div className="space-y-6 rounded-lg bg-white p-6 shadow dark:bg-gray-800">
-      <div className="flex flex-col gap-4 border-b border-gray-200 pb-6 dark:border-gray-700 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
+    <div className="space-y-6 rounded-lg bg-white p-3 shadow dark:bg-gray-800 sm:p-6">
+      <div className="flex flex-col gap-4 border-b border-gray-200 pb-5 dark:border-gray-700 lg:flex-row lg:items-start lg:justify-between">
+        <div className="space-y-3">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
             عروض الكميات
           </h3>
-          <p className="max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+          <p className="max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300">
             أنشئ عروض 2 أو 3 أو 4 قطع لنفس المنتج، مع سعر مخفض لكل قطعة.
             سيظهر العرض على صفحة المنتج، ويمكن للعميل اختيار اللون أو المقاس لكل قطعة من نفس البلوك.
           </p>
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
             <span className="rounded-full bg-gray-100 px-3 py-1 font-semibold dark:bg-gray-700 dark:text-gray-200">
               المنتج: {productName || "منتج جديد"}
             </span>
@@ -107,24 +107,24 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
         <button
           type="button"
           onClick={addOffer}
-          className="inline-flex h-11 items-center justify-center rounded-md bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+          className="inline-flex h-11 shrink-0 items-center justify-center self-start rounded-md bg-indigo-600 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
         >
           إضافة عرض جديد
         </button>
       </div>
 
       {quantityOffers.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center dark:border-gray-700 dark:bg-gray-900/20">
+        <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center dark:border-gray-700 dark:bg-gray-900/20 sm:px-6 sm:py-10">
           <p className="text-sm font-semibold text-gray-900 dark:text-white">
             لا توجد عروض كميات لهذا المنتج حتى الآن
           </p>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
             ابدأ بعرض 2 قطعة أو 3 قطع، وسيظهر للعميل كبطاقة شراء مباشرة مثل الصور التي اتفقنا عليها.
           </p>
         </div>
       ) : null}
 
-      <div className="space-y-5">
+      <div className="sm:space-y-5">
         {quantityOffers.map((offer, index) => {
           const totals = getQuantityOfferTotals(offer, referenceUnitPrice);
           const previewText =
@@ -138,10 +138,10 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
           return (
             <div
               key={offer.id}
-              className="rounded-2xl border border-gray-200 bg-gray-50/70 p-5 dark:border-gray-700 dark:bg-gray-900/20"
+              className="border-t border-gray-200 py-4 first:border-t-0 dark:border-gray-700 sm:rounded-2xl sm:border sm:border-gray-200 sm:bg-gray-50/70 sm:p-5 sm:py-5 sm:first:border-t sm:dark:border-gray-700 sm:dark:bg-gray-900/20"
             >
-              <div className="mb-4 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-                <div className="space-y-1">
+              <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="space-y-1.5">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="rounded-full bg-indigo-600 px-3 py-1 text-xs font-bold text-white">
                       عرض {index + 1}
@@ -161,10 +161,10 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                       {offer.isActive !== false ? "نشط" : "متوقف"}
                     </span>
                   </div>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <p className="text-sm leading-6 font-semibold text-gray-900 dark:text-white">
                     {previewText}
                   </p>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                  <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
                     الإجمالي {totals.offerTotal} {displayCurrency} • التوفير{" "}
                     {totals.savings} {displayCurrency}
                   </p>
@@ -174,7 +174,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                   <button
                     type="button"
                     onClick={() => markAsDefault(offer.id)}
-                    className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
+                    className={`rounded-md px-3 py-2.5 text-sm font-semibold transition ${
                       offer.isDefault
                         ? "bg-emerald-600 text-white"
                         : "bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-100 dark:bg-gray-800 dark:text-gray-200 dark:ring-gray-600 dark:hover:bg-gray-700"
@@ -185,14 +185,14 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                   <button
                     type="button"
                     onClick={() => removeOffer(offer.id)}
-                    className="rounded-md bg-rose-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-rose-700"
+                    className="rounded-md bg-rose-600 px-3 py-2.5 text-sm font-semibold text-white transition hover:bg-rose-700"
                   >
                     إزالة
                   </button>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 md:gap-4">
                 <label className="space-y-1">
                   <span className="block text-xs font-bold text-gray-600 dark:text-gray-300">
                     عدد القطع
@@ -208,7 +208,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                         sortOrder: Math.max(1, Number(event.target.value || 1)),
                       }))
                     }
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   />
                 </label>
 
@@ -227,7 +227,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                         unitPrice: Math.max(0, Number(event.target.value || 0)),
                       }))
                     }
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   />
                 </label>
 
@@ -245,7 +245,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                       }))
                     }
                     placeholder={previewText}
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   />
                 </label>
 
@@ -263,7 +263,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                       }))
                     }
                     placeholder="مثل: الأكثر توفيرًا"
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   />
                 </label>
 
@@ -281,13 +281,13 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                       }))
                     }
                     placeholder="مثل: اختر لون ومقاس كل قطعة مرة واحدة"
-                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
+                    className="w-full rounded-md border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
                   />
                 </label>
               </div>
 
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              <div className="mt-4 grid gap-2 sm:mt-5 sm:gap-3 md:grid-cols-2">
+                <label className="flex items-center gap-3 rounded-xl px-0 py-2 text-sm text-gray-700 dark:text-gray-200 sm:border sm:border-gray-200 sm:bg-white sm:px-4 sm:py-3 sm:dark:border-gray-700 sm:dark:bg-gray-800">
                   <input
                     type="checkbox"
                     checked={Boolean(offer.hideUnitPrice)}
@@ -297,12 +297,12 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                         hideUnitPrice: event.target.checked,
                       }))
                     }
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
                   إخفاء سعر القطعة في storefront
                 </label>
 
-                <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                <label className="flex items-center gap-3 rounded-xl px-0 py-2 text-sm text-gray-700 dark:text-gray-200 sm:border sm:border-gray-200 sm:bg-white sm:px-4 sm:py-3 sm:dark:border-gray-700 sm:dark:bg-gray-800">
                   <input
                     type="checkbox"
                     checked={Boolean(offer.enableFreeShipping)}
@@ -312,12 +312,12 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                         enableFreeShipping: event.target.checked,
                       }))
                     }
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
                   إظهار ميزة الشحن المجاني داخل العرض
                 </label>
 
-                <label className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                <label className="flex items-center gap-3 rounded-xl px-0 py-2 text-sm text-gray-700 dark:text-gray-200 sm:border sm:border-gray-200 sm:bg-white sm:px-4 sm:py-3 sm:dark:border-gray-700 sm:dark:bg-gray-800">
                   <input
                     type="checkbox"
                     checked={offer.isActive !== false}
@@ -327,12 +327,12 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
                         isActive: event.target.checked,
                       }))
                     }
-                    className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    className="h-4 w-4 shrink-0 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                   />
                   تفعيل العرض في صفحة المنتج
                 </label>
 
-                <div className="rounded-xl border border-dashed border-gray-300 px-4 py-3 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                <div className="rounded-xl border border-dashed border-gray-300 px-3 py-3 text-sm leading-6 text-gray-500 dark:border-gray-700 dark:text-gray-400 sm:px-4">
                   {hasVariants
                     ? "سيظهر داخل العرض اختيار لون/مقاس لكل قطعة، مع زر لنسخ اختيار القطعة الأولى على باقي القطع."
                     : "لأن المنتج بدون variants، سيضيف العرض العدد الكامل مباشرة إلى السلة بسعر العرض."}

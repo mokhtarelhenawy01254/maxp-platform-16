@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  AdjustmentsHorizontalIcon,
   ArrowUturnLeftIcon,
   ArrowUturnRightIcon,
   Bars3Icon,
@@ -7,6 +8,7 @@ import {
   ChevronUpIcon,
   ComputerDesktopIcon,
   DevicePhoneMobileIcon,
+  EyeIcon,
   EyeSlashIcon,
   PaintBrushIcon,
   PhotoIcon,
@@ -57,6 +59,7 @@ import {
   getStorefrontPageOverridesFromDesignTokens,
   upsertStorefrontPageOverridesInDesignTokens,
 } from "../../storefront/utils/pageOverrides";
+import { StorefrontPreviewIframe } from "../../storefront/components/StorefrontPreviewIframe";
 import type { StorefrontPageValidationIssue } from "../../storefront/utils/pageOverrideValidation";
 import {
   cleanStorefrontSectionSettings,
@@ -459,7 +462,9 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
   onChange,
   onOpenHeroImagePicker,
 }) => {
+  const [activePageKey, setActivePageKey] = useState<string>("home");
   const [deviceMode, setDeviceMode] = useState<DeviceMode>("desktop");
+  const [mobileTab, setMobileTab] = useState<"preview" | "sections" | "settings">("preview");
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("current");
   const [selectedSectionKey, setSelectedSectionKey] = useState("");
 
@@ -940,6 +945,70 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
           </div>
         </div>
 
+        <div className="mt-4 flex items-center gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
+          {[
+            { id: "home", label: "الرئيسية", icon: "🏠" },
+            { id: "shop", label: "المتجر والكتالوج", icon: "🛍️" },
+            { id: "pdp", label: "صفحة المنتج", icon: "📦" },
+            { id: "cart", label: "السلة", icon: "🛒" },
+            { id: "checkout", label: "إتمام الطلب", icon: "💳" },
+          ].map((page) => (
+            <button
+              key={page.id}
+              type="button"
+              onClick={() => setActivePageKey(page.id)}
+              className={`inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-xs font-bold transition-colors ${
+                activePageKey === page.id
+                  ? "bg-gray-900 text-white shadow-sm dark:bg-white dark:text-gray-900"
+                  : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              }`}
+            >
+              <span>{page.icon}</span>
+              <span>{page.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Mobile App Segmented Tabs (Preview | Sections | Settings) */}
+        <div className="mt-3 flex items-center gap-1 rounded-2xl bg-gray-100 p-1 dark:bg-gray-800 xl:hidden">
+          <button
+            type="button"
+            onClick={() => setMobileTab("preview")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black transition-all ${
+              mobileTab === "preview"
+                ? "bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white"
+                : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            }`}
+          >
+            <EyeIcon className="h-4 w-4" />
+            <span>المعاينة</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("sections")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black transition-all ${
+              mobileTab === "sections"
+                ? "bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white"
+                : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            }`}
+          >
+            <Squares2X2Icon className="h-4 w-4" />
+            <span>المكونات ({homeSections.length})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileTab("settings")}
+            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-black transition-all ${
+              mobileTab === "settings"
+                ? "bg-white text-gray-900 shadow-sm dark:bg-gray-900 dark:text-white"
+                : "text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            }`}
+          >
+            <AdjustmentsHorizontalIcon className="h-4 w-4" />
+            <span>الإعدادات {selectedSection ? "•" : ""}</span>
+          </button>
+        </div>
+
         {homeValidationIssues.length > 0 ? (
           <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200">
             توجد {homeValidationIssues.length} ملاحظات على الصفحة الرئيسية. يمكنكِ تعديل الأقسام من هنا، ثم مراجعة التنبيهات قبل الحفظ النهائي.
@@ -950,7 +1019,9 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
       <div className="grid gap-0 xl:grid-cols-[320px_minmax(0,1fr)_290px]" dir="ltr">
         <aside
           dir="rtl"
-          className="order-2 border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 xl:order-1 xl:border-e xl:border-t-0"
+          className={`order-2 border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 xl:order-1 xl:block xl:border-e xl:border-t-0 ${
+            mobileTab === "settings" ? "block" : "hidden xl:block"
+          }`}
         >
           <div className="space-y-4">
             <div className="flex items-center justify-between">
@@ -1110,21 +1181,31 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
 
         <main
           dir="rtl"
-          className="order-1 min-w-0 border-t border-gray-200 bg-gray-50/70 px-4 py-4 dark:border-gray-700 dark:bg-gray-950/40 xl:order-2 xl:border-t-0"
+          className={`order-1 min-w-0 border-t border-gray-200 bg-gray-50/70 px-4 py-4 dark:border-gray-700 dark:bg-gray-950/40 xl:order-2 xl:block xl:border-t-0 ${
+            mobileTab === "preview" ? "block" : "hidden xl:block"
+          }`}
         >
           <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
-            <PreviewShellInner
-              theme={previewTheme}
-              selectedSectionKey={selectedSectionKey}
-              deviceMode={deviceMode}
-              onSelectSection={setSelectedSectionKey}
-            />
+            <StorefrontPreviewIframe deviceMode={deviceMode}>
+              <PreviewShellInner
+                theme={previewTheme}
+                activePageKey={activePageKey}
+                selectedSectionKey={selectedSectionKey}
+                deviceMode={deviceMode}
+                onSelectSection={(key) => {
+                  setSelectedSectionKey(key);
+                  setMobileTab("settings");
+                }}
+              />
+            </StorefrontPreviewIframe>
           </StorefrontThemeProvider>
         </main>
 
         <aside
           dir="rtl"
-          className="order-3 border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 xl:border-s xl:border-t-0"
+          className={`order-3 border-t border-gray-200 bg-white px-4 py-4 dark:border-gray-700 dark:bg-gray-900 xl:block xl:border-s xl:border-t-0 ${
+            mobileTab === "sections" ? "block" : "hidden xl:block"
+          }`}
         >
           <div className="space-y-4">
             <div className="flex items-center justify-between gap-3">

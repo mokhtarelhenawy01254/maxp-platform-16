@@ -44,6 +44,23 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const asTypedRecord = <T extends object>(value: unknown): TypedRecord<T> =>
   (isRecord(value) ? (value as TypedRecord<T>) : {});
 
+export const resolveStorefrontI18nText = (
+  value: unknown,
+  locale: string = "ar",
+  fallbackLocale: string = "en",
+): string => {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (isRecord(value)) {
+    const primary = typeof value[locale] === "string" ? (value[locale] as string) : "";
+    if (primary.trim()) return primary;
+    const fallback = typeof value[fallbackLocale] === "string" ? (value[fallbackLocale] as string) : "";
+    if (fallback.trim()) return fallback;
+  }
+  return "";
+};
+
 const cloneJsonValue = <T,>(value: T): T =>
   JSON.parse(JSON.stringify(value)) as T;
 

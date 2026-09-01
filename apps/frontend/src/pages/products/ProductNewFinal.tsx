@@ -1354,9 +1354,9 @@ export const ProductNewFinal: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-12">
       {/* Top Navigation Bar */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0 max-w-6xl 2xl:max-w-7xl mx-auto">
-          <div className="flex items-center space-x-4 rtl:space-x-reverse">
+      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0 max-w-6xl 2xl:max-w-7xl mx-auto">
+          <div className="flex items-center space-x-3 rtl:space-x-reverse">
             <Link
               to="/products"
               className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
@@ -1364,7 +1364,7 @@ export const ProductNewFinal: React.FC = () => {
               <ArrowLeftIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
             </Link>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {isEditMode ? t("products.editTitle") : t("products.addNew")}
               </h1>
               <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
@@ -1394,18 +1394,18 @@ export const ProductNewFinal: React.FC = () => {
               </div>
             </div>
           </div>
-          <div className="flex w-full flex-wrap items-center gap-3 sm:w-auto">
+          <div className="flex w-full items-center gap-2 overflow-x-auto scrollbar-none py-1 sm:w-auto sm:flex-wrap sm:gap-3 sm:overflow-visible sm:py-0">
             <ThemeToggle />
             <button
               onClick={() => navigate("/products")}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="shrink-0 whitespace-nowrap px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               {t("common.cancel")}
             </button>
             <button
               onClick={handlePreview}
               disabled={loading}
-              className={`inline-flex items-center rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200 dark:hover:bg-indigo-900/30 ${
+              className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200 dark:hover:bg-indigo-900/30 ${
                 loading ? "cursor-not-allowed opacity-75" : ""
               }`}
             >
@@ -1422,7 +1422,7 @@ export const ProductNewFinal: React.FC = () => {
                   ? undefined
                   : "احفظ المنتج أولاً قبل تحويله إلى عرض تقديمي"
               }
-              className={`inline-flex items-center rounded-md border border-purple-200 bg-white px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-slate-800 dark:text-purple-300 dark:hover:bg-purple-900/20 ${
+              className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-purple-200 bg-white px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-slate-800 dark:text-purple-300 dark:hover:bg-purple-900/20 ${
                 effectiveProductId ? "" : "cursor-not-allowed opacity-50"
               }`}
             >
@@ -1433,7 +1433,7 @@ export const ProductNewFinal: React.FC = () => {
             <button
               onClick={() => runWorkflowAction("save_draft")}
               disabled={loading}
-              className={`inline-flex items-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 ${
+              className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 ${
                 loading ? "cursor-not-allowed opacity-75" : ""
               }`}
             >
@@ -1442,7 +1442,7 @@ export const ProductNewFinal: React.FC = () => {
             <button
               onClick={handleSaveChanges}
               disabled={loading}
-              className={`flex-1 sm:flex-none justify-center inline-flex items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 ${
+              className={`flex-1 sm:flex-none justify-center inline-flex shrink-0 whitespace-nowrap items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 ${
                 loading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >
@@ -1475,7 +1475,7 @@ export const ProductNewFinal: React.FC = () => {
               <button
                 onClick={() => runWorkflowAction("submit_review")}
                 disabled={loading}
-                className={`inline-flex items-center rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1486,7 +1486,7 @@ export const ProductNewFinal: React.FC = () => {
               <button
                 onClick={() => runWorkflowAction("approve")}
                 disabled={loading}
-                className={`inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200 dark:hover:bg-emerald-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200 dark:hover:bg-emerald-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1497,7 +1497,7 @@ export const ProductNewFinal: React.FC = () => {
               <button
                 onClick={() => runWorkflowAction("reject")}
                 disabled={loading}
-                className={`inline-flex items-center rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-200 dark:hover:bg-rose-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-200 dark:hover:bg-rose-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1508,7 +1508,7 @@ export const ProductNewFinal: React.FC = () => {
               <button
                 onClick={() => runWorkflowAction("publish")}
                 disabled={loading}
-                className={`inline-flex items-center rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200 dark:hover:bg-green-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200 dark:hover:bg-green-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1519,7 +1519,7 @@ export const ProductNewFinal: React.FC = () => {
               <button
                 onClick={() => runWorkflowAction("unpublish")}
                 disabled={loading}
-                className={`inline-flex items-center rounded-md border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-200 dark:hover:bg-orange-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-200 dark:hover:bg-orange-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1530,7 +1530,7 @@ export const ProductNewFinal: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-6xl 2xl:max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-8">
         {/* Error / Success Messages */}
         {error && (
           <div className="mb-6 bg-red-50 dark:bg-red-900/20 border-l-4 border-red-500 p-4 rounded-r-md">
@@ -1632,9 +1632,35 @@ export const ProductNewFinal: React.FC = () => {
         )}
 
         {/* Main Grid Layout */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
+          {/* Mobile horizontal tab bar */}
+          <div className="lg:hidden -mx-2 px-2 sm:mx-0 sm:px-0">
+            <nav
+              className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mb-1"
+              aria-label="أقسام المنتج"
+            >
+              {tabs.map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => changeTab(tab.id)}
+                    className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold transition-colors ${
+                      isActive
+                        ? "bg-indigo-600 text-white shadow-sm"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                    }`}
+                  >
+                    {tab.name}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
           {/* Sidebar Tabs */}
-          <div className="lg:col-span-1">
+          <div className="hidden lg:block lg:col-span-1">
             <nav className="space-y-1 sticky top-24">
               {tabs.map((tab) => {
                 const Icon = tab.icon;
