@@ -12,6 +12,7 @@ import {
   UsersIcon,
   ShoppingBagIcon,
   TagIcon,
+  ChatBubbleLeftRightIcon,
 } from "@heroicons/react/24/outline";
 import {
   customerService,
@@ -161,11 +162,27 @@ const CustomerList: React.FC = () => {
     setFilters((prev) => ({ ...prev, tag: tagName || undefined, page: 1 }));
   };
 
+  // ⚡ Auto-search debounce on typing (300ms)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const trimmed = searchQuery.trim();
+      setFilters((prev) => {
+        if (prev.search === (trimmed || undefined)) return prev;
+        return {
+          ...prev,
+          search: trimmed || undefined,
+          page: 1,
+        };
+      });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     setFilters((prev) => ({
       ...prev,
-      search: searchQuery,
+      search: searchQuery.trim() || undefined,
       page: 1,
     }));
   };
@@ -570,6 +587,18 @@ const CustomerList: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2 space-x-reverse">
+                        {customer.phone && (
+                          <a
+                            href={`https://wa.me/${customer.phone.replace(/[^0-9]/g, "")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            title="مراسلة سريعة عبر واتساب"
+                            aria-label="مراسلة سريعة عبر واتساب"
+                            className="inline-flex h-9 w-9 items-center justify-center rounded-md text-emerald-600 dark:text-emerald-400 hover:text-emerald-900 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                          >
+                            <ChatBubbleLeftRightIcon className="h-4 w-4" />
+                          </a>
+                        )}
                         <Link
                           to={`/customers/${customer.id}/portal`}
                           title="صفحة العميل (النقاط والخصومات والكاش باك)"
