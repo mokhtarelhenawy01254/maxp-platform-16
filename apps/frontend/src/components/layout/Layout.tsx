@@ -621,9 +621,11 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                 i18n.dir() === 'rtl' ? 'right-0' : 'left-0'
               }`}
               data-open={isMobileMenuOpen ? 'true' : 'false'}
+              dir={i18n.dir()}
               role="dialog"
               aria-modal="true"
               aria-label={t('sidebar.navigation') || 'Navigation'}
+              style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
             >
               <TemplateSlot
                 name="sidebar"
@@ -657,6 +659,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             </div>
           </div>
         )}
+
         {isAppsDashboard ? (
           <React.Suspense fallback={headerBlock || <div className="min-h-screen" />}>
             <div key={normalizedPathname} className="motion-safe:animate-fade-in">
@@ -751,9 +754,11 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                   i18n.dir() === "rtl" ? "right-0" : "left-0"
                 }`}
                 data-open={isMobileMenuOpen ? "true" : "false"}
+                dir={i18n.dir()}
                 role="dialog"
                 aria-modal="true"
                 aria-label={t("sidebar.navigation") || "Navigation"}
+                style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
               >
                 <TemplateSlot
                   name="sidebar"
@@ -865,9 +870,11 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
                     i18n.dir() === "rtl" ? "right-0" : "left-0"
                   }`}
                   data-open={isMobileMenuOpen ? "true" : "false"}
+                  dir={i18n.dir()}
                   role="dialog"
                   aria-modal="true"
                   aria-label={t("sidebar.navigation") || "Navigation"}
+                  style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
                 >
                   <TemplateSlot
                     name="sidebar"

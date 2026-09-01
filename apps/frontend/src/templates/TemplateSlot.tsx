@@ -14,7 +14,11 @@ const TemplateSlot: React.FC<TemplateSlotProps> = ({ name, props = {}, children 
   const Override = registry[name];
 
   if (Override) {
-    return React.createElement(Override, props);
+    return (
+      <React.Suspense fallback={<div className="p-4" />}>
+        {React.createElement(Override, props)}
+      </React.Suspense>
+    );
   }
 
   return <>{children}</>;

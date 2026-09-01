@@ -34,7 +34,7 @@ const SidebarLayoutFactory: React.FC<SidebarLayoutFactoryProps> = (props) => {
     case "minimal":
       return <MinimalSidebar {...props} />;
     case "app-dashboard":
-      return null;
+      return props.mobileMode ? <ThreeTierSidebar {...props} /> : null;
     case "classic":
     default:
       return <ClassicSidebar {...props} />;
