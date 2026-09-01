@@ -1555,6 +1555,9 @@ async function startServer() {
 
     server.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀🚀🚀 STABLE SERVER STARTED ON PORT ${PORT} 🚀🚀🚀`);
+      if (typeof process.send === "function") {
+        process.send("ready");
+      }
     });
   } catch (error) {
     console.error("❌ [SERVER] FATAL STARTUP ERROR:", error);
