@@ -593,6 +593,7 @@ export default defineConfig(({ mode }) => {
         external(id) {
           return (
             id.startsWith('node:') ||
+            id.includes('@cornerstonejs/codec-') ||
             [
               'fs', 'path', 'buffer', 'child_process', 'stream', 'util', 'url',
               'zlib', 'os', 'crypto', 'net', 'http', 'https', 'events', 'assert',
@@ -612,6 +613,13 @@ export default defineConfig(({ mode }) => {
             return;
           }
           if (warning.code === 'SOURCEMAP_ERROR') {
+            return;
+          }
+          if (
+            (warning.code === 'UNRESOLVED_IMPORT' || warning.code === 'PLUGIN_WARNING') &&
+            typeof warning.message === 'string' &&
+            warning.message.includes('@cornerstonejs')
+          ) {
             return;
           }
           warn(warning);

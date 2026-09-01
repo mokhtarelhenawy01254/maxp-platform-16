@@ -5387,7 +5387,12 @@
     "copySuccess": "✅ تم نسخ رابط المعاينة",
     "copyError": "تعذر نسخ الرابط — جرّب مرة أخرى",
     "previewBlocked": "المتصفح منع فتح تبويب المعاينة. اسمح للنوافذ المنبثقة ثم جرّب مرة أخرى.",
-    "previewNoCompany": "تعذر تحديد الشركة لفتح المعاينة"
+    "previewNoCompany": "تعذر تحديد الشركة لفتح المعاينة",
+    "addCategory": "إضافة فئة",
+    "newCategoryPlaceholder": "اسم الفئة الجديدة",
+    "confirmAddCategory": "إضافة فئة",
+    "cancelAddCategory": "إلغاء",
+    "removeCategory": "حذف {{name}}"
   },
   "StorefrontVisualEditorPage": {
     "success_save_ddb7": "تم حفظ تعديلات الصفحة الرئيسية",

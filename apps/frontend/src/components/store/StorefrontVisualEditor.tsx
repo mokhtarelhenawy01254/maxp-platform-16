@@ -59,7 +59,6 @@ import {
   getStorefrontPageOverridesFromDesignTokens,
   upsertStorefrontPageOverridesInDesignTokens,
 } from "../../storefront/utils/pageOverrides";
-import { StorefrontPreviewIframe } from "../../storefront/components/StorefrontPreviewIframe";
 import type { StorefrontPageValidationIssue } from "../../storefront/utils/pageOverrideValidation";
 import {
   cleanStorefrontSectionSettings,
@@ -1186,18 +1185,16 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
           }`}
         >
           <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
-            <StorefrontPreviewIframe deviceMode={deviceMode}>
-              <PreviewShellInner
-                theme={previewTheme}
-                activePageKey={activePageKey}
-                selectedSectionKey={selectedSectionKey}
-                deviceMode={deviceMode}
-                onSelectSection={(key) => {
-                  setSelectedSectionKey(key);
-                  setMobileTab("settings");
-                }}
-              />
-            </StorefrontPreviewIframe>
+            <PreviewShellInner
+              theme={previewTheme}
+              activePageKey={activePageKey}
+              selectedSectionKey={selectedSectionKey}
+              deviceMode={deviceMode}
+              onSelectSection={(key) => {
+                setSelectedSectionKey(key);
+                setMobileTab("settings");
+              }}
+            />
           </StorefrontThemeProvider>
         </main>
 

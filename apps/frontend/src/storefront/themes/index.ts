@@ -2119,9 +2119,16 @@ export const getStorefrontThemePreset = (
   );
 };
 
-export {
-  loadStorefrontThemeAsync,
-  preloadStorefrontTheme,
-  type ThemeLoaderFn,
-} from "./themeLoaders";
+export type ThemeLoaderFn = (themeId: string) => Promise<StorefrontTheme>;
+
+export const loadStorefrontThemeAsync: ThemeLoaderFn = async (
+  themeId: string,
+): Promise<StorefrontTheme> => {
+  return getStorefrontThemePreset(themeId);
+};
+
+export const preloadStorefrontTheme = (themeId: string): void => {
+  getStorefrontThemePreset(themeId);
+};
+
 
