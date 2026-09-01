@@ -186,6 +186,21 @@ const isFacebookExpiringMediaUrl = (targetUrl) => {
   }
 };
 
+const isAvatarLikeUrl = (targetUrl) => {
+  if (typeof targetUrl !== "string" || !targetUrl.trim()) {
+    return false;
+  }
+
+  const normalized = targetUrl.toLowerCase();
+  return (
+    normalized.includes("pps.whatsapp.net")
+    || normalized.includes("/t61.24694-24/")
+    || normalized.includes("profile_pic")
+    || normalized.includes("lookaside.facebook.com")
+    || normalized.includes("avatar")
+  );
+};
+
 const getFacebookFriendlyHeaders = (targetUrl) => {
   let hostname = "";
 
@@ -747,6 +762,12 @@ const proxyImage = async (req, res) => {
         ? req.query.whatsAppMessageId.trim()
         : "";
     const transformOptions = normalizeImageTransformOptions(req.query);
+    const isAvatarRequest = Boolean(
+      (customerId && !messageId) ||
+      isAvatarLikeUrl(targetUrl) ||
+      req.query.type === "avatar" ||
+      req.query.fallback === "avatar"
+    );
 
     if (!targetUrl && !messageId && !customerId && !whatsAppMessageId) {
       return res.status(400).json({
@@ -810,9 +831,9 @@ const proxyImage = async (req, res) => {
     }
 
     if (candidateUrls.length === 0) {
-      if (customerId && !messageId) {
+      if (isAvatarRequest) {
         console.warn("⚠️ [IMAGE-PROXY] No proxyable avatar asset was found, serving fallback avatar:", {
-          customerId,
+          customerId: customerId || null,
           targetUrl: targetUrl || null,
         });
         return sendCustomerAvatarFallback(req, res);
@@ -843,9 +864,9 @@ const proxyImage = async (req, res) => {
       });
     }
 
-    if (customerId && !messageId) {
+    if (isAvatarRequest) {
       console.warn("⚠️ [IMAGE-PROXY] Avatar fetch failed for all candidates, serving fallback avatar:", {
-        customerId,
+        customerId: customerId || null,
         targetUrl: targetUrl || null,
         lastFailureStatus,
       });

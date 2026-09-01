@@ -50,18 +50,23 @@ const checkAppAccess = (appSlug) => {
         });
       }
 
-      // 🚀 Special check for Turbo: if company has Turbo API key configured or turboEnabled, allow access immediately
-      if (appSlug === 'order-shipping-turbo') {
-        const company = await executeWithRetry(async () => {
-          return await getSharedPrismaClient().company.findUnique({
-            where: { id: companyId },
-            select: { turboEnabled: true, turboApiKey: true }
-          });
+      // 🚀 Company level settings & active trial mode check
+      const company = await executeWithRetry(async () => {
+        return await getSharedPrismaClient().company.findUnique({
+          where: { id: companyId },
+          select: { trialModeEnabled: true, trialEndsAt: true, turboEnabled: true, turboApiKey: true }
         });
-        if (company && (company.turboEnabled || company.turboApiKey)) {
-          return next();
-        }
+      });
+
+      if (appSlug === 'order-shipping-turbo' && company && (company.turboEnabled || company.turboApiKey)) {
+        return next();
       }
+
+      const isCompanyInActiveTrial = Boolean(
+        company?.trialModeEnabled &&
+        company?.trialEndsAt &&
+        new Date() <= new Date(company.trialEndsAt)
+      );
 
       // Find all marketplace apps matching any candidate slug
       const candidateSlugs = getCandidateAppSlugs(appSlug);
@@ -99,6 +104,32 @@ const checkAppAccess = (appSlug) => {
             }
           });
         });
+
+        // 🛡️ Auto-heal / grant if company is in active trial mode
+        if (isCompanyInActiveTrial) {
+          if (!companyAppRecord || companyAppRecord.status === 'EXPIRED' || (companyAppRecord.status === 'TRIAL' && companyAppRecord.trialEndsAt && new Date() > new Date(companyAppRecord.trialEndsAt))) {
+            const updatedRecord = await executeWithRetry(async () => {
+              return await getSharedPrismaClient().companyApp.upsert({
+                where: {
+                  companyId_appId: { companyId, appId: candidateApp.id }
+                },
+                create: {
+                  companyId,
+                  appId: candidateApp.id,
+                  status: 'TRIAL',
+                  trialEndsAt: company.trialEndsAt
+                },
+                update: {
+                  status: 'TRIAL',
+                  trialEndsAt: company.trialEndsAt
+                }
+              });
+            });
+            req.companyApp = updatedRecord;
+            req.marketplaceApp = candidateApp;
+            return next();
+          }
+        }
 
         if (!companyAppRecord) {
           continue;
