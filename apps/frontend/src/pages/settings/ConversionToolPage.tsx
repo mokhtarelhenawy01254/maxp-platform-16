@@ -145,9 +145,15 @@ export default function ConversionToolPage() {
   const appState = tool ? managedApps[tool.appSlug] : undefined;
   const settings = appState?.settings || {};
 
-  const storePreviewUrl = user?.companyId
-    ? buildStorefrontPreviewPath("/", { companyId: user.companyId })
-    : "";
+  // لينك المتجر: اسم المتجر (slug) هو الصح — companyId cuid مش سب دومين حقيقي
+  const storeSlug = user?.company?.slug?.trim();
+  const storePreviewUrl =
+    storeSlug || user?.companyId
+      ? buildStorefrontPreviewPath("/", {
+          companySlug: storeSlug || undefined,
+          companyId: storeSlug ? undefined : user?.companyId || undefined,
+        })
+      : "";
 
   const saveIndicator = saving || isFieldSaving ? (
     <span className="flex items-center gap-1.5 text-[11px] font-black text-indigo-700 dark:text-indigo-300">
