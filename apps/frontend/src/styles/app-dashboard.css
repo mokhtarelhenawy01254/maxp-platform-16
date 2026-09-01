@@ -81,16 +81,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border-radius: 0.5rem;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.625rem;
   border: 1px solid var(--color-border);
   background: transparent;
   color: var(--color-muted-foreground);
   cursor: pointer;
   user-select: none;
+  -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
-  transition: background-color 150ms ease, color 150ms ease;
+  transition: background-color 150ms ease, color 150ms ease, transform 100ms ease;
 }
 .app-shell-mobile-header-button:hover,
 .app-shell-mobile-header-button:focus-visible {
@@ -100,6 +101,19 @@
 .app-shell-mobile-header-button:focus-visible {
   outline: 2px solid var(--color-ring);
   outline-offset: 2px;
+}
+.app-shell-mobile-header-button:active {
+  transform: scale(0.94);
+  background-color: var(--color-accent);
+  color: var(--color-accent-foreground);
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-mobile-header-button {
+    transition: none;
+  }
+  .app-shell-mobile-header-button:active {
+    transform: none;
+  }
 }
 
 .app-shell-mobile-header-title {
@@ -269,6 +283,13 @@
   overflow: hidden;
 }
 
+/* Reserve space for the fixed bottom nav on mobile so content doesn't hide under it. */
+@media (max-width: 1023px) {
+  .app-shell-content {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
 .app-shell-header {
   display: flex;
   align-items: center;
@@ -366,5 +387,119 @@ body.app-shell-mobile-open {
   .app-shell-mobile-backdrop,
   .app-card-enter-active {
     transition: none;
+  }
+}
+
+/* ====== Admin Bottom Nav (mobile only) ====== */
+.admin-bottom-nav {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  background: var(--color-background, #ffffff);
+  border-top: 1px solid var(--color-border, #e5e7eb);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.admin-bottom-nav-list {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  margin: 0;
+  padding: 0.25rem 0.5rem;
+  list-style: none;
+  max-width: 36rem;
+  margin-inline: auto;
+}
+
+.admin-bottom-nav-item {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.admin-bottom-nav-link {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-height: 3rem;          /* 48px tap target */
+  padding: 0.375rem 0.25rem;
+  border-radius: 0.625rem;
+  color: var(--color-muted-foreground, #6b7280);
+  text-decoration: none;
+  font-size: 0.6875rem;      /* 11px */
+  font-weight: 600;
+  line-height: 1;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: color 150ms ease, background-color 150ms ease, transform 100ms ease;
+}
+
+.admin-bottom-nav-link:active {
+  transform: scale(0.94);
+  background-color: var(--color-accent, #f3f4f6);
+}
+
+.admin-bottom-nav-link--active {
+  color: var(--color-primary, #4f46e5);
+}
+
+.admin-bottom-nav-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.admin-bottom-nav-icon {
+  width: 1.375rem;            /* 22px */
+  height: 1.375rem;
+  stroke-width: 1.75;
+}
+
+.admin-bottom-nav-link--active .admin-bottom-nav-icon {
+  stroke-width: 2.25;
+}
+
+.admin-bottom-nav-badge {
+  position: absolute;
+  top: -0.25rem;
+  inset-inline-end: -0.5rem;
+  min-width: 1.125rem;        /* 18px */
+  height: 1.125rem;
+  padding: 0 0.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--color-destructive, #ef4444);
+  color: #fff;
+  font-size: 0.625rem;        /* 10px */
+  font-weight: 700;
+  line-height: 1;
+}
+
+.admin-bottom-nav-label {
+  font-feature-settings: "tnum" 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-bottom-nav-link {
+    transition: none;
+  }
+  .admin-bottom-nav-link:active {
+    transform: none;
+  }
+}
+
+@supports (padding: max(0px)) {
+  .admin-bottom-nav {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
   }
 }

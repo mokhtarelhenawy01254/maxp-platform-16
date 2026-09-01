@@ -62,10 +62,10 @@ const DeltaPill: React.FC<{ delta: number | null; title: string }> = ({
   return (
     <span
       title={title}
-      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none ${
+      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-xs font-bold leading-none ${
         up
-          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400"
-          : "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400"
+          ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400"
+          : "bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400"
       }`}
     >
       {up ? "▲" : "▼"} {Math.abs(delta)}%
@@ -256,7 +256,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
   }
 
   const segmentedBtn = (active: boolean) =>
-    `min-h-[28px] whitespace-nowrap rounded-lg px-2.5 text-[11px] font-bold transition-all ${
+    `min-h-[36px] whitespace-nowrap rounded-lg px-2.5 text-xs font-bold transition-all ${
       active
         ? "bg-blue-600 text-white shadow-sm"
         : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
@@ -334,7 +334,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
                   {kpi.icon}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  <p className="truncate text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
                     {kpi.label}
                   </p>
                   <div className="flex items-center gap-1.5">

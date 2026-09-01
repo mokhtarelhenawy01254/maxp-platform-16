@@ -110,19 +110,16 @@ describe('storefront theme resolver', () => {
 
     expect(resolved.pages.contact?.sections).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ type: 'hero-banner' }),
         expect.objectContaining({ type: 'info-content' }),
       ]),
     );
     expect(resolved.pages.shipping?.sections).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ type: 'hero-banner' }),
         expect.objectContaining({ type: 'info-content' }),
       ]),
     );
     expect(resolved.pages.returns?.sections).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ type: 'hero-banner' }),
         expect.objectContaining({ type: 'info-content' }),
       ]),
     );

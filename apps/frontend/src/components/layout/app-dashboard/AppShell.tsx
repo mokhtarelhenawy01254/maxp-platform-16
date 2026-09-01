@@ -3,6 +3,7 @@ import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Bars3Icon, ArrowUturnLeftIcon, ChartBarIcon } from '@heroicons/react/24/outline';
 import AppSidebar from './AppSidebar';
+import AdminBottomNav from './AdminBottomNav';
 import { sectionHasVisibleItems } from './helpers';
 import { getAppById, APP_REGISTRY } from '../../../config/appRegistry';
 import type { AppDefinition } from '../../../config/appRegistry';
@@ -285,6 +286,8 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
             )}
           </div>
         </div>
+
+        <AdminBottomNav />
       </div>
     </div>
   );

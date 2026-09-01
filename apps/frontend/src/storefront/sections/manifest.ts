@@ -802,7 +802,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "shop-promo-rail": {
     label: "Shop Promo Rail",
     component: "shop-promo-rail",
-    pages: ["shop"],
+    pages: ["home", "shop", "collections"],
     variants: [
       { value: "trust-rail", label: "مسار ثقة" },
       { value: "campaign-rail", label: "مسار حملات" },
@@ -1617,7 +1617,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "trusted-badges": {
     label: "Trusted Badges",
     component: "conversion-stack",
-    pages: ["pdp"],
+    pages: ["home", "shop", "pdp", "cart", "checkout"],
     variants: STOREFRONT_CONVERSION_SECTION_VARIANTS,
     fields: buildConversionSectionFields([
       {
@@ -2865,7 +2865,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "journal-strip": {
     label: "يوميات أو مدونة خفيفة",
     component: "journal-strip",
-    pages: ["home", "lookbook", "collections"],
+    pages: ["home", "lookbook", "collections", "blogs", "journal"],
     variants: [
       { value: "editorial-cards", label: "بطاقات تحريرية" },
       { value: "vela-customer-testimonials", label: "شهادات عملاء Vela" }
@@ -3178,7 +3178,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
     label: "Collection Tab (تبويبات أقسام)",
     component: "collection-tab",
     note: "شبكة منتجات بأعمدة وتبويبات حسب الموسم أو المناسبة مع أسهم تنقّل.",
-    pages: ["home", "shop", "sale", "collections"],
+    pages: ["home", "shop", "sale", "collections", "about"],
     variants: [
       { value: "standard", label: "قياسي" },
       { value: "split", label: "مقسّم" },
@@ -3237,7 +3237,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
     label: "Social Gallery (معرض المجتمع)",
     component: "social-gallery",
     note: "شريط صور Instagram متحرك (marquee) أو شبكة بأيقونة انستغرام عند المرور.",
-    pages: ["home"],
+    pages: ["home", "about", "lookbook"],
     variants: [
       { value: "standard", label: "شريط" },
       { value: "grid", label: "شبكة" },
@@ -3366,13 +3366,75 @@ const STOREFRONT_SECTION_VARIANT_ALIASES = {
   },
   "product-gallery": {
     slider: "standard",
+    graceful: "atelier-editorial-stage",
+    default: "standard",
   },
-  "promo-strip": {},
-  "features-bar": {},
+  "product-info": {
+    graceful: "atelier-buybox",
+    default: "standard",
+  },
+  "promo-strip": {
+    split: "standard",
+    banner: "standard",
+  },
+  "features-bar": {
+    minimal: "trust-strip",
+  },
+  "featured-collections": {
+    editorial: "editorial-categories",
+  },
   "shopping-intents": {},
-  "offer-bento": {},
-  "journal-strip": {},
-  "info-content": {},
+  "offer-bento": {
+    grid: "category-promo",
+  },
+  "journal-strip": {
+    carousel: "editorial-cards",
+    grid: "editorial-cards",
+  },
+  "lookbook-showcase": {
+    masonry: "standard",
+  },
+  "story-parallax": {
+    editorial: "standard",
+  },
+  "shop-promo-rail": {
+    side: "trust-rail",
+  },
+  "trusted-badges": {
+    row: "minimal",
+  },
+  "quantity-offers": {
+    tiers: "stacked-cards",
+  },
+  "bulk-savings": {
+    inline: "minimal",
+  },
+  "delivery-proof": {
+    timeline: "minimal",
+  },
+  "conversion-stack": {
+    editorial: "editorial",
+  },
+  "bought-together": {},
+  reviews: {
+    editorial: "standard",
+  },
+  "info-content": {
+    faq: "standard",
+    usage: "standard",
+  },
+  "size-guide": {
+    table: "quick",
+  },
+  "image-hotspot": {
+    default: "standard",
+  },
+  "before-after": {
+    default: "standard",
+  },
+  "combined-listing": {
+    default: "standard",
+  },
   "member-registration": {},
   "services-grid": {},
   "shop-hero": {
@@ -3434,7 +3496,7 @@ export const isStorefrontSectionVariantAllowed = (
   }
 
   if (allowedVariants.length === 0) {
-    return false;
+    return normalizedVariant === "default" || normalizedVariant === "standard";
   }
 
   return allowedVariants.includes(normalizedVariant);

@@ -224,22 +224,63 @@ const ProfileSettings: React.FC = () => {
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="profile-first-name">{t("settings.firstName")}</Label>
-              <Input id="profile-first-name" name="firstName" type="text" autoComplete="given-name" value={formData.firstName} onChange={handleFieldChange("firstName")} />
+              <Input
+                id="profile-first-name"
+                name="firstName"
+                type="text"
+                autoComplete="given-name"
+                inputMode="text"
+                value={formData.firstName}
+                onChange={handleFieldChange("firstName")}
+                dir="auto"
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="profile-last-name">{t("settings.lastName")}</Label>
-              <Input id="profile-last-name" name="lastName" type="text" autoComplete="family-name" value={formData.lastName} onChange={handleFieldChange("lastName")} />
+              <Input
+                id="profile-last-name"
+                name="lastName"
+                type="text"
+                autoComplete="family-name"
+                inputMode="text"
+                value={formData.lastName}
+                onChange={handleFieldChange("lastName")}
+                dir="auto"
+              />
             </div>
           </div>
 
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             <div className="flex flex-col gap-2">
               <Label htmlFor="profile-email">{t("common.email")}</Label>
-              <Input id="profile-email" name="email" type="email" autoComplete="email" value={formData.email} disabled />
+              <Input
+                id="profile-email"
+                name="email"
+                type="email"
+                inputMode="email"
+                autoComplete="email"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                value={formData.email}
+                onChange={handleFieldChange("email")}
+                dir="ltr"
+                disabled
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label htmlFor="profile-phone">{t("common.phone")}</Label>
-              <Input id="profile-phone" name="phone" type="tel" autoComplete="tel" value={formData.phone} onChange={handleFieldChange("phone")} placeholder="+201234567890" />
+              <Input
+                id="profile-phone"
+                name="phone"
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={formData.phone}
+                onChange={handleFieldChange("phone")}
+                placeholder="+20 1XX XXX XXXX"
+                dir="ltr"
+              />
             </div>
           </div>
 
@@ -248,7 +289,15 @@ const ProfileSettings: React.FC = () => {
               <Label htmlFor="profile-timezone">{t("settings.timezone")}</Label>
               <Select value={formData.timezone} onValueChange={(value) => setFormData((prev) => ({ ...prev, timezone: value }))}>
                 <SelectTrigger id="profile-timezone">
-                  <SelectValue />
+                  <SelectValue>
+                    {formData.timezone === "Africa/Cairo"
+                      ? t("settings.cairo")
+                      : formData.timezone === "Asia/Riyadh"
+                        ? t("settings.riyadh")
+                        : formData.timezone === "Asia/Dubai"
+                          ? t("settings.dubai")
+                          : formData.timezone}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Africa/Cairo">{t("settings.cairo")}</SelectItem>
@@ -261,7 +310,13 @@ const ProfileSettings: React.FC = () => {
               <Label htmlFor="profile-language">{t("settings.language")}</Label>
               <Select value={formData.language} onValueChange={(value) => setFormData((prev) => ({ ...prev, language: value }))}>
                 <SelectTrigger id="profile-language">
-                  <SelectValue />
+                  <SelectValue>
+                    {formData.language === "ar"
+                      ? t("settings.arabic")
+                      : formData.language === "en"
+                        ? "English"
+                        : formData.language}
+                  </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="ar">{t("settings.arabic")}</SelectItem>

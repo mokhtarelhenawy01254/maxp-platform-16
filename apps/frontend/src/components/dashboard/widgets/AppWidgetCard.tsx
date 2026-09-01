@@ -29,10 +29,10 @@ export function AppWidgetCard({ widget, data }: Props) {
       {data?.status && (
         <span
           className={cn(
-            "absolute top-3 end-3 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[9px] font-medium",
-            data.status === "active" && "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-            data.status === "warning" && "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400",
-            data.status === "error" && "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400",
+            "absolute top-3 end-3 inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[11px] font-medium",
+            data.status === "active" && "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
+            data.status === "warning" && "bg-amber-50 dark:bg-amber-500/10 text-amber-700 dark:text-amber-400",
+            data.status === "error" && "bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-400",
             data.status === "inactive" && "bg-gray-100 dark:bg-gray-500/10 text-gray-500 dark:text-gray-400",
           )}
         >

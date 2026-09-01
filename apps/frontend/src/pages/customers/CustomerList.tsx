@@ -573,20 +573,23 @@ const CustomerList: React.FC = () => {
                         <Link
                           to={`/customers/${customer.id}/portal`}
                           title="صفحة العميل (النقاط والخصومات والكاش باك)"
-                          className="text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-900 dark:hover:text-fuchsia-300"
+                          aria-label="صفحة العميل (النقاط والخصومات والكاش باك)"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-fuchsia-600 dark:text-fuchsia-400 hover:text-fuchsia-900 dark:hover:text-fuchsia-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           <EyeIcon className="h-4 w-4" />
                         </Link>
                         <Link
                           to={`/customers/${customer.id}`}
                           title={t("customers.tableActions")}
-                          className="text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300"
+                          aria-label={t("customers.tableActions")}
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-indigo-600 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                         >
                           <InformationCircleIcon className="h-4 w-4" />
                         </Link>
                         <Link
                           to={`/customers/${customer.id}/edit`}
-                          className="text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300"
+                          className="inline-flex h-9 w-9 items-center justify-center rounded-md text-green-600 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                          aria-label="تعديل العميل"
                         >
                           <PencilIcon className="h-4 w-4" />
                         </Link>

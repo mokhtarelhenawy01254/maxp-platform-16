@@ -110,13 +110,16 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
     window.open(getStorefrontUrl(product), "_blank", "noopener,noreferrer");
   };
 
+  const actionBtn =
+    "inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors hover:bg-gray-100 dark:hover:bg-gray-700";
   const renderWorkflowActions = () => {
     if (canSubmitReviewWorkflow && canSubmitReview(product.workflow)) {
       return (
         <button
           onClick={() => onWorkflowAction(product, "submit_review")}
           disabled={isWorkflowBusy}
-          className="text-amber-600 transition-colors hover:text-amber-900 disabled:cursor-wait disabled:opacity-50"
+          className={`${actionBtn} text-amber-600 hover:text-amber-900 disabled:cursor-wait disabled:opacity-50`}
+          aria-label="إرسال للمراجعة"
           title="إرسال للمراجعة"
         >
           <PaperAirplaneIcon className="h-4 w-4" />
@@ -130,7 +133,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           <button
             onClick={() => onWorkflowAction(product, "approve")}
             disabled={isWorkflowBusy}
-            className="text-green-600 transition-colors hover:text-green-900 disabled:cursor-wait disabled:opacity-50"
+            className={`${actionBtn} text-green-600 hover:text-green-900 disabled:cursor-wait disabled:opacity-50`}
+            aria-label="اعتماد"
             title="اعتماد"
           >
             <CheckCircleIcon className="h-4 w-4" />
@@ -138,7 +142,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           <button
             onClick={() => onWorkflowAction(product, "reject")}
             disabled={isWorkflowBusy}
-            className="text-rose-600 transition-colors hover:text-rose-900 disabled:cursor-wait disabled:opacity-50"
+            className={`${actionBtn} text-rose-600 hover:text-rose-900 disabled:cursor-wait disabled:opacity-50`}
+            aria-label="رفض"
             title="رفض"
           >
             <XCircleIcon className="h-4 w-4" />
@@ -152,7 +157,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
         <button
           onClick={() => onWorkflowAction(product, "publish")}
           disabled={isWorkflowBusy}
-          className="text-green-600 transition-colors hover:text-green-900 disabled:cursor-wait disabled:opacity-50"
+          className={`${actionBtn} text-green-600 hover:text-green-900 disabled:cursor-wait disabled:opacity-50`}
+          aria-label="نشر"
           title="نشر"
         >
           <CheckCircleIcon className="h-4 w-4" />
@@ -165,7 +171,8 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
         <button
           onClick={() => onWorkflowAction(product, "unpublish")}
           disabled={isWorkflowBusy}
-          className="text-orange-600 transition-colors hover:text-orange-900 disabled:cursor-wait disabled:opacity-50"
+          className={`${actionBtn} text-orange-600 hover:text-orange-900 disabled:cursor-wait disabled:opacity-50`}
+          aria-label="إلغاء النشر"
           title="إلغاء النشر"
         >
           <XCircleIcon className="h-4 w-4" />
@@ -319,10 +326,10 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
         <div className="flex items-center space-x-2 space-x-reverse">
           {isEditing ? (
             <>
-              <button onClick={() => onSaveQuickEdit(product.id)} className="text-green-600 hover:text-green-900" title="حفظ">
+              <button onClick={() => onSaveQuickEdit(product.id)} className={`${actionBtn} text-green-600 hover:text-green-900`} aria-label="حفظ" title="حفظ">
                 <CheckCircleIcon className="h-4 w-4" />
               </button>
-              <button onClick={onCancelQuickEdit} className="text-red-600 hover:text-red-900" title="إلغاء">
+              <button onClick={onCancelQuickEdit} className={`${actionBtn} text-red-600 hover:text-red-900`} aria-label="إلغاء" title="إلغاء">
                 <XCircleIcon className="h-4 w-4" />
               </button>
             </>
@@ -330,21 +337,23 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
             <>
               <button
                 onClick={openStorefront}
-                className="text-indigo-600 hover:text-indigo-900 transition-colors"
+                className={`${actionBtn} text-indigo-600 hover:text-indigo-900`}
+                aria-label={product.isActive ? "عرض في المتجر" : "معاينة قبل النشر"}
                 title={product.isActive ? "عرض في المتجر" : "معاينة قبل النشر"}
               >
                 <EyeIcon className="h-4 w-4" />
               </button>
-              <button onClick={() => window.open(`/products/${product.id}/edit`, "_blank", "noopener,noreferrer")} className="text-green-600 hover:text-green-900 transition-colors" title="تعديل">
+              <button onClick={() => window.open(`/products/${product.id}/edit`, "_blank", "noopener,noreferrer")} className={`${actionBtn} text-green-600 hover:text-green-900`} aria-label="تعديل" title="تعديل">
                 <PencilIcon className="h-4 w-4" />
               </button>
-              <button onClick={() => onStartQuickEdit(product)} className="text-blue-600 hover:text-blue-900 transition-colors" title="تعديل سريع">
+              <button onClick={() => onStartQuickEdit(product)} className={`${actionBtn} text-blue-600 hover:text-blue-900`} aria-label="تعديل سريع" title="تعديل سريع">
                 <PencilIcon className="h-4 w-4" />
               </button>
               <button
                 onClick={() => onDuplicate(product)}
                 disabled={!!duplicatingProductId}
-                className={`transition-colors ${duplicatingProductId === product.id ? "text-purple-300 cursor-wait" : "text-purple-600 hover:text-purple-900"} disabled:opacity-50`}
+                className={`transition-colors ${duplicatingProductId === product.id ? "text-purple-300 cursor-wait" : "text-purple-600 hover:text-purple-900"} disabled:opacity-50 ${actionBtn}`}
+                aria-label={duplicatingProductId === product.id ? "جاري النسخ..." : "نسخ"}
                 title={duplicatingProductId === product.id ? "جاري النسخ..." : "نسخ"}
               >
                 {duplicatingProductId === product.id ? (
@@ -358,7 +367,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
               </button>
               {renderWorkflowActions()}
               {canDelete && (
-                <button onClick={() => onDelete(product.id)} className="text-red-600 hover:text-red-900 transition-colors" title="حذف">
+                <button onClick={() => onDelete(product.id)} className={`${actionBtn} text-red-600 hover:text-red-900`} aria-label="حذف" title="حذف">
                   <TrashIcon className="h-4 w-4" />
                 </button>
               )}

@@ -2609,17 +2609,6 @@ export const storefrontVariantRegistry = {
   ],
   ShopCommandBar: [
     {
-      id: 'graceful-bar',
-      section: 'ShopCommandBar',
-      purpose: 'Texture-style single-row catalog toolbar: filter dropdown, live product count, and sort select',
-      bestPages: ['shop'],
-      bestArchetypes: ['women-fashion', 'sales-led-fashion', 'egypt-fashion'],
-      rtlSuitability: 'high',
-      density: 'low',
-      tone: 'fashion-commerce',
-      status: 'implemented-now',
-    },
-    {
       id: 'default-discovery',
       section: 'ShopCommandBar',
       purpose: 'Balanced search/filter/sort entry point',
@@ -2629,6 +2618,17 @@ export const storefrontVariantRegistry = {
       density: 'medium',
       tone: 'utility-first',
       status: 'active',
+    },
+    {
+      id: 'graceful-bar',
+      section: 'ShopCommandBar',
+      purpose: 'Texture-style single-row catalog toolbar: filter dropdown, live product count, and sort select',
+      bestPages: ['shop'],
+      bestArchetypes: ['women-fashion', 'sales-led-fashion', 'egypt-fashion'],
+      rtlSuitability: 'high',
+      density: 'low',
+      tone: 'fashion-commerce',
+      status: 'implemented-now',
     },
     {
       id: 'marketplace-dense',

@@ -17510,6 +17510,116 @@ declare module 'react-i18next' {
         sectionSpecialSelling: string;
         sectionVisualContent: string;
         sectionTrustProof: string;
+        savingIndicator: string;
+        savedIndicator: string;
+        backToTools: string;
+        viewOnStore: string;
+        viewMobile: string;
+        viewDesktop: string;
+        livePreviewBadge: string;
+        expectedLookCaption: string;
+        previewMockCaption: string;
+        toolState: string;
+        generalEnabledNote: string;
+        fieldsTitle: string;
+        toolsIndexTitle: string;
+        toolsIndexDesc: string;
+        tool: {
+          saleCountdown: {
+            label: string;
+            benefit: string;
+          };
+          lowStockNotice: {
+            label: string;
+            benefit: string;
+          };
+          soldCounter: {
+            label: string;
+            benefit: string;
+          };
+          purchaseFomo: {
+            label: string;
+            benefit: string;
+          };
+          estimatedDelivery: {
+            label: string;
+            benefit: string;
+          };
+          trustedBadges: {
+            label: string;
+            benefit: string;
+          };
+          stickyAddToCart: {
+            label: string;
+            benefit: string;
+          };
+          backInStock: {
+            label: string;
+            benefit: string;
+          };
+          crossSell: {
+            label: string;
+            benefit: string;
+          };
+          boughtTogether: {
+            label: string;
+            benefit: string;
+          };
+          bulkSavings: {
+            label: string;
+            benefit: string;
+          };
+          buyMoreSaveMore: {
+            label: string;
+            benefit: string;
+          };
+          freeShippingBar: {
+            label: string;
+            benefit: string;
+          };
+          inactiveTab: {
+            label: string;
+            benefit: string;
+          };
+          exitIntentPopup: {
+            label: string;
+            benefit: string;
+          };
+          fakeVisitorCounter: {
+            label: string;
+            benefit: string;
+          };
+          fakeSalePopup: {
+            label: string;
+            benefit: string;
+          };
+          preOrder: {
+            label: string;
+            benefit: string;
+          };
+          externalAffiliate: {
+            label: string;
+            benefit: string;
+          };
+          photoReviews: {
+            label: string;
+            benefit: string;
+          };
+          videoReviews: {
+            label: string;
+            benefit: string;
+          };
+          verifiedBadge: {
+            label: string;
+            benefit: string;
+          };
+        };
+        field: {
+          freeShippingAmount: {
+            label: string;
+            description: string;
+          };
+        };
       };
       storeFooter: {
         footerTitle: string;

@@ -165,6 +165,7 @@ describe("storefrontThemeCatalogService", () => {
       where: { companyId: "cmp_1" },
       data: {
         balance: { decrement: 200 },
+        totalSpent: { increment: 200 },
       },
     });
     expect(mockTx.companyApp.create).toHaveBeenCalledWith(

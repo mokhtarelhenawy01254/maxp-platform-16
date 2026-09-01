@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import {
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
   Bars3Icon,
   ChevronDownIcon,
   ChevronUpIcon,
@@ -31,6 +33,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
+import { useDesignTokensHistory, useDesignTokensHistoryShortcuts } from "./useDesignTokensHistory";
 import type { StorefrontSettings } from "../../services/storefrontSettingsService";
 import { PageComposer } from "../../storefront/engine/PageComposer";
 import { StorefrontThemeProvider, useStorefrontTheme } from "../../storefront/engine/ThemeProvider";
@@ -278,20 +281,21 @@ const SortableSectionRow: React.FC<{
 
 const PreviewShellInner: React.FC<{
   theme: StorefrontTheme;
+  activePageKey?: string;
   selectedSectionKey: string;
   deviceMode: DeviceMode;
   onSelectSection: (sectionKey: string) => void;
-}> = ({ theme, selectedSectionKey, deviceMode, onSelectSection }) => {
+}> = ({ theme, activePageKey = "home", selectedSectionKey, deviceMode, onSelectSection }) => {
   const { theme: scopedTheme } = useStorefrontTheme();
-  const homePage = theme.pages.home as StorefrontPageConfig | undefined;
+  const activePage = (theme.pages[activePageKey] || theme.pages.home) as StorefrontPageConfig | undefined;
   const navigationLinks = scopedTheme.header?.navigation?.slice(0, 4) || [];
   const footerGroups = scopedTheme.footer?.navigation?.slice(0, 2) || [];
   const direction = scopedTheme.tokens?.typography?.direction === "ltr" ? "ltr" : "rtl";
 
-  if (!homePage) {
+  if (!activePage) {
     return (
       <div className="rounded-[2rem] border border-dashed border-gray-300 bg-white px-6 py-12 text-center text-sm text-gray-500">
-        لا توجد أقسام مفعلة للصفحة الرئيسية حاليًا.
+        لا توجد أقسام مفعلة لهذه الصفحة حاليًا.
       </div>
     );
   }
@@ -330,7 +334,9 @@ const PreviewShellInner: React.FC<{
 
       <div className="bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.88),_rgba(226,232,240,0.55)_55%,_rgba(241,245,249,0.85))] p-4 md:p-5">
         <div className="space-y-1 px-2 pb-4 text-right">
-          <div className="text-sm font-black text-gray-900">بناء الصفحة الرئيسية</div>
+          <div className="text-sm font-black text-gray-900">
+            {activePageKey === "home" ? "بناء الصفحة الرئيسية" : `تخصيص صفحة (${activePageKey})`}
+          </div>
           <div className="text-sm text-gray-500">اضغطي على أي قسم داخل المعاينة لتعديل النصوص والصور والترتيب مباشرة.</div>
         </div>
 
@@ -350,8 +356,8 @@ const PreviewShellInner: React.FC<{
 
           <div className="max-h-[980px] overflow-auto bg-background">
             <PageComposer
-              pageConfig={homePage}
-              layout={homePage.layoutHint || "stack"}
+              pageConfig={activePage}
+              layout={activePage.layoutHint || "stack"}
               renderSectionFrame={({ element, index, sectionEntry, sectionId, componentKey }) => {
                 const stableSectionKey = getSectionKey(sectionEntry);
                 const selected = stableSectionKey === selectedSectionKey;
@@ -457,6 +463,37 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
   const [sidebarMode, setSidebarMode] = useState<SidebarMode>("current");
   const [selectedSectionKey, setSelectedSectionKey] = useState("");
 
+  const currentDesignTokens = useMemo<Record<string, unknown>>(
+    () => designTokens ?? {},
+    [designTokens],
+  );
+  const history = useDesignTokensHistory<Record<string, unknown>>(currentDesignTokens);
+
+  const emitChange = (nextDesignTokens: Record<string, unknown>) => {
+    history.commit(nextDesignTokens);
+    onChange(nextDesignTokens);
+  };
+
+  const applyHistoryState = (restored: Record<string, unknown>) => {
+    emitChange(restored);
+  };
+
+  const handleHistoryUndo = () => {
+    const restored = history.undo();
+    if (restored !== null && restored !== undefined) {
+      applyHistoryState(restored);
+    }
+  };
+
+  const handleHistoryRedo = () => {
+    const restored = history.redo();
+    if (restored !== null && restored !== undefined) {
+      applyHistoryState(restored);
+    }
+  };
+
+  useDesignTokensHistoryShortcuts(history, applyHistoryState);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -557,7 +594,7 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
       };
     }
 
-    onChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
+    emitChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
   };
 
   const stripHomePageFieldOverride = (
@@ -685,7 +722,7 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
         cleanedPageOverrides,
       );
 
-      onChange(nextTokens);
+      emitChange(nextTokens);
       return;
     }
 
@@ -852,6 +889,30 @@ const StorefrontVisualEditor: React.FC<StorefrontVisualEditorProps> = ({
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleHistoryUndo}
+                disabled={!history.canUndo}
+                aria-label="تراجع عن آخر تعديل"
+                title="تراجع (Ctrl+Z)"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+              >
+                <ArrowUturnLeftIcon className="h-4 w-4" />
+                تراجع
+              </button>
+              <button
+                type="button"
+                onClick={handleHistoryRedo}
+                disabled={!history.canRedo}
+                aria-label="إعادة آخر تعديل"
+                title="إعادة (Ctrl+Shift+Z)"
+                className="inline-flex items-center gap-1.5 rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+              >
+                <ArrowUturnRightIcon className="h-4 w-4" />
+                إعادة
+              </button>
+            </div>
             <button
               type="button"
               onClick={() => setDeviceMode("desktop")}

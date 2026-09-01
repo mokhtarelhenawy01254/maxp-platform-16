@@ -51,7 +51,7 @@
     ]
   },
   "header": {
-    "brandName": "Cairo Stride",
+    "brandName": "خطوة ناعمة",
     "showSearch": true,
     "showCart": true,
     "navigation": [
@@ -78,7 +78,7 @@
     ]
   },
   "footer": {
-    "description": "سنيكرز يومي، لوفر عملي، وكلاسيك هادئ للشغل والمشاوير مع شحن واضح واستبدال مقاس أسهل.",
+    "description": "سنيكرز يومي، كعب للمساء، ولوفر مريح للعمل مع شحن واضح واستبدال مقاس أسهل.",
     "copyrightText": "© 2026 جميع الحقوق محفوظة.",
     "socialLinks": {},
     "navigation": [
@@ -134,7 +134,7 @@
         {
           "type": "promo-strip",
           "settings": {
-            "badge": "اختيارات الأسبوع",
+            "badge": "Stride Picks",
             "message": "خصومات أسبوعية على السنيكرز والكاجوال مع شحن سريع واستبدال أوضح داخل مصر.",
             "saleLabel": "حتى 20% خصم",
             "shippingLabel": "شحن خلال 48 ساعة",
@@ -172,14 +172,14 @@
             ],
             "floatingCards": [
               {
-                "eyebrow": "اختيارات جاهزة",
+                "eyebrow": "Stride Picks",
                 "title": "سنيكرز يومي",
                 "description": "موديلات مريحة للحركة والشغل والخروج اليومي.",
                 "tone": "primary",
                 "position": "top-left"
               },
               {
-                "eyebrow": "مقاس مضمون",
+                "eyebrow": "Egypt Fit",
                 "title": "مقاسات أوضح",
                 "description": "دليل سريع يقلل التردد قبل ما تضيف للسلة.",
                 "tone": "accent",
@@ -191,8 +191,8 @@
               "value": "عملي + واضح + مريح"
             },
             "panelEyebrow": "منتج اليوم",
-            "panelTitle": "موديلات تمشي في الشغل والخروجات",
-            "panelSubtitle": "كاجوال وكلاسيك وسنيكرز بتوازن بين الشكل والراحة وبتخلي القرار أسهل.",
+            "panelTitle": "ستايل رجالي عملي بدون مبالغة",
+            "panelSubtitle": "كاجوال وكلاسيك وسنيكرز بتوازن بين الشكل والراحة وسهولة الاختيار.",
             "panelMetricLabel": "الأكثر طلبًا",
             "panelMetricValue": "موديلات يومية",
             "panelNote": "شحن سريع داخل مصر + استبدال أوضح",
@@ -208,7 +208,7 @@
             "limit": 4,
             "ctaText": "كل التصنيفات",
             "ctaLink": "/collections",
-            "collections": "سنيكرز يومي|موديلات مريحة للحركة والجامعة والشغل الخفيف.|https://images.unsplash.com/photo-1491553895911-0055eca6402d?auto=format&fit=crop&q=80&w=900|/shop?category=sneakers\nكاجوال عملي|اختيارات مناسبة للمشاوير اليومية والخروجات السريعة.|https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=900|/shop?category=casual\nكلاسيك هادي|موديلات أرتب للمكتب والمناسبات والشغل الرسمي.|https://images.unsplash.com/photo-1608667508764-33cf0726b13a?auto=format&fit=crop&q=80&w=900|/shop?category=formal\nراحة طوال اليوم|اختيارات تركّز على الراحة والثبات وسهولة اللبس.|https://images.unsplash.com/photo-1552346154-21d32810aba3?auto=format&fit=crop&q=80&w=900|/shop?sortBy=createdAt&sortOrder=desc"
+            "collections": "سنيكرز يومي|موديلات مريحة للحركة والجامعة والشغل الخفيف.|https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&q=80&w=900|/shop?category=sneakers\nكاجوال عملي|اختيارات مناسبة للمشاوير اليومية والخروجات السريعة.|https://images.unsplash.com/photo-1525966222134-fcfa99b8ae77?auto=format&fit=crop&q=80&w=900|/shop?category=casual\nكلاسيك هادي|موديلات أرتب للمكتب والمناسبات والشغل الرسمي.|https://images.unsplash.com/photo-1614252235316-8c857d38b5f4?auto=format&fit=crop&q=80&w=900|/shop?category=formal\nراحة طوال اليوم|اختيارات تركّز على الراحة والثبات وسهولة اللبس.|https://images.unsplash.com/photo-1600185365483-26d7a4cc7519?auto=format&fit=crop&q=80&w=900|/shop?sortBy=createdAt&sortOrder=desc"
           }
         },
         {
@@ -243,7 +243,7 @@
         {
           "type": "offer-bento",
           "settings": {
-            "badge": "اختيارات سريعة",
+            "badge": "Stride Edits",
             "title": "3 مداخل سريعة للشراء",
             "subtitle": "بلوك بصري أقوى يوجّه العميل لأسرع طريقة يناسبه يكتشف بها المنتج.",
             "cards": [
@@ -315,7 +315,7 @@
             "searchPlaceholder": "ابحث عن موديل أو نوع الحذاء",
             "resultsLabel": "منتج متاح",
             "clearButtonText": "مسح التصفية",
-            "stickyLabel": "أدوات التصفح",
+            "stickyLabel": "Stride Controls",
             "chipLimit": 6
           }
         },
@@ -332,7 +332,7 @@
         {
           "type": "shop-promo-rail",
           "settings": {
-            "badge": "ثقة قبل الشراء",
+            "badge": "Stride Trust",
             "title": "معلومات تريحك قبل القرار",
             "subtitle": "رسائل سريعة عن المقاسات والشحن والاستبدال بدون ما نعطل تصفح المنتجات.",
             "spotlightTitle": "موديلات مناسبة للشغل والخروجات اليومية",
@@ -340,7 +340,7 @@
             "ctaText": "اذهب للعروض",
             "ctaLink": "/sale",
             "trustItems": "شحن واضح|توصيل سريع داخل مصر على أغلب الموديلات الجاهزة.\nاستبدال أسهل|رسالة ثقة تقلل الحيرة قبل تأكيد الطلب.\nمقاس أقرب|دليل بسيط يساعدك تختار رقمك بسرعة.",
-            "highlights": "اختيارات كاجوال|يومي\nخط كلاسيك|أرتب\nمقاس مصري|أوضح"
+            "highlights": "Casual Picks|Daily\nFormal Line|Sharper\nEgypt Fit|Clearer"
           }
         },
         {
@@ -384,7 +384,7 @@
           "type": "size-guide",
           "variant": "compact",
           "settings": {
-            "badge": "مساعد المقاس",
+            "badge": "Fit Helper",
             "title": "اختار المقاس بثقة",
             "subtitle": "جدول سريع ونصيحة مباشرة قبل إتمام الطلب.",
             "note": "لو القدم عريضة أو بين مقاسين، اختار الأكبر غالبًا.",
@@ -521,7 +521,7 @@
         {
           "type": "promo-strip",
           "settings": {
-            "badge": "عروض محدودة",
+            "badge": "Stride Sale",
             "message": "عروض محدودة على موديلات مختارة مع شحن أسرع داخل مصر.",
             "saleLabel": "خصومات واضحة",
             "shippingLabel": "توصيل سريع",
@@ -533,7 +533,7 @@
         {
           "type": "offer-bento",
           "settings": {
-            "badge": "عروض محدودة",
+            "badge": "Stride Sale",
             "title": "عروض محسوبة للحسم الأسرع",
             "subtitle": "رتبنا التخفيضات حول نوع الاستخدام والقيمة بدل عرضها بشكل مسطح.",
             "cards": [
@@ -626,7 +626,7 @@
             "badge": "الدعم",
             "title": "تواصل معنا",
             "subtitle": "نرد على استفسارات الطلبات والشحن وما بعد البيع خلال أوقات العمل.",
-            "body": "فريقنا جاهز للرد على استفسارات الطلبات، متابعة الشحن، ومساعدة المقاسات والاستبدال عبر القنوات المتاحة.\n\nإذا كان لديك رقم طلب أو تحتاج مساعدة في اختيار المقاس، أرسله لنا مع الاستفسار لنقدر نتابع معك بشكل أسرع.",
+            "body": "فريقنا جاهز للرد على استفسارات الطلبات، متابعة الشحن، ومساعدة المقاسات والاستبدال عبر القنوات المتاحة.\n\nإذا كان لديك رقم طلب أو تريدين مساعدة في اختيار المقاس، أرسليه لنا مع الاستفسار لنقدر نتابع معك بشكل أسرع.",
             "detailsTitle": "قنوات التواصل",
             "details": "واتساب|للطلبات السريعة واستفسارات المقاسات\nالبريد الإلكتروني|للمتابعة الرسمية والشكاوى\nأوقات الدعم|من الأحد إلى الخميس من 10 ص إلى 6 م",
             "ctaText": "ابدأ التسوق",
@@ -684,7 +684,7 @@
           "type": "size-guide",
           "variant": "detailed",
           "settings": {
-            "badge": "دليل المقاس",
+            "badge": "Stride Sizing",
             "title": "دليل مقاسات الأحذية الرجالي",
             "subtitle": "مرجع واضح لاختيار المقاس الأنسب قبل الشراء.",
             "note": "لو القدم عريضة أو بين مقاسين، اختار الأكبر غالبًا.",

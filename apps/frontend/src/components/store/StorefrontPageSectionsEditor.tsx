@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import i18n from "../../i18n";
 import {
   ArrowPathIcon,
+  ArrowUturnLeftIcon,
+  ArrowUturnRightIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   Bars3Icon,
@@ -31,6 +33,7 @@ import {
   useSortable,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useDesignTokensHistory, useDesignTokensHistoryShortcuts } from "./useDesignTokensHistory";
 import {
   DEFAULT_STOREFRONT_THEME_ID,
   getStorefrontThemePreset,
@@ -2466,6 +2469,35 @@ export const StorefrontPageSectionsEditor: React.FC<
     token: focusedSectionType ? 1 : 0,
   });
 
+  const history = useDesignTokensHistory<Record<string, unknown>>(
+    designTokens as Record<string, unknown>,
+  );
+
+  const emitChange = (nextDesignTokens: Record<string, unknown>) => {
+    history.commit(nextDesignTokens);
+    onChange(nextDesignTokens);
+  };
+
+  const applyHistoryState = (restored: Record<string, unknown>) => {
+    emitChange(restored);
+  };
+
+  const handleHistoryUndo = () => {
+    const restored = history.undo();
+    if (restored !== null && restored !== undefined) {
+      applyHistoryState(restored);
+    }
+  };
+
+  const handleHistoryRedo = () => {
+    const restored = history.redo();
+    if (restored !== null && restored !== undefined) {
+      applyHistoryState(restored);
+    }
+  };
+
+  useDesignTokensHistoryShortcuts(history, applyHistoryState);
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -2743,7 +2775,7 @@ export const StorefrontPageSectionsEditor: React.FC<
       nextOverrides[pageKey] = { sections: normalizedSections };
     }
 
-    onChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
+    emitChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
   };
 
   const handleToggleSection = (section: SectionEntry, enabled: boolean) => {
@@ -2923,7 +2955,7 @@ export const StorefrontPageSectionsEditor: React.FC<
 
     const nextOverrides = { ...pageOverrides };
     delete nextOverrides[selectedPage];
-    onChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
+    emitChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
   };
 
   const handleFocusSectionShortcut = (sectionType: string) => {
@@ -2943,6 +2975,30 @@ export const StorefrontPageSectionsEditor: React.FC<
           <p className="text-sm text-gray-500 dark:text-gray-400">
             يمكنك هنا تخصيص الصفحات الأساسية والإضافية، وإعادة ترتيب الأقسام أو إنشاء صفحات عامة جديدة بدون بناء قالب منفصل.
           </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleHistoryUndo}
+            disabled={!history.canUndo}
+            aria-label="تراجع عن آخر تعديل"
+            title="تراجع (Ctrl+Z)"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            <ArrowUturnLeftIcon className="h-4 w-4" />
+            تراجع
+          </button>
+          <button
+            type="button"
+            onClick={handleHistoryRedo}
+            disabled={!history.canRedo}
+            aria-label="إعادة آخر تعديل"
+            title="إعادة (Ctrl+Shift+Z)"
+            className="inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-gray-600 dark:text-gray-200 dark:hover:bg-gray-700"
+          >
+            <ArrowUturnRightIcon className="h-4 w-4" />
+            إعادة
+          </button>
         </div>
         <button
           type="button"
@@ -3220,7 +3276,7 @@ export const StorefrontPageSectionsEditor: React.FC<
                   ...pageOverrides,
                   [slug]: { sections: [...STOREFRONT_CUSTOM_PAGE_STARTER_SECTIONS] },
                 };
-                onChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
+                emitChange(upsertStorefrontPageOverridesInDesignTokens(designTokens, nextOverrides));
                 setSelectedPage(slug as StorefrontPageKey);
               }
             }}
