@@ -1,13 +1,15 @@
 ﻿import React, { useState } from "react";
 import {
   AdjustmentsHorizontalIcon,
+  ChartBarIcon,
+  ChevronUpDownIcon,
   EyeIcon,
   PaintBrushIcon,
   PhotoIcon,
-  SparklesIcon,
-  XMarkIcon,
-  SwatchIcon,
   RectangleGroupIcon,
+  SparklesIcon,
+  SwatchIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { getStorefrontSectionLabel, getStorefrontSectionManifest } from "../sections/manifest";
 import type { StudioInspectorTab } from "./StudioTypes";
@@ -69,6 +71,11 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
   const currentVariant = getVal("variant", manifest?.variants?.[0]?.id || "");
   const bgColor = getVal("backgroundColor") || getVal("bgColor") || "#ffffff";
   const textColor = getVal("textColor") || "#0f172a";
+  const spacing = getVal("spacing", "normal");
+  const align = getVal("align", "right");
+  const pixelEvent = getVal("pixelEvent", "InitiateCheckout");
+  const badgeText = getVal("badgeText", "");
+  const stockCount = getVal("stockCount", "");
 
   return (
     <aside className="flex h-full w-full flex-col border-s border-border/80 bg-card/95 backdrop-blur-md">
@@ -94,12 +101,12 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
         </button>
       </div>
 
-      {/* 2. Tabs Switcher (Content / Style / Visibility) */}
-      <div className="flex border-b border-border/80 p-2 gap-1 bg-background/50">
+      {/* 2. Tabs Switcher (Content / Style / Commerce / Visibility) */}
+      <div className="flex border-b border-border/80 p-1.5 gap-1 bg-background/50 overflow-x-auto [scrollbar-width:none]">
         <button
           type="button"
           onClick={() => setActiveTab("content")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-bold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
             activeTab === "content"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -111,7 +118,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
         <button
           type="button"
           onClick={() => setActiveTab("style")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-bold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
             activeTab === "style"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -122,8 +129,20 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
         </button>
         <button
           type="button"
+          onClick={() => setActiveTab("commerce")}
+          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
+            activeTab === "commerce"
+              ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
+              : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
+          }`}
+        >
+          <ChartBarIcon className="h-3.5 w-3.5" />
+          <span>التجارة</span>
+        </button>
+        <button
+          type="button"
           onClick={() => setActiveTab("visibility")}
-          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl py-1.5 text-xs font-bold transition-all ${
+          className={`flex flex-1 items-center justify-center gap-1 rounded-xl py-1.5 text-[11px] font-bold transition-all shrink-0 px-2 ${
             activeTab === "visibility"
               ? "bg-secondary text-foreground shadow-sm ring-1 ring-border/50"
               : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
@@ -148,7 +167,7 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
                 <select
                   value={currentVariant}
                   onChange={(e) => onUpdateField("variant", e.target.value)}
-                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs text-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-bold"
                 >
                   {manifest.variants.map((v) => (
                     <option key={v.id} value={v.id}>
@@ -339,6 +358,60 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
           </div>
         ) : activeTab === "style" ? (
           <div className="space-y-4">
+            {/* Spacing / Vertical Padding */}
+            <div>
+              <label className="block text-[11px] font-bold text-foreground mb-1.5">
+                الهوامش والمسافات الرأسية (Vertical Padding)
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "compact", label: "مدمج (صغير)" },
+                  { id: "normal", label: "قياسي (متوسط)" },
+                  { id: "spacious", label: "رحب (كبير)" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onUpdateField("spacing", item.id)}
+                    className={`rounded-xl border py-2 text-[11px] font-bold transition-all ${
+                      spacing === item.id
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Text Alignment */}
+            <div>
+              <label className="block text-[11px] font-bold text-foreground mb-1.5">
+                محاذاة النصوص
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "right", label: "يمين (RTL)" },
+                  { id: "center", label: "في المنتصف" },
+                  { id: "left", label: "يسار (LTR)" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => onUpdateField("align", item.id)}
+                    className={`rounded-xl border py-2 text-[11px] font-bold transition-all ${
+                      align === item.id
+                        ? "border-primary bg-primary/10 text-primary shadow-sm"
+                        : "border-border bg-background text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Background Color */}
             <div>
               <label className="block text-[11px] font-bold text-foreground mb-1.5 flex items-center gap-1">
@@ -391,7 +464,59 @@ export const StudioPropertyInspector: React.FC<StudioPropertyInspectorProps> = (
               </div>
             </div>
           </div>
+        ) : activeTab === "commerce" ? (
+          /* Commerce, Urgency & Ad Tracking Tab */
+          <div className="space-y-4">
+            <div className="rounded-2xl border border-primary/20 bg-primary/[0.03] p-3 space-y-3">
+              <span className="block text-[11px] font-black text-primary">تتبع بكسل الحملات (Ad Pixels Event)</span>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">
+                عند النقر على زر الإجراء في هذا القسم، سيتم إرسال هذا الحدث فوراً لبيكسل Meta و TikTok و Snapchat.
+              </p>
+              <select
+                value={pixelEvent}
+                onChange={(e) => onUpdateField("pixelEvent", e.target.value)}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs font-bold text-foreground focus:border-primary focus:outline-none"
+              >
+                <option value="InitiateCheckout">بدء الدفع (InitiateCheckout)</option>
+                <option value="AddToCart">إضافة للسلة (AddToCart)</option>
+                <option value="ViewContent">مشاهدة محتوى (ViewContent)</option>
+                <option value="Lead">تسجيل اهتمام / ليد (Lead)</option>
+                <option value="Purchase">شراء مباشر (Purchase)</option>
+              </select>
+            </div>
+
+            {/* Urgency & Stock Badge */}
+            <div className="rounded-2xl border border-border bg-background/50 p-3 space-y-3">
+              <span className="block text-[11px] font-bold text-foreground">شارات التحفيز والمخزون المتبقي (FOMO)</span>
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                  نص شارة العرض (Badge)
+                </label>
+                <input
+                  type="text"
+                  value={badgeText}
+                  onChange={(e) => onUpdateField("badgeText", e.target.value)}
+                  placeholder="مثال: شحن مجاني اليوم فقط • دفع عند الاستلام"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-muted-foreground mb-1">
+                  تنبيه المخزون المتبقي (اختياري)
+                </label>
+                <input
+                  type="text"
+                  value={stockCount}
+                  onChange={(e) => onUpdateField("stockCount", e.target.value)}
+                  placeholder="مثال: متبقي 3 قطع فقط في المستودع"
+                  className="w-full rounded-xl border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
         ) : (
+          /* Visibility Tab */
           <div className="space-y-4">
             <div className="rounded-2xl border border-border bg-background/50 p-3 space-y-3">
               <div className="flex items-center justify-between">

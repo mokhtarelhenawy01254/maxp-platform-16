@@ -1,8 +1,12 @@
-import React, { useState, useMemo, useEffect } from "react";
+﻿import React, { useState, useMemo, useEffect } from "react";
 import {
   AdjustmentsHorizontalIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  DocumentDuplicateIcon,
   EyeIcon,
   Squares2X2Icon,
+  TrashIcon,
 } from "@heroicons/react/24/outline";
 import { StudioTopBar } from "./StudioTopBar";
 import { StudioLayersDrawer } from "./StudioLayersDrawer";
@@ -274,6 +278,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             sections={activeSections}
             selectedSectionKey={selectedSectionKey}
             leftPanelTab={leftPanelTab}
+            designTokens={designTokens}
             onSelectSection={(key) => {
               setSelectedSectionKey(key);
               setMobileStudioTab("inspector");
@@ -283,6 +288,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
             onDeleteSection={handleDeleteSection}
             onOpenSectionCatalog={() => setShowCatalogModal(true)}
             onTabChange={setLeftPanelTab}
+            onUpdateThemeTokens={onChange}
           />
         </div>
 
@@ -315,19 +321,61 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
                           setMobileStudioTab("inspector");
                         }}
                       >
+                        {/* Interactive Highlight Border */}
                         <div
                           className={`pointer-events-none absolute inset-0 z-30 rounded-2xl border-2 transition-all ${
                             selected
                               ? "border-primary bg-primary/[0.04] shadow-[0_0_0_3px_rgba(59,130,246,0.25)]"
                               : "border-transparent group-hover:border-primary/40 group-hover:bg-primary/[0.015]"
                           }`}
-                        >
-                          {selected ? (
-                            <span className="absolute top-2 start-2 rounded-md bg-primary px-2.5 py-1 text-[10px] font-black text-primary-foreground shadow">
-                              {sectionLabel} (محدد للتعديل)
+                        />
+
+                        {/* On-Canvas Floating Action Toolbar (Elementor/Framer Style) */}
+                        {selected && (
+                          <div
+                            className="absolute top-2 start-2 z-40 flex items-center gap-1 rounded-xl border border-border/80 bg-background/95 p-1 shadow-xl backdrop-blur-md"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <span className="rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-black text-primary">
+                              {sectionLabel}
                             </span>
-                          ) : null}
-                        </div>
+                            <div className="h-3 w-[1px] bg-border mx-0.5" />
+                            <button
+                              type="button"
+                              onClick={() => index > 0 && handleMoveSection(index, "up")}
+                              disabled={index === 0}
+                              className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                              title="تحريك لأعلى"
+                            >
+                              <ChevronUpIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => index < activeSections.length - 1 && handleMoveSection(index, "down")}
+                              disabled={index === activeSections.length - 1}
+                              className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
+                              title="تحريك لأسفل"
+                            >
+                              <ChevronDownIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDuplicateSection(index)}
+                              className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                              title="تكرار القسم"
+                            >
+                              <DocumentDuplicateIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteSection(stableSectionKey)}
+                              className="rounded-lg p-1 text-destructive/80 hover:bg-destructive/10 hover:text-destructive"
+                              title="حذف القسم"
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
 
                         <div className="relative z-10 select-none [&_a]:pointer-events-none [&_button]:pointer-events-none [&_input]:pointer-events-none [&_select]:pointer-events-none">
                           {element}

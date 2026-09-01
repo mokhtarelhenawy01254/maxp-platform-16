@@ -2,7 +2,7 @@
 
 export type StudioLeftPanelTab = "layers" | "theme" | "pages";
 
-export type StudioInspectorTab = "content" | "style" | "visibility";
+export type StudioInspectorTab = "content" | "style" | "commerce" | "visibility";
 
 export type StudioZoomLevel = 0.5 | 0.75 | 1 | 1.25;
 
@@ -49,27 +49,27 @@ export const STUDIO_SECTION_CATEGORIES: StudioSectionCategory[] = [
     title: "العروض والمؤقتات الترويجية",
     icon: "🔥",
     description: "أشرطة الخصم، مؤقتات العد التنازلي، وباقات التوفير",
-    types: ["sale-countdown", "promotion-banner", "deal-of-the-day", "coupon-strip"],
+    types: ["sale-countdown", "promotion-banner", "deal-of-the-day", "coupon-strip", "offer-bento"],
   },
   {
     id: "trust",
     title: "الموثوقية والضمان والمراجعات",
     icon: "🛡️",
     description: "آراء العملاء، شارات الأمان، ومميزات الشحن السريع",
-    types: ["trust-badges", "customer-reviews", "testimonials-slider", "press-features"],
+    types: ["trust-badges", "customer-reviews", "testimonials-slider", "press-features", "features-bar"],
   },
   {
     id: "content",
     title: "القصص والمدونات والمحتوى",
     icon: "📖",
     description: "نبذة عن المتجر، الأسئلة الشائعة، ومقالات المدونة",
-    types: ["rich-text", "about-story", "faq-accordion", "blog-feed", "video-showcase"],
+    types: ["rich-text", "about-story", "story-parallax", "faq-accordion", "blog-feed", "video-showcase"],
   },
   {
     id: "navigation",
     title: "التصنيفات والفوتر",
     icon: "🧭",
     description: "شريط الفئات المصورة، القوائم السريعة، وتذييل الصفحة",
-    types: ["category-grid", "brand-strip", "footer-section", "newsletter-signup"],
+    types: ["featured-collections", "category-grid", "brand-strip", "footer-section", "newsletter"],
   },
 ];

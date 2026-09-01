@@ -1613,7 +1613,7 @@ if (typeof window !== "undefined") {
   p["/analytics/store"] = () => import("./pages/Analytics/StoreAnalyticsDashboard");
   p["/whatsapp"] = () => import("./pages/whatsapp-inbox/WhatsAppChat");
   p["/pos"] = () => import("./pages/pos/PosPage");
-  p["/tickets"] = () => import("./pages/tickets/Tickets");
+  p["/tickets"] = () => import("./pages/tickets/TurboTickets");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
   p["/affiliates"] = () => import("./pages/affiliates/AffiliateDashboard");
   p["/hr"] = () => import("./pages/hr/HRDashboard");
