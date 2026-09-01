@@ -34,12 +34,12 @@ export const BasicTab: React.FC<BasicTabProps> = ({
 }) => {
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
         {/* Product Name */}
-        <div className="col-span-2">
+        <div className="col-span-1 sm:col-span-2">
           <label
             htmlFor="name"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
             {t("products.productName")}
             <span className="text-red-500 mr-1">*</span>
@@ -51,23 +51,23 @@ export const BasicTab: React.FC<BasicTabProps> = ({
             required
             value={formData.name}
             onChange={handleInputChange}
-            className={`mt-1 bg-white dark:bg-gray-700 block w-full shadow-sm sm:text-lg border-gray-300 dark:border-gray-600 rounded-md focus:ring-indigo-500 focus:border-indigo-500 py-3 ${getInputClassName(
+            className={`bg-white dark:bg-gray-700 block w-full shadow-xs text-base sm:text-lg border-gray-300 dark:border-gray-600 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 py-2.5 px-3.5 ${getInputClassName(
               "name"
             )}`}
             placeholder={t("products.placeholders.productNamePlaceholder") as string}
           />
           {fieldErrors.name && (
-            <p className="mt-2 text-sm text-red-600 dark:text-red-500 flex items-center">
+            <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center">
               <span className="mx-1">⚠️</span> {fieldErrors.name}
             </p>
           )}
         </div>
 
         {/* Product Description */}
-        <div className="col-span-2">
+        <div className="col-span-1 sm:col-span-2">
           <label
             htmlFor="description"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1"
           >
             {t("products.description")}
           </label>
@@ -84,28 +84,31 @@ export const BasicTab: React.FC<BasicTabProps> = ({
                 (t("products.placeholders.descriptionPlaceholder") as string) ||
                 "اكتب وصف المنتج هنا..."
               }
-              minHeight="220px"
+              minHeight="200px"
             />
           </div>
         </div>
 
         {/* Category */}
-        <div>
-          <label
-            htmlFor="category"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            {t("products.category")}
-            <span className="text-red-500 mr-1">*</span>
-          </label>
-          <div className="mt-1 flex rounded-md shadow-sm">
+        <div className="col-span-1">
+          <div className="flex items-center justify-between mb-1">
+            <label
+              htmlFor="category"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              {t("products.category")}
+              <span className="text-red-500 mr-1">*</span>
+            </label>
+            <InfoTooltip text={t("products.categoryHelp") as string} />
+          </div>
+          <div className="flex rounded-lg shadow-xs">
             <select
               id="category"
               name="category"
               required
               value={formData.category}
               onChange={handleInputChange}
-              className={`flex-1 min-w-0 block w-full rounded-md bg-white dark:bg-gray-700 sm:text-sm border-gray-300 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 ${getInputClassName(
+              className={`flex-1 min-w-0 block w-full rounded-r-none rounded-l-lg rtl:rounded-r-lg rtl:rounded-l-none bg-white dark:bg-gray-700 text-sm border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 ${getInputClassName(
                 "category"
               )}`}
               disabled={categoriesLoading}
@@ -126,36 +129,34 @@ export const BasicTab: React.FC<BasicTabProps> = ({
               onClick={onAddCategoryClick}
               title={t("categories.management.addCategory")}
               aria-label={t("categories.management.addCategory")}
-              className="inline-flex items-center justify-center w-9 shrink-0 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-indigo-600 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400 dark:hover:bg-gray-600 dark:hover:text-indigo-400"
+              className="inline-flex items-center justify-center px-3 shrink-0 rounded-l-none rounded-r-lg rtl:rounded-l-lg rtl:rounded-r-none border border-l-0 rtl:border-r-0 rtl:border-l border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-600 hover:text-indigo-600 dark:hover:text-indigo-400 text-sm transition-colors"
             >
               <Plus className="w-4 h-4" />
             </button>
           </div>
           {categoriesError && (
-            <p className="mt-2 text-sm text-red-600">{categoriesError}</p>
+            <p className="mt-1.5 text-xs text-red-600 dark:text-red-400">{categoriesError}</p>
           )}
           {fieldErrors.category && (
-            <p className="mt-2 text-sm text-red-600 flex items-center">
+            <p className="mt-1.5 text-xs text-red-600 dark:text-red-400 flex items-center">
               <span className="mx-1">⚠️</span> {fieldErrors.category}
             </p>
           )}
-          <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-start gap-1">
-            <span className="text-indigo-500 shrink-0">ℹ️</span>
-            {t("products.categoryHelp")}
-          </p>
         </div>
 
         {/* Slug */}
-        <div>
-          <label
-            htmlFor="slug"
-            className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
-          >
-            {t("products.slug")}
+        <div className="col-span-1">
+          <div className="flex items-center justify-between mb-1">
+            <label
+              htmlFor="slug"
+              className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              {t("products.slug")}
+            </label>
             <InfoTooltip text={t("products.tooltips.slugTooltip") as string} />
-          </label>
-          <div className="mt-1 flex rounded-md shadow-sm">
-            <span className="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-50 text-gray-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400">
+          </div>
+          <div className="flex rounded-lg shadow-xs" dir="ltr">
+            <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-xs font-mono dark:bg-gray-700 dark:border-gray-600 dark:text-gray-400">
               /product/
             </span>
             <input
@@ -164,10 +165,10 @@ export const BasicTab: React.FC<BasicTabProps> = ({
               id="slug"
               value={formData.slug}
               onChange={handleInputChange}
-              className={`flex-1 min-w-0 bg-white dark:bg-gray-800 block w-full px-3 py-2 rounded-none rounded-l-md sm:text-sm border-gray-300 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500 ${getInputClassName(
+              className={`flex-1 min-w-0 bg-white dark:bg-gray-700 block w-full px-3 py-2 rounded-none rounded-r-lg text-sm border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-indigo-500 focus:border-indigo-500 ${getInputClassName(
                 "slug"
               )}`}
-              placeholder="مثال: custom-tshirt"
+              placeholder="custom-tshirt"
               dir="ltr"
             />
           </div>
@@ -177,10 +178,10 @@ export const BasicTab: React.FC<BasicTabProps> = ({
         </div>
 
         {/* SKU */}
-        <div>
+        <div className="col-span-1 sm:col-span-2">
           <label
             htmlFor="sku"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
           >
             {t("products.sku")}
           </label>
@@ -190,7 +191,7 @@ export const BasicTab: React.FC<BasicTabProps> = ({
             id="sku"
             value={formData.sku}
             onChange={handleInputChange}
-            className="mt-1 block w-full border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white sm:text-sm"
+            className="block w-full border-gray-300 dark:border-gray-600 rounded-lg shadow-xs focus:ring-indigo-500 focus:border-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm px-3 py-2"
             placeholder="مثل: SHIRT-BLK-M"
             dir="ltr"
           />
@@ -200,7 +201,7 @@ export const BasicTab: React.FC<BasicTabProps> = ({
         </div>
 
         {/* Tags */}
-        <div className="col-span-2">
+        <div className="col-span-1 sm:col-span-2">
           <TagsInput
             tags={formData.tags}
             onAddTag={(tag) => setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }))}
@@ -216,12 +217,12 @@ export const BasicTab: React.FC<BasicTabProps> = ({
         </div>
 
         {/* Workflow Note */}
-        <div className="col-span-2 rounded-lg border border-indigo-100 bg-indigo-50/80 p-4 dark:border-indigo-900/40 dark:bg-indigo-900/20">
+        <div className="col-span-1 sm:col-span-2 rounded-xl border border-indigo-100 bg-indigo-50/80 p-4 dark:border-indigo-900/40 dark:bg-indigo-900/20">
           <div className="space-y-1 text-sm">
             <p className="font-semibold text-indigo-900 dark:text-indigo-200">
               حالة المنتج الحالية: {workflowLabel}
             </p>
-            <p className="text-indigo-700 dark:text-indigo-300">
+            <p className="text-xs sm:text-sm text-indigo-700 dark:text-indigo-300">
               الحفظ كمسودة، الإرسال للمراجعة، الاعتماد، النشر وإلغاء النشر تتم من الشريط العلوي في الصفحة.
             </p>
           </div>

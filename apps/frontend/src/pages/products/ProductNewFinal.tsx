@@ -1354,62 +1354,71 @@ export const ProductNewFinal: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 pb-12">
       {/* Top Navigation Bar */}
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-30 px-4 sm:px-6 lg:px-8 py-3 sm:py-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-3 sm:space-y-0 max-w-6xl 2xl:max-w-7xl mx-auto">
-          <div className="flex items-center space-x-3 rtl:space-x-reverse">
-            <Link
-              to="/products"
-              className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            >
-              <ArrowLeftIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
-            </Link>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
-                {isEditMode ? t("products.editTitle") : t("products.addNew")}
-              </h1>
-              <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-                <span className="mr-2">الحالة:</span>
-                <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${workflowColorClass}`}
-                >
-                  {workflowLabel}
-                </span>
-                {Array.isArray(categories) && formData.category && (
-                  <>
-                    <span>•</span>
-                    <span>
-                      {categories.find((c) => c.id === formData.category)
-                        ?.name || "بدون فئة"}
-                    </span>
-                  </>
-                )}
+      <div className="bg-white/95 dark:bg-gray-800/95 backdrop-blur-sm border-b border-gray-200/80 dark:border-gray-700/70 sticky top-0 z-30 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3.5 shadow-xs">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2.5 sm:gap-4 max-w-6xl 2xl:max-w-7xl mx-auto">
+          {/* Title & Status */}
+          <div className="flex items-center justify-between w-full sm:w-auto">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <Link
+                to="/products"
+                className="p-1.5 sm:p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors shrink-0"
+              >
+                <ArrowLeftIcon className="h-5 w-5 sm:h-6 sm:w-6 text-gray-500 dark:text-gray-400" />
+              </Link>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white truncate">
+                    {isEditMode ? t("products.editTitle") : t("products.addNew")}
+                  </h1>
+                  <span
+                    className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${workflowColorClass}`}
+                  >
+                    {workflowLabel}
+                  </span>
+                </div>
                 {workflow.rejectionReason && (
-                  <>
-                    <span>•</span>
-                    <span className="text-rose-600 dark:text-rose-300">
-                      سبب الرفض: {workflow.rejectionReason}
-                    </span>
-                  </>
+                  <p className="text-xs text-rose-600 dark:text-rose-400 mt-0.5">
+                    سبب الرفض: {workflow.rejectionReason}
+                  </p>
                 )}
               </div>
             </div>
+
+            {/* Mobile quick save & theme toggle */}
+            <div className="flex items-center gap-1.5 sm:hidden">
+              <ThemeToggle />
+              <button
+                type="button"
+                onClick={handleSaveChanges}
+                disabled={loading}
+                className="inline-flex items-center px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg shadow-xs transition-colors"
+              >
+                {loading ? "..." : (effectiveProductId ? "حفظ" : "إنشاء")}
+              </button>
+            </div>
           </div>
-          <div className="flex w-full items-center gap-2 overflow-x-auto scrollbar-none py-1 sm:w-auto sm:flex-wrap sm:gap-3 sm:overflow-visible sm:py-0">
-            <ThemeToggle />
+
+          {/* Action Buttons Row */}
+          <div className="flex w-full items-center gap-1.5 overflow-x-auto scrollbar-none py-0.5 sm:w-auto sm:flex-wrap sm:gap-2 sm:overflow-visible sm:py-0">
+            <div className="hidden sm:block">
+              <ThemeToggle />
+            </div>
             <button
+              type="button"
               onClick={() => navigate("/products")}
-              className="shrink-0 whitespace-nowrap px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+              className="shrink-0 whitespace-nowrap px-3 py-1.5 sm:px-4 sm:py-2 border border-gray-300 dark:border-gray-600 shadow-xs text-xs sm:text-sm font-medium rounded-lg text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             >
               {t("common.cancel")}
             </button>
             <button
+              type="button"
               onClick={handlePreview}
               disabled={loading}
-              className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-indigo-200 bg-indigo-50 px-4 py-2 text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200 dark:hover:bg-indigo-900/30 ${
+              className={`inline-flex shrink-0 whitespace-nowrap items-center gap-1 rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-indigo-700 hover:bg-indigo-100 dark:border-indigo-900/40 dark:bg-indigo-900/20 dark:text-indigo-200 dark:hover:bg-indigo-900/30 ${
                 loading ? "cursor-not-allowed opacity-75" : ""
               }`}
             >
-              <EyeIcon className="ml-2 h-4 w-4" />
+              <EyeIcon className="h-4 w-4" />
               معاينة
             </button>
 
@@ -1422,33 +1431,36 @@ export const ProductNewFinal: React.FC = () => {
                   ? undefined
                   : "احفظ المنتج أولاً قبل تحويله إلى عرض تقديمي"
               }
-              className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-purple-200 bg-white px-4 py-2 text-sm font-medium text-purple-700 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-slate-800 dark:text-purple-300 dark:hover:bg-purple-900/20 ${
+              className={`inline-flex shrink-0 whitespace-nowrap items-center gap-1 rounded-lg border border-purple-200 bg-white px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-purple-700 hover:bg-purple-50 dark:border-purple-900/40 dark:bg-slate-800 dark:text-purple-300 dark:hover:bg-purple-900/20 ${
                 effectiveProductId ? "" : "cursor-not-allowed opacity-50"
               }`}
             >
-              <ArrowPathIcon className="ml-2 h-4 w-4" />
-              حوّل إلى عرض تقديمي
+              <ArrowPathIcon className="h-4 w-4" />
+              عرض تقديمي
             </button>
 
             <button
+              type="button"
               onClick={() => runWorkflowAction("save_draft")}
               disabled={loading}
-              className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 ${
+              className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-lg border border-slate-200 bg-white px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 ${
                 loading ? "cursor-not-allowed opacity-75" : ""
               }`}
             >
-              حفظ كمسودة
+              مسودة
             </button>
+
             <button
+              type="button"
               onClick={handleSaveChanges}
               disabled={loading}
-              className={`flex-1 sm:flex-none justify-center inline-flex shrink-0 whitespace-nowrap items-center px-6 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 ${
+              className={`hidden sm:inline-flex shrink-0 whitespace-nowrap items-center px-5 py-2 border border-transparent shadow-xs text-sm font-bold rounded-lg text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 ${
                 loading ? "opacity-75 cursor-not-allowed" : ""
               }`}
             >
               {loading && (
                 <svg
-                  className="animate-spin -ml-1 mr-3 h-4 w-4 text-white"
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
                   fill="none"
                   viewBox="0 0 24 24"
                 >
@@ -1471,11 +1483,13 @@ export const ProductNewFinal: React.FC = () => {
                 ? t("common.saveChanges")
                 : t("products.save")}
             </button>
+
             {canSubmitProductReview && canSubmitReview(workflow) && (
               <button
+                type="button"
                 onClick={() => runWorkflowAction("submit_review")}
                 disabled={loading}
-                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-amber-800 hover:bg-amber-100 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-200 dark:hover:bg-amber-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1484,9 +1498,10 @@ export const ProductNewFinal: React.FC = () => {
             )}
             {canManageProductWorkflow && canApprove(workflow) && (
               <button
+                type="button"
                 onClick={() => runWorkflowAction("approve")}
                 disabled={loading}
-                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200 dark:hover:bg-emerald-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-emerald-800 hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-200 dark:hover:bg-emerald-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1495,9 +1510,10 @@ export const ProductNewFinal: React.FC = () => {
             )}
             {canManageProductWorkflow && canReject(workflow) && (
               <button
+                type="button"
                 onClick={() => runWorkflowAction("reject")}
                 disabled={loading}
-                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-rose-200 bg-rose-50 px-4 py-2 text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-200 dark:hover:bg-rose-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-rose-700 hover:bg-rose-100 dark:border-rose-900/40 dark:bg-rose-900/20 dark:text-rose-200 dark:hover:bg-rose-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1506,9 +1522,10 @@ export const ProductNewFinal: React.FC = () => {
             )}
             {canManageProductWorkflow && canPublish(workflow) && (
               <button
+                type="button"
                 onClick={() => runWorkflowAction("publish")}
                 disabled={loading}
-                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700 hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200 dark:hover:bg-green-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-lg border border-green-200 bg-green-50 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-green-700 hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-200 dark:hover:bg-green-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1517,9 +1534,10 @@ export const ProductNewFinal: React.FC = () => {
             )}
             {canManageProductWorkflow && canUnpublish(workflow) && (
               <button
+                type="button"
                 onClick={() => runWorkflowAction("unpublish")}
                 disabled={loading}
-                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-md border border-orange-200 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-200 dark:hover:bg-orange-900/30 ${
+                className={`inline-flex shrink-0 whitespace-nowrap items-center rounded-lg border border-orange-200 bg-orange-50 px-3 py-1.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-medium text-orange-700 hover:bg-orange-100 dark:border-orange-900/40 dark:bg-orange-900/20 dark:text-orange-200 dark:hover:bg-orange-900/30 ${
                   loading ? "cursor-not-allowed opacity-75" : ""
                 }`}
               >
@@ -1634,25 +1652,27 @@ export const ProductNewFinal: React.FC = () => {
         {/* Main Grid Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 lg:gap-8">
           {/* Mobile horizontal tab bar */}
-          <div className="lg:hidden -mx-2 px-2 sm:mx-0 sm:px-0">
+          <div className="lg:hidden -mx-1 px-1 sm:mx-0 sm:px-0 mb-2">
             <nav
-              className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1 -mb-1"
+              className="flex gap-1.5 overflow-x-auto scrollbar-none py-1.5 px-2 bg-white/90 dark:bg-gray-800/90 border border-gray-200/70 dark:border-gray-700/60 rounded-xl shadow-2xs"
               aria-label="أقسام المنتج"
             >
               {tabs.map((tab) => {
+                const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
                 return (
                   <button
                     key={tab.id}
                     type="button"
                     onClick={() => changeTab(tab.id)}
-                    className={`shrink-0 whitespace-nowrap rounded-full px-3.5 py-2 text-xs font-bold transition-colors ${
+                    className={`shrink-0 flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition-all min-h-[38px] ${
                       isActive
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-300"
+                        ? "bg-indigo-600 text-white shadow-xs"
+                        : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/60"
                     }`}
                   >
-                    {tab.name}
+                    <Icon className="h-4 w-4 shrink-0" />
+                    <span>{tab.name}</span>
                   </button>
                 );
               })}
