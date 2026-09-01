@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import {
   AdjustmentsHorizontalIcon,
   EyeIcon,
@@ -358,7 +358,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       </div>
 
       {/* 3. Mobile Bottom Studio Dock (Hidden on Desktops >= 768px) */}
-      <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md md:hidden">
+      <div className="sticky bottom-0 z-40 flex h-14 w-full items-center justify-around border-t border-border/80 bg-background/95 p-1 backdrop-blur-md md:!hidden">
         <button
           type="button"
           onClick={() => setMobileStudioTab("layers")}
