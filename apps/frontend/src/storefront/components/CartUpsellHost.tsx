@@ -450,65 +450,79 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
 
     if (isKhemetDrawer) {
       const compactActionClassName =
-        "mt-2 inline-flex h-9 w-full items-center justify-center rounded-[0.8rem] px-3 text-[12px] font-black transition hover:opacity-90";
+        "mt-2 inline-flex h-8 w-full items-center justify-center gap-1 rounded-xl px-2.5 text-[11px] font-black transition-all shadow-xs active:scale-95";
       const compactActionLabel = hasVariants
         ? chooseOptionsCtaLabel
         : prefersArabicCopy
-          ? "أضيفي"
+          ? "أضيفي للطلب"
           : quickAddLabel;
+      const comparePrice = typeof product.comparePrice === 'number' && product.comparePrice > (Number(product.price) || 0)
+        ? product.comparePrice
+        : null;
 
       return (
         <div
           key={`${label}-${product.id}`}
-          className="flex min-w-[12.75rem] max-w-[12.75rem] snap-start flex-col rounded-[1rem] border border-[#e7ddd0] bg-white/94 p-2.5 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.22)]"
+          className="group flex min-w-[10.5rem] max-w-[10.5rem] sm:min-w-[11.25rem] sm:max-w-[11.25rem] snap-start flex-col rounded-2xl border border-[#e7ddd0] bg-white p-2.5 shadow-xs hover:shadow-md hover:border-[#173f31]/30 transition-all"
         >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[0.85rem] border border-[#eadfcf] bg-[#fbf5ed]">
-              <StorefrontProductImage
-                candidates={getProductImageCandidates(product)}
-                alt={product.name}
-                width="56"
-                height="56"
-                className="h-full w-full object-cover"
-                fallback={
-                  <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground">
-                    IMG
-                  </div>
-                }
-              />
-            </div>
+          {/* Hero Product Visual with Badge Overlay */}
+          <div className="relative w-full aspect-[4/3] overflow-hidden rounded-xl border border-[#eadfcf]/80 bg-[#fbf8f4]">
+            <StorefrontProductImage
+              candidates={getProductImageCandidates(product)}
+              alt={product.name}
+              width="180"
+              height="135"
+              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+              fallback={
+                <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground font-bold">
+                  {product.name?.[0] || "Swan"}
+                </div>
+              }
+            />
+            {/* Top Badge */}
+            <span className="absolute top-1.5 right-1.5 rounded-full bg-[#173f31]/90 backdrop-blur-xs px-2 py-0.5 text-[9px] font-black text-[#fff7eb] shadow-xs">
+              {label}
+            </span>
+          </div>
 
-            <div className="min-w-0 flex-1">
-              <span className="inline-flex rounded-full bg-[#eef1ec] px-2 py-0.5 text-[10px] font-black text-[#1f4c3b]">
-                {label}
-              </span>
-              <h4
-                dir="ltr"
-                className="mt-1 line-clamp-2 min-h-8 text-left text-[12px] font-black leading-4 text-[#2f2923]"
-              >
-                {product.name}
-              </h4>
-              <p dir="ltr" className="mt-0.5 text-left text-[11px] font-medium text-[#7b6d58]">
+          {/* Product Details */}
+          <div className="mt-2 min-w-0 flex-1 text-right">
+            <h4
+              className="line-clamp-1 text-xs font-black text-[#2a2118]"
+              title={product.name}
+            >
+              {product.name}
+            </h4>
+            <div className="flex items-baseline gap-1.5 mt-0.5">
+              <span className="text-xs font-black text-[#173f31]">
                 {formatStorefrontCurrency(Number(product.price) || 0, currency)}
-              </p>
+              </span>
+              {comparePrice ? (
+                <span className="text-[10px] text-[#a89987] line-through">
+                  {formatStorefrontCurrency(comparePrice, currency)}
+                </span>
+              ) : null}
             </div>
           </div>
 
+          {/* High-Converting CTA Button */}
           {hasVariants ? (
             <Link
               to={productPath}
               onClick={() => setIsOpen(false)}
-              className={`${compactActionClassName} border border-[#d7c6b4] bg-[#fffaf4] text-[#4a352e]`}
+              className={`${compactActionClassName} bg-[#173f31] text-[#fff7eb] hover:bg-[#204d3d]`}
             >
-              {compactActionLabel}
+              <span>+</span>
+              <span>{compactActionLabel}</span>
             </Link>
           ) : (
             <button
               type="button"
               onClick={() => handleQuickAdd(product)}
-              className={`${compactActionClassName} bg-[#173f31] text-[#fff7eb]`}
+              className={`${compactActionClassName} bg-[#173f31] text-[#fff7eb] hover:bg-[#204d3d]`}
             >
-              {compactActionLabel}
+              <span>+</span>
+              <span>{compactActionLabel}</span>
             </button>
           )}
         </div>
@@ -663,7 +677,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
             {[1, 2].map((item) => (
               <div
                 key={item}
-                className="h-[8.75rem] min-w-[12.75rem] animate-pulse rounded-[1rem] border border-[#e7ddd0] bg-white/70"
+                className="h-[13.5rem] min-w-[10.5rem] animate-pulse rounded-2xl border border-[#e7ddd0] bg-white/70"
               />
             ))}
           </div>
@@ -675,7 +689,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
           </div>
         ) : (
           <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-[12.75rem] max-w-[12.75rem] snap-start flex-col rounded-[1rem] border border-[#e7ddd0] bg-white/94 p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.22)]">
+            <div className="flex min-w-[10.5rem] max-w-[10.5rem] sm:min-w-[11.25rem] sm:max-w-[11.25rem] snap-start flex-col rounded-2xl border border-[#e7ddd0] bg-white/94 p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.22)]">
               <span className="inline-flex self-start rounded-full bg-[#eef1ec] px-2 py-0.5 text-[10px] font-black text-[#1f4c3b]">
                 {prefersArabicCopy ? "زيادة ذكية" : "Smart add"}
               </span>
@@ -711,7 +725,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
             <Link
               to={shopPath}
               onClick={() => setIsOpen(false)}
-              className="flex min-w-[12.75rem] max-w-[12.75rem] snap-start flex-col rounded-[1rem] border border-[#e7ddd0] bg-[#fffaf4] p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.18)]"
+              className="flex min-w-[10.5rem] max-w-[10.5rem] sm:min-w-[11.25rem] sm:max-w-[11.25rem] snap-start flex-col rounded-2xl border border-[#e7ddd0] bg-[#fffaf4] p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.18)]"
             >
               <span className="inline-flex self-start rounded-full bg-[#f2eadf] px-2 py-0.5 text-[10px] font-black text-[#725523]">
                 {prefersArabicCopy ? "كمّلي اللوك" : "Keep browsing"}

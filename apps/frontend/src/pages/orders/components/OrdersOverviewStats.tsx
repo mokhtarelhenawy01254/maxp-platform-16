@@ -256,14 +256,14 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
   }
 
   const segmentedBtn = (active: boolean) =>
-    `min-h-[36px] whitespace-nowrap rounded-lg px-2.5 text-xs font-bold transition-all ${
+    `min-h-[36px] flex-shrink-0 whitespace-nowrap rounded-lg px-3 text-xs font-bold transition-all ${
       active
         ? "bg-blue-600 text-white shadow-sm"
-        : "text-slate-500 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
+        : "text-slate-600 hover:bg-slate-100 hover:text-slate-800 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-100"
     }`;
 
   const dateInputClass =
-    "rounded-lg border border-slate-200 bg-white px-1.5 py-1 text-[11px] text-slate-700 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
+    "rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs text-slate-700 focus:border-blue-500 focus:outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200";
 
   const vsPrevTitle = t("orders.overviewVsPrevPeriod");
 
@@ -327,37 +327,41 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
     <section aria-label={t("orders.overviewAriaLabel")} className="mb-3">
       <div className="rounded-2xl border border-slate-200/70 bg-white/85 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/70">
         <div className="flex flex-col gap-3 p-3 lg:flex-row lg:items-center">
-          <div className="grid flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid flex-1 grid-cols-2 gap-x-3 gap-y-2.5 sm:gap-x-4 sm:gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
             {kpis.map((kpi) => (
-              <div key={kpi.key} className="flex min-w-0 items-center gap-2.5">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
-                  {kpi.icon}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-xs font-semibold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                    {kpi.label}
-                  </p>
-                  <div className="flex items-center gap-1.5">
-                    <p className="truncate text-base font-black leading-tight text-slate-950 dark:text-white">
-                      {kpi.value}
+              <div key={kpi.key} className="flex min-w-0 items-center justify-between gap-2">
+                <div className="flex min-w-0 items-center gap-2">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-500 sm:h-8 sm:w-8 sm:rounded-xl dark:bg-slate-800 dark:text-slate-400">
+                    {kpi.icon}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[11px] font-semibold uppercase tracking-wider text-slate-500 sm:text-xs dark:text-slate-400">
+                      {kpi.label}
                     </p>
-                    <DeltaPill
-                      delta={kpi.delta}
-                      title={
-                        kpi.deltaIsPoints ? vsPrevTitle : `${vsPrevTitle} (${periodLabel})`
-                      }
-                    />
+                    <div className="flex items-center gap-1">
+                      <p className="truncate text-sm font-black leading-tight text-slate-950 sm:text-base dark:text-white">
+                        {kpi.value}
+                      </p>
+                      <DeltaPill
+                        delta={kpi.delta}
+                        title={
+                          kpi.deltaIsPoints ? vsPrevTitle : `${vsPrevTitle} (${periodLabel})`
+                        }
+                      />
+                    </div>
                   </div>
                 </div>
                 {kpi.spark && kpi.spark.length > 1 && (
-                  <Sparkline
-                    data={kpi.spark}
-                    width={56}
-                    height={24}
-                    tone={kpi.tone}
-                    filled
-                    ariaLabel={kpi.aria}
-                  />
+                  <div className="hidden shrink-0 xl:block">
+                    <Sparkline
+                      data={kpi.spark}
+                      width={48}
+                      height={20}
+                      tone={kpi.tone}
+                      filled
+                      ariaLabel={kpi.aria}
+                    />
+                  </div>
                 )}
               </div>
             ))}
@@ -365,7 +369,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
 
           <div className="flex flex-wrap items-center gap-2 border-t border-slate-200/70 pt-2.5 lg:border-t-0 lg:border-r lg:pt-0 lg:pr-3 dark:border-slate-700/70">
             {period === "custom" && (
-              <div className="flex items-center gap-1.5">
+              <div className="flex w-full items-center justify-between gap-1.5 sm:w-auto">
                 <CalendarDaysIcon className="h-3.5 w-3.5 text-slate-400" />
                 <input
                   type="date"
@@ -375,7 +379,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
                   className={dateInputClass}
                   aria-label={t("orders.overviewFrom")}
                 />
-                <span className="text-[11px] text-slate-400">
+                <span className="text-xs text-slate-400">
                   {t("orders.overviewTo")}
                 </span>
                 <input
@@ -389,7 +393,7 @@ export const OrdersOverviewStats: React.FC<OrdersOverviewStatsProps> = ({
               </div>
             )}
             <div
-              className="flex flex-wrap items-center gap-0.5 rounded-xl border border-slate-200/70 bg-slate-50/80 p-0.5 dark:border-slate-700/70 dark:bg-slate-800/60"
+              className="no-scrollbar flex w-full items-center gap-1 overflow-x-auto rounded-xl border border-slate-200/70 bg-slate-50/80 p-0.5 sm:w-auto dark:border-slate-700/70 dark:bg-slate-800/60"
               role="tablist"
               aria-label={periodLabel}
             >

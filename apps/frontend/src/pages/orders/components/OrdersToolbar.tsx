@@ -8,6 +8,7 @@ import {
   FunnelIcon,
   ExclamationTriangleIcon,
   ArrowLeftIcon,
+  ArrowPathIcon,
   BoltIcon,
 } from "@heroicons/react/24/outline";
 import { CommandPalette } from "../../../components/common/CommandPalette";
@@ -43,6 +44,7 @@ interface OrdersToolbarProps {
   onToggleAdvancedFilters: () => void;
   onSetQuickDate: (range: string) => void;
   onRetry: () => void;
+  onRefresh?: () => void;
 }
 
 export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
@@ -67,6 +69,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   onToggleAdvancedFilters,
   onSetQuickDate,
   onRetry,
+  onRefresh,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -101,6 +104,17 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
   // Quick views: one-press presets for the highest-frequency filter combos.
   const quickViews = useMemo(
     () => [
+      {
+        key: "all",
+        label: t("orders.allOrders"),
+        isActive: (f: OrdersFilters) =>
+          !f.timeRange && f.status.length === 0 && !f.onlyUnseen,
+        apply: () => {
+          onFilterChange("status", []);
+          onFilterChange("timeRange", "");
+          onFilterChange("onlyUnseen", false);
+        },
+      },
       {
         key: "today",
         label: t("orders.today"),
@@ -226,7 +240,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
       <div className="rounded-[22px] border border-slate-200/70 bg-white/90 p-2 shadow-[0_18px_50px_-42px_rgba(15,23,42,0.35)] dark:border-slate-700/70 dark:bg-slate-950/55">
         <div className="flex flex-col gap-3">
           {/* Quick views: one-press presets for the highest-frequency filters */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto pb-0.5 sm:flex-wrap">
             <span className="hidden items-center gap-1 text-[11px] font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500 sm:inline-flex">
               <BoltIcon className="h-3.5 w-3.5" />
               {t("orders.quickViews")}
@@ -238,7 +252,7 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
                   key={view.key}
                   type="button"
                   onClick={view.apply}
-                  className={`inline-flex min-h-[32px] items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition ${active
+                  className={`inline-flex min-h-[32px] flex-shrink-0 items-center gap-1 whitespace-nowrap rounded-full border px-3 py-1 text-xs font-semibold transition ${active
                     ? "border-blue-500 bg-blue-600 text-white shadow-sm shadow-blue-500/20"
                     : "border-slate-200/80 bg-white/80 text-slate-600 hover:border-blue-300 hover:bg-blue-50/60 hover:text-blue-700 dark:border-slate-700/70 dark:bg-slate-900/60 dark:text-slate-300 dark:hover:border-blue-500/40 dark:hover:bg-blue-500/10 dark:hover:text-blue-200"
                     }`}
@@ -248,7 +262,9 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               );
             })}
             <span className="mx-0.5 hidden h-5 w-px bg-slate-200 dark:bg-slate-700 sm:inline-block" />
-            <SavedViews filters={filters} onApplyFilters={onApplyFilters} />
+            <div className="flex-shrink-0">
+              <SavedViews filters={filters} onApplyFilters={onApplyFilters} />
+            </div>
           </div>
 
           {ordersLoadError && (
@@ -295,12 +311,23 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 lg:flex-nowrap">
+            <div className="flex items-center gap-2 lg:flex-nowrap">
               <CommandPalette />
+              {onRefresh && (
+                <button
+                  type="button"
+                  onClick={onRefresh}
+                  aria-label={String(t("orders.refreshOrders"))}
+                  title={t("orders.refreshOrders")}
+                  className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 p-2.5 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  <ArrowPathIcon className="h-4 w-4" />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={onToggleAdvancedFilters}
-                className={`inline-flex min-h-[44px] items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${showAdvancedFilters
+                className={`inline-flex min-h-[44px] flex-1 items-center justify-center gap-2 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:flex-initial sm:text-sm ${showAdvancedFilters
                   ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                   : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
                   }`}
@@ -320,10 +347,11 @@ export const OrdersToolbar: React.FC<OrdersToolbarProps> = ({
               </button>
 
               <button
+                type="button"
                 onClick={() =>
                   onFilterChange("onlyUnseen", !filters.onlyUnseen)
                 }
-                className={`flex min-h-[44px] min-w-[118px] items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:text-sm ${filters.onlyUnseen
+                className={`flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl border px-3 py-2 text-xs font-semibold transition sm:min-w-[118px] sm:flex-initial sm:text-sm ${filters.onlyUnseen
                   ? "border-blue-500 bg-blue-600 text-white shadow-lg shadow-blue-500/20"
                   : "border-slate-200/80 bg-white/90 text-slate-700 hover:bg-slate-50 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-200 dark:hover:bg-slate-800"
                   }`}

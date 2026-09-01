@@ -116,27 +116,51 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
             const orderItemsSummary = summarizeOrderDocumentItems(order.items);
             const isSelected = selectedOrders.includes(order.orderNumber);
 
+            const displayOrderNumber =
+              order.metadata?.isIncompleteCart && order.orderNumber?.startsWith("cart_")
+                ? `INC-${order.orderNumber.replace(/^cart_/, "").slice(0, 8).toUpperCase()}`
+                : order.orderNumber;
+
+            const itemsCount = (order.items || []).reduce(
+              (sum, item) => sum + (item.quantity || 1),
+              0,
+            );
+            const firstItemName =
+              order.items?.[0]?.productName || order.items?.[0]?.name;
+            const productsSummary =
+              order.items && order.items.length > 0
+                ? order.items.length === 1
+                  ? `${firstItemName || t("orders.product")}${
+                      (order.items[0]?.quantity || 1) > 1
+                        ? ` × ${order.items[0].quantity}`
+                        : ""
+                    }`
+                  : `${firstItemName || t("orders.product")} + ${
+                      order.items.length - 1
+                    } (${itemsCount} ${t("orders.itemsCount", { defaultValue: "قطع" })})`
+                : null;
+
             return (
               <div
                 key={`mobile-${order.id || virtualRow.key}`}
                 data-index={virtualRow.index}
                 ref={mobileRowVirtualizer.measureElement}
-                className="absolute left-0 top-0 w-full pb-4"
+                className="absolute left-0 top-0 w-full pb-3.5"
                 style={{
                   transform: `translateY(${virtualRow.start - mobileRowVirtualizer.options.scrollMargin}px)`,
                 }}
               >
                 <article
-                  className={`rounded-2xl border ${density === "compact" ? "p-2.5" : "p-3.5"} shadow-[0_20px_60px_-42px_rgba(15,23,42,0.5)] transition ${isSelected
-                    ? "border-blue-400/70 bg-blue-50/90 dark:border-blue-500/60 dark:bg-blue-500/10"
-                    : "border-slate-200/70 bg-white/90 dark:border-slate-700/70 dark:bg-slate-900/70"
+                  className={`rounded-2xl border ${density === "compact" ? "p-2.5" : "p-3.5"} bg-white/95 shadow-[0_12px_36px_-24px_rgba(15,23,42,0.35)] transition dark:bg-slate-900/90 ${isSelected
+                    ? "border-blue-500/70 bg-blue-50/80 ring-1 ring-blue-500/30 dark:border-blue-500/60 dark:bg-blue-500/10"
+                    : "border-slate-200/80 dark:border-slate-700/80"
                     }`}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1.5">
+                    <div className="min-w-0 flex-1 space-y-1">
                       <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2.5 py-0.5 text-[11px] font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                          #{order.orderNumber}
+                        <span className="inline-flex items-center rounded-full border border-slate-200/70 bg-slate-50 px-2.5 py-0.5 text-[11px] font-bold text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                          #{displayOrderNumber}
                         </span>
                         {!order.isViewed && (
                           <span className="inline-flex items-center rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-semibold text-red-600 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
@@ -151,12 +175,12 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       </div>
 
                       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-                        <h3 className="truncate text-[15px] font-semibold text-slate-900 dark:text-white">
+                        <h3 className="truncate text-sm font-bold text-slate-900 dark:text-white">
                           {getCustomerDisplayName(order)}
                         </h3>
                         {order.customerPhone && (
                           <p
-                            className="text-xs text-slate-500 dark:text-slate-400"
+                            className="text-xs font-medium text-slate-500 dark:text-slate-400"
                             dir="ltr"
                           >
                             {order.customerPhone}
@@ -176,8 +200,15 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     )}
                   </div>
 
+                  {productsSummary && (
+                    <div className="mt-2 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300">
+                      <span className="shrink-0 text-slate-400 dark:text-slate-500">📦</span>
+                      <span className="truncate font-medium">{productsSummary}</span>
+                    </div>
+                  )}
+
                   {orderItemsSummary.hasQuantityOffers ? (
-                    <div className="mt-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+                    <div className="mt-2 rounded-xl border border-amber-200/80 bg-amber-50/80 px-2.5 py-1.5 text-xs text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
                       <div className="font-semibold">
                         {t("orders.quantityOffersLabel")}: {orderItemsSummary.primaryLabel}
                       </div>
@@ -187,28 +218,29 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     </div>
                   ) : null}
 
-                  <div className="mt-2.5 grid grid-cols-2 gap-2 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-2.5 dark:border-slate-700 dark:bg-slate-950/40">
+                  {/* Single-depth metadata layout (Ban box-in-box MOB-015) */}
+                  <div className="mt-2.5 grid grid-cols-2 gap-2 border-t border-slate-100 pt-2.5 dark:border-slate-800/80">
                     <div className="min-w-0">
-                      <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {t("orders.amount")}
                       </p>
-                      <p className="mt-0.5 truncate text-sm font-bold text-slate-900 dark:text-white">
+                      <p className="mt-0.5 truncate text-sm font-black text-slate-900 dark:text-white">
                         {formatPrice(getOrderAmount(order))}
                       </p>
-                      <p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-slate-400">
+                      <p className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400">
                         {getOrderSourceText(order)}
                       </p>
                     </div>
 
-                    <div className="min-w-0 text-left">
-                      <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400">
+                    <div className="min-w-0 text-end">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
                         {t("orders.time")}
                       </p>
-                      <p className="mt-0.5 truncate text-sm font-semibold text-slate-900 dark:text-white">
+                      <p className="mt-0.5 truncate text-sm font-semibold text-slate-800 dark:text-slate-200">
                         {getRelativeTime(order.createdAt || new Date().toISOString())}
                       </p>
                       <p
-                        className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-slate-400"
+                        className="mt-0.5 truncate text-[11px] text-slate-500 dark:text-slate-400"
                         title={formatDate(order.createdAt || new Date().toISOString())}
                       >
                         {formatDate(order.createdAt || new Date().toISOString())}
@@ -243,8 +275,9 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
 
                   <div className="mt-3 flex items-center gap-2">
                     <button
+                      type="button"
                       onClick={() => onOpenOrder(order)}
-                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] dark:bg-blue-500 dark:hover:bg-blue-600"
                     >
                       <EyeIcon className="h-4 w-4" />
                       {t("orders.quickView")}
@@ -259,7 +292,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                           onMarkAsViewed(order.orderNumber);
                         }
                       }}
-                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-2xl border border-slate-200/80 bg-white/90 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+                      className="inline-flex min-h-[44px] flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                     >
                       <ShoppingBagIcon className="h-4 w-4" />
                       {t("orders.viewDetails")}
@@ -268,7 +301,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                     {order.conversationId && (
                       <Link
                         to={`/whatsapp?conversationId=${order.conversationId}`}
-                        className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
+                        className="inline-flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-700 transition hover:bg-emerald-100 active:scale-[0.98] dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/15"
                         aria-label={`${t("orders.conversation")} ${order.orderNumber}`}
                         title={t("orders.conversation")}
                       >

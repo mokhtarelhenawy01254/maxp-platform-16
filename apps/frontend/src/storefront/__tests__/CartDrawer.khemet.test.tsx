@@ -41,7 +41,23 @@ vi.mock('../engine/ThemeProvider', () => ({
 
 vi.mock('../components/CartUpsellHost', () => ({
   default: ({ open }: { open: boolean }) =>
-    open ? <section data-testid="cart-upsell">اقتراحات السلة</section> : null,
+    open ? (
+      <section data-testid="cart-upsell">
+        <div data-testid="khemet-cart-quantity-upsell">
+          <button
+            onClick={() => {
+              const current = useCartStore.getState().items[0];
+              if (current) {
+                useCartStore.getState().updateQuantity(current.id, (current.quantity || 1) + 1);
+              }
+            }}
+          >
+            زودي قطعة
+          </button>
+          <a href="/shop">افتحي الشوب</a>
+        </div>
+      </section>
+    ) : null,
 }));
 
 vi.mock('../components/StorefrontProductImage', () => ({

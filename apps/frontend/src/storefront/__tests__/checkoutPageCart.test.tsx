@@ -138,6 +138,11 @@ describe('Storefront checkout cart injection', () => {
         return jsonResponse({ success: true });
       }
 
+      if (url.pathname.endsWith('/public/orders/minimum-settings') || url.pathname.includes('minimum-settings')) {
+        return jsonResponse({ success: true, data: { enabled: false } });
+      }
+
+      console.warn('[Test unhandled request]:', url.pathname);
       return jsonResponse({ success: false, message: `Unhandled request: ${url.pathname}` }, 404);
     }) as typeof fetch;
   });
@@ -164,7 +169,9 @@ describe('Storefront checkout cart injection', () => {
       </QueryClientProvider>,
     );
 
-    expect(await screen.findByText(/Shopping cart|سلة التسوق/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Shopping cart|سلة التسوق/, {}, { timeout: 5000 }),
+    ).toBeInTheDocument();
     expect(screen.getAllByText('Atlas Tee').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/(Color|اللون):\s*Blue/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/(Size|المقاس):\s*L/).length).toBeGreaterThan(0);

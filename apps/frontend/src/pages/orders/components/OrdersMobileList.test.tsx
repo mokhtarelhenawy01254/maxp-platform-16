@@ -110,15 +110,45 @@ describe("OrdersMobileList", () => {
     expect(document.querySelector(".skeleton-shimmer")).not.toBeNull();
   });
 
-  it("renders order cards in compact density", () => {
+  it("renders product summary when items are present", () => {
+    const ordersWithItems = [
+      makeOrder({
+        items: [
+          {
+            id: "i1",
+            productId: "p1",
+            name: "Classic Shoes",
+            price: 50,
+            quantity: 2,
+            total: 100,
+          },
+        ],
+      }),
+    ];
+
     render(
       <MemoryRouter>
-        <OrdersMobileList {...baseProps} density="compact" />
+        <OrdersMobileList {...baseProps} orders={ordersWithItems} />
       </MemoryRouter>,
     );
 
-    const card = document.querySelector("article");
-    expect(card).not.toBeNull();
-    expect(card?.className).toContain("p-2.5");
+    expect(screen.getByText(/Classic Shoes × 2/)).toBeInTheDocument();
+  });
+
+  it("formats incomplete cart IDs cleanly", () => {
+    const incompleteOrders = [
+      makeOrder({
+        orderNumber: "cart_d339ab42-57e0-4f6a-9b7c-333fcbac86e#",
+        metadata: { isIncompleteCart: true, cartId: "cart_d339ab42" },
+      }),
+    ];
+
+    render(
+      <MemoryRouter>
+        <OrdersMobileList {...baseProps} orders={incompleteOrders} />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByText("#INC-D339AB42")).toBeInTheDocument();
   });
 });

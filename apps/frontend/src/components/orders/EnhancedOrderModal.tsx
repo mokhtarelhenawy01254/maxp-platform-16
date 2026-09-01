@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   XMarkIcon,
   ChatBubbleLeftRightIcon,
@@ -669,7 +669,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                             </div>
                           )}
                         </div>
-                        <div className="text-left">
+                        <div className="text-end">
                           <p className="font-semibold text-foreground text-sm">
                             {formatPrice(
                               item.total || item.price * item.quantity,
@@ -737,10 +737,6 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           {/* Tab: Update */}
           {activeTab === "update" && (
           <div>
-            {renderSectionHeader(
-              <PencilSquareIcon className="h-3.5 w-3.5" />,
-              t("orders.updateOrder"),
-            )}
             {renderSectionHeader(
               <PencilSquareIcon className="h-3.5 w-3.5" />,
               t("orders.updateOrder"),
@@ -959,19 +955,19 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
         </div>
       </div>
         {/* Sticky Bottom Action Bar */}
-        <div className="sticky bottom-0 z-10 flex flex-col gap-1.5 border-t border-border/60 bg-background/90 px-3 py-2 backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4">
+        <div className="sticky bottom-0 z-10 flex flex-col gap-2 border-t border-border/60 bg-background/95 px-3 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))] backdrop-blur-md sm:flex-row sm:items-center sm:justify-between sm:px-4 sm:py-2">
           <div className="flex flex-col gap-2 sm:flex-row">
             <button
               onClick={handlePrintInvoice}
               disabled={isPrinting}
-              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-success px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-success/90 disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-success px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-success/90 active:scale-[0.98] disabled:opacity-50 sm:min-h-[38px] sm:rounded-lg"
             >
               <PrinterIcon className="h-4 w-4" />
               {isPrinting ? t("orders.printing") : t("orders.printInvoice")}
             </button>
             <Link
               to={`/orders/${encodeURIComponent(String(order.orderNumber || ""))}`}
-              className="inline-flex min-h-[36px] items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+              className="inline-flex min-h-[44px] items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary/90 active:scale-[0.98] sm:min-h-[38px] sm:rounded-lg"
             >
               <ShoppingBagIcon className="h-4 w-4" />
               {t("orders.viewFullDetails")}
@@ -979,7 +975,7 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="inline-flex min-h-[36px] w-full items-center justify-center rounded-lg border border-border bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted sm:w-auto"
+            className="inline-flex min-h-[44px] w-full items-center justify-center rounded-xl border border-border bg-background px-5 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-muted active:scale-[0.98] sm:min-h-[38px] sm:w-auto sm:rounded-lg"
           >
             {t("orders.close")}
           </button>

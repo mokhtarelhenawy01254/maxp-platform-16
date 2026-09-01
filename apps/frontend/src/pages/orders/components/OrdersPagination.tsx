@@ -31,38 +31,40 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
 
   if (variant === "mobile") {
     return (
-      <div className="rounded-[26px] border border-slate-200/70 bg-white/88 p-4 shadow-sm dark:border-slate-700/70 dark:bg-slate-900/72 lg:hidden">
+      <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 shadow-sm dark:border-slate-700/80 dark:bg-slate-900/90 lg:hidden">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
               {t("orders.currentPage")}
             </p>
-            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">
               {page} / {Math.max(totalPages, 1)}
             </p>
           </div>
-          <div className="text-left">
-            <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          <div className="text-end">
+            <p className="text-[11px] font-medium uppercase tracking-wider text-slate-400 dark:text-slate-500">
               {t("orders.currentlyShown")}
             </p>
-            <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+            <p className="mt-0.5 text-sm font-bold text-slate-900 dark:text-white">
               {Math.min(page * limit, totalOrders)} / {totalOrders}
             </p>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
+        <div className="mt-3 flex items-center gap-2">
           <button
+            type="button"
             onClick={() => onPageChange(page - 1)}
             disabled={page === 1}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl border border-slate-200/80 bg-white/90 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl border border-slate-200/80 bg-slate-50/80 px-3 py-2 text-xs font-bold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             {t("orders.previous")}
           </button>
           <button
+            type="button"
             onClick={() => onPageChange(page + 1)}
             disabled={page === totalPages}
-            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-2xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-500 dark:hover:bg-blue-600"
+            className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-40 active:scale-[0.98] dark:bg-blue-500 dark:hover:bg-blue-600"
           >
             {t("orders.next")}
           </button>
@@ -70,7 +72,7 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
             aria-label={String(t("orders.ordersPerPage"))}
             value={limit}
             onChange={(e) => onLimitChange(parseInt(e.target.value))}
-            className="theme-native-control w-full rounded-2xl border border-slate-200/80 bg-white/90 px-3 py-2 text-sm text-slate-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.65)] transition focus:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-500/15 dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-100 w-auto min-w-[88px] px-3"
+            className="theme-native-control min-h-[44px] rounded-xl border border-slate-200/80 bg-white/90 px-2.5 py-2 text-xs font-semibold text-slate-700 shadow-sm transition focus:border-blue-400 focus:outline-none dark:border-slate-700/80 dark:bg-slate-800/85 dark:text-slate-100"
           >
             {LIMIT_OPTIONS.map((value) => (
               <option key={value} value={value}>
@@ -89,7 +91,7 @@ export const OrdersPagination: React.FC<OrdersPaginationProps> = ({
                 ? t("orders.comfortableDensity")
                 : t("orders.compactDensity")
             }
-            className={`inline-flex min-h-[44px] items-center justify-center rounded-2xl border px-3 py-2 text-xs font-semibold transition ${density === "compact"
+            className={`inline-flex min-h-[44px] items-center justify-center rounded-xl border px-3 py-2 text-xs font-semibold transition active:scale-[0.98] ${density === "compact"
               ? "border-blue-500 bg-blue-600 text-white"
               : "border-slate-200/80 bg-white/90 text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
               }`}

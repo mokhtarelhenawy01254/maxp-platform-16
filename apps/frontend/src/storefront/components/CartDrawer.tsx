@@ -437,7 +437,7 @@ const CartDrawer: React.FC = () => {
 
                 return (
                 <div key={entry.key} className={itemCardClassName}>
-                  <div className={`flex ${isKhemetLuxe ? 'h-20 w-20 sm:h-22 sm:w-22' : 'h-20 w-20'} shrink-0 items-center justify-center overflow-hidden ${
+                  <div className={`flex ${isKhemetLuxe ? 'h-24 w-24' : 'h-20 w-20'} shrink-0 items-center justify-center overflow-hidden ${
                     isBiteRush
                       ? 'rounded-[1.3rem] bg-[#fff1e2]'
                       : isCafeDemo
