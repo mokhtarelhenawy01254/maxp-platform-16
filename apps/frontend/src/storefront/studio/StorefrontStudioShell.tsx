@@ -247,9 +247,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
       <div className="relative flex flex-1 h-[calc(100vh-4rem)] w-full overflow-hidden">
         {/* Left Studio Dock (Layers / Catalog) */}
         <div
-          className={`h-full shrink-0 border-e border-border/80 bg-card md:w-80 lg:w-80 ${
-            mobileStudioTab === "layers" ? "flex flex-col w-full" : "hidden md:flex md:flex-col"
-          }`}
+          className={`h-full shrink-0 border-e border-border/80 bg-card ${
+            mobileStudioTab === "layers" ? "flex flex-col w-full" : "hidden"
+          } md:flex md:flex-col md:w-80`}
         >
           <StudioLayersDrawer
             sections={activeSections}
@@ -270,8 +270,8 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
         {/* Center Studio Stage (Interactive Live Canvas) */}
         <div
           className={`h-full flex-1 overflow-hidden bg-muted/20 ${
-            mobileStudioTab === "canvas" ? "flex flex-col w-full" : "hidden md:flex md:flex-col"
-          }`}
+            mobileStudioTab === "canvas" ? "flex flex-col w-full" : "hidden"
+          } md:flex md:flex-col`}
         >
           <StudioCanvasStage deviceMode={deviceMode}>
             <StorefrontThemeProvider initialTheme={previewTheme as unknown as StorefrontThemeInput}>
@@ -324,9 +324,9 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
         {/* Right Studio Dock (Property Inspector) */}
         <div
-          className={`h-full shrink-0 border-s border-border/80 bg-card md:w-80 lg:w-96 ${
-            mobileStudioTab === "inspector" ? "flex flex-col w-full" : "hidden md:flex md:flex-col"
-          }`}
+          className={`h-full shrink-0 border-s border-border/80 bg-card ${
+            mobileStudioTab === "inspector" ? "flex flex-col w-full" : "hidden"
+          } md:flex md:flex-col md:w-80 lg:w-96`}
         >
           <StudioPropertyInspector
             selectedSectionKey={selectedSectionKey}
