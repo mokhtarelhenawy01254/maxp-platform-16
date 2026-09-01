@@ -12,7 +12,15 @@ const LEGACY_APP_SLUG_ALIASES = {
   // Grandfathering only for monolithic apps that historically included manual orders.
   // order-core / ecommerce-basic / store-basic do NOT open manual orders anymore —
   // manual-orders-pro is now a standalone paid app.
-  'manual-orders-pro': ['store-pro']
+  'manual-orders-pro': ['store-pro'],
+  // WhatsApp apps aliases & backwards compatibility:
+  'whatsapp-business': ['whatsapp-integration', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing', 'unified-inbox'],
+  'whatsapp-integration': ['whatsapp-business', 'whatsapp-inbox', 'whatsapp-settings', 'whatsapp-notifications', 'whatsapp-templates', 'whatsapp-routing', 'unified-inbox'],
+  'whatsapp-inbox': ['whatsapp-business', 'whatsapp-integration', 'unified-inbox'],
+  'whatsapp-settings': ['whatsapp-business', 'whatsapp-integration'],
+  'whatsapp-notifications': ['whatsapp-business', 'whatsapp-integration'],
+  'whatsapp-templates': ['whatsapp-business', 'whatsapp-integration'],
+  'whatsapp-routing': ['whatsapp-business', 'whatsapp-integration']
 };
 
 const getCandidateAppSlugs = (appSlug) => {
