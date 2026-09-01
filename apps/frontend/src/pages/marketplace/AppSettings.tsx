@@ -3350,7 +3350,7 @@ export default function AppSettings() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl items-center justify-between gap-6 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col sm:flex-row sm:items-center justify-between gap-4 px-3 py-4 sm:px-6 sm:py-6">
           <div className="space-y-3">
             <button
               onClick={() => navigate(backDestination)}
@@ -3359,23 +3359,23 @@ export default function AppSettings() {
               <ArrowLeft size={18} />
               {backLabel}
             </button>
-            <div className="flex items-start gap-4">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-100 text-3xl dark:bg-blue-900/30">
+            <div className="flex items-start gap-3 sm:gap-4">
+              <div className="flex h-12 w-12 sm:h-16 sm:w-16 shrink-0 items-center justify-center rounded-2xl bg-blue-100 text-2xl sm:text-3xl dark:bg-blue-900/30">
                 {companyApp.app.icon || "📦"}
               </div>
               <div>
-                <div className="mb-2 flex items-center gap-2">
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                <div className="mb-1 sm:mb-2 flex flex-wrap items-center gap-2">
+                  <h1 className="text-xl sm:text-3xl font-bold text-gray-900 dark:text-white">
                     {pageTitle}
                   </h1>
                   {supported && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2.5 py-0.5 sm:px-3 sm:py-1 text-xs font-semibold text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
                       <Sparkles size={14} />
                       {isUpsellCenter ? "Unified" : "Template Ready"}
                     </span>
                   )}
                 </div>
-                <p className="max-w-3xl text-gray-600 dark:text-gray-400">
+                <p className="max-w-3xl text-xs sm:text-sm text-gray-600 dark:text-gray-400">
                   {pageDescription}
                 </p>
               </div>
@@ -3384,7 +3384,7 @@ export default function AppSettings() {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 sm:px-5 sm:py-3 text-sm sm:text-base font-semibold text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-70"
           >
             <Save size={18} />
             {saving ? "جارٍ الحفظ..." : "حفظ الإعدادات"}
@@ -3392,14 +3392,14 @@ export default function AppSettings() {
         </div>
       </div>
 
-      <div className="mx-auto max-w-6xl 2xl:max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-6xl 2xl:max-w-7xl px-0 py-4 sm:px-6 sm:py-8">
         {!isUpsellCenter ? (
-          <div className="mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-900/40 dark:bg-blue-900/10">
+          <div className="mb-4 sm:mb-6 rounded-2xl border border-blue-100 bg-blue-50 p-4 sm:p-5 dark:border-blue-900/40 dark:bg-blue-900/10">
             <div className="mb-2 flex items-center gap-2 text-blue-700 dark:text-blue-300">
               <Settings2 size={18} />
               <span className="font-semibold">منطق التنفيذ الحالي</span>
             </div>
-            <p className="text-sm leading-7 text-blue-800 dark:text-blue-200">
+            <p className="text-xs sm:text-sm leading-6 sm:leading-7 text-blue-800 dark:text-blue-200">
               الإعدادات هنا مصممة لتخدم 3 طبقات معًا: الظهور في Marketplace، والربط مع الـ
               storefront العام، والإدراج داخل القوالب والثيمات كـ components وvariants.
             </p>
@@ -3411,12 +3411,12 @@ export default function AppSettings() {
         {renderForm()}
 
         {!isUpsellCenter ? (
-          <div className="mt-8 rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+          <div className="mt-6 sm:mt-8 rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 dark:border-gray-700 dark:bg-gray-800">
             <div className="mb-3 flex items-center gap-2 text-gray-900 dark:text-white">
               <Package size={18} />
               <span className="font-semibold">معاينة بنية الإعدادات</span>
             </div>
-            <pre className="overflow-x-auto rounded-xl bg-gray-950 p-4 text-xs leading-6 text-green-200">
+            <pre className="overflow-x-auto rounded-xl bg-gray-950 p-3 sm:p-4 text-xs leading-6 text-green-200">
               {JSON.stringify(normalizedSettings, null, 2)}
             </pre>
           </div>

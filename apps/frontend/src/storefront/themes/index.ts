@@ -725,7 +725,7 @@ export const hasStorefrontThemePreset = (themeId: string): boolean =>
   Boolean(STOREFRONT_THEME_PRESETS[themeId]);
 
 export const cloneStorefrontTheme = (theme: StorefrontTheme): StorefrontTheme =>
-  JSON.parse(JSON.stringify(theme)) as StorefrontTheme;
+  theme ? (JSON.parse(JSON.stringify(theme)) as StorefrontTheme) : ({} as StorefrontTheme);
 
 const getSectionType = (section: string | StorefrontSectionConfig): string =>
   typeof section === "string" ? section : section.type;
@@ -933,7 +933,7 @@ const findThemeSectionVariant = (
   theme: StorefrontTheme,
   sectionTypes: string[],
 ): string | undefined => {
-  for (const page of Object.values(theme.pages)) {
+  for (const page of Object.values(theme?.pages || {})) {
     if (!page?.sections) {
       continue;
     }
@@ -2007,7 +2007,7 @@ const buildGeneratedStorefrontPageConfig = (
 export const getGeneratedStorefrontThemePages = (
   theme: StorefrontTheme,
 ): Partial<StorefrontTheme["pages"]> => {
-  const existingPages = new Set(Object.keys(theme.pages));
+  const existingPages = new Set(Object.keys(theme?.pages || {}));
   const labelsBySlug = new Map<string, string>();
 
   collectStorefrontThemeLinkedPageReferences(theme).forEach((reference) => {

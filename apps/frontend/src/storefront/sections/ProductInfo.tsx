@@ -78,6 +78,10 @@ import {
   type SharePlatform,
 } from './product-info/ProductInfoShareActions';
 import {
+  SpecsGrid,
+  BentoSpecs,
+} from './product-info/buyboxes/SpecsBuyboxes';
+import {
   formatSaleCountdownValue,
   getSaleCountdownParts,
   resolveSaleCountdownTimestamp,
@@ -662,149 +666,7 @@ const ConfigurableTrustBadges = ({
 
 ConfigurableTrustBadges.displayName = 'ConfigurableTrustBadges';
 
-/**
- * Premium Tech variants for Nova Mobile
- */
-const SpecsGrid = ({
-  specs,
-  header,
-  price,
-  actions,
-  variantSelector,
-  emptyStateText = 'لا توجد مواصفات تقنية مضافة لهذا المنتج حتى الآن.',
-}: {
-  specs: Array<{ label: string; value: string }>;
-  header: React.ReactNode;
-  price: React.ReactNode;
-  actions: React.ReactNode;
-  variantSelector?: React.ReactNode;
-  emptyStateText?: string;
-}) => {
-  return (
-    <div className="flex flex-col gap-8">
-      <div className="space-y-4">
-        {header}
-        {price}
-      </div>
 
-      {variantSelector}
-
-      <div className="grid grid-cols-2 gap-4 py-8 border-y border-border/50">
-        {specs.length > 0 ? specs.map((spec, i) => (
-          <StaticMotionDiv
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: i * 0.1 }}
-            key={i}
-            className="flex flex-col gap-1 p-4 rounded-2xl bg-secondary/30 border border-border/5"
-          >
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">
-              {spec.label}
-            </span>
-            <span className="text-sm font-black text-foreground">
-              {spec.value}
-            </span>
-          </StaticMotionDiv>
-        )) : (
-          <div className="col-span-2 py-4 text-center text-muted-foreground text-sm italic">
-            {emptyStateText}
-          </div>
-        )}
-      </div>
-
-      {actions}
-    </div>
-  );
-};
-
-SpecsGrid.displayName = 'SpecsGrid';
-
-const BentoSpecs = ({
-  specs,
-  header,
-  price,
-  actions,
-  variantSelector,
-  emptyStateText = 'لا توجد مواصفات تقنية مضافة لهذا المنتج حتى الآن.',
-}: {
-  specs: Array<{ label: string; value: string }>;
-  header: React.ReactNode;
-  price: React.ReactNode;
-  actions: React.ReactNode;
-  variantSelector?: React.ReactNode;
-  emptyStateText?: string;
-}) => {
-  const mainSpec = specs[0];
-  const otherSpecs = specs.slice(1, 5);
-
-  return (
-    <div className="flex flex-col gap-8">
-      <div className="space-y-4">
-        {header}
-        {price}
-      </div>
-
-      {variantSelector}
-
-      <div className="grid grid-cols-4 gap-3">
-        {specs.length > 0 ? (
-          <>
-            {/* Hero Spec */}
-            {mainSpec && (
-              <StaticMotionDiv
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className="col-span-4 p-6 rounded-3xl bg-primary text-primary-foreground flex flex-col justify-between min-h-[160px] relative overflow-hidden group"
-              >
-                <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 blur-3xl rounded-full group-hover:scale-150 transition-transform duration-700" />
-                <div className="relative z-10">
-                  <span className="text-xs font-black uppercase tracking-widest opacity-70">{mainSpec.label}</span>
-                  <p className="text-3xl font-black mt-2 leading-none">{mainSpec.value}</p>
-                </div>
-                <div className="relative z-10 mt-4">
-                  <div className="h-1 w-full bg-white/20 rounded-full overflow-hidden">
-                    <StaticMotionDiv
-                      initial={{ width: 0 }}
-                      animate={{ width: '66%' }}
-                      transition={{ duration: 1, delay: 0.5 }}
-                      className="h-full bg-white"
-                    />
-                  </div>
-                </div>
-              </StaticMotionDiv>
-            )}
-
-            {/* Secondary Specs */}
-            {otherSpecs.map((spec, i) => (
-              <StaticMotionDiv
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + (i * 0.1) }}
-                key={i}
-                className="p-4 rounded-3xl border border-border/50 flex flex-col justify-center gap-1 col-span-2 bg-secondary/40 backdrop-blur-sm"
-              >
-                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground opacity-60">
-                  {spec.label}
-                </span>
-                <span className="text-base font-black text-foreground">
-                  {spec.value}
-                </span>
-              </StaticMotionDiv>
-            ))}
-          </>
-        ) : (
-          <div className="col-span-4 p-8 rounded-3xl border border-dashed border-border/50 text-center text-muted-foreground text-sm italic">
-            {emptyStateText}
-          </div>
-        )}
-      </div>
-
-      {actions}
-    </div>
-  );
-};
-
-BentoSpecs.displayName = 'BentoSpecs';
 
 const StickyMobileCTA = ({
   activePrice,

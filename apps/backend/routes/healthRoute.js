@@ -20,7 +20,7 @@ router.get("/", async (req, res) => {
     if (dbStatus.status === 'ok') {
       healthCheck.database = "Connected";
       healthCheck.dbStats = {
-        queryCount: dbStatus.queryCount,
+        queryCount: dbStatus.queries || dbStatus.queryCount || 0,
         latency: dbStatus.latency,
         queue: dbStatus.queue,
         active: dbStatus.active
@@ -36,7 +36,7 @@ router.get("/", async (req, res) => {
     } else {
       healthCheck.database = "Disconnected";
       healthCheck.status = "ERROR";
-      healthCheck.error = dbStatus.error;
+      healthCheck.error = dbStatus.error || dbStatus.message;
     }
 
     // Check Model Integrity

@@ -316,13 +316,31 @@
 }
 
 /* MOB-015: reduce horizontal chrome on phones — 1.5rem×2 eats ~77px of a 390px
-   viewport before any page content. 16px keeps breathing room while giving
-   pages their real width back. */
+   viewport before any page content. 0.75rem-1rem keeps breathing room while giving
+   pages their real width back (up to 85%+ content area). */
 @media (max-width: 639px) {
   .app-shell-content {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    padding-top: 1rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
+    padding-top: 0.875rem;
+  }
+
+  /* Flatten nested cards on mobile to eliminate the "box inside box" cramped effect */
+  .app-shell-content [data-slot="card"] [data-slot="card"] {
+    box-shadow: none !important;
+    --tw-ring-shadow: 0 0 #0000 !important;
+    --tw-ring-offset-shadow: 0 0 #0000 !important;
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    border-radius: 0.5rem !important;
+    background-color: transparent !important;
+  }
+
+  .app-shell-content [data-slot="card"] [data-slot="card"] > [data-slot="card-header"],
+  .app-shell-content [data-slot="card"] [data-slot="card"] > [data-slot="card-content"],
+  .app-shell-content [data-slot="card"] [data-slot="card"] > [data-slot="card-footer"] {
+    padding-left: 0.25rem !important;
+    padding-right: 0.25rem !important;
   }
 }
 

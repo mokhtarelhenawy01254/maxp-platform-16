@@ -5073,6 +5073,14 @@ const getActiveTimer = async (req, res) => {
     const userId = req.user.id;
     const memberId = await devTeamService.getOrCreateMember(userId);
 
+    if (!memberId) {
+      return res.json({
+        success: true,
+        data: null,
+        timers: [],
+      });
+    }
+
     const activeTimers = await getPrisma().devTimeLog.findMany({
       where: {
         memberId: memberId,

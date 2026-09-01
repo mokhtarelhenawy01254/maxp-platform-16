@@ -330,7 +330,7 @@ const HRReports: React.FC = () => {
   };
 
   return (
-    <div className="p-6 space-y-6" dir="rtl">
+    <div className="p-2.5 sm:p-6 space-y-4 sm:space-y-6" dir="rtl">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

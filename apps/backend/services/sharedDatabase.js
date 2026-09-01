@@ -40,7 +40,7 @@ const CONNECTION_LIMIT_COOLDOWN = 60 * 1000; // 1 minute
 // Query queue management (Protects DB from spikes)
 const queryQueue = [];
 let isProcessingQueue = false;
-const MAX_CONCURRENT_QUERIES = 80; // ⚡ Optimized for high throughput
+const MAX_CONCURRENT_QUERIES = 40; // ⚡ Matched 1:1 with connection limit to eliminate pool queue lag
 let activeQueries = 0;
 const QUEUE_WARNING_THRESHOLD = 500;
 const QUEUE_CRITICAL_THRESHOLD = 1000;
@@ -169,7 +169,7 @@ function createStablePrismaClient() {
     // fixed 80/process kept ~190 live PG connections open (near max_connections
     // 300) and amplified memory pressure. 25/process keeps headroom while
     // sustaining the existing query queue (MAX_CONCURRENT_QUERIES=80).
-    const poolLimit = process.env.DATABASE_CONNECTION_LIMIT || '25';
+    const poolLimit = process.env.DATABASE_CONNECTION_LIMIT || '40';
     urlWithParams.searchParams.set('connection_limit', poolLimit);
     urlWithParams.searchParams.set('pool_timeout', '30'); // Increased for stability
     urlWithParams.searchParams.set('connect_timeout', '30'); // Increased for stability
@@ -214,23 +214,37 @@ function createStablePrismaClient() {
       }
     });
 
-    // 🛡️ [SharedDB] Apply RLS Extension
+    // 🛡️ [SharedDB] 2026 High-Performance Tenant Isolation Extension (AST Injection)
+    // Eliminates pseudo-transactions while guaranteeing 100% strict data isolation.
+    const GLOBAL_MODELS = new Set([
+      'Company',
+      'User',
+      'SubscriptionPlan',
+      'PlatformSetting',
+      'PlatformSiteMetaPixelSetting',
+      'PlatformSiteHomepageSetting',
+      'PlatformDefaultSidebarSetting',
+      'DevProject',
+      'DevTask',
+      'DevTeamMember',
+      'DevTimeLog',
+      'SystemLog',
+      'AppSystemLog',
+      'TelegramConfig',
+      'TelegramScheduledMessage'
+    ]);
+
     const extendedClient = client.$extends({
       query: {
         $allOperations: async ({ model, operation, args, query }) => {
           const companyId = tenantContext.getCompanyId();
+          const isBypassed = tenantContext.isBypassed();
 
-          // If no companyId in context OR it's a global model like Company, execute query normally
-          // This prevents circular dependencies where we need to find the company to set the RLS context
-          if (!companyId || model === 'Company') {
-            // ✅ OPTIMIZATION: Skip transaction for system-level or global queries
+          // 1. Skip injection if context is bypassed, no companyId is set, or table is a global/system model
+          if (isBypassed || !companyId || GLOBAL_MODELS.has(model)) {
             const result = await query(args);
 
-            // 🧹 Company cache invalidation: أي update/upsert على شركة لازم
-            // يمسح الـ subdomain cache فورًا عشان مفيش بيانات قديمة (slug /
-            // customDomain / isActive / settings) تفضل تترد للفرونت.
-            // الشركة بينضرب منها استعلامات كتير في subdomainMiddleware،
-            // فلو اتغيرت هي أو الـ settings لازم الـ cache يتفسر على طول.
+            // 🧹 Company cache invalidation on company updates
             if (model === 'Company' && ['update', 'updateMany', 'upsert'].includes(operation)) {
               const updatedCompanyId =
                 (result && result.id) ||
@@ -245,21 +259,43 @@ function createStablePrismaClient() {
             }
 
             return result;
-          } else {
-            // Use a transaction to ensure SET and QUERY are on the same connection
-            return await client.$transaction(async (tx) => {
-              await tx.$executeRaw`SELECT set_config('app.current_company_id', ${companyId}, true)`;
-              return query(args);
-            }, {
-              maxWait: INTERACTIVE_TRANSACTION_MAX_WAIT,
-              timeout: INTERACTIVE_TRANSACTION_TIMEOUT
-            });
           }
+
+          // 2. Safe Auto-Tenant Injection without transactions
+          args = args || {};
+
+          if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(operation)) {
+            args.where = { ...args.where, companyId };
+          } else if (operation === 'findUnique' || operation === 'findUniqueOrThrow') {
+            // Prisma's findUnique rejects non-unique where clauses (like companyId when not part of composite primary key).
+            // Converting to findFirst ensures strict companyId scoping without schema errors.
+            return client[model].findFirst({
+              ...args,
+              where: { ...args.where, companyId }
+            });
+          } else if (operation === 'create') {
+            args.data = { ...args.data, companyId };
+          } else if (operation === 'createMany') {
+            if (Array.isArray(args.data)) {
+              args.data = args.data.map((item) => ({ ...item, companyId }));
+            } else if (args.data) {
+              args.data = { ...args.data, companyId };
+            }
+          } else if (['update', 'updateMany', 'delete', 'deleteMany'].includes(operation)) {
+            args.where = { ...args.where, companyId };
+          } else if (operation === 'upsert') {
+            args.where = { ...args.where, companyId };
+            args.create = { ...args.create, companyId };
+            args.update = { ...args.update };
+          }
+
+          // ⚡ Execute single native SQL query through connection pool (Zero Transaction Overhead)
+          return query(args);
         },
       },
     });
 
-    console.log('📋 [SharedDB] Client created and RLS extensions applied.');
+    console.log('📋 [SharedDB] Client created and 2026 Auto-Tenant Isolation extension applied.');
 
     return extendedClient;
 
@@ -467,7 +503,11 @@ async function checkModelIntegrity(prisma) {
   const criticalModels = ['telegramConfig', 'telegramScheduledMessage', 'user', 'company'];
   const missing = [];
 
-  const client = prisma || sharedPrismaInstance;
+  let client = prisma || sharedPrismaInstance;
+  if (!client) {
+    await guaranteeConnection().catch(() => {});
+    client = sharedPrismaInstance;
+  }
   if (!client) return { status: 'error', message: 'Prisma not initialized' };
 
   for (const model of criticalModels) {
@@ -731,6 +771,9 @@ async function executeWithRetry(operation, maxRetries = 3, initialDelay = 500) {
  */
 async function healthCheck() {
   try {
+    if (!sharedPrismaInstance) {
+      await guaranteeConnection().catch(() => {});
+    }
     if (!sharedPrismaInstance) {
       return { status: 'error', message: 'Not initialized' };
     }

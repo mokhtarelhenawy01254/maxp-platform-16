@@ -250,9 +250,9 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
     };
 
     return (
-        <div className="p-4 md:p-6 max-w-7xl mx-auto space-y-6 dir-rtl text-right font-sans">
+        <div className="p-2 sm:p-6 max-w-7xl mx-auto space-y-4 sm:space-y-6 dir-rtl text-right font-sans">
             {/* Header Section */}
-            <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-r from-purple-700 via-indigo-700 to-blue-700 rounded-2xl p-4 sm:p-6 text-white shadow-xl relative overflow-hidden">
                 <div className="absolute top-0 left-0 -translate-x-4 -translate-y-4 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
                 <div className="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                     <div>
@@ -431,7 +431,7 @@ const CustomerBirthdayWhatsAppNotify: React.FC = () => {
 
             {/* TAB CONTENT 1: Today's Birthdays */}
             {activeTab === 'today' && (
-                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+                <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-4 sm:p-6 space-y-4">
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 pb-4 border-b border-gray-100">
                         <div>
                             <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">

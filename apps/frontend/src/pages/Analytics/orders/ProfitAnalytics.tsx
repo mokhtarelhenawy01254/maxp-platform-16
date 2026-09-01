@@ -140,8 +140,8 @@ const ProfitAnalytics: React.FC = () => {
       {header}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-green-500">
               <CurrencyDollarIcon className="h-6 w-6 text-white" />
@@ -157,10 +157,10 @@ const ProfitAnalytics: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-blue-500">
-              <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
+              <ChartBarIcon className="h-6 w-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-gray-500">
@@ -173,23 +173,23 @@ const ProfitAnalytics: React.FC = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-4">
-            <div className="p-3 rounded-full bg-purple-500">
-              <ChartBarIcon className="h-6 w-6 text-white" />
+            <div className="p-3 rounded-full bg-yellow-500">
+              <ArrowTrendingUpIcon className="h-6 w-6 text-white" />
             </div>
             <div>
               <p className="text-sm text-gray-500">
-                {t("profitAnalytics.profitMargin")}
+                {t("profitAnalytics.margin")}
               </p>
-              <p className="text-2xl font-bold text-purple-600">
-                {stats?.profitMargin?.toFixed(1)}%
+              <p className="text-2xl font-bold text-yellow-600">
+                {(stats?.profitMargin || 0).toFixed(1)}%
               </p>
             </div>
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-full bg-red-500">
               <ArrowTrendingDownIcon className="h-6 w-6 text-white" />
@@ -211,8 +211,8 @@ const ProfitAnalytics: React.FC = () => {
       </div>
 
       {/* Cost Breakdown */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <p className="text-sm text-gray-500 mb-2">
             {t("profitAnalytics.cogs")}
           </p>
@@ -221,7 +221,7 @@ const ProfitAnalytics: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <p className="text-sm text-gray-500 mb-2">
             {t("profitAnalytics.adsCost")}
           </p>
@@ -230,7 +230,7 @@ const ProfitAnalytics: React.FC = () => {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
           <p className="text-sm text-gray-500 mb-2">
             {t("profitAnalytics.operatingExpenses")}
           </p>
@@ -241,7 +241,7 @@ const ProfitAnalytics: React.FC = () => {
       </div>
 
       {/* Profit Over Time */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-sm border border-gray-100 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100 dark:border-gray-700">
         <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {t("profitAnalytics.profitOverTime")}
         </h3>
