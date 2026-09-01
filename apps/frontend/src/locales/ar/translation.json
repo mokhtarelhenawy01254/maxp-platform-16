@@ -16454,7 +16454,7 @@
     "faq1q": "هل أحتاج لدفع رسوم إضافية؟",
     "faq1a": "لا، المنصة تقدم دعم الدومينات المخصصة وشهادات SSL مجاناً ضمن باقتك.",
     "faq2q": "ماذا لو أردت استخدام Subdomain؟",
-    "faq2a": "بإمكانك ربط `shop.example.com` بنفس الطريقة عبر تغيير الـ Host في سجل الـ CNAME.",
+    "faq2a": "بإمكانك ربط shop.example.com بنفس الطريقة عبر تغيير الـ Host في سجل الـ CNAME.",
     "domainFormatError": "صيغة الدومين غير صحيحة. يجب أن يكون مثل: example.com أو www.example.com",
     "domainUpdated": "تم تحديث الدومين المخصص بنجاح!",
     "domainUpdateFailed": "فشل في تحديث الدومين",

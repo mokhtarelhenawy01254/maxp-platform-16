@@ -240,7 +240,7 @@ const CustomDomainPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-lg flex gap-3">
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700 flex gap-3">
               <InformationCircleIcon className="h-5 w-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
               <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed">
                 {t("customDomain.dnsNote")}
