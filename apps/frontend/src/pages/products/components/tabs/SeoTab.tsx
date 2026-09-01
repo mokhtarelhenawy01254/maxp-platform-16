@@ -11,7 +11,7 @@ export const SeoTab: React.FC<SeoTabProps> = ({
   handleInputChange,
 }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-8 animate-fade-in">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 space-y-8 animate-fade-in">
       {/* Header */}
       <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
         <h3 className="text-lg font-medium text-gray-900 dark:text-white">

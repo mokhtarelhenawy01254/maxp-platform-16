@@ -227,7 +227,7 @@ const CartDrawer: React.FC = () => {
     : isPharmacy
       ? 'flex gap-4 rounded-[1.5rem] border border-[#99f6e4] bg-white/92 p-3 shadow-[0_18px_44px_-36px_rgba(20,184,166,0.18)]'
       : isKhemetLuxe
-        ? 'flex gap-4 rounded-[1.05rem] border border-[#e7ddd0] bg-white/96 p-3.5 shadow-[0_16px_44px_-40px_rgba(109,85,39,0.08)]'
+        ? 'relative flex gap-3.5 sm:gap-4 rounded-2xl border border-[#e7ddd0] bg-white/98 p-3.5 shadow-[0_8px_24px_-16px_rgba(109,85,39,0.12)]'
       : 'flex gap-4 rounded-[var(--radius)] border border-border bg-card p-3';
   const footerClassName = isBiteRush
     ? 'shrink-0 border-t border-[#f8c08c] p-5 space-y-4 bg-[linear-gradient(180deg,#fff8f1_0%,#fff0e1_100%)]'
@@ -386,6 +386,40 @@ const CartDrawer: React.FC = () => {
         >
         {/* Items */}
         <div className={cartContentClassName}>
+          {showKhemetFreeShippingProgress ? (
+            <div className="rounded-xl border border-[#e0d2bd]/80 bg-[#fffaf2] p-3 shadow-xs">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[#173f31]">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-[#173f31]">
+                    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+                    <path d="M15 18H9" />
+                    <path d="M19 18h2a1 1 0 0 0 1-1v-3.65a1 1 0 0 0-.22-.624l-3.48-4.35A1 1 0 0 0 17.52 8H14" />
+                    <circle cx="17" cy="18.5" r="2.5" />
+                    <circle cx="7" cy="18.5" r="2.5" />
+                  </svg>
+                  <span>
+                    {freeShippingRemaining > 0
+                      ? theme.direction === 'rtl'
+                        ? `أضيفي ${formatStorefrontCurrency(freeShippingRemaining, currency)} للشحن المجاني`
+                        : `Add ${formatStorefrontCurrency(freeShippingRemaining, currency)} for free shipping`
+                      : theme.direction === 'rtl'
+                        ? 'مبروك! شحن مجاني مفعّل لطلبك 🎉'
+                        : 'Congratulations! Free shipping unlocked 🎉'}
+                  </span>
+                </div>
+                <span className="shrink-0 text-[11px] font-black text-[#173f31]">
+                  {Math.round(freeShippingProgress)}%
+                </span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eadfcf]">
+                <div
+                  className="h-full rounded-full bg-[#173f31] transition-[width] duration-500"
+                  style={{ width: `${freeShippingProgress}%` }}
+                />
+              </div>
+            </div>
+          ) : null}
+
           {items.length === 0 ? (
             <div className="flex min-h-[18rem] flex-col items-center justify-center text-muted-foreground space-y-3">
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="opacity-40">
@@ -403,7 +437,7 @@ const CartDrawer: React.FC = () => {
 
                 return (
                 <div key={entry.key} className={itemCardClassName}>
-                  <div className={`flex ${isKhemetLuxe ? 'h-24 w-24' : 'h-20 w-20'} shrink-0 items-center justify-center overflow-hidden ${
+                  <div className={`flex ${isKhemetLuxe ? 'h-20 w-20 sm:h-22 sm:w-22' : 'h-20 w-20'} shrink-0 items-center justify-center overflow-hidden ${
                     isBiteRush
                       ? 'rounded-[1.3rem] bg-[#fff1e2]'
                       : isCafeDemo
@@ -411,7 +445,7 @@ const CartDrawer: React.FC = () => {
                       : isPharmacy
                         ? 'rounded-[1.3rem] bg-[#e6fffa]'
                         : isKhemetLuxe
-                          ? 'rounded-[0.95rem] border border-[#eadfcf] bg-[#fbf5ed] p-1'
+                          ? 'rounded-xl border border-[#eadfcf]/80 bg-[#fbf8f4]'
                         : 'rounded-[var(--radius)] bg-muted'
                   } text-xs text-muted-foreground`}>
                     <StorefrontProductImage
@@ -423,47 +457,65 @@ const CartDrawer: React.FC = () => {
                       imageQuality={72}
                       width="80"
                       height="80"
-                      className={`h-full w-full ${isKhemetLuxe ? 'object-contain' : 'object-cover'}`}
+                      className={`h-full w-full ${isKhemetLuxe ? 'object-cover' : 'object-cover'}`}
                       fallback="IMG"
                     />
                   </div>
-                  <div className="min-w-0 flex-1 space-y-1">
-                    <h3 className="truncate text-sm font-semibold font-heading text-foreground">
-                      {itemName}
-                    </h3>
-                    {attributeEntries.map(([key, value]) => (
-                      <p key={key} className="text-xs text-muted-foreground">
-                        {key}: {value}
-                      </p>
-                    ))}
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-foreground">
-                        {formatStorefrontCurrency(entry.pricing.effectiveUnitPrice, currency)}
-                      </p>
-                      {entry.pricing.totalDiscount > 0 ? (
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-muted-foreground line-through">
-                            {formatStorefrontCurrency(entry.pricing.baseUnitPrice, currency)}
-                          </span>
-                          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 font-semibold text-emerald-600">
-                            {saveLabel}
-                            {formatStorefrontCurrency(entry.pricing.totalDiscount, currency)}
-                          </span>
+                  <div className="min-w-0 flex-1 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="truncate text-sm font-bold font-heading text-foreground">
+                          {itemName}
+                        </h3>
+                        <button
+                          onClick={() => removeItem(entry.item.id)}
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-[#9e8f7a] transition-colors hover:bg-red-50 hover:text-red-600"
+                          aria-label={`${removeLabel} ${itemName}`}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                      {attributeEntries.length > 0 ? (
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {attributeEntries.map(([key, value]) => (
+                            <span
+                              key={key}
+                              className="inline-flex items-center rounded-md bg-[#f5ede2] px-2 py-0.5 text-[11px] font-medium text-[#654e28]"
+                            >
+                              {key}: {value}
+                            </span>
+                          ))}
                         </div>
                       ) : null}
                     </div>
-                    <div className="mt-1 flex items-center gap-3">
+
+                    <div className="mt-2.5 flex items-center justify-between gap-2 pt-1">
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-black text-[#173f31]">
+                          {formatStorefrontCurrency(entry.pricing.effectiveUnitPrice, currency)}
+                        </p>
+                        {entry.pricing.totalDiscount > 0 ? (
+                          <div className="flex items-center gap-1.5 text-xs">
+                            <span className="text-muted-foreground line-through text-[11px]">
+                              {formatStorefrontCurrency(entry.pricing.baseUnitPrice, currency)}
+                            </span>
+                            <span className="rounded-md bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                              {saveLabel}
+                              {formatStorefrontCurrency(entry.pricing.totalDiscount, currency)}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
+
                       <QuantitySelector
+                        size="compact"
                         value={entry.item.quantity}
                         onChange={(q) => updateQuantity(entry.item.id, q)}
                       />
-                      <button
-                        onClick={() => removeItem(entry.item.id)}
-                        className="text-xs text-muted-foreground transition-colors hover:text-destructive"
-                        aria-label={`${removeLabel} ${itemName}`}
-                      >
-                        {removeLabel}
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -493,10 +545,14 @@ const CartDrawer: React.FC = () => {
                     </div>
                     <button
                       onClick={() => removeQuantityOfferGroup(entry.group.groupId)}
-                      className="text-xs text-muted-foreground transition-colors hover:text-destructive"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-red-50 hover:text-destructive"
                       aria-label={`${removeLabel} ${entry.group.offerLabel}`}
                     >
-                      {removeLabel}
+                      <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      </svg>
                     </button>
                   </div>
 
@@ -560,84 +616,6 @@ const CartDrawer: React.FC = () => {
               <React.Suspense fallback={null}>
                 <LazyCartUpsellHost open={isOpen && items.length > 0} />
               </React.Suspense>
-            ) : null}
-            {isKhemetLuxe ? (
-              <section
-                data-testid="khemet-cart-quantity-upsell"
-                className="space-y-3 border-t border-[#eadfd0] pt-3"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-black text-[#2f2923]">
-                      {theme.direction === 'rtl' ? 'اقتراحات سريعة قبل التأكيد' : 'Smart add-ons before checkout'}
-                    </h3>
-                    <p className="mt-0.5 text-[12px] leading-5 text-[#7b6d58]">
-                      {theme.direction === 'rtl'
-                        ? 'زودي الكمية أو كمّلي اختياراتك من غير ما تسيبي السلة.'
-                        : 'Increase quantity or keep browsing without leaving the cart.'}
-                    </p>
-                  </div>
-                  <span className="shrink-0 rounded-full bg-[#eef1ec] px-2.5 py-1 text-[10px] font-black text-[#1f4c3b]">
-                    {theme.direction === 'rtl' ? 'اختياري' : 'Optional'}
-                  </span>
-                </div>
-
-                <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <div className="flex min-w-[12.75rem] max-w-[12.75rem] snap-start flex-col rounded-[1rem] border border-[#e7ddd0] bg-white/94 p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.22)]">
-                    <span className="inline-flex self-start rounded-full bg-[#eef1ec] px-2 py-0.5 text-[10px] font-black text-[#1f4c3b]">
-                      {theme.direction === 'rtl' ? 'زيادة ذكية' : 'Smart add'}
-                    </span>
-                    <h4 className="mt-2 text-[13px] font-black leading-5 text-[#2f2923]">
-                      {theme.direction === 'rtl' ? 'قطعة إضافية من نفس الاختيار' : 'Add another of this pick'}
-                    </h4>
-                    <p className="mt-1 min-h-10 text-[11px] leading-5 text-[#7b6d58]">
-                      {theme.direction === 'rtl'
-                        ? 'مناسبة لو محتاجة مقاس احتياطي أو هدية بنفس الستايل.'
-                        : 'Helpful for a backup size or a gift in the same style.'}
-                    </p>
-                    {firstCartItemName ? (
-                      <p dir="ltr" className="mt-1 truncate text-left text-[11px] font-semibold text-[#4a352e]">
-                        {firstCartItemName} • {formatStorefrontCurrency(firstCartItemUnitPrice, currency)}
-                      </p>
-                    ) : null}
-                    <button
-                      type="button"
-                      onClick={handleKhemetQuantityUpsell}
-                      disabled={!canIncreaseKhemetCartItem}
-                      className="mt-auto inline-flex h-9 w-full items-center justify-center rounded-[0.8rem] bg-[#173f31] px-3 text-[12px] font-black text-[#fff7eb] transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[#c8b8a6] disabled:text-[#fffaf4]"
-                    >
-                      {canIncreaseKhemetCartItem
-                        ? theme.direction === 'rtl'
-                          ? 'زودي قطعة'
-                          : 'Add one more'
-                        : theme.direction === 'rtl'
-                          ? 'العرض محدد'
-                          : 'Offer locked'}
-                    </button>
-                  </div>
-
-                  <Link
-                    to={shopPath}
-                    onClick={onClose}
-                    className="flex min-w-[12.75rem] max-w-[12.75rem] snap-start flex-col rounded-[1rem] border border-[#e7ddd0] bg-[#fffaf4] p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.18)]"
-                  >
-                    <span className="inline-flex self-start rounded-full bg-[#f2eadf] px-2 py-0.5 text-[10px] font-black text-[#725523]">
-                      {theme.direction === 'rtl' ? 'كمّلي اللوك' : 'Keep browsing'}
-                    </span>
-                    <h4 className="mt-2 text-[13px] font-black leading-5 text-[#2f2923]">
-                      {theme.direction === 'rtl' ? 'اختاري لون أو موديل ثاني' : 'Pick another color or model'}
-                    </h4>
-                    <p className="mt-1 min-h-10 text-[11px] leading-5 text-[#7b6d58]">
-                      {theme.direction === 'rtl'
-                        ? 'افتحي الشوب ورجّعي للسلة في أي لحظة، اختياراتك محفوظة.'
-                        : 'Open the shop and come back to the cart anytime.'}
-                    </p>
-                    <span className="mt-auto inline-flex h-9 w-full items-center justify-center rounded-[0.8rem] border border-[#d7c6b4] bg-white px-3 text-[12px] font-black text-[#4a352e]">
-                      {theme.direction === 'rtl' ? 'افتحي الشوب' : 'Open shop'}
-                    </span>
-                  </Link>
-                </div>
-              </section>
             ) : null}
             </>
           )}
@@ -727,15 +705,21 @@ const CartDrawer: React.FC = () => {
           <div className={footerClassName}>
             {khemetServiceHighlights.length > 0 ? (
               isKhemetLuxe ? (
-                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] font-semibold text-[#725523]">
-                  {khemetServiceHighlights.map((item, index) => (
-                    <React.Fragment key={item}>
-                      <span>{item}</span>
-                      {index < khemetServiceHighlights.length - 1 ? (
-                        <span className="text-[#c7ad85]" aria-hidden="true">•</span>
-                      ) : null}
-                    </React.Fragment>
-                  ))}
+                <div className="flex items-center justify-between border-b border-[#eadfcf]/60 pb-2 text-[11px] font-semibold text-[#725523]">
+                  <span className="inline-flex items-center gap-1">
+                    <svg className="h-3.5 w-3.5 text-[#173f31]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                    {khemetServiceHighlights[0] || 'تأكيد المقاس'}
+                  </span>
+                  <span className="text-[#c7ad85]" aria-hidden="true">•</span>
+                  <span className="inline-flex items-center gap-1">
+                    <svg className="h-3.5 w-3.5 text-[#173f31]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+                    {khemetServiceHighlights[1] || 'شحن داخل مصر'}
+                  </span>
+                  <span className="text-[#c7ad85]" aria-hidden="true">•</span>
+                  <span className="inline-flex items-center gap-1">
+                    <svg className="h-3.5 w-3.5 text-[#173f31]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                    {khemetServiceHighlights[2] || 'تبديل 14 يوم'}
+                  </span>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-2">
@@ -750,31 +734,7 @@ const CartDrawer: React.FC = () => {
                 </div>
               )
             ) : null}
-            {showKhemetFreeShippingProgress ? (
-              <div className="space-y-2 rounded-lg border border-[#e0d2bd] bg-[#fffaf2] p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 space-y-0.5">
-                    <p className="text-[11px] font-black text-[#725523]">
-                      الشحن المجاني
-                    </p>
-                    <p className="text-xs leading-5 text-[#6d5a44]">
-                      {freeShippingRemaining > 0
-                        ? `ضيفي ${formatStorefrontCurrency(freeShippingRemaining, currency)} ووصلي للشحن المجاني`
-                        : 'تم تفعيل الشحن المجاني للطلب ده'}
-                    </p>
-                  </div>
-                  <span className="shrink-0 text-[11px] font-black text-[#173f31]">
-                    {Math.round(freeShippingProgress)}%
-                  </span>
-                </div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-[#eadfcf]">
-                  <div
-                    className="h-full rounded-full bg-[#173f31] transition-[width] duration-500"
-                    style={{ width: `${freeShippingProgress}%` }}
-                  />
-                </div>
-              </div>
-            ) : null}
+
             {minimumOrder.blocked ? (
               <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
                 <p className="text-xs font-semibold leading-5 text-amber-900">
@@ -788,9 +748,9 @@ const CartDrawer: React.FC = () => {
                 </div>
               </div>
             ) : null}
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between items-center text-sm">
               <span className={isKhemetLuxe ? 'font-medium text-[#725523]' : 'text-muted-foreground'}>{subtotalLabel}</span>
-              <span className={isKhemetLuxe ? 'font-bold text-foreground' : 'font-semibold text-foreground'}>
+              <span className={isKhemetLuxe ? 'text-base font-black text-[#173f31]' : 'font-semibold text-foreground'}>
                 {formatStorefrontCurrency(subtotal, currency)}
               </span>
             </div>
@@ -803,7 +763,7 @@ const CartDrawer: React.FC = () => {
               </div>
             )}
             {khemetShippingHint ? (
-              <p className="text-xs leading-5 text-[#7b6d58]">
+              <p className="text-[11px] text-[#7b6d58]">
                 {khemetShippingHint}
               </p>
             ) : null}

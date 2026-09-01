@@ -63,7 +63,7 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Variants Section */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">

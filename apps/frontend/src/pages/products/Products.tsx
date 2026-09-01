@@ -282,8 +282,24 @@ const Products: React.FC = () => {
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
+  const handleStatClick = (type: "all" | "published" | "low-stock" | "out-of-stock") => {
+    if (type === "all") {
+      handleFilterChange("statusFilter", "all");
+      handleFilterChange("stockFilter", "all");
+    } else if (type === "published") {
+      handleFilterChange("statusFilter", filters.statusFilter === "published" ? "all" : "published");
+      handleFilterChange("stockFilter", "all");
+    } else if (type === "low-stock") {
+      handleFilterChange("stockFilter", filters.stockFilter === "low-stock" ? "all" : "low-stock");
+      handleFilterChange("statusFilter", "all");
+    } else if (type === "out-of-stock") {
+      handleFilterChange("stockFilter", filters.stockFilter === "out-of-stock" ? "all" : "out-of-stock");
+      handleFilterChange("statusFilter", "all");
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-3 sm:space-y-5">
       <ProductsHeader
         viewMode={viewMode}
         setViewMode={setViewMode}
@@ -302,6 +318,9 @@ const Products: React.FC = () => {
         products={products}
         totalItems={totalItems}
         publishedCount={publishedCount}
+        activeStockFilter={filters.stockFilter}
+        activeStatusFilter={filters.statusFilter}
+        onStatClick={handleStatClick}
       />
 
       {canSelectProducts && (

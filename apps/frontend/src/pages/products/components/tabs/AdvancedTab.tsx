@@ -37,7 +37,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
   setCrossSellProducts,
 }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6 animate-fade-in">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 space-y-6 animate-fade-in">
       <h3 className="text-lg font-medium text-gray-900 dark:text-white">
         {t("products.advanced.title")}
       </h3>

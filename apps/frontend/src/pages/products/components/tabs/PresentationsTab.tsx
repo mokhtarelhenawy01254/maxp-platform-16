@@ -197,9 +197,23 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
 
   if (!productId) {
     return (
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-fade-in">
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          احفظ المنتج أولاً قبل إدارة العروض التقديمية
+      <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 animate-fade-in">
+        <div className="text-center py-12">
+          <div className="mx-auto w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-purple-600 dark:text-purple-400 mb-4">
+            <LinkIcon className="w-6 h-6" />
+          </div>
+          <h3 className="text-base font-bold text-gray-900 dark:text-white mb-2">
+            العروض التقديمية (Presentations)
+          </h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">
+            أنشئ روابط مخصصة لهذا المنتج (بصور وعناوين مختلفة) مناسبة
+            للحملات الإعلانية ومجموعات العملاء المختلفة — دون تكرار المنتج في
+            الكتالوج أو تقسيم المخزون.
+          </p>
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 text-xs text-amber-800 dark:text-amber-300 font-medium">
+            <span>💡</span>
+            <span>احفظ المنتج أولاً لتتمكن من إضافة عروض تقديمية له</span>
+          </div>
         </div>
       </div>
     );
@@ -207,7 +221,7 @@ export const PresentationsTab: React.FC<PresentationsTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg text-purple-600 dark:text-purple-400">

@@ -52,6 +52,15 @@ function stripBaileysButtonBox(content: string, footer?: string | null): string 
   return result.trim();
 }
 
+function sanitizeInteractiveUrl(rawUrl?: string | null): string | null {
+  if (!rawUrl || typeof rawUrl !== 'string') return null;
+  const trimmed = rawUrl.trim();
+  if (/^(?:https?:\/\/|mailto:|tel:)/i.test(trimmed)) {
+    return trimmed;
+  }
+  return null;
+}
+
 function shouldShowDateSeparator(
   currentMessage: Message,
   previousMessage: Message | undefined,
@@ -193,13 +202,14 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
         if (!interactiveButtons || interactiveButtons.length === 0) return null;
         return (
           <div className="mt-1.5 space-y-1.5">
-            {interactiveButtons.map((btn, i) =>
-              btn.url ? (
+            {interactiveButtons.map((btn, i) => {
+              const safeUrl = sanitizeInteractiveUrl(btn.url);
+              return safeUrl ? (
                 <a
                   key={btn.id || i}
-                  href={btn.url}
+                  href={safeUrl}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="flex items-center justify-center gap-1.5 rounded-lg border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-2 text-center text-sm font-semibold text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
                 >
                   {btn.text}
@@ -212,8 +222,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                 >
                   {btn.text}
                 </div>
-              )
-            )}
+              );
+            })}
             {interactiveFooter ? (
               <p className="pt-0.5 text-center text-xs text-[color:var(--color-muted-foreground)]">
                 {interactiveFooter}

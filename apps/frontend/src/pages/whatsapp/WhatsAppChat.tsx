@@ -333,11 +333,22 @@ const WhatsAppChatContent: React.FC = () => {
   useEffect(() => {
     if (!selectedContact) {
       if (window.location.hash === '#chat') {
-        window.history.back();
+        try {
+          const cleanUrl = window.location.pathname + window.location.search;
+          window.history.replaceState(null, '', cleanUrl);
+        } catch {
+          // ignore
+        }
       }
       return;
     }
-    window.location.hash = 'chat';
+    if (window.location.hash !== '#chat') {
+      try {
+        window.history.pushState(null, '', window.location.pathname + window.location.search + '#chat');
+      } catch {
+        window.location.hash = 'chat';
+      }
+    }
     const onHashChange = () => {
       if (window.location.hash !== '#chat' && selectedContact) {
         setSelectedContact(null);

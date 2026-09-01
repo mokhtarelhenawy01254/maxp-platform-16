@@ -92,15 +92,15 @@ export const normalizeQuantityOffer = (
     unitPrice,
     buyText:
       typeof rawOffer.buyText === "string"
-        ? rawOffer.buyText.trim()
+        ? rawOffer.buyText
         : "",
     helperText:
       typeof rawOffer.helperText === "string"
-        ? rawOffer.helperText.trim()
+        ? rawOffer.helperText
         : "",
     helperDescription:
       typeof rawOffer.helperDescription === "string"
-        ? rawOffer.helperDescription.trim()
+        ? rawOffer.helperDescription
         : "",
     hideUnitPrice: rawOffer.hideUnitPrice === true,
     enableFreeShipping: rawOffer.enableFreeShipping === true,

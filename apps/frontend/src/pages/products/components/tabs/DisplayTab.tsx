@@ -127,7 +127,7 @@ export const DisplayTab: React.FC<DisplayTabProps> = ({
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+      <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
           <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg text-indigo-600 dark:text-indigo-400">
             <EyeIcon className="h-6 w-6" />

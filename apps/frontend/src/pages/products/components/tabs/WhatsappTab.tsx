@@ -21,7 +21,7 @@ export const WhatsappTab: React.FC<WhatsappTabProps> = ({
   setWhatsappNotify,
 }) => {
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6 animate-fade-in">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 space-y-6 animate-fade-in">
       <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-700 pb-4">
         <MegaphoneIcon className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
         <div>

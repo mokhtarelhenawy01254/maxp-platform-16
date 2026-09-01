@@ -89,7 +89,7 @@ export const AttributesTab: React.FC<AttributesTabProps> = ({
     setEditValues((prev) => prev.filter((_, i) => i !== idx));
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 animate-fade-in">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 animate-fade-in">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h3 className="text-lg font-medium text-gray-900 dark:text-white">

@@ -389,6 +389,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       <div className="wa-input-bar border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] bg-[color:var(--color-card)] px-2 py-2 sm:px-3 sm:py-3 shrink-0">
+        {selectedContact?.session?.provider === 'META_CLOUD' && selectedContact?.window && !selectedContact.window.isOpen ? (
+          <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span className="truncate">
+                انتهت نافذة الـ 24 ساعة المسموحة من Meta. يجب استخدام قالب رسمي معتمد للمراسلة.
+              </span>
+            </div>
+            {onOpenTemplate && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenTemplate}
+                className="shrink-0 h-7 text-xs border-amber-500/40 text-amber-900 hover:bg-amber-500/20 dark:text-amber-100"
+              >
+                <FileText className="size-3.5 me-1" />
+                إرسال قالب رسمي
+              </Button>
+            )}
+          </div>
+        ) : null}
+
         {replyingTo ? (
           <div className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-2">
             <div className="min-w-0 space-y-1">

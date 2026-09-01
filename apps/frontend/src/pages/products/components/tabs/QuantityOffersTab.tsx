@@ -4,7 +4,6 @@ import {
   createEmptyQuantityOffer,
   getDefaultQuantityOfferBuyText,
   getQuantityOfferTotals,
-  normalizeQuantityOffers,
 } from "../../../../utils/quantityOffers";
 
 interface QuantityOffersTabProps {
@@ -31,43 +30,38 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
 }) => {
   const referenceUnitPrice = getReferenceUnitPrice(baseUnitPrice, currentUnitPrice);
 
-  const commitOffers = React.useCallback(
-    (offers: QuantityOffer[]) => {
-      setQuantityOffers(normalizeQuantityOffers(offers));
-    },
-    [setQuantityOffers],
-  );
-
   const updateOffer = React.useCallback(
     (offerId: string, updater: (offer: QuantityOffer) => QuantityOffer) => {
-      commitOffers(
-        quantityOffers.map((offer) =>
+      setQuantityOffers((prev) =>
+        prev.map((offer) =>
           offer.id === offerId ? updater(offer) : offer,
         ),
       );
     },
-    [commitOffers, quantityOffers],
+    [setQuantityOffers],
   );
 
   const addOffer = () => {
-    const lastQuantity = quantityOffers.reduce(
-      (maxQuantity, offer) => Math.max(maxQuantity, offer.quantity),
-      1,
-    );
+    setQuantityOffers((prev) => {
+      const lastQuantity = prev.reduce(
+        (maxQuantity, offer) => Math.max(maxQuantity, offer.quantity),
+        1,
+      );
 
-    commitOffers([
-      ...quantityOffers,
-      createEmptyQuantityOffer(lastQuantity + 1, currentUnitPrice),
-    ]);
+      return [
+        ...prev,
+        createEmptyQuantityOffer(lastQuantity + 1, currentUnitPrice),
+      ];
+    });
   };
 
   const removeOffer = (offerId: string) => {
-    commitOffers(quantityOffers.filter((offer) => offer.id !== offerId));
+    setQuantityOffers((prev) => prev.filter((offer) => offer.id !== offerId));
   };
 
   const markAsDefault = (offerId: string) => {
-    commitOffers(
-      quantityOffers.map((offer) => ({
+    setQuantityOffers((prev) =>
+      prev.map((offer) => ({
         ...offer,
         isDefault: offer.id === offerId,
       })),

@@ -65,3 +65,64 @@ describe("buildQuantityOfferInsights", () => {
     });
   });
 });
+
+import {
+  normalizeQuantityOffer,
+  normalizeQuantityOffers,
+  createEmptyQuantityOffer,
+  getQuantityOfferTotals,
+  getDefaultQuantityOfferBuyText,
+} from "../../../utils/quantityOffers";
+
+describe("quantityOffers normalization and string preservation", () => {
+  it("preserves spaces in buyText, helperText, and helperDescription during normalization", () => {
+    const rawOffer = {
+      id: "offer-1",
+      quantity: 2,
+      unitPrice: 500,
+      buyText: "طقم من قطعتين ",
+      helperText: "الأكثر توفيرًا ",
+      helperDescription: "اختر لون ومقاس كل قطعة ",
+    };
+
+    const normalized = normalizeQuantityOffer(rawOffer);
+    expect(normalized).not.toBeNull();
+    expect(normalized?.buyText).toBe("طقم من قطعتين ");
+    expect(normalized?.helperText).toBe("الأكثر توفيرًا ");
+    expect(normalized?.helperDescription).toBe("اختر لون ومقاس كل قطعة ");
+  });
+
+  it("normalizes array of offers without stripping spaces", () => {
+    const rawOffers = [
+      {
+        id: "offer-1",
+        quantity: 2,
+        unitPrice: 500,
+        buyText: "طقم قطعتين ",
+      },
+      {
+        id: "offer-2",
+        quantity: 3,
+        unitPrice: 400,
+        buyText: "طقم 3 قطع ",
+      },
+    ];
+
+    const normalized = normalizeQuantityOffers(rawOffers);
+    expect(normalized).toHaveLength(2);
+    expect(normalized[0].buyText).toBe("طقم قطعتين ");
+    expect(normalized[1].buyText).toBe("طقم 3 قطع ");
+  });
+
+  it("calculates totals and default preview text correctly", () => {
+    const offer = createEmptyQuantityOffer(2, 500);
+    const totals = getQuantityOfferTotals(offer, 600);
+    expect(totals.offerTotal).toBe(1000);
+    expect(totals.originalTotal).toBe(1200);
+    expect(totals.savings).toBe(200);
+
+    const buyText = getDefaultQuantityOfferBuyText(offer, 600, "ج.م");
+    expect(buyText).toContain("1000");
+    expect(buyText).toContain("1200");
+  });
+});

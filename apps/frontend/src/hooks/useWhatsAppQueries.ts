@@ -63,6 +63,13 @@ export interface Contact {
   labels?: string[];
   unreadCount: number;
   lastMessageAt: string | null;
+  lastCustomerMessageAt?: string | null;
+  window?: {
+    isOpen: boolean;
+    windowExpiresAt: string | null;
+    remainingSeconds: number;
+    remainingLabel: string;
+  } | null;
   isArchived: boolean;
   isPinned: boolean;
   isMuted: boolean;
@@ -70,6 +77,7 @@ export interface Contact {
   session: {
     name: string;
     phoneNumber: string | null;
+    provider?: string | null;
   };
   customer: {
     id: string;

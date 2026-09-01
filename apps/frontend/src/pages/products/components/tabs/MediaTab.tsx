@@ -67,18 +67,18 @@ const SortableImageItem = ({
       )}
 
       {/* Actions Overlay */}
-      <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center gap-2">
-        {/* Drag Handle */}
+      <div className="absolute inset-0 bg-black/30 sm:bg-black/40 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center gap-2 pointer-events-none">
+        {/* Drag Handle (Desktop) */}
         <div
           {...attributes}
           {...listeners}
-          className="p-1 cursor-grab active:cursor-grabbing text-white opacity-80 hover:opacity-100"
+          className="p-1 cursor-grab active:cursor-grabbing text-white opacity-80 hover:opacity-100 pointer-events-auto hidden sm:block"
           title="سحب لإعادة الترتيب"
         >
           <Bars4Icon className="w-8 h-8 drop-shadow-md" />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 pointer-events-auto">
           {!isMain && (
             <button
               type="button"
@@ -87,7 +87,7 @@ const SortableImageItem = ({
                 e.stopPropagation();
                 onSetMain();
               }}
-              className="text-white hover:text-yellow-400 bg-black/50 p-1.5 rounded-full backdrop-blur-sm transition-colors"
+              className="text-white hover:text-yellow-400 bg-black/60 p-1.5 rounded-full backdrop-blur-sm transition-colors shadow-sm"
               title="تعيين كصورة رئيسية"
             >
               <StarIcon className="w-4 h-4" />
@@ -101,7 +101,7 @@ const SortableImageItem = ({
               e.stopPropagation();
               onRemove();
             }}
-            className="text-white hover:text-red-400 bg-black/50 p-1.5 rounded-full backdrop-blur-sm transition-colors"
+            className="text-white hover:text-red-400 bg-black/60 p-1.5 rounded-full backdrop-blur-sm transition-colors shadow-sm"
             title="حذف الصورة"
           >
             <XMarkIcon className="w-4 h-4" />
@@ -155,7 +155,7 @@ export const MediaTab: React.FC<MediaTabProps> = ({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 space-y-6 animate-fade-in">
+    <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6 space-y-6 animate-fade-in">
       <h3 className="text-lg font-medium text-gray-900 dark:text-white">
         {t("products.media.title")}
       </h3>
