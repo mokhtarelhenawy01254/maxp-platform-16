@@ -1672,5 +1672,9 @@ seedMarketplace()
     process.exit(1);
   })
   .finally(async () => {
-    // Prisma disconnect handled by sharedDatabase service
+    // sharedDatabase keeps the Prisma + Redis (company-cache) handles open for
+    // the long-running server, so in a CLI context this process never exits on
+    // its own — it sat for hours holding /tmp/maxp-production-deploy.lock while
+    // deploy-remote.sh waited on it (2026-08-31). Exit explicitly.
+    process.exit(0);
   });
