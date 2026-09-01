@@ -10,11 +10,13 @@
  *   Removed: نظام POS (pos-pro)
  *
  * This script:
- *   - Renames display metadata for the 4 kept apps (slug stays → installs preserved).
- *   - Deactivates + unpublishes legacy apps: store, ecommerce-basic, ecommerce-pro, pos-pro.
- *   - Migrates companyApp installs: store/ecommerce-basic → store-basic, ecommerce-pro → store-pro.
+ *   - Renames display metadata for the kept apps (slug stays → installs preserved).
+ *   - Deactivates + unpublishes legacy apps: ecommerce-basic, ecommerce-pro, pos-pro.
+ *   - NOTE: `store` (PAY_PER_USE — 2 EGP/order) is retained as a permanent app and is
+ *     intentionally NOT treated as legacy, so it is NOT deactivated/unpublished nor migrated.
+ *   - Migrates companyApp installs: ecommerce-basic → store-basic, ecommerce-pro → store-pro.
  *   - Remaps requiredApps arrays across all marketplace_apps:
- *       store → store-basic, ecommerce-basic → store-basic, ecommerce-pro → store-pro
+ *       ecommerce-basic → store-basic, ecommerce-pro → store-pro
  *
  * Usage:
  *   node scripts/merge_store_plans_2026.js [--dry-run]
@@ -101,17 +103,16 @@ const RENAMES = {
   },
 };
 
-const LEGACY_SLUGS = ['store', 'ecommerce-basic', 'ecommerce-pro', 'pos-pro'];
+// `store` is a permanent PAY_PER_USE app (2 EGP/order) and must NOT be treated as legacy.
+const LEGACY_SLUGS = ['ecommerce-basic', 'ecommerce-pro', 'pos-pro'];
 
 const REQUIRED_APPS_REMAP = {
-  store: 'store-basic',
   'ecommerce-basic': 'store-basic',
   'ecommerce-pro': 'store-pro',
   'pos-pro': 'store-pro',
 };
 
 const INSTALL_MIGRATION = {
-  store: 'store-basic',
   'ecommerce-basic': 'store-basic',
   'ecommerce-pro': 'store-pro',
 };
