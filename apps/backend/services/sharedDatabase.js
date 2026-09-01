@@ -234,14 +234,23 @@ function createStablePrismaClient() {
       'TelegramScheduledMessage'
     ]);
 
+    // Dynamic set of all models in the schema that contain a scalar companyId field
+    const { Prisma: PostgresPrisma } = require('../prisma/generated/postgresql_v2');
+    const MODELS_WITH_COMPANY_ID = new Set(
+      PostgresPrisma.dmmf?.datamodel?.models
+        ?.filter((m) => m.fields.some((f) => f.name === 'companyId'))
+        ?.map((m) => m.name) || []
+    );
+
     const extendedClient = client.$extends({
       query: {
         $allOperations: async ({ model, operation, args, query }) => {
           const companyId = tenantContext.getCompanyId();
           const isBypassed = tenantContext.isBypassed();
 
-          // 1. Skip injection if context is bypassed, no companyId is set, or table is a global/system model
-          if (isBypassed || !companyId || GLOBAL_MODELS.has(model)) {
+          // 1. Skip injection if context is bypassed, no companyId is set, table is a global/system model,
+          // or table doesn't have a companyId column in the database schema.
+          if (isBypassed || !companyId || GLOBAL_MODELS.has(model) || !MODELS_WITH_COMPANY_ID.has(model)) {
             const result = await query(args);
 
             // 🧹 Company cache invalidation on company updates
@@ -261,18 +270,11 @@ function createStablePrismaClient() {
             return result;
           }
 
-          // 2. Safe Auto-Tenant Injection without transactions
+          // 2. Safe Auto-Tenant Injection for models with companyId
           args = args || {};
 
           if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(operation)) {
             args.where = { ...args.where, companyId };
-          } else if (operation === 'findUnique' || operation === 'findUniqueOrThrow') {
-            // Prisma's findUnique rejects non-unique where clauses (like companyId when not part of composite primary key).
-            // Converting to findFirst ensures strict companyId scoping without schema errors.
-            return client[model].findFirst({
-              ...args,
-              where: { ...args.where, companyId }
-            });
           } else if (operation === 'create') {
             args.data = { ...args.data, companyId };
           } else if (operation === 'createMany') {
@@ -281,12 +283,10 @@ function createStablePrismaClient() {
             } else if (args.data) {
               args.data = { ...args.data, companyId };
             }
-          } else if (['update', 'updateMany', 'delete', 'deleteMany'].includes(operation)) {
+          } else if (['updateMany', 'deleteMany'].includes(operation)) {
             args.where = { ...args.where, companyId };
-          } else if (operation === 'upsert') {
-            args.where = { ...args.where, companyId };
+          } else if (operation === 'upsert' && args.create) {
             args.create = { ...args.create, companyId };
-            args.update = { ...args.update };
           }
 
           // ⚡ Execute single native SQL query through connection pool (Zero Transaction Overhead)

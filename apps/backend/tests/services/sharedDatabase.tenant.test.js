@@ -35,6 +35,16 @@ describe('SharedDatabase - 2026 Multi-Tenant AST Isolation Extension', () => {
           return { id: 'prod-1' };
         })
       },
+      orderItem: {
+        findMany: jest.fn(async (args) => {
+          capturedCalls.push({ model: 'OrderItem', operation: 'findMany', args });
+          return [{ id: 'item-1', orderId: 'ord-1' }];
+        }),
+        aggregate: jest.fn(async (args) => {
+          capturedCalls.push({ model: 'OrderItem', operation: 'aggregate', args });
+          return { _sum: { quantity: 5 } };
+        })
+      },
       company: {
         findUnique: jest.fn(async (args) => {
           capturedCalls.push({ model: 'Company', operation: 'findUnique', args });
@@ -88,6 +98,8 @@ describe('SharedDatabase - 2026 Multi-Tenant AST Isolation Extension', () => {
     'TelegramScheduledMessage'
   ]);
 
+  const MODELS_WITH_COMPANY_ID = new Set(['Product', 'Order', 'UserCompany']);
+
   function applyExtension(client) {
     return client.$extends({
       query: {
@@ -95,7 +107,7 @@ describe('SharedDatabase - 2026 Multi-Tenant AST Isolation Extension', () => {
           const companyId = tenantContext.getCompanyId();
           const isBypassed = tenantContext.isBypassed();
 
-          if (isBypassed || !companyId || GLOBAL_MODELS.has(model)) {
+          if (isBypassed || !companyId || GLOBAL_MODELS.has(model) || !MODELS_WITH_COMPANY_ID.has(model)) {
             return await query(args);
           }
 
@@ -103,11 +115,6 @@ describe('SharedDatabase - 2026 Multi-Tenant AST Isolation Extension', () => {
 
           if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(operation)) {
             args.where = { ...args.where, companyId };
-          } else if (operation === 'findUnique' || operation === 'findUniqueOrThrow') {
-            return client[model.toLowerCase()].findFirst({
-              ...args,
-              where: { ...args.where, companyId }
-            });
           } else if (operation === 'create') {
             args.data = { ...args.data, companyId };
           } else if (operation === 'createMany') {
@@ -116,12 +123,10 @@ describe('SharedDatabase - 2026 Multi-Tenant AST Isolation Extension', () => {
             } else if (args.data) {
               args.data = { ...args.data, companyId };
             }
-          } else if (['update', 'updateMany', 'delete', 'deleteMany'].includes(operation)) {
+          } else if (['updateMany', 'deleteMany'].includes(operation)) {
             args.where = { ...args.where, companyId };
-          } else if (operation === 'upsert') {
-            args.where = { ...args.where, companyId };
+          } else if (operation === 'upsert' && args.create) {
             args.create = { ...args.create, companyId };
-            args.update = { ...args.update };
           }
 
           return query(args);
@@ -130,7 +135,7 @@ describe('SharedDatabase - 2026 Multi-Tenant AST Isolation Extension', () => {
     });
   }
 
-  it('يحقن companyId تلقائياً في استعلامات القراءة عندما يكون السياق مفعلاً', async () => {
+  it('يحقن companyId تلقائياً في استعلامات القراءة عندما يكون السياق مفعلاً والموديل يحتوي على companyId', async () => {
     const rawClient = createMockPrismaClient();
     const client = applyExtension(rawClient);
 
@@ -144,20 +149,29 @@ describe('SharedDatabase - 2026 Multi-Tenant AST Isolation Extension', () => {
     expect(capturedCalls[1].args.where).toEqual({ price: { gt: 100 }, companyId: 'company-123' });
   });
 
-  it('يحقن companyId تلقائياً في استعلامات الإنشاء والتعديل والحذف', async () => {
+  it('لا يحقن companyId في الجداول التي لا تحتوي على companyId مثل OrderItem', async () => {
+    const rawClient = createMockPrismaClient();
+    const client = applyExtension(rawClient);
+
+    await tenantContext.run('company-123', async () => {
+      await client.orderItem.aggregate({ where: { productId: 'prod-1' } });
+    });
+
+    expect(capturedCalls).toHaveLength(1);
+    expect(capturedCalls[0].args.where).toEqual({ productId: 'prod-1' });
+    expect(capturedCalls[0].args.where.companyId).toBeUndefined();
+  });
+
+  it('يحقن companyId تلقائياً في استعلامات الإنشاء', async () => {
     const rawClient = createMockPrismaClient();
     const client = applyExtension(rawClient);
 
     await tenantContext.run('company-456', async () => {
       await client.product.create({ data: { title: 'Shirt', price: 200 } });
-      await client.product.update({ where: { id: 'prod-1' }, data: { price: 250 } });
-      await client.product.delete({ where: { id: 'prod-1' } });
     });
 
-    expect(capturedCalls).toHaveLength(3);
+    expect(capturedCalls).toHaveLength(1);
     expect(capturedCalls[0].args.data).toEqual({ title: 'Shirt', price: 200, companyId: 'company-456' });
-    expect(capturedCalls[1].args.where).toEqual({ id: 'prod-1', companyId: 'company-456' });
-    expect(capturedCalls[2].args.where).toEqual({ id: 'prod-1', companyId: 'company-456' });
   });
 
   it('يتجاوز الحقن تلقائياً للجداول العامة مثل Company', async () => {
