@@ -626,6 +626,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const [elessiSocialProofStep, setElessiSocialProofStep] = useState(0);
   const [elessiCountdownNow, setElessiCountdownNow] = useState(() => Date.now());
   const [isInlineQuickOrderVisible, setIsInlineQuickOrderVisible] = useState(false);
+  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [personalizationText, setPersonalizationText] = useState('');
   const [selectedPersonalizationOptions, setSelectedPersonalizationOptions] = useState<
     Record<string, string>
@@ -965,16 +966,21 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   };
 
   const handleAddToCart = () => {
-    const didAddToCart = addCurrentSelectionToCart({
-      openCart: shouldOpenCartAfterAddToCart,
-    });
+    setIsAddingToCart(true);
+    try {
+      const didAddToCart = addCurrentSelectionToCart({
+        openCart: shouldOpenCartAfterAddToCart,
+      });
 
-    if (!didAddToCart) {
-      return;
-    }
+      if (!didAddToCart) {
+        return;
+      }
 
-    if (shouldOpenEmbeddedCheckoutAfterAddToCart) {
-      dispatchEmbeddedCheckoutOpen();
+      if (shouldOpenEmbeddedCheckoutAfterAddToCart) {
+        dispatchEmbeddedCheckoutOpen();
+      }
+    } finally {
+      setIsAddingToCart(false);
     }
   };
 

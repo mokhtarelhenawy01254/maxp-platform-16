@@ -60,6 +60,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [storefrontSettings, setStorefrontSettings] = useState<StorefrontSettings | null>(null);
   const [savedTokensSignature, setSavedTokensSignature] = useState("{}");
   const [savedThemeId, setSavedThemeId] = useState(DEFAULT_STOREFRONT_THEME_ID);
   const [savedContentSignature, setSavedContentSignature] = useState("{}");
@@ -161,7 +162,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
     setLoading(true);
     try {
       const fresh = await storefrontSettingsService.getSettings();
-      setStorefrontSettings(fresh);
+      setStorefrontSettings(fresh.data);
       toast.info("تم إلغاء التعديلات والعودة للنسخة المحفوظة 🔄");
     } catch {
       window.location.reload();

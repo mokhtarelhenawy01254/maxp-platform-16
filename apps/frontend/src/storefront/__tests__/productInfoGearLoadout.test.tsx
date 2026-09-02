@@ -40,6 +40,10 @@ vi.mock('../hooks/useStorefrontFacebookTracking', () => ({
   useStorefrontFacebookTracking: () => trackingMocks,
 }));
 
+vi.mock('../hooks/useProductReviews', () => ({
+  useProductReviews: () => ({ reviews: [], averageRating: 0 }),
+}));
+
 const product = {
   id: 'tee-001',
   name: 'Atlas Tee',
