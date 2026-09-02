@@ -517,50 +517,6 @@ function AgingView() {
             <p className="text-xl font-bold text-rose-600 dark:text-rose-400">{fmtMoney(total)} {t("dentalLab.common.egp")}</p>
           </div>
           <div className={tableWrap}>
-function AgingView() {
-  const { t } = useTranslation();
-  const [buckets, setBuckets] = useState<AgingBucket[]>([]);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await fetchAgingReport();
-      setBuckets(data.buckets || []);
-      setTotal(data.totalOutstanding ?? 0);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
-    } finally {
-      setLoading(false);
-    }
-  }, [t]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const bucketLabel = (label: string) => tKey(t, `dentalLab.reports.aging.${label}`);
-
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-          <Wallet className="w-4 h-4" />
-          <span>{t("dentalLab.reports.aging.hint")}</span>
-        </div>
-        <button onClick={load} className="flex items-center gap-1.5 px-3 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-          <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
-        </button>
-      </div>
-
-      {loading ? (
-        <Skeleton />
-      ) : (
-        <>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4 flex items-center justify-between">
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("dentalLab.reports.aging.totalOutstanding")}</p>
-            <p className="text-xl font-bold text-rose-600 dark:text-rose-400">{fmtMoney(total)} {t("dentalLab.common.egp")}</p>
-          </div>
-          <div className={tableWrap}>
             <table className="w-full text-sm">
               <thead>
                 <tr>
