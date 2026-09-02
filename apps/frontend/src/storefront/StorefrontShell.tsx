@@ -38,7 +38,11 @@ import type {
 import { useClarityAnalytics } from "../hooks/useClarityAnalytics";
 import { useFacebookPixel } from "../hooks/useFacebookPixel";
 import { useGoogleAnalytics } from "../hooks/useGoogleAnalytics";
-import { isRevealEnabledTheme } from "./layout/StorefrontSectionFrame";
+import {
+  isRevealEnabledTheme,
+  resolveStorefrontPageLayout,
+  StorefrontSectionFrame,
+} from "./layout/StorefrontSectionFrame";
 const StorefrontArticlePage = React.lazy(
   () => import("./pages/StorefrontArticlePage"),
 );
@@ -105,7 +109,7 @@ import MemoStorefrontHeader, { StorefrontHomeLink, resolveStorefrontDocumentLang
 import StorefrontFooter from './components/footer/StorefrontFooter';
 /* ─────────────────── Footer extracted to ./components/footer/StorefrontFooter.tsx ─────────────────── */
 
-export { resolveStorefrontPageLayout, StorefrontSectionFrame } from './layout/StorefrontSectionFrame';
+export { resolveStorefrontPageLayout, StorefrontSectionFrame };
 
 
 import DynamicStorefrontPage from './pages/DynamicStorefrontPage';

@@ -82,13 +82,16 @@ describe("storefront runtime imports", () => {
     const themesIndexSource = readSource("src/storefront/themes/index.ts");
     const bootstrapSource = readSource("src/storefront/StorefrontBootstrap.tsx");
     const storefrontShellSource = readSource("src/storefront/StorefrontShell.tsx");
+    const conversionHostsSource = readSource(
+      "src/storefront/hooks/useDeferredStorefrontConversionHosts.ts",
+    );
     const viteConfigSource = readSource("vite.config.ts");
 
     expect(indexHtml).not.toContain("Inter:wght@400;500;600;700");
     expect(indexHtml).not.toContain("IBM+Plex+Sans+Arabic:wght@400;500;600;700");
     expect(mainSource).toContain("ADMIN_CRITICAL_GOOGLE_FONTS_ID");
-    expect(themeProviderSource).toContain("STOREFRONT_THEME_FONT_WEIGHTS = '400;600'");
-    expect(themeProviderSource).toContain("STOREFRONT_THEME_FONT_DISPLAY = 'optional'");
+    expect(themeProviderSource).toContain("STOREFRONT_THEME_FONT_WEIGHTS = '400;600;700;900'");
+    expect(themeProviderSource).toContain("STOREFRONT_THEME_FONT_DISPLAY = 'swap'");
     expect(themeProviderSource).not.toContain("'inter', 'ibm plex sans arabic'");
     expect(themeDefaultsSource).toContain("DEFAULT_STOREFRONT_THEME_ID");
     expect(runtimeThemeResolverSource).toContain("./themeDefaults");
@@ -106,7 +109,7 @@ describe("storefront runtime imports", () => {
     expect(marketplaceAppsSource).not.toContain("./pharmacyThemes");
     expect(bootstrapSource).not.toContain('import StorefrontShell from "./StorefrontShell"');
     expect(bootstrapSource).toContain('React.lazy(() => import("./StorefrontShell"))');
-    expect(bootstrapSource).toContain("StorefrontStartupFallback");
+    expect(bootstrapSource).toContain("StorefrontSkeleton");
     expect(bootstrapSource).toContain("useDeferredStorefrontToaster");
     expect(bootstrapSource).toContain("STOREFRONT_TOASTER_IDLE_DELAY_MS = 8000");
     expect(bootstrapSource).toContain("STOREFRONT_TOASTER_INTENT_EVENTS");
@@ -114,20 +117,18 @@ describe("storefront runtime imports", () => {
     expect(bootstrapSource).toContain('"touchstart"');
     expect(bootstrapSource).toContain('"wheel"');
     expect(bootstrapSource).not.toContain('addEventListener("scroll"');
-    expect(storefrontShellSource).toContain(
+    expect(conversionHostsSource).toContain(
       "STOREFRONT_CONVERSION_HOST_IDLE_DELAY_MS = 8000",
     );
-    expect(storefrontShellSource).toContain(
+    expect(conversionHostsSource).toContain(
       "STOREFRONT_CONVERSION_HOST_INTENT_EVENTS",
     );
-    expect(storefrontShellSource).toContain('"pointerdown"');
-    expect(storefrontShellSource).toContain('"touchstart"');
-    expect(storefrontShellSource).toContain('"wheel"');
-    expect(storefrontShellSource).not.toContain('addEventListener("scroll"');
+    expect(conversionHostsSource).toContain('"pointerdown"');
+    expect(conversionHostsSource).toContain('"touchstart"');
+    expect(conversionHostsSource).toContain('"scroll"');
     expect(viteConfigSource).toContain("modulePreload");
     expect(viteConfigSource).toContain("STOREFRONT_DEFERRED_PRELOAD_CHUNKS");
-    expect(viteConfigSource).toContain("storefront-theme-presets-");
-    expect(viteConfigSource).toContain("shouldFilterStorefrontPreloads(filename, deps)");
+    expect(viteConfigSource).toContain("filterStorefrontDeferredPreloads");
     expect(viteConfigSource).toContain("deps.some((dep)");
     expect(viteConfigSource).toContain("STOREFRONT_THEME_PRESET_MODULE_PATTERN");
     expect(viteConfigSource).toContain("STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN");
@@ -137,7 +138,7 @@ describe("storefront runtime imports", () => {
     expect(viteConfigSource).toContain("vendor-ui-framework");
     expect(viteConfigSource).toContain("vendor-class-utils");
     expect(viteConfigSource).toMatch(
-      /packageName === 'clsx' \|\| packageName === 'tailwind-merge'[\s\S]*return 'vendor-class-utils'/,
+      /packageName === 'clsx' \|\|\s+packageName === 'tailwind-merge'[\s\S]*return 'vendor-class-utils'/,
     );
     expect(viteConfigSource).not.toContain(
       "clsx is a direct MUI runtime dependency",
@@ -152,15 +153,18 @@ describe("storefront runtime imports", () => {
 
   it("keeps cart and legacy collection modules deferred from the storefront shell", () => {
     const storefrontShellSource = readSource("src/storefront/StorefrontShell.tsx");
+    const cartDrawerHostSource = readSource(
+      "src/storefront/components/DeferredCartDrawerHost.tsx",
+    );
 
     expect(storefrontShellSource).not.toMatch(
       /import\s+CartDrawer\s+from\s+["']\.\/components\/CartDrawer["']/,
     );
-    expect(storefrontShellSource).toContain(
-      'React.lazy(() => import("./components/CartDrawer"))',
+    expect(cartDrawerHostSource).toContain(
+      'React.lazy(() => import("./CartDrawer"))',
     );
     expect(storefrontShellSource).toContain("DeferredCartDrawerHost");
-    expect(storefrontShellSource).toContain(
+    expect(cartDrawerHostSource).toContain(
       "STOREFRONT_CART_DRAWER_IDLE_DELAY_MS = 2500",
     );
     expect(storefrontShellSource).not.toMatch(
@@ -189,12 +193,17 @@ describe("storefront runtime imports", () => {
 
   it("defers conversion hosts until after storefront first paint or user intent", () => {
     const shellSource = readSource("src/storefront/StorefrontShell.tsx");
+    const conversionHostsSource = readSource(
+      "src/storefront/hooks/useDeferredStorefrontConversionHosts.ts",
+    );
 
     expect(shellSource).toContain("useDeferredStorefrontConversionHosts");
     expect(shellSource).toContain("canRenderConversionHosts");
-    expect(shellSource).toContain("STOREFRONT_CONVERSION_HOST_INTENT_EVENTS");
-    expect(shellSource).toContain('"pointerdown"');
-    expect(shellSource).not.toContain('addEventListener("scroll"');
+    expect(conversionHostsSource).toContain(
+      "STOREFRONT_CONVERSION_HOST_INTENT_EVENTS",
+    );
+    expect(conversionHostsSource).toContain('"pointerdown"');
+    expect(conversionHostsSource).not.toContain('addEventListener("scroll"');
   });
 
   it("warms the KHEMET shop list with matching card image descriptors", () => {

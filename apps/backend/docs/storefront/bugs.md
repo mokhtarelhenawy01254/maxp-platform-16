@@ -1861,3 +1861,12 @@
 - **Impact**: Swan and other storefronts now display product placeholder images for missing uploads instead of blank cards. Original missing files (202 URLs across multiple companies) still need to be sourced from a backup or re-uploaded.
 - **Files Modified**:
   - `apps/backend/routes/publicProductsRoutes.js`
+
+### [FIX] Storefront ReferenceError: resolveStorefrontPageLayout is not defined (2026-09-02)
+- **Description**: Public storefront crashed with `ReferenceError: resolveStorefrontPageLayout is not defined` at `StorefrontLayout` during route rendering.
+- **Root Cause**: `StorefrontShell.tsx` was re-exporting `resolveStorefrontPageLayout` and `StorefrontSectionFrame` using direct export syntax `export { resolveStorefrontPageLayout, StorefrontSectionFrame } from './layout/StorefrontSectionFrame'`, which did not create a local lexical binding in `StorefrontShell.tsx` scope.
+- **Resolution**: Explicitly imported `resolveStorefrontPageLayout` and `StorefrontSectionFrame` in `StorefrontShell.tsx` before exporting, and updated unit test assertions in `storefrontRuntimeImports.test.ts`.
+- **Files Modified**:
+  - `apps/frontend/src/storefront/StorefrontShell.tsx`
+  - `apps/frontend/src/storefront/__tests__/storefrontRuntimeImports.test.ts`
+
