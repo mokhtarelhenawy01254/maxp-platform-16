@@ -20,6 +20,7 @@ import {
   type DentalWorkType,
 } from "./shared";
 import DentalPortalToast from "./DentalPortalToast";
+import OdontogramChart from "../dental-lab/OdontogramChart";
 
 interface CartNotice {
   message: string;
@@ -37,6 +38,7 @@ const DentalPortalNewOrderPage: React.FC = () => {
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
   const [teeth, setTeeth] = useState("");
+  const [selectedTeeth, setSelectedTeeth] = useState<string[]>([]);
   const [shade, setShade] = useState("");
   const [material, setMaterial] = useState("");
   const [notes, setNotes] = useState("");
@@ -262,20 +264,16 @@ const DentalPortalNewOrderPage: React.FC = () => {
                     )}
                   />
                 </div>
-                <div>
-                  <label
-                    htmlFor="dp-teeth"
-                    className="mb-1.5 block text-sm font-medium text-gray-700"
-                  >
-                    {t("dentalPortal.newOrder.teeth")}
+                <div className="sm:col-span-2">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                    {t("dentalPortal.newOrder.teeth")} (تحديد الأسنان بالخريطة التفاعلية)
                   </label>
-                  <input
-                    id="dp-teeth"
-                    type="text"
-                    value={teeth}
-                    onChange={(e) => setTeeth(e.target.value)}
-                    className="h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                    placeholder={t("dentalPortal.newOrder.teethPlaceholder")}
+                  <OdontogramChart
+                    selectedTeeth={selectedTeeth}
+                    onChange={(arr) => {
+                      setSelectedTeeth(arr);
+                      setTeeth(arr.join(", "));
+                    }}
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-4">

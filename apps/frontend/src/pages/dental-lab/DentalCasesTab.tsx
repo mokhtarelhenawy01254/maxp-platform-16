@@ -15,6 +15,7 @@ import {
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 import QuickOrderModal from "./QuickOrderModal";
+import OdontogramChart from "./OdontogramChart";
 
 const FALLBACK_BADGE = { label: "", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" };
 
@@ -41,6 +42,7 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
   const [patientName, setPatientName] = useState(initial?.patientName ?? "");
   const [patientPhone, setPatientPhone] = useState(initial?.patientPhone ?? "");
   const [teeth, setTeeth] = useState(initial?.teeth ?? "");
+  const [selectedTeeth, setSelectedTeeth] = useState<string[]>(initial?.teeth ? initial.teeth.split(/[,،\s]+/).filter(Boolean) : []);
   const [shade, setShade] = useState(initial?.shade ?? "");
   const [material, setMaterial] = useState(initial?.material ?? "");
   const [lotNumber, setLotNumber] = useState(initial?.lotNumber ?? "");
@@ -189,9 +191,15 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
             <label className={labelCls}>{t("dentalLab.cases.patientPhone")}</label>
             <input className={inputCls} value={patientPhone} onChange={e => setPatientPhone(e.target.value)} placeholder="01xxxxxxxxx" dir="ltr" />
           </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.teeth")}</label>
-            <input className={inputCls} value={teeth} onChange={e => setTeeth(e.target.value)} placeholder="مثال: 11، 21" />
+          <div className="sm:col-span-2">
+            <label className={labelCls}>{t("dentalLab.cases.teeth")} (تحديد الأسنان بالخريطة التفاعلية)</label>
+            <OdontogramChart
+              selectedTeeth={selectedTeeth}
+              onChange={(arr) => {
+                setSelectedTeeth(arr);
+                setTeeth(arr.join(", "));
+              }}
+            />
           </div>
           <div>
             <label className={labelCls}>{t("dentalLab.cases.shade")}</label>

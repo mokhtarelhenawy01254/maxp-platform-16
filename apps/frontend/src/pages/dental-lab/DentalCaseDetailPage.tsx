@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import DentalModelViewer from "./DentalModelViewer";
+import OdontogramChart from "./OdontogramChart";
 import {
   AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
   Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, X as XMarkIcon, XCircle,
@@ -1193,6 +1194,18 @@ export default function DentalCaseDetailPage() {
                 </div>
               ))}
             </div>
+            {c.teeth ? (
+              <div className="mt-4 border-t dark:border-gray-700 pt-4">
+                <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                  خريطة الأسنان المحددة في أمر الشغل (Visual FDI Odontogram):
+                </p>
+                <OdontogramChart
+                  selectedTeeth={c.teeth.split(/[,،\s]+/).filter(Boolean)}
+                  onChange={() => {}}
+                  readOnly={true}
+                />
+              </div>
+            ) : null}
             {c.notes ? (
               <div className="mt-4 border-t dark:border-gray-700 pt-3 text-sm">
                 <p className="text-gray-500 dark:text-gray-400 text-xs mb-0.5">{t("dentalLab.common.notes")}</p>
