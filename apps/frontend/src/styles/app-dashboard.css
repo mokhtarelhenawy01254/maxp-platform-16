@@ -363,6 +363,20 @@
   padding: 0;
 }
 
+/* The WhatsApp inbox is a full-height list+conversation workspace. The bottom
+   nav is now visible on the conversations LIST (see helpers.isChatRoute), so
+   reserve space for it on mobile — but only while no conversation is open.
+   Once a chat opens (data-chat-active="true") the list hides and the nav is
+   removed by CSS, so the composer can sit flush at the bottom. */
+@media (max-width: 1023px) {
+  .app-shell-content:has(
+      > .motion-safe\:animate-fade-in
+        > .whatsapp-workspace-root:not([data-chat-active="true"])
+    ) {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
 .app-shell-content > .motion-safe\:animate-fade-in:has(> .whatsapp-workspace-root) {
   display: flex;
   flex-direction: column;
