@@ -120,6 +120,195 @@ const buildDemoResponse = (slug) => ({
 });
 
 /**
+ * buildFunnelConfigFromProduct(product, company, overrides)
+ * ---------------------------------------------------------
+ * Produces a complete funnel config from a real product row. Used by
+ * quick-generate, the admin publish endpoint, and the refresh endpoint so
+ * that every published funnel page shows the actual product's image,
+ * description, pricing, and product-appropriate copy — never the static
+ * socks demo config.
+ *
+ * `product` is expected to be a plain JS object (Prisma row or merged
+ * product+product_translations result) with at minimum:
+ *   { id, name, price, comparePrice?, description?, images?: string[] }
+ *
+ * `overrides` may include: { heroTitle, heroSubtitle, heroOverline,
+ * heroBadge, designNotes, currency } — used by the wizard and admin
+ * endpoints to let the merchant tune the copy without re-deriving it.
+ */
+function buildFunnelConfigFromProduct(product, company, overrides = {}) {
+  if (!product) return DEMO_FUNNEL_CONFIG;
+
+  const currency = (company && company.currency) || overrides.currency || "EGP";
+  const basePrice = Number(product.price || 0);
+  const comparePrice =
+    product.comparePrice && Number(product.comparePrice) > basePrice
+      ? Number(product.comparePrice)
+      : Math.round(basePrice * 1.25);
+
+  const rawDescription =
+    (product.description && String(product.description).trim()) ||
+    (product.shortDescription && String(product.shortDescription).trim()) ||
+    `${product.name} — منتج أصلي بضمان ${company && company.name ? company.name : "المتجر"}.`;
+  // Subtitle stays punchy: first sentence, capped at ~140 chars
+  const firstSentence = rawDescription
+    .split(/[.\n]/)[0]
+    .trim()
+    .replace(/\s+/g, " ");
+  const heroSubtitle =
+    overrides.heroSubtitle ||
+    (firstSentence.length > 6 ? firstSentence : rawDescription).slice(0, 140);
+
+  const heroImage =
+    (Array.isArray(product.images) && product.images[0]) ||
+    product.image ||
+    product.imageUrl ||
+    (Array.isArray(product.productImages) && product.productImages[0]?.url) ||
+    null;
+
+  const discountPct = comparePrice
+    ? Math.max(1, Math.round(((comparePrice - basePrice) / comparePrice) * 100))
+    : 0;
+
+  // Bundle tiers anchored on the actual product price. Three tiers:
+  //  1× base price, 2× with 10% off (popular), 3× with 20% off + free shipping.
+  const tier1Price = basePrice;
+  const tier2Price = Math.round(basePrice * 2 * 0.9);
+  const tier3Price = Math.round(basePrice * 3 * 0.8);
+
+  const tier1Original =
+    comparePrice > tier1Price ? comparePrice : Math.round(basePrice * 1.2);
+  const tier2Original = Math.round(tier1Original * 2);
+  const tier3Original = Math.round(tier1Original * 3);
+
+  const productUnit = product.unit || "قطعة";
+  const productUnitPlural = product.unitPlural || "قطع";
+
+  // Use product tags/category to pick a relevant feature set when available,
+  // otherwise fall back to a generic COD-friendly feature list. The list
+  // intentionally maps to the icons the page already renders.
+  const rawTags = []
+    .concat(product.tags || [])
+    .concat(product.category ? [product.category.name, product.category.nameAr] : [])
+    .concat(product.categoryName || [])
+    .filter(Boolean)
+    .map((t) => String(t).toLowerCase());
+
+  const tagSet = new Set(rawTags);
+  const features = [];
+
+  if (tagSet.has("cotton") || tagSet.has("قطن")) {
+    features.push({
+      icon: "✨",
+      title: "خامة فاخرة",
+      desc: "مصنوع من خامات عالية الجودة ومختارة بعناية.",
+    });
+  } else if (
+    tagSet.has("leather") ||
+    tagSet.has("جلد") ||
+    tagSet.has("shoes") ||
+    tagSet.has("أحذية") ||
+    tagSet.has("كوتشي")
+  ) {
+    features.push({
+      icon: "👟",
+      title: "تصميم متين",
+      desc: "متين للاستخدام اليومي ومريح للمشي ساعات طويلة.",
+    });
+  } else {
+    features.push({
+      icon: "✨",
+      title: "جودة عالية",
+      desc: "منتج أصلي مصنوع من خامات مضمونة ومختارة بعناية.",
+    });
+  }
+
+  if (tagSet.has("free-shipping") || tagSet.has("شحن مجاني")) {
+    features.push({
+      icon: "🚚",
+      title: "شحن مجاني",
+      desc: "شحن مجاني لكل المحافظات بدون حد أدنى.",
+    });
+  } else {
+    features.push({
+      icon: "🚚",
+      title: "شحن سريع",
+      desc: "2-3 أيام لكل المحافظات مع تتبع كامل للطلب.",
+    });
+  }
+
+  features.push({
+    icon: "✅",
+    title: "منتج أصلي",
+    desc: `مستورد ومضمون 100% من ${company && company.name ? company.name : "المتجر"}.`,
+  });
+
+  if (tagSet.has("cod") || tagSet.has("دفع عند الاستلام")) {
+    features.push({
+      icon: "💵",
+      title: "دفع عند الاستلام",
+      desc: "ادفع كاش بعد ما تستلم وتعاين المنتج.",
+    });
+  } else {
+    features.push({
+      icon: "💵",
+      title: "كاش عند الاستلام",
+      desc: "من غير دفع مسبق أو بطاقة ائتمان.",
+    });
+  }
+
+  return {
+    ...DEMO_FUNNEL_CONFIG,
+    heroTitle: overrides.heroTitle || product.name,
+    heroSubtitle,
+    heroOverline:
+      overrides.heroOverline ||
+      overrides.designNotes ||
+      (product.category && (product.category.nameAr || product.category.name)) ||
+      "🔥 الأكثر طلباً",
+    heroBadge:
+      overrides.heroBadge ||
+      (discountPct > 0 ? `خصم ${discountPct}%!` : DEMO_FUNNEL_CONFIG.heroBadge),
+    heroImage,
+    currency,
+    basePrice,
+    comparePrice,
+    bundleTiers: [
+      {
+        qty: 1,
+        price: tier1Price,
+        originalPrice: tier1Original,
+        label: `1 ${productUnit} (${tier1Price} ${currency})`,
+      },
+      {
+        qty: 2,
+        price: tier2Price,
+        originalPrice: tier2Original,
+        label: `2 ${productUnitPlural} — وفّر ${tier1Original * 2 - tier2Price} ${currency}`,
+        popular: true,
+      },
+      {
+        qty: 3,
+        price: tier3Price,
+        originalPrice: tier3Original,
+        label: `3 ${productUnitPlural} — خصم ${discountPct || 20}% + شحن مجاني`,
+        bestValue: true,
+        freeShipping: true,
+      },
+    ],
+    features,
+    orderTitle: overrides.orderTitle || `اطلب ${product.name} دلوقتي`,
+    orderCopy:
+      overrides.orderCopy ||
+      `املأ البيانات وسيتم التواصل معك خلال ساعة لتأكيد طلب ${product.name}.`,
+    buttonLabel:
+      overrides.buttonLabel || `تأكيد الطلب — كاش عند الاستلام (${basePrice} ${currency})`,
+    offerEndsAt:
+      overrides.offerEndsAt || new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+  };
+}
+
+/**
  * GET /api/v1/funnels/public/:slug
  * Returns the funnel + linked product + company. Falls back to demo payload
  * if the funnel is not found, not published, or DB is unavailable.
@@ -177,6 +366,16 @@ router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
       })
       .catch(() => null);
 
+    // Always rebuild the public config from the *live* product so the page
+    // shows the real product image, description, and pricing. The stored
+    // formConfig may be stale (e.g. it was generated against the demo
+    // socks template before the product-aware helper existed) or out of
+    // date with the merchant's latest product edits. We treat formConfig
+    // as a cache that can be ignored if the product is available.
+    const config = product
+      ? buildFunnelConfigFromProduct(product, company)
+      : parseConfig(funnel.formConfig) || DEMO_FUNNEL_CONFIG;
+
     return res.json({
       funnel: {
         id: funnel.id,
@@ -185,7 +384,7 @@ router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
         slug: funnel.slug,
         title: funnel.title,
         status: funnel.status,
-        config: parseConfig(funnel.formConfig) || DEMO_FUNNEL_CONFIG,
+        config,
       },
       product: product || DEMO_PRODUCT,
       company: company || DEMO_COMPANY,
@@ -271,11 +470,45 @@ router.post(
         .slice(0, 60) ||
       `funnel-${Date.now()}`;
 
-    const previewConfig = {
-      ...DEMO_FUNNEL_CONFIG,
-      heroTitle: title || DEMO_FUNNEL_CONFIG.heroTitle,
-      heroOverline: designNotes || DEMO_FUNNEL_CONFIG.heroOverline,
-    };
+    let resolvedCompanyId = companyId || req.user?.companyId || "demo-company";
+    let liveProduct = null;
+    let liveCompany = null;
+    let previewConfig = null;
+
+    try {
+      const prisma = await getSharedPrismaClientAsync();
+      if (productId && prisma.product?.findUnique) {
+        liveProduct = await prisma.product
+          .findUnique({ where: { id: productId } })
+          .catch(() => null);
+        if (liveProduct && !companyId && liveProduct.companyId) {
+          resolvedCompanyId = liveProduct.companyId;
+        }
+      }
+      if (prisma.company?.findUnique) {
+        liveCompany = await prisma.company
+          .findUnique({
+            where: { id: resolvedCompanyId },
+            select: { id: true, name: true, slug: true, currency: true, logo: true },
+          })
+          .catch(() => null);
+      }
+    } catch {
+      // DB unavailable; we'll fall through to the demo preview below.
+    }
+
+    if (liveProduct) {
+      previewConfig = buildFunnelConfigFromProduct(liveProduct, liveCompany, {
+        heroTitle: title,
+        heroOverline: designNotes,
+      });
+    } else {
+      previewConfig = {
+        ...DEMO_FUNNEL_CONFIG,
+        heroTitle: title || DEMO_FUNNEL_CONFIG.heroTitle,
+        heroOverline: designNotes || DEMO_FUNNEL_CONFIG.heroOverline,
+      };
+    }
 
     try {
       const prisma = await getSharedPrismaClientAsync();
@@ -283,10 +516,10 @@ router.post(
         const created = await prisma.productLandingPage.create({
           data: {
             id: `fun_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
-            companyId: companyId || "demo-company",
+            companyId: resolvedCompanyId,
             productId: productId || DEMO_PRODUCT.id,
             slug: baseSlug,
-            title: title || DEMO_PRODUCT.name,
+            title: title || (liveProduct && liveProduct.name) || DEMO_PRODUCT.name,
             // Quick-funnel flow: publish immediately. The wizard's whole
             // point is "create a live page in 30 seconds" — leaving it as
             // DRAFT forces the merchant to flip a toggle before the link
@@ -309,6 +542,13 @@ router.post(
             publicPath: `/funnel/${created.slug}`,
             config: previewConfig,
           },
+          product: liveProduct
+            ? {
+                id: liveProduct.id,
+                name: liveProduct.name,
+                price: liveProduct.price,
+              }
+            : null,
         });
       }
     } catch (err) {
@@ -383,12 +623,6 @@ router.post(
       (slug && String(slug).trim()) ||
       `swan-${Date.now().toString(36).toString().slice(-6)}`;
 
-    const previewConfig = {
-      ...DEMO_FUNNEL_CONFIG,
-      heroTitle: designNotes || DEMO_FUNNEL_CONFIG.heroTitle,
-      heroOverline: designNotes || DEMO_FUNNEL_CONFIG.heroOverline,
-    };
-
     const ownerCompanyId = companyId || req.user?.companyId || "demo-company";
 
     try {
@@ -402,6 +636,29 @@ router.post(
       if (!product) {
         return res.status(404).json({ error: `Product ${productId} not found` });
       }
+
+      let liveCompany = null;
+      if (prisma.company?.findUnique) {
+        liveCompany = await prisma.company
+          .findUnique({
+            where: { id: ownerCompanyId },
+            select: { id: true, name: true, slug: true, currency: true, logo: true },
+          })
+          .catch(() => null);
+      }
+
+      // Build the funnel config from the real product, not the demo socks
+      // template. This is the fix for the user-facing bug where every
+      // funnel page was rendering the static "باكدج 5 أزواج" copy
+      // regardless of the actual product.
+      const previewConfig = buildFunnelConfigFromProduct(
+        product,
+        liveCompany,
+        {
+          heroTitle: designNotes && designNotes.length > 80 ? undefined : product.name,
+          heroOverline: designNotes,
+        },
+      );
 
       if (!prisma.productLandingPage?.create) {
         return res.status(503).json({ error: "productLandingPage.create unavailable" });
@@ -442,6 +699,117 @@ router.post(
     } catch (err) {
       return res.status(500).json({
         error: "Failed to publish funnel",
+        message: err?.message || String(err),
+      });
+    }
+  },
+);
+
+/**
+ * POST /api/v1/funnels/admin/refresh
+ * Re-builds the stored formConfig for an existing funnel from the current
+ * product row. Use this when the existing funnel page is showing stale or
+ * demo-template content (e.g. it was generated before
+ * buildFunnelConfigFromProduct existed, or the merchant edited the
+ * product after the funnel was published).
+ *
+ * Auth: same dual-auth as publish-by-product (Bearer token OR
+ * x-admin-secret matching MAXP_ADMIN_SECRET).
+ *
+ * Body: { slug } OR { funnelId } — at least one is required.
+ */
+router.post(
+  "/admin/refresh",
+  express.json(),
+  async (req, res) => {
+    const authHeader = req.headers.authorization || "";
+    const adminSecret = req.headers["x-admin-secret"];
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const validBearer = bearer
+      ? await new Promise((resolve) => {
+          authenticateToken(req, res, (err) =>
+            resolve(!err && req.user ? true : false),
+          );
+        })
+      : false;
+
+    if (!validBearer && adminSecret !== ADMIN_SECRET) {
+      return res.status(401).json({
+        error: "Unauthorized: provide Bearer token or x-admin-secret",
+      });
+    }
+
+    const { slug, funnelId } = req.body || {};
+    if (!slug && !funnelId) {
+      return res.status(400).json({ error: "slug or funnelId is required" });
+    }
+
+    try {
+      const prisma = await getSharedPrismaClientAsync();
+      if (!prisma.productLandingPage?.findFirst) {
+        return res.status(503).json({ error: "productLandingPage unavailable" });
+      }
+
+      const funnel = await prisma.productLandingPage.findFirst({
+        where: slug ? { slug } : { id: funnelId },
+      });
+      if (!funnel) {
+        return res.status(404).json({ error: "Funnel not found" });
+      }
+
+      let product = null;
+      if (funnel.productId && prisma.product?.findUnique) {
+        product = await prisma.product
+          .findUnique({ where: { id: funnel.productId } })
+          .catch(() => null);
+      }
+      if (!product) {
+        return res.status(404).json({
+          error: "Linked product not found — cannot rebuild config",
+          productId: funnel.productId,
+        });
+      }
+
+      let company = null;
+      if (funnel.companyId && prisma.company?.findUnique) {
+        company = await prisma.company
+          .findUnique({
+            where: { id: funnel.companyId },
+            select: { id: true, name: true, slug: true, currency: true, logo: true },
+          })
+          .catch(() => null);
+      }
+
+      const newConfig = buildFunnelConfigFromProduct(product, company);
+
+      const updated = await prisma.productLandingPage.update({
+        where: { id: funnel.id },
+        data: {
+          formConfig: JSON.stringify(newConfig),
+          title: product.name,
+          generationStatus: "READY",
+        },
+      });
+
+      return res.json({
+        ok: true,
+        funnel: {
+          id: updated.id,
+          slug: updated.slug,
+          status: updated.status,
+          publicPath: `/funnel/${updated.slug}`,
+          publicUrl: `https://maxp.online/funnel/${updated.slug}`,
+        },
+        product: {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+        },
+        config: newConfig,
+      });
+    } catch (err) {
+      return res.status(500).json({
+        error: "Failed to refresh funnel",
         message: err?.message || String(err),
       });
     }
