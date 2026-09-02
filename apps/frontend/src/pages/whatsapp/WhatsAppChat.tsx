@@ -53,6 +53,7 @@ import BusinessProfileDialog from '../../components/whatsapp/BusinessProfileDial
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import ProductImagePickerModal from '../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal';
+import CreateServiceOrderModal from '../../components/facebook-inbox/Modals/CreateServiceOrderModal';
 import { useAuth } from '../../hooks/useAuthSimple';
 
 import ChatSidebar from './components/ChatSidebar';
@@ -441,6 +442,7 @@ const WhatsAppChatContent: React.FC = () => {
 
   // Quick Order Modal (same as Facebook inbox)
   const [showQuickOrderModal, setShowQuickOrderModal] = useState(false);
+  const [showServiceOrderModal, setShowServiceOrderModal] = useState(false);
   const [showProductPicker, setShowProductPicker] = useState(false);
   const [quickOrderContact, setQuickOrderContact] = useState<Contact | null>(null);
   const [ordersRefreshToken, setOrdersRefreshToken] = useState(0);
@@ -2290,6 +2292,7 @@ const WhatsAppChatContent: React.FC = () => {
           onOpenCatalog={() => { loadProducts(); setCatalogDialogOpen(true); }}
           onOpenLocation={() => setLocationDialogOpen(true)}
           onOpenOrder={() => setShowQuickOrderModal(true)}
+          onOpenServiceOrder={() => setShowServiceOrderModal(true)}
           onOpenTasks={() => setShowQuickCreateTaskModal(true)}
           onOpenTemplate={handleOpenTemplateDialog}
           onOpenProducts={() => setShowProductPicker(true)}
@@ -2318,6 +2321,7 @@ const WhatsAppChatContent: React.FC = () => {
                 labels={labels}
                 refreshToken={ordersRefreshToken}
                 onOpenOrder={() => setShowQuickOrderModal(true)}
+                onOpenServiceOrder={() => setShowServiceOrderModal(true)}
                 onOpenTasks={() => setShowQuickCreateTaskModal(true)}
                 onClose={() => setShowRightPanel(false)}
                 onOpenLabels={() => {
@@ -3278,6 +3282,16 @@ const WhatsAppChatContent: React.FC = () => {
         }
         onOrderCreated={(orderId) => {
           toast.success(t('whatsapp.dialogs.orderCreated', { orderId }));
+          setOrdersRefreshToken((prev) => prev + 1);
+        }}
+      />
+
+      <CreateServiceOrderModal
+        isOpen={showServiceOrderModal}
+        onClose={() => setShowServiceOrderModal(false)}
+        customerName={selectedContact ? getContactName(selectedContact) : undefined}
+        customerPhone={selectedContactPhoneNumber || undefined}
+        onOrderCreated={() => {
           setOrdersRefreshToken((prev) => prev + 1);
         }}
       />

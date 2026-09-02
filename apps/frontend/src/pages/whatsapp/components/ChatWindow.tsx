@@ -75,6 +75,7 @@ interface ChatWindowProps {
   onOpenCatalog: () => void;
   onOpenLocation: () => void;
   onOpenOrder: () => void;
+  onOpenServiceOrder?: () => void;
   onOpenTasks?: () => void;
   onOpenTemplate?: () => void;
   onOpenProducts?: () => void;
@@ -123,6 +124,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   onOpenCatalog,
   onOpenLocation,
   onOpenOrder,
+  onOpenServiceOrder,
   onOpenTasks,
   onOpenTemplate,
   onOpenProducts,
@@ -552,6 +554,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 >
                   <ShoppingCart className="size-4" />
                 </Button>
+                {onOpenServiceOrder && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="rounded-full text-purple-600 hover:text-purple-700 hover:bg-purple-50 dark:text-purple-400"
+                    onClick={onOpenServiceOrder}
+                    title="إنشاء طلب خدمة للعميل"
+                  >
+                    <span className="text-sm leading-none">🛠️</span>
+                  </Button>
+                )}
                 {onOpenTasks && (
                   <Button
                     variant="ghost"

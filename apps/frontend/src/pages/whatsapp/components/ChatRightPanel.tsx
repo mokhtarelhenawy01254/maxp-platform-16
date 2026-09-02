@@ -24,6 +24,7 @@ type Tab = 'info' | 'orders' | 'activity';
 interface ChatRightPanelProps {
   contact: Contact | null;
   onOpenOrder: () => void;
+  onOpenServiceOrder?: () => void;
   onOpenTasks: () => void;
   onClose?: () => void;
   onOpenLabels?: () => void;
@@ -38,7 +39,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   BLOCKED: { label: 'محظور', color: '#ef4444' },
 };
 
-const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenTasks, onClose, onOpenLabels, labels = [], refreshToken = 0 }) => {
+const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenServiceOrder, onOpenTasks, onClose, onOpenLabels, labels = [], refreshToken = 0 }) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [avatarError, setAvatarError] = useState(false);
@@ -860,36 +861,48 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                           <div key={order.id} style={sectionStyle}>
                             <div className="mb-1.5 flex items-start justify-between">
                               <div className="min-w-0">
-                                <p
-                                  role="button"
-                                  tabIndex={0}
-                                  title={order.orderNumber}
-                                  className="w-fit cursor-pointer text-sm font-bold text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setOrderMenu({
-                                      mouseX: e.clientX + 2,
-                                      mouseY: e.clientY - 6,
-                                      orderNumber: order.orderNumber,
-                                    });
-                                  }}
-                                  onKeyDown={(e) => {
-                                    if (e.key === "Enter" || e.key === " ") {
+                                <div className="flex items-center gap-1.5">
+                                  <p
+                                    role="button"
+                                    tabIndex={0}
+                                    title={order.orderNumber}
+                                    className="w-fit cursor-pointer text-sm font-bold text-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+                                    onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
                                       setOrderMenu({
-                                        mouseX: (e.currentTarget as HTMLElement).getBoundingClientRect().left,
-                                        mouseY: (e.currentTarget as HTMLElement).getBoundingClientRect().bottom + 4,
+                                        mouseX: e.clientX + 2,
+                                        mouseY: e.clientY - 6,
                                         orderNumber: order.orderNumber,
                                       });
-                                    }
-                                  }}
-                                >
-                                  #{order.orderNumber}
-                                </p>
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (e.key === "Enter" || e.key === " ") {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setOrderMenu({
+                                          mouseX: (e.currentTarget as HTMLElement).getBoundingClientRect().left,
+                                          mouseY: (e.currentTarget as HTMLElement).getBoundingClientRect().bottom + 4,
+                                          orderNumber: order.orderNumber,
+                                        });
+                                      }
+                                    }}
+                                  >
+                                    #{order.orderNumber}
+                                  </p>
+                                  {(order as any).type === 'SERVICE' && (
+                                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                                      🛠️ خدمة
+                                    </span>
+                                  )}
+                                </div>
                                 <p className="text-xs text-muted-foreground">
                                   {format(new Date(order.createdAt), 'dd MMM yyyy', { locale: arSA })}
+                                  {(order as any).type === 'SERVICE' && (order as any).serviceName && (
+                                    <span className="mr-1 text-purple-600 dark:text-purple-400 font-medium">
+                                      • {(order as any).serviceName}
+                                    </span>
+                                  )}
                                 </p>
                               </div>
                               <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${statusDisplay.colorClass}`}>
@@ -897,7 +910,11 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                               </span>
                             </div>
                             <div className="flex items-center justify-between border-t pt-1.5 text-xs" style={{ borderColor: 'var(--business-muted-line)' }}>
-                              <span className="text-muted-foreground">{order.items?.length || 0} منتجات</span>
+                              <span className="text-muted-foreground">
+                                {(order as any).type === 'SERVICE'
+                                  ? ((order as any).serviceName || 'طلب خدمة')
+                                  : `${order.items?.length || 0} منتجات`}
+                              </span>
                               <span className="font-bold text-primary">{order.total?.toLocaleString() || 0} ج.م</span>
                             </div>
                           </div>
@@ -910,9 +927,20 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                       <p className="text-sm">لا توجد طلبات سابقة</p>
                     </div>
                   )}
-                  <Button variant="outline" className="w-full gap-1.5" onClick={onOpenOrder}>
-                    <ShoppingBag className="size-4" /> طلب جديد
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="flex-1 gap-1.5" onClick={onOpenOrder}>
+                      <ShoppingBag className="size-4" /> طلب متجر
+                    </Button>
+                    {onOpenServiceOrder && (
+                      <Button
+                        variant="outline"
+                        className="flex-1 gap-1.5 border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-900/30"
+                        onClick={onOpenServiceOrder}
+                      >
+                        <span className="text-sm">🛠️</span> طلب خدمة
+                      </Button>
+                    )}
+                  </div>
                 </div>
               )}
 
