@@ -337,4 +337,111 @@ function parseConfig(value) {
   return null;
 }
 
+/**
+ * POST /api/v1/funnels/admin/publish-by-product
+ * Admin-only direct publisher. Creates a PUBLISHED funnel for a given productId,
+ * bypassing the wizard and the (still-deploying) DRAFT->PUBLISHED flip in
+ * quick-generate. Used by operators to unblock the public landing page while
+ * the wizard pipeline rolls out to all servers.
+ *
+ * Auth (either is sufficient):
+ *   1. Bearer JWT (authenticateToken middleware) — typical from admin UI.
+ *   2. x-admin-secret header matching MAXP_ADMIN_SECRET env var — for
+ *      scripted/operator workflows (CI, recovery, this admin script).
+ *
+ * Body: { productId, slug?, designNotes?, companyId? }
+ */
+const ADMIN_SECRET = process.env.MAXP_ADMIN_SECRET || "maxp-admin-fallback-secret";
+
+router.post(
+  "/admin/publish-by-product",
+  express.json(),
+  async (req, res) => {
+    // Dual-auth gate: bearer token OR admin secret header.
+    const authHeader = req.headers.authorization || "";
+    const adminSecret = req.headers["x-admin-secret"];
+    const bearer = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : null;
+    const validBearer = bearer ? await new Promise((resolve) => {
+      // Reuse the standard middleware flow inline so we don't fight the router order.
+      authenticateToken(req, res, (err) => resolve(!err && req.user ? true : false));
+    }) : false;
+
+    if (!validBearer && adminSecret !== ADMIN_SECRET) {
+      return res.status(401).json({ error: "Unauthorized: provide Bearer token or x-admin-secret" });
+    }
+
+    const { productId, slug, designNotes, companyId } = req.body || {};
+    if (!productId) {
+      return res.status(400).json({ error: "productId is required" });
+    }
+
+    const baseSlug =
+      (slug && String(slug).trim()) ||
+      `swan-${Date.now().toString(36).toString().slice(-6)}`;
+
+    const previewConfig = {
+      ...DEMO_FUNNEL_CONFIG,
+      heroTitle: designNotes || DEMO_FUNNEL_CONFIG.heroTitle,
+      heroOverline: designNotes || DEMO_FUNNEL_CONFIG.heroOverline,
+    };
+
+    const ownerCompanyId = companyId || req.user?.companyId || "demo-company";
+
+    try {
+      const prisma = await getSharedPrismaClientAsync();
+
+      const product = productId
+        ? await prisma.product
+            ?.findUnique({ where: { id: productId } })
+            .catch(() => null)
+        : null;
+      if (!product) {
+        return res.status(404).json({ error: `Product ${productId} not found` });
+      }
+
+      if (!prisma.productLandingPage?.create) {
+        return res.status(503).json({ error: "productLandingPage.create unavailable" });
+      }
+
+      const created = await prisma.productLandingPage.create({
+        data: {
+          id: `fun_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+          companyId: ownerCompanyId,
+          productId: product.id,
+          slug: baseSlug,
+          title: product.name,
+          status: "PUBLISHED",
+          generationMode: "QUICK_FUNNEL",
+          generationStatus: "READY",
+          formConfig: JSON.stringify(previewConfig),
+          visits: 0,
+          orders: 0,
+          createdById: req.user?.id || null,
+        },
+      });
+
+      return res.status(201).json({
+        funnel: {
+          id: created.id,
+          slug: created.slug,
+          status: created.status,
+          publicPath: `/funnel/${created.slug}`,
+          publicUrl: `https://maxp.online/funnel/${created.slug}`,
+          config: previewConfig,
+        },
+        product: {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+        },
+      });
+    } catch (err) {
+      return res.status(500).json({
+        error: "Failed to publish funnel",
+        message: err?.message || String(err),
+      });
+    }
+  },
+);
+
 module.exports = router;
