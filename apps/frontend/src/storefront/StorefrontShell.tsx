@@ -38,6 +38,7 @@ import type {
 import { useClarityAnalytics } from "../hooks/useClarityAnalytics";
 import { useFacebookPixel } from "../hooks/useFacebookPixel";
 import { useGoogleAnalytics } from "../hooks/useGoogleAnalytics";
+import { isRevealEnabledTheme } from "./layout/StorefrontSectionFrame";
 const StorefrontArticlePage = React.lazy(
   () => import("./pages/StorefrontArticlePage"),
 );
