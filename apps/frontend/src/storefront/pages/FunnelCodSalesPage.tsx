@@ -35,7 +35,6 @@ import { Link, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { EGYPT_GOVERNORATES } from "../../constants/egyptGovernorates";
 import { getCompanyId, storefrontApi } from "../../utils/storefrontApi";
-import { buildCheckoutOrderPayload } from "../hooks/useCheckout";
 import type { Product } from "../hooks/useProducts";
 import { formatStorefrontCurrency } from "../utils/currency";
 import { getPrimaryProductImage } from "../utils/productImages";
@@ -290,12 +289,16 @@ const FunnelCodSalesPage: React.FC = () => {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Declared outside try so the catch block can use it for the
+      // demo-fallback (otherwise `const companyId` inside try is block-scoped
+      // and the catch can't see it — throws "companyId is not defined").
+      let resolvedCompanyId: string | null = null;
       try {
         setLoading(true);
         setError(null);
-        const companyId = getCompanyId();
+        resolvedCompanyId = getCompanyId();
         const res = await storefrontApi.getFunnel?.(slug, {
-          companyId: companyId ?? undefined,
+          companyId: resolvedCompanyId ?? undefined,
         });
         if (cancelled) return;
         if (res) {
@@ -308,7 +311,7 @@ const FunnelCodSalesPage: React.FC = () => {
           setError(err instanceof Error ? err.message : "fallback");
           setFunnel({
             id: "demo",
-            companyId: companyId ?? "demo",
+            companyId: resolvedCompanyId ?? "demo",
             productId: FALLBACK_PRODUCT.id,
             slug,
             title: FALLBACK_PRODUCT.name,
@@ -386,27 +389,26 @@ const FunnelCodSalesPage: React.FC = () => {
     }
     try {
       setSubmitting(true);
-      const payload = buildCheckoutOrderPayload({
-        product,
-        quantity: form.quantity,
-        variant: undefined,
-        form: {
-          name: form.customerName,
-          phone: form.phone,
-          address: `${form.area ? form.area + " - " : ""}${form.address}`,
-          city: form.governorate,
-          notes: form.notes,
-        },
-      });
-      const tracking = persistPurchaseTracking({
+      // The funnel backend only needs the minimum: who is buying, what
+      // product, how many, and where to ship. We bypass the standard
+      // buildCheckoutOrderPayload (cart-based) because this page is a
+      // single-product COD flow that doesn't use the cart.
+      const subtotal = activeTier ? activeTier.price * form.quantity : 0;
+      await storefrontApi.trackFunnelOrder?.(funnel.slug, {
         companyId: funnel.companyId,
         productId: funnel.productId,
-        source: "funnel_cod_sales",
-        funnelId: funnel.id,
-      });
-      await storefrontApi.trackFunnelOrder?.(funnel.slug, {
-        ...payload,
-        ...tracking,
+        productName: product.name,
+        productImage: heroImage,
+        quantity: form.quantity,
+        unitPrice: activeTier?.price ?? product.price ?? 0,
+        subtotal,
+        currency: company.currency ?? "EGP",
+        customerName: form.customerName,
+        phone: form.phone,
+        governorate: form.governorate,
+        area: form.area,
+        address: form.address,
+        notes: form.notes,
         landingSlug: funnel.slug,
       });
       toast.success("تم استلام طلبك! هنتواصل معاك خلال ساعة.");

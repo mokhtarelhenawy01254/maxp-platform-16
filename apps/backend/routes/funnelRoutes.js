@@ -283,7 +283,12 @@ router.post(
             productId: productId || DEMO_PRODUCT.id,
             slug: baseSlug,
             title: title || DEMO_PRODUCT.name,
-            status: "DRAFT",
+            // Quick-funnel flow: publish immediately. The wizard's whole
+            // point is "create a live page in 30 seconds" — leaving it as
+            // DRAFT forces the merchant to flip a toggle before the link
+            // actually serves the product. Publish-by-default is the
+            // Easy-Orders behaviour and what merchants expect.
+            status: "PUBLISHED",
             generationMode: "QUICK_FUNNEL",
             generationStatus: "READY",
             formConfig: JSON.stringify(previewConfig),
