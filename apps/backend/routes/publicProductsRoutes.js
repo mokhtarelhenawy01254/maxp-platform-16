@@ -1534,6 +1534,24 @@ router.get('/', async (req, res) => {
       isHidden: false,
     });
 
+    // 🚀 Fast Redis Cache check for public storefront product browsing
+    const isCacheable = !search && !req.query.ref && !req.query.affiliate && !req.cookies?.affiliateCode;
+    const cacheKey = isCacheable
+      ? `public_products:${companyId}:${category || 'all'}:${currentPage}:${take}:${normalizedSortField}:${normalizedSortOrder}:${minPrice || '0'}:${maxPrice || '0'}`
+      : null;
+
+    if (cacheKey) {
+      try {
+        const cached = await redisCacheService.get(cacheKey);
+        if (cached) {
+          res.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
+          return res.json(cached);
+        }
+      } catch (cacheErr) {
+        console.warn('⚠️ [REDIS] public products cache lookup failed:', cacheErr?.message);
+      }
+    }
+
     if (category && category !== 'all') {
       where.categoryId = category;
     }
@@ -1571,8 +1589,7 @@ router.get('/', async (req, res) => {
       products.map((product) => product.id),
     );
 
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
-    res.json({
+    const responseData = {
       success: true,
       data: products.map((product) =>
         applyAffiliatePricing(
@@ -1586,7 +1603,18 @@ router.get('/', async (req, res) => {
         limit: take,
         pages: Math.ceil(total / take),
       },
-    });
+    };
+
+    if (cacheKey) {
+      try {
+        await redisCacheService.set(cacheKey, responseData, 60); // 60s TTL
+      } catch (cacheSetErr) {
+        // non-blocking redis cache set error
+      }
+    }
+
+    res.set('Cache-Control', 'public, max-age=30, s-maxage=60, stale-while-revalidate=120');
+    res.json(responseData);
   } catch (error) {
     console.error('❌ [PUBLIC-PRODUCTS] GET / error:', error);
     res.status(500).json({
@@ -1599,6 +1627,15 @@ router.get('/', async (req, res) => {
 
 router.get('/categories', async (req, res) => {
   try {
+    const cacheKey = `public_categories:${req.companyId}`;
+    try {
+      const cached = await redisCacheService.get(cacheKey);
+      if (cached) {
+        res.set('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600');
+        return res.json(cached);
+      }
+    } catch (e) {}
+
     const prisma = await getPrisma();
     const categories = await prisma.category.findMany({
       where: {
@@ -1610,11 +1647,17 @@ router.get('/categories', async (req, res) => {
       },
     });
 
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
-    res.json({
+    const responseData = {
       success: true,
       data: categories,
-    });
+    };
+
+    try {
+      await redisCacheService.set(cacheKey, responseData, 300);
+    } catch (e) {}
+
+    res.set('Cache-Control', 'public, max-age=120, s-maxage=300, stale-while-revalidate=600');
+    res.json(responseData);
   } catch (error) {
     console.error('❌ [PUBLIC-PRODUCTS] GET /categories error:', error);
     res.status(500).json({
