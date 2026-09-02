@@ -42,6 +42,18 @@ describe('isProductInfoConversionModuleEnabled', () => {
       isProductInfoConversionModuleEnabled(true, { lowStockNotice: false }, 'lowStockNotice'),
     ).toBe(false);
   });
+
+  it('enables Sticky Add to Cart only when conversion-suite and its module are both active', () => {
+    expect(
+      isProductInfoConversionModuleEnabled(true, { stickyAddToCart: true }, 'stickyAddToCart'),
+    ).toBe(true);
+    expect(
+      isProductInfoConversionModuleEnabled(false, { stickyAddToCart: true }, 'stickyAddToCart'),
+    ).toBe(false);
+    expect(
+      isProductInfoConversionModuleEnabled(true, { stickyAddToCart: false }, 'stickyAddToCart'),
+    ).toBe(false);
+  });
 });
 
 describe('product-info add-to-cart routing', () => {

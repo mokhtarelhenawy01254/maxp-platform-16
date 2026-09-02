@@ -91,3 +91,7 @@
 - explanations about where unrelated tools should live
 - duplicate back/manage buttons
 - card-based wrappers around every block
+
+## Theme Sync & Sticky Add to Cart
+- Theme-specific mobile sticky action bars (such as Khemet / Elessi two-button bar) are bound to `conversion-suite`'s `stickyAddToCart` setting via `isStickyAddToCartEnabled`.
+- Disabling `Sticky Add to Cart` in `/settings/store/tools/stickyAddToCart` cleanly disables both the global host and theme-level mobile sticky action bars.

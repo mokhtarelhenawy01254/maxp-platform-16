@@ -661,6 +661,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   );
   const conversionModules =
     (conversionSuiteSettings['modules'] as Record<string, any> | undefined) || {};
+  const isStickyAddToCartEnabled = isProductInfoConversionModuleEnabled(
+    conversionSuiteEnabled,
+    conversionModules,
+    'stickyAddToCart',
+  );
   const conversionUi =
     (conversionSuiteSettings['ui'] as Record<string, any> | undefined) || {};
   const conversionCopy =
@@ -3183,6 +3188,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   // primary decision area, especially for merged-buybox PDP variants.
   const shouldRenderPrimaryBuyBox = !externalOnlyProduct;
   const showStickyMobileAddToCart =
+    isStickyAddToCartEnabled &&
     isElessiCareBuybox &&
     shouldRenderPrimaryBuyBox &&
     !externalOnlyProduct &&
@@ -4504,7 +4510,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         </dl>
       ) : null;
     const showStickyMobileAddToCart =
-      shouldRenderStandaloneBuyBox && !externalOnlyProduct && !isCartOpen;
+      isStickyAddToCartEnabled &&
+      shouldRenderStandaloneBuyBox &&
+      !externalOnlyProduct &&
+      !isCartOpen;
 
     return (
       <section className="w-full px-1 py-4">
@@ -6329,7 +6338,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           ]
     ).slice(0, 3);
     const showStickyMobileAddToCart =
-      shouldRenderPrimaryBuyBox && !externalOnlyProduct && !isCartOpen;
+      isStickyAddToCartEnabled &&
+      shouldRenderPrimaryBuyBox &&
+      !externalOnlyProduct &&
+      !isCartOpen;
 
     return (
       <>
@@ -6618,6 +6630,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     const shouldUseInlineOrderFormOnly =
       isKhemetInlineQuickOrderBuybox && Boolean(mergedInlinePdpQuickOrder);
     const showStickyMobileAddToCart =
+      isStickyAddToCartEnabled &&
       isElessiCareBuybox &&
       shouldRenderPrimaryBuyBox &&
       !externalOnlyProduct &&
@@ -9064,7 +9077,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         )}
       </div>
 
-      {isNovaMobile && !productPageCheckoutEnabled && (
+      {isNovaMobile && !productPageCheckoutEnabled && isStickyAddToCartEnabled && (
         <StickyMobileCTA
           activePrice={activePrice}
           currency={currency}
