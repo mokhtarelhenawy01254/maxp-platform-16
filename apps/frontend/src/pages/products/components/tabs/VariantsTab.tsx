@@ -8,6 +8,7 @@ import {
   CubeIcon,
   TruckIcon,
   PlusIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { getImageUrl } from "../../../../utils/imageUrl";
 import { ShippingClassOption } from "../../../../constants/shippingClasses";
@@ -31,6 +32,12 @@ interface VariantsTabProps {
   addVariant: () => void;
   displayCurrency: string;
   shippingClassOptions: ShippingClassOption[];
+  defaultPricing?: {
+    price?: number;
+    comparePrice?: number;
+    cost?: number;
+  };
+  syncWithProductPricing?: (targetIdx?: number) => void;
   t: any;
 }
 
@@ -50,6 +57,8 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
   addVariant,
   displayCurrency,
   shippingClassOptions,
+  defaultPricing,
+  syncWithProductPricing,
   t,
 }) => {
   const [expandedVariantIdx, setExpandedVariantIdx] = useState<number | null>(
@@ -64,11 +73,25 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
     <div className="space-y-6 animate-fade-in">
       {/* Variants Section */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-xl p-3.5 sm:p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <div className="flex items-center gap-3 flex-wrap">
             <h3 className="text-lg font-medium text-gray-900 dark:text-white">
               {t("products.variants.title")} ({variants.length})
             </h3>
+            {variants.length > 0 &&
+              defaultPricing?.price !== undefined &&
+              Number(defaultPricing.price) > 0 && (
+                <button
+                  type="button"
+                  onClick={() => syncWithProductPricing?.()}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 border border-indigo-200 dark:border-indigo-800/50 rounded-lg transition-colors shadow-sm"
+                  title="تطبيق سعر وسعر شراء المنتج الأساسي على جميع المتغيرات"
+                >
+                  <ArrowPathIcon className="h-3.5 w-3.5" />
+                  مزامنة تسعير الكل مع المنتج الأساسي ({defaultPricing.price}{" "}
+                  {displayCurrency})
+                </button>
+              )}
           </div>
           <button
             type="button"
@@ -98,6 +121,13 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
                   <option value="delete">🗑️ حذف الكل</option>
                 </optgroup>
                 <optgroup label="💰 التسعير">
+                  {defaultPricing?.price !== undefined &&
+                    Number(defaultPricing.price) > 0 && (
+                      <option value="sync_product_pricing">
+                        🔄 تطبيق تسعير المنتج الأساسي ({defaultPricing.price}{" "}
+                        {displayCurrency})
+                      </option>
+                    )}
                   <option value="set_price">💵 تعيين السعر</option>
                   <option value="increase_price">📈 زيادة السعر (مبلغ)</option>
                   <option value="decrease_price">📉 تخفيض السعر (مبلغ)</option>
@@ -476,10 +506,25 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
 
                       {/* Section 3: Pricing */}
                       <div className="border-b border-gray-200 dark:border-gray-600 pb-4">
-                        <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
-                          <CurrencyDollarIcon className="h-4 w-4 ml-1" />
-                          التسعير
-                        </h5>
+                        <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                          <h5 className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center">
+                            <CurrencyDollarIcon className="h-4 w-4 ml-1" />
+                            التسعير
+                          </h5>
+                          {defaultPricing?.price !== undefined &&
+                            Number(defaultPricing.price) > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => syncWithProductPricing?.(idx)}
+                                className="inline-flex items-center gap-1 text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 hover:underline"
+                                title="استعادة تسعير المنتج الأساسي لهذا المتغير"
+                              >
+                                <ArrowPathIcon className="h-3 w-3" />
+                                استعادة تسعير المنتج الأساسي ({defaultPricing.price}{" "}
+                                {displayCurrency})
+                              </button>
+                            )}
+                        </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -487,12 +532,17 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
                             </label>
                             <input
                               type="number"
-                              value={variant.price || ""}
+                              value={
+                                variant.price !== undefined &&
+                                variant.price !== null
+                                  ? variant.price
+                                  : ""
+                              }
                               onChange={(e) =>
                                 updateVariant(
                                   idx,
                                   "price",
-                                  e.target.value
+                                  e.target.value !== ""
                                     ? parseFloat(e.target.value)
                                     : undefined,
                                 )
@@ -509,12 +559,17 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
                             </label>
                             <input
                               type="number"
-                              value={variant.comparePrice || ""}
+                              value={
+                                variant.comparePrice !== undefined &&
+                                variant.comparePrice !== null
+                                  ? variant.comparePrice
+                                  : ""
+                              }
                               onChange={(e) =>
                                 updateVariant(
                                   idx,
                                   "comparePrice",
-                                  e.target.value
+                                  e.target.value !== ""
                                     ? parseFloat(e.target.value)
                                     : undefined,
                                 )
@@ -531,12 +586,17 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
                             </label>
                             <input
                               type="number"
-                              value={variant.cost || ""}
+                              value={
+                                variant.cost !== undefined &&
+                                variant.cost !== null
+                                  ? variant.cost
+                                  : ""
+                              }
                               onChange={(e) =>
                                 updateVariant(
                                   idx,
                                   "cost",
-                                  e.target.value
+                                  e.target.value !== ""
                                     ? parseFloat(e.target.value)
                                     : undefined,
                                 )
@@ -548,6 +608,9 @@ export const VariantsTab: React.FC<VariantsTabProps> = ({
                             />
                           </div>
                         </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                          💡 يتم أخذ التسعير تلقائياً من إعدادات تسعير المنتج الأساسي، ويمكنك تخصيص أي قيمة بحرية لهذا المتغير.
+                        </p>
                       </div>
 
                       {/* Section 4: Inventory */}

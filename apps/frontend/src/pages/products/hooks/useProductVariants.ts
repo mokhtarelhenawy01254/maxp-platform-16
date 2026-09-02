@@ -1,9 +1,23 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { ProductVariant, ProductAttribute } from "../types";
 import { uploadFiles } from "../../../utils/apiHelpers";
 import { normalizeImagePath } from "../../../utils/imageUrl";
 
-export const useProductVariants = (initialTrackInventory: boolean = true) => {
+export interface ProductPricingDefaults {
+  price?: number;
+  comparePrice?: number;
+  cost?: number;
+  shippingClass?: string;
+  lowStockThreshold?: number;
+}
+
+export const useProductVariants = (
+  initialTrackInventory: boolean = true,
+  defaultSettings?: ProductPricingDefaults,
+) => {
+  const defaultSettingsRef = useRef<ProductPricingDefaults | undefined>(defaultSettings);
+  defaultSettingsRef.current = defaultSettings;
+
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [deletedVariantIds, setDeletedVariantIds] = useState<string[]>([]);
   
@@ -24,12 +38,60 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
     attributeColors: { [key: string]: { [value: string]: string } };
   }>({ styles: {}, attributeImages: {}, attributeColors: {} });
 
+  // Auto-fill unpriced variants when base pricing is provided/updated in product draft
+  useEffect(() => {
+    const currentPrice = defaultSettings?.price;
+    if (currentPrice === undefined || Number(currentPrice) <= 0) return;
+
+    setVariants((prev) => {
+      const hasUnpriced = prev.some(
+        (v) => v.price === undefined || v.price === null || Number(v.price) <= 0
+      );
+      if (!hasUnpriced) return prev;
+
+      return prev.map((v) => {
+        if (v.price === undefined || v.price === null || Number(v.price) <= 0) {
+          return {
+            ...v,
+            price: Number(currentPrice),
+            comparePrice:
+              v.comparePrice !== undefined && Number(v.comparePrice) > 0
+                ? v.comparePrice
+                : defaultSettings?.comparePrice !== undefined && Number(defaultSettings.comparePrice) > 0
+                  ? Number(defaultSettings.comparePrice)
+                  : undefined,
+            cost:
+              v.cost !== undefined && Number(v.cost) > 0
+                ? v.cost
+                : defaultSettings?.cost !== undefined && Number(defaultSettings.cost) > 0
+                  ? Number(defaultSettings.cost)
+                  : undefined,
+          };
+        }
+        return v;
+      });
+    });
+  }, [defaultSettings?.price, defaultSettings?.comparePrice, defaultSettings?.cost]);
+
   // Single variant operations
   const addVariant = () => {
+    const defaults = defaultSettingsRef.current;
     const baseVariant: ProductVariant = {
       name: "",
       type: "color",
       sku: "",
+      price:
+        defaults?.price !== undefined && Number(defaults.price) > 0
+          ? Number(defaults.price)
+          : undefined,
+      comparePrice:
+        defaults?.comparePrice !== undefined && Number(defaults.comparePrice) > 0
+          ? Number(defaults.comparePrice)
+          : undefined,
+      cost:
+        defaults?.cost !== undefined && Number(defaults.cost) > 0
+          ? Number(defaults.cost)
+          : undefined,
       images: [],
       stock: 0,
       trackInventory: initialTrackInventory,
@@ -39,9 +101,10 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
       description: "",
       weight: undefined,
       dimensions: {},
-      shippingClass: "standard",
+      shippingClass: defaults?.shippingClass || "standard",
       allowBackorders: false,
-      lowStockThreshold: 5,
+      lowStockThreshold:
+        defaults?.lowStockThreshold !== undefined ? defaults.lowStockThreshold : 5,
       attributeValues: {},
     };
     setVariants((prev) => [...prev, baseVariant]);
@@ -122,6 +185,23 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
       [] as { [key: string]: string }[][]
     );
 
+    const defaults = defaultSettingsRef.current;
+    const defaultPrice =
+      defaults?.price !== undefined && Number(defaults.price) > 0
+        ? Number(defaults.price)
+        : undefined;
+    const defaultComparePrice =
+      defaults?.comparePrice !== undefined && Number(defaults.comparePrice) > 0
+        ? Number(defaults.comparePrice)
+        : undefined;
+    const defaultCost =
+      defaults?.cost !== undefined && Number(defaults.cost) > 0
+        ? Number(defaults.cost)
+        : undefined;
+    const defaultShippingClass = defaults?.shippingClass || "standard";
+    const defaultLowStock =
+      defaults?.lowStockThreshold !== undefined ? defaults.lowStockThreshold : 5;
+
     const newVariants: ProductVariant[] = allCombinations.map((combo, idx) => {
       const attributeValues = combo.reduce((acc, curr) => ({ ...acc, ...curr }), {});
       const name = Object.values(attributeValues).join(" - ");
@@ -129,6 +209,9 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
         name,
         type: "combination",
         sku: "",
+        price: defaultPrice,
+        comparePrice: defaultComparePrice,
+        cost: defaultCost,
         images: [],
         stock: 0,
         trackInventory: initialTrackInventory,
@@ -136,14 +219,45 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
         sortOrder: idx,
         description: "",
         dimensions: {},
-        shippingClass: "standard",
+        shippingClass: defaultShippingClass,
         allowBackorders: false,
-        lowStockThreshold: 5,
+        lowStockThreshold: defaultLowStock,
         attributeValues,
       };
     });
 
     setVariants(newVariants);
+  };
+
+  // Sync pricing with base product settings
+  const syncWithProductPricing = (targetIndex?: number) => {
+    const defaults = defaultSettingsRef.current;
+    if (!defaults) return;
+
+    const price =
+      defaults.price !== undefined && Number(defaults.price) > 0
+        ? Number(defaults.price)
+        : undefined;
+    const comparePrice =
+      defaults.comparePrice !== undefined && Number(defaults.comparePrice) > 0
+        ? Number(defaults.comparePrice)
+        : undefined;
+    const cost =
+      defaults.cost !== undefined && Number(defaults.cost) > 0
+        ? Number(defaults.cost)
+        : undefined;
+
+    setVariants((prev) =>
+      prev.map((v, i) => {
+        if (targetIndex !== undefined && i !== targetIndex) return v;
+        return {
+          ...v,
+          price: price !== undefined ? price : v.price,
+          comparePrice: comparePrice !== undefined ? comparePrice : v.comparePrice,
+          cost: cost !== undefined ? cost : v.cost,
+        };
+      })
+    );
   };
 
   // Bulk actions
@@ -169,6 +283,19 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
         switch (bulkAction) {
           case "activate": updated.isActive = true; break;
           case "deactivate": updated.isActive = false; break;
+          case "sync_product_pricing": {
+            const defaults = defaultSettingsRef.current;
+            if (defaults?.price !== undefined && Number(defaults.price) > 0) {
+              updated.price = Number(defaults.price);
+            }
+            if (defaults?.comparePrice !== undefined && Number(defaults.comparePrice) > 0) {
+              updated.comparePrice = Number(defaults.comparePrice);
+            }
+            if (defaults?.cost !== undefined && Number(defaults.cost) > 0) {
+              updated.cost = Number(defaults.cost);
+            }
+            break;
+          }
           case "set_price": updated.price = numValue; break;
           case "increase_price": updated.price = (updated.price || 0) + numValue; break;
           case "decrease_price": updated.price = Math.max(0, (updated.price || 0) - numValue); break;
@@ -220,6 +347,6 @@ export const useProductVariants = (initialTrackInventory: boolean = true) => {
     variantSettings, setVariantSettings,
     addVariant, updateVariant, removeVariant, uploadVariantImage,
     addAttribute, addValueField, updateValueField, removeValueField, removeAttribute, generateVariations,
-    handleBulkActionChange, applyBulkAction
+    handleBulkActionChange, applyBulkAction, syncWithProductPricing
   };
 };

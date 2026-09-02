@@ -459,7 +459,14 @@ export const ProductNewFinal: React.FC = () => {
     generateVariations,
     handleBulkActionChange,
     applyBulkAction,
-  } = useProductVariants(formData.trackInventory);
+    syncWithProductPricing,
+  } = useProductVariants(formData.trackInventory, {
+    price: formData.price,
+    comparePrice: formData.comparePrice,
+    cost: formData.cost,
+    shippingClass: formData.shippingClass,
+    lowStockThreshold: formData.lowStockThreshold,
+  });
 
   const {
     loading,
@@ -952,14 +959,44 @@ export const ProductNewFinal: React.FC = () => {
         localStorage.setItem("storefront_companyId", companyId);
       }
 
+      let storedCompanySlug = "";
+      let storedCustomDomain = "";
+      try {
+        const storedCompany = JSON.parse(
+          localStorage.getItem("company") || "{}",
+        );
+        storedCompanySlug = storedCompany?.slug || "";
+        storedCustomDomain = storedCompany?.customDomain || "";
+      } catch {
+        // ignore storage parse error
+      }
+
+      const companySlug =
+        user?.company?.slug?.trim() ||
+        storedCompanySlug?.trim() ||
+        localStorage.getItem("companySlug") ||
+        "";
+      const customDomain =
+        user?.company?.customDomain?.trim() ||
+        storedCustomDomain?.trim() ||
+        "";
+
       return buildProductPreviewUrl({
         origin: window.location.origin,
         productId: resolvedProductId,
         productSlug: formData.slug,
         companyId,
+        companySlug,
+        customDomain,
       });
     },
-    [formData.slug, productCompanyId, user?.companyId],
+    [
+      formData.slug,
+      productCompanyId,
+      user?.company?.customDomain,
+      user?.company?.slug,
+      user?.companyId,
+    ],
   );
 
 
@@ -1233,7 +1270,28 @@ export const ProductNewFinal: React.FC = () => {
   }, [isMerchant, persistProduct, workflow]);
 
   const handlePreview = useCallback(async () => {
-    // Open window synchronously to bypass the browser's popup blocker
+    const resolvedProductId = effectiveProductId || id;
+
+    // 1. If product already exists (edit mode), open immediately in a new tab!
+    // This gives instant response with zero delay and avoids popup-blocker issues.
+    if (resolvedProductId) {
+      const previewUrl = buildPreviewUrl(resolvedProductId);
+      if (previewUrl) {
+        window.open(previewUrl, "_blank", "noopener,noreferrer");
+
+        // Concurrently auto-save any draft edits without blocking user navigation
+        persistProduct({
+          validationMode: "draft",
+          workflowOverride: workflow,
+        }).catch((err) => {
+          console.warn("[handlePreview] Background auto-save encountered error:", err);
+        });
+
+        return;
+      }
+    }
+
+    // 2. If it's a new unsaved product, open window synchronously to bypass popup blocker
     const previewWindow = window.open("", "_blank");
     if (previewWindow) {
       try {
@@ -1255,33 +1313,38 @@ export const ProductNewFinal: React.FC = () => {
           </head>
           <body>
             <div class="spinner"></div>
-            <div class="text">جاري حفظ التعديلات وتجهيز المعاينة...</div>
+            <div class="text">جاري حفظ المسودة وتجهيز المعاينة...</div>
           </body>
         </html>
       `);
       previewWindow.document.close();
     }
 
-    const savedProduct = await persistProduct({
-      validationMode: "draft",
-      workflowOverride: workflow,
-    });
-    const productId = savedProduct?.id || effectiveProductId;
-    const previewUrl = productId ? buildPreviewUrl(productId) : "";
+    try {
+      const savedProduct = await persistProduct({
+        validationMode: "draft",
+        workflowOverride: workflow,
+      });
+      const productId = savedProduct?.id || effectiveProductId;
+      const previewUrl = productId ? buildPreviewUrl(productId) : "";
 
-    if (!previewUrl) {
-      setError((prev) => prev || "تعذر تجهيز رابط المعاينة لهذا المنتج");
+      if (!previewUrl) {
+        setError((prev) => prev || "تعذر تجهيز رابط المعاينة لهذا المنتج");
+        if (previewWindow) previewWindow.close();
+        return;
+      }
+
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.location.href = previewUrl;
+      } else {
+        window.open(previewUrl, "_blank", "noopener,noreferrer");
+      }
+    } catch (err) {
+      console.error("[handlePreview] Error during preview creation:", err);
       if (previewWindow) previewWindow.close();
-      return;
+      setError("حدث خطأ أثناء تجهيز المعاينة");
     }
-
-    if (previewWindow && !previewWindow.closed) {
-      previewWindow.location.replace(previewUrl);
-    } else {
-      // Fallback if popup was totally blocked anyway
-      window.location.assign(previewUrl);
-    }
-  }, [buildPreviewUrl, effectiveProductId, persistProduct, setError, workflow]);
+  }, [buildPreviewUrl, effectiveProductId, id, persistProduct, setError, workflow]);
 
   const handleConverted = useCallback(
     (result: ConvertPresentationResult) => {
@@ -1836,6 +1899,12 @@ export const ProductNewFinal: React.FC = () => {
                 applyBulkAction={applyBulkAction}
                 displayCurrency={displayCurrency}
                 shippingClassOptions={resolvedShippingClassOptions}
+                defaultPricing={{
+                  price: formData.price,
+                  comparePrice: formData.comparePrice,
+                  cost: formData.cost,
+                }}
+                syncWithProductPricing={syncWithProductPricing}
                 t={t}
               />
             )}
