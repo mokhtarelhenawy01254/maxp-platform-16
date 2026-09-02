@@ -111,6 +111,10 @@ router.post('/cases/:id/attachments', verifyToken.authenticateToken, dentalRoleG
 router.delete('/cases/:id/attachments/:attachmentId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.deleteCaseAttachment);
 router.get('/cases/:id/work-order', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.getWorkOrderPdf);
 router.get('/cases/:id/pan-label', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.getPanLabelPdf);
+router.get('/cases/:id/warranty-certificate', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.getWarrantyCertificatePdf);
+router.post('/cases/:id/send-tryin', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.sendCaseToTryIn);
+router.post('/cases/:id/return-tryin', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.returnCaseFromTryIn);
+router.post('/cases/kiosk-scan', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.kioskScanCase);
 router.get('/cases/:id/download-all', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.downloadAllAttachments);
 router.post('/cases/:id/quality-check', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.recordQualityCheck);
 router.get('/cases/:id/quality-checks', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.listQualityChecks);
@@ -151,6 +155,7 @@ router.get('/reports/technician-productivity', verifyToken.authenticateToken, de
 router.get('/reports/work-type-revenue', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getWorkTypeRevenue);
 router.get('/reports/overdue', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getOverdueReport);
 router.get('/reports/aging', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getAgingReport);
+router.get('/reports/remakes-analysis', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getRemakesAnalysisReport);
 
 // Credit notes
 router.get('/credit-notes', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getCreditNotes);

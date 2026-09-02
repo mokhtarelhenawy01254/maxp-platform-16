@@ -102,6 +102,12 @@ const createPrisma = (overrides = {}) => {
       findMany: jest.fn(),
       create: jest.fn(),
     },
+    dentalRefabrication: {
+      findMany: jest.fn(),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
     dentalSetting: {
       findMany: jest.fn(),
       upsert: jest.fn(),
@@ -802,6 +808,104 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       await controller.deleteDoctor(req({ params: { id: 'foreign' } }), res);
       expect(res.statusCode).toBe(404);
       expect(prisma.dentalLabDoctor.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Try-in Cycles', () => {
+    test('sendCaseToTryIn sets isTryIn=true and increments tryInCount', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ id: 'case-1', companyId: 'company-1', status: 'MANUFACTURING', tryInCount: 1 });
+      prisma.dentalLabCase.update.mockResolvedValue({ id: 'case-1', isTryIn: true, tryInStage: 'WAX_TRY_IN', tryInCount: 2 });
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.sendCaseToTryIn(req({ params: { id: 'case-1' }, body: { tryInStage: 'WAX_TRY_IN', note: 'بروفة شمع' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalLabCase.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'case-1' },
+        data: expect.objectContaining({ isTryIn: true, tryInStage: 'WAX_TRY_IN', tryInCount: 2 }),
+      }));
+    });
+
+    test('returnCaseFromTryIn clears isTryIn and resumes production stage', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ id: 'case-1', companyId: 'company-1', isTryIn: true, tryInStage: 'WAX_TRY_IN' });
+      prisma.dentalLabCase.update.mockResolvedValue({ id: 'case-1', isTryIn: false, status: 'MANUFACTURING' });
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.returnCaseFromTryIn(req({ params: { id: 'case-1' }, body: { targetStage: 'MANUFACTURING', feedbackNotes: 'البروفة ممتازة' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalLabCase.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'case-1' },
+        data: expect.objectContaining({ isTryIn: false, status: 'MANUFACTURING' }),
+      }));
+    });
+  });
+
+  describe('Barcode Kiosk Station', () => {
+    test('kioskScanCase finds case by barcode, completes active stage and advances status', async () => {
+      const prisma = createPrisma();
+      const mockCase = {
+        id: 'case-1',
+        caseNumber: 'DL-1001',
+        companyId: 'company-1',
+        status: 'RECEIVED',
+        stages: [
+          { id: 'stg-1', name: 'استلام', status: 'IN_PROGRESS', sortOrder: 0 },
+          { id: 'stg-2', name: 'تصميم CAD', status: 'PENDING', sortOrder: 1 },
+        ],
+        assignments: [],
+      };
+      prisma.dentalLabCase.findFirst.mockResolvedValue(mockCase);
+      prisma.dentalCaseStage.update.mockResolvedValue({});
+      prisma.dentalLabCase.update.mockResolvedValue({ ...mockCase, status: 'DESIGN' });
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.kioskScanCase(req({ body: { barcode: 'DL-1001' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.newStatus).toBe('DESIGN');
+    });
+
+    test('kioskScanCase returns 404 for unknown barcode', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.kioskScanCase(req({ body: { barcode: 'UNKNOWN-999' } }), res);
+
+      expect(res.statusCode).toBe(404);
+    });
+  });
+
+  describe('Remakes Root Cause Analytics', () => {
+    test('getRemakesAnalysisReport groups refabrications by root cause, doctor, and workType', async () => {
+      const prisma = createPrisma();
+      prisma.dentalRefabrication.findMany.mockResolvedValue([
+        { id: 'rf-1', rootCauseCategory: 'DOCTOR_IMPRESSION', isBillable: true, case: { doctorName: 'د. أحمد', workTypeName: 'Zirconia' } },
+        { id: 'rf-2', rootCauseCategory: 'DOCTOR_IMPRESSION', isBillable: false, case: { doctorName: 'د. أحمد', workTypeName: 'Zirconia' } },
+        { id: 'rf-3', rootCauseCategory: 'LAB_FIT_MARGIN', isBillable: false, case: { doctorName: 'د. سارة', workTypeName: 'Emax' } },
+      ]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.getRemakesAnalysisReport(req({ query: {} }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.totalCount).toBe(3);
+      expect(res.payload.data.billableCount).toBe(1);
+      expect(res.payload.data.freeCount).toBe(2);
+      expect(res.payload.data.byCategory.DOCTOR_IMPRESSION).toBe(2);
+      expect(res.payload.data.byCategory.LAB_FIT_MARGIN).toBe(1);
     });
   });
 

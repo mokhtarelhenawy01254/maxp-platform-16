@@ -104,36 +104,7 @@ import MemoStorefrontHeader, { StorefrontHomeLink, resolveStorefrontDocumentLang
 import StorefrontFooter from './components/footer/StorefrontFooter';
 /* ─────────────────── Footer extracted to ./components/footer/StorefrontFooter.tsx ─────────────────── */
 
-export const resolveStorefrontPageLayout = (
-  pageConfig: StorefrontPageConfig | undefined,
-  fallback: StorefrontPageLayout = "stack",
-): StorefrontPageLayout => pageConfig?.layoutHint || fallback;
-
-// Scroll-reveal is intentionally opt-in: only themes that ship a reveal-enabled
-// layout (e.g. soft-graceful) animate sections. Applying `sf-reveal` globally
-// forces `transform`/`will-change` on every section, which turns each section
-// into a containing block for `position: fixed` children — breaking the mobile
-// sticky add-to-cart bar (it can no longer stick to the viewport). See
-// storefront-layout.css `.sf-reveal-in`.
-const REVEAL_ENABLED_THEMES = new Set<string>(['soft-graceful']);
-const isRevealEnabledTheme = (themeId?: string) =>
-  Boolean(themeId) && REVEAL_ENABLED_THEMES.has(String(themeId));
-
-export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
-  element,
-  index,
-}) => {
-  const { theme } = useStorefrontTheme();
-  const reveal = isRevealEnabledTheme(theme?.id);
-  return (
-    <div
-      className={reveal ? `sf-reveal ${index > 0 ? 'mt-6 sm:mt-12' : ''}` : index > 0 ? 'mt-6 sm:mt-12' : ''}
-      data-reveal-delay={reveal ? (index % 5) + 1 : undefined}
-    >
-      {element}
-    </div>
-  );
-};
+export { resolveStorefrontPageLayout, StorefrontSectionFrame } from './layout/StorefrontSectionFrame';
 
 
 import DynamicStorefrontPage from './pages/DynamicStorefrontPage';

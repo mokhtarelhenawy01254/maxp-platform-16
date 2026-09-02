@@ -9,7 +9,7 @@ import StorefrontSkeleton from "../components/StorefrontSkeleton";
 import { resolveCatalogCategoryBySlug } from "../utils/catalogCategories";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
 import { extractShopStudioConfig, hasShopStudioConfig, resolveShopPageLayoutHint } from "../../utils/shopPageStudioConfig";
-import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../StorefrontShell";
+import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../layout/StorefrontSectionFrame";
 const prettifyCollectionSlug = (slug: string, isRtl: boolean): string => {
   const normalized = slug.trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
 

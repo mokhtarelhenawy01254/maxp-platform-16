@@ -168,6 +168,8 @@ export interface DentalRefabrication {
   id: string;
   caseId?: string;
   reason?: string;
+  rootCauseCategory?: string;
+  isBillable?: boolean;
   stageFrom?: string;
   requestedBy?: string;
   requestedByName?: string;
@@ -235,6 +237,16 @@ export interface OverdueReportRow {
   remaining?: number;
 }
 
+export interface RemakesAnalysisReport {
+  totalCount: number;
+  billableCount: number;
+  freeCount: number;
+  byCategory: Record<string, number>;
+  topDoctors: { name: string; count: number }[];
+  topWorkTypes: { name: string; count: number }[];
+  recentRefabrications: DentalRefabrication[];
+}
+
 export interface DentalLabCase {
   id: string;
   caseNumber?: string;
@@ -248,6 +260,12 @@ export interface DentalLabCase {
   teeth?: string;
   shade?: string;
   material?: string;
+  lotNumber?: string;
+  materialBrand?: string;
+  warrantyYears?: number;
+  isTryIn?: boolean;
+  tryInStage?: string;
+  tryInCount?: number;
   priceSnapshot?: number;
   discount?: number;
   total?: number;
@@ -715,6 +733,23 @@ export const fetchWorkTypeRevenue = async (params?: { from?: string; to?: string
 
 export const fetchOverdueReport = async (): Promise<OverdueReportRow[]> =>
   unwrapEnvelope<OverdueReportRow[]>(await apiClient.get("/dental-lab/reports/overdue"));
+
+export const fetchRemakesAnalysis = async (params?: { from?: string; to?: string }): Promise<RemakesAnalysisReport> =>
+  unwrapEnvelope<RemakesAnalysisReport>(await apiClient.get("/dental-lab/reports/remakes-analysis", { params }));
+
+export const fetchWarrantyCertificatePdf = async (id: string): Promise<Blob> => {
+  const res = await apiClient.get(`/dental-lab/cases/${id}/warranty-certificate`, { responseType: "blob" });
+  return res.data as Blob;
+};
+
+export const sendCaseToTryIn = async (id: string, body: { tryInStage?: string; note?: string }): Promise<DentalLabCaseDetail> =>
+  unwrapEnvelope<DentalLabCaseDetail>(await apiClient.post(`/dental-lab/cases/${id}/send-tryin`, body));
+
+export const returnCaseFromTryIn = async (id: string, body: { targetStage?: string; feedbackNotes?: string }): Promise<DentalLabCaseDetail> =>
+  unwrapEnvelope<DentalLabCaseDetail>(await apiClient.post(`/dental-lab/cases/${id}/return-tryin`, body));
+
+export const kioskScanCase = async (body: { barcode: string; technicianId?: string }): Promise<{ case: DentalLabCase; scannedCode: string; completedStage?: string; newStatus: string; technicianName?: string }> =>
+  unwrapEnvelope<{ case: DentalLabCase; scannedCode: string; completedStage?: string; newStatus: string; technicianName?: string }>(await apiClient.post("/dental-lab/cases/kiosk-scan", body));
 
 export const fetchSettings = async (): Promise<DentalLabSettings> => {
   try {

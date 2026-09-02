@@ -7,7 +7,7 @@ import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { useStorePage } from "../../hooks/useStorePage";
 import StorefrontSkeleton from "../components/StorefrontSkeleton";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
-import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../StorefrontShell";
+import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../layout/StorefrontSectionFrame";
 const DynamicStorefrontPage: React.FC = () => {
   const { theme } = useStorefrontTheme();
   const { settings, isLoading: settingsLoading } = useStorefrontSettings();

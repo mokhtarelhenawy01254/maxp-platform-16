@@ -12,7 +12,8 @@ import {
   DentalCaseHistoryEntry, DentalCaseStage, DentalCaseAttachment, DentalInvoice, DentalTechnician,
   DentalQualityCheck, DentalRefabrication, DentalCaseStatus, DentalLabCaseDetail, RefabricationStage, CreditNote,
   fetchCaseDetail, advanceCase, updateCase, uploadCaseAttachment, deleteCaseAttachment,
-  addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf, fetchPanLabelPdf, downloadAllFiles,
+  addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf, fetchPanLabelPdf, fetchWarrantyCertificatePdf,
+  sendCaseToTryIn, returnCaseFromTryIn, downloadAllFiles,
   recordQualityCheck, flagRefabrication, resolveRefabrication,
   inferAttachmentKind,
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
@@ -388,18 +389,44 @@ function QualityCheckModal({ caseId, onClose, onSaved }: { caseId: string; onClo
   );
 }
 
+const REMAKE_ROOT_CAUSES = [
+  { id: "DOCTOR_IMPRESSION", label: "مقاس / طبعة الطبيب غير دقيقة (Doctor Impression)" },
+  { id: "DOCTOR_PREPARATION", label: "تحضير وبرد السن غير كافٍ (Doctor Preparation)" },
+  { id: "LAB_CAD_DESIGN", label: "خطأ تصميم CAD بالمعمل (Lab CAD Design)" },
+  { id: "LAB_FIT_MARGIN", label: "عدم مطابقة الحواف بالمعمل (Lab Fit & Margins)" },
+  { id: "LAB_SHADE_COLOR", label: "اختلاف اللون والجماليات (Lab Shade/Color)" },
+  { id: "MATERIAL_FAILURE", label: "كسر أو عيب في المادة الخام (Material Defect)" },
+  { id: "PATIENT_CHANGE", label: "تغيير رغبة المريض (Patient Request)" },
+  { id: "OTHER", label: "سبب آخر (Other)" },
+];
+
+const TRYIN_STAGES = [
+  { id: "WAX_TRY_IN", label: "بروفة شمع (Wax Try-in)" },
+  { id: "METAL_TRY_IN", label: "بروفة شاسيه معدن (Metal Try-in)" },
+  { id: "BISQUE_TRY_IN", label: "بروفة بسكويت/خزف (Bisque Try-in)" },
+  { id: "FRAME_TRY_IN", label: "بروفة فريم زيركون (Zirconia Frame Try-in)" },
+  { id: "CUSTOM_TRY_IN", label: "بروفة مخصصة (Custom Try-in)" },
+];
+
 function RefabricationModal({ caseId, onClose, onSaved }: { caseId: string; onClose: () => void; onSaved: () => void }) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [reason, setReason] = useState("");
   const [stageFrom, setStageFrom] = useState<RefabricationStage>("DESIGN");
+  const [rootCauseCategory, setRootCauseCategory] = useState("DOCTOR_IMPRESSION");
+  const [isBillable, setIsBillable] = useState(false);
 
   const save = async () => {
     if (saving) return;
     if (!reason.trim()) { toast.error(t("dentalLab.detail.refabReasonRequired")); return; }
     setSaving(true);
     try {
-      await flagRefabrication(caseId, { reason: reason.trim(), stageFrom });
+      await flagRefabrication(caseId, {
+        reason: reason.trim(),
+        stageFrom,
+        rootCauseCategory,
+        isBillable,
+      });
       toast.success(t("dentalLab.detail.refabFlagged"));
       onSaved();
     } catch (e) {
@@ -421,13 +448,31 @@ function RefabricationModal({ caseId, onClose, onSaved }: { caseId: string; onCl
         <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.detail.refabReason")} *</label>
-            <textarea className={`${MODAL_INPUT_CLS} min-h-[80px] resize-y`} value={reason} onChange={e => setReason(e.target.value)} />
+            <textarea className={`${MODAL_INPUT_CLS} min-h-[80px] resize-y`} value={reason} onChange={e => setReason(e.target.value)} placeholder="اذكر سبب الإعادة بالتفصيل..." />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">السبب الجذري للمشكلة (Root Cause)</label>
+            <select className={MODAL_INPUT_CLS} value={rootCauseCategory} onChange={e => setRootCauseCategory(e.target.value)}>
+              {REMAKE_ROOT_CAUSES.map(rc => <option key={rc.id} value={rc.id}>{rc.label}</option>)}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.detail.refabStageFrom")}</label>
             <select className={MODAL_INPUT_CLS} value={stageFrom} onChange={e => setStageFrom(e.target.value as RefabricationStage)}>
               {REFAB_STAGES.map(s => <option key={s.id} value={s.id}>{t(s.labelKey)}</option>)}
             </select>
+          </div>
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="isBillable"
+              checked={isBillable}
+              onChange={e => setIsBillable(e.target.checked)}
+              className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 h-4 w-4"
+            />
+            <label htmlFor="isBillable" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+              إعادة مدفوعة (تحميل تكلفة الإعادة على الطبيب)
+            </label>
           </div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
@@ -436,6 +481,115 @@ function RefabricationModal({ caseId, onClose, onSaved }: { caseId: string; onCl
           </button>
           <button onClick={save} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("dentalLab.common.save")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SendToTryInModal({ caseId, onClose, onSaved }: { caseId: string; onClose: () => void; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [tryInStage, setTryInStage] = useState("WAX_TRY_IN");
+  const [note, setNote] = useState("");
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await sendCaseToTryIn(caseId, { tryInStage, note: note.trim() || undefined });
+      toast.success("تم تسجيل خروج الحالة للبروفة بنجاح");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "حدث خطأ في إرسال الحالة للبروفة");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => !saving && onClose()}>
+      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">خروج الحالة لإجراء بروفة (Try-in)</h3>
+          <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">نوع البروفة المطلوبة</label>
+            <select className={MODAL_INPUT_CLS} value={tryInStage} onChange={e => setTryInStage(e.target.value)}>
+              {TRYIN_STAGES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات البروفة أو تعليمات الطبيب</label>
+            <textarea className={`${MODAL_INPUT_CLS} min-h-[80px] resize-y`} value={note} onChange={e => setNote(e.target.value)} placeholder="مثال: التأكد من الإطباق ومطابقة خط المنتصف..." />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
+            إلغاء
+          </button>
+          <button onClick={save} disabled={saving} className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />} تسجيل خروج للبروفة
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReturnFromTryInModal({ caseId, onClose, onSaved }: { caseId: string; onClose: () => void; onSaved: () => void }) {
+  const [saving, setSaving] = useState(false);
+  const [targetStage, setTargetStage] = useState("MANUFACTURING");
+  const [feedbackNotes, setFeedbackNotes] = useState("");
+
+  const save = async () => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await returnCaseFromTryIn(caseId, { targetStage, feedbackNotes: feedbackNotes.trim() || undefined });
+      toast.success("تم استلام الحالة من البروفة بنجاح واستئناف مسار العمل");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "حدث خطأ في استلام الحالة من البروفة");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => !saving && onClose()}>
+      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-bold">استلام الحالة من البروفة وملاحظات الطبيب</h3>
+          <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">المرحلة المستهدفة لاستئناف العمل</label>
+            <select className={MODAL_INPUT_CLS} value={targetStage} onChange={e => setTargetStage(e.target.value)}>
+              <option value="MANUFACTURING">تصنيع / إنهاء (MANUFACTURING)</option>
+              <option value="DESIGN">إعادة تصميم CAD (DESIGN)</option>
+              <option value="QC">فحص الجودة النهائي (QC)</option>
+              <option value="READY">جاهزة للتسليم (READY)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات الطبيب والتعديلات المطلوبة</label>
+            <textarea className={`${MODAL_INPUT_CLS} min-h-[80px] resize-y`} value={feedbackNotes} onChange={e => setFeedbackNotes(e.target.value)} placeholder="مثال: تمت البروفة بنجاح، تقصير الحد القاطع بمقدار 0.5 مم..." />
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
+            إلغاء
+          </button>
+          <button onClick={save} disabled={saving} className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />} استلام ومتابعة العمل
           </button>
         </div>
       </div>
@@ -458,6 +612,9 @@ export default function DentalCaseDetailPage() {
   const [uploadDragOver, setUploadDragOver] = useState(false);
   const [workOrderLoading, setWorkOrderLoading] = useState(false);
   const [panLabelLoading, setPanLabelLoading] = useState(false);
+  const [warrantyLoading, setWarrantyLoading] = useState(false);
+  const [tryInSendOpen, setTryInSendOpen] = useState(false);
+  const [tryInReturnOpen, setTryInReturnOpen] = useState(false);
   const [qualityOpen, setQualityOpen] = useState(false);
   const [refabOpen, setRefabOpen] = useState(false);
   const [refabBusyId, setRefabBusyId] = useState<string | null>(null);
@@ -488,6 +645,20 @@ export default function DentalCaseDetailPage() {
       toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
     } finally {
       setPanLabelLoading(false);
+    }
+  };
+
+  const openWarrantyCertificate = async () => {
+    if (!id || warrantyLoading) return;
+    setWarrantyLoading(true);
+    try {
+      const blob = await fetchWarrantyCertificatePdf(id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setWarrantyLoading(false);
     }
   };
 
@@ -776,6 +947,10 @@ export default function DentalCaseDetailPage() {
     { label: t("dentalLab.cases.teeth"), value: c.teeth || "—" },
     { label: t("dentalLab.cases.shade"), value: c.shade || "—" },
     { label: t("dentalLab.cases.material"), value: c.material || "—" },
+    { label: "الماركة / الشركة", value: c.materialBrand || "—" },
+    { label: "رقم التشغيلة (Lot #)", value: c.lotNumber ? <span className="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{c.lotNumber}</span> : "—" },
+    { label: "مدة الضمان", value: c.warrantyYears ? <span className="text-emerald-600 font-bold">{c.warrantyYears} سنوات</span> : "بدون ضمان" },
+    { label: "حالة البروفة", value: c.isTryIn ? <span className="text-amber-600 font-bold">في بروفة ({c.tryInStage})</span> : (c.tryInCount ? `تمت (${c.tryInCount} بروفة)` : "لا يوجد") },
     { label: t("dentalLab.cases.dueDate"), value: c.dueDate ? <span className="flex items-center gap-1"><Calendar className="w-4 h-4" />{fmtDate(c.dueDate)}</span> : "—" },
     { label: t("dentalLab.cases.priceSnapshot"), value: fmtMoney(c.priceSnapshot) },
     { label: t("dentalLab.cases.discount"), value: fmtMoney(c.discount) },
@@ -795,27 +970,67 @@ export default function DentalCaseDetailPage() {
           <h1 className="text-xl font-bold" dir="ltr">{c.caseNumber || c.id.slice(0, 8)}</h1>
           {badge(CASE_STATUS_MAP, c.status)}
           {badge(PRIORITY_CONFIG, c.priority)}
+          {c.isTryIn && (
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/50 dark:text-amber-200">
+              في بروفة ({c.tryInStage})
+            </span>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={openWorkOrder} disabled={workOrderLoading} className="flex items-center gap-2 px-3 sm:px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
             {workOrderLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}{t("dentalLab.detail.workOrder")}
           </button>
           <button onClick={openPanLabel} disabled={panLabelLoading} className="flex items-center gap-2 px-3 sm:px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" title="طباعة ملصق الباركود لعلبة الشغل (حراري 80x50 مم)">
             {panLabelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Box className="w-4 h-4 text-blue-600 dark:text-blue-400" />}ملصق العلبة
           </button>
+          <button onClick={openWarrantyCertificate} disabled={warrantyLoading} className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-lg text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50" title="طباعة شهادة ضمان المريض مع تفاصيل الخامة والـ Lot Number">
+            {warrantyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}شهادة الضمان
+          </button>
+          {!c.isTryIn && c.status !== "DELIVERED" && c.status !== "CLOSED" && (
+            <button onClick={() => setTryInSendOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-100 dark:hover:bg-amber-900/40" title="إرسال الحالة للعيادة لإجراء بروفة">
+              <RotateCcw className="w-4 h-4 text-amber-600 dark:text-amber-400" />خروج بروفة
+            </button>
+          )}
+          {c.isTryIn && (
+            <button onClick={() => setTryInReturnOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold shadow-sm">
+              <RotateCcw className="w-4 h-4" />استلام من بروفة
+            </button>
+          )}
           <button onClick={refresh} className="flex items-center gap-2 px-3 sm:px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
           <button onClick={() => setStatusOpen(true)} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <Pencil className="w-4 h-4" />{t("dentalLab.detail.editStatus")}
           </button>
-          {next && (
+          {next && !c.isTryIn && (
             <button onClick={() => setAdvanceOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
               <ArrowRightCircle className="w-4 h-4" />{t("dentalLab.cases.advance")}
             </button>
           )}
         </div>
       </div>
+
+      {c.isTryIn && (
+        <div className="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <span className="p-2 rounded-lg bg-amber-500 text-white font-bold text-sm">بروفة</span>
+            <div>
+              <h4 className="font-bold text-amber-900 dark:text-amber-200">
+                الحالة حالياً في مرحلة بروفة (Try-in) لدى العيادة — {c.tryInStage || "بروفة عامة"}
+              </h4>
+              <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                عدد مرات خروج البروفة لهذه الحالة: {c.tryInCount || 1} مرات. الفاتورة والبيانات المالية محفوظة دون تكرار.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setTryInReturnOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-semibold shadow-sm"
+          >
+            <RotateCcw className="w-4 h-4" /> استلام الحالة من البروفة
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
@@ -1225,6 +1440,22 @@ export default function DentalCaseDetailPage() {
         <EditStatusModal caseData={c} onClose={() => setStatusOpen(false)} onSaved={() => { setStatusOpen(false); refresh(); }} />
       )}
 
+      {tryInSendOpen && (
+        <SendToTryInModal
+          caseId={c.id}
+          onClose={() => setTryInSendOpen(false)}
+          onSaved={() => { setTryInSendOpen(false); refresh(); }}
+        />
+      )}
+
+      {tryInReturnOpen && (
+        <ReturnFromTryInModal
+          caseId={c.id}
+          onClose={() => setTryInReturnOpen(false)}
+          onSaved={() => { setTryInReturnOpen(false); refresh(); }}
+        />
+      )}
+
       {paymentInvoice && (
         <PaymentModal invoice={paymentInvoice} onClose={() => setPaymentInvoice(null)} onSaved={() => { setPaymentInvoice(null); refresh(); }} />
       )}
@@ -1322,12 +1553,30 @@ function EditStatusModal({ caseData, onClose, onSaved }: EditStatusModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState(caseData.status);
+  const [lotNumber, setLotNumber] = useState(caseData.lotNumber || "");
+  const [materialBrand, setMaterialBrand] = useState(caseData.materialBrand || "");
+  const [warrantyYears, setWarrantyYears] = useState(caseData.warrantyYears || 0);
+  const [teeth, setTeeth] = useState(caseData.teeth || "");
+  const [shade, setShade] = useState(caseData.shade || "");
+  const [material, setMaterial] = useState(caseData.material || "");
+  const [notes, setNotes] = useState(caseData.notes || "");
 
   const save = async () => {
     if (saving) return;
     setSaving(true);
     try {
-      await advanceCase(caseData.id, { status: status as DentalCaseStatus });
+      if (status !== caseData.status) {
+        await advanceCase(caseData.id, { status: status as DentalCaseStatus });
+      }
+      await updateCase(caseData.id, {
+        teeth: teeth.trim() || undefined,
+        shade: shade.trim() || undefined,
+        material: material.trim() || undefined,
+        lotNumber: lotNumber.trim() || undefined,
+        materialBrand: materialBrand.trim() || undefined,
+        warrantyYears: Number(warrantyYears) >= 0 ? Number(warrantyYears) : 0,
+        notes: notes.trim() || undefined,
+      });
       toast.success(t("dentalLab.common.saved"));
       onSaved();
     } catch (e) {
@@ -1338,19 +1587,53 @@ function EditStatusModal({ caseData, onClose, onSaved }: EditStatusModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => !saving && onClose()}>
-      <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => !saving && onClose()}>
+      <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">{t("dentalLab.detail.editStatus")}</h3>
+          <h3 className="text-lg font-bold">تعديل بيانات الحالة والضمان</h3>
           <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.common.status")}</label>
-          <select className={MODAL_INPUT_CLS} value={status} onChange={e => setStatus(e.target.value as DentalCaseStatus)}>
-            {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-          </select>
+        <div className="space-y-4 text-sm">
+          <div>
+            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.common.status")}</label>
+            <select className={MODAL_INPUT_CLS} value={status} onChange={e => setStatus(e.target.value as DentalCaseStatus)}>
+              {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">الشركة المصنعة / الماركة</label>
+              <input className={MODAL_INPUT_CLS} value={materialBrand} onChange={e => setMaterialBrand(e.target.value)} placeholder="مثال: Ivoclar, Aidite, Wieland..." />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">رقم التشغيلة (Lot #)</label>
+              <input className={MODAL_INPUT_CLS} value={lotNumber} onChange={e => setLotNumber(e.target.value)} placeholder="مثال: LOT-2026-9988" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">سنوات الضمان</label>
+              <input className={MODAL_INPUT_CLS} type="number" min="0" max="20" value={warrantyYears} onChange={e => setWarrantyYears(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">اللون (Shade)</label>
+              <input className={MODAL_INPUT_CLS} value={shade} onChange={e => setShade(e.target.value)} placeholder="A1, A2, BL2..." />
+            </div>
+            <div>
+              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">الأسنان (Teeth)</label>
+              <input className={MODAL_INPUT_CLS} value={teeth} onChange={e => setTeeth(e.target.value)} placeholder="11, 21, 22..." />
+            </div>
+          </div>
+          <div>
+            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">المادة (Material)</label>
+            <input className={MODAL_INPUT_CLS} value={material} onChange={e => setMaterial(e.target.value)} placeholder="Zirconia 3D Pro, E.max Press, PFM..." />
+          </div>
+          <div>
+            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.common.notes")}</label>
+            <textarea className={`${MODAL_INPUT_CLS} min-h-[60px] resize-y`} value={notes} onChange={e => setNotes(e.target.value)} />
+          </div>
         </div>
         <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
