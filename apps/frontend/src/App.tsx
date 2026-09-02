@@ -2959,6 +2959,30 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/marketplace/:slug/settings"
+                  element={
+                    <Layout>
+                      <AppSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/apps/:slug"
+                  element={
+                    <Layout>
+                      <AppDetails />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/marketplace/apps/:slug/settings"
+                  element={
+                    <Layout>
+                      <AppSettings />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/marketplace/wallet"
                   element={<Navigate to="/payments" replace />}
                 />

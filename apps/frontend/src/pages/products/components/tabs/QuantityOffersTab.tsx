@@ -213,7 +213,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
             </button>
 
             <Link
-              to="/marketplace/apps/quantity-offers-pro"
+              to="/marketplace/quantity-offers-pro"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
@@ -230,7 +230,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
             <span>تطبيق عروض الكميات مفعّل في متجرك — ستظهر العروض للعملاء في صفحة المنتج فور الحفظ.</span>
           </div>
           <Link
-            to="/marketplace/apps/quantity-offers-pro/settings"
+            to="/my-apps/quantity-offers-pro/settings"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 font-semibold text-emerald-700 underline hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200"
