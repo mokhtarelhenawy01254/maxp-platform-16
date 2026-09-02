@@ -3,28 +3,34 @@ import type { SidebarSection } from '../../../types/layout';
 export const sectionHasVisibleItems = (section: SidebarSection): boolean =>
   !section.hidden && section.items.some((item) => !item.hidden);
 
-const CHAT_ROUTE_PREFIXES = [
+const STRICT_CHAT_PATHS = new Set([
   '/whatsapp',
-  '/whatsapp-chat',
-  '/whatsapp-inbox',
-  '/facebook-inbox',
-  '/instagram-inbox',
-  '/tiktok-inbox',
-  '/unified-inbox',
-  '/conversations',
-  '/telegram-inbox',
-  '/inbox',
+  '/whatsapp/chat',
   '/apps/whatsapp',
+  '/apps/whatsapp/chat',
+  '/apps/whatsapp/inbox',
+  '/facebook-inbox',
   '/apps/facebook-inbox',
-  '/apps/facebook',
+  '/instagram-inbox',
   '/apps/instagram-inbox',
-  '/apps/instagram',
+  '/tiktok-inbox',
   '/apps/tiktok-inbox',
-  '/apps/tiktok',
+  '/unified-inbox',
   '/apps/unified-inbox',
-  '/apps/telegram',
+  '/conversations/messenger',
   '/apps/messenger',
-  '/apps/inbox',
+  '/apps/facebook/inbox',
+  '/apps/instagram/inbox',
+]);
+
+const CHAT_PREFIX_PATHS = [
+  '/whatsapp-chat/',
+  '/whatsapp/routing',
+  '/apps/whatsapp/routing',
+  '/facebook-inbox/',
+  '/instagram-inbox/',
+  '/tiktok-inbox/',
+  '/unified-inbox/',
 ];
 
 const NON_CHAT_SUBPATHS = [
@@ -48,25 +54,22 @@ const NON_CHAT_SUBPATHS = [
   '/prediction',
 ];
 
-export const isChatRoute = (
-  pathname?: string,
-  appId?: string,
-  appCategory?: string,
-): boolean => {
-  const norm = (pathname || '').split('?')[0].toLowerCase().replace(/\/+$/, '') || '/';
+export const isChatRoute = (pathname?: string): boolean => {
+  if (!pathname) return false;
+  const norm = pathname.split('?')[0].toLowerCase().replace(/\/+$/, '') || '/';
 
-  // If on a non-chat management page (e.g. /whatsapp/settings, /whatsapp/templates, etc.), not a chat
-  if (NON_CHAT_SUBPATHS.some((subpath) => norm.includes(subpath))) {
+  // 1. Exclude non-chat subpaths immediately
+  if (NON_CHAT_SUBPATHS.some((sub) => norm.includes(sub))) {
     return false;
   }
 
-  // Check against known chat route prefixes
-  if (CHAT_ROUTE_PREFIXES.some((prefix) => norm === prefix || norm.startsWith(`${prefix}/`))) {
+  // 2. Check exact matches
+  if (STRICT_CHAT_PATHS.has(norm)) {
     return true;
   }
 
-  // Check appId if category is communication
-  if (appId && ['whatsapp', 'facebook', 'facebook-inbox', 'instagram', 'instagram-inbox', 'telegram', 'tiktok', 'tiktok-inbox', 'unified-inbox', 'messenger', 'inbox'].includes(appId.toLowerCase())) {
+  // 3. Check dynamic prefix matches (e.g. /whatsapp-chat/123, /whatsapp/routing/456)
+  if (CHAT_PREFIX_PATHS.some((prefix) => norm.startsWith(prefix) || norm === prefix.replace(/\/+$/, ''))) {
     return true;
   }
 

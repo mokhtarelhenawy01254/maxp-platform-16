@@ -141,7 +141,7 @@ describe("AppShell mobile navigation", () => {
     expect(openButton).toHaveFocus();
   });
 
-  it("hides header and AdminBottomNav on chat/conversation routes", () => {
+  it("hides AdminBottomNav on chat/conversation routes while preserving top header", () => {
     render(
       <MemoryRouter initialEntries={["/apps/whatsapp/inbox"]}>
         <Routes>
@@ -157,14 +157,14 @@ describe("AppShell mobile navigation", () => {
       </MemoryRouter>,
     );
 
-    const headerToggle = screen.queryByRole("button", { name: /openAppMenu/ });
-    expect(headerToggle).not.toBeInTheDocument();
+    const headerToggle = screen.getByRole("button", { name: /openAppMenu/ });
+    expect(headerToggle).toBeInTheDocument();
 
     const bottomNav = screen.queryByRole("navigation", { name: /التنقل السفلي للتاجر/ });
     expect(bottomNav).not.toBeInTheDocument();
   });
 
-  it("renders header and AdminBottomNav on non-chat routes", () => {
+  it("renders both header and AdminBottomNav on non-chat routes", () => {
     render(
       <MemoryRouter initialEntries={["/apps/whatsapp/settings"]}>
         <Routes>

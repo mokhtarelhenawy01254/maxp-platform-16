@@ -180,7 +180,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
     }
   };
 
-  const isChat = isChatRoute(location.pathname, appId, app?.category);
+  const isChat = isChatRoute(location.pathname);
 
   return (
     <div className={`app-shell-root${isChat ? ' app-shell-root--no-bottom-nav' : ''}`}>
@@ -191,7 +191,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
         {t('appDashboard.skipToContent')}
       </a>
 
-      {showMobileHeader && !isChat && (
+      {showMobileHeader && (
         <header className="app-shell-mobile-header lg:hidden">
           <button
             ref={mobileMenuToggleRef}
