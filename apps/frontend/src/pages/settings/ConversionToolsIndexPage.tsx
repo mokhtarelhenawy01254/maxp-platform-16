@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { getDirection } from "../../i18n";
 import { Link } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
+import { ChevronLeft, TrendingUp, Sparkles } from "lucide-react";
 import { ALL_CONVERSION_TOOLS } from "./conversionToolMeta";
 import { ConversionToolPreviewProvider } from "./conversionToolPreviews";
 import type { StorefrontThemeInput } from "../../storefront/engine/themeResolver";
@@ -136,13 +136,38 @@ export default function ConversionToolsIndexPage() {
 
   return (
     <div className="conversion-admin-scope mx-auto max-w-7xl space-y-10" dir={getDirection()}>
-      <header className="max-w-3xl space-y-2">
-        <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-          {t("storeConversionSettings.toolsIndexTitle")}
-        </h1>
-        <p className="text-sm leading-7 text-gray-600 dark:text-gray-300">
-          {t("storeConversionSettings.toolsIndexDesc")}
-        </p>
+      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div className="max-w-3xl space-y-2">
+          <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
+            {t("storeConversionSettings.toolsIndexTitle")}
+          </h1>
+          <p className="text-sm leading-7 text-gray-600 dark:text-gray-300">
+            {t("storeConversionSettings.toolsIndexDesc")}
+          </p>
+        </div>
+
+        <Link
+          to="/settings/upsell"
+          className="inline-flex items-center gap-2 rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 transition hover:border-blue-300 hover:shadow-sm dark:border-blue-900/50 dark:from-blue-950/40 dark:to-indigo-950/40"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-white shadow-md shadow-blue-500/20">
+            <TrendingUp className="h-5 w-5" />
+          </span>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-black text-blue-900 dark:text-blue-200">
+                عروض الـ Upsell والـ Cross-sell
+              </span>
+              <span className="rounded-full bg-blue-600 px-1.5 py-0.5 text-[9px] font-black text-white">
+                Hub
+              </span>
+            </div>
+            <p className="text-[11px] text-blue-700 dark:text-blue-300">
+              إدارة عروض الترقية والمكملات لزيادة قيمة السلة
+            </p>
+          </div>
+          <ChevronLeft className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        </Link>
       </header>
 
       {loading ? (

@@ -6147,6 +6147,12 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/upsell"
+                  element={
+                    <Navigate to="/settings/upsell" replace />
+                  }
+                />
+                <Route
                   path="/settings/homepage"
                   element={
                     <Navigate to="/settings/storefront/editor" replace />

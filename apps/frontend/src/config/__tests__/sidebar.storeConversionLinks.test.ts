@@ -11,7 +11,7 @@ const createOwnerSidebar = (activeApps: string[]) =>
   });
 
 describe("store conversion sidebar links", () => {
-  it("shows grouped store conversion pages inside the store section", () => {
+  it("shows store conversion and upsell links inside the store section", () => {
     const config = createOwnerSidebar(["store", "analytics-advanced"]);
 
     const storefrontSection = config.find(
@@ -24,23 +24,24 @@ describe("store conversion sidebar links", () => {
         .map((item) => item.label) || [];
 
     expect(labels).toContain("sidebar.conversionTools");
-    expect(labels).toContain("sidebar.offersBundles");
-    expect(labels).toContain("sidebar.growthWidgets");
-    expect(labels).toContain("sidebar.sellingModes");
-    expect(labels).toContain("sidebar.reviewsSocialProof");
+    expect(labels).toContain("sidebar.upsellManagement");
   });
 
-  it("shows conversion pages when only the granular conversion-suite app is active", () => {
+  it("shows conversion section when conversion-suite app is active", () => {
     const config = createOwnerSidebar(["conversion-suite"]);
     const storefrontSection = config.find(
       (section) => section.id === "storefront-design",
     );
-    const conversionPage = storefrontSection?.items?.find(
-      (item) => item.to === "/settings/store/product-conversion",
+    const conversionToolsItem = storefrontSection?.items?.find(
+      (item) => item.to === "/settings/store/tools",
+    );
+    const upsellItem = storefrontSection?.items?.find(
+      (item) => item.to === "/settings/upsell",
     );
 
     expect(storefrontSection?.hidden).toBe(false);
-    expect(conversionPage?.hidden).not.toBe(true);
+    expect(conversionToolsItem?.hidden).not.toBe(true);
+    expect(upsellItem?.hidden).not.toBe(true);
   });
 });
 

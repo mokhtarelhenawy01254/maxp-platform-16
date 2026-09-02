@@ -641,8 +641,6 @@ export const getSidebarConfig = (
                 { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
                 { to: '/products/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
                 { to: '/categories', icon: Tag, label: t('sidebar.categories') },
-                { to: '/settings/upsell', icon: TrendingUp, label: t('sidebar.upsellManagement') },
-                { to: '/analytics/store', icon: TrendingUp, label: t('sidebar.storeAnalytics') },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
@@ -675,6 +673,7 @@ export const getSidebarConfig = (
                 { to: '/settings/custom-domain', icon: Link, label: t('sidebar.customDomain') },
                 { to: '/settings/store', icon: Store, label: t('sidebar.storeSettings') },
                 { to: '/settings/store/tools', icon: Sparkles, label: t('sidebar.conversionTools') },
+                { to: '/settings/upsell', icon: TrendingUp, label: t('sidebar.upsellManagement') },
                 { to: '/admin/faqs', icon: HelpCircle, label: t('sidebar.faqs') },
                 { to: '/admin/policies', icon: ClipboardCheck, label: t('sidebar.policies') },
                 { to: '/settings/clarity', icon: BarChart3, label: t('sidebar.microsoftClarity') },

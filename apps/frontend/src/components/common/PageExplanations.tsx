@@ -51,12 +51,15 @@ const PageExplanations: React.FC = () => {
         `/app-explanations/by-route?route=${encodeURIComponent(route)}`
       );
       const data = res.data as any;
-      if (data.success) {
+      if (data?.success && Array.isArray(data.explanations)) {
         setExplanations(data.explanations);
+      } else {
+        setExplanations([]);
       }
     } catch (err) {
       // Silently fail — this is a helper, not critical
       console.error("PageExplanations fetch error:", err);
+      setExplanations([]);
     }
   }, [location.pathname]);
 
@@ -64,7 +67,7 @@ const PageExplanations: React.FC = () => {
     fetchExplanations();
   }, [fetchExplanations]);
 
-  if (explanations.length === 0) return null;
+  if (!Array.isArray(explanations) || explanations.length === 0) return null;
 
   const embedUrl = selectedExp?.videoUrl
     ? getYouTubeEmbedUrl(selectedExp.videoUrl)

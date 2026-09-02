@@ -67,7 +67,259 @@ const resolveDirectionalCopy = ({
     return trimmedValue;
   }
 
-  return prefersArabicCopy ? arabicFallback : englishFallback;
+interface KhemetCinematicUpsellCardProps {
+  product: Product;
+  label: string;
+  currency: string;
+  prefersArabicCopy: boolean;
+  chooseOptionsLabel: string;
+  onQuickAdd: (product: Product) => void;
+  onOpenProduct: (path: string) => void;
+  productPath: string;
+  isInline?: boolean;
+}
+
+const KhemetCinematicUpsellCard: React.FC<KhemetCinematicUpsellCardProps> = ({
+  product,
+  label,
+  currency,
+  prefersArabicCopy,
+  onOpenProduct,
+  productPath,
+  isInline = false,
+}) => {
+  const addItem = useCartStore((state) => state.addItem);
+  const setIsOpen = useCartStore((state) => state.setIsOpen);
+
+  const availableVariants = product.productVariants?.length
+    ? product.productVariants
+    : product.variants || [];
+
+  const availableSizes = useMemo(() => {
+    return Array.from(
+      new Set(
+        availableVariants
+          .map((v: any) => v.attributes?.["المقاس"] || v.attributeValues?.["المقاس"])
+          .filter(Boolean),
+      ),
+    ) as string[];
+  }, [availableVariants]);
+
+  const [selectedSize, setSelectedSize] = useState<string | null>(
+    availableSizes.length > 0 ? availableSizes[0] : null,
+  );
+  const [addedSuccess, setAddedSuccess] = useState(false);
+
+  const matchedVariant = useMemo(() => {
+    if (!selectedSize || availableVariants.length === 0) return null;
+    return (
+      availableVariants.find(
+        (v: any) =>
+          (v.attributes?.["المقاس"] || v.attributeValues?.["المقاس"]) === selectedSize,
+      ) || null
+    );
+  }, [availableVariants, selectedSize]);
+
+  const currentPrice = matchedVariant?.price
+    ? Number(matchedVariant.price)
+    : Number(product.price) || 0;
+
+  const comparePrice =
+    typeof matchedVariant?.compareAtPrice === "number" && matchedVariant.compareAtPrice > currentPrice
+      ? matchedVariant.compareAtPrice
+      : typeof product.comparePrice === "number" && product.comparePrice > currentPrice
+      ? product.comparePrice
+      : null;
+
+  const discountAmount = comparePrice ? Math.round(comparePrice - currentPrice) : 0;
+
+  const handle1TapAdd = (sizeOverride?: string) => {
+    const sizeToUse = sizeOverride || selectedSize;
+    let targetVariant = matchedVariant;
+    if (sizeOverride && sizeOverride !== selectedSize) {
+      targetVariant =
+        availableVariants.find(
+          (v: any) =>
+            (v.attributes?.["المقاس"] || v.attributeValues?.["المقاس"]) === sizeOverride,
+        ) || null;
+    }
+
+    const finalPrice = targetVariant?.price
+      ? Number(targetVariant.price)
+      : Number(product.price) || 0;
+    const finalComparePrice =
+      typeof targetVariant?.compareAtPrice === "number"
+        ? targetVariant.compareAtPrice
+        : typeof product.comparePrice === "number"
+        ? product.comparePrice
+        : undefined;
+
+    addItem(
+      {
+        productId: product.id,
+        variantId: targetVariant?.id || null,
+        name: sizeToUse ? `${product.name} (مقاس ${sizeToUse})` : product.name,
+        price: finalPrice,
+        basePrice: finalPrice,
+        comparePrice: finalComparePrice,
+        quantity: 1,
+        imageUrl: targetVariant?.image || getPrimaryProductImage(product),
+        attributes: sizeToUse ? { "المقاس": sizeToUse } : undefined,
+        volumeDiscounts: getProductVolumeDiscounts(product),
+      },
+      { openCart: !isInline },
+    );
+
+    if (!isInline) {
+      setIsOpen(true);
+    }
+
+    setAddedSuccess(true);
+    setTimeout(() => {
+      setAddedSuccess(false);
+    }, 2000);
+  };
+
+  return (
+    <div className="group relative flex min-w-[16.5rem] max-w-[17.5rem] sm:min-w-[18.5rem] sm:max-w-[19.5rem] snap-center shrink-0 flex-col rounded-2xl border border-[#e7ddd0] bg-white p-3 shadow-[0_8px_24px_-12px_rgba(47,41,35,0.12)] hover:shadow-lg hover:border-[#173f31]/40 transition-all duration-300">
+      {/* Hero Visual Container */}
+      <div className="relative w-full h-40 sm:h-44 overflow-hidden rounded-xl bg-gradient-to-b from-[#fbf8f4] to-[#f4ebe1] border border-[#eadfcf]/70">
+        <StorefrontProductImage
+          candidates={getProductImageCandidates(product)}
+          alt={product.name}
+          requestedWidth={380}
+          responsiveWidths={[240, 320, 380, 480]}
+          responsiveSizes="320px"
+          imageQuality={82}
+          width="320"
+          height="220"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          fallback={
+            <div className="flex h-full w-full items-center justify-center text-xs font-bold text-muted-foreground">
+              {product.name?.[0] || "Swan"}
+            </div>
+          }
+        />
+
+        {/* Top Badges */}
+        <div className="absolute top-2 right-2 flex items-center gap-1.5 pointer-events-none">
+          <span className="rounded-full bg-[#173f31]/92 backdrop-blur-md px-2.5 py-0.5 text-[9px] font-black text-[#fff7eb] shadow-xs">
+            {label}
+          </span>
+        </div>
+
+        {discountAmount > 0 && (
+          <div className="absolute top-2 left-2 pointer-events-none">
+            <span className="rounded-full bg-[#e35335] px-2 py-0.5 text-[9px] font-black text-white shadow-xs">
+              {prefersArabicCopy ? `وفر ${discountAmount} ج.م` : `Save ${discountAmount}`}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Product Title & Pricing */}
+      <div className="mt-2.5 min-w-0 text-right">
+        <Link
+          to={productPath}
+          onClick={() => onOpenProduct(productPath)}
+          className="block truncate text-xs sm:text-sm font-black text-[#2a2118] hover:text-[#173f31] transition-colors"
+          title={product.name}
+        >
+          {product.name}
+        </Link>
+
+        <div className="flex items-center gap-2 mt-1">
+          <span className="text-sm sm:text-base font-black text-[#173f31]">
+            {formatStorefrontCurrency(currentPrice, currency)}
+          </span>
+          {comparePrice && (
+            <span className="text-xs text-[#a89987] line-through font-semibold">
+              {formatStorefrontCurrency(comparePrice, currency)}
+            </span>
+          )}
+          {discountAmount > 0 && (
+            <span className="rounded-md bg-[#fdf0ec] px-1.5 py-0.2 text-[9px] font-bold text-[#e35335]">
+              {prefersArabicCopy ? "عرض خاص" : "Deal"}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 1-Tap Quick Size Selector */}
+      {availableSizes.length > 0 && (
+        <div className="mt-2.5 pt-2 border-t border-[#f4ebe1]">
+          <div className="flex items-center justify-between text-[10px] font-bold text-[#7b6d58] mb-1.5">
+            <span>{prefersArabicCopy ? "المقاس السريع:" : "Quick Size:"}</span>
+            {selectedSize && (
+              <span className="text-[#173f31] font-black">
+                {prefersArabicCopy ? `مقاس ${selectedSize}` : `Size ${selectedSize}`}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+            {availableSizes.map((size) => {
+              const isSelected = selectedSize === size;
+              return (
+                <button
+                  key={size}
+                  type="button"
+                  onClick={() => {
+                    setSelectedSize(size);
+                    handle1TapAdd(size);
+                  }}
+                  className={`h-7.5 min-w-[2.2rem] px-2 rounded-lg text-[11px] font-black transition-all active:scale-90 flex items-center justify-center ${
+                    isSelected
+                      ? "bg-[#173f31] text-[#fff7eb] shadow-xs ring-1 ring-[#173f31]"
+                      : "bg-[#f6eee5] hover:bg-[#ede1d3] text-[#4a352e] border border-[#d7c6b4]/50"
+                  }`}
+                  title={prefersArabicCopy ? `إضافة فورية بمقاس ${size}` : `1-Tap Add Size ${size}`}
+                >
+                  {size}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Primary 1-Tap CTA Action Button */}
+      <div className="mt-2.5">
+        <button
+          type="button"
+          onClick={() => handle1TapAdd()}
+          className={`inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl px-3 text-xs font-black transition-all shadow-xs active:scale-[0.98] ${
+            addedSuccess
+              ? "bg-[#107048] text-white shadow-md"
+              : "bg-[#173f31] text-[#fff7eb] hover:bg-[#204d3d]"
+          }`}
+        >
+          {addedSuccess ? (
+            <>
+              <span>✓</span>
+              <span>{prefersArabicCopy ? "تمت الإضافة للسلة!" : "Added to cart!"}</span>
+            </>
+          ) : (
+            <>
+              <span>+</span>
+              <span>
+                {availableSizes.length > 0
+                  ? selectedSize
+                    ? prefersArabicCopy
+                      ? `أضيفي مقاس (${selectedSize}) للطلب`
+                      : `Add size (${selectedSize})`
+                    : prefersArabicCopy
+                    ? "اختاري المقاس وأضيفي"
+                    : "Choose size & add"
+                  : prefersArabicCopy
+                  ? "أضيفي للطلب الآن"
+                  : "Add to order"}
+              </span>
+            </>
+          )}
+        </button>
+      </div>
+    </div>
+  );
 };
 
 const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
@@ -449,83 +701,21 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
         : "inline-flex rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-black uppercase tracking-wide text-primary";
 
     if (isKhemetDrawer) {
-      const compactActionClassName =
-        "mt-2 inline-flex h-8 w-full items-center justify-center gap-1 rounded-xl px-2.5 text-[11px] font-black transition-all shadow-xs active:scale-95";
-      const compactActionLabel = hasVariants
-        ? chooseOptionsCtaLabel
-        : prefersArabicCopy
-          ? "أضيفي للطلب"
-          : quickAddLabel;
-      const comparePrice = typeof product.comparePrice === 'number' && product.comparePrice > (Number(product.price) || 0)
-        ? product.comparePrice
-        : null;
-
       return (
-        <div
+        <KhemetCinematicUpsellCard
           key={`${label}-${product.id}`}
-          className="group flex min-w-[10.5rem] max-w-[10.5rem] sm:min-w-[11.25rem] sm:max-w-[11.25rem] snap-start flex-col rounded-2xl border border-[#e7ddd0] bg-white p-2.5 shadow-xs hover:shadow-md hover:border-[#173f31]/30 transition-all"
-        >
-          {/* Hero Product Visual with Badge Overlay */}
-          <div className="relative w-full aspect-[4/3] overflow-hidden rounded-xl border border-[#eadfcf]/80 bg-[#fbf8f4]">
-            <StorefrontProductImage
-              candidates={getProductImageCandidates(product)}
-              alt={product.name}
-              width="180"
-              height="135"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-              fallback={
-                <div className="flex h-full w-full items-center justify-center text-xs text-muted-foreground font-bold">
-                  {product.name?.[0] || "Swan"}
-                </div>
-              }
-            />
-            {/* Top Badge */}
-            <span className="absolute top-1.5 right-1.5 rounded-full bg-[#173f31]/90 backdrop-blur-xs px-2 py-0.5 text-[9px] font-black text-[#fff7eb] shadow-xs">
-              {label}
-            </span>
-          </div>
-
-          {/* Product Details */}
-          <div className="mt-2 min-w-0 flex-1 text-right">
-            <h4
-              className="line-clamp-1 text-xs font-black text-[#2a2118]"
-              title={product.name}
-            >
-              {product.name}
-            </h4>
-            <div className="flex items-baseline gap-1.5 mt-0.5">
-              <span className="text-xs font-black text-[#173f31]">
-                {formatStorefrontCurrency(Number(product.price) || 0, currency)}
-              </span>
-              {comparePrice ? (
-                <span className="text-[10px] text-[#a89987] line-through">
-                  {formatStorefrontCurrency(comparePrice, currency)}
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-          {/* High-Converting CTA Button */}
-          {hasVariants ? (
-            <Link
-              to={productPath}
-              onClick={() => setIsOpen(false)}
-              className={`${compactActionClassName} bg-[#173f31] text-[#fff7eb] hover:bg-[#204d3d]`}
-            >
-              <span>+</span>
-              <span>{compactActionLabel}</span>
-            </Link>
-          ) : (
-            <button
-              type="button"
-              onClick={() => handleQuickAdd(product)}
-              className={`${compactActionClassName} bg-[#173f31] text-[#fff7eb] hover:bg-[#204d3d]`}
-            >
-              <span>+</span>
-              <span>{compactActionLabel}</span>
-            </button>
-          )}
-        </div>
+          product={product}
+          label={label}
+          currency={currency}
+          prefersArabicCopy={prefersArabicCopy}
+          chooseOptionsLabel={chooseOptionsLabel}
+          onQuickAdd={handleQuickAdd}
+          onOpenProduct={(p) => {
+            setIsOpen(false);
+          }}
+          productPath={productPath}
+          isInline={isInline}
+        />
       );
     }
 
@@ -673,36 +863,36 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
         </div>
 
         {loading ? (
-          <div className="-mx-4 flex gap-2 overflow-hidden px-4 pb-1">
+          <div className="-mx-4 flex gap-3 overflow-hidden px-4 pb-2">
             {[1, 2].map((item) => (
               <div
                 key={item}
-                className="h-[13.5rem] min-w-[10.5rem] animate-pulse rounded-2xl border border-[#e7ddd0] bg-white/70"
+                className="h-[18rem] min-w-[16.5rem] max-w-[17.5rem] animate-pulse rounded-2xl border border-[#e7ddd0] bg-white/70"
               />
             ))}
           </div>
         ) : hasSuggestions ? (
-          <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
             {compactDrawerSuggestions
-              .slice(0, 3)
+              .slice(0, 4)
               .map(({ product, label }) => renderProductCard(product, label))}
           </div>
         ) : (
-          <div className="-mx-4 flex snap-x gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            <div className="flex min-w-[10.5rem] max-w-[10.5rem] sm:min-w-[11.25rem] sm:max-w-[11.25rem] snap-start flex-col rounded-2xl border border-[#e7ddd0] bg-white/94 p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.22)]">
-              <span className="inline-flex self-start rounded-full bg-[#eef1ec] px-2 py-0.5 text-[10px] font-black text-[#1f4c3b]">
+          <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div className="flex min-w-[16.5rem] max-w-[17.5rem] sm:min-w-[18.5rem] sm:max-w-[19.5rem] snap-center shrink-0 flex-col rounded-2xl border border-[#e7ddd0] bg-white/94 p-4 shadow-md">
+              <span className="inline-flex self-start rounded-full bg-[#eef1ec] px-2.5 py-1 text-[10px] font-black text-[#1f4c3b]">
                 {prefersArabicCopy ? "زيادة ذكية" : "Smart add"}
               </span>
-              <h4 className="mt-2 text-[13px] font-black leading-5 text-[#2f2923]">
+              <h4 className="mt-2.5 text-sm font-black leading-snug text-[#2f2923]">
                 {prefersArabicCopy ? "قطعة إضافية من نفس الاختيار" : "Add another of this pick"}
               </h4>
-              <p className="mt-1 min-h-10 text-[11px] leading-5 text-[#7b6d58]">
+              <p className="mt-1.5 min-h-10 text-xs leading-5 text-[#7b6d58]">
                 {prefersArabicCopy
                   ? "مناسبة لو محتاجة مقاس احتياطي أو هدية بنفس الستايل."
                   : "Helpful for a backup size or a gift in the same style."}
               </p>
               {firstCartItemName ? (
-                <p dir="ltr" className="mt-1 truncate text-left text-[11px] font-semibold text-[#4a352e]">
+                <p dir="ltr" className="mt-1 truncate text-left text-xs font-semibold text-[#4a352e]">
                   {firstCartItemName} • {formatStorefrontCurrency(firstCartItemUnitPrice, currency)}
                 </p>
               ) : null}
@@ -710,7 +900,7 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
                 type="button"
                 onClick={handleFallbackQuantityIncrease}
                 disabled={!canIncreaseFirstCartItem}
-                className="mt-auto inline-flex h-9 w-full items-center justify-center rounded-[0.8rem] bg-[#173f31] px-3 text-[12px] font-black text-[#fff7eb] transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[#c8b8a6] disabled:text-[#fffaf4]"
+                className="mt-4 inline-flex h-9 w-full items-center justify-center rounded-xl bg-[#173f31] px-3 text-xs font-black text-[#fff7eb] transition hover:opacity-90 disabled:cursor-not-allowed disabled:bg-[#c8b8a6] disabled:text-[#fffaf4]"
               >
                 {canIncreaseFirstCartItem
                   ? prefersArabicCopy
@@ -725,20 +915,20 @@ const CartUpsellHost: React.FC<CartUpsellHostProps> = ({
             <Link
               to={shopPath}
               onClick={() => setIsOpen(false)}
-              className="flex min-w-[10.5rem] max-w-[10.5rem] sm:min-w-[11.25rem] sm:max-w-[11.25rem] snap-start flex-col rounded-2xl border border-[#e7ddd0] bg-[#fffaf4] p-3 shadow-[0_14px_38px_-34px_rgba(65,41,17,0.18)]"
+              className="flex min-w-[16.5rem] max-w-[17.5rem] sm:min-w-[18.5rem] sm:max-w-[19.5rem] snap-center shrink-0 flex-col rounded-2xl border border-[#e7ddd0] bg-[#fffaf4] p-4 shadow-md"
             >
-              <span className="inline-flex self-start rounded-full bg-[#f2eadf] px-2 py-0.5 text-[10px] font-black text-[#725523]">
+              <span className="inline-flex self-start rounded-full bg-[#f2eadf] px-2.5 py-1 text-[10px] font-black text-[#725523]">
                 {prefersArabicCopy ? "كمّلي اللوك" : "Keep browsing"}
               </span>
-              <h4 className="mt-2 text-[13px] font-black leading-5 text-[#2f2923]">
+              <h4 className="mt-2.5 text-sm font-black leading-snug text-[#2f2923]">
                 {prefersArabicCopy ? "اختاري لون أو موديل ثاني" : "Pick another color or model"}
               </h4>
-              <p className="mt-1 min-h-10 text-[11px] leading-5 text-[#7b6d58]">
+              <p className="mt-1.5 min-h-10 text-xs leading-5 text-[#7b6d58]">
                 {prefersArabicCopy
                   ? "افتحي الشوب ورجّعي للسلة في أي لحظة، اختياراتك محفوظة."
                   : "Open the shop and come back to the cart anytime."}
               </p>
-              <span className="mt-auto inline-flex h-9 w-full items-center justify-center rounded-[0.8rem] border border-[#d7c6b4] bg-white px-3 text-[12px] font-black text-[#4a352e]">
+              <span className="mt-4 inline-flex h-9 w-full items-center justify-center rounded-xl border border-[#d7c6b4] bg-white px-3 text-xs font-black text-[#4a352e]">
                 {prefersArabicCopy ? "افتحي الشوب" : "Open shop"}
               </span>
             </Link>

@@ -127,7 +127,7 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
   const reveal = isRevealEnabledTheme(theme?.id);
   return (
     <div
-      className={reveal ? `sf-reveal ${index > 0 ? 'mt-12' : ''}` : index > 0 ? 'mt-12' : ''}
+      className={reveal ? `sf-reveal ${index > 0 ? 'mt-6 sm:mt-12' : ''}` : index > 0 ? 'mt-6 sm:mt-12' : ''}
       data-reveal-delay={reveal ? (index % 5) + 1 : undefined}
     >
       {element}

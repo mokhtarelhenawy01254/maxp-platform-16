@@ -58,7 +58,7 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
   }, [showMenu]);
 
   return (
-    <div className="flex items-center justify-between gap-3 animate-slide-up">
+    <div className="relative z-30 flex items-center justify-between gap-3 animate-slide-up">
       {/* Title & Subtitle */}
       <div className="min-w-0">
         <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold bg-gradient-to-l from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent truncate">
@@ -161,7 +161,7 @@ const ProductsHeader: React.FC<ProductsHeaderProps> = ({
           </button>
 
           {showMenu && (
-            <div className="absolute left-0 mt-1.5 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700/80 py-1.5 z-50 animate-in fade-in zoom-in-95 duration-100">
+            <div className="absolute left-0 mt-1.5 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 py-1.5 z-50 ring-1 ring-black/10 dark:ring-white/10 animate-in fade-in zoom-in-95 duration-100">
               {/* Mobile-only menu items */}
               {!isMerchant && (
                 <Link

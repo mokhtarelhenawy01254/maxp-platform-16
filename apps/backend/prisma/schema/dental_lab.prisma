@@ -71,6 +71,12 @@ model DentalLabCase {
   teeth         String?   // e.g. "11,12"
   shade         String?   // A1/B2...
   material      String?   // زيركون | إيماكس | برسلين
+  lotNumber     String?   // رقم تشغيلة الخامة (Zirconia / e.max disc lot #)
+  materialBrand String?   // ماركة الخامة (e.g. Katana Zirconia, Ivoclar e.max)
+  warrantyYears Int?      @default(0) // سنوات الضمان للمريض
+  isTryIn       Boolean   @default(false) // هل الحالة حالياً في بروفة
+  tryInStage    String?   // نوع البروفة (COPING | WAX | BISQUE | FRAMEWORK)
+  tryInCount    Int       @default(0) // عدد مرات خروج ودخول البروفة
   status        String    @default("RECEIVED") // RECEIVED | DESIGN | MANUFACTURING | QC | READY | DELIVERED | CLOSED
   orderStatus   String    @default("PENDING") // PENDING | CHECKED_IN | IN_PROGRESS | COMPLETED | CANCELLED
   priority      String    @default("NORMAL") // NORMAL | URGENT | STAT
@@ -319,15 +325,17 @@ model DentalRefabrication {
   id            String    @id @default(cuid())
   companyId     String?
   caseId        String
-  reason        String
-  stageFrom     String    @default("DESIGN") // RECEIVED | DESIGN | MANUFACTURING | QC | READY
-  status        String    @default("OPEN") // OPEN | RESOLVED
-  createdBy     String?
-  createdByName String?
-  resolvedBy    String?
-  resolvedNote  String?
-  resolvedAt    DateTime?
-  createdAt     DateTime  @default(now())
+  reason            String
+  rootCauseCategory String?   @default("OTHER") // DOCTOR_IMPRESSION | DOCTOR_SHADE | LAB_MILLING | LAB_PORCELAIN | LAB_MARGIN | PATIENT_CHANGE | OTHER
+  isBillable        Boolean   @default(false)
+  stageFrom         String    @default("DESIGN") // RECEIVED | DESIGN | MANUFACTURING | QC | READY
+  status            String    @default("OPEN") // OPEN | RESOLVED
+  createdBy         String?
+  createdByName     String?
+  resolvedBy        String?
+  resolvedNote      String?
+  resolvedAt        DateTime?
+  createdAt         DateTime  @default(now())
 
   case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
 

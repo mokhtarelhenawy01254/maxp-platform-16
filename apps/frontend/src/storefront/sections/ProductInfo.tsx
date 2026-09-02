@@ -6880,16 +6880,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         {shippingPolicyDialog}
         {questionDialog}
         {mobileVariantSheet}
-        <section className="w-full overflow-hidden px-1 py-3 sm:py-4">
-          <div className={isKhemetLuxeTheme ? "space-y-3 sm:space-y-4" : "space-y-4 sm:space-y-5"}>
+        <section className="w-full overflow-hidden px-1 py-1.5 sm:py-4">
+          <div className={isKhemetLuxeTheme ? "space-y-2.5 sm:space-y-4" : "space-y-3.5 sm:space-y-5"}>
             {commonHeader}
 
-            <div className="flex flex-wrap items-center gap-3 border-b border-[#ead8ca] pb-3 sm:pb-4">
+            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 border-b border-[#ead8ca] pb-2.5 sm:pb-4">
               {elessiRatingSummary}
               {elessiBrandSpotlightCard}
             </div>
 
-            <div className="space-y-3 sm:space-y-4 border-b border-[#ead8ca] pb-4 sm:pb-5">
+            <div className="space-y-2.5 sm:space-y-4 border-b border-[#ead8ca] pb-3 sm:pb-5">
               {commonPrice}
               {!isKhemetInlineQuickOrderBuybox && activeElessiSocialProof ? (
                 <StaticMotionDiv

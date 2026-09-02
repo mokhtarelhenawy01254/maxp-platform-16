@@ -32,22 +32,30 @@ const ProductsPagination: React.FC<ProductsPaginationProps> = ({
   return (
     <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm px-4 py-3 flex items-center justify-between rounded-xl shadow-md border border-gray-100 dark:border-gray-700/50">
       {/* Mobile */}
-      <div className="flex-1 flex justify-between sm:hidden">
+      <div className="flex-1 flex items-center justify-between sm:hidden">
         <button
+          type="button"
           onClick={() => onPageChange(Math.max(1, currentPage - 1))}
           disabled={currentPage === 1}
-          className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50"
+          className="relative inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-semibold rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-40 transition-colors"
         >
-          <ChevronRightIcon className="h-5 w-5" />
-          السابق
+          <ChevronRightIcon className="h-4 w-4" />
+          <span>السابق</span>
         </button>
+
+        <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+          صفحة <span className="font-mono text-indigo-600 dark:text-indigo-400">{currentPage}</span> من{" "}
+          <span className="font-mono">{Math.max(1, totalPages)}</span>
+        </span>
+
         <button
+          type="button"
           onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
           disabled={currentPage === totalPages}
-          className="mr-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-50"
+          className="relative inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 dark:border-gray-600 text-xs font-semibold rounded-lg text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 disabled:opacity-40 transition-colors"
         >
-          التالي
-          <ChevronLeftIcon className="h-5 w-5" />
+          <span>التالي</span>
+          <ChevronLeftIcon className="h-4 w-4" />
         </button>
       </div>
 

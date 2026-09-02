@@ -1,8 +1,9 @@
 import React from "react";
-import { Navigate } from "react-router-dom";
+import UpsellHubPage from "../marketing/UpsellHubPage";
 
-const RecommendationSettings: React.FC = () => (
-  <Navigate to="/my-apps/conversion-suite/settings?focus=upsell&section=manual-links" replace />
-);
+const RecommendationSettings: React.FC = () => {
+  return <UpsellHubPage />;
+};
 
 export default RecommendationSettings;
+

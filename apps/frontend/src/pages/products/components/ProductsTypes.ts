@@ -67,8 +67,8 @@ export type StockStatus = "in-stock" | "low-stock" | "out-of-stock";
 // ================================================
 
 export const getStockStatus = (product: Product): StockStatus => {
-  if (product.stock === 0) return "out-of-stock";
-  if (product.stock <= product.lowStockThreshold) return "low-stock";
+  if (product.stock <= 0) return "out-of-stock";
+  if (product.stock <= (product.lowStockThreshold || 5)) return "low-stock";
   return "in-stock";
 };
 

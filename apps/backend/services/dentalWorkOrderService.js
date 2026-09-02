@@ -174,7 +174,7 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
   });
 }
 
-module.exports = { generateWorkOrderPdf, generateInvoicePdf, generatePanLabelPdf };
+module.exports = { generateWorkOrderPdf, generateInvoicePdf, generatePanLabelPdf, generateWarrantyCertificatePdf };
 
 /**
  * فاتورة PDF للعميل (الطبيب) من بيانات الفاتورة + الحالة المرتبطة + ترويسة المعمل.
@@ -322,6 +322,121 @@ async function generatePanLabelPdf({ company, caseRow, workOrderHeader }) {
     const priorityStr = c.priority && c.priority !== 'NORMAL' ? `[${PRIORITY_LABEL[c.priority] || c.priority}] ` : '';
     const dueStr = c.dueDate ? new Date(c.dueDate).toLocaleDateString('ar-EG') : '—';
     printLine('التسليم', priorityStr + dueStr, Boolean(priorityStr));
+
+    doc.end();
+  });
+}
+
+/**
+ * شهادة ضمان ومطابقة جودة التركيبات للمريض (Patient Warranty Certificate) بمقاس A5.
+ */
+async function generateWarrantyCertificatePdf({ company, caseRow, workOrderHeader }) {
+  const c = caseRow || {};
+  const header = workOrderHeader || {};
+  const labName = header.labName || (company && company.name) || 'معمل الأسنان';
+  const caseNumber = c.caseNumber || '—';
+  const warrantyYears = Number(c.warrantyYears) > 0 ? Number(c.warrantyYears) : 5;
+
+  const issueDate = c.deliveredAt ? new Date(c.deliveredAt) : new Date();
+  const expiryDate = new Date(issueDate);
+  expiryDate.setFullYear(expiryDate.getFullYear() + warrantyYears);
+
+  const qrText = `MAXP-WARRANTY::${caseNumber}::${c.patientName || ''}::${warrantyYears}Y`;
+  let qrBuffer = null;
+  try {
+    qrBuffer = await QRCode.toBuffer(qrText, { type: 'png', width: 100, margin: 1 });
+  } catch (error) {
+    console.error('Error generating warranty QR:', error);
+  }
+
+  return new Promise((resolve, reject) => {
+    // A5 Portrait (419.53 x 595.28 pt)
+    const doc = new PDFDocument({ size: 'A5', margin: 24 });
+    const chunks = [];
+    doc.on('data', (chunk) => chunks.push(chunk));
+    doc.on('end', () => resolve({ buffer: Buffer.concat(chunks), caseNumber }));
+    doc.on('error', reject);
+
+    doc.registerFont('Noto', FONT);
+    doc.font('Noto');
+
+    const pageWidth = 419.53;
+    const pageHeight = 595.28;
+    const margin = 20;
+    const w = pageWidth - margin * 2;
+    const h = pageHeight - margin * 2;
+
+    // Outer Decorative Borders
+    doc.rect(margin, margin, w, h).strokeColor('#1e40af').lineWidth(2).stroke();
+    doc.rect(margin + 4, margin + 4, w - 8, h - 8).strokeColor('#d97706').lineWidth(0.8).stroke();
+
+    // Top Header Banner
+    doc.rect(margin + 6, margin + 6, w - 12, 64).fill('#1e3a8a');
+    doc.fontSize(14).fillColor('#ffffff').text(AR(labName), margin + 10, margin + 14, { width: w - 20, align: 'center' });
+    doc.fontSize(10).fillColor('#fbbf24').text(AR('شهادة ضمان ومطابقة جودة التركيبات'), margin + 10, margin + 34, { width: w - 20, align: 'center' });
+    doc.fontSize(8).fillColor('#93c5fd').text(AR('Patient Dental Prosthetics Warranty Certificate'), margin + 10, margin + 48, { width: w - 20, align: 'center' });
+
+    // Certificate Number & QR Code
+    let currentY = margin + 80;
+    doc.fontSize(8.5).fillColor('#6b7280').text(AR(`رقم الشهادة: ${caseNumber}`), margin + 15, currentY, { width: 220, align: 'right' });
+    doc.fontSize(8.5).fillColor('#6b7280').text(AR(`تاريخ الإصدار: ${fmtDate(issueDate)}`), margin + 15, currentY + 14, { width: 220, align: 'right' });
+
+    if (qrBuffer) {
+      doc.image(qrBuffer, pageWidth - margin - 70, currentY - 5, { width: 55, height: 55 });
+    }
+
+    currentY += 45;
+    doc.moveTo(margin + 15, currentY).lineTo(pageWidth - margin - 15, currentY).strokeColor('#e5e7eb').lineWidth(1).stroke();
+    currentY += 12;
+
+    // Certificate Core Fields Box
+    doc.rect(margin + 12, currentY, w - 24, 195).fillAndStroke('#f8fafc', '#cbd5e1');
+
+    const drawField = (label, value, y, highlight = false) => {
+      doc.fontSize(8.5).fillColor('#475569').text(AR(label + ':'), margin + 20, y, { width: 100, align: 'right' });
+      doc.fontSize(highlight ? 9.5 : 9).fillColor(highlight ? '#1e40af' : '#0f172a').text(AR(value || '—'), margin + 125, y, { width: w - 145, align: 'right' });
+    };
+
+    let fieldY = currentY + 10;
+    drawField('اسم المريض', c.patientName, fieldY, true);
+    fieldY += 20;
+    drawField('الطبيب المعالج / العيادة', c.doctorName || (c.doctor && c.doctor.name), fieldY, true);
+    fieldY += 20;
+    drawField('نوع التركيبة / التعويض', c.workTypeName, fieldY);
+    fieldY += 20;
+    drawField('الأسنان المستهدفة', c.teeth, fieldY);
+    fieldY += 20;
+    drawField('الخامة والماركة المعتمدة', c.materialBrand || c.material || 'Zirconia Premium Multi-Layer', fieldY);
+    fieldY += 20;
+    drawField('رقم التشغيلة والباتش (Lot #)', c.lotNumber || 'LOT-' + (c.id ? c.id.slice(-8).toUpperCase() : 'CERT'), fieldY);
+    fieldY += 20;
+    drawField('درجة اللون (Shade)', c.shade, fieldY);
+    fieldY += 20;
+    drawField('مدة الضمان المعتمدة', `${warrantyYears} سنوات (حتى ${fmtDate(expiryDate)})`, fieldY, true);
+
+    currentY += 210;
+
+    // Warranty Statement
+    doc.fontSize(7.5).fillColor('#64748b').text(
+      AR('يضمن المعمل جودة الخامات الطبية المستخدمة ومطابقتها للمواصفات الدولية، وخلوها من العيوب المصنعية طوال فترة الضمان المذكورة أعلاه بشرط اتباع إرشادات العناية بالأسنان الموصى بها من الطبيب المعالج.'),
+      margin + 16, currentY,
+      { width: w - 32, align: 'center', lineGap: 2 }
+    );
+
+    // Footer Signature & Stamp
+    currentY += 45;
+    doc.fontSize(8).fillColor('#1e3a8a').text(AR('ختم واعتماد معمل الأسنان'), margin + 25, currentY, { width: 150, align: 'center' });
+    doc.rect(margin + 25, currentY + 12, 150, 40).strokeColor('#94a3b8').dash(3, { space: 3 }).stroke().undash();
+
+    doc.fontSize(8).fillColor('#1e3a8a').text(AR('توقيع الطبيب المعالج'), pageWidth - margin - 175, currentY, { width: 150, align: 'center' });
+    doc.rect(pageWidth - margin - 175, currentY + 12, 150, 40).strokeColor('#94a3b8').dash(3, { space: 3 }).stroke().undash();
+
+    // Lab Phone / Address
+    doc.fontSize(7).fillColor('#94a3b8').text(
+      AR([header.phone && `هاتف: ${header.phone}`, header.address].filter(Boolean).join(' | ')),
+      margin, pageHeight - margin - 14,
+      { width: w, align: 'center' }
+    );
 
     doc.end();
   });

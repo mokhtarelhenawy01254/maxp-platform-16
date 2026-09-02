@@ -728,6 +728,9 @@ const doctorRow = doctorId
             teeth: body.teeth ? String(body.teeth) : null,
             shade: body.shade ? String(body.shade) : null,
             material: body.material ? String(body.material) : null,
+            lotNumber: body.lotNumber ? String(body.lotNumber).trim() : null,
+            materialBrand: body.materialBrand ? String(body.materialBrand).trim() : null,
+            warrantyYears: Number(body.warrantyYears) >= 0 ? Number(body.warrantyYears) : 0,
             status: 'RECEIVED',
             orderStatus: 'PENDING',
             priority,
@@ -819,7 +822,7 @@ const getCaseDetail = async (req, res) => {
   }
 };
 
-const CASE_UPDATE_FIELDS = ['patientName', 'patientPhone', 'teeth', 'shade', 'material', 'priority', 'notes', 'dueDate'];
+const CASE_UPDATE_FIELDS = ['patientName', 'patientPhone', 'teeth', 'shade', 'material', 'lotNumber', 'materialBrand', 'warrantyYears', 'priority', 'notes', 'dueDate'];
 
 const updateCase = async (req, res) => {
   try {
@@ -851,6 +854,9 @@ const updateCase = async (req, res) => {
     if ('teeth' in data) data.teeth = data.teeth ? String(data.teeth) : null;
     if ('shade' in data) data.shade = data.shade ? String(data.shade) : null;
     if ('material' in data) data.material = data.material ? String(data.material) : null;
+    if ('lotNumber' in data) data.lotNumber = data.lotNumber ? String(data.lotNumber).trim() : null;
+    if ('materialBrand' in data) data.materialBrand = data.materialBrand ? String(data.materialBrand).trim() : null;
+    if ('warrantyYears' in data) data.warrantyYears = Number(data.warrantyYears) >= 0 ? Number(data.warrantyYears) : 0;
     if ('notes' in data) data.notes = data.notes ? String(data.notes) : null;
     if ('dueDate' in data) data.dueDate = parseDate(data.dueDate);
     if ('priority' in data) {
@@ -2076,6 +2082,8 @@ const flagRefabrication = async (req, res) => {
           companyId,
           caseId: id,
           reason,
+          rootCauseCategory: body.rootCauseCategory ? String(body.rootCauseCategory).trim() : 'OTHER',
+          isBillable: Boolean(body.isBillable),
           stageFrom,
           status: 'OPEN',
           createdBy: req.user?.id || req.user?.email || null,
@@ -2814,10 +2822,264 @@ const getPanLabelPdf = async (req, res) => {
   }
 };
 
-const recordDoctorBulkPayment = async (req, res) => {
+const getWarrantyCertificatePdf = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const dentalCase = await prisma.dentalLabCase.findFirst({
+      where: { id, companyId },
+      include: { doctor: true, workType: true },
+    });
+    if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+
+    const company = await prisma.company.findUnique({ where: { id: companyId } });
+    const { generateWarrantyCertificatePdf } = require('../services/dentalWorkOrderService');
+    const workOrderHeader = await getWorkOrderHeader(prisma, companyId);
+    const { buffer, caseNumber } = await generateWarrantyCertificatePdf({ company, caseRow: dentalCase, workOrderHeader });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="warranty-${caseNumber}.pdf"`);
+    return res.send(buffer);
+  } catch (error) {
+    console.error('Error generating warranty certificate:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في توليد شهادة الضمان' });
+  }
+};
+
+const sendCaseToTryIn = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const { tryInStage, note } = req.body || {};
+    const prisma = getSharedPrismaClient();
+
+    const existing = await prisma.dentalLabCase.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+    if (existing.status === 'DELIVERED' || existing.status === 'CLOSED') {
+      return res.status(400).json({ success: false, error: 'لا يمكن إرسال حالة مغلقة أو مسلمة نهائياً لبروفة' });
+    }
+
+    const stageKind = (tryInStage && String(tryInStage).trim()) || 'TRY_IN';
+    const tryInCount      const updateData = {};
+      if (nextStatus) {
+        updateData.status = nextStatus;
+        if (nextStatus === 'DELIVERED') {
+          updateData.deliveredAt = new Date();
+          updateData.orderStatus = 'COMPLETED';
+        } else {
+          updateData.orderStatus = 'IN_PROGRESS';
+        }
+      }
+
+      const c = await tx.dentalLabCase.update({
+        where: { id: dentalCase.id },
+        data: updateData,
+        include: CASE_LIST_INCLUDE,
+      });
+
+      await recordDentalLabStatusHistory(tx, {
+        companyId,
+        caseId: dentalCase.id,
+        dimension: 'STAGE',
+        status: nextStatus || dentalCase.status,
+        oldStatus: dentalCase.status,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: techName ? `مسح سريع (Kiosk) - الفني: ${techName}` : 'مسح سريع (Kiosk)',
+        reason: `ترقية سريعة للمرحلة عبر محطة الباركود (${activeStage ? activeStage.name : 'مسح'})`,
+      });
+
+      return c;
+    });
+
+    return res.json({
+      success: true,
+      message: `تم مسح الحالة بنجاح ونقلها إلى ${nextStatus || updated.status}`,
+      data: {
+        case: updated,
+        scannedCode: code,
+        completedStage: activeStage?.name || null,
+        newStatus: nextStatus || updated.status,
+        technicianName: techName,
+      },
+    });
+  } catch (error) {
+    console.error('Error processing kiosk scan:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في معالجة المسح السريع' });
+  }
+};
+
+const getRemakesAnalysisReport = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const prisma = getSharedPrismaClient();
+
+    const fromDate = parseDate(req.query.from);
+    const toDate = parseDate(req.query.to);
+    const where = { companyId };
+    if (fromDate || toDate) {
+      where.createdAt = {};
+      if (fromDate) where.createdAt.gte = fromDate;
+      if (toDate) {
+        const { getEndOfDayInTimezone } = require('../utils/dateUtils');
+        where.createdAt.lte = getEndOfDayInTimezone(toDate);
+      }
+    }
+
+    const refabs = await prisma.dentalRefabrication.findMany({
+      where,
+      include: {
+        case: {
+          select: {
+            id: true,
+            caseNumber: true,
+            doctorId: true,
+            doctorName: true,
+            workTypeId: true,
+            workTypeName: true,
+            material: true,
+            total: true,
+          },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const totalCount = refabs.length;
+    const byCategory = {};
+    const byDoctor = {};
+    const byWorkType = {};
+    let billableCount = 0;
+    let freeCount = 0;
+
+    for (const r of refabs) {
+      const cat = r.rootCauseCategory || 'OTHER';
+      byCategory[cat] = (byCategory[cat] || 0) + 1;
+
+      if (r.isBillable) billableCount++;
+      else freeCount++;
+
+      const docName = r.case?.doctorName || 'طبيب غير محدد';
+      byDoctor[docName] = (byDoctor[docName] || 0) + 1;
+
+      const wtName = r.case?.workTypeName || 'نوع غير محدد';
+      byWorkType[wtName] = (byWorkType[wtName] || 0) + 1;
+    }
+
+    const topDoctors = Object.entries(byDoctor)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    const topWorkTypes = Object.entries(byWorkType)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10);
+
+    return res.json({
+      success: true,
+      data: {
+        totalCount,
+        billableCount,
+        freeCount,
+        byCategory,
+        topDoctors,
+        topWorkTypes,
+        recentRefabrications: refabs.slice(0, 30),
+      },
+    });
+  } catch (error) {
+    console.error('Error generating remakes analysis report:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في استخراج تقرير الإعادات' });
+  }
+};
+
+module.exports = {
+  CASE_STATUS_CHAIN,
+  listDoctors,
+  createDoctor,
+  updateDoctor,
+  deleteDoctor,
+  listWorkTypes,
+  createWorkType,
+  updateWorkType,
+  deleteWorkType,
+  listTechnicians,
+  createTechnician,
+  updateTechnician,
+  deleteTechnician,
+  listCases,
+  createCase,
+  getCaseDetail,
+  updateCase,
+  advanceCaseStatus,
+  assignTechnician,
+  uploadCaseAttachment,
+  deleteCaseAttachment,
+  listInvoices,
+  createInvoice,
+  recordInvoicePayment,
+  getDashboard,
+  getSettings,
+  updateSettings,
+  listCustomFields,
+  createCustomField,
+  updateCustomField,
+  deleteCustomField,
+  getNotificationSchedule,
+  updateNotificationSchedule,
+  scanOverdueNotifications,
+  getWorkOrderPdf,
+  downloadAllAttachments,
+  parseScan,
+  recordQualityCheck,
+  listQualityChecks,
+  flagRefabrication,
+  resolveRefabrication,
+  listTeam,
+  setTeamRole,
+  getDoctorStatement,
+  getTechnicianProductivity,
+  getWorkTypeRevenue,
+  getOverdueReport,
+  getDeliveryEstimate,
+  resolveDentalRole,
+  getMyInfo,
+  getMyCases,
+  getMyWage,
+  getAgingReport,
+  getCreditNotes,
+  getInvoicePdf,
+  getDoctorPricing,
+  setDoctorPricing,
+  getInvoicePaymentLink,
+  getPanLabelPdf,
+  recordDoctorBulkPayment,
+  getWarrantyCertificatePdf,
+  sendCaseToTryIn,
+  returnCaseFromTryIn,
+  kioskScanCase,
+  getRemakesAnalysisReport,
+};MyInfo,
+  getMyCases,
+  getMyWage,
+  getAgingReport,
+  getCreditNotes,
+  getInvoicePdf,
+  getDoctorPricing,
+  setDoctorPricing,
+  getInvoicePaymentLink,
+  getPanLabelPdf,
+  recordDoctorBulkPayment,
+  getWarrantyCertificatePdf,
+  sendCaseToTryIn,
+  returnCaseFromTryIn,
+  kioskScanCase,
+  getRemakesAnalysisReport,
+};Id) return;
     const { id: doctorId } = req.params;
     const body = req.body || {};
     const amountResult = toPositiveNumber(body.amount);
