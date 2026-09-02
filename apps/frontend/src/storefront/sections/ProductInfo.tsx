@@ -59,6 +59,10 @@ import { usePdpSelectionStore } from '../store/usePdpSelectionStore';
 import PdpQuickOrderPanel from './PdpQuickOrderPanel';
 import AtelierBuybox from './product-info/buyboxes/AtelierBuybox';
 import BoutiqueLedgerBuybox from './product-info/buyboxes/BoutiqueLedgerBuybox';
+import ButcherAtelierBuybox from './product-info/buyboxes/ButcherAtelierBuybox';
+import ZenOrganicBuybox from './product-info/buyboxes/ZenOrganicBuybox';
+import PlayfulStoryBuybox from './product-info/buyboxes/PlayfulStoryBuybox';
+import IntruderNftBuybox from './product-info/buyboxes/IntruderNftBuybox';
 import {
   PDP_CHECKOUT_SECTION_ID,
   STOREFRONT_BUYBOX_ID,
@@ -7021,505 +7025,98 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   }
 
   // Theme Specific Overrides
+  // Theme Specific Overrides
   if (isButcherAtelier) {
-    const butcherBadge = prefersArabicCopy ? 'درجة فاخرة • طازج يومياً' : 'PRIME GRADE • DAILY FRESH';
-    const pricePerKgLabel = prefersArabicCopy ? 'السعر للكيلو' : 'Price per KG';
-    const weightSelectorLabel = prefersArabicCopy ? 'اختر الوزن المطلوب' : 'Select Weight';
-    const prepRoomLabel = prefersArabicCopy ? 'تجهيز غرفة التقطيع' : 'Prep Room Configuration';
-    const butcherBuyCta = prefersArabicCopy ? 'تجهيز الطلب الآن' : 'Prepare My Order';
-    
     return (
-      <section className="w-full bg-[#f9f5f2] scroll-mt-20 selection:bg-[#3f0c0d] selection:text-white">
-        <div className="mx-auto max-w-7xl px-4 py-8">
-          {/* Breadcrumbs */}
-          <nav className="mb-8 flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.25em] text-[#3f0c0d]/40">
-            <Link to={homePath} className="transition-colors hover:text-[#3f0c0d]">{breadcrumbHomeLabel}</Link>
-            <span className="h-1 w-1 rounded-full bg-[#c5a059]" />
-            <Link to={shopPath} className="transition-colors hover:text-[#3f0c0d]">{breadcrumbShopLabel}</Link>
-            <span className="h-1 w-1 rounded-full bg-[#c5a059]" />
-            <span className="text-[#3f0c0d]">{product.name}</span>
-          </nav>
-
-          <div className="grid gap-12 lg:grid-cols-2">
-            {/* Left Column: Visuals & Experience */}
-            <div className="space-y-10">
-              <div className="relative overflow-hidden rounded-[2.5rem] bg-white p-2 shadow-[0_40px_100px_-40px_rgba(63,12,13,0.15)]">
-                 <div className="absolute left-8 top-8 z-10">
-                    <span className="rounded-full bg-[#3f0c0d] px-4 py-2 text-[10px] font-black uppercase tracking-[0.2em] text-[#c5a059] shadow-2xl">
-                      {butcherBadge}
-                    </span>
-                 </div>
-                 <div className="aspect-[4/5] overflow-hidden rounded-[2rem]">
-                    <img 
-                      src={selectedPrimaryImage || '/placeholder-meat.jpg'} 
-                      alt={product.name}
-                      className="h-full w-full object-cover transition-transform duration-1000 hover:scale-105"
-                    />
-                 </div>
-              </div>
-
-              {/* Artisan Notes */}
-              <div className="rounded-[2.5rem] border border-[#efe1da] bg-white/50 p-8 backdrop-blur-sm">
-                <h3 className="mb-6 text-xl font-black italic text-[#3f0c0d]">{prefersArabicCopy ? 'ملاحظات الجزار' : 'Master Butcher Notes'}</h3>
-                <div className="grid gap-6 sm:grid-cols-2">
-                  {[
-                    { label: prefersArabicCopy ? 'التعتيق' : 'Aging', value: prefersArabicCopy ? '21 يوم' : '21 Days Dry-Aged' },
-                    { label: prefersArabicCopy ? 'المصدر' : 'Source', value: prefersArabicCopy ? 'مزارعنا الخاصة' : 'Local Premium Farm' },
-                    { label: prefersArabicCopy ? 'الرخامية' : 'Marbling', value: 'Grade A+' },
-                    { label: prefersArabicCopy ? 'القطع' : 'Cut', value: product.category?.name || 'Prime' },
-                  ].map((note) => (
-                    <div key={note.label} className="border-s-2 border-[#c5a059] ps-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-[#3f0c0d]/50">{note.label}</p>
-                      <p className="mt-1 text-sm font-bold text-[#3f0c0d]">{note.value}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Atelier Flow */}
-            <div className="flex flex-col justify-center space-y-8 lg:ps-8">
-              <div className="space-y-4">
-                <h1 className="font-heading text-4xl font-black tracking-tight text-[#3f0c0d] md:text-6xl">
-                  {product.name}
-                </h1>
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col">
-                    <span className="text-4xl font-black text-[#3f0c0d]">{displayPrice}</span>
-                    <span className="text-[10px] font-black uppercase tracking-widest text-[#c5a059]">{pricePerKgLabel}</span>
-                  </div>
-                  {originalPrice && (
-                    <span className="text-xl text-[#3f0c0d]/30 line-through">{originalPrice}</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="prose prose-sm max-w-none text-[#3f0c0d]/70">
-                <ProductDescription safeDescription={safeDescription} emptyText={descriptionPreviewText} />
-              </div>
-
-              {/* Weight Atelier */}
-              <div className="space-y-6 rounded-[2.5rem] bg-[#3f0c0d] p-8 text-white shadow-2xl">
-                <div className="space-y-4">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#c5a059]">{weightSelectorLabel}</p>
-                  <div className="flex flex-wrap gap-3">
-                    {[0.5, 1, 1.5, 2, 5].map((w) => (
-                      <button
-                        key={w}
-                        onClick={() => setButcherWeight(w)}
-                        className={`group relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 transition-all ${
-                          butcherWeight === w 
-                            ? 'border-[#c5a059] bg-[#c5a059] text-[#3f0c0d]' 
-                            : 'border-white/10 bg-white/5 hover:border-[#c5a059]/50'
-                        }`}
-                      >
-                        <span className="text-lg font-black">{w}</span>
-                        <span className="absolute bottom-1 text-[8px] font-black uppercase">{prefersArabicCopy ? 'كجم' : 'KG'}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="h-px bg-white/10" />
-
-                <div className="space-y-4">
-                  <p className="text-xs font-black uppercase tracking-[0.2em] text-[#c5a059]">{prepRoomLabel}</p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    {[
-                      { key: 'cut', options: prefersArabicCopy ? ['مكعبات', 'شرائح', 'قطعة كاملة'] : ['Cubes', 'Steaks', 'Whole'] },
-                      { key: 'trim', options: prefersArabicCopy ? ['وسط', 'بدون دهن', 'دسم'] : ['Regular', 'Trimmed', 'Fat-on'] }
-                    ].map((pref) => (
-                      <select
-                        key={pref.key}
-                        value={butcherPrep[pref.key]}
-                        onChange={(e) => setButcherPrep(prev => ({ ...prev, [pref.key]: e.target.value }))}
-                        className="h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-xs font-bold text-white outline-none focus:border-[#c5a059]"
-                      >
-                        {pref.options.map(o => <option key={o} value={o} className="bg-[#3f0c0d]">{o}</option>)}
-                      </select>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-4">
-                  <div className="mb-4 flex items-center justify-between">
-                    <span className="text-sm font-bold opacity-60">{prefersArabicCopy ? 'إجمالي الوزن:' : 'Total Weight:'}</span>
-                    <span className="text-xl font-black text-[#c5a059]">{butcherWeight} {prefersArabicCopy ? 'كجم' : 'KG'}</span>
-                  </div>
-                  <button
-                    onClick={handleAddToCart}
-                    className="group relative h-16 w-full overflow-hidden rounded-2xl bg-[#c5a059] text-lg font-black uppercase tracking-widest text-[#3f0c0d] transition-all hover:scale-[1.02] active:scale-95"
-                  >
-                    <span className="relative z-10">{butcherBuyCta}</span>
-                    <div className="absolute inset-0 -translate-x-full bg-white/20 transition-transform group-hover:translate-x-0" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Trust & Cold Chain */}
-              <div className="flex items-center gap-6 rounded-[2rem] border border-[#efe1da] p-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#c5a059]/10 text-[#c5a059]">
-                   <Truck size={24} />
-                </div>
-                <div>
-                   <p className="text-sm font-black text-[#3f0c0d]">{prefersArabicCopy ? 'توصيل مبرد مضمون' : 'Cold-Chain Delivery'}</p>
-                   <p className="text-xs text-[#3f0c0d]/60">{prefersArabicCopy ? 'يصلك طازجاً في حافظات حرارية' : 'Arrives fresh in thermal artisan packaging'}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ButcherAtelierBuybox
+        product={product}
+        theme={theme}
+        homePath={homePath}
+        shopPath={shopPath}
+        breadcrumbHomeLabel={breadcrumbHomeLabel}
+        breadcrumbShopLabel={breadcrumbShopLabel}
+        selectedPrimaryImage={selectedPrimaryImage}
+        selectedVariant={selectedVariant}
+        selectedAttributes={selectedAttributes}
+        setSelectedAttributes={setSelectedAttributes}
+        variantSettings={variantSettings}
+        activePrice={activePrice}
+        activeComparePrice={activeComparePrice}
+        currency={currency}
+        quantity={quantity}
+        setQuantity={setQuantity}
+        isAddingToCart={isAddingToCart}
+        handleAddToCart={handleAddToCart}
+        prefersArabicCopy={prefersArabicCopy}
+      />
     );
   }
 
   if (isZenOrganic) {
     return (
-      <section className="w-full bg-background scroll-mt-20">
-        <div className="space-y-6">
-          <nav className="flex w-fit items-center gap-2 rounded-full border border-[#d9e1d2] bg-white/88 px-4 py-2 text-[11px] font-bold uppercase tracking-[0.16em] text-[#6f7d66] shadow-sm">
-            <Link to={homePath} className="transition-colors hover:text-[#1a3328]">
-              {breadcrumbHomeLabel}
-            </Link>
-            <span>/</span>
-            <Link to={shopPath} className="transition-colors hover:text-[#1a3328]">
-              {breadcrumbShopLabel}
-            </Link>
-            <span>/</span>
-            <span className="max-w-[18rem] truncate text-[#1a3328]">{product.name}</span>
-          </nav>
-
-          <div className="rounded-[2rem] border border-[#dbe3d3] bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(241,243,238,0.94))] p-5 shadow-[0_30px_90px_-62px_rgba(26,51,40,0.3)] md:p-6">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex rounded-full border border-[#d5ddca] bg-white px-3 py-1 text-[11px] font-black uppercase tracking-[0.2em] text-[#688059] shadow-sm">
-                {zenCategoryLabel}
-              </span>
-              {discount ? (
-                <span className="inline-flex rounded-full bg-[#88a876] px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-white shadow-sm">
-                  وفر {discount}%
-                </span>
-              ) : (
-                <span className="inline-flex rounded-full bg-[#f1f3ee] px-3 py-1 text-[11px] font-black uppercase tracking-[0.18em] text-[#688059]">
-                  اختيار يومي هادئ
-                </span>
-              )}
-            </div>
-
-            <div className="mt-4 space-y-4">
-              <h1 className="font-heading text-3xl font-black leading-tight text-[#1a3328] md:text-4xl">
-                {product.name}
-              </h1>
-              <p className="max-w-2xl text-base leading-8 text-[#4f5f4c] md:text-lg">
-                {shortDescription || 'سيظهر وصف هذا المنتج هنا بمجرد إضافة محتوى أوضح من لوحة الإدارة.'}
-              </p>
-            </div>
-
-            <div className="mt-6 flex flex-wrap items-end gap-4">
-              <div dir="ltr" className="space-y-1 font-sans">
-                <p className="text-3xl font-black text-[#1a3328]">{displayPrice}</p>
-                {originalPrice ? (
-                  <p className="text-sm text-[#708269] line-through decoration-[#aab6a4]">
-                    {originalPrice}
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="grid flex-1 gap-3 md:grid-cols-3">
-                {zenQuickFacts.map((fact) => (
-                  <div
-                    key={fact.label}
-                    className="rounded-[1.35rem] border border-[#dde5d7] bg-white/90 px-4 py-3 shadow-sm"
-                  >
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8a9684]">
-                      {fact.label}
-                    </p>
-                    <p className="mt-2 text-sm font-bold leading-6 text-[#1a3328]">
-                      {fact.value}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {sizeGuideHref || fitNote ? (
-            <div className="rounded-[1.75rem] border border-[#dbe3d3] bg-white/86 p-5 shadow-[0_22px_60px_-54px_rgba(26,51,40,0.32)]">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <p className="text-sm font-black text-[#1a3328]">
-                    دليل الأحجام والاختيار
-                  </p>
-                  <p className="text-sm leading-7 text-[#5a6956]">
-                    {fitNote || 'راجع الأحجام أو الأبعاد أو سعة المنتج قبل الإضافة للسلة للحصول على اختيار أنسب.'}
-                  </p>
-                </div>
-
-                {sizeGuideHref ? (
-                  isExternalHref(sizeGuideHref) ? (
-                    <a
-                      href={sizeGuideHref}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center justify-center rounded-full border border-[#cfd8c7] bg-[#f6f7f2] px-5 py-2.5 text-sm font-black text-[#1a3328] transition-all hover:-translate-y-0.5 hover:border-[#88a876] hover:text-[#688059]"
-                    >
-                      {sizeGuideText || 'دليل الأحجام'}
-                    </a>
-                  ) : (
-                    <Link
-                      to={sizeGuideHref}
-                      className="inline-flex items-center justify-center rounded-full border border-[#cfd8c7] bg-[#f6f7f2] px-5 py-2.5 text-sm font-black text-[#1a3328] transition-all hover:-translate-y-0.5 hover:border-[#88a876] hover:text-[#688059]"
-                    >
-                      {sizeGuideText || 'دليل الأحجام'}
-                    </Link>
-                  )
-                ) : null}
-              </div>
-            </div>
-          ) : null}
-
-          {product.productVariants && product.productVariants.length > 0 && (
-            <div
-              id={hasEmbeddedPdpCheckout ? STOREFRONT_BUYBOX_ID : undefined}
-              className="rounded-[1.75rem] border border-[#dbe3d3] bg-white/90 p-5 shadow-[0_20px_56px_-52px_rgba(26,51,40,0.28)]"
-            >
-              <p className="mb-4 text-[11px] font-black uppercase tracking-[0.2em] text-[#8a9684]">
-                الخيارات المتاحة
-              </p>
-              <VariantSelector
-                variants={product.productVariants}
-                selectedAttributes={selectedAttributes}
-                onChange={setSelectedAttributes}
-                variantSettings={variantSettings}
-              />
-            </div>
-          )}
-
-          {externalOnlyProduct ? (
-            <div id={STOREFRONT_BUYBOX_ID} className="rounded-[1.75rem] border border-[#dbe3d3] bg-white/92 p-5 shadow-[0_22px_60px_-52px_rgba(26,51,40,0.28)]">
-              {renderExternalPurchaseCta('card')}
-            </div>
-          ) : shouldRenderPrimaryBuyBox ? (
-            <div className="space-y-3">
-              <div
-                id={STOREFRONT_BUYBOX_ID}
-                className="flex flex-col gap-4 rounded-[1.75rem] border border-[#dbe3d3] bg-white/92 p-4 shadow-[0_22px_60px_-52px_rgba(26,51,40,0.28)] sm:flex-row sm:items-center"
-              >
-                <QuantitySelector value={quantity} onChange={setQuantity} />
-                <Button
-                  size="lg"
-                  fullWidth
-                  onClick={handleAddToCart}
-                  className="h-12 rounded-full border-none bg-[linear-gradient(135deg,#1a3328_0%,#476343_100%)] text-base font-black text-white shadow-[0_20px_50px_-24px_rgba(26,51,40,0.55)] transition-all hover:opacity-95"
-                >
-                  {addToCartText}
-                </Button>
-              </div>
-              {showExternalAffiliateCta ? renderExternalPurchaseCta('inline') : null}
-            </div>
-          ) : showExternalAffiliateCta ? renderExternalPurchaseCta('inline') : null}
-
-          <div className="grid gap-4 lg:grid-cols-[1.12fr_0.88fr]">
-            <div className="rounded-[1.85rem] border border-[#dbe3d3] bg-white/90 p-5 shadow-[0_24px_70px_-54px_rgba(26,51,40,0.24)] md:p-6">
-              {inlinePdpQuickOrderBeforeDescription ? (
-                <div className="mb-6">
-                  {inlinePdpQuickOrderBeforeDescription}
-                </div>
-              ) : null}
-              <div className="space-y-6">
-                <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8a9684]">
-                    {descriptionTitle}
-                  </p>
-                  <div className="mt-4">
-                    {safeDescription ? (
-                      <ProductDescription
-                        safeDescription={safeDescription}
-                        emptyText={
-                          prefersArabicCopy
-                            ? 'لا يوجد وصف متاح لهذا المنتج حتى الآن.'
-                            : 'No description is available for this product yet.'
-                        }
-                      />
-                    ) : (
-                      <p className="max-w-2xl text-base leading-8 text-[#4f5f4c]">
-                        لا يوجد وصف مفصل لهذا المنتج بعد. أضف وصفًا أوضح من لوحة الإدارة ليظهر هنا بشكل احترافي.
-                      </p>
-                    )}
-                  </div>
-                </div>
-                {inlinePdpQuickOrderAfterDescription ? (
-                  <div>
-                    {inlinePdpQuickOrderAfterDescription}
-                  </div>
-                ) : null}
-
-                <div className="border-t border-[#e4eadf] pt-6">
-                  <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8a9684]">
-                    {shippingTitle}
-                  </p>
-                  <p className="mt-4 max-w-2xl text-sm leading-8 text-[#4f5f4c]">
-                    {shippingText}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="rounded-[1.85rem] border border-[#dbe3d3] bg-[linear-gradient(180deg,rgba(246,247,242,0.96),rgba(255,255,255,0.96))] p-5 shadow-[0_24px_70px_-54px_rgba(26,51,40,0.22)]">
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-[#8a9684]">
-                  ملاحظات سريعة
-                </p>
-                <div className="mt-4 grid gap-3">
-                  {[
-                    'اختيار المقاس أو الوعاء المناسب يقلل الحاجة للاستبدال بعد الشراء.',
-                    'الشحن يحسب حسب المحافظة داخل صفحة الدفع ليبقى السعر النهائي واضحًا.',
-                    'عند التردد بين خيارين، ابدأ بما يناسب المساحة الفعلية لا الصورة فقط.',
-                  ].map((note) => (
-                    <div
-                      key={note}
-                      className="rounded-[1.2rem] border border-[#e2e9dd] bg-white/90 px-4 py-3 text-sm leading-7 text-[#3f4f3d]"
-                    >
-                      {note}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div className="rounded-[1.85rem] border border-[#dbe3d3] bg-white/92 p-5 shadow-[0_24px_70px_-54px_rgba(26,51,40,0.22)]">
-                <ConfigurableTrustBadges
-                  title={guaranteesTitle}
-                  subtitle={guaranteesSubtitle}
-                  items={guaranteeItems.length ? guaranteeItems : undefined}
-                  variant={guaranteeStyle}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <ZenOrganicBuybox
+        product={product}
+        theme={theme}
+        homePath={homePath}
+        shopPath={shopPath}
+        breadcrumbHomeLabel={breadcrumbHomeLabel}
+        breadcrumbShopLabel={breadcrumbShopLabel}
+        selectedPrimaryImage={selectedPrimaryImage}
+        ratingAverage={ratingAverage}
+        ratingCount={ratingCount}
+        activePrice={activePrice}
+        activeComparePrice={activeComparePrice}
+        currency={currency}
+        discount={discount}
+        selectedVariant={selectedVariant}
+        selectedAttributes={selectedAttributes}
+        setSelectedAttributes={setSelectedAttributes}
+        variantSettings={variantSettings}
+        quantity={quantity}
+        setQuantity={setQuantity}
+        isAddingToCart={isAddingToCart}
+        handleAddToCart={handleAddToCart}
+        prefersArabicCopy={prefersArabicCopy}
+        safeDescription={safeDescription}
+        descriptionPreviewText={descriptionPreviewText}
+        guaranteesTitle={guaranteesTitle}
+        guaranteesSubtitle={guaranteesSubtitle}
+        guaranteeItems={guaranteeItems}
+        guaranteeStyle={guaranteeStyle}
+      />
     );
   }
 
   if (variant === 'playful-story') {
     return (
-      <section className="w-full py-4 px-1">
-        <PlayfulStory
-          header={
-            <div className="space-y-2">
-              <span className="inline-flex rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-primary">
-                {product.category?.name || 'Playtime'}
-              </span>
-              <h1 className="font-heading text-3xl font-black tracking-tight text-foreground md:text-5xl">
-                {product.name}
-              </h1>
-            </div>
-          }
-          price={
-            <div className="flex items-center gap-4">
-              <span className="text-4xl font-black text-primary">{displayPrice}</span>
-              {originalPrice && (
-                <span className="text-xl font-bold text-muted-foreground line-through opacity-40">
-                  {originalPrice}
-                </span>
-              )}
-            </div>
-          }
-          variants={commonVariantSelector}
-          description={
-            <div className="space-y-6">
-              {inlinePdpQuickOrderBeforeDescription}
-              <div className="prose prose-sm dark:prose-invert">
-              <ProductDescription
-                safeDescription={safeDescription}
-                emptyText={
-                  prefersArabicCopy
-                    ? 'لا يوجد وصف متاح لهذا المنتج حتى الآن.'
-                    : 'No description is available for this product yet.'
-                }
-              />
-              </div>
-              {inlinePdpQuickOrderAfterDescription}
-            </div>
-          }
-          actions={commonActions}
-        />
-      </section>
+      <PlayfulStoryBuybox
+        product={product}
+        theme={theme}
+        displayPrice={displayPrice}
+        originalPrice={originalPrice}
+        commonVariantSelector={commonVariantSelector}
+        inlinePdpQuickOrderBeforeDescription={inlinePdpQuickOrderBeforeDescription}
+        inlinePdpQuickOrderAfterDescription={inlinePdpQuickOrderAfterDescription}
+        commonActions={commonActions}
+        safeDescription={safeDescription}
+        prefersArabicCopy={prefersArabicCopy}
+      />
     );
   }
 
   if (isIntruderNft) {
     return (
-      <section className="w-full bg-background font-sans">
-        <div className="space-y-8">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-primary font-bold">
-            <Link to={homePath} className="hover:text-white transition-colors opacity-60">Home</Link>
-            <span className="opacity-30">/</span>
-            <Link to={shopPath} className="hover:text-white transition-colors opacity-60">Market</Link>
-            <span className="opacity-30">/</span>
-            <span className="text-white">NFT Details</span>
-          </div>
-          <div className="space-y-2">
-             <div className="inline-flex items-center gap-2 rounded-lg bg-primary/10 border border-primary/20 px-3 py-1.5 text-xs font-bold text-primary backdrop-blur-sm">
-                <span className="relative flex h-2 w-2">
-                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
-                </span>
-                Verified Collection
-             </div>
-             <h1 className="text-4xl md:text-5xl font-black text-white italic tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]">
-               {product.name}
-             </h1>
-             <div className="flex gap-2">
-                <span className="text-sm font-bold text-primary">@{product.category?.name || "Artist"}</span>
-                <span className="text-sm font-bold text-muted-foreground opacity-50">|</span>
-                <span className="text-sm font-bold text-muted-foreground">Series #84/100</span>
-             </div>
-          </div>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-md shadow-2xl relative overflow-hidden group">
-             <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/20 blur-[80px] group-hover:bg-primary/30 transition-all duration-700" />
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative z-10">
-                <div className="space-y-4">
-                   <div className="space-y-1">
-                      <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-black opacity-60">Current Offering</p>
-                      <div className="flex items-center gap-3">
-                         <div className="w-10 h-10 rounded-full bg-primary/20 flex items-center justify-center text-primary text-xl font-bold border border-primary/30">Ξ</div>
-                         <div className="flex flex-col">
-                            <span className="text-3xl font-black text-white leading-tight">{(product.price / 5000).toFixed(2)} ETH</span>
-                            <span className="text-sm font-bold text-muted-foreground">({displayPrice})</span>
-                         </div>
-                      </div>
-                   </div>
-                </div>
-                <div className="space-y-4">
-                   {commonVariantSelector}
-                   <div className="flex items-center gap-3">
-                      <button
-                         onClick={handleAddToCart}
-                         className="flex-1 bg-primary text-primary-foreground h-14 rounded-xl font-black text-sm uppercase tracking-widest transition-all hover:scale-[1.02] hover:shadow-[0_0_25px_hsl(var(--primary)/0.6)] active:scale-[0.98]"
-                      >
-                         Place Bid Now
-                      </button>
-                      <button className="w-14 h-14 flex items-center justify-center rounded-xl bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-all group/heart">
-                         <Heart size={20} className="group-hover/heart:fill-primary group-hover/heart:text-primary" />
-                      </button>
-                   </div>
-                </div>
-             </div>
-          </div>
-          <div className="space-y-4 pt-4">
-             <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                <h3 className="text-xl font-black text-white uppercase tracking-wider">Description</h3>
-                <Share2 size={18} className="text-muted-foreground cursor-pointer hover:text-white" />
-             </div>
-             <p className="text-sm leading-relaxed text-muted-foreground/80 max-w-2xl font-medium">
-                {product.description?.replace(/<[^>]+>/g, '') || "Futuristic aesthetic digital asset."}
-             </p>
-          </div>
-        </div>
-      </section>
+      <IntruderNftBuybox
+        product={product}
+        theme={theme}
+        homePath={homePath}
+        shopPath={shopPath}
+        displayPrice={displayPrice}
+        commonVariantSelector={commonVariantSelector}
+        handleAddToCart={handleAddToCart}
+      />
     );
   }
-
   // Standard Storefront Return
   return (
     <section className="w-full bg-background scroll-mt-20">
