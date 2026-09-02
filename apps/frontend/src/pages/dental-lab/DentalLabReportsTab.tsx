@@ -861,7 +861,8 @@ export default function DentalLabReportsTab() {
         {view === "productivity" && <ProductivityView />}
         {view === "revenue" && <RevenueView />}
         {view === "overdue" && <OverdueView />}
-  {view === "aging" && <AgingView />}
+        {view === "aging" && <AgingView />}
+        {view === "remakes" && <RemakesAnalysisView />}
       </div>
     </div>
   );
