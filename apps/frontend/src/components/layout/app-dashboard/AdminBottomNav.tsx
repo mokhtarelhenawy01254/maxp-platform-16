@@ -8,7 +8,6 @@ import {
   BellIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
-import { isChatRoute } from './helpers';
 
 interface AdminBottomNavItem {
   key: string;
@@ -80,10 +79,6 @@ const AdminBottomNav: React.FC<AdminBottomNavProps> = ({ notificationCount, labe
   const isRtl = i18n.language?.startsWith('ar') ?? false;
   const location = useLocation();
   const items = React.useMemo(() => buildItems(labels, notificationCount), [labels, notificationCount]);
-
-  if (isChatRoute(location.pathname)) {
-    return null;
-  }
 
   return (
     <nav

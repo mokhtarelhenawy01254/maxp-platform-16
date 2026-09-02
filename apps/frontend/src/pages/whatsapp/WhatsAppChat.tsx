@@ -358,6 +358,20 @@ const WhatsAppChatContent: React.FC = () => {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, [selectedContact]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+
+    if (selectedContact) {
+      document.body.classList.add('app-shell-chat-active');
+    } else {
+      document.body.classList.remove('app-shell-chat-active');
+    }
+
+    return () => {
+      document.body.classList.remove('app-shell-chat-active');
+    };
+  }, [selectedContact]);
+
   // Persist right panel visibility
   useEffect(() => {
     localStorage.setItem('whatsappChatRightPanelVisible', String(showRightPanel));
@@ -2169,7 +2183,13 @@ const WhatsAppChatContent: React.FC = () => {
 
 
   return (
-    <div className="whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden">
+    <div
+      className={cn(
+        "whatsapp-workspace-root whatsapp-theme-transition flex h-full min-h-0 flex-col overflow-hidden",
+        selectedContact && "whatsapp-workspace--chat-active",
+      )}
+      data-chat-active={selectedContact ? "true" : "false"}
+    >
       <h1 className="sr-only">لوحة تشغيل واتساب</h1>
       <div className="whatsapp-theme-transition flex h-full min-h-0 flex-1 flex-col overflow-hidden lg:flex-row border-none rounded-none shadow-none bg-[color:var(--color-card)]">
       {/* Sidebar — LEFT in LTR, RIGHT in RTL (natural RTL flow) */}

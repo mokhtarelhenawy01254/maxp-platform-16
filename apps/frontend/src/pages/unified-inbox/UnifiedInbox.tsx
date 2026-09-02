@@ -617,6 +617,20 @@ const UnifiedInbox: React.FC = () => {
     return () => window.removeEventListener('hashchange', onHashChange);
   }, [selectedConversation]);
 
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+
+    if (selectedConversation) {
+      document.body.classList.add('app-shell-chat-active');
+    } else {
+      document.body.classList.remove('app-shell-chat-active');
+    }
+
+    return () => {
+      document.body.classList.remove('app-shell-chat-active');
+    };
+  }, [selectedConversation]);
+
   // ──────────────────────────────────────────────────────────
   // 🎯 Actions
   // ──────────────────────────────────────────────────────────

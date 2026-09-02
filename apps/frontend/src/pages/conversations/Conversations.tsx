@@ -506,10 +506,19 @@ const Conversations: React.FC = () => {
     }
   }, [selectedConversation]);
 
-  // إزالة التمرير التلقائي المزعج - دع المستخدم يتحكم في التمرير
-  // useEffect(() => {
-  //   scrollToBottom();
-  // }, [selectedConversation?.messages]);
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+
+    if (selectedConversation) {
+      document.body.classList.add('app-shell-chat-active');
+    } else {
+      document.body.classList.remove('app-shell-chat-active');
+    }
+
+    return () => {
+      document.body.classList.remove('app-shell-chat-active');
+    };
+  }, [selectedConversation]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !selectedConversation) return;

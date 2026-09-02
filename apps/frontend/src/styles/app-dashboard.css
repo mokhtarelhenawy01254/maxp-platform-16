@@ -290,8 +290,15 @@
   }
 
   .app-shell-root--no-bottom-nav .app-shell-content,
-  .app-shell-content.app-shell-content--no-bottom-nav {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+  .app-shell-content.app-shell-content--no-bottom-nav,
+  body.app-shell-chat-active .app-shell-content,
+  body:has(.business-inbox-shell--conversation-active) .app-shell-content,
+  body:has(.whatsapp-workspace--chat-active) .app-shell-content,
+  body:has([data-chat-active="true"]) .app-shell-content,
+  .app-shell-root:has(.business-inbox-shell--conversation-active) .app-shell-content,
+  .app-shell-root:has(.whatsapp-workspace--chat-active) .app-shell-content,
+  .app-shell-root:has([data-chat-active="true"]) .app-shell-content {
+    padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   }
 }
 
@@ -436,6 +443,19 @@ body.app-shell-mobile-open {
   box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.06);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
+}
+
+@media (max-width: 1023px) {
+  body.app-shell-chat-active .admin-bottom-nav,
+  body:has(.business-inbox-shell--conversation-active) .admin-bottom-nav,
+  body:has(.whatsapp-workspace--chat-active) .admin-bottom-nav,
+  body:has([data-chat-active="true"]) .admin-bottom-nav,
+  .app-shell-root--no-bottom-nav .admin-bottom-nav,
+  .app-shell-root:has(.business-inbox-shell--conversation-active) .admin-bottom-nav,
+  .app-shell-root:has(.whatsapp-workspace--chat-active) .admin-bottom-nav,
+  .app-shell-root:has([data-chat-active="true"]) .admin-bottom-nav {
+    display: none !important;
+  }
 }
 
 .admin-bottom-nav-list {

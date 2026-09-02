@@ -289,7 +289,7 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
           </div>
         </div>
 
-        {!isChat && <AdminBottomNav />}
+        <AdminBottomNav />
       </div>
     </div>
   );
