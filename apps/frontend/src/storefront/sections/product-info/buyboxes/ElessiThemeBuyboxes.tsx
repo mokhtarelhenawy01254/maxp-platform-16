@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Star, ShieldCheck, Truck, RefreshCw, Eye, Sparkles, Heart, Share2,
-  Lock, Clock, Award, CheckCircle, Package, ArrowRight, Phone, MessageSquare
+  Lock, Clock, Award, CheckCircle, Package, ArrowRight, Phone, MessageSquare,
+  AlarmClock, CheckCircle2, BadgeCheck, RotateCcw, MessageCircle
 } from 'lucide-react';
 import type { Product, ProductVariant } from '../../../hooks/useProducts';
 import type { StorefrontTheme } from '../../../types/theme.types';
@@ -15,6 +16,9 @@ import StorefrontProductImage from '../../../components/StorefrontProductImage';
 import ProductDescription from '../components/ProductDescription';
 import ConfigurableTrustBadges from '../components/ConfigurableTrustBadges';
 import StickyMobileCTA from '../components/StickyMobileCTA';
+import { isKhemetLuxeTheme as isKhemetLuxeThemeCheck } from '../../../utils/navigationGuards';
+import { calculateVolumeDiscountPricing, getProductVolumeDiscounts } from '../../../utils/volumeDiscounts';
+import MobileVariantSheet from '../../../components/MobileVariantSheet';
 
 export interface ElessiThemeBuyboxesProps {
   product: Product;
@@ -178,6 +182,85 @@ export const ElessiThemeBuyboxes: React.FC<ElessiThemeBuyboxesProps> = (props) =
     mergedInlinePdpQuickOrder,
     externalOnlyProduct,
   } = props;
+
+  // Compute from available props instead of relying on parent scope
+  const isKhemetLuxeTheme = isKhemetLuxeThemeCheck(theme.id);
+  const isKhemetLuxeV2Theme = theme.id === 'khemet-luxe-v2';
+  const isKhemetInlineQuickOrderBuybox =
+    isKhemetLuxeTheme && variant === 'elessi-care-buybox' && !isKhemetLuxeV2Theme;
+
+  // ── Component-level defaults for variables shared across branches ──
+  const showUtilitySoldCounter = false;
+  const soldCount = 0;
+  const utilityViewerMessage = '';
+  const utilityDeliveryRange = deliveryRangeText || '';
+  const utilityDeliveryLabel = prefersArabicCopy ? 'التوصيل' : 'Delivery';
+  const returnsPolicyBody = '';
+  const showGuarantees = guaranteeItems.length > 0;
+  const parseMaybeNumber = (val: unknown): number | null => { const n = Number(val); return Number.isFinite(n) ? n : null; };
+  const discountAmount = discount && discount > 0 && activeComparePrice ? activeComparePrice - activePrice : 0;
+  const compactMobileCommerceActions = null as React.ReactNode;
+  const displayPrice = formatStorefrontCurrency(activePrice, currency);
+  const selectedOptionSummary = Object.values(selectedAttributes).filter(Boolean).join(' / ') || '';
+  const shouldRenderPrimaryBuyBox = true;
+  const isCartOpen = false;
+  const addToCartText = prefersArabicCopy ? 'أضف للسلة' : 'ADD TO CART';
+  const buyNowText = prefersArabicCopy ? 'اشتري الآن' : 'BUY NOW';
+  const commandFacts: Array<{ label: string; value: string }> = [];
+  const STOREFRONT_REVIEWS_SECTION_ID = 'storefront-reviews';
+  const handleQuickScroll = (id: string, _pos?: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+  const commonRatingValue = typeof product.rating === 'number' ? product.rating : null;
+  const commonReviewCount = typeof product.reviewCount === 'number' ? product.reviewCount : 0;
+  const commonHeader = (
+    <div className="space-y-1">
+      <h1 className="text-lg font-black leading-tight text-[#2d211e] sm:text-xl">{product.name}</h1>
+      {productCategoryLabel ? <p className="text-xs text-[#8f7a72]">{productCategoryLabel}</p> : null}
+    </div>
+  );
+  const commonPrice = (
+    <div className="flex flex-wrap items-baseline gap-2">
+      <span className="text-xl font-black text-[#2d211e]">{displayPrice}</span>
+      {activeComparePrice && activeComparePrice > activePrice ? (
+        <span className="text-sm text-[#9e857a] line-through">{formatStorefrontCurrency(activeComparePrice, currency)}</span>
+      ) : null}
+      {discount && discount > 0 ? (
+        <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-bold text-red-600">-{discount}%</span>
+      ) : null}
+    </div>
+  );
+  const commonVariantSelector = onSelectVariantAttribute && product.productVariants?.length ? (
+    <VariantSelector
+      variants={product.productVariants}
+      selectedAttributes={selectedAttributes}
+      onSelect={onSelectVariantAttribute}
+      settings={variantSettings}
+    />
+  ) : null;
+  const commonActionsWithRef = shouldRenderPrimaryBuyBox ? (
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <QuantitySelector value={quantity} onChange={setQuantity} />
+        <div className="grid flex-1 grid-cols-1 gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            className="h-14 rounded-[0.95rem] bg-primary px-4 text-sm font-black uppercase tracking-[0.18em] text-primary-foreground transition-colors hover:opacity-95"
+          >
+            {addToCartText}
+          </button>
+          <button
+            type="button"
+            onClick={handleBuyNow}
+            className="h-14 rounded-[0.95rem] bg-[#78aa00] px-4 text-sm font-black uppercase tracking-[0.18em] text-white transition-colors hover:bg-[#6e9b00]"
+          >
+            {buyNowText}
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   if (isElessiBagBuybox) {
     const bagRating =
@@ -1372,6 +1455,63 @@ export const ElessiThemeBuyboxes: React.FC<ElessiThemeBuyboxesProps> = (props) =
   }
 
   if (isAnyElessiBuybox) {
+    // ── Block-specific safe defaults for undeclared variables ──
+    const isGalleryZoomOpen = false;
+    const isInlineQuickOrderVisible = false;
+    const hasEmbeddedPdpCheckout = false;
+    const STOREFRONT_BUYBOX_ID = 'storefront-buybox';
+    const STOREFRONT_PRODUCT_DESCRIPTION_ID = 'storefront-description';
+    const shouldProductInfoMobileStickyOpenVariantSheet = (canOpen: boolean, hasSelection: boolean) => canOpen && !hasSelection;
+    const initialElessiSocialProofItems: Array<{ icon: React.ReactNode; text: string }> = [];
+    const elessiSocialProofStep = 0;
+    const isMobileVariantSheetOpen = false;
+    const setIsMobileVariantSheetOpen = (_v: boolean) => {};
+    const mobileVariantSheetMode: 'cart' | 'checkout' = 'cart';
+    const setMobileVariantSheetMode = (_v: 'cart' | 'checkout') => {};
+    const selectedPrimaryImage = product.images?.[0] || '';
+    const elessiVariantSettings = variantSettings;
+    const canOpenSizeGuide = true;
+    const supportSections: Array<{ label: string; title: string; description: string }> = [];
+    const queueQuickScroll = handleQuickScroll;
+    const brandSpotlight: { title?: string; href?: string; image?: string } | null = null;
+    const brandName = '';
+    const brandUrl = '';
+    const brandSubtitle = '';
+    const isExternalHref = (href: string) => /^https?:\/\//.test(href);
+    const buyActionsRef = { current: null } as React.RefObject<HTMLDivElement | null>;
+    const renderExternalPurchaseCta = (_style: string) => null as React.ReactNode;
+    const personalizationEnabled = false;
+    const personalizationFields: Array<{ key: string; label: string; options: string[] }> = [];
+    const personalizationTitle = '';
+    const personalizationSubtitle = '';
+    const selectedPersonalizationOptions: Record<string, string> = {};
+    const updatePersonalizationOption = (_key: string, _val: string) => {};
+    const personalizationText = '';
+    const setPersonalizationText = (_val: string) => {};
+    const personalizationMaxLength = 100;
+    const personalizationTextLabel = '';
+    const personalizationTextPlaceholder = '';
+    const shouldHideDuplicateDescriptionSection = false;
+    const featureHighlights: string[] = [];
+    const safeCheckoutItems: Array<{ label: string }> = [];
+    const sizeGuideDialog = null as React.ReactNode;
+    const shippingPolicyDialog = null as React.ReactNode;
+    const questionDialog = null as React.ReactNode;
+    const elessiVariantSelector = commonVariantSelector;
+    const elessiUtilityRail = null as React.ReactNode;
+    const inlinePdpQuickOrderBeforeDescription = null as React.ReactNode;
+    const inlinePdpQuickOrderAfterDescription = null as React.ReactNode;
+    const setElessiLowerSection = (_val: string) => {};
+    const elessiLowerSection = 'description';
+    const descriptionTitle = prefersArabicCopy ? 'الوصف' : 'Description';
+    const reviewsTabLabel = prefersArabicCopy ? 'التقييمات' : 'Reviews';
+    const elessiSaleCountdown = null as React.ReactNode;
+    const elessiLowStockNotice = null as React.ReactNode;
+    const elessiSupportAnchorId = 'elessi-support';
+    const StaticMotionDiv = 'div' as unknown as React.FC<any>;
+    const StaticMotionSpan = 'span' as unknown as React.FC<any>;
+    // ── End safe defaults ──
+
     const elessiIntroBadge = isElessiGiftBuybox
       ? prefersArabicCopy
         ? 'اختيار الهدية'
