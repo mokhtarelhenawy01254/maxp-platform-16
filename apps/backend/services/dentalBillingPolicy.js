@@ -48,29 +48,36 @@ const assertCreditLimit = async (prisma, companyId, doctorId, additionalTotal) =
   const creditLimit = Number(doctor.creditLimit) || 0;
   if (creditLimit <= 0) return null;
 
+  const creditPromise = db.dentalCreditNote && typeof db.dentalCreditNote.aggregate === 'function'
+    ? Promise.resolve(db.dentalCreditNote.aggregate({ where: { companyId, doctorId }, _sum: { amount: true } })).catch(() => ({ _sum: { amount: 0 } }))
+    : Promise.resolve({ _sum: { amount: 0 } });
+
+  const unbilledPromise = db.dentalLabCase && typeof db.dentalLabCase.findMany === 'function'
+    ? Promise.resolve(db.dentalLabCase.findMany({
+        where: {
+          companyId,
+          doctorId,
+          status: { notIn: ['DELIVERED', 'CLOSED'] },
+          invoices: { none: { status: { not: 'VOID' } } },
+        },
+        select: { remaining: true, total: true, paid: true },
+      })).catch(() => [])
+    : Promise.resolve([]);
+
   const [invAgg, creditAgg, unbilledCases] = await Promise.all([
     db.dentalInvoice.aggregate({
       where: { companyId, doctorId, status: { not: 'VOID' } },
       _sum: { remaining: true },
     }),
-    db.dentalCreditNote ? db.dentalCreditNote.aggregate({
-      where: { companyId, doctorId },
-      _sum: { amount: true },
-    }).catch(() => ({ _sum: { amount: 0 } })) : Promise.resolve({ _sum: { amount: 0 } }),
-    db.dentalLabCase ? db.dentalLabCase.findMany({
-      where: {
-        companyId,
-        doctorId,
-        status: { notIn: ['DELIVERED', 'CLOSED'] },
-        invoices: { none: { status: { not: 'VOID' } } },
-      },
-      select: { remaining: true, total: true, paid: true },
-    }).catch(() => []) : Promise.resolve([]),
+    creditPromise,
+    unbilledPromise,
   ]);
 
-  const invOutstanding = Number(invAgg._sum?.remaining) || 0;
-  const credits = Number(creditAgg._sum?.amount) || 0;
-  const unbilledOutstanding = unbilledCases.reduce((sum, c) => {
+  const invOutstanding = Number(invAgg?._sum?.remaining) || 0;
+  const credits = Number(creditAgg?._sum?.amount) || 0;
+  const safeUnbilled = Array.isArray(unbilledCases) ? unbilledCases : [];
+  const unbilledOutstanding = safeUnbilled.reduce((sum, c) => {
+    if (!c) return sum;
     const rem = c.remaining != null ? Number(c.remaining) : Math.max(0, (Number(c.total) || 0) - (Number(c.paid) || 0));
     return sum + (Number.isFinite(rem) ? rem : 0);
   }, 0);

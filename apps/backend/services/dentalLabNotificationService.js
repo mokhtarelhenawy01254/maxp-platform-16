@@ -128,14 +128,15 @@ async function ensureDefaultTemplates(companyId) {
   try {
     if (!companyId) return;
     const prisma = getSharedPrismaClient();
-    const existing = await prisma.whatsAppNotificationTemplate.findMany({
+    const model = prisma && (prisma.whatsAppNotificationTemplate || prisma.notificationTemplate);
+    if (!model || typeof model.findMany !== 'function') return;
+    const existing = await model.findMany({
       where: { companyId, category: 'DENTAL_LAB' },
-      select: { eventType: true },
     });
-    const existingEvents = new Set((existing || []).map((t) => t.eventType));
+    const byEvent = new Set((existing || []).map((t) => t.eventType));
     for (const eventType of Object.values(DENTAL_NOTIFICATION_EVENTS)) {
-      if (existingEvents.has(eventType)) continue;
-      await prisma.whatsAppNotificationTemplate.create({
+      if (byEvent.has(eventType)) continue;
+      await model.create({
         data: {
           companyId,
           name: TEMPLATE_NAMES[eventType] || eventType,
@@ -158,8 +159,17 @@ async function getNotificationSchedule(companyId) {
     if (!companyId) return [];
     await ensureDefaultTemplates(companyId);
     const prisma = getSharedPrismaClient();
-    let row = await prisma.dentalSetting.findFirst({ where: { companyId, key: SCHEDULE_KEY } });
-    if (!row) {
+    if (!prisma || !prisma.dentalSetting || (typeof prisma.dentalSetting.findFirst !== 'function' && typeof prisma.dentalSetting.findMany !== 'function')) {
+      return mergeSchedule([]);
+    }
+    const finder = typeof prisma.dentalSetting.findFirst === 'function'
+      ? prisma.dentalSetting.findFirst.bind(prisma.dentalSetting)
+      : async ({ where }) => {
+          const rows = await prisma.dentalSetting.findMany({ where: { companyId: where.companyId } });
+          return rows.find((r) => r.key === where.key) || null;
+        };
+    let row = await finder({ where: { companyId, key: SCHEDULE_KEY } });
+    if (!row && typeof prisma.dentalSetting.upsert === 'function') {
       row = await prisma.dentalSetting.upsert({
         where: { companyId_key: { companyId, key: SCHEDULE_KEY } },
         update: { value: DEFAULT_SCHEDULE },

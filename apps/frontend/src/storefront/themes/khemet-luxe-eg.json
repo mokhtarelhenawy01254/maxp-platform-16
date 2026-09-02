@@ -399,9 +399,9 @@
           "type": "quantity-offers",
           "variant": "selection-rail",
           "settings": {
-            "title": "وفّر مع العرض",
-            "subtitle": "اختار الكمية، واختار اللون والمقاس لكل قطعة.",
-            "decisionMode": "primary",
+            "title": "وفّر مع العروض",
+            "subtitle": "اقتصدي عند طلب قطعتين أو أكثر — اختاري اللون والمقاس لكل قطعة.",
+            "decisionMode": "supporting",
             "continueToFormLabel": "كمّلي البيانات",
             "placement": "inline-buybox"
           }
@@ -409,11 +409,11 @@
         {
           "type": "pdp-checkout",
           "settings": {
-            "title": "بيانات الطلب",
-            "subtitle": "الاسم ورقم الهاتف والمحافظة والعنوان.",
-            "emptyStateText": "اختاري العرض أولًا.",
-            "scrollToBuyBoxText": "اختيار العرض",
-            "submitButtonText": "تأكيد الطلب",
+            "title": "بيانات الطلب السريع",
+            "subtitle": "الاسم ورقم الهاتف والمحافظة والعنوان — الدفع عند الاستلام.",
+            "emptyStateText": "اختاري اللون والمقاس أولًا.",
+            "scrollToBuyBoxText": "اختيار اللون والمقاس",
+            "submitButtonText": "تأكيد الطلب — الدفع عند الاستلام",
             "formVariant": "khemet-luxe-eg",
             "placement": "before-description",
             "surfaceMode": "merged-buybox",

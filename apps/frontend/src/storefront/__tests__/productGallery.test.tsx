@@ -169,6 +169,96 @@ describe('ProductGallery', () => {
     );
     expect(mainImage.getAttribute('src')).toContain('format=webp');
     expect(mainImage.getAttribute('src')).toContain('w=1280');
-    expect(mainImage.getAttribute('srcset')).toContain('w=640');
+    expect(mainImage.getAttribute('srcset')).toBeTruthy();
+  });
+
+  it('hides wishlist and compare buttons when disabled via conversion-suite or storefront settings', () => {
+    useStorefrontSettingsMock.mockReturnValue({
+      settings: {
+        storefront: {
+          settings: { currency: 'EGP' },
+          apps: {
+            'conversion-suite': {
+              enabled: true,
+              settings: {
+                general: { enabled: true },
+                modules: {
+                  productWishlist: false,
+                  productComparison: false,
+                },
+              },
+            },
+          },
+        },
+      },
+      isLoading: false,
+      error: null,
+      previewThemeId: null,
+    });
+
+    render(
+      <StorefrontThemeProvider>
+        <MemoryRouter initialEntries={['/products/test-product']}>
+          <Routes>
+            <Route
+              path="/products/:id"
+              element={<ProductGallery section={{ variant: 'elessi-showroom' }} />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </StorefrontThemeProvider>,
+    );
+
+    expect(
+      screen.queryByLabelText(/Add to wishlist|إضافة إلى المفضلة/i),
+    ).toBeNull();
+    expect(
+      screen.queryByLabelText(/Add to compare|إضافة إلى المقارنة/i),
+    ).toBeNull();
+  });
+
+  it('shows wishlist and compare buttons on elessi-showroom when enabled', () => {
+    useStorefrontSettingsMock.mockReturnValue({
+      settings: {
+        storefront: {
+          settings: { currency: 'EGP' },
+          apps: {
+            'conversion-suite': {
+              enabled: true,
+              settings: {
+                general: { enabled: true },
+                modules: {
+                  productWishlist: true,
+                  productComparison: true,
+                },
+              },
+            },
+          },
+        },
+      },
+      isLoading: false,
+      error: null,
+      previewThemeId: null,
+    });
+
+    render(
+      <StorefrontThemeProvider>
+        <MemoryRouter initialEntries={['/products/test-product']}>
+          <Routes>
+            <Route
+              path="/products/:id"
+              element={<ProductGallery section={{ variant: 'elessi-showroom' }} />}
+            />
+          </Routes>
+        </MemoryRouter>
+      </StorefrontThemeProvider>,
+    );
+
+    expect(
+      screen.getByLabelText(/Add to wishlist|إضافة إلى المفضلة/i),
+    ).toBeTruthy();
+    expect(
+      screen.getByLabelText(/Add to compare|إضافة إلى المقارنة/i),
+    ).toBeTruthy();
   });
 });

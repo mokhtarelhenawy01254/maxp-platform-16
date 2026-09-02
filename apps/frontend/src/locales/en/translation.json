@@ -17583,14 +17583,6 @@
         "label": "Back in Stock",
         "benefit": "Enables back-in-stock interest collection for unavailable sizes or colors."
       },
-      "productWishlist": {
-        "label": "Product Wishlist",
-        "benefit": "Shows the wishlist heart button over product gallery images and product cards."
-      },
-      "productComparison": {
-        "label": "Product Compare",
-        "benefit": "Shows the product compare button over product gallery images for easy comparison."
-      },
       "crossSell": {
         "label": "Cross Sell",
         "benefit": "Runs cross-sell product suggestions in dedicated spaces."

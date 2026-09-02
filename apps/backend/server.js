@@ -679,6 +679,7 @@ app.use("/api/v1/public/promotion-settings", promotionSettingsRoutes);
 app.use("/api/v1/public/forms", publicFormsRoutes);
 app.use("/api/v1/public/store-promotions", storePromotionRoutes);
 app.use("/api/v1/product-landings", productLandingPagesRoutes);
+app.use("/api/v1/funnels", funnelRoutes);
   console.log("✅ [DEBUG] Public Products, Orders & Storefront Routes Loaded");
 
   // Public Kashier payment & checkout routes (no dashboard auth required)

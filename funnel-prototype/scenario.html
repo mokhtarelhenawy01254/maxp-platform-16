@@ -1,0 +1,418 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MaxP Funnel — End-to-End Scenario</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Cairo', system-ui, sans-serif;
+      background: #0d0d14;
+      color: #e4e4e7;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    .head {
+      padding: 32px 24px;
+      background: linear-gradient(135deg, #221A3F 0%, #FF5D73 100%);
+      text-align: center;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .head h1 { margin: 0 0 8px; font-size: 32px; font-weight: 900; color: white; }
+    .head p { margin: 0; opacity: 0.9; font-size: 16px; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
+
+    .persona-bar {
+      display: grid; gap: 12px; margin-bottom: 32px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 700px) { .persona-bar { grid-template-columns: repeat(3, 1fr); } }
+    .persona {
+      background: #1a1a25;
+      border: 2px solid #2a2a3a;
+      border-radius: 14px;
+      padding: 18px;
+      text-align: center;
+    }
+    .persona.merchant { border-color: #FF5D73; }
+    .persona.customer { border-color: #4ade80; }
+    .persona.tech { border-color: #60a5fa; }
+    .persona .avatar { font-size: 40px; margin-bottom: 8px; }
+    .persona h3 { margin: 0 0 4px; font-size: 18px; }
+    .persona p { margin: 0; font-size: 13px; opacity: 0.8; }
+
+    .flow {
+      display: grid; gap: 24px;
+    }
+    .flow-section {
+      background: #1a1a25;
+      border: 1px solid #2a2a3a;
+      border-radius: 16px;
+      padding: 24px;
+    }
+    .flow-section h2 {
+      margin: 0 0 6px;
+      font-size: 22px;
+      color: #FF5D73;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .flow-section h2 .step {
+      background: #FF5D73; color: #221A3F;
+      padding: 4px 10px; border-radius: 8px; font-size: 14px;
+    }
+    .flow-section h2.tech .step { background: #60a5fa; color: #0d0d14; }
+    .flow-section h2.customer .step { background: #4ade80; color: #0d0d14; }
+    .flow-section .sub { margin: 0 0 20px; opacity: 0.7; font-size: 14px; }
+
+    .steps {
+      display: grid; gap: 12px;
+    }
+    .step-card {
+      background: #14141d;
+      border: 1px solid #2a2a3a;
+      border-radius: 12px;
+      padding: 16px;
+      position: relative;
+      padding-inline-start: 56px;
+    }
+    .step-card .num {
+      position: absolute; inset-inline-start: 14px; top: 14px;
+      width: 32px; height: 32px;
+      background: #FF5D73; color: #221A3F;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 14px;
+    }
+    .step-card.tech .num { background: #60a5fa; }
+    .step-card.customer .num { background: #4ade80; }
+    .step-card h4 { margin: 0 0 6px; font-size: 15px; color: white; }
+    .step-card p { margin: 0; font-size: 13px; opacity: 0.8; }
+    .step-card code {
+      background: #0d0d14;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: #FF5D73;
+      display: inline-block;
+      margin: 4px 2px;
+    }
+
+    .preview {
+      margin-top: 12px;
+      padding: 12px;
+      background: #0d0d14;
+      border-radius: 8px;
+      border-inline-start: 3px solid #FF5D73;
+      font-size: 13px;
+    }
+    .preview.tech { border-inline-start-color: #60a5fa; }
+    .preview strong { color: #FF5D73; }
+
+    .files {
+      display: grid; gap: 8px; margin-top: 16px;
+    }
+    .file {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px;
+      background: #0d0d14;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+    .file .status { margin-inline-start: auto; }
+    .file .status.exists { color: #4ade80; }
+    .file .status.need { color: #facc15; }
+
+    .cta {
+      text-align: center; margin-top: 24px;
+      padding: 20px;
+      background: linear-gradient(90deg, rgba(255,93,115,0.1), rgba(34,26,63,0.1));
+      border-radius: 12px;
+      border: 1px solid rgba(255,93,115,0.3);
+    }
+    .cta h3 { margin: 0 0 8px; color: #FF5D73; }
+    .cta p { margin: 0; opacity: 0.85; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>🎬 MaxP Funnel — End-to-End Scenario</h1>
+    <p>رحلة التاجر + العميل + الـ Technical Flow — من أول كليك لين آخر طلب</p>
+  </div>
+
+  <div class="container">
+    <!-- Personas -->
+    <div class="persona-bar">
+      <div class="persona merchant">
+        <div class="avatar">👨‍💼</div>
+        <h3>التاجر (Merchant)</h3>
+        <p>صاحب Swan — بيبع شرابات</p>
+      </div>
+      <div class="persona customer">
+        <div class="avatar">🛍️</div>
+        <h3>العميل (Customer)</h3>
+        <p>شافت إعلان على فيسبوك</p>
+      </div>
+      <div class="persona tech">
+        <div class="avatar">⚙️</div>
+        <h3>النظام (MaxP Backend)</h3>
+        <p>API + AI + Database + Storefront</p>
+      </div>
+    </div>
+
+    <div class="flow">
+      <!-- PHASE 1: MERCHANT -->
+      <section class="flow-section">
+        <h2><span class="step">تاجر</span>المرحلة 1: التاجر بيبني الصفحة</h2>
+        <p class="sub">8 خطوات من أول ما بيدخل اللوحة لحد ما الصفحة تنزل</p>
+
+        <div class="steps">
+          <div class="step-card">
+            <div class="num">1</div>
+            <h4>تسجيل دخول</h4>
+            <p>التاجر بيدخل <code>maxp.online</code> بالـ OTP أو الباسورد</p>
+          </div>
+          <div class="step-card">
+            <div class="num">2</div>
+            <h4>فتح قسم Landings</h4>
+            <p>من الـ sidebar → <code>التسويق</code> → <code>صفحات الهبوط</code></p>
+            <p>أو مباشرة: <code>/advertising/product-landing-pages</code></p>
+          </div>
+          <div class="step-card">
+            <div class="num">3</div>
+            <h4>دوس "إنشاء صفحة جديدة"</h4>
+            <p>يفتح wizard بـ 4 steps</p>
+          </div>
+          <div class="step-card">
+            <div class="num">4</div>
+            <h4>اختيار المنتج</h4>
+            <p>بيختار <code>Swan Skotch</code> من dropdown (25 منتج موجودين)</p>
+          </div>
+          <div class="step-card">
+            <div class="num">5</div>
+            <h4>اختيار طريقة الإنشاء</h4>
+            <p>4 خيارات:</p>
+            <div class="preview">
+              🚀 <strong>Quick Funnel (جديد)</strong> — يولّد كل حاجة في 30 ثانية<br>
+              🤖 <strong>Reference Clone</strong> — يلصق لينك أي صفحة تنافسية<br>
+              ✍️ <strong>AI Copy</strong> — يكتب prompt والـ AI يكتب<br>
+              🛠️ <strong>Manual (Phase 2)</strong> — drag-and-drop
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="num">6</div>
+            <h4>انتظار التوليد (30-90 ثانية)</h4>
+            <p>النظام بيولّد في الخلفية:</p>
+            <div class="preview">
+              ⏳ Hero section → Bundle tiers (3) → Countdown → Scarcity → Sold counter → FOMO → Features → Reviews → Trust badges → Order form
+            </div>
+          </div>
+          <div class="step-card">
+            <div class="num">7</div>
+            <h4>المعاينة + التعديل البسيط</h4>
+            <p>Desktop / Mobile preview → يعدّل العنوان أو السعر → دوس "نشر"</p>
+          </div>
+          <div class="step-card">
+            <div class="num">8</div>
+            <h4>الصفحة تنشر</h4>
+            <p><code>https://swan.maxp.online/p/socks</code> — دلوقتي العميل يقدر يفتحها</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PHASE 2: CUSTOMER -->
+      <section class="flow-section">
+        <h2 class="customer"><span class="step">عميل</span>المرحلة 2: العميل بيشتري</h2>
+        <p class="sub">7 خطوات من إعلان فيسبوك لين تأكيد الطلب</p>
+
+        <div class="steps">
+          <div class="step-card customer">
+            <div class="num">1</div>
+            <h4>شاف إعلان على Facebook</h4>
+            <p>"كوتشي swan - خفة وأناقة بخطوة 🔥 خصم 29% — شحن مجاني"</p>
+          </div>
+          <div class="step-card customer">
+            <div class="num">2</div>
+            <h4>دوس على اللينك</h4>
+            <p>المتصفح يفتح <code>https://swan.maxp.online/p/socks</code></p>
+          </div>
+          <div class="step-card customer">
+            <div class="num">3</div>
+            <h4>الصفحة تفتح (Mobile-first)</h4>
+            <p>بيشوف:</p>
+            <div class="preview tech">
+              ⏱️ Top countdown → 📸 Hero → ⏰ "العرض بينتهي بعد" → 🔥 "باقي 18" → ✅ "انبيع 1,247" → 📦 Bundle 1/2/3 → 💎 Features → ⭐ Reviews → 🛡️ Trust → 📝 Order form
+            </div>
+          </div>
+          <div class="step-card customer">
+            <div class="num">4</div>
+            <h4>اختار باكدج 3 (الأفضل)</h4>
+            <p>الصفحة تتحدث تلقائياً — السعر 597 ج.م + شحن مجاني</p>
+          </div>
+          <div class="step-card customer">
+            <div class="num">5</div>
+            <h4>ضغط "اطلب الآن" → فورم الطلب</h4>
+            <p>الاسم + الجوال + المحافظة + العنوان + (اختياري: كود خصم) + 💵 دفع عند الاستلام</p>
+          </div>
+          <div class="step-card customer">
+            <div class="num">6</div>
+            <h4>دوس "تأكيد الطلب"</h4>
+            <p>يطلع له <code>صفحة شكر</code> — "تم! رجلك هتبقى في قمة السعادة 🥳 — طلبك #38472"</p>
+          </div>
+          <div class="step-card customer">
+            <div class="num">7</div>
+            <h4>الطلب يوصل للتاجر</h4>
+            <p>إشعار على الموبايل + يظهر في <code>/orders</code> بـ status "جديد"</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PHASE 3: TECH -->
+      <section class="flow-section">
+        <h2 class="tech"><span class="step">نظام</span>المرحلة 3: Technical Flow</h2>
+        <p class="sub">شغل ورا الكواليس — APIs + Database + AI</p>
+
+        <div class="steps">
+          <div class="step-card tech">
+            <div class="num">1</div>
+            <h4>POST /api/v1/product-landings</h4>
+            <p>التاجر يدوس "نشر" → الـ frontend يبعت request للـ backend</p>
+            <div class="preview tech">
+              <code>POST /api/v1/product-landings</code><br>
+              Body: <code>{ productId: "abc-123", generationMode: "QUICK_FUNNEL" }</code>
+            </div>
+          </div>
+          <div class="step-card tech">
+            <div class="num">2</div>
+            <h4>Database INSERT</h4>
+            <p>Backend بيعمل record في <code>product_landing_pages</code> table</p>
+            <div class="preview tech">
+              status: <code>DRAFT</code><br>
+              generationStatus: <code>GENERATING</code><br>
+              companyId: <code>cmleybpf70028juo2wwpmp8rt</code>
+            </div>
+          </div>
+          <div class="step-card tech">
+            <div class="num">3</div>
+            <h4>AI Generation Pipeline</h4>
+            <p>الـ backend بيشغّل الـ AI عشان يولّد:</p>
+            <div class="preview tech">
+              → Hero copy (عربي من AI runtime)<br>
+              → 6 image slices (من Image Studio / Gemini)<br>
+              → Bundle tier config (3 tiers)<br>
+              → formConfig (orderKicker, orderTitle, orderCopy, buttonLabel)<br>
+              → Trust badges + Reviews template
+            </div>
+          </div>
+          <div class="step-card tech">
+            <div class="num">4</div>
+            <h4>Update status → READY</h4>
+            <p>الـ slices + formConfig يتسجلوا في الـ DB، الـ status يتغير لـ <code>READY</code></p>
+          </div>
+          <div class="step-card tech">
+            <div class="num">5</div>
+            <h4>Merchant publishes</h4>
+            <p>دوس "نشر" → <code>status: PUBLISHED</code> + <code>publishedAt: timestamp</code></p>
+          </div>
+          <div class="step-card tech">
+            <div class="num">6</div>
+            <h4>Customer visits public URL</h4>
+            <p><code>GET /api/v1/product-landings/public/socks</code></p>
+            <p>الـ backend بيرجع الـ landing data + product data + company data</p>
+          </div>
+          <div class="step-card tech">
+            <div class="num">7</div>
+            <h4>Storefront renders</h4>
+            <p><code>ProductImageLandingPage.tsx</code> بيرسم الصفحة على الموبايل</p>
+          </div>
+          <div class="step-card tech">
+            <div class="num">8</div>
+            <h4>Customer submits order</h4>
+            <p><code>POST /api/v1/product-landings/public/socks/order</code></p>
+            <p>الطلب يتسجل في <code>orders</code> table + إشعار للـ merchant</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- PHASE 4: ANALYTICS -->
+      <section class="flow-section">
+        <h2><span class="step">تحليل</span>المرحلة 4: Analytics & Tracking</h2>
+        <p class="sub">بعد النشر، التاجر بيتابع الأرقام</p>
+
+        <div class="preview">
+          📊 <strong>الـ Dashboard بيعرض:</strong><br>
+          • 2,847 زيارة (visits counter)<br>
+          • 142 تفاعل (5% conversion rate)<br>
+          • 38 طلب جديد (orders counter)<br>
+          • 12,500 ج.م إيرادات<br><br>
+          🔍 <strong>تحليل أعمق:</strong><br>
+          • أعلى bundle tier مختار: 3 (62%)<br>
+          • معدل التحويل في أول 5 دقائق: 18%<br>
+          • Drop-off point: فورم الطلب (23%)<br>
+          • A/B Test variants (لو مفعّل)
+        </div>
+      </section>
+
+      <!-- FILES TOUCHED -->
+      <section class="flow-section">
+        <h2 class="tech"><span class="step">كود</span>الملفات اللي هتتأثر في MaxP</h2>
+        <p class="sub">شوف كل ملف وحالته (موجود ✅ أو محتاج يتكتب ⚠️)</p>
+
+        <div class="files">
+          <div class="file">
+            📄 apps/frontend/src/pages/advertising/ProductLandingPages.tsx
+            <span class="status exists">✅ موجود (يحتاج تطوير)</span>
+          </div>
+          <div class="file">
+            📄 apps/frontend/src/storefront/pages/ProductImageLandingPage.tsx
+            <span class="status exists">✅ موجود (يحتاج تطوير)</span>
+          </div>
+          <div class="file">
+            📄 apps/backend/routes/productLandingPagesRoutes.js
+            <span class="status exists">✅ موجود (يحتاج تطوير)</span>
+          </div>
+          <div class="file">
+            📄 apps/frontend/src/storefront/sections/QuantityOffersSection.tsx
+            <span class="status exists">✅ موجود</span>
+          </div>
+          <div class="file">
+            📄 apps/frontend/src/storefront/sections/ConversionBlocks/*
+            <span class="status exists">✅ كلهم موجودين (7 blocks)</span>
+          </div>
+          <div class="file">
+            📄 apps/frontend/src/services/productLandingPagesService.ts
+            <span class="status exists">✅ موجود</span>
+          </div>
+          <div class="file">
+            🆕 funnel-generator.ts (new) — Quick Funnel builder
+            <span class="status need">⚠️ محتاج يتكتب</span>
+          </div>
+          <div class="file">
+            🆕 bilingual-toggle.tsx (new) — EN/AR switcher
+            <span class="status need">⚠️ محتاج يتكتب</span>
+          </div>
+          <div class="file">
+            🆕 whatsapp-float.tsx (new) — Floating WA button
+            <span class="status need">⚠️ محتاج يتكتب</span>
+          </div>
+          <div class="file">
+            🆕 inline-upsell.tsx (new) — Cross-sell widget
+            <span class="status need">⚠️ محتاج يتكتب</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- CTA -->
+      <div class="cta">
+        <h3>🚀 الخطوة الجاية: تنفيذ Quick Funnel Generator</h3>
+        <p>الـ wizard اللي بيولّد الصفحة كاملة في 30 ثانية — بناءً على كل الـ blocks الموجودين في MaxP</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

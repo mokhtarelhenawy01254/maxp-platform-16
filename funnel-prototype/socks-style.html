@@ -1,0 +1,781 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes" />
+  <title>MaxP Funnel Prototype — Happy Feet 5-Pack (سوكس)</title>
+  <meta name="description" content="MaxP funnel prototype styled after the Baseet socks reference page." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --maxp-bg: #FFF7DB;        /* lemon header (Baseet DNA) */
+      --maxp-surface: #FFFDF2;   /* body canvas */
+      --maxp-accent: #FF5D73;    /* coral CTA */
+      --maxp-accent-strong: #f04b62;
+      --maxp-ink: #221A3F;       /* deep navy */
+      --maxp-ink-soft: #5B5480;
+      --maxp-stroke: #221A3F;
+      --maxp-success: #1E9E5A;
+      --maxp-warn: #F5A623;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      font-family: 'Cairo', 'Poppins', system-ui, sans-serif;
+      color: var(--maxp-ink);
+      background: var(--maxp-surface);
+    }
+    .maxp-shell { min-height: 100vh; }
+    .maxp-bar {
+      width: 100%;
+      background: white;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-size: 13px;
+    }
+    .maxp-bar .label { color: var(--maxp-ink-soft); letter-spacing: 0.1em; text-transform: uppercase; font-size: 11px; }
+    .maxp-bar .count { font-weight: 800; color: var(--maxp-ink); font-variant-numeric: tabular-nums; }
+    .maxp-promo {
+      width: 100%;
+      background: var(--maxp-accent);
+      color: #0A0A0A;
+      text-align: center;
+      padding: 8px 16px;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .maxp-header {
+      position: sticky; top: 0; z-index: 40;
+      background: rgba(255, 247, 219, 0.95);
+      backdrop-filter: blur(8px);
+      border-bottom: 2px solid var(--maxp-stroke);
+    }
+    .maxp-header-inner {
+      max-width: 1200px; margin: 0 auto;
+      padding: 12px 20px;
+      display: flex; align-items: center; gap: 16px; height: 64px;
+    }
+    .maxp-logo {
+      width: 36px; height: 36px;
+      background: var(--maxp-accent);
+      color: white;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 10px;
+      font-weight: 900;
+      font-size: 18px;
+    }
+    .maxp-brand { font-weight: 800; font-size: 16px; }
+    .maxp-nav { display: flex; gap: 6px; margin-inline-start: auto; }
+    .maxp-nav a {
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--maxp-ink-soft);
+      text-decoration: none;
+      border-radius: 8px;
+    }
+    .maxp-nav a:hover { background: rgba(0,0,0,0.04); color: var(--maxp-ink); }
+    .maxp-trust-pill {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600; color: var(--maxp-ink-soft);
+    }
+    .maxp-trust-pill svg { width: 14px; height: 14px; }
+
+    .maxp-section { padding: 40px 20px; max-width: 1200px; margin: 0 auto; }
+    .maxp-section h2 { font-size: 30px; font-weight: 900; letter-spacing: -0.01em; margin: 0 0 20px; }
+    .maxp-section h3 { font-size: 22px; font-weight: 800; margin: 0 0 12px; }
+
+    /* HERO */
+    .maxp-hero {
+      display: grid; gap: 32px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 900px) {
+      .maxp-hero { grid-template-columns: 1fr 1fr; align-items: center; gap: 48px; }
+    }
+    .maxp-hero .img-frame {
+      transform: rotate(-1.5deg);
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 8px 8px 0 0 rgba(34, 26, 63, 0.9);
+      background: white;
+      aspect-ratio: 4/5;
+      position: relative;
+    }
+    .maxp-hero .img-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .maxp-hero .discount-stamp {
+      position: absolute; top: -16px; right: -8px;
+      background: var(--maxp-accent);
+      color: white;
+      padding: 10px 18px;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 999px;
+      transform: rotate(-8deg);
+      font-weight: 800;
+      box-shadow: 3px 3px 0 0 rgba(34, 26, 63, 0.9);
+    }
+    .maxp-hero .overline {
+      display: inline-block;
+      background: var(--maxp-ink);
+      color: white;
+      padding: 6px 14px;
+      border: 2px solid var(--maxp-ink);
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 700;
+      transform: rotate(-1deg);
+      align-self: flex-start;
+    }
+    .maxp-hero h1 {
+      font-size: 44px;
+      font-weight: 900;
+      letter-spacing: -0.01em;
+      line-height: 1.05;
+      margin: 12px 0 8px;
+    }
+    .maxp-rating {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 12px;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 999px;
+      background: white;
+      font-weight: 700;
+      font-size: 13px;
+    }
+    .maxp-rating .stars { color: var(--maxp-accent); font-size: 14px; }
+    .maxp-price-row {
+      display: flex; align-items: baseline; gap: 10px;
+      margin: 12px 0 8px;
+    }
+    .maxp-price { font-size: 28px; font-weight: 900; color: var(--maxp-accent); }
+    .maxp-old-price { font-size: 16px; color: var(--maxp-ink-soft); text-decoration: line-through; }
+    .maxp-discount-badge {
+      background: var(--maxp-accent);
+      color: white;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .maxp-sizes, .maxp-colors {
+      display: flex; flex-wrap: wrap; gap: 8px;
+      margin: 12px 0;
+    }
+    .maxp-size, .maxp-color {
+      padding: 8px 14px;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 10px;
+      background: white;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    .maxp-size.is-active, .maxp-color.is-active {
+      background: var(--maxp-ink);
+      color: white;
+    }
+    .maxp-cta {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 10px;
+      padding: 18px 32px;
+      background: var(--maxp-accent);
+      color: white;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 18px;
+      box-shadow: 4px 4px 0 0 var(--maxp-stroke);
+      cursor: pointer;
+      text-decoration: none;
+      margin-top: 18px;
+    }
+    .maxp-cta:hover { transform: translate(2px, 2px); box-shadow: 2px 2px 0 0 var(--maxp-stroke); }
+    .maxp-cta.outline {
+      background: white; color: var(--maxp-ink);
+    }
+
+    /* BUNDLE / TIER */
+    .maxp-tiers { display: grid; gap: 14px; grid-template-columns: 1fr; }
+    .maxp-tier {
+      display: grid; grid-template-columns: auto 1fr auto;
+      gap: 16px; align-items: center;
+      padding: 18px 20px;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 14px;
+      background: white;
+      position: relative;
+    }
+    .maxp-tier.is-popular { box-shadow: 6px 6px 0 0 var(--maxp-accent); border-color: var(--maxp-accent); }
+    .maxp-tier.is-best { box-shadow: 6px 6px 0 0 var(--maxp-ink); }
+    .maxp-tier .qbadge {
+      width: 56px; height: 56px;
+      border-radius: 14px;
+      background: var(--maxp-bg);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 900; font-size: 18px; color: var(--maxp-ink);
+      border: 2px solid var(--maxp-stroke);
+    }
+    .maxp-tier h4 { font-size: 18px; margin: 0 0 4px; font-weight: 800; }
+    .maxp-tier .meta { font-size: 13px; color: var(--maxp-ink-soft); }
+    .maxp-tier .pill {
+      display: inline-block;
+      background: var(--maxp-ink);
+      color: white;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 800;
+      margin-inline-start: 6px;
+    }
+    .maxp-tier .pill.popular { background: var(--maxp-accent); }
+    .maxp-tier .price-block { text-align: end; }
+    .maxp-tier .price { font-size: 24px; font-weight: 900; color: var(--maxp-ink); }
+    .maxp-tier .old { font-size: 13px; color: var(--maxp-ink-soft); text-decoration: line-through; }
+    .maxp-tier .save {
+      display: block;
+      margin-top: 4px;
+      font-size: 11px; color: var(--maxp-success); font-weight: 800;
+    }
+
+    /* COUNTDOWN / SCARCITY */
+    .maxp-countdown {
+      display: flex; gap: 8px; align-items: center;
+      justify-content: center;
+      padding: 14px;
+      background: var(--maxp-ink);
+      color: white;
+      border-radius: 14px;
+      margin: 20px 0;
+      font-variant-numeric: tabular-nums;
+    }
+    .maxp-countdown .cell {
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+      padding: 8px 12px;
+      text-align: center;
+      min-width: 64px;
+    }
+    .maxp-countdown .num { font-size: 22px; font-weight: 900; }
+    .maxp-countdown .lbl { font-size: 11px; opacity: 0.7; }
+    .maxp-stock {
+      display: flex; align-items: center; gap: 10px;
+      padding: 12px 16px;
+      background: #fff5f5;
+      border: 2px solid #ffd6d6;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #b13a3a;
+      font-weight: 700;
+    }
+    .maxp-stock .bar {
+      flex: 1; height: 8px; background: #ffd6d6; border-radius: 4px; overflow: hidden;
+    }
+    .maxp-stock .bar > span { display: block; width: 18%; height: 100%; background: var(--maxp-accent); }
+
+    /* FOMO PULSE */
+    .maxp-fomo {
+      position: fixed; bottom: 88px; right: 16px;
+      background: white; color: var(--maxp-ink);
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 13px; font-weight: 700;
+      box-shadow: 4px 4px 0 0 var(--maxp-ink);
+      max-width: 260px;
+      z-index: 30;
+    }
+    .maxp-fomo .dot { width: 8px; height: 8px; background: var(--maxp-success); border-radius: 50%; display: inline-block; margin-inline-end: 6px; animation: pulse 1.6s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+
+    /* FEATURES */
+    .maxp-features {
+      display: grid; gap: 16px;
+      grid-template-columns: 1fr 1fr;
+    }
+    @media (min-width: 700px) { .maxp-features { grid-template-columns: repeat(4, 1fr); } }
+    .maxp-feature {
+      background: white;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 16px;
+      padding: 18px;
+      text-align: center;
+    }
+    .maxp-feature .ic {
+      width: 48px; height: 48px;
+      background: var(--maxp-accent);
+      color: white;
+      border-radius: 50%;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      margin-bottom: 10px;
+    }
+    .maxp-feature h4 { margin: 0 0 6px; font-size: 15px; }
+    .maxp-feature p { margin: 0; font-size: 13px; color: var(--maxp-ink-soft); line-height: 1.6; }
+
+    /* REVIEWS */
+    .maxp-reviews {
+      display: grid; gap: 16px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 800px) { .maxp-reviews { grid-template-columns: repeat(3, 1fr); } }
+    .maxp-review {
+      background: white; border: 2px solid var(--maxp-stroke);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .maxp-review .stars { color: var(--maxp-accent); font-size: 16px; }
+    .maxp-review .text { font-size: 14px; line-height: 1.7; margin: 8px 0 12px; color: var(--maxp-ink); }
+    .maxp-review .who { display: flex; align-items: center; gap: 10px; }
+    .maxp-review .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--maxp-bg); border: 2px solid var(--maxp-stroke); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+    .maxp-review .name { font-weight: 700; font-size: 14px; }
+    .maxp-review .verified { font-size: 11px; color: var(--maxp-success); font-weight: 700; }
+
+    /* TRUST ROW */
+    .maxp-trust {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+    }
+    @media (min-width: 700px) { .maxp-trust { grid-template-columns: repeat(4, 1fr); } }
+    .maxp-trust .item {
+      background: white; border: 2px solid var(--maxp-stroke);
+      border-radius: 14px; padding: 14px; text-align: center;
+    }
+    .maxp-trust .item .ic { font-size: 22px; margin-bottom: 6px; display: block; }
+    .maxp-trust .item h4 { margin: 0 0 4px; font-size: 14px; }
+    .maxp-trust .item p { margin: 0; font-size: 12px; color: var(--maxp-ink-soft); }
+
+    /* FORM */
+    .maxp-form {
+      background: white; border: 2px solid var(--maxp-stroke);
+      border-radius: 18px;
+      padding: 22px;
+      box-shadow: 6px 6px 0 0 rgba(34, 26, 63, 0.15);
+    }
+    .maxp-form .row { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
+    .maxp-form label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; }
+    .maxp-form input, .maxp-form select, .maxp-form textarea {
+      width: 100%; padding: 12px 14px;
+      border: 2px solid #d4d5dc;
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 14px;
+      background: #fafafa;
+    }
+    .maxp-form input:focus, .maxp-form select:focus, .maxp-form textarea:focus {
+      outline: none; border-color: var(--maxp-accent); background: white;
+    }
+    .maxp-form .full { grid-column: 1 / -1; }
+    .maxp-form .submit {
+      width: 100%; padding: 16px;
+      background: var(--maxp-accent);
+      color: white;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 12px;
+      font-weight: 900; font-size: 16px;
+      cursor: pointer;
+      box-shadow: 4px 4px 0 0 var(--maxp-stroke);
+      margin-top: 8px;
+    }
+
+    /* STICKY CTA */
+    .maxp-sticky {
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+      background: white;
+      border-top: 2px solid var(--maxp-stroke);
+      padding: 10px 16px;
+      display: flex; gap: 12px; align-items: center;
+    }
+    .maxp-sticky .img { width: 50px; height: 50px; border-radius: 8px; background: var(--maxp-bg); display: flex; align-items: center; justify-content: center; font-size: 24px; border: 2px solid var(--maxp-stroke); }
+    .maxp-sticky .meta { flex: 1; }
+    .maxp-sticky .meta h4 { margin: 0; font-size: 14px; }
+    .maxp-sticky .meta .p { color: var(--maxp-accent); font-weight: 900; }
+    .maxp-sticky button {
+      padding: 14px 22px;
+      background: var(--maxp-accent);
+      color: white;
+      border: 2px solid var(--maxp-stroke);
+      border-radius: 999px;
+      font-weight: 800; font-size: 14px;
+      cursor: pointer;
+    }
+
+    .maxp-watermark {
+      position: fixed; top: 12px; right: 12px;
+      background: var(--maxp-ink);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 800;
+      z-index: 60;
+    }
+    .maxp-divider { height: 1px; background: rgba(34, 26, 63, 0.08); max-width: 1200px; margin: 0 auto; }
+  </style>
+</head>
+<body>
+  <div class="maxp-watermark">MaxP · Phase 1 Prototype</div>
+
+  <div class="maxp-shell">
+    <!-- Top thin bar with countdown -->
+    <div class="maxp-bar">
+      <span class="label">ينتهي العرض خلال</span>
+      <span class="count" id="maxp-top-count">30 : 00</span>
+    </div>
+    <!-- Promo strip -->
+    <div class="maxp-promo">🎉 خصم 20% على باكدج الـ 3 + شحن مجاني!</div>
+
+    <!-- Sticky header -->
+    <header class="maxp-header">
+      <div class="maxp-header-inner">
+        <div class="maxp-logo">S</div>
+        <div class="maxp-brand">SOCKS!</div>
+        <nav class="maxp-nav">
+          <a href="#tiers">العروض</a>
+          <a href="#reviews">الآراء</a>
+          <a href="#order">اطلب</a>
+        </nav>
+        <div class="maxp-trust-pill" style="margin-inline-start:12px">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          دفع آمن
+        </div>
+      </div>
+    </header>
+
+    <!-- HERO -->
+    <section class="maxp-section">
+      <div class="maxp-hero">
+        <div class="img-frame">
+          <img src="https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=1200&q=80&auto=format&fit=crop" alt="باكدج شرابات قطن ملونة" />
+          <span class="discount-stamp">خصم 29%!</span>
+        </div>
+        <div>
+          <span class="overline">🧦 أشهر شرابات في مصر</span>
+          <h1>رجلك تستاهل<br/>شوية بهجة!</h1>
+          <div class="maxp-rating">
+            <span class="stars">★★★★★</span>
+            <span>4.9 · +2,100 رِجل مبسوطة</span>
+          </div>
+          <div class="maxp-price-row">
+            <span class="maxp-price">249 ج.م</span>
+            <span class="maxp-old-price">349 ج.م</span>
+            <span class="maxp-discount-badge">خصم 29%</span>
+          </div>
+          <p style="color: var(--maxp-ink-soft); line-height: 1.7; margin: 8px 0 0;">
+            5 أزواج قطن ممشط تقيل بألوان تكسر الروتين — مش بتتكوّر، مش بتبهت، ومقاسها ثابت من أول غسلة لآخر واحدة.
+          </p>
+
+          <div style="margin-top:18px">
+            <div style="font-size:13px; font-weight:700; margin-bottom:8px">اختار اللون:</div>
+            <div class="maxp-colors">
+              <button class="maxp-color is-active">أبيض</button>
+              <button class="maxp-color">أسود</button>
+              <button class="maxp-color">بيج</button>
+              <button class="maxp-color">كحلي</button>
+              <button class="maxp-color">أحمر</button>
+              <button class="maxp-color">أزرق</button>
+              <button class="maxp-color">أصفر</button>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:13px; font-weight:700; margin-bottom:8px">اختار المقاس:</div>
+            <div class="maxp-sizes">
+              <button class="maxp-size">38</button>
+              <button class="maxp-size is-active">39</button>
+              <button class="maxp-size">40</button>
+              <button class="maxp-size">41</button>
+              <button class="maxp-size">42</button>
+            </div>
+          </div>
+          <a class="maxp-cta" href="#order">🎁 هاتلي الباكدج</a>
+        </div>
+      </div>
+    </section>
+
+    <div class="maxp-divider"></div>
+
+    <!-- COUNTDOWN + SCARCITY + SOLD COUNTER -->
+    <section class="maxp-section">
+      <h2>⏳ العرض بينتهي بعد</h2>
+      <div class="maxp-countdown" id="maxp-cd">
+        <div class="cell"><div class="num">00</div><div class="lbl">يوم</div></div>
+        <div class="cell"><div class="num">00</div><div class="lbl">ساعة</div></div>
+        <div class="cell"><div class="num">00</div><div class="lbl">دقيقة</div></div>
+        <div class="cell"><div class="num">00</div><div class="lbl">ثانية</div></div>
+      </div>
+      <div class="maxp-stock">
+        <span>🔥 باقي 18 من 100 قطعة بس</span>
+        <div class="bar"><span></span></div>
+      </div>
+      <div class="maxp-stock" style="background:#f0fbf5; border-color:#cdebd8; color:var(--maxp-success)">
+        <span>✅ انباع 1,247 قطعة في آخر 24 ساعة</span>
+      </div>
+    </section>
+
+    <div class="maxp-divider"></div>
+
+    <!-- BUNDLE TIERS -->
+    <section class="maxp-section" id="tiers">
+      <h2>🎁 باكدج واحد ولا تخزين للسنة؟</h2>
+      <p style="color:var(--maxp-ink-soft); margin-top:0">كل ما زودت الكمية، زاد الخصم. الشحن علينا على باكدج الـ 3.</p>
+      <div class="maxp-tiers">
+        <div class="maxp-tier">
+          <div class="qbadge">1×</div>
+          <div>
+            <h4>باكدج واحد <span class="pill">5 أزواج</span></h4>
+            <div class="meta">5 ألوان مختارة متظبطة مع بعض زي الصور بالظبط.</div>
+          </div>
+          <div class="price-block">
+            <div class="price">249 ج.م</div>
+            <div class="old">349 ج.م</div>
+            <span class="save">وفّر 100 ج.م</span>
+          </div>
+        </div>
+
+        <div class="maxp-tier is-popular">
+          <div class="qbadge">2×</div>
+          <div>
+            <h4>باكدجين <span class="pill">10 أزواج</span> <span class="pill popular">الأكثر طلبًا</span></h4>
+            <div class="meta">هدية جاهزة لجوزك أو حد من العيلة.</div>
+          </div>
+          <div class="price-block">
+            <div class="price">448 ج.م</div>
+            <div class="old">698 ج.م</div>
+            <span class="save">وفّر 250 ج.م · خصم 10%</span>
+          </div>
+        </div>
+
+        <div class="maxp-tier is-best">
+          <div class="qbadge">3×</div>
+          <div>
+            <h4>3 باكدجات <span class="pill">15 زوج</span> <span class="pill popular">+ شحن مجاني</span></h4>
+            <div class="meta">احتفظ للسنة الجاية. الأنسب للعيلة والشغل.</div>
+          </div>
+          <div class="price-block">
+            <div class="price">597 ج.م</div>
+            <div class="old">1,047 ج.م</div>
+            <span class="save">وفّر 450 ج.م · خصم 20%</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="maxp-divider"></div>
+
+    <!-- FEATURES -->
+    <section class="maxp-section">
+      <h2>💛 ليه هتحبها؟</h2>
+      <div class="maxp-features">
+        <div class="maxp-feature">
+          <div class="ic">✨</div>
+          <h4>قطن ممشط 85%</h4>
+          <p>نعومة من أول لبسة ولحد آخر غسلة.</p>
+        </div>
+        <div class="maxp-feature">
+          <div class="ic">🛡️</div>
+          <h4>كعب معزز</h4>
+          <p>مش بتتخرم حتى مع اللبس اليومي.</p>
+        </div>
+        <div class="maxp-feature">
+          <div class="ic">💜</div>
+          <h4>استك مريح</h4>
+          <p>بيثبت من غير ما يسيب علامة على رجلك.</p>
+        </div>
+        <div class="maxp-feature">
+          <div class="ic">🎨</div>
+          <h4>ألوان ثابتة</h4>
+          <p>صبغات ثابتة مش بتبهت ولا بتلون الغسيل.</p>
+        </div>
+      </div>
+    </section>
+
+    <div class="maxp-divider"></div>
+
+    <!-- REVIEWS -->
+    <section class="maxp-section" id="reviews">
+      <h2>🗣️ الناس بتقول إيه؟</h2>
+      <div class="maxp-reviews">
+        <div class="maxp-review">
+          <div class="stars">★★★★★</div>
+          <p class="text">"أول مرة أصحى الصبح مبسوط عشان هلبس شراب 😂 الألوان جنان والخامة تقيلة بجد."</p>
+          <div class="who">
+            <div class="avatar">عش</div>
+            <div>
+              <div class="name">عمر الشناوي</div>
+              <div class="verified">✓ مشتري موثّق</div>
+            </div>
+          </div>
+        </div>
+        <div class="maxp-review">
+          <div class="stars">★★★★★</div>
+          <p class="text">"غسلتهم عشر مرات ولا بهتوا ولا اتكوروا — جبت باكدج تاني لجوزي."</p>
+          <div class="who">
+            <div class="avatar">مح</div>
+            <div>
+              <div class="name">مريم حسام</div>
+              <div class="verified">✓ مشتري موثّق</div>
+            </div>
+          </div>
+        </div>
+        <div class="maxp-review">
+          <div class="stars">★★★★★</div>
+          <p class="text">"المقاس مظبوط والاستك مش بيعور، وبقى في طابور في البيت على الألوان."</p>
+          <div class="who">
+            <div class="avatar">يد</div>
+            <div>
+              <div class="name">يوسف الديب</div>
+              <div class="verified">✓ مشتري موثّق</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="maxp-divider"></div>
+
+    <!-- TRUST BADGES -->
+    <section class="maxp-section">
+      <div class="maxp-trust">
+        <div class="item"><span class="ic">🚚</span><h4>شحن سريع</h4><p>2-3 أيام لكل المحافظات</p></div>
+        <div class="item"><span class="ic">✅</span><h4>منتج أصلي</h4><p>مستورد ومضمون 100%</p></div>
+        <div class="item"><span class="ic">💵</span><h4>دفع عند الاستلام</h4><p>من غير دفع مسبق</p></div>
+        <div class="item"><span class="ic">🔁</span><h4>ضمان استرداد</h4><p>14 يوم لاستبدال أو إرجاع</p></div>
+      </div>
+    </section>
+
+    <div class="maxp-divider"></div>
+
+    <!-- ORDER FORM -->
+    <section class="maxp-section" id="order">
+      <h2>📦 كمّل طلبك</h2>
+      <form class="maxp-form" onsubmit="event.preventDefault(); alert('شكراً! طلبك اتسجل (Demo).')">
+        <div class="row">
+          <div>
+            <label>الاسم بالكامل *</label>
+            <input type="text" required placeholder="اكتب اسمك هنا" />
+          </div>
+          <div>
+            <label>رقم الجوال *</label>
+            <input type="tel" required placeholder="01xxxxxxxxx" />
+          </div>
+          <div>
+            <label>المحافظة *</label>
+            <select required>
+              <option value="">اختار المحافظة</option>
+              <option>القاهرة</option><option>الجيزة</option><option>الإسكندرية</option>
+              <option>المنصورة</option><option>أسيوط</option><option>أسوان</option>
+            </select>
+          </div>
+          <div>
+            <label>المنطقة / الحي</label>
+            <input type="text" placeholder="مثال: مدينة نصر" />
+          </div>
+          <div class="full">
+            <label>العنوان بالكامل *</label>
+            <textarea required rows="2" placeholder="الشارع، رقم العمارة، الشقة..."></textarea>
+          </div>
+          <div>
+            <label>الكمية</label>
+            <select>
+              <option>1 باكدج (249 ج.م)</option>
+              <option>2 باكدج (448 ج.م)</option>
+              <option selected>3 باكدج + شحن مجاني (597 ج.م)</option>
+            </select>
+          </div>
+          <div>
+            <label>كود خصم (اختياري)</label>
+            <input type="text" placeholder="عندك كوبون؟" />
+          </div>
+          <div class="full">
+            <label style="display:flex; align-items:center; gap:10px; padding:12px; background:var(--maxp-bg); border:2px solid var(--maxp-stroke); border-radius:10px;">
+              <input type="radio" name="pay" checked style="width:auto" />
+              <span>💵 دفع عند الاستلام — هتدفع للكابتن بعد ما توصلك الباكدج</span>
+            </label>
+          </div>
+        </div>
+        <button type="submit" class="submit">✅ تأكيد الطلب — كاش عند الاستلام</button>
+        <p style="font-size:12px; color:var(--maxp-ink-soft); text-align:center; margin: 10px 0 0;">
+          الدفع عند الاستلام متاح لكل المحافظات · الاستبدال متاح خلال 14 يوم
+        </p>
+      </form>
+    </section>
+
+    <!-- FOMO POPUP (will toggle) -->
+    <div class="maxp-fomo" id="maxp-fomo" style="display:none">
+      <span class="dot"></span>
+      <strong>أحمد من القاهرة</strong> اشترى للتو باكدج 3
+    </div>
+
+    <!-- STICKY CTA -->
+    <div class="maxp-sticky">
+      <div class="img">🧦</div>
+      <div class="meta">
+        <h4>باكدج 3 + شحن مجاني</h4>
+        <div class="p">597 ج.م</div>
+      </div>
+      <button onclick="document.getElementById('order').scrollIntoView({behavior:'smooth'})">اطلب الآن</button>
+    </div>
+
+    <div style="height: 90px"></div>
+  </div>
+
+  <script>
+    // 30-minute countdown
+    (function() {
+      const end = Date.now() + 30 * 60 * 1000;
+      const cells = document.querySelectorAll('#maxp-cd .num');
+      const topCount = document.getElementById('maxp-top-count');
+      function tick() {
+        const r = Math.max(0, end - Date.now());
+        const s = Math.floor(r / 1000);
+        const d = Math.floor(s / 86400);
+        const h = Math.floor((s % 86400) / 3600);
+        const m = Math.floor((s % 3600) / 60);
+        const sec = s % 60;
+        cells[0].textContent = String(d).padStart(2, '0');
+        cells[1].textContent = String(h).padStart(2, '0');
+        cells[2].textContent = String(m).padStart(2, '0');
+        cells[3].textContent = String(sec).padStart(2, '0');
+        if (topCount) topCount.textContent = `${String(m).padStart(2,'0')} : ${String(sec).padStart(2,'0')}`;
+      }
+      tick(); setInterval(tick, 1000);
+    })();
+
+    // FOMO toggle
+    (function() {
+      const el = document.getElementById('maxp-fomo');
+      const msgs = [
+        'أحمد من القاهرة اشترى للتو باكدج 3',
+        'سارة من الإسكندرية اشترت للتو باكدج 1',
+        'محمد من الجيزة اشترى للتو باكدج 3',
+        'منى من المنصورة اشترت للتو باكدج 2',
+        'كريم من أسيوط اشترى للتو باكدج 1',
+      ];
+      let i = 0;
+      function show() {
+        el.style.display = 'block';
+        el.innerHTML = '<span class="dot"></span> <strong>' + msgs[i % msgs.length] + '</strong>';
+        i++;
+        setTimeout(() => { el.style.display = 'none'; }, 4500);
+      }
+      setTimeout(show, 5000);
+      setInterval(show, 12000);
+    })();
+
+    // Size + color toggling
+    document.querySelectorAll('.maxp-sizes, .maxp-colors').forEach(group => {
+      group.addEventListener('click', e => {
+        if (e.target.classList.contains('maxp-size') || e.target.classList.contains('maxp-color')) {
+          group.querySelectorAll('button').forEach(b => b.classList.remove('is-active'));
+          e.target.classList.add('is-active');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

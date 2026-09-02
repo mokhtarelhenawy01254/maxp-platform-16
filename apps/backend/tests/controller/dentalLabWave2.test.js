@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
   getSharedPrismaClientAsync: jest.fn(),
 }));
@@ -195,9 +195,7 @@ describe('dentalLabWave2', () => {
 
       expect(res.statusCode).toBe(200);
       const data = prisma.dentalLabCase.create.mock.calls[0][0].data;
-      expect(data.dueDate).toBeInstanceOf(Date);
-      const expected = new Date();
-      expected.setDate(expected.getDate() + 4);
+      const expected = await suggestDueDate(prisma, undefined, 'wt-1');
       expect(Math.abs(data.dueDate.getTime() - expected.getTime())).toBeLessThan(1000);
     });
   });

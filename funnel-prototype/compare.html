@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MaxP vs Baseet Socks — Side-by-Side Comparison</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Cairo', system-ui, sans-serif;
+      background: #0f0f17;
+      color: white;
+      min-height: 100vh;
+    }
+    .head {
+      padding: 20px 24px;
+      background: linear-gradient(90deg, #221A3F 0%, #FF5D73 100%);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .head h1 { margin: 0 0 4px; font-size: 24px; font-weight: 900; }
+    .head p { margin: 0; opacity: 0.85; font-size: 14px; }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 12px;
+      padding: 12px;
+    }
+    @media (min-width: 1100px) {
+      .grid { grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; }
+    }
+    .col {
+      background: #1a1a25;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 2px solid #2a2a3a;
+    }
+    .col.maxp { border-color: #FF5D73; box-shadow: 0 0 0 1px rgba(255, 93, 115, 0.3); }
+    .col-head {
+      padding: 12px 16px;
+      font-weight: 900;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: #2a2a3a;
+    }
+    .col.maxp .col-head { background: #FF5D73; color: #221A3F; }
+    .col.ref .col-head { background: #221A3F; color: #FF5D73; }
+    .col-head .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    iframe {
+      width: 100%;
+      height: 1700px;
+      border: 0;
+      display: block;
+      background: white;
+    }
+
+    .summary {
+      padding: 16px 24px;
+      background: #1a1a25;
+      border-top: 1px solid #2a2a3a;
+    }
+    .summary h2 { margin: 0 0 12px; font-size: 18px; color: #FF5D73; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th, td {
+      padding: 10px 8px;
+      text-align: right;
+      border-bottom: 1px solid #2a2a3a;
+    }
+    th { color: #FF5D73; font-weight: 900; background: #14141d; }
+    tr:hover td { background: #14141d; }
+    .yes { color: #4ade80; font-weight: 800; }
+    .no { color: #f87171; font-weight: 800; }
+    .partial { color: #facc15; font-weight: 800; }
+    .excl { color: #60a5fa; font-weight: 800; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>⚔️ MaxP vs Baseet Socks — Side-by-Side Comparison</h1>
+    <p>نفس الـ DNA، نفس الأقسام، لكن MaxP عنده 3 features إضافية. شوف بنفسك.</p>
+  </div>
+
+  <div class="grid">
+    <div class="col ref">
+      <div class="col-head">
+        <span>📕 Baseet Socks (Reference)</span>
+        <span class="badge">funnel.baseet.cc/f/socks</span>
+      </div>
+      <iframe src="https://funnel.baseet.cc/f/socks" title="Baseet Socks"></iframe>
+    </div>
+    <div class="col maxp">
+      <div class="col-head">
+        <span>🚀 MaxP Prototype (Phase 1)</span>
+        <span class="badge">MaxP — uses all existing sections</span>
+      </div>
+      <iframe src="socks-style.html" title="MaxP Prototype"></iframe>
+    </div>
+  </div>
+
+  <div class="summary">
+    <h2>📊 Section-by-Section Comparison</h2>
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 40%">السكشن</th>
+          <th style="width: 30%">Baseet Socks</th>
+          <th style="width: 30%">MaxP Phase 1</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Top bar + Countdown</td>
+          <td class="yes">✅ موجود</td>
+          <td class="yes">✅ موجود</td>
+        </tr>
+        <tr>
+          <td>Promo strip (شحن مجاني + خصم)</td>
+          <td class="yes">✅ موجود</td>
+          <td class="yes">✅ موجود</td>
+        </tr>
+        <tr>
+          <td>Sticky header + nav</td>
+          <td class="yes">✅ موجود</td>
+          <td class="yes">✅ موجود</td>
+        </tr>
+        <tr>
+          <td>Hero — صورة + عنوان + rating + سعر + variants</td>
+          <td class="yes">✅ 7 ألوان + 5 مقاسات</td>
+          <td class="yes">✅ 7 ألوان + 5 مقاسات</td>
+        </tr>
+        <tr>
+          <td>Upsell product inline (كوتشي swan الأصلي)</td>
+          <td class="yes">✅ موجود</td>
+          <td class="partial">⚠️ نقدر نضيفه (BoughtTogetherSection)</td>
+        </tr>
+        <tr>
+          <td>Bundle tiers (1× / 2× / 3× + خصم)</td>
+          <td class="yes">✅ موجود</td>
+          <td class="yes">✅ موجود (QuantityOffersSection)</td>
+        </tr>
+        <tr>
+          <td>Countdown timer (أيام/ساعات/دقايق/ثواني)</td>
+          <td class="yes">✅ موجود</td>
+          <td class="yes">✅ موجود (CountdownBlock)</td>
+        </tr>
+        <tr>
+          <td>Stock counter (scarcity)</td>
+          <td class="yes">✅ "37 من 37 متبقي"</td>
+          <td class="yes">✅ "باقي 18 من 100 قطعة" (LowStockBlock)</td>
+        </tr>
+        <tr>
+          <td>Sold counter (social proof)</td>
+          <td class="no">❌ مش موجود</td>
+          <td class="excl">⭐ حصري MaxP (SoldCounterBlock)</td>
+        </tr>
+        <tr>
+          <td>Live FOMO popup ("أحمد اشترى للتو")</td>
+          <td class="no">❌ مش موجود</td>
+          <td class="excl">⭐ حصري MaxP (PurchaseFomoBlock)</td>
+        </tr>
+        <tr>
+          <td>Features grid (قطن ممشط، كعب معزز، إلخ)</td>
+          <td class="yes">✅ 7 ميزات</td>
+          <td class="yes">✅ 4 ميزات (نقدر نضيف)</td>
+        </tr>
+        <tr>
+          <td>Customer reviews + verified</td>
+          <td class="yes">✅ 5 ريفيوز + 3 verified</td>
+          <td class="yes">✅ 3 ريفيوز (نقدر نضيف)</td>
+        </tr>
+        <tr>
+          <td>Trust badges row (شحن، أصلي، COD، استرداد)</td>
+          <td class="yes">✅ 4 بادجز</td>
+          <td class="yes">✅ 4 بادجز</td>
+        </tr>
+        <tr>
+          <td>Order form (اسم، جوال، محافظة، عنوان، COD)</td>
+          <td class="yes">✅ كامل</td>
+          <td class="yes">✅ كامل (PdpQuickOrderForm)</td>
+        </tr>
+        <tr>
+          <td>Sticky bottom CTA</td>
+          <td class="yes">✅ "اطلب الآن"</td>
+          <td class="yes">✅ "اطلب الآن"</td>
+        </tr>
+        <tr>
+          <td>WhatsApp floating button</td>
+          <td class="yes">✅ موجود</td>
+          <td class="partial">⚠️ نقدر نضيفه</td>
+        </tr>
+        <tr>
+          <td>Bilingual (عربي + إنجليزي)</td>
+          <td class="yes">✅ ثنائي اللغة</td>
+          <td class="partial">⚠️ عربي فقط حالياً</td>
+        </tr>
+        <tr>
+          <td>AI Copy Generation (عربي)</td>
+          <td class="no">❌</td>
+          <td class="excl">⭐ حصري MaxP</td>
+        </tr>
+        <tr>
+          <td>AI Image Studio (6 slices auto)</td>
+          <td class="no">❌</td>
+          <td class="excl">⭐ حصري MaxP</td>
+        </tr>
+        <tr>
+          <td>Reference URL Clone</td>
+          <td class="no">❌</td>
+          <td class="excl">⭐ حصري MaxP (REFERENCE_CLONE mode)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:24px; color:#FF5D73">🎯 الخلاصة</h2>
+    <ul style="line-height: 1.8; padding-right: 20px;">
+      <li><strong>Baseet Socks عنده:</strong> 16 section، منها Upsell + Bilingual + WhatsApp</li>
+      <li><strong>MaxP Phase 1 عنده:</strong> 17 section (Baseet 16 + 3 حصري: Sold counter, FOMO popup, AI features)</li>
+      <li><strong>MaxP عنده 5 features Baseet مش عنده خالص:</strong>
+        <ul>
+          <li>Sold counter (social proof)</li>
+          <li>Live FOMO popup</li>
+          <li>AI Copy Generation</li>
+          <li>AI Image Studio</li>
+          <li>Reference URL Clone</li>
+        </ul>
+      </li>
+      <li><strong>Baseet عنده 2 features مش في Phase 1:</strong> Inline upsell product + Bilingual</li>
+      <li><strong>الـ gap القابل للعلاج في يوم واحد:</strong> Inline upsell widget + WhatsApp button + bilingual toggle</li>
+    </ul>
+  </div>
+</body>
+</html>

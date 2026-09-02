@@ -4253,6 +4253,21 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   };
   const elessiVariantSelector = (
     <div id={hasEmbeddedPdpCheckout ? STOREFRONT_BUYBOX_ID : undefined} className="py-1">
+      {canOpenSizeGuide ? (
+        <div className="mb-2 flex items-center justify-between">
+          <span className="text-xs font-black uppercase tracking-wider text-muted-foreground">
+            {prefersArabicCopy ? 'المقاس واللون' : 'Size & Color'}
+          </span>
+          <button
+            type="button"
+            onClick={() => setIsSizeGuideDialogOpen(true)}
+            className="inline-flex items-center gap-1 text-xs font-bold text-[#8f5c44] transition-colors hover:text-[#2d211e] hover:underline"
+          >
+            <Ruler className="h-3.5 w-3.5" />
+            <span>{sizeGuideText || (prefersArabicCopy ? 'دليل المقاسات بالسنتيمتر' : 'Size guide (cm)')}</span>
+          </button>
+        </div>
+      ) : null}
       <VariantSelector
         variants={product.productVariants || []}
         selectedAttributes={selectedAttributes}
@@ -4261,6 +4276,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         variantSettings={elessiVariantSettings}
         isOpen={product.productVariants && product.productVariants.length > 0}
       />
+      {fitNote ? (
+        <div className="mt-2.5 flex items-center gap-2 rounded-[0.8rem] border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-900 dark:text-amber-200">
+          <span className="font-bold shrink-0">💡 {prefersArabicCopy ? 'نصيحة المقاس:' : 'Fit tip:'}</span>
+          <span className="leading-snug">{fitNote}</span>
+        </div>
+      ) : null}
     </div>
   );
   const elessiSupportAnchorId = 'khemet-pdp-support';
@@ -7238,6 +7259,20 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
                     {mergedInlinePdpQuickOrder}
                   </div>
                 ) : null}
+                <div className="mt-3.5 flex flex-wrap items-center justify-around gap-2 rounded-[0.95rem] border border-[#ead8ca]/70 bg-[#fffdfa] px-3 py-2.5 text-[11px] font-bold text-[#6f5a54] sm:text-xs">
+                  <div className="flex items-center gap-1.5">
+                    <Truck className="h-3.5 w-3.5 text-[#8f5c44]" />
+                    <span>{prefersArabicCopy ? 'شحن 48 ساعة' : '48h Shipping'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-[#8f5c44]" />
+                    <span>{prefersArabicCopy ? 'معاينة وقياس مع المندوب' : 'Inspect before paying'}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <RotateCcw className="h-3.5 w-3.5 text-[#8f5c44]" />
+                    <span>{prefersArabicCopy ? 'استبدال 14 يوم' : '14-Day Exchange'}</span>
+                  </div>
+                </div>
               </div>
             </div>
 

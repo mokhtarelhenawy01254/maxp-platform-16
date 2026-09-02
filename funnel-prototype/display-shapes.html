@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MaxP — كل أشكال عرض المنتج (50+ shape)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Cairo', system-ui, sans-serif;
+      background: #0a0a12;
+      color: #e4e4e7;
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    .head {
+      padding: 40px 24px;
+      background: linear-gradient(135deg, #1a1a2e 0%, #FF5D73 100%);
+      text-align: center;
+    }
+    .head h1 { margin: 0 0 8px; font-size: 36px; font-weight: 900; color: white; }
+    .head .sub { margin: 0 0 12px; opacity: 0.9; font-size: 16px; }
+    .head .count {
+      display: inline-block;
+      background: rgba(0,0,0,0.3);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 32px 20px; }
+
+    .category {
+      background: #14141d;
+      border: 1px solid #2a2a3a;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .category h2 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .category .num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 40px; height: 40px;
+      background: #FF5D73;
+      color: #221A3F;
+      border-radius: 10px;
+      font-weight: 900; font-size: 16px;
+    }
+    .category .desc { margin: 0 0 20px; opacity: 0.75; font-size: 14px; }
+    .category .count-badge {
+      display: inline-block;
+      margin-inline-start: auto;
+      background: rgba(255,93,115,0.15);
+      color: #FF5D73;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .grid {
+      display: grid; gap: 12px;
+      grid-template-columns: 1fr;
+    }
+    @media (min-width: 700px) { .grid { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1000px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+
+    .shape {
+      background: #1a1a25;
+      border: 1px solid #2a2a3a;
+      border-radius: 12px;
+      padding: 16px;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .shape:hover { transform: translateY(-2px); border-color: #FF5D73; }
+    .shape .header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+    .shape .icon {
+      width: 36px; height: 36px;
+      background: rgba(255,93,115,0.15);
+      color: #FF5D73;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+    }
+    .shape h3 { margin: 0; font-size: 15px; color: white; }
+    .shape .path {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: #FF5D73;
+      background: rgba(0,0,0,0.3);
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin: 8px 0;
+      overflow: auto;
+    }
+    .shape .file {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: #888;
+      margin: 4px 0;
+    }
+    .shape p { margin: 8px 0 0; font-size: 12px; opacity: 0.8; }
+
+    .key-surface {
+      background: linear-gradient(135deg, #221A3F 0%, #FF5D73 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .key-surface h2 { margin: 0 0 8px; color: white; font-size: 22px; }
+    .key-surface p { margin: 0; opacity: 0.95; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div class="head">
+    <h1>🎨 كل أشكال عرض المنتج في MaxP</h1>
+    <p class="sub">نتيجة فحص الكود — 50+ surface / component / route</p>
+    <span class="count">// Total: 50 product display shapes</span>
+  </div>
+
+  <div class="container">
+
+    <div class="key-surface">
+      <h2>🎯 الـ PDP الأساسية (صفحة المنتج)</h2>
+      <p>الـ <code>ProductInfo.tsx</code> + sections. الـ Route: <code>/store/&lt;slug&gt;</code> أو <code>/{subdomain}/products/&lt;slug&gt;</code>. هي الـ context الرئيسي لكل منتج في MaxP.</p>
+    </div>
+
+    <!-- Category 1: Dedicated Pages -->
+    <div class="category">
+      <h2><span class="num">1</span> Dedicated Product Pages <span class="count-badge">4</span></h2>
+      <p class="desc">صفحات مخصصة للمنتج (full-page experiences)</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">📄</div><h3>PDP (Main)</h3></div>
+          <span class="path">/store/{slug} · /{sub}/products/{slug}</span>
+          <span class="file">ProductInfo.tsx + sections</span>
+          <p>الصفحة الأساسية — كل قسماته من gallery + variants + reviews + addons</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🎯</div><h3>Product Image Landing</h3></div>
+          <span class="path">/{sub}/p/{slug}</span>
+          <span class="file">ProductImageLandingPage.tsx</span>
+          <p>Single-product landing (funnel) — كل التركيز على منتج واحد</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">↩️</div><h3>Returns Page</h3></div>
+          <span class="path">/returns</span>
+          <span class="file">ReturnsPage.tsx</span>
+          <p>صفحة إرجاع المنتج بعد الشراء</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📰</div><h3>Article Page</h3></div>
+          <span class="path">/store/articles/{slug}</span>
+          <span class="file">StorefrontArticlePage.tsx</span>
+          <p>مقال يذكر المنتج (SEO + content marketing)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 2: List/Grid -->
+    <div class="category">
+      <h2><span class="num">2</span> List / Grid Surfaces <span class="count-badge">8</span></h2>
+      <p class="desc">عرض مجموعة منتجات (browsing + discovery)</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">🏪</div><h3>Shop Page</h3></div>
+          <span class="path">/shop</span>
+          <span class="file">StorefrontShell</span>
+          <p>كل المنتجات في المتجر</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">▦</div><h3>Product Grid</h3></div>
+          <span class="file">ProductGrid.tsx</span>
+          <p>Grid عادي للمنتجات</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">⭐</div><h3>Featured Collections</h3></div>
+          <span class="file">FeaturedCollections.tsx</span>
+          <p>Collections مميزة على الـ homepage</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📑</div><h3>Collection Tab</h3></div>
+          <span class="file">CollectionTab.tsx</span>
+          <p>Collection بـ tabs (filters)</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🔍</div><h3>Search Results</h3></div>
+          <span class="file">StorefrontSearchResults.tsx</span>
+          <p>نتائج البحث</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📚</div><h3>Article Grid</h3></div>
+          <span class="file">ArticleGrid.tsx</span>
+          <p>مقالات + منتجات مدمجة</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">💎</div><h3>Glassmorphic Grid</h3></div>
+          <span class="file">GlassmorphicGrid.tsx</span>
+          <p>Grid ستايل زجاجي خاص</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🛎️</div><h3>Services Grid</h3></div>
+          <span class="file">ServicesGrid.tsx</span>
+          <p>خدمات (vertical غير D2C — Clinics, Hotels, إلخ)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 3: Product Cards -->
+    <div class="category">
+      <h2><span class="num">3</span> Product Cards <span class="count-badge">5</span></h2>
+      <p class="desc">الـ product في شكل كارت (compact view)</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">🃏</div><h3>Product Card</h3></div>
+          <span class="file">ProductCard.tsx</span>
+          <p>الكارت الأساسي — بيظهر في كل grid</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">☕</div><h3>Cafe Product Card</h3></div>
+          <span class="file">CafeProductCard.tsx</span>
+          <p>ستايل Café (vertical الـ F&B)</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">✨</div><h3>Graceful Smart Card</h3></div>
+          <span class="file">GracefulSmartCard.tsx</span>
+          <p>ستايل Graceful theme</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">👁️</div><h3>Quick View Modal</h3></div>
+          <span class="file">QuickViewModal.tsx</span>
+          <p>popup للمعاينة السريعة من غير ما تفتح PDP</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🌟</div><h3>Featured Product</h3></div>
+          <span class="file">FeaturedProduct.tsx</span>
+          <p>Highlight لمنتج واحد (homepage hero)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 4: Cart -->
+    <div class="category">
+      <h2><span class="num">4</span> Cart Surfaces <span class="count-badge">4</span></h2>
+      <p class="desc">المنتج في الكارت + cross-sells</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">🛒</div><h3>Cart Drawer</h3></div>
+          <span class="file">CartDrawer.tsx</span>
+          <p>سايد بار — بيظهر من أي مكان</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📋</div><h3>Cart Items</h3></div>
+          <span class="file">CartItems.tsx</span>
+          <p>list الـ items في الكارت</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🎁</div><h3>Cart Upsell Host</h3></div>
+          <span class="file">CartUpsellHost.tsx</span>
+          <p>cross-sell في الـ cart drawer</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">✅</div><h3>Post-Purchase Upsell</h3></div>
+          <span class="file">PostPurchaseUpsellBlock.tsx</span>
+          <p>cross-sell بعد تأكيد الطلب</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 5: Conversion Blocks -->
+    <div class="category">
+      <h2><span class="num">5</span> Conversion Blocks (Overlays) <span class="count-badge">7</span></h2>
+      <p class="desc">Overlays بتحفز الشراء (FOMO, scarcity, urgency)</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">⏱️</div><h3>Countdown Timer</h3></div>
+          <span class="file">CountdownBlock.tsx</span>
+          <p>عداد تنازلي للعرض</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🔥</div><h3>Low Stock</h3></div>
+          <span class="file">LowStockBlock.tsx</span>
+          <p>"باقي 5 قطع" — scarcity</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">✅</div><h3>Sold Counter</h3></div>
+          <span class="file">SoldCounterBlock.tsx</span>
+          <p>"انبيع 1,247" — social proof</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">👀</div><h3>Purchase FOMO</h3></div>
+          <span class="file">PurchaseFomoBlock.tsx</span>
+          <p>"أحمد اشترى للتو" popup</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🟢</div><h3>Fake Visitor</h3></div>
+          <span class="file">FakeVisitorBlock.tsx</span>
+          <p>"23 شخص يشاهد الآن"</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📅</div><h3>Pre-Order</h3></div>
+          <span class="file">PreOrderBlock.tsx</span>
+          <p>حجز مسبق</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🚚</div><h3>Delivery</h3></div>
+          <span class="file">DeliveryBlock.tsx</span>
+          <p>معلومات الشحن</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 6: Order/Checkout -->
+    <div class="category">
+      <h2><span class="num">6</span> Order / Checkout <span class="count-badge">5</span></h2>
+      <p class="desc">المنتج في رحلة الشراء</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">📝</div><h3>PDP Quick Order Form</h3></div>
+          <span class="file">PdpQuickOrderForm.tsx</span>
+          <p>فورم سريع في PDP بدون checkout كامل</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📊</div><h3>Quick Order Panel</h3></div>
+          <span class="file">PdpQuickOrderPanel.tsx</span>
+          <p>panel جانبي للطلب السريع</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">💳</div><h3>PDP Checkout</h3></div>
+          <span class="file">PdpCheckout.tsx</span>
+          <p>checkout مدمج في PDP</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🎉</div><h3>Order Confirmation</h3></div>
+          <span class="file">OrderConfirmation.tsx</span>
+          <p>صفحة الشكر بعد الطلب</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📃</div><h3>Order Summary</h3></div>
+          <span class="file">OrderSummary.tsx</span>
+          <p>ملخص الطلب</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 7: Reviews -->
+    <div class="category">
+      <h2><span class="num">7</span> Reviews & Social <span class="count-badge">4</span></h2>
+      <p class="desc">ريفيوز + media</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">⭐</div><h3>Reviews</h3></div>
+          <span class="file">Reviews.tsx</span>
+          <p>الـ reviews الأساسية</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📰</div><h3>Reviews Section</h3></div>
+          <span class="file">ReviewsSection.tsx</span>
+          <p>قسم reviews في PDP</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🖼️</div><h3>Review Media Gallery</h3></div>
+          <span class="file">ReviewMediaGallery.tsx</span>
+          <p>صور + فيديو من الـ reviews</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">✍️</div><h3>Write Review Dialog</h3></div>
+          <span class="file">WriteReviewDialog.tsx</span>
+          <p>modal لكتابة review</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 8: Admin -->
+    <div class="category">
+      <h2><span class="num">8</span> Admin Views <span class="count-badge">8</span></h2>
+      <p class="desc">التاجر بيشوف/يدير المنتج من هنا</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">📋</div><h3>Products List</h3></div>
+          <span class="path">/products</span>
+          <span class="file">Products.tsx</span>
+          <p>قائمة كل المنتجات (107 منتج)</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📄</div><h3>Product Detail</h3></div>
+          <span class="path">/products/:id</span>
+          <span class="file">Products.tsx</span>
+          <p>تفاصيل المنتج في الـ admin</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">✏️</div><h3>Product Edit</h3></div>
+          <span class="path">/products/:id/edit</span>
+          <span class="file">ProductNewFinal.tsx</span>
+          <p>تعديل المنتج (الصورة الكبيرة في الـ Easy Orders)</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">➕</div><h3>Product New</h3></div>
+          <span class="path">/products/new</span>
+          <span class="file">ProductNewFinal.tsx</span>
+          <p>إنشاء منتج جديد</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🗑️</div><h3>Product Trash</h3></div>
+          <span class="path">/products/trash</span>
+          <span class="file">ProductsTrash.tsx</span>
+          <p>المنتجات المحذوفة</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">⭐</div><h3>Product Reviews (admin)</h3></div>
+          <span class="path">/products/reviews</span>
+          <span class="file">ProductReviews.tsx</span>
+          <p>إدارة الريفيوز</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📥</div><h3>Import Easy Orders</h3></div>
+          <span class="path">/products/import-easy-orders</span>
+          <span class="file">EasyOrdersImport.tsx</span>
+          <p>استيراد من Easy Orders</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📥</div><h3>Import WooCommerce</h3></div>
+          <span class="path">/products/import-woocommerce</span>
+          <span class="file">WooCommerceImport.tsx</span>
+          <p>استيراد من WooCommerce</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Category 9: Cross-vertical -->
+    <div class="category">
+      <h2><span class="num">9</span> Cross-Vertical <span class="count-badge">5</span></h2>
+      <p class="desc">المنتج في verticals تانية غير D2C</p>
+      <div class="grid">
+        <div class="shape">
+          <div class="header"><div class="icon">🤝</div><h3>Affiliate Products</h3></div>
+          <span class="path">/affiliates/products</span>
+          <p>منتجات المسوقين بالعمولة</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📦</div><h3>Amazon Affiliate</h3></div>
+          <span class="path">/amazon-affiliate/products</span>
+          <p>منتجات أمازون للـ affiliate</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🎁</div><h3>Customer Product Offers</h3></div>
+          <span class="path">/customers/product-offers</span>
+          <p>عروض مخصصة للعملاء</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">📊</div><h3>Break-Even Tool</h3></div>
+          <span class="path">/tools/product-break-even</span>
+          <p>حاسبة نقطة التعادل</p>
+        </div>
+        <div class="shape">
+          <div class="header"><div class="icon">🧠</div><h3>Product Embeddings</h3></div>
+          <span class="path">/super-admin/product-embeddings</span>
+          <p>AI embeddings للمنتجات</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 40px; padding: 24px; background: linear-gradient(135deg, rgba(34,26,63,0.3), rgba(255,93,115,0.2)); border-radius: 16px; text-align: center;">
+      <h2 style="margin: 0 0 8px; color: #FF5D73;">🎯 الـ 4 surfaces الأهم للـ D2C</h2>
+      <p style="margin: 0; opacity: 0.9;">بناءً على الـ funnel scenario (إعلان → شراء)، الـ 4 surfaces دول بيأثروا على conversion مباشرة:</p>
+      <div style="margin-top: 16px; display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+        <div style="background: #14141d; padding: 16px; border-radius: 10px; border: 1px solid #FF5D73;">
+          <div style="font-size: 30px; margin-bottom: 6px;">🎯</div>
+          <strong>1. Product Image Landing</strong>
+          <p style="font-size: 12px; margin: 4px 0 0; opacity: 0.7;">الـ funnel المفرد — أعلى conversion</p>
+        </div>
+        <div style="background: #14141d; padding: 16px; border-radius: 10px; border: 1px solid #FF5D73;">
+          <div style="font-size: 30px; margin-bottom: 6px;">📄</div>
+          <strong>2. PDP (Main)</strong>
+          <p style="font-size: 12px; margin: 4px 0 0; opacity: 0.7;">صفحة المنتج الكاملة</p>
+        </div>
+        <div style="background: #14141d; padding: 16px; border-radius: 10px; border: 1px solid #FF5D73;">
+          <div style="font-size: 30px; margin-bottom: 6px;">🛒</div>
+          <strong>3. Cart Drawer</strong>
+          <p style="font-size: 12px; margin: 4px 0 0; opacity: 0.7;">آخر فرصة قبل الدفع</p>
+        </div>
+        <div style="background: #14141d; padding: 16px; border-radius: 10px; border: 1px solid #FF5D73;">
+          <div style="font-size: 30px; margin-bottom: 6px;">✅</div>
+          <strong>4. Order Confirmation</strong>
+          <p style="font-size: 12px; margin: 4px 0 0; opacity: 0.7;">cross-sell بعد الشراء</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

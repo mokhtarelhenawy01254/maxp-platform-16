@@ -12,7 +12,7 @@ import {
   DentalCaseHistoryEntry, DentalCaseStage, DentalCaseAttachment, DentalInvoice, DentalTechnician,
   DentalQualityCheck, DentalRefabrication, DentalCaseStatus, DentalLabCaseDetail, RefabricationStage, CreditNote,
   fetchCaseDetail, advanceCase, updateCase, uploadCaseAttachment, deleteCaseAttachment,
-  addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf, downloadAllFiles,
+  addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf, fetchPanLabelPdf, downloadAllFiles,
   recordQualityCheck, flagRefabrication, resolveRefabrication,
   inferAttachmentKind,
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
@@ -457,6 +457,7 @@ export default function DentalCaseDetailPage() {
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
   const [uploadDragOver, setUploadDragOver] = useState(false);
   const [workOrderLoading, setWorkOrderLoading] = useState(false);
+  const [panLabelLoading, setPanLabelLoading] = useState(false);
   const [qualityOpen, setQualityOpen] = useState(false);
   const [refabOpen, setRefabOpen] = useState(false);
   const [refabBusyId, setRefabBusyId] = useState<string | null>(null);
@@ -473,6 +474,20 @@ export default function DentalCaseDetailPage() {
       toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
     } finally {
       setWorkOrderLoading(false);
+    }
+  };
+
+  const openPanLabel = async () => {
+    if (!id || panLabelLoading) return;
+    setPanLabelLoading(true);
+    try {
+      const blob = await fetchPanLabelPdf(id);
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setPanLabelLoading(false);
     }
   };
 
@@ -782,10 +797,13 @@ export default function DentalCaseDetailPage() {
           {badge(PRIORITY_CONFIG, c.priority)}
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={openWorkOrder} disabled={workOrderLoading} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
+          <button onClick={openWorkOrder} disabled={workOrderLoading} className="flex items-center gap-2 px-3 sm:px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50">
             {workOrderLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}{t("dentalLab.detail.workOrder")}
           </button>
-          <button onClick={refresh} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+          <button onClick={openPanLabel} disabled={panLabelLoading} className="flex items-center gap-2 px-3 sm:px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50" title="طباعة ملصق الباركود لعلبة الشغل (حراري 80x50 مم)">
+            {panLabelLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Box className="w-4 h-4 text-blue-600 dark:text-blue-400" />}ملصق العلبة
+          </button>
+          <button onClick={refresh} className="flex items-center gap-2 px-3 sm:px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
           <button onClick={() => setStatusOpen(true)} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
