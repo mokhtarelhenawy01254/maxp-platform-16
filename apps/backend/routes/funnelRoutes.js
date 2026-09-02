@@ -160,7 +160,8 @@ function buildFunnelConfigFromProduct(product, company, overrides = {}) {
     (firstSentence.length > 6 ? firstSentence : rawDescription).slice(0, 140);
 
   const heroImage =
-    (Array.isArray(product.images) && product.images[0]) ||
+    product.mainImage ||
+    parseImagesField(product.images) ||
     product.image ||
     product.imageUrl ||
     (Array.isArray(product.productImages) && product.productImages[0]?.url) ||
@@ -574,6 +575,36 @@ function parseConfig(value) {
   if (typeof value === "string") {
     try {
       return JSON.parse(value);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
+/**
+ * parseImagesField(value)
+ * -----------------------
+ * Product.images in this codebase is a TEXT column holding a JSON-encoded
+ * string of URL strings (sometimes a single URL, sometimes an array of
+ * URLs, sometimes a JSON-stringified array of objects with `url`).
+ * Returns the first image URL it can find, or null.
+ */
+function parseImagesField(value) {
+  if (!value) return null;
+  if (Array.isArray(value)) {
+    const first = value[0];
+    if (typeof first === "string") return first;
+    if (first && typeof first === "object" && first.url) return first.url;
+    return null;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return null;
+    if (trimmed.startsWith("http")) return trimmed;
+    try {
+      const parsed = JSON.parse(trimmed);
+      return parseImagesField(parsed);
     } catch {
       return null;
     }
