@@ -3,7 +3,12 @@ import { Link, useLocation, useSearchParams } from "react-router-dom";
 import { useStorefrontTheme } from "../../engine/ThemeProvider";
 import type { StorefrontTheme } from "../../types/theme.types";
 import { useCartStore, DEFAULT_STOREFRONT_CART_STORAGE_NAME, getStorefrontPreviewCartStorageName } from "../../store/useCartStore";
-import { buildStorefrontPath, buildStorefrontPreviewAdminPath, resolveStorefrontPreviewAdminOrigin } from "../../utils/paths";
+import {
+  buildStorefrontPath,
+  buildStorefrontPreviewAdminPath,
+  resolveStorefrontPreviewAdminOrigin,
+  getStorefrontProductRouteKey,
+} from "../../utils/paths";
 import { useStorefrontSettings } from "../../hooks/useStorefrontSettings";
 import { useCategories } from "../../hooks/useCategories";
 import StorefrontProductImage from "../StorefrontProductImage";
@@ -12,6 +17,7 @@ import { getStorefrontMarketplaceAppSettings, isStorefrontMarketplaceAppEnabled 
 import { createStorefrontThemeTextReplacer } from "../../utils/runtimeBrandText";
 import { isRuntimePharmacyThemeId } from "../header/StorefrontHeader";
 import type { Product } from "../../hooks/useProducts";
+import { useProduct } from "../../hooks/useProduct";
 const StorefrontPreviewBanner: React.FC<{ previewThemeId: string }> = ({
   previewThemeId,
 }) => {
