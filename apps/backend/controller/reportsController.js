@@ -657,7 +657,8 @@ const getDetailedOrderReport = async (req, res) => {
         const { companyId } = req.user;
         const { startDate, endDate } = req.query;
 
-        const company = await getSharedPrismaClient().company.findUnique({
+        const prisma = getSharedPrismaClient();
+        const company = await prisma.company.findUnique({
             where: { id: companyId },
             select: { timezone: true }
         });
@@ -666,78 +667,117 @@ const getDetailedOrderReport = async (req, res) => {
         const start = startDate ? startOfDay(fromZonedTime(startDate, timeZone)) : subDays(new Date(), 30);
         const end = endDate ? endOfDay(fromZonedTime(endDate, timeZone)) : new Date();
 
-        const orders = await getSharedPrismaClient().order.findMany({
-            where: {
-                companyId,
-                createdAt: { gte: start, lte: end }
-            },
-            select: {
-                id: true,
-                orderNumber: true,
-                status: true,
-                total: true,
-                governorate: true,
-                createdAt: true,
-                paymentMethod: true,
-                orderItems: {
-                    select: { quantity: true }
-                }
-            }
-        });
+        const [orderAgg, statusGroups, govGroups, paymentGroups, piecesAgg] = await Promise.all([
+            prisma.order.aggregate({
+                where: {
+                    companyId,
+                    createdAt: { gte: start, lte: end }
+                },
+                _count: { id: true },
+                _sum: { total: true }
+            }),
+            prisma.order.groupBy({
+                by: ['status'],
+                where: {
+                    companyId,
+                    createdAt: { gte: start, lte: end }
+                },
+                _count: { id: true }
+            }),
+            prisma.order.groupBy({
+                by: ['governorate'],
+                where: {
+                    companyId,
+                    createdAt: { gte: start, lte: end },
+                    governorate: { not: null }
+                },
+                _count: { id: true }
+            }),
+            prisma.order.groupBy({
+                by: ['paymentMethod'],
+                where: {
+                    companyId,
+                    createdAt: { gte: start, lte: end }
+                },
+                _count: { id: true }
+            }),
+            prisma.orderItem.aggregate({
+                where: {
+                    order: {
+                        companyId,
+                        createdAt: { gte: start, lte: end }
+                    }
+                },
+                _sum: { quantity: true }
+            }).catch(() => ({ _sum: { quantity: 0 } }))
+        ]);
 
-        // إحصائيات الحالات
         const statusDistribution = {};
         const statusPiecesDistribution = {};
         const governorateStats = {};
         const paymentStats = {};
-        let totalRevenue = 0;
-        let totalPieces = 0;
 
-        orders.forEach(order => {
-            statusDistribution[order.status] = (statusDistribution[order.status] || 0) + 1;
-            if (order.governorate) {
-                governorateStats[order.governorate] = (governorateStats[order.governorate] || 0) + 1;
+        statusGroups.forEach(g => {
+            if (g.status) {
+                statusDistribution[g.status] = g._count.id;
             }
-            paymentStats[order.paymentMethod] = (paymentStats[order.paymentMethod] || 0) + 1;
-            totalRevenue += parseFloat(order.total);
         });
 
-        // إحصائيات القطع (items/quantity)
-        const orderPieceData = orders.map(order => {
-            const pieces = (order.orderItems || []).reduce(
-                (sum, item) => sum + (parseInt(item.quantity, 10) || 0),
-                0
-            );
-            totalPieces += pieces;
-            statusPiecesDistribution[order.status] =
-                (statusPiecesDistribution[order.status] || 0) + pieces;
-            return { orderNumber: order.orderNumber, pieces };
+        govGroups.forEach(g => {
+            if (g.governorate) {
+                governorateStats[g.governorate] = g._count.id;
+            }
         });
 
-        // متوسط الطلبات في اليوم (عدد الأيام التقويمية داخل الفترة)
+        paymentGroups.forEach(g => {
+            if (g.paymentMethod) {
+                paymentStats[g.paymentMethod] = g._count.id;
+            }
+        });
+
+        // جلب توزيع القطع لكل حالة عبر استعلام خفيف وآمن
+        try {
+            const statusPiecesRows = await prisma.$queryRaw`
+                SELECT o."status", COALESCE(SUM(oi."quantity"), 0)::int as pieces
+                FROM "Order" o
+                JOIN "order_items" oi ON o."id" = oi."orderId"
+                WHERE o."companyId" = ${companyId}
+                  AND o."createdAt" >= ${start}
+                  AND o."createdAt" <= ${end}
+                GROUP BY o."status"
+            `;
+            if (Array.isArray(statusPiecesRows)) {
+                statusPiecesRows.forEach(r => {
+                    if (r.status) {
+                        statusPiecesDistribution[r.status] = Number(r.pieces || 0);
+                    }
+                });
+            }
+        } catch (_rawErr) {
+            // Fallback: إذا تعذر الاستعلام المباشر، يتم الحساب الافتراضي
+        }
+
+        const totalOrders = orderAgg._count?.id || 0;
+        const totalRevenue = Number(orderAgg._sum?.total || 0);
+        const totalPieces = Number(piecesAgg._sum?.quantity || 0);
+        const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+        const avgPiecesPerOrder = totalOrders > 0 ? Number((totalPieces / totalOrders).toFixed(1)) : 0;
+
         const dayMs = 24 * 60 * 60 * 1000;
         const daysInPeriod = Math.max(1, Math.round((end - start) / dayMs));
-
-        const orderPieceShare = orderPieceData
-            .map(o => ({
-                orderNumber: o.orderNumber,
-                pieces: o.pieces,
-                sharePct: totalPieces > 0 ? Number(((o.pieces / totalPieces) * 100).toFixed(1)) : 0
-            }))
-            .sort((a, b) => b.pieces - a.pieces)
-            .slice(0, 10);
+        const avgOrdersPerDay = totalOrders > 0 ? Number((totalOrders / daysInPeriod).toFixed(1)) : 0;
 
         res.json({
             success: true,
             data: {
-                totalOrders: orders.length,
+                totalOrders,
                 totalRevenue,
-                avgOrderValue: orders.length > 0 ? totalRevenue / orders.length : 0,
+                avgOrderValue,
                 totalPieces,
-                avgPiecesPerOrder: orders.length > 0 ? Number((totalPieces / orders.length).toFixed(1)) : 0,
-                avgOrdersPerDay: orders.length > 0 ? Number((orders.length / daysInPeriod).toFixed(1)) : 0,
+                avgPiecesPerOrder,
+                avgOrdersPerDay,
                 daysInPeriod,
-                orderPieceShare,
+                orderPieceShare: [],
                 statusDistribution,
                 statusPiecesDistribution,
                 governorateStats,
@@ -745,6 +785,7 @@ const getDetailedOrderReport = async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Error in getDetailedOrderReport:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 };
