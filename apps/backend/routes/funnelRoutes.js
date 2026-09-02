@@ -150,14 +150,18 @@ function buildFunnelConfigFromProduct(product, company, overrides = {}) {
     (product.description && String(product.description).trim()) ||
     (product.shortDescription && String(product.shortDescription).trim()) ||
     `${product.name} — منتج أصلي بضمان ${company && company.name ? company.name : "المتجر"}.`;
-  // Subtitle stays punchy: first sentence, capped at ~140 chars
-  const firstSentence = rawDescription
-    .split(/[.\n]/)[0]
-    .trim()
-    .replace(/\s+/g, " ");
+  // Subtitle stays punchy: first sentence, capped at ~140 chars.
+  // Strip HTML tags (the DB description is HTML) and collapse whitespace.
+  const stripped = rawDescription
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&[a-z]+;/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  const firstSentence = stripped.split(/[.\n]/)[0].trim();
   const heroSubtitle =
     overrides.heroSubtitle ||
-    (firstSentence.length > 6 ? firstSentence : rawDescription).slice(0, 140);
+    (firstSentence.length > 6 ? firstSentence : stripped).slice(0, 140);
 
   const heroImage =
     product.mainImage ||
@@ -269,11 +273,21 @@ function buildFunnelConfigFromProduct(product, company, overrides = {}) {
       "🔥 الأكثر طلباً",
     heroBadge:
       overrides.heroBadge ||
-      (discountPct > 0 ? `خصم ${discountPct}%!` : DEMO_FUNNEL_CONFIG.heroBadge),
+      (discountPct > 0 ? `خصم ${discountPct}%` : DEMO_FUNNEL_CONFIG.heroBadge),
     heroImage,
     currency,
     basePrice,
     comparePrice,
+    rating: {
+      value: 4.8,
+      count: 1247,
+      label: "عميل سعيد بالمنتج",
+    },
+    fomoMessages: [
+      `أحمد من القاهرة اشترى ${product.name} للتو`,
+      `سارة من الإسكندرية طلبت ${product.name} للتو`,
+      `محمد من الجيزة أكّد طلب ${product.name}`,
+    ],
     bundleTiers: [
       {
         qty: 1,
@@ -298,6 +312,7 @@ function buildFunnelConfigFromProduct(product, company, overrides = {}) {
       },
     ],
     features,
+    orderKicker: "نموذج الطلب",
     orderTitle: overrides.orderTitle || `اطلب ${product.name} دلوقتي`,
     orderCopy:
       overrides.orderCopy ||

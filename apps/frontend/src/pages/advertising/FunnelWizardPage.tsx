@@ -301,7 +301,7 @@ const FunnelWizardPage: React.FC = () => {
                 type="text"
                 value={titleOverride}
                 onChange={(e) => setTitleOverride(e.target.value)}
-                placeholder="مثال: رجلك تستاهل شوية بهجة!"
+                placeholder="مثال: المنتج اللي هيفرق معاك!"
               />
             </label>
             <label>
@@ -310,7 +310,7 @@ const FunnelWizardPage: React.FC = () => {
                 type="text"
                 value={overline}
                 onChange={(e) => setOverline(e.target.value)}
-                placeholder="مثال: 🧦 أشهر شرابات في مصر"
+                placeholder="مثال: 🔥 الأكثر طلباً"
               />
             </label>
             <label>
@@ -318,7 +318,7 @@ const FunnelWizardPage: React.FC = () => {
               <textarea
                 value={subtitle}
                 onChange={(e) => setSubtitle(e.target.value)}
-                placeholder="مثال: باكدج 5 أزواج قطن ممشط بألوان تكسر الروتين."
+                placeholder="مثال: جملة قصيرة توضح أهم ميزة في المنتج."
                 rows={2}
               />
             </label>

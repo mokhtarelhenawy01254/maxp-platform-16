@@ -140,21 +140,21 @@ interface OrderFormState {
 // ────────────────────────────────────────────────────────────
 
 const DEFAULT_FOMO_POOL = [
-  "أحمد من القاهرة اشترى للتو باكدج 3",
-  "سارة من الإسكندرية اشترت للتو باكدج 1",
-  "محمد من الجيزة اشترى للتو باكدج 3",
-  "منى من المنصورة اشترت للتو باكدج 2",
-  "كريم من أسيوط اشترى للتو باكدج 1",
-  "يوسف من طنطا اشترى للتو باكدج 2",
-  "جنى من شبرا اشترت للتو باكدج 1",
+  "أحمد من القاهرة اشترى للتو 3 قطع",
+  "سارة من الإسكندرية اشترت للتو قطعة واحدة",
+  "محمد من الجيزة اشترى للتو 3 قطع",
+  "منى من المنصورة اشترت للتو قطعتين",
+  "كريم من أسيوط اشترى للتو قطعة واحدة",
+  "يوسف من طنطا اشترى للتو قطعتين",
+  "جنى من شبرا اشترت للتو قطعة واحدة",
 ];
 
 const FALLBACK_CONFIG: FunnelConfig = {
-  heroTitle: "رجلك تستاهل شوية بهجة!",
-  heroSubtitle: "باكدج 5 أزواج قطن ممشط بألوان تكسر الروتين.",
-  heroOverline: "🧦 أشهر شرابات في مصر",
-  heroBadge: "خصم 29%!",
-  rating: { value: 4.9, count: 2100, label: "+2,100 رِجل مبسوطة" },
+  heroTitle: "منتج مميز بأفضل سعر",
+  heroSubtitle: "جودة عالية بضمان المتجر، دفع كاش عند الاستلام.",
+  heroOverline: "🔥 الأكثر طلباً",
+  heroBadge: "خصم مميز!",
+  rating: { value: 4.8, count: 1247, label: "عميل سعيد بالمنتج" },
   offerEndsAt: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
   lowStockCount: 18,
   soldCount: 1247,
@@ -162,48 +162,48 @@ const FALLBACK_CONFIG: FunnelConfig = {
   bundleTiers: [
     {
       qty: 1,
-      price: 249,
-      originalPrice: 349,
-      label: "باكدج واحد (5 أزواج)",
+      price: 499,
+      originalPrice: 699,
+      label: "قطعة واحدة",
     },
     {
       qty: 2,
-      price: 448,
-      originalPrice: 698,
-      label: "باكدجين (10 أزواج) — خصم 10%",
+      price: 898,
+      originalPrice: 1398,
+      label: "قطعتين — وفّر 500 EGP",
       popular: true,
     },
     {
       qty: 3,
-      price: 597,
-      originalPrice: 1047,
-      label: "3 باكدجات (15 زوج) — خصم 20% + شحن مجاني",
+      price: 1198,
+      originalPrice: 2097,
+      label: "3 قطع — خصم 20% + شحن مجاني",
       bestValue: true,
       freeShipping: true,
     },
   ],
   features: [
-    { title: "قطن ممشط 85%", desc: "نعومة من أول لبسة ولحد آخر غسلة.", icon: "✨" },
-    { title: "كعب معزز", desc: "مش بتتخرم حتى مع اللبس اليومي.", icon: "🛡️" },
-    { title: "استك مريح", desc: "بيثبت من غير ما يسيب علامة على رجلك.", icon: "💜" },
-    { title: "ألوان ثابتة", desc: "صبغات ثابتة مش بتبهت ولا بتلون الغسيل.", icon: "🎨" },
+    { title: "جودة عالية", desc: "منتج أصلي مصنوع من خامات مضمونة ومختارة بعناية.", icon: "✨" },
+    { title: "شحن سريع", desc: "2-3 أيام لكل المحافظات مع تتبع كامل للطلب.", icon: "🚚" },
+    { title: "منتج أصلي", desc: "مستورد ومضمون 100% من المتجر.", icon: "✅" },
+    { title: "كاش عند الاستلام", desc: "ادفع كاش بعد ما تستلم وتعاين المنتج.", icon: "💵" },
   ],
   reviews: [
     {
       name: "عمر الشناوي",
-      text: "أول مرة أصحى الصبح مبسوط عشان هلبس شراب 😂 الألوان جنان والخامة تقيلة بجد.",
+      text: "المنتج جودته عالية جداً والتوصيل كان سريع. أنصح به بشدة 👌",
       rating: 5,
       verified: true,
     },
     {
       name: "مريم حسام",
-      text: "غسلتهم عشر مرات ولا بهتوا ولا اتكوروا — جبت باكدج تاني لجوزي.",
+      text: "الجودة ممتازة والتوصيل كان سريع. التجربة تستاهل التكرار.",
       rating: 5,
       verified: true,
     },
     {
       name: "يوسف الديب",
-      text: "المقاس مظبوط والاستك مش بيعور، وبقى في طابور في البيت على الألوان.",
+      text: "المنتج مطابق تماماً للوصف والتغليف كان محترم. أنصح بالطلب.",
       rating: 5,
       verified: true,
     },
@@ -215,18 +215,18 @@ const FALLBACK_CONFIG: FunnelConfig = {
     { icon: "🔁", title: "ضمان استرداد", desc: "14 يوم لاستبدال أو إرجاع" },
   ],
   orderKicker: "نموذج الطلب",
-  orderTitle: "كمّل طلبك",
+  orderTitle: "اطلب المنتج دلوقتي",
   orderCopy: "املأ البيانات الأساسية وسيتم التواصل معك لتأكيد الطلب خلال ساعة.",
   buttonLabel: "تأكيد الطلب — كاش عند الاستلام",
 };
 
 const FALLBACK_PRODUCT: Product = {
   id: "demo-product",
-  name: "باكدج الشرابات المبهجة (5 أزواج)",
-  slug: "happy-feet-5-pack",
-  description: "باكدج 5 أزواج شرابات قطن ممشط بألوان مختارة.",
-  price: 249,
-  images: ["https://images.unsplash.com/photo-1586350977771-b3b0abd50c82?w=1200"],
+  name: "منتج مميز",
+  slug: "demo-product",
+  description: "منتج أصلي بضمان المتجر، دفع كاش عند الاستلام.",
+  price: 499,
+  images: ["https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=1200"],
 };
 
 const FALLBACK_COMPANY = {
@@ -446,7 +446,7 @@ const FunnelCodSalesPage: React.FC = () => {
       </div>
       {config.heroBadge && (
         <div className="fcs-promo">
-          🎉 {config.heroBadge} + شحن مجاني على باكدج الـ 3!
+          🎉 {config.heroBadge} + شحن مجاني على 3 قطع!
         </div>
       )}
 
@@ -521,7 +521,7 @@ const FunnelCodSalesPage: React.FC = () => {
           )}
 
           <a href="#order" className="fcs-cta">
-            🎁 {config.buttonLabel?.replace("تأكيد", "هاتلي") ?? "هاتلي الباكدج"}
+            🎁 {config.buttonLabel?.replace("تأكيد", "هاتلي") ?? "هاتلي الطلب"}
           </a>
         </div>
       </section>
@@ -552,9 +552,9 @@ const FunnelCodSalesPage: React.FC = () => {
 
       {/* BUNDLE TIERS */}
       <section className="fcs-section" id="tiers">
-        <h2 className="fcs-h2">🎁 باكدج واحد ولا تخزين للسنة؟</h2>
+        <h2 className="fcs-h2">🎁 قطعة واحدة ولا 3 قطع؟</h2>
         <p className="fcs-section-sub">
-          كل ما زودت الكمية، زاد الخصم. الشحن علينا على باكدج الـ 3.
+          كل ما زودت الكمية، زاد الخصم. الشحن علينا على الـ 3 قطع.
         </p>
         <div className="fcs-tiers">
           {config.bundleTiers.map((tier) => {
@@ -744,7 +744,7 @@ const FunnelCodSalesPage: React.FC = () => {
             <div className="fcs-form-full fcs-cod">
               <label>
                 <input type="radio" name="pay" defaultChecked />
-                <span>💵 دفع عند الاستلام — هتدفع للكابتن بعد ما توصلك الباكدج</span>
+                <span>💵 دفع عند الاستلام — هتدفع للكابتن بعد ما توصلك الطلب</span>
               </label>
             </div>
           </div>
@@ -767,9 +767,9 @@ const FunnelCodSalesPage: React.FC = () => {
 
       {/* Sticky CTA */}
       <div className="fcs-sticky">
-        <div className="fcs-sticky-img">🧦</div>
+        <div className="fcs-sticky-img">🛍️</div>
         <div className="fcs-sticky-meta">
-          <h4>باكدج {form.quantity} {activeTier?.freeShipping ? "+ شحن مجاني" : ""}</h4>
+          <h4>{form.quantity} {form.quantity === 1 ? "قطعة" : "قطع"} {activeTier?.freeShipping ? "+ شحن مجاني" : ""}</h4>
           <div className="fcs-sticky-price">
             {activeTier
               ? formatStorefrontCurrency(subtotal, company.currency ?? "EGP")
