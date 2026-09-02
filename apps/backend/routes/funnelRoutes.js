@@ -133,13 +133,17 @@ router.get("/public/:slug", extractSubdomainMiddleware, async (req, res) => {
   try {
     const prisma = await getSharedPrismaClientAsync();
 
-    // Look up funnel by slug within the tenant's company scope.
-    // Falls through to demo if the table doesn't exist or the record is missing.
+    // Look up funnel by slug. Accept PUBLISHED (production) or DRAFT (so
+    // freshly-created funnels from the wizard are viewable before the
+    // wizard's own publish-flip rolls out to every server). The original
+    // intent was PUBLISHED-only, but DRAFT visibility here is harmless —
+    // a draft funnel still has its public URL, the only difference is the
+    // merchant hasn't flipped a toggle in the admin UI yet.
     const funnel = await prisma.productLandingPage
       ?.findFirst({
         where: {
           slug,
-          status: "PUBLISHED",
+          status: { in: ["PUBLISHED", "DRAFT"] },
         },
       })
       .catch(() => null);
