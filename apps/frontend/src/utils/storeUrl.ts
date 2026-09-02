@@ -24,7 +24,7 @@ const isLocalLikeHost = (hostname: string): boolean => {
 };
 
 export const isLocalLikeDomain = (domainWithOptionalPort: string): boolean => {
-  const hostOnly = domainWithOptionalPort.split(":")[0].toLowerCase();
+  const hostOnly = (domainWithOptionalPort.split(":")[0] || "").toLowerCase();
   return isLocalLikeHost(hostOnly);
 };
 
