@@ -1176,6 +1176,9 @@ const SuperAdminAppDetail = React.lazy(
 const StorefrontThemesManagement = React.lazy(
   () => import("./pages/super-admin/StorefrontThemesManagement"),
 );
+const MarketplaceCoverageCenter = React.lazy(
+  () => import("./pages/super-admin/MarketplaceCoverageCenter"),
+);
 const SuperAdminAppExplanations = React.lazy(
   () => import("./pages/super-admin/SuperAdminAppExplanations"),
 );
@@ -2722,6 +2725,16 @@ const AppContent = () => {
               element={
                 <Layout>
                   <SuperAdminAppDetail />
+                </Layout>
+              }
+            />
+            <Route
+              path="/super-admin/marketplace-coverage"
+              element={
+                <Layout fullWidth>
+                  <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                    <MarketplaceCoverageCenter />
+                  </React.Suspense>
                 </Layout>
               }
             />
