@@ -945,6 +945,18 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
         }}
       />
 
+      <CreateServiceOrderModal
+        isOpen={showServiceOrderModal}
+        onClose={() => setShowServiceOrderModal(false)}
+        customerName={conversation.customer.name}
+        customerPhone={conversation.customer.phone}
+        onOrderCreated={() => {
+          if (conversation.customer.id) {
+            fetchCustomerOrders(conversation.customer.id);
+          }
+        }}
+      />
+
       <QuickCreateTaskModal
         isOpen={showQuickCreateTaskModal}
         onClose={() => setShowQuickCreateTaskModal(false)}

@@ -49,8 +49,21 @@
 - استدعاء غير متزامن (fire-and-forget) للإشعارات في `createPublic` و `updateStatus`.
 - إرجاع `companyContactPhone` في استجابة إنشاء الطلب للواجهة.
 
+### 2.6 دمج طلبات الخدمات في سجل العميل (WhatsApp Inbox CRM)
+- **الملف**: `apps/backend/controller/customerController.js` (دالة `getCustomerOrders`).
+- جلب طلبات الخدمات للعميل برقم هاتفه ودمجها مع طلبات المتجر مرتبة زمنياً.
+- إظهار شارة `🛠️ خدمة` واسم الخدمة بجانب تفاصيل الطلب في الشريط الجانبي لشات الواتساب لمعرفة تاريخ العميل بالكامل فوراً.
+
+### 2.7 إنشاء طلب خدمة مباشر من شات الواتساب
+- **الملف**: `apps/frontend/src/components/facebook-inbox/Modals/CreateServiceOrderModal.tsx`.
+- **الملف**: `apps/frontend/src/pages/whatsapp-inbox/WhatsAppChat.tsx`.
+- زر إضافي في شريط الطلبات بالشات (`🛠️`) لفتح نافذة إنشاء طلب خدمة مسبقة التعبئة باسم وهاتف العميل.
+- اختيار الخدمة، تدوين متطلبات الشات، والحفظ مع إرسال تأكيد واتساب آلي للعميل فورياً وتحديث سجل طلباته مباشرة.
+
 ---
 
 ## 3. التحقق والاختبارات
-- **اختبارات الوحدة**: `apps/backend/tests/services/serviceOrderNotificationService.test.js` (5/5 اختبارات ناجحة).
+- **اختبارات الوحدة لإشعارات الخدمات**: `apps/backend/tests/services/serviceOrderNotificationService.test.js` (5/5 اختبارات ناجحة).
+- **اختبارات الوحدة لدمج سجل طلبات العميل**: `apps/backend/tests/controller/customerOrdersWithServices.test.js` (2/2 اختبارات ناجحة).
 - **فحص البنية اللغوية**: `node --check` على كافة الملفات المعدلة بنجاح.
+
