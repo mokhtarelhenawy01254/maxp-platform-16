@@ -1,4 +1,14 @@
 import React from "react";
+import { Link } from "react-router-dom";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  ExternalLink,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
+import { toast } from "sonner";
+import { apiClient } from "../../../../services/apiClient";
 import {
   QuantityOffer,
   createEmptyQuantityOffer,
@@ -29,6 +39,67 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
   productName,
 }) => {
   const referenceUnitPrice = getReferenceUnitPrice(baseUnitPrice, currentUnitPrice);
+
+  const [appStatus, setAppStatus] = React.useState<
+    "loading" | "installed" | "not_installed"
+  >("loading");
+  const [isActivating, setIsActivating] = React.useState(false);
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const checkAppStatus = async () => {
+      try {
+        const response = await apiClient.get<{
+          data?: { isInstalled?: boolean };
+          isInstalled?: boolean;
+        }>("/marketplace/apps/quantity-offers-pro");
+        if (!isMounted) return;
+        const isInstalled = Boolean(
+          response?.data?.data?.isInstalled ??
+            (response?.data as { isInstalled?: boolean })?.isInstalled,
+        );
+        setAppStatus(isInstalled ? "installed" : "not_installed");
+      } catch {
+        // Fallback: check via /my-apps
+        try {
+          const myAppsRes = await apiClient.get<{
+            data?: Array<{ app?: { slug?: string } }>;
+          }>("/my-apps");
+          if (!isMounted) return;
+          const apps = Array.isArray(myAppsRes?.data?.data)
+            ? myAppsRes.data.data
+            : [];
+          const isInstalled = apps.some(
+            (entry) => entry?.app?.slug === "quantity-offers-pro",
+          );
+          setAppStatus(isInstalled ? "installed" : "not_installed");
+        } catch {
+          if (isMounted) setAppStatus("not_installed");
+        }
+      }
+    };
+
+    void checkAppStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleActivateApp = async () => {
+    setIsActivating(true);
+    try {
+      await apiClient.post("/marketplace/apps/quantity-offers-pro/install", {
+        pricingModel: "FREE",
+      });
+      toast.success("تم تفعيل تطبيق عروض الكميات بنجاح لمتجرك");
+      setAppStatus("installed");
+    } catch (error) {
+      console.error("Failed to activate quantity offers app:", error);
+      toast.error("فشل تفعيل التطبيق، يرجى المحاولة من صفحة الماركت بليس");
+    } finally {
+      setIsActivating(false);
+    }
+  };
 
   const updateOffer = React.useCallback(
     (offerId: string, updater: (offer: QuantityOffer) => QuantityOffer) => {
@@ -106,6 +177,69 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
           إضافة عرض جديد
         </button>
       </div>
+
+      {appStatus === "not_installed" ? (
+        <div className="flex flex-col gap-3.5 rounded-xl border border-amber-200 bg-amber-50/90 p-4 text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-400" />
+            <div className="space-y-1 text-sm">
+              <p className="font-bold text-amber-950 dark:text-amber-100">
+                تطبيق عروض الكميات (Quantity Offers Pro) غير مفعّل في متجرك حالياً
+              </p>
+              <p className="text-xs leading-5 text-amber-800 dark:text-amber-300">
+                يمكنك تجهيز العروض وحفظها هنا، ولكنها لن تظهر للعملاء في صفحة المنتج حتى يتم تفعيل التطبيق.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 self-end sm:self-center">
+            <button
+              type="button"
+              onClick={handleActivateApp}
+              disabled={isActivating}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-amber-700 disabled:opacity-50"
+            >
+              {isActivating ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  جاري التفعيل...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="h-3.5 w-3.5" />
+                  تفعيل التطبيق الآن
+                </>
+              )}
+            </button>
+
+            <Link
+              to="/marketplace/apps/quantity-offers-pro"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-900/40 dark:text-amber-100 dark:hover:bg-amber-900/60"
+            >
+              <span>صفحة التطبيق</span>
+              <ExternalLink className="h-3 w-3" />
+            </Link>
+          </div>
+        </div>
+      ) : appStatus === "installed" ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-xs text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+            <span>تطبيق عروض الكميات مفعّل في متجرك — ستظهر العروض للعملاء في صفحة المنتج فور الحفظ.</span>
+          </div>
+          <Link
+            to="/marketplace/apps/quantity-offers-pro/settings"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 font-semibold text-emerald-700 underline hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200"
+          >
+            <span>إعدادات التطبيق المتقدمة</span>
+            <ExternalLink className="h-3 w-3" />
+          </Link>
+        </div>
+      ) : null}
 
       {quantityOffers.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 px-4 py-8 text-center dark:border-gray-700 dark:bg-gray-900/20 sm:px-6 sm:py-10">

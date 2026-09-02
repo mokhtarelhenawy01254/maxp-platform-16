@@ -328,7 +328,7 @@ describe('dentalLabNotificationService', () => {
           }),
         })
       );
-      expect(result).toEqual({ scanned: 2, sent: 2, failed: 0, skipped: 0 });
+      expect(result).toEqual({ scanned: 2, sent: 2, failed: 0, skipped: 0, internalNotifsCreated: 0 });
       expect(sendNotification).toHaveBeenCalledTimes(2);
       expect(prisma.dentalCaseStatusHistory.create).toHaveBeenCalledTimes(2);
       expect(prisma.dentalCaseStatusHistory.create).toHaveBeenCalledWith(
@@ -339,6 +339,39 @@ describe('dentalLabNotificationService', () => {
             dimension: 'NOTIFICATION',
             status: 'OVERDUE_NOTIFIED',
             reason: 'تجاوز تاريخ الاستحقاق',
+          }),
+        })
+      );
+    });
+
+    test('creates in-app internal notification for overdue cases', async () => {
+      const prisma = createPrisma({
+        notification: {
+          findFirst: jest.fn().mockResolvedValue(null),
+          create: jest.fn().mockResolvedValue({ id: 'notif-1' }),
+        },
+      });
+      prisma.dentalLabCase.findMany.mockResolvedValue([
+        makeCase({ id: 'case-1', caseNumber: 'DL-20260809-0001', companyId: 'company-1' }),
+      ]);
+      prisma.dentalCaseStatusHistory.findFirst.mockResolvedValue(null);
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      prisma.dentalLabCase.findUnique.mockResolvedValue(makeCase({ id: 'case-1', companyId: 'company-1' }));
+      prisma.dentalSetting.findFirst.mockResolvedValue({ key: 'notificationSchedule', value: [] });
+      prisma.dentalSetting.upsert.mockImplementation(({ create }) => Promise.resolve({ value: create.value }));
+      prisma.whatsAppNotificationTemplate.findMany.mockResolvedValue([]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+      sendNotification.mockResolvedValue({ success: true });
+
+      const result = await service.scanOverdueCases('company-1');
+
+      expect(result.internalNotifsCreated).toBe(1);
+      expect(prisma.notification.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            companyId: 'company-1',
+            type: 'DENTAL_CASE_OVERDUE',
+            title: expect.stringContaining('DL-20260809-0001'),
           }),
         })
       );
@@ -363,7 +396,7 @@ describe('dentalLabNotificationService', () => {
 
       const result = await service.scanOverdueCases('company-1');
 
-      expect(result).toEqual({ scanned: 2, sent: 1, failed: 0, skipped: 1 });
+      expect(result).toEqual({ scanned: 2, sent: 1, failed: 0, skipped: 1, internalNotifsCreated: 0 });
       expect(sendNotification).toHaveBeenCalledTimes(1);
       expect(prisma.dentalCaseStatusHistory.create).toHaveBeenCalledTimes(1);
       expect(prisma.dentalCaseStatusHistory.create.mock.calls[0][0].data.caseId).toBe('case-2');
@@ -383,7 +416,7 @@ describe('dentalLabNotificationService', () => {
 
       const result = await service.scanOverdueCases('company-1');
 
-      expect(result).toEqual({ scanned: 1, sent: 0, failed: 1, skipped: 0 });
+      expect(result).toEqual({ scanned: 1, sent: 0, failed: 1, skipped: 0, internalNotifsCreated: 0 });
       expect(prisma.dentalCaseStatusHistory.create).not.toHaveBeenCalled();
     });
   });

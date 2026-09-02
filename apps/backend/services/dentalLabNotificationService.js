@@ -318,6 +318,7 @@ async function scanOverdueCases(companyId = null) {
   const where = {
     dueDate: { lt: new Date() },
     status: { notIn: ['DELIVERED', 'CLOSED'] },
+    isDeleted: false,
   };
   if (companyId) where.companyId = companyId;
 
@@ -335,8 +336,56 @@ async function scanOverdueCases(companyId = null) {
   let sent = 0;
   let failed = 0;
   let skipped = 0;
+  let internalNotifsCreated = 0;
+
   for (const dentalCase of cases || []) {
     try {
+      // 1) إنشاء إشعار داخلي في المنصة (In-App Notification) لفريق المعمل والإدارة
+      if (prisma && prisma.notification && typeof prisma.notification.create === 'function' && dentalCase.companyId) {
+        try {
+          const docName = dentalCase.doctorName || (dentalCase.doctor && dentalCase.doctor.name) || 'غير محدد';
+          const patName = dentalCase.patientName || 'غير محدد';
+          const cNum = dentalCase.caseNumber || dentalCase.id;
+          const daysOverdue = dentalCase.dueDate
+            ? Math.max(1, Math.floor((Date.now() - new Date(dentalCase.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+            : 1;
+
+          // التحقق من عدم تكرار الإشعار الداخلي لنفس الحالة
+          const existingInternal = await prisma.notification.findFirst({
+            where: {
+              companyId: dentalCase.companyId,
+              type: 'DENTAL_CASE_OVERDUE',
+              createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }, // مرة كل 24 ساعة كحد أقصى
+              message: { contains: cNum },
+            },
+          }).catch(() => null);
+
+          if (!existingInternal) {
+            await prisma.notification.create({
+              data: {
+                companyId: dentalCase.companyId,
+                title: `⚠️ تأخير حالة معمل: ${cNum}`,
+                message: `الحالة رقم ${cNum} للمريض (${patName}) - د. ${docName} متأخرة ${daysOverdue} يوم عن موعد التسليم.`,
+                type: 'DENTAL_CASE_OVERDUE',
+                data: {
+                  caseId: dentalCase.id,
+                  caseNumber: cNum,
+                  patientName: patName,
+                  doctorName: docName,
+                  dueDate: dentalCase.dueDate,
+                  daysOverdue,
+                  url: `/dental-lab/cases/${dentalCase.id}`,
+                },
+              },
+            });
+            internalNotifsCreated++;
+          }
+        } catch (inAppErr) {
+          console.error(`[DentalNotification] in-app notification error for case ${dentalCase.id}:`, inAppErr.message);
+        }
+      }
+
+      // 2) إرسال إشعار الواتساب للطبيب (إن كان مفعلاً)
       const already = await prisma.dentalCaseStatusHistory.findFirst({
         where: {
           companyId: dentalCase.companyId,
@@ -371,7 +420,7 @@ async function scanOverdueCases(companyId = null) {
     }
   }
 
-  return { scanned: (cases || []).length, sent, failed, skipped };
+  return { scanned: (cases || []).length, sent, failed, skipped, internalNotifsCreated };
 }
 
 /**

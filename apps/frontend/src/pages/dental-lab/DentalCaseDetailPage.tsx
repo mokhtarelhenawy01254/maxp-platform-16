@@ -4,17 +4,18 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import DentalModelViewer from "./DentalModelViewer";
 import {
-  ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
-  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Upload, UploadCloud, X as XMarkIcon, XCircle,
+  AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
+  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
   CASE_STATUSES, CASE_STATUS_MAP, PRIORITY_CONFIG, PAYMENT_STATUS_MAP, ROLE_CONFIG, STAGE_STATUS_MAP,
   DentalCaseHistoryEntry, DentalCaseStage, DentalCaseAttachment, DentalInvoice, DentalTechnician,
   DentalQualityCheck, DentalRefabrication, DentalCaseStatus, DentalLabCaseDetail, RefabricationStage, CreditNote,
-  fetchCaseDetail, advanceCase, updateCase, uploadCaseAttachment, deleteCaseAttachment,
+  fetchCaseDetail, advanceCase, updateCase, deleteCaseAttachment,
   addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf, fetchPanLabelPdf, fetchWarrantyCertificatePdf,
   sendCaseToTryIn, returnCaseFromTryIn, downloadAllFiles,
   recordQualityCheck, flagRefabrication, resolveRefabrication,
+  trashCase, restoreCase, permanentDeleteCase,
   inferAttachmentKind,
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
@@ -188,7 +189,7 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
               <div className="flex items-center gap-2 min-w-0">
                 <Box className="w-5 h-5 text-blue-600 flex-shrink-0" />
                 <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{attachment.fileName}</span>
-                <span className="text-xs text-gray-400 flex-shrink-0">({(attachment.size / 1024 / 1024).toFixed(1)}MB · {fileExt.toUpperCase()})</span>
+                <span className="text-xs text-gray-400 flex-shrink-0">({((attachment.size || 0) / 1024 / 1024).toFixed(1)}MB · {fileExt.toUpperCase()})</span>
               </div>
               <button
                 onClick={() => setShow3d(false)}
@@ -242,7 +243,7 @@ function AttachmentCard({ attachment, onDeleted }: { attachment: DentalCaseAttac
               <div className="flex items-center gap-2 min-w-0">
                 <FileText className="w-5 h-5 text-red-500 flex-shrink-0" />
                 <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{attachment.fileName}</span>
-                <span className="text-xs text-gray-400 flex-shrink-0">({(attachment.size / 1024).toFixed(0)}KB · PDF)</span>
+                <span className="text-xs text-gray-400 flex-shrink-0">({((attachment.size || 0) / 1024).toFixed(0)}KB · PDF)</span>
               </div>
               <button
                 onClick={() => setShowPdf(false)}
@@ -459,7 +460,7 @@ function RefabricationModal({ caseId, onClose, onSaved }: { caseId: string; onCl
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.detail.refabStageFrom")}</label>
             <select className={MODAL_INPUT_CLS} value={stageFrom} onChange={e => setStageFrom(e.target.value as RefabricationStage)}>
-              {REFAB_STAGES.map(s => <option key={s.id} value={s.id}>{t(s.labelKey)}</option>)}
+              {REFAB_STAGES.map(s => <option key={s.id} value={s.id}>{t(s.labelKey as any)}</option>)}
             </select>
           </div>
           <div className="flex items-center gap-2 pt-2">
@@ -691,6 +692,51 @@ export default function DentalCaseDetailPage() {
     }
   }, [id, t]);
 
+  const [caseBusy, setCaseBusy] = useState(false);
+
+  const handleTrash = async () => {
+    if (!id || caseBusy) return;
+    if (!window.confirm("هل أنت متأكد من نقل هذه الحالة إلى سلة المهملات؟")) return;
+    setCaseBusy(true);
+    try {
+      await trashCase(id);
+      toast.success("تم نقل الحالة إلى سلة المهملات");
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل نقل الحالة إلى سلة المهملات");
+    } finally {
+      setCaseBusy(false);
+    }
+  };
+
+  const handleRestore = async () => {
+    if (!id || caseBusy) return;
+    setCaseBusy(true);
+    try {
+      await restoreCase(id);
+      toast.success("تمت استعادة الحالة بنجاح");
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشلت استعادة الحالة");
+    } finally {
+      setCaseBusy(false);
+    }
+  };
+
+  const handlePermanentDelete = async () => {
+    if (!id || caseBusy) return;
+    if (!window.confirm("تحذير: هل أنت متأكد من الحذف النهائي للحالة؟ هذا الإجراء لا يمكن التراجع عنه.")) return;
+    setCaseBusy(true);
+    try {
+      await permanentDeleteCase(id);
+      toast.success("تم حذف الحالة نهائياً");
+      window.location.href = "/dental-lab/cases";
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل الحذف النهائي");
+      setCaseBusy(false);
+    }
+  };
+
   useEffect(() => {
     refresh();
     fetchTechnicians()
@@ -786,6 +832,7 @@ export default function DentalCaseDetailPage() {
       const valid: { file: File; kind: string }[] = [];
       for (let i = 0; i < compressed.length; i++) {
         const f = compressed[i];
+        if (!f) continue;
         if (f.size > MAX_FILE_SIZE) {
           toast.error(`${f.name}: أكبر من 50MB (الحجم: ${(f.size / 1024 / 1024).toFixed(1)}MB)`);
           continue;
@@ -820,6 +867,7 @@ export default function DentalCaseDetailPage() {
       const next = async (): Promise<void> => {
         while (cursor < items.length) {
           const item = items[cursor++];
+          if (!item) break;
           updateItem(item.id, { status: "uploading" });
           try {
             const fd = new FormData();
@@ -960,6 +1008,16 @@ export default function DentalCaseDetailPage() {
     { label: t("dentalLab.common.status"), value: badge(PAYMENT_STATUS_MAP, c.paymentStatus) },
   ];
 
+  const isOverdue = Boolean(
+    c.dueDate &&
+    !c.isDeleted &&
+    !["DELIVERED", "CLOSED"].includes(c.status) &&
+    new Date(c.dueDate) < new Date()
+  );
+  const daysOverdue = isOverdue && c.dueDate
+    ? Math.max(1, Math.floor((Date.now() - new Date(c.dueDate).getTime()) / (1000 * 60 * 60 * 24)))
+    : 0;
+
   return (
     <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6 pb-4 border-b dark:border-gray-800">
@@ -968,11 +1026,22 @@ export default function DentalCaseDetailPage() {
             <ArrowRight className="w-4 h-4" />{t("dentalLab.common.back")}
           </a>
           <h1 className="text-xl font-bold" dir="ltr">{c.caseNumber || c.id.slice(0, 8)}</h1>
-          {badge(CASE_STATUS_MAP, c.status)}
+          {c.isDeleted ? (
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+              🗑️ سلة المهملات
+            </span>
+          ) : (
+            badge(CASE_STATUS_MAP, c.status)
+          )}
           {badge(PRIORITY_CONFIG, c.priority)}
           {c.isTryIn && (
             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-900/50 dark:text-amber-200">
               في بروفة ({c.tryInStage})
+            </span>
+          )}
+          {isOverdue && (
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-200 border border-rose-300 dark:border-rose-800 animate-pulse">
+              <AlertTriangle className="w-3.5 h-3.5" /> متأخر {daysOverdue} يوم
             </span>
           )}
         </div>
@@ -986,7 +1055,7 @@ export default function DentalCaseDetailPage() {
           <button onClick={openWarrantyCertificate} disabled={warrantyLoading} className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-emerald-300 dark:border-emerald-700 bg-emerald-50/50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 rounded-lg text-sm hover:bg-emerald-100 dark:hover:bg-emerald-900/40 disabled:opacity-50" title="طباعة شهادة ضمان المريض مع تفاصيل الخامة والـ Lot Number">
             {warrantyLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <BadgeCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}شهادة الضمان
           </button>
-          {!c.isTryIn && c.status !== "DELIVERED" && c.status !== "CLOSED" && (
+          {!c.isTryIn && c.status !== "DELIVERED" && c.status !== "CLOSED" && !c.isDeleted && (
             <button onClick={() => setTryInSendOpen(true)} className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-amber-300 dark:border-amber-700 bg-amber-50/50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded-lg text-sm hover:bg-amber-100 dark:hover:bg-amber-900/40" title="إرسال الحالة للعيادة لإجراء بروفة">
               <RotateCcw className="w-4 h-4 text-amber-600 dark:text-amber-400" />خروج بروفة
             </button>
@@ -999,16 +1068,97 @@ export default function DentalCaseDetailPage() {
           <button onClick={refresh} className="flex items-center gap-2 px-3 sm:px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
-          <button onClick={() => setStatusOpen(true)} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-            <Pencil className="w-4 h-4" />{t("dentalLab.detail.editStatus")}
-          </button>
-          {next && !c.isTryIn && (
+          {!c.isDeleted && (
+            <button onClick={() => setStatusOpen(true)} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
+              <Pencil className="w-4 h-4" />{t("dentalLab.detail.editStatus")}
+            </button>
+          )}
+          {next && !c.isTryIn && !c.isDeleted && (
             <button onClick={() => setAdvanceOpen(true)} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
               <ArrowRightCircle className="w-4 h-4" />{t("dentalLab.cases.advance")}
             </button>
           )}
+          {!c.isDeleted ? (
+            <button
+              onClick={handleTrash}
+              disabled={caseBusy}
+              className="flex items-center gap-1.5 px-3 py-2 border border-red-200 dark:border-red-900/60 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg text-sm disabled:opacity-50"
+              title="نقل الحالة إلى سلة المهملات"
+            >
+              <Trash2 className="w-4 h-4" /> نقل للسلة
+            </button>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleRestore}
+                disabled={caseBusy}
+                className="flex items-center gap-1.5 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                <RotateCcw className="w-4 h-4" /> استعادة
+              </button>
+              <button
+                onClick={handlePermanentDelete}
+                disabled={caseBusy}
+                className="flex items-center gap-1.5 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" /> حذف نهائي
+              </button>
+            </div>
+          )}
         </div>
       </div>
+
+      {isOverdue && (
+        <div className="mb-6 p-4 rounded-xl border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 flex items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <AlertTriangle className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-rose-900 dark:text-rose-200">
+                تنبيه تأخير: هذه الحالة متأخرة بمقدار {daysOverdue} يوم عن موعد التسليم المحدد!
+              </h4>
+              <p className="text-xs text-rose-700 dark:text-rose-300 mt-0.5">
+                تاريخ الاستحقاق كان في: <b className="font-sans">{fmtDate(c.dueDate)}</b> — يرجى الإسراع في إنهاء المراحل المتبقية وتجهيز الشغل للتسليم.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {c.isDeleted && (
+        <div className="mb-6 p-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-gray-800/80 flex items-center justify-between gap-4 animate-in fade-in duration-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gray-600 text-white flex items-center justify-center shrink-0">
+              <Trash2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                هذه الحالة موجودة حالياً في سلة المهملات
+              </h4>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                تم نقل الحالة إلى سلة المهملات ولا تظهر في القوائم النشطة أو الإحصائيات. يمكنك استعادتها أو حذفها نهائياً.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleRestore}
+              disabled={caseBusy}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
+            >
+              <RotateCcw className="w-3.5 h-3.5" /> استعادة الحالة
+            </button>
+            <button
+              onClick={handlePermanentDelete}
+              disabled={caseBusy}
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-xs font-semibold rounded-lg disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" /> حذف نهائي
+            </button>
+          </div>
+        </div>
+      )}
 
       {c.isTryIn && (
         <div className="mb-6 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-800 flex flex-wrap items-center justify-between gap-4">
@@ -1188,7 +1338,7 @@ export default function DentalCaseDetailPage() {
                     </div>
                     {r.reason ? <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">{r.reason}</p> : null}
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      {t("dentalLab.detail.refabStageFrom")}: {r.stageFrom ? t(`dentalLab.status.${r.stageFrom}`) : "—"}
+                      {t("dentalLab.detail.refabStageFrom")}: {r.stageFrom ? t(`dentalLab.status.${r.stageFrom}` as any) : "—"}
                     </p>
                     {!(r.resolved || r.status === "RESOLVED") && (
                       <button

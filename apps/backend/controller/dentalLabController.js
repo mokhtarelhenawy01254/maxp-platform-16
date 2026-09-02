@@ -610,12 +610,20 @@ const listCases = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
-    const { status, doctorId, search } = req.query;
+    const { status, doctorId, search, trash, isDeleted, overdueOnly } = req.query;
     const where = { companyId };
-    if (status) {
+
+    const isTrash = trash === 'true' || isDeleted === 'true' || status === 'TRASH';
+    where.isDeleted = isTrash ? true : false;
+
+    if (status && status !== 'TRASH') {
       const s = String(status).toUpperCase();
       if (!CASE_STATUSES.has(s)) return res.status(400).json({ success: false, error: 'حالة الشغل غير صحيحة' });
       where.status = s;
+    }
+    if (overdueOnly === 'true') {
+      where.dueDate = { lt: new Date() };
+      where.status = { notIn: ['DELIVERED', 'CLOSED'] };
     }
     if (doctorId) where.doctorId = doctorId;
     if (search) {
@@ -628,11 +636,12 @@ const listCases = async (req, res) => {
 
     const { pageNum, limitNum, skip } = parsePagination(req.query);
     const prisma = getSharedPrismaClient();
-    const [items, total] = await Promise.all([
+    const [items, total, trashCount] = await Promise.all([
       prisma.dentalLabCase.findMany({ where, include: CASE_LIST_INCLUDE, orderBy: { createdAt: 'desc' }, skip, take: limitNum }),
       prisma.dentalLabCase.count({ where }),
+      prisma.dentalLabCase.count({ where: { companyId, isDeleted: true } }),
     ]);
-    res.json({ success: true, data: { items, total, page: pageNum, limit: limitNum } });
+    res.json({ success: true, data: { items, total, trashCount, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error listing dental cases:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب حالات المعمل' });
@@ -942,6 +951,99 @@ const updateCase = async (req, res) => {
   } catch (error) {
     console.error('Error updating dental case:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الحالة' });
+  }
+};
+
+const trashCase = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalLabCase.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+    if (existing.isDeleted) return res.status(400).json({ success: false, error: 'الحالة موجودة بالفعل في سلة المهملات' });
+
+    const dentalCase = await prisma.dentalLabCase.update({
+      where: { id },
+      data: { isDeleted: true, deletedAt: new Date() },
+      include: CASE_LIST_INCLUDE,
+    });
+
+    await prisma.dentalCaseStatusHistory.create({
+      data: {
+        companyId,
+        caseId: id,
+        dimension: 'ORDER',
+        status: 'TRASHED',
+        oldStatus: existing.status,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: adminDisplayName(req),
+        reason: req.body?.reason || 'نقل إلى سلة المهملات',
+      },
+    }).catch(() => null);
+
+    res.json({ success: true, data: dentalCase, message: 'تم نقل الحالة إلى سلة المهملات بنجاح' });
+  } catch (error) {
+    console.error('Error trashing dental case:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في نقل الحالة إلى سلة المهملات' });
+  }
+};
+
+const restoreCase = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalLabCase.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+    if (!existing.isDeleted) return res.status(400).json({ success: false, error: 'الحالة ليست في سلة المهملات' });
+
+    const dentalCase = await prisma.dentalLabCase.update({
+      where: { id },
+      data: { isDeleted: false, deletedAt: null },
+      include: CASE_LIST_INCLUDE,
+    });
+
+    await prisma.dentalCaseStatusHistory.create({
+      data: {
+        companyId,
+        caseId: id,
+        dimension: 'ORDER',
+        status: 'RESTORED',
+        oldStatus: 'TRASHED',
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: adminDisplayName(req),
+        reason: 'استعادة من سلة المهملات',
+      },
+    }).catch(() => null);
+
+    res.json({ success: true, data: dentalCase, message: 'تمت استعادة الحالة بنجاح' });
+  } catch (error) {
+    console.error('Error restoring dental case:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في استعادة الحالة' });
+  }
+};
+
+const permanentDeleteCase = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalLabCase.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+
+    await prisma.$transaction(async (tx) => {
+      await tx.dentalInvoice.updateMany({ where: { caseId: id, companyId }, data: { caseId: null } });
+      await tx.dentalLabCase.delete({ where: { id } });
+    });
+
+    res.json({ success: true, message: 'تم حذف الحالة نهائياً من النظام' });
+  } catch (error) {
+    console.error('Error permanently deleting dental case:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في الحذف النهائي للحالة' });
   }
 };
 
@@ -1545,13 +1647,13 @@ const getDashboard = async (req, res) => {
     const startOfToday = getStartOfDayInTimezone(now);
     const endOfToday = getEndOfDayInTimezone(now);
 
-const [statusRows, todayReceived, readyCount, overdueCount, revenueAgg, outstandingAgg, topDoctorRows, topDebtorRows] =
+    const [statusRows, todayReceived, readyCount, overdueCount, revenueAgg, outstandingAgg, topDoctorRows, topDebtorRows] =
       await Promise.all([
-        prisma.dentalLabCase.groupBy({ by: ['status'], where: { companyId }, _count: { _all: true } }),
-        prisma.dentalLabCase.count({ where: { companyId, receivedDate: { gte: startOfToday, lte: endOfToday } } }),
-        prisma.dentalLabCase.count({ where: { companyId, status: 'READY' } }),
+        prisma.dentalLabCase.groupBy({ by: ['status'], where: { companyId, isDeleted: false }, _count: { _all: true } }),
+        prisma.dentalLabCase.count({ where: { companyId, isDeleted: false, receivedDate: { gte: startOfToday, lte: endOfToday } } }),
+        prisma.dentalLabCase.count({ where: { companyId, isDeleted: false, status: 'READY' } }),
         prisma.dentalLabCase.count({
-          where: { companyId, dueDate: { lt: now }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
+          where: { companyId, isDeleted: false, dueDate: { lt: now }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
         }),
         prisma.dentalInvoice.aggregate({ where: { companyId, status: { not: 'VOID' } }, _sum: { paid: true } }),
         prisma.dentalInvoice.aggregate({ where: { companyId, status: { not: 'VOID' } }, _sum: { remaining: true } }),
@@ -2454,6 +2556,7 @@ const getOverdueReport = async (req, res) => {
     const cases = await prisma.dentalLabCase.findMany({
       where: {
         companyId,
+        isDeleted: false,
         dueDate: { lt: now },
         status: { notIn: ['DELIVERED', 'CLOSED'] },
       },
@@ -3250,6 +3353,9 @@ module.exports = {
   createCase,
   getCaseDetail,
   updateCase,
+  trashCase,
+  restoreCase,
+  permanentDeleteCase,
   advanceCaseStatus,
   assignTechnician,
   uploadCaseAttachment,

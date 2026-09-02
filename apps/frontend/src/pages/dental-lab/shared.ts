@@ -171,6 +171,7 @@ export interface DentalRefabrication {
   rootCauseCategory?: string;
   isBillable?: boolean;
   stageFrom?: string;
+  status?: string;
   requestedBy?: string;
   requestedByName?: string;
   resolved: boolean;
@@ -277,6 +278,8 @@ export interface DentalLabCase {
   source?: string;
   notes?: string;
   status: DentalCaseStatus;
+  isDeleted?: boolean;
+  deletedAt?: string;
   createdAt?: string;
   updatedAt?: string;
   stages?: DentalCaseStage[];
@@ -383,6 +386,7 @@ export interface DashboardData {
 export interface CasesListResult {
   data: DentalLabCase[];
   total: number;
+  trashCount?: number;
 }
 
 export const CASE_STATUSES: { id: DentalCaseStatus; label: string; color: string; barColor: string; dotColor: string }[] = [
@@ -502,26 +506,39 @@ export const createTechnician = async (body: Partial<DentalTechnician>): Promise
 export const updateTechnician = async (id: string, body: Partial<DentalTechnician>): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.put(`/dental-lab/technicians/${id}`, body));
 export const deleteTechnician = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/technicians/${id}`); };
 
-export const fetchCases = async (params?: { status?: string; doctorId?: string; search?: string; page?: number; limit?: number }): Promise<CasesListResult> => {
+export const fetchCases = async (params?: {
+  status?: string;
+  doctorId?: string;
+  search?: string;
+  trash?: boolean;
+  isDeleted?: boolean;
+  overdueOnly?: boolean;
+  page?: number;
+  limit?: number;
+}): Promise<CasesListResult> => {
   const res = await apiClient.get("/dental-lab/cases", { params });
   const body = asRecord(res.data) ?? {};
   let data: DentalLabCase[] = [];
   let total = 0;
+  let trashCount = 0;
   const rawData = body["data"];
   if (Array.isArray(rawData)) {
     data = rawData as DentalLabCase[];
     total = Number(body["total"] ?? data.length) || data.length;
+    trashCount = Number(body["trashCount"] ?? 0) || 0;
   } else {
     const inner = asRecord(rawData);
     if (inner && Array.isArray(inner["data"])) {
       data = inner["data"] as DentalLabCase[];
       total = Number(inner["total"] ?? body["total"] ?? data.length) || data.length;
+      trashCount = Number(inner["trashCount"] ?? body["trashCount"] ?? 0) || 0;
     } else if (inner && Array.isArray(inner["items"])) {
       data = inner["items"] as DentalLabCase[];
       total = Number(inner["total"] ?? body["total"] ?? data.length) || data.length;
+      trashCount = Number(inner["trashCount"] ?? body["trashCount"] ?? 0) || 0;
     }
   }
-  return { data, total };
+  return { data, total, trashCount };
 };
 
 export const fetchCaseDetail = async (id: string): Promise<DentalLabCaseDetail> => {
@@ -541,6 +558,12 @@ export const fetchCaseDetail = async (id: string): Promise<DentalLabCaseDetail> 
 
 export const createCase = async (body: Partial<DentalLabCase>): Promise<DentalLabCase> => unwrapEnvelope<DentalLabCase>(await apiClient.post("/dental-lab/cases", body));
 export const updateCase = async (id: string, body: Partial<DentalLabCase>): Promise<DentalLabCase> => unwrapEnvelope<DentalLabCase>(await apiClient.put(`/dental-lab/cases/${id}`, body));
+export const trashCase = async (id: string, reason?: string): Promise<DentalLabCase> =>
+  unwrapEnvelope<DentalLabCase>(await apiClient.delete(`/dental-lab/cases/${id}`, { data: { reason } }));
+export const restoreCase = async (id: string): Promise<DentalLabCase> =>
+  unwrapEnvelope<DentalLabCase>(await apiClient.post(`/dental-lab/cases/${id}/restore`));
+export const permanentDeleteCase = async (id: string): Promise<{ success: boolean; message?: string }> =>
+  unwrapEnvelope<{ success: boolean; message?: string }>(await apiClient.delete(`/dental-lab/cases/${id}/permanent`));
 
 export const advanceCase = async (id: string, body: { to?: string; status?: string; reason?: string; assigneeId?: string }): Promise<DentalLabCase> =>
   unwrapEnvelope<DentalLabCase>(await apiClient.post(`/dental-lab/cases/${id}/advance`, body));
@@ -564,7 +587,8 @@ export const inferAttachmentKind = (filename: string): "SCAN" | "PHOTO" | "XRAY"
 const buildKindsArray = (files: File[], kinds: (string | undefined)[], defaultKind?: string): string[] => {
   const result: string[] = [];
   for (let i = 0; i < files.length; i++) {
-    const k = kinds[i] || defaultKind || inferAttachmentKind(files[i].name);
+    const file = files[i];
+    const k = kinds[i] || defaultKind || (file ? inferAttachmentKind(file.name) : "OTHER");
     result.push(k.toUpperCase());
   }
   return result;
@@ -711,7 +735,7 @@ export const recordQualityCheck = async (id: string, body: { passed: boolean; no
 export const listQualityChecks = async (id: string): Promise<DentalQualityCheck[]> =>
   unwrapListEnvelope<DentalQualityCheck>(await apiClient.get(`/dental-lab/cases/${id}/quality-checks`));
 
-export const flagRefabrication = async (id: string, body: { reason: string; stageFrom?: RefabricationStage }): Promise<DentalRefabrication> =>
+export const flagRefabrication = async (id: string, body: { reason: string; stageFrom?: RefabricationStage; rootCauseCategory?: string; isBillable?: boolean }): Promise<DentalRefabrication> =>
   unwrapEnvelope<DentalRefabrication>(await apiClient.post(`/dental-lab/cases/${id}/refabrication`, body));
 
 export const resolveRefabrication = async (id: string, refabId: string, body: { note?: string }): Promise<DentalRefabrication> =>

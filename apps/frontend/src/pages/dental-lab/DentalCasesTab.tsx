@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "reac
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  ArrowRightCircle, CreditCard, Eye, Loader2, Pencil, RefreshCw, ScanLine, Search, Stethoscope, Upload, UserPlus, X as XMarkIcon,
+  AlertTriangle, ArrowRightCircle, CreditCard, Eye, Loader2, Pencil, RefreshCw, RotateCcw, ScanLine, Search, Stethoscope, Trash2, Upload, UserPlus, X as XMarkIcon,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG,
@@ -10,6 +10,7 @@ import {
   fetchCases, fetchDoctors, fetchWorkTypes, fetchTechnicians,
   createCase, updateCase, advanceCase, assignCase, uploadCaseAttachment, uploadCaseAttachments, parseScan,
   createInvoice, addInvoicePayment, kioskScanCase,
+  trashCase, restoreCase, permanentDeleteCase,
   fmtMoney, fmtDate, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
@@ -679,6 +680,9 @@ export default function DentalCasesTab() {
   const [searchInput, setSearchInput] = useState("");
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
+  const [trashCount, setTrashCount] = useState(0);
+  const [viewMode, setViewMode] = useState<"ACTIVE" | "OVERDUE" | "TRASH">("ACTIVE");
+  const [actionBusyId, setActionBusyId] = useState<string | null>(null);
   const pageSize = 20;
 
   const [doctors, setDoctors] = useState<DentalLabDoctor[]>([]);
@@ -715,15 +719,18 @@ export default function DentalCasesTab() {
         status: status || undefined,
         doctorId: doctorId || undefined,
         search: search.trim() || undefined,
+        trash: viewMode === "TRASH",
+        overdueOnly: viewMode === "OVERDUE",
         page,
         limit: pageSize,
       });
       setCases(res.data);
       setTotal(res.total);
+      if (res.trashCount !== undefined) setTrashCount(res.trashCount);
     } catch (e) {
       if (!opts?.silent) toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
     }
-  }, [status, doctorId, search, page, t]);
+  }, [status, doctorId, search, viewMode, page, t]);
 
   useEffect(() => {
     const t2 = setTimeout(() => setSearch(searchInput.trim()), 400);
@@ -742,13 +749,57 @@ export default function DentalCasesTab() {
     refresh({ silent: true });
   };
 
+  const handleTrashCase = async (c: DentalLabCase) => {
+    if (actionBusyId) return;
+    if (!window.confirm(`هل أنت متأكد من نقل الحالة "${c.caseNumber || c.patientName}" إلى سلة المهملات؟`)) return;
+    setActionBusyId(c.id);
+    try {
+      await trashCase(c.id);
+      toast.success("تم نقل الحالة إلى سلة المهملات بنجاح");
+      refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل نقل الحالة إلى سلة المهملات");
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handleRestoreCase = async (c: DentalLabCase) => {
+    if (actionBusyId) return;
+    setActionBusyId(c.id);
+    try {
+      await restoreCase(c.id);
+      toast.success("تمت استعادة الحالة بنجاح");
+      refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشلت استعادة الحالة");
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
+  const handlePermanentDelete = async (c: DentalLabCase) => {
+    if (actionBusyId) return;
+    if (!window.confirm(`تحذير: هل أنت متأكد من الحذف النهائي للحالة "${c.caseNumber || c.patientName}"؟ هذا الإجراء لا يمكن التراجع عنه نهائياً وسيتم حذف سجلاتها.`)) return;
+    setActionBusyId(c.id);
+    try {
+      await permanentDeleteCase(c.id);
+      toast.success("تم حذف الحالة نهائياً من النظام");
+      refresh({ silent: true });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل الحذف النهائي");
+    } finally {
+      setActionBusyId(null);
+    }
+  };
+
   const handleUpload = async (c: DentalLabCase, e: ChangeEvent<HTMLInputElement>) => {
     const fileList = e.target.files;
     e.target.value = "";
     if (!fileList || fileList.length === 0 || uploadingId === c.id) return;
     setUploadingId(c.id);
     try {
-      if (fileList.length === 1) {
+      if (fileList.length === 1 && fileList[0]) {
         await uploadCaseAttachment(c.id, fileList[0]);
       } else {
         await uploadCaseAttachments(c.id, Array.from(fileList));
@@ -761,13 +812,27 @@ export default function DentalCasesTab() {
     }
   };
 
+  const isCaseOverdue = (c: DentalLabCase) => {
+    if (!c.dueDate || c.isDeleted || ["DELIVERED", "CLOSED"].includes(c.status)) return false;
+    return new Date(c.dueDate) < new Date();
+  };
+
+  const getDaysOverdue = (c: DentalLabCase) => {
+    if (!c.dueDate) return 0;
+    const diff = Date.now() - new Date(c.dueDate).getTime();
+    return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  };
+
   const filterCls = "border dark:border-gray-600 rounded-lg px-3 py-2 text-sm dark:bg-gray-800 dark:text-gray-100";
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
 
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold">{t("dentalLab.cases.title")}</h2>
+        <div>
+          <h2 className="text-xl font-bold">{t("dentalLab.cases.title")}</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">إدارة ومتابعة مراحل الشغل وحالات المعمل</p>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setKioskOpen(true)}
@@ -789,25 +854,59 @@ export default function DentalCasesTab() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <select className={filterCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
-          <option value="">{t("dentalLab.cases.allStatuses")}</option>
-          {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-        </select>
-        <select className={filterCls} value={doctorId} onChange={e => { setDoctorId(e.target.value); setPage(1); }}>
-          <option value="">{t("dentalLab.cases.allDoctors")}</option>
-          {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-        </select>
-        <div className="relative">
-          <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
-          <input className={`${filterCls} pr-9 w-64`} placeholder={t("dentalLab.cases.searchPlaceholder")} value={searchInput} onChange={e => { setSearchInput(e.target.value); setPage(1); }} />
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-2 border-b dark:border-gray-800">
+        <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl text-sm">
+          <button
+            onClick={() => { setViewMode("ACTIVE"); setPage(1); }}
+            className={`px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === "ACTIVE" ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400"}`}
+          >
+            الحالات النشطة
+          </button>
+          <button
+            onClick={() => { setViewMode("OVERDUE"); setPage(1); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === "OVERDUE" ? "bg-rose-600 text-white shadow-sm" : "text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40"}`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            الحالات المتأخرة
+          </button>
+          <button
+            onClick={() => { setViewMode("TRASH"); setPage(1); }}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg font-medium transition-all ${viewMode === "TRASH" ? "bg-gray-700 dark:bg-gray-600 text-white shadow-sm" : "text-gray-500 hover:text-gray-900 dark:text-gray-400"}`}
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            سلة المهملات
+            {trashCount > 0 && (
+              <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${viewMode === "TRASH" ? "bg-white/20 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"}`}>
+                {trashCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {viewMode !== "TRASH" && (
+            <select className={filterCls} value={status} onChange={e => { setStatus(e.target.value); setPage(1); }}>
+              <option value="">{t("dentalLab.cases.allStatuses")}</option>
+              {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+            </select>
+          )}
+          <select className={filterCls} value={doctorId} onChange={e => { setDoctorId(e.target.value); setPage(1); }}>
+            <option value="">{t("dentalLab.cases.allDoctors")}</option>
+            {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+          </select>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400 dark:text-gray-500" />
+            <input className={`${filterCls} pr-9 w-64`} placeholder={t("dentalLab.cases.searchPlaceholder")} value={searchInput} onChange={e => { setSearchInput(e.target.value); setPage(1); }} />
+          </div>
         </div>
       </div>
 
       {loading && !cases ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       ) : cases === null || cases.length === 0 ? (
-        <p className="text-center py-16 text-gray-400 dark:text-gray-500">{t("dentalLab.common.noResults")}</p>
+        <div className="text-center py-16 text-gray-400 dark:text-gray-500">
+          <p>{viewMode === "TRASH" ? "سلة المهملات فارغة لا توجد بها حالات" : t("dentalLab.common.noResults")}</p>
+        </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
@@ -822,9 +921,22 @@ export default function DentalCasesTab() {
               <tbody>
                 {cases.map(c => {
                   const next = nextStatusOf(c.status);
+                  const overdue = isCaseOverdue(c);
+                  const daysOverdue = overdue ? getDaysOverdue(c) : 0;
+                  const isBusy = actionBusyId === c.id;
+
                   return (
-                    <tr key={c.id} className="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="py-3 px-4 font-medium" dir="ltr">{c.caseNumber || c.id.slice(0, 8)}</td>
+                    <tr
+                      key={c.id}
+                      className={`border-b dark:border-gray-700 transition-colors ${
+                        overdue
+                          ? "bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                          : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                      }`}
+                    >
+                      <td className="py-3 px-4 font-medium" dir="ltr">
+                        <span className="font-mono">{c.caseNumber || c.id.slice(0, 8)}</span>
+                      </td>
                       <td className="py-3 px-4 font-medium">
                         {c.patientName}
                         {c.patientPhone ? <span className="block text-xs text-gray-400" dir="ltr">{c.patientPhone}</span> : null}
@@ -832,35 +944,83 @@ export default function DentalCasesTab() {
                       <td className="py-3 px-4">{c.doctorName || "—"}</td>
                       <td className="py-3 px-4">{c.workTypeName || "—"}</td>
                       <td className="py-3 px-4">{statusBadge(PRIORITY_CONFIG, c.priority)}</td>
-                      <td className="py-3 px-4">{statusBadge(CASE_STATUS_MAP, c.status)}</td>
-                      <td className="py-3 px-4 whitespace-nowrap text-gray-500 dark:text-gray-400">{fmtDate(c.dueDate)}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col gap-1 items-start">
+                          {c.isDeleted ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300">
+                              🗑️ محذوفة
+                            </span>
+                          ) : (
+                            statusBadge(CASE_STATUS_MAP, c.status)
+                          )}
+                          {overdue && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800 animate-pulse whitespace-nowrap">
+                              <AlertTriangle className="w-3 h-3" /> متأخر {daysOverdue} يوم
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 whitespace-nowrap">
+                        <span className={overdue ? "text-rose-600 dark:text-rose-400 font-bold" : "text-gray-500 dark:text-gray-400"}>
+                          {fmtDate(c.dueDate)}
+                        </span>
+                      </td>
                       <td className="py-3 px-4 text-gray-600 dark:text-gray-300 whitespace-nowrap">
                         <span dir="ltr">{fmtMoney(c.total)} / {fmtMoney(c.paid)} / {fmtMoney(c.remaining)}</span>
                       </td>
                       <td className="py-3 px-4">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <a href={`/dental-lab/cases/${c.id}`} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("dentalLab.cases.open")}>
-                            <Eye className="w-4 h-4" />
-                          </a>
-                          <button onClick={() => { setEditingCase(c); setCreateOpen(true); }} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("dentalLab.common.edit")}>
-                            <Pencil className="w-4 h-4" />
-                          </button>
-                          {next && (
-                            <button onClick={() => setAdvanceCaseData(c)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title={t("dentalLab.cases.advance")}>
-                              <ArrowRightCircle className="w-4 h-4" />
+                        {viewMode === "TRASH" ? (
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <button
+                              onClick={() => handleRestoreCase(c)}
+                              disabled={isBusy}
+                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded hover:bg-blue-100 disabled:opacity-50"
+                              title="استعادة الحالة من سلة المهملات"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" /> استعادة
                             </button>
-                          )}
-                          <button onClick={() => setAssignCaseData(c)} className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded" title={t("dentalLab.cases.assign")}>
-                            <UserPlus className="w-4 h-4" />
-                          </button>
-                          <label className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded cursor-pointer" title={t("dentalLab.cases.uploadMulti")}>
-                            {uploadingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                            <input type="file" multiple className="hidden" onChange={e => handleUpload(c, e)} />
-                          </label>
-                          <button onClick={() => setInvoiceCase(c)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title={t("dentalLab.cases.createInvoice")}>
-                            <CreditCard className="w-4 h-4" />
-                          </button>
-                        </div>
+                            <button
+                              onClick={() => handlePermanentDelete(c)}
+                              disabled={isBusy}
+                              className="flex items-center gap-1 px-2.5 py-1 text-xs font-semibold bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 rounded hover:bg-red-100 disabled:opacity-50"
+                              title="حذف الحالة نهائياً من النظام"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" /> حذف نهائي
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-1 flex-wrap">
+                            <a href={`/dental-lab/cases/${c.id}`} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("dentalLab.cases.open")}>
+                              <Eye className="w-4 h-4" />
+                            </a>
+                            <button onClick={() => { setEditingCase(c); setCreateOpen(true); }} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("dentalLab.common.edit")}>
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            {next && (
+                              <button onClick={() => setAdvanceCaseData(c)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded" title={t("dentalLab.cases.advance")}>
+                                <ArrowRightCircle className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button onClick={() => setAssignCaseData(c)} className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 rounded" title={t("dentalLab.cases.assign")}>
+                              <UserPlus className="w-4 h-4" />
+                            </button>
+                            <label className="p-1.5 text-teal-600 dark:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 rounded cursor-pointer" title={t("dentalLab.cases.uploadMulti")}>
+                              {uploadingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                              <input type="file" multiple className="hidden" onChange={e => handleUpload(c, e)} />
+                            </label>
+                            <button onClick={() => setInvoiceCase(c)} className="p-1.5 text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/30 rounded" title={t("dentalLab.cases.createInvoice")}>
+                              <CreditCard className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleTrashCase(c)}
+                              disabled={isBusy}
+                              className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded disabled:opacity-50"
+                              title="نقل الحالة إلى سلة المهملات"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   );

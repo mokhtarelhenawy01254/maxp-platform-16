@@ -315,6 +315,7 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       const args = prisma.dentalLabCase.findMany.mock.calls[0][0];
       expect(args.where).toEqual({
         companyId: 'company-1',
+        isDeleted: false,
         status: 'QC',
         doctorId: 'doc-1',
         OR: [
@@ -339,6 +340,60 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       await controller.listCases(req({ query: { status: 'BOGUS' } }), res);
       expect(res.statusCode).toBe(400);
       expect(prisma.dentalLabCase.findMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('case deletion and restoration (Trash Bin)', () => {
+    test('trashCase moves active case to trash and records history', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue(makeCase({ isDeleted: false }));
+      prisma.dentalLabCase.update.mockResolvedValue(makeCase({ isDeleted: true }));
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.trashCase(req({ params: { id: 'case-1' }, body: { reason: 'طلب الطبيب' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalLabCase.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'case-1' },
+          data: expect.objectContaining({ isDeleted: true }),
+        })
+      );
+    });
+
+    test('restoreCase restores a trashed case back to active', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue(makeCase({ isDeleted: true }));
+      prisma.dentalLabCase.update.mockResolvedValue(makeCase({ isDeleted: false, deletedAt: null }));
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.restoreCase(req({ params: { id: 'case-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalLabCase.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'case-1' },
+          data: { isDeleted: false, deletedAt: null },
+        })
+      );
+    });
+
+    test('permanentDeleteCase permanently deletes the case within transaction', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue(makeCase());
+      prisma.dentalInvoice.updateMany = jest.fn().mockResolvedValue({ count: 1 });
+      prisma.dentalLabCase.delete = jest.fn().mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.permanentDeleteCase(req({ params: { id: 'case-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
     });
   });
 
