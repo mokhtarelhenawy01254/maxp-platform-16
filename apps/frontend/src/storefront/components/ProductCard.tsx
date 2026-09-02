@@ -284,6 +284,27 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       : null;
   })();
 
+  const savingsAmount =
+    hasDiscount && typeof numericComparePrice === 'number'
+      ? numericComparePrice - numericPrice
+      : null;
+  const formattedSavings =
+    savingsAmount && savingsAmount > 0
+      ? formatStorefrontCurrency(savingsAmount, currency)
+      : null;
+  const stockQuantity =
+    typeof product.stock === 'number'
+      ? product.stock
+      : typeof product.inventory === 'number'
+        ? product.inventory
+        : typeof product.quantity === 'number'
+          ? product.quantity
+          : null;
+  const isLowStock =
+    stockQuantity !== null &&
+    stockQuantity > 0 &&
+    stockQuantity <= 5;
+
   const imageCandidates = getProductImageCandidates(product);
   const isRtl = theme?.direction === 'rtl';
   const prefersArabicCopy =
@@ -608,21 +629,50 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     borderRadius: 'var(--product-card-badge-radius, 999px)',
   };
 
-  const DiscountBadge = ({ className = '' }: { className?: string }) => {
+  const DiscountBadge = ({
+    className = '',
+    showSavings = false,
+  }: {
+    className?: string;
+    showSavings?: boolean;
+  }) => {
     if (!discountPercentage) return null;
+
+    const shouldShowMonetarySavings =
+      showSavings || (formattedSavings && (isRtl || prefersArabicCopy));
 
     return (
       <span
         style={productCardBadgeStyles}
-        className={`inline-flex rounded-full px-2.5 py-1 text-xs font-black shadow-sm ${
+        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black shadow-sm ${
           isZenOrganic
             ? 'bg-[#88a876] text-white'
             : isAirlume
               ? 'border border-white/70 bg-white/92 text-slate-950'
-              : 'bg-accent text-accent-foreground'
+              : 'bg-rose-600 text-white shadow-rose-500/20'
         } ${className}`}
       >
-        {isZenOrganic ? `وفر ${discountPercentage}%` : `-${discountPercentage}%`}
+        {shouldShowMonetarySavings && formattedSavings
+          ? isRtl
+            ? `وفر ${formattedSavings}`
+            : `Save ${formattedSavings}`
+          : isZenOrganic
+            ? `وفر ${discountPercentage}%`
+            : `-${discountPercentage}%`}
+      </span>
+    );
+  };
+
+  const UrgencyBadge = ({ className = '' }: { className?: string }) => {
+    if (!isLowStock || !stockQuantity) return null;
+
+    return (
+      <span
+        style={productCardBadgeStyles}
+        className={`inline-flex items-center gap-1 rounded-full bg-amber-500/95 px-2 py-0.5 text-[10px] font-bold text-white shadow-sm backdrop-blur-sm animate-pulse ${className}`}
+      >
+        <span>🔥</span>
+        <span>{isRtl ? `باقي ${stockQuantity} فقط!` : `Only ${stockQuantity} left!`}</span>
       </span>
     );
   };
@@ -3106,15 +3156,15 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
             fallback={renderImageFallback()}
           />
-          {features.gridDiscountBanner && discountPercentage ? (
-            <span className={`absolute start-3 top-3 inline-flex rounded-full px-2.5 py-1 text-xs font-black shadow-sm ${isZenOrganic ? 'bg-[#88a876] text-white' : 'bg-accent text-accent-foreground'}`}>
-              {isZenOrganic ? `وفر ${discountPercentage}%` : `-${discountPercentage}%`}
-            </span>
-          ) : isZenOrganic ? (
-            <span className="absolute start-3 top-3 inline-flex rounded-full bg-[#1a3328] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
-              جديد
-            </span>
-          ) : null}
+          <div className="absolute start-3 top-3 z-10 flex flex-wrap gap-1.5">
+            <DiscountBadge />
+            <UrgencyBadge />
+            {isZenOrganic && !discountPercentage ? (
+              <span className="inline-flex rounded-full bg-[#1a3328] px-3 py-1 text-[10px] font-bold uppercase tracking-wider text-white shadow-sm">
+                جديد
+              </span>
+            ) : null}
+          </div>
           {isZenOrganic && (
             <div className={`absolute inset-0 flex items-center justify-center gap-3 bg-black/5 opacity-0 transition-opacity duration-300 ${isHovered ? 'opacity-100' : ''}`}>
               <button
@@ -3178,6 +3228,26 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
               </span>
             )}
           </div>
+
+          {(ratingValue || reviewCount) ? (
+            <div className="flex items-center gap-1 text-[#f59e0b]">
+              <div className="flex items-center gap-0.5">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <Star
+                    key={`std-star-${index}`}
+                    size={11}
+                    fill={ratingValue && index < Math.round(ratingValue) ? 'currentColor' : 'none'}
+                  />
+                ))}
+              </div>
+              {reviewCount ? (
+                <span className="font-sans text-[11px] text-muted-foreground">
+                  ({reviewCount})
+                </span>
+              ) : null}
+            </div>
+          ) : null}
+
           <div dir="ltr" className="flex items-center gap-2 font-sans">
             <p className={`text-sm font-bold ${isZenOrganic ? 'text-[#1a3328]' : 'text-primary'}`}>{formattedPrice}</p>
             {formattedComparePrice ? (

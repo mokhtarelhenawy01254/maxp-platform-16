@@ -1,9 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { buildStorefrontPath } from '../utils/paths';
 import { getDefaultRegisteredVariantId, hasRegisteredVariant } from '../variants';
 import { resolveSectionContentAlign } from '../utils/contentAlignment';
+import { Sparkles, Copy, Check, Timer, Tag, ShieldCheck } from 'lucide-react';
 
 interface ShopPromoRailProps {
   section?: {
@@ -21,6 +22,9 @@ interface ShopPromoRailProps {
     ctaLink?: string;
     trustItems?: string;
     highlights?: string;
+    couponCode?: string;
+    couponDiscount?: string;
+    countdownHours?: number;
     contentAlign?: string;
     [key: string]: unknown;
   };
@@ -100,6 +104,17 @@ const ShopPromoRail: React.FC<ShopPromoRailProps> = ({
   const isPcHub = theme.id === 'pc-hub-eg';
   const isRtl = theme.direction === 'rtl';
   const variant = normalizeShopPromoRailVariant(section?.variant);
+  const [isCopied, setIsCopied] = useState(false);
+
+  const couponCode = settings?.couponCode;
+  const couponDiscount = settings?.couponDiscount || '10%';
+
+  const handleCopyCoupon = () => {
+    if (!couponCode) return;
+    navigator.clipboard.writeText(couponCode);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2500);
+  };
 
   const trustItems = useMemo(
     () =>
@@ -282,6 +297,34 @@ const ShopPromoRail: React.FC<ShopPromoRailProps> = ({
             </div>
           ))}
         </div>
+
+        {couponCode ? (
+          <div className="mt-4 rounded-[calc(var(--radius)+0.2rem)] border-2 border-dashed border-primary/30 bg-primary/5 p-3 text-center">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
+                <Tag size={14} />
+                <span>{isRtl ? `كود خصم ${couponDiscount}` : `${couponDiscount} Off Coupon`}</span>
+              </div>
+              <button
+                onClick={handleCopyCoupon}
+                className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-bold text-primary-foreground shadow-sm transition-all hover:scale-105 active:scale-95"
+                title={isRtl ? 'نسخ الكوبون' : 'Copy Coupon'}
+              >
+                {isCopied ? (
+                  <>
+                    <Check size={12} className="text-emerald-300" />
+                    <span>{isRtl ? 'تم النسخ!' : 'Copied!'}</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={12} />
+                    <span className="font-mono">{couponCode}</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        ) : null}
 
         <Link
           to={buildStorefrontPath(location.pathname, ctaLink, location.search)}
