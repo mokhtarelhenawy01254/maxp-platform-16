@@ -3,23 +3,19 @@ import type { SidebarSection } from '../../../types/layout';
 export const sectionHasVisibleItems = (section: SidebarSection): boolean =>
   !section.hidden && section.items.some((item) => !item.hidden);
 
-// These are combined "list + conversation" inbox screens (master-detail). They
-// render the contact list and the conversation on the SAME route, and hide the
-// bottom nav inside the conversation through their own chat-active markers
-// (data-chat-active, .business-inbox-shell--conversation-active,
-//  .whatsapp-workspace--chat-active, body.app-shell-chat-active).
-// They must NOT be treated as chat routes here, otherwise the bottom nav is
-// hidden on the conversations LIST too — we want it visible there and hidden
-// only once a conversation is actually open (handled by the markers + CSS).
 const STRICT_CHAT_PATHS = new Set([
+  '/whatsapp',
+  '/whatsapp/chat',
   '/apps/whatsapp',
   '/apps/whatsapp/chat',
   '/apps/whatsapp/inbox',
+  '/facebook-inbox',
   '/apps/facebook-inbox',
   '/instagram-inbox',
   '/apps/instagram-inbox',
   '/tiktok-inbox',
   '/apps/tiktok-inbox',
+  '/unified-inbox',
   '/apps/unified-inbox',
   '/conversations/messenger',
   '/apps/messenger',
@@ -31,8 +27,10 @@ const CHAT_PREFIX_PATHS = [
   '/whatsapp-chat/',
   '/whatsapp/routing',
   '/apps/whatsapp/routing',
+  '/facebook-inbox/',
   '/instagram-inbox/',
   '/tiktok-inbox/',
+  '/unified-inbox/',
 ];
 
 const NON_CHAT_SUBPATHS = [
