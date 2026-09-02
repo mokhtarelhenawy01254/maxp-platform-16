@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { buildQuantityOfferLogInsights } from "../quantityOfferLogInsights";
 
 describe("buildQuantityOfferLogInsights", () => {

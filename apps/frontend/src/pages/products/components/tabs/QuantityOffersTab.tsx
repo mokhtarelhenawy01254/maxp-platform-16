@@ -224,20 +224,9 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
           </div>
         </div>
       ) : appStatus === "installed" ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-xs text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
-          <div className="flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-            <span>تطبيق عروض الكميات مفعّل في متجرك — ستظهر العروض للعملاء في صفحة المنتج فور الحفظ.</span>
-          </div>
-          <Link
-            to="/my-apps/quantity-offers-pro/settings"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-semibold text-emerald-700 underline hover:text-emerald-900 dark:text-emerald-400 dark:hover:text-emerald-200"
-          >
-            <span>إعدادات التطبيق المتقدمة</span>
-            <ExternalLink className="h-3 w-3" />
-          </Link>
+        <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50/60 px-4 py-2.5 text-xs text-emerald-800 dark:border-emerald-900/40 dark:bg-emerald-950/20 dark:text-emerald-300">
+          <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+          <span>تطبيق عروض الكميات مفعّل في متجرك — ستظهر العروض للعملاء في صفحة المنتج فور الحفظ.</span>
         </div>
       ) : null}
 

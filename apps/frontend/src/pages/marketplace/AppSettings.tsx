@@ -25,8 +25,6 @@ import {
   normalizeMarketplaceAppSettings,
 } from "../../config/marketplaceAppSettings";
 import UpsellManualManager from "./UpsellManualManager";
-import { buildQuantityOfferInsights } from "./quantityOfferInsights";
-import { buildQuantityOfferLogInsights } from "./quantityOfferLogInsights";
 
 type JsonRecord = Record<string, unknown>;
 
@@ -123,7 +121,6 @@ const APP_TITLES: Record<string, string> = {
   "conversion-suite": "Conversion Suite",
   "ugc-reviews-pro": "UGC Reviews Pro",
   "commerce-advanced": "Commerce Advanced",
-  "quantity-offers-pro": "Quantity Offers Pro",
 };
 
 const isRecord = (value: unknown): value is JsonRecord =>
@@ -636,14 +633,6 @@ export default function AppSettings() {
         reorderClicks,
     };
   }, [usageFeatureMap]);
-  const quantityOfferJourney = useMemo(
-    () => buildQuantityOfferInsights(usageFeatureMap),
-    [usageFeatureMap],
-  );
-  const quantityOfferLogInsights = useMemo(
-    () => buildQuantityOfferLogInsights(usageInsights?.logs),
-    [usageInsights?.logs],
-  );
   const upsellCenterMetrics = useMemo(
     () => ({
       crossSellViews: getFeatureActionCount(usageFeatureMap, ["cross_sell_section_view"]),
@@ -735,9 +724,7 @@ export default function AppSettings() {
       setBillingSummaryLoading(true);
 
       const requests: Promise<unknown>[] = [
-        apiClient.get(`/my-apps/${installedApp.id}/usage`, {
-          params: slug === "quantity-offers-pro" ? { limit: 300 } : undefined,
-        }),
+        apiClient.get(`/my-apps/${installedApp.id}/usage`),
       ];
 
       const isPayPerUse = installedApp?.app?.pricingModel === "PAY_PER_USE";
@@ -2955,250 +2942,6 @@ export default function AppSettings() {
           </div>
         ) : null}
 
-        {slug === "quantity-offers-pro" && !insightsLoading ? (
-          <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
-                <ShoppingCart size={18} />
-                <span className="font-semibold">Quantity Offer Funnel</span>
-              </div>
-              <div className="space-y-3">
-                {[
-                  {
-                    label: "Panel views",
-                    value: quantityOfferJourney.panelViews,
-                    hint: "عدد مرات ظهور بلوك عروض الكميات على صفحات المنتجات.",
-                  },
-                  {
-                    label: "Offer selections",
-                    value: quantityOfferJourney.offerSelections,
-                    hint: "كم مرة اختار العميل tier معين داخل البلوك.",
-                  },
-                  {
-                    label: "Copy first selection",
-                    value: quantityOfferJourney.copySelectionActions,
-                    hint: "مرات استخدام زر نسخ اختيار القطعة الأولى على باقي القطع.",
-                  },
-                  {
-                    label: "Add-to-cart actions",
-                    value: quantityOfferJourney.addToCartActions,
-                    hint: "إضافات العروض إلى السلة بعد استكمال الاختيارات.",
-                  },
-                  {
-                    label: "Orders created",
-                    value: quantityOfferJourney.ordersCreated,
-                    hint: "طلبات تم إنشاؤها واحتوت فعليًا على Quantity Offer.",
-                  },
-                ].map((item) => (
-                  <div
-                    key={item.label}
-                    className="flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4 dark:border-gray-700"
-                  >
-                    <div>
-                      <div className="font-semibold text-gray-900 dark:text-white">
-                        {item.label}
-                      </div>
-                      <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                        {item.hint}
-                      </div>
-                    </div>
-                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
-                      {item.value}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <InsightCard
-                  label="Selection Rate"
-                  value={formatRate(
-                    quantityOfferJourney.offerSelections,
-                    quantityOfferJourney.panelViews,
-                  )}
-                  hint="نسبة العملاء الذين اختاروا عرضًا بعد مشاهدة البلوك."
-                  icon={<BadgePercent size={18} />}
-                />
-                <InsightCard
-                  label="Add-to-Cart Rate"
-                  value={formatRate(
-                    quantityOfferJourney.addToCartActions,
-                    quantityOfferJourney.panelViews,
-                  )}
-                  hint="كم مرة تحولت مشاهدة البلوك إلى إضافة عرض فعلي إلى السلة."
-                  icon={<ShoppingCart size={18} />}
-                />
-                <InsightCard
-                  label="Order Capture Rate"
-                  value={formatRate(
-                    quantityOfferJourney.ordersCreated,
-                    quantityOfferJourney.addToCartActions,
-                  )}
-                  hint="نسبة عروض الكميات المضافة للسلة التي انتهت بطلب تم إنشاؤه."
-                  icon={<CheckCircle2 size={18} />}
-                />
-                <InsightCard
-                  label="Avg Units / Add"
-                  value={`${quantityOfferJourney.avgUnitsPerAdd}`}
-                  hint="متوسط عدد القطع داخل كل إضافة للسلة من عروض الكميات."
-                  icon={<Package size={18} />}
-                />
-                <InsightCard
-                  label="Tracked Cart Value"
-                  value={formatMoney(quantityOfferJourney.trackedCartValue)}
-                  hint="قيمة العروض المسجلة عند الإضافة للسلة من نفس البلوك."
-                  icon={<ShoppingCart size={18} />}
-                />
-                <InsightCard
-                  label="Tracked Order Value"
-                  value={formatMoney(quantityOfferJourney.trackedOrderValue)}
-                  hint="قيمة الطلبات التي وصلت فعليًا ومعها Quantity Offers."
-                  icon={<Package size={18} />}
-                />
-                <InsightCard
-                  label="Units Added"
-                  value={`${quantityOfferJourney.unitsAddedToCart}`}
-                  hint="إجمالي عدد القطع التي دخلت السلة عبر عروض الكميات."
-                  icon={<Sparkles size={18} />}
-                />
-                <InsightCard
-                  label="Units Ordered"
-                  value={`${quantityOfferJourney.unitsOrdered}`}
-                  hint="إجمالي عدد القطع التي تحولت إلى طلبات من عروض الكميات."
-                  icon={<CheckCircle2 size={18} />}
-                />
-              </div>
-
-              <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-                <div className="mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
-                  <BarChart3 size={18} />
-                  <span className="font-semibold">How To Read These Numbers</span>
-                </div>
-                <div className="space-y-3 text-sm leading-7 text-gray-600 dark:text-gray-400">
-                  <p>
-                    لو كان <span className="font-semibold text-gray-900 dark:text-white">Selection Rate</span>
-                    منخفضًا، راجع ترتيب العروض أو النص الرئيسي داخل صفحة المنتج.
-                  </p>
-                  <p>
-                    لو كانت الإضافات جيدة لكن{" "}
-                    <span className="font-semibold text-gray-900 dark:text-white">Order Capture Rate</span>
-                    ضعيفًا، راجع الشحن والمخزون وخطوة الدفع للعروض متعددة القطع.
-                  </p>
-                  <p>
-                    قارن بين{" "}
-                    <span className="font-semibold text-gray-900 dark:text-white">Tracked Cart Value</span>
-                    و{" "}
-                    <span className="font-semibold text-gray-900 dark:text-white">Tracked Order Value</span>
-                    لتفهم حجم التسرب بين السلة والطلب النهائي.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : null}
-
-        {slug === "quantity-offers-pro" && !insightsLoading ? (
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold text-gray-900 dark:text-white">
-                    أفضل المنتجات أداءً
-                  </div>
-                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    محسوبة من آخر {quantityOfferLogInsights.sampledLogCount} usage event مسجلة للتطبيق.
-                  </div>
-                </div>
-                <BarChart3 size={18} className="text-blue-600 dark:text-blue-300" />
-              </div>
-              {quantityOfferLogInsights.products.length > 0 ? (
-                <div className="space-y-3">
-                  {quantityOfferLogInsights.products.slice(0, 5).map((row) => (
-                    <div
-                      key={row.productId}
-                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">
-                            {row.productName}
-                          </div>
-                          <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            {row.productId}
-                          </div>
-                        </div>
-                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-300">
-                          {formatMoney(row.trackedOrderValue)}
-                        </div>
-                      </div>
-                      <div className="mt-3 grid gap-2 text-sm text-gray-600 dark:text-gray-400 sm:grid-cols-4">
-                        <div>Views: {row.panelViews}</div>
-                        <div>Selects: {row.selections}</div>
-                        <div>Adds: {row.addToCartActions}</div>
-                        <div>Orders: {row.ordersCreated}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-gray-300 p-5 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400">
-                  لا توجد بيانات كافية بعد لعرض breakdown حسب المنتج.
-                </div>
-              )}
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-4 flex items-start justify-between gap-4">
-                <div>
-                  <div className="font-semibold text-gray-900 dark:text-white">
-                    أفضل العروض والـ tiers
-                  </div>
-                  <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    يوضح أي عرض يحقق اختيارات وإضافات وطلبات أكثر.
-                  </div>
-                </div>
-                <Sparkles size={18} className="text-amber-600 dark:text-amber-300" />
-              </div>
-              {quantityOfferLogInsights.offers.length > 0 ? (
-                <div className="space-y-3">
-                  {quantityOfferLogInsights.offers.slice(0, 6).map((row) => (
-                    <div
-                      key={row.key}
-                      className="rounded-xl border border-gray-200 p-4 dark:border-gray-700"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="font-semibold text-gray-900 dark:text-white">
-                            {row.offerLabel}
-                          </div>
-                          <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                            {row.productName}
-                          </div>
-                        </div>
-                        <div className="text-sm font-bold text-emerald-600 dark:text-emerald-300">
-                          {formatMoney(row.trackedOrderValue)}
-                        </div>
-                      </div>
-                      <div className="mt-3 grid gap-2 text-sm text-gray-600 dark:text-gray-400 sm:grid-cols-4">
-                        <div>Qty: {row.offerQuantity}</div>
-                        <div>Selects: {row.selections}</div>
-                        <div>Adds: {row.addToCartActions}</div>
-                        <div>Orders: {row.ordersCreated}</div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-xl border border-dashed border-gray-300 p-5 text-sm text-gray-600 dark:border-gray-700 dark:text-gray-400">
-                  لا توجد بيانات كافية بعد لعرض breakdown حسب الـ tiers.
-                </div>
-              )}
-            </div>
-          </div>
-        ) : null}
-
         <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
           <div className="mb-4 flex items-center gap-2 text-gray-900 dark:text-white">
             <Clock3 size={18} />
@@ -3243,71 +2986,6 @@ export default function AppSettings() {
         return renderUgcReviews();
       case "commerce-advanced":
         return renderCommerceAdvanced();
-      case "quantity-offers-pro":
-        return (
-          <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <div className="mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  إدارة التطبيق
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-400">
-                  هذا التطبيق يُدار أساسًا من داخل صفحة المنتج نفسها. من هناك تحدد عروض 2 و3 و4 قطع،
-                  وسعر القطعة داخل العرض، والنصوص التي ستظهر للعميل، وما إذا كان العرض يحمل شارة
-                  مثل الشحن المجاني أو الأكثر توفيرًا.
-                </p>
-              </div>
-
-              <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5 dark:border-indigo-900/40 dark:bg-indigo-900/20">
-                <h3 className="font-semibold text-indigo-900 dark:text-indigo-100">
-                  ما الذي تفعله من صفحة المنتج؟
-                </h3>
-                <ul className="mt-3 space-y-2 text-sm text-indigo-900/90 dark:text-indigo-100/90">
-                  <li>تضيف أكثر من tier مثل 2 قطع أو 3 قطع أو 4 قطع.</li>
-                  <li>تحدد سعر القطعة داخل كل عرض.</li>
-                  <li>تكتب عنوان العرض والنصوص المساعدة.</li>
-                  <li>تتيح للعميل اختيار لون ومقاس كل قطعة من نفس البلوك.</li>
-                </ul>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-3">
-                <button
-                  onClick={() => navigate("/products")}
-                  className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition-colors hover:bg-blue-700"
-                >
-                  فتح المنتجات
-                </button>
-                <button
-                  onClick={() => navigate("/settings/upsell")}
-                  className="rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-900 transition-colors hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-white dark:hover:bg-gray-800"
-                >
-                  فتح إدارة الـ Upsell
-                </button>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                توصية التنفيذ الحالية
-              </h3>
-              <div className="mt-4 space-y-4 text-sm leading-6 text-gray-600 dark:text-gray-400">
-                <p>
-                  فعّل التطبيق من الـ marketplace، ثم افتح أي منتج وادخل إلى تبويب
-                  <span className="font-semibold text-gray-900 dark:text-white"> عروض الكميات </span>
-                  لإعداد tiers المنتج.
-                </p>
-                <p>
-                  إذا كان المنتج يحتوي على variants، سيظهر للعميل اختيار لون/مقاس لكل قطعة
-                  داخل العرض نفسه على صفحة المنتج.
-                </p>
-                <p>
-                  الصفحة الحالية هنا مخصّصة للتوجيه والـ overview، بينما الإدارة اليومية الحقيقية
-                  تتم من صفحة المنتج.
-                </p>
-              </div>
-            </div>
-          </div>
-        );
       default:
         return (
           <div className="rounded-2xl border border-dashed border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 p-8 text-center text-gray-600 dark:text-gray-400">

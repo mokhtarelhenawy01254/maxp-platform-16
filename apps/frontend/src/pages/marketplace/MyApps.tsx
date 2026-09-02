@@ -273,12 +273,21 @@ function MyApps() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Link to={`/my-apps/${installed.app.slug}/settings`} className="flex-1">
-                        <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-xl text-xs font-bold">
-                          <Settings2 size={13} />
-                          {t("marketplace.details")}
-                        </Button>
-                      </Link>
+                      {installed.app.slug === "quantity-offers-pro" ? (
+                        <Link to="/products" className="flex-1">
+                          <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-xl text-xs font-bold">
+                            <Package size={13} />
+                            <span>فتح المنتجات</span>
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link to={`/my-apps/${installed.app.slug}/settings`} className="flex-1">
+                          <Button variant="outline" size="sm" className="w-full gap-1.5 rounded-xl text-xs font-bold">
+                            <Settings2 size={13} />
+                            {t("marketplace.details")}
+                          </Button>
+                        </Link>
+                      )}
                       <Button
                         variant="ghost"
                         size="sm"

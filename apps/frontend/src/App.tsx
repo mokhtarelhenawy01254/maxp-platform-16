@@ -2951,6 +2951,18 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/my-apps/quantity-offers-pro/settings"
+                  element={<Navigate to="/products" replace />}
+                />
+                <Route
+                  path="/marketplace/quantity-offers-pro/settings"
+                  element={<Navigate to="/products" replace />}
+                />
+                <Route
+                  path="/marketplace/apps/quantity-offers-pro/settings"
+                  element={<Navigate to="/products" replace />}
+                />
+                <Route
                   path="/my-apps/:slug/settings"
                   element={
                     <Layout>
