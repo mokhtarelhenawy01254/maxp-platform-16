@@ -16814,6 +16814,9 @@ declare module 'react-i18next' {
         externalMessagesStats: string;
         facebookAds: string;
         facebookAdsReports: string;
+        adLibrary: string;
+        overlayCampaigns: string;
+        productLandingPages: string;
         facebookInbox: string;
         facebookIntegrationSettings: string;
         facebookBlocked: string;
@@ -17006,7 +17009,6 @@ declare module 'react-i18next' {
         orderCustomerUnknown: string;
         ordersSettings: string;
         customerBlockSettings: string;
-        overlayCampaigns: string;
         ordersStats: string;
         pageBuilder: string;
         pages: string;

@@ -871,24 +871,24 @@ const FacebookPixelSettings: React.FC = () => {
   }
 
   return (
-    <div className="w-full p-6 min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="w-full p-3 sm:p-6 pb-28 sm:pb-12 min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
+      <div className="mb-6 sm:mb-8">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center">
-              <ChartBarIcon className="h-8 w-8 text-indigo-600 ml-3" />
-              Facebook Pixel & Conversions API
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white flex items-center">
+              <ChartBarIcon className="h-6 w-6 sm:h-8 sm:w-8 text-indigo-600 ml-2.5 sm:ml-3 flex-shrink-0" />
+              <span>Facebook Pixel & Conversions API</span>
             </h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
+            <p className="mt-1.5 sm:mt-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               تتبع دقيق لزوار متجرك وتحسين أداء إعلانات Facebook
             </p>
           </div>
-          <div className="flex gap-3">
+          <div className="flex gap-3 w-full sm:w-auto">
             <button
               onClick={handleSave}
               disabled={saving}
-              className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+              className="w-full sm:w-auto px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors min-h-[44px] font-medium"
             >
               {saving ? (
                 <>
@@ -907,45 +907,47 @@ const FacebookPixelSettings: React.FC = () => {
       </div>
 
       {/* Info Banner */}
-      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4 mb-6">
-        <div className="flex">
-          <InformationCircleIcon className="h-6 w-6 text-blue-600 ml-3 flex-shrink-0" />
-          <div className="text-sm text-blue-800 dark:text-blue-200">
+      <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-3.5 sm:p-4 mb-6">
+        <div className="flex items-start">
+          <InformationCircleIcon className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 ml-2.5 sm:ml-3 flex-shrink-0 mt-0.5" />
+          <div className="text-xs sm:text-sm text-blue-800 dark:text-blue-200 leading-relaxed">
             <p className="font-semibold mb-1">💡 نصيحة مهمة:</p>
             <p>
               للحصول على أفضل دقة في التتبع (90%+)، فعّل{" "}
-              <strong>Pixel + Conversions API معاً</strong>. هذا يضمن تتبع
-              الأحداث حتى مع Ad Blockers و iOS 14.5+
+              <strong dir="ltr" className="inline-block font-bold">Pixel + Conversions API</strong>{" "}
+              معاً. هذا يضمن تتبع الأحداث حتى مع مانعات الإعلانات{" "}
+              <span dir="ltr" className="inline-block">(Ad Blockers)</span> وتحديثات{" "}
+              <span dir="ltr" className="inline-block font-semibold">iOS 14.5+</span>.
             </p>
           </div>
         </div>
       </div>
 
       {/* 🆕 Easy Connect Section */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-6 mb-6">
-        <div className="flex items-start">
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-2 border-blue-200 dark:border-blue-700 rounded-lg p-4 sm:p-6 mb-6">
+        <div className="flex flex-col sm:flex-row items-start gap-4">
           <div className="flex-shrink-0">
-            <RocketLaunchIcon className="h-12 w-12 text-blue-600" />
+            <RocketLaunchIcon className="h-10 w-10 sm:h-12 sm:w-12 text-blue-600" />
           </div>
-          <div className="mr-4 flex-1">
-            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">
+          <div className="flex-1 w-full">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white mb-2">
               🚀 الطريقة السهلة (موصى بها)
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 mb-4">
-              اربط حسابك مع Facebook وسيتم جلب Pixel ID و Access Token تلقائياً
+            <p className="text-sm sm:text-base text-gray-700 dark:text-gray-300 mb-4 leading-relaxed">
+              اربط حسابك مع Facebook وسيتم جلب <span dir="ltr" className="font-semibold">Pixel ID</span> و <span dir="ltr" className="font-semibold">Access Token</span> تلقائياً
             </p>
 
-            <div className="space-y-2 mb-4 text-sm text-gray-600 dark:text-gray-400">
+            <div className="space-y-2 mb-4 text-xs sm:text-sm text-gray-600 dark:text-gray-400">
               <div className="flex items-center">
-                <CheckCircleIcon className="h-5 w-5 text-green-500 ml-2" />
+                <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 ml-2 flex-shrink-0" />
                 <span>سهل وسريع (2-3 دقائق فقط)</span>
               </div>
               <div className="flex items-center">
-                <CheckCircleIcon className="h-5 w-5 text-green-500 ml-2" />
+                <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 ml-2 flex-shrink-0" />
                 <span>لا يحتاج نسخ ولصق</span>
               </div>
               <div className="flex items-center">
-                <CheckCircleIcon className="h-5 w-5 text-green-500 ml-2" />
+                <CheckCircleIcon className="h-4 w-4 sm:h-5 sm:w-5 text-green-500 ml-2 flex-shrink-0" />
                 <span>Access Token يُنشأ تلقائياً</span>
               </div>
             </div>
@@ -953,7 +955,7 @@ const FacebookPixelSettings: React.FC = () => {
             <button
               onClick={handleEasyConnect}
               disabled={fetchingPixels}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2 font-semibold"
+              className="w-full sm:w-auto px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 font-semibold min-h-[44px]"
             >
               {fetchingPixels ? (
                 <>
@@ -963,13 +965,13 @@ const FacebookPixelSettings: React.FC = () => {
               ) : (
                 <>
                   <svg
-                    className="w-5 h-5"
+                    className="w-5 h-5 flex-shrink-0"
                     fill="currentColor"
                     viewBox="0 0 24 24"
                   >
                     <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                   </svg>
-                  🔗 ربط مع Facebook تلقائياً
+                  <span>🔗 ربط مع Facebook تلقائياً</span>
                 </>
               )}
             </button>
@@ -1021,20 +1023,20 @@ const FacebookPixelSettings: React.FC = () => {
 
       <div className="space-y-6">
         {/* Facebook Pixel Section */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-                🎯 Facebook Pixel
-                <span className="mr-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center flex-wrap gap-1.5">
+                <span>🎯 Facebook Pixel</span>
+                <span className="text-xs sm:text-sm font-normal text-gray-500 dark:text-gray-400">
                   (Browser Tracking)
                 </span>
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                 تتبع الأحداث من متصفح المستخدم
               </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer min-h-[44px]">
               <input
                 type="checkbox"
                 checked={settings.facebookPixelEnabled || false}
@@ -1059,28 +1061,29 @@ const FacebookPixelSettings: React.FC = () => {
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   معرف البكسل (Pixel ID) <span className="text-red-500">*</span>
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={settings.facebookPixelId || ""}
                     onChange={(e) =>
                       setSettings({
                         ...settings,
-                        facebookPixelId: e.target.value,
+                        facebookPixelId: e.target.value.trim(),
                       })
                     }
                     placeholder="1234567890123456"
-                    maxLength={16}
-                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    maxLength={20}
+                    className="flex-1 px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all min-h-[44px]"
                   />
                   <button
                     onClick={handleTestPixel}
                     disabled={
                       testingPixel ||
                       !settings.facebookPixelId ||
-                      settings.facebookPixelId.length !== 16
+                      settings.facebookPixelId.length < 14 ||
+                      settings.facebookPixelId.length > 17
                     }
-                    className="px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors whitespace-nowrap"
+                    className="w-full sm:w-auto px-5 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors whitespace-nowrap min-h-[44px] font-medium"
                   >
                     {testingPixel ? (
                       <>
@@ -1096,8 +1099,8 @@ const FacebookPixelSettings: React.FC = () => {
                   </button>
                 </div>
                 <p className="mt-2 text-xs text-gray-500 flex items-center">
-                  <InformationCircleIcon className="h-4 w-4 ml-1" />
-                  16 رقم - يمكنك الحصول عليه من Facebook Events Manager
+                  <InformationCircleIcon className="h-4 w-4 ml-1 flex-shrink-0" />
+                  15-16 رقم - يمكنك الحصول عليه من Facebook Events Manager
                 </p>
               </div>
 
@@ -1211,20 +1214,20 @@ const FacebookPixelSettings: React.FC = () => {
         </div>
 
         {/* Facebook Conversions API Section */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
-                🚀 Facebook Conversions API
-                <span className="mr-2 px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full">
+              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center flex-wrap gap-1.5">
+                <span>🚀 Facebook Conversions API</span>
+                <span className="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded-full font-normal">
                   موصى به
                 </span>
               </h2>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
                 تتبع الأحداث من السيرفر - دقة أعلى (90%+)
               </p>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
+            <label className="relative inline-flex items-center cursor-pointer min-h-[44px]">
               <input
                 type="checkbox"
                 checked={settings.facebookConvApiEnabled || false}
@@ -1376,7 +1379,7 @@ const FacebookPixelSettings: React.FC = () => {
                     !settings.facebookPixelId ||
                     !settings.facebookConvApiToken
                   }
-                  className="px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 transition-colors"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors min-h-[44px] font-medium"
                 >
                   {testing ? (
                     <>
@@ -1426,16 +1429,17 @@ const FacebookPixelSettings: React.FC = () => {
         </div>
 
         {/* Advanced Settings */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
           <button
+            type="button"
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="w-full flex items-center justify-between text-right"
+            className="w-full flex items-center justify-between text-right py-2 min-h-[48px]"
           >
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
               ⚙️ إعدادات متقدمة
             </h2>
             <ChevronDownIcon
-              className={`h-5 w-5 text-gray-400 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
+              className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ${showAdvanced ? "rotate-180" : ""}`}
             />
           </button>
 
@@ -1536,22 +1540,23 @@ const FacebookPixelSettings: React.FC = () => {
         </div>
 
         {/* 🔧 Diagnostics & Troubleshooting Section */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
           <button
+            type="button"
             onClick={() => {
               setShowDiagnostics(!showDiagnostics);
               if (!showDiagnostics && !diagnostics) {
                 loadDiagnostics();
               }
             }}
-            className="w-full flex items-center justify-between text-right"
+            className="w-full flex items-center justify-between text-right py-2 min-h-[48px]"
           >
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <WrenchScrewdriverIcon className="h-6 w-6 text-orange-600 ml-2" />
-              🔧 التشخيص واستكشاف الأخطاء
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+              <WrenchScrewdriverIcon className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600 ml-2 flex-shrink-0" />
+              <span>🔧 التشخيص واستكشاف الأخطاء</span>
             </h2>
             <ChevronDownIcon
-              className={`h-5 w-5 text-gray-400 transition-transform ${showDiagnostics ? "rotate-180" : ""}`}
+              className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ${showDiagnostics ? "rotate-180" : ""}`}
             />
           </button>
 
@@ -1758,11 +1763,11 @@ const FacebookPixelSettings: React.FC = () => {
 
                   {/* Token Check Button */}
                   {settings.facebookConvApiToken && (
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                       <button
                         onClick={handleCheckTokenPermissions}
                         disabled={checkingToken}
-                        className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 flex items-center gap-2"
+                        className="w-full sm:w-auto px-4 py-2.5 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 flex items-center justify-center gap-2 min-h-[44px] font-medium"
                       >
                         {checkingToken ? (
                           <>
@@ -1778,7 +1783,7 @@ const FacebookPixelSettings: React.FC = () => {
                       </button>
                       <button
                         onClick={loadDiagnostics}
-                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                        className="w-full sm:w-auto px-4 py-2.5 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center justify-center gap-2 min-h-[44px]"
                       >
                         <ArrowPathIcon className="h-4 w-4" />
                         تحديث التشخيص
@@ -1855,22 +1860,23 @@ const FacebookPixelSettings: React.FC = () => {
         </div>
 
         {/* 🎯 Multiple Pixels Section */}
-        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 sm:p-6">
           <button
+            type="button"
             onClick={() => {
               setShowMultiplePixels(!showMultiplePixels);
               if (!showMultiplePixels && multiplePixels.length === 0) {
                 loadMultiplePixels();
               }
             }}
-            className="w-full flex items-center justify-between text-right"
+            className="w-full flex items-center justify-between text-right py-2 min-h-[48px]"
           >
-            <h2 className="text-xl font-semibold text-gray-900 flex items-center">
-              <ChartBarIcon className="h-6 w-6 text-purple-600 ml-2" />
-              🎯 إدارة Pixels متعددة
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+              <ChartBarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 ml-2 flex-shrink-0" />
+              <span>🎯 إدارة Pixels متعددة</span>
             </h2>
             <ChevronDownIcon
-              className={`h-5 w-5 text-gray-400 transition-transform ${showMultiplePixels ? "rotate-180" : ""}`}
+              className={`h-5 w-5 text-gray-400 transition-transform flex-shrink-0 ${showMultiplePixels ? "rotate-180" : ""}`}
             />
           </button>
 
