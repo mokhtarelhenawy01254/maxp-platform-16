@@ -329,6 +329,12 @@ export const storefrontApi = {
   /**
    * Fetch a public COD-Sales funnel page by slug. Returns the funnel config,
    * the linked product, and the company context. Used by FunnelCodSalesPage.
+   *
+   * The backend route lives at `/api/v1/funnels/public/:slug` (NOT
+   * `/api/v1/public/funnels/public/:slug`). Funnel pages are product-landing
+   * surfaces mounted under the merchant's tenant scope, so we go through
+   * productLandingFetch which uses getApiBase() (`/api/v1`) — not
+   * storefrontFetch which uses getPublicBase() (`/api/v1/public`).
    */
   getFunnel: async (
     slug: string,
@@ -342,7 +348,7 @@ export const storefrontApi = {
     if (options.companyId) params.set("companyId", options.companyId);
     if (options.previewToken) params.set("previewToken", options.previewToken);
     const query = params.toString();
-    return storefrontFetch(
+    return productLandingFetch(
       `/funnels/public/${encodeURIComponent(normalizedSlug)}${query ? `?${query}` : ""}`,
     );
   },
@@ -359,7 +365,7 @@ export const storefrontApi = {
     if (!normalizedSlug) {
       throw new Error("Funnel slug is required");
     }
-    return storefrontFetch(
+    return productLandingFetch(
       `/funnels/public/${encodeURIComponent(normalizedSlug)}/order`,
       withJsonBody("POST", payload),
     );
