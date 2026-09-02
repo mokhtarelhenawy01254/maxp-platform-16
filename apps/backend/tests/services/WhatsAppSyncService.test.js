@@ -98,4 +98,18 @@ describe("WhatsAppSyncService findOrCreateCustomer", () => {
       })
     );
   });
+
+  test("skips CRM customer sync when remoteJid is a WhatsApp group (@g.us)", async () => {
+    const result = await WhatsAppSyncService.syncMessage(
+      "company-1",
+      "session-1",
+      "120363024823492834@g.us",
+      { text: "group message" },
+      true
+    );
+
+    expect(result).toBeNull();
+    expect(mockPrisma.customer.findFirst).not.toHaveBeenCalled();
+    expect(mockPrisma.customer.create).not.toHaveBeenCalled();
+  });
 });

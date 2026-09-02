@@ -256,6 +256,11 @@ const WhatsAppSyncService = {
         return null;
       }
 
+      if (String(remoteJid || '').endsWith('@g.us')) {
+        // مجموعات الواتساب لا تضاف كعملاء أفراد في جدول الـ Customer بالـ CRM
+        return null;
+      }
+
       // ملاحظة: لا يوجد early-return على isNewMessage === false هنا.
       // الـ dedup الصحيح لازم يكون على الـ CRM Message row (اللي ممكن يفشل)، مش على الـ WhatsApp
       // row (اللي بينجح). لو الـ CRM sync فشل مرة واحدة ثم اتعاد إرسال نفس الرسالة، لازم يفضل

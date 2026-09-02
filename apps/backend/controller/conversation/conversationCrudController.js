@@ -762,6 +762,34 @@ const markConversationAsRead = async (req, res) => {
           });
         }
 
+        // 💬 Send read receipt to WhatsApp if this is a WhatsApp conversation
+        if (conversation.channel === 'WHATSAPP' && unreadMessagesBefore.length > 0) {
+          setImmediate(async () => {
+            try {
+              const { getSessionIdFromMetadata, safeJsonParse } = require('../../services/whatsappInboxMetadata');
+              const sessionId = getSessionIdFromMetadata(conversation.metadata);
+              const metadataObj = safeJsonParse(conversation.metadata, {});
+              let remoteJid = metadataObj.remoteJid;
+              if (!remoteJid && conversation.customerId) {
+                const prismaClient = getSharedPrismaClient();
+                const cust = await prismaClient.customer.findUnique({
+                  where: { id: conversation.customerId },
+                  select: { phone: true, whatsappId: true }
+                });
+                const cleanPhone = (cust?.whatsappId || cust?.phone || '').replace(/\D/g, '');
+                if (cleanPhone) remoteJid = `${cleanPhone}@s.whatsapp.net`;
+              }
+              if (sessionId && remoteJid) {
+                const WhatsAppMessageHandler = require('../../services/whatsapp/WhatsAppMessageHandler');
+                await WhatsAppMessageHandler.markAsRead(sessionId, remoteJid);
+                console.log(`💬 [WA-READ-RECEIPT] Read receipt sent for WhatsApp conversation ${id}`);
+              }
+            } catch (waErr) {
+              console.warn('⚠️ [WA-READ-RECEIPT] Failed to send read receipt:', waErr.message);
+            }
+          });
+        }
+
         res.json({
             success: true,
             message: `تم تحديد ${result.count} رسالة كمقروءة`,

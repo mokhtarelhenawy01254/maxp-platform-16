@@ -62,6 +62,7 @@ const companySessionMap = new Map(); // companyId -> Set<sessionId>
 const historySyncQueues = new Map(); // sessionId -> Promise
 const historyMediaSyncJobs = new Map(); // sessionId -> Promise
 const historySyncCompletionRequested = new Set();
+const historySyncRequestTimers = new Map(); // sessionId -> NodeJS.Timeout
 
 // Cache لصور البروفايل: كانت `sock.profilePictureUrl()` (نداء شبكة لواتساب) بتتنفذ
 // على كل رسالة واردة — صورة البروفايل نادراً ما تتغير، فـ TTL طويل (ساعة) آمن.
@@ -511,12 +512,8 @@ function classifySessionSocketHealth(session) {
         }
 
         if (readyState === 1) {
-            const lastMsgRecv = session.sock.lastReceivedMessageTimestamp || 0;
-            const now = Date.now();
-            const staleThreshold = parseInt(process.env.STALE_CONNECTION_THRESHOLD_MS || '120000', 10);
-            if (lastMsgRecv > 0 && (now - lastMsgRecv) > staleThreshold) {
-                return { alive: true, stale: true, reason: 'no_recent_messages' };
-            }
+            // readyState 1 = WebSocket OPEN. Baileys handles keepAlive (ping/pong every 30s).
+            // Do not disconnect healthy sockets just because no incoming messages were received.
             return { alive: true, stale: false, reason: null };
         } else if (readyState === 0) {
             return { alive: false, reason: 'websocket_connecting' };
@@ -1686,10 +1683,15 @@ async function createSession(sessionId, companyId, options = {}) {
             await handlePresenceUpdate(sessionId, companyId, update);
         });
 
-        // معالجة أحداث المكالمات
-        sock.ev.on('call.update', async (update) => {
+        // معالجة أحداث المكالمات (Baileys يطلق الحدث باسم 'call' بمصفوفة WACallEvent[])
+        sock.ev.on('call', async (calls) => {
             markSocketActivity(sock);
-            await handleCallUpdate(sessionId, companyId, update);
+            const callEvents = Array.isArray(calls) ? calls : [calls];
+            for (const call of callEvents) {
+                if (call) {
+                    await handleCallUpdate(sessionId, companyId, call);
+                }
+            }
         });
 
         // معالجة أحداث التصنيفات
@@ -2161,7 +2163,60 @@ function normalizeHistoryProgress(progress) {
     return Math.max(0, Math.min(value > 1 ? value : value * 100, 100));
 }
 
+const HISTORY_SYNC_REQUEST_TIMEOUT_MS = 120000; // 2 minutes (allows for 30s reconnect cooldown + handshake + WA upload)
+
+function clearHistorySyncRequestTimeout(sessionId) {
+    if (historySyncRequestTimers.has(sessionId)) {
+        clearTimeout(historySyncRequestTimers.get(sessionId));
+        historySyncRequestTimers.delete(sessionId);
+    }
+}
+
+function scheduleHistorySyncRequestTimeout(sessionId, companyId) {
+    clearHistorySyncRequestTimeout(sessionId);
+    const timer = setTimeout(async () => {
+        historySyncRequestTimers.delete(sessionId);
+        try {
+            const prisma = getSharedPrismaClient();
+            const imp = await prisma.whatsAppSessionHistoryImport.findUnique({
+                where: { sessionId },
+                select: { status: true }
+            });
+            // إذا استمرت الحالة REQUESTED بعد 60 ثانية (واتساب لم يرسل حزم تاريخ)، ننهي الطلب بسلام
+            if (imp && imp.status === 'REQUESTED') {
+                const sessionData = activeSessions.get(sessionId);
+                if (sessionData) sessionData.syncFullHistory = false;
+
+                await prisma.whatsAppSessionHistoryImport.update({
+                    where: { sessionId },
+                    data: {
+                        status: 'COMPLETED',
+                        completedAt: new Date(),
+                        lastProgress: 100,
+                        lastError: 'خوادم واتساب لم ترسل حزم تاريخ إضافية لهذه الجلسة المربوطة مسبقاً.'
+                    }
+                });
+
+                const io = getIO();
+                io?.to(`company_${companyId}`).emit('whatsapp:history_sync', {
+                    sessionId,
+                    status: 'COMPLETED',
+                    progress: 100,
+                    isLatest: true
+                });
+                console.log(`⏱️ [HISTORY] Safety timeout: Session ${sessionId} requested history but WhatsApp servers sent no history. Marked completed.`);
+            }
+        } catch (e) {
+            console.warn(`⚠️ [HISTORY] Safety timeout check failed for ${sessionId}:`, e.message);
+        }
+    }, HISTORY_SYNC_REQUEST_TIMEOUT_MS);
+
+    historySyncRequestTimers.set(sessionId, timer);
+}
+
 function enqueueMessagingHistorySet(sessionId, companyId, history, sock) {
+    clearHistorySyncRequestTimeout(sessionId);
+
     const previous = historySyncQueues.get(sessionId) || Promise.resolve();
     const next = previous
         .catch(() => {})
@@ -2172,9 +2227,14 @@ function enqueueMessagingHistorySet(sessionId, companyId, history, sock) {
         if (historySyncQueues.get(sessionId) === next) {
             historySyncQueues.delete(sessionId);
             if (historySyncCompletionRequested.delete(sessionId)) {
-                void finalizeHistoryImport(sessionId, companyId).catch((error) => {
-                    console.error(`❌ [HISTORY] Failed to finalize import for ${sessionId}:`, error.message);
-                });
+                // مهلة استقرار قصيرة (2 ثانية) لضمان عدم وصول حزم تالية مثل PUSH_NAME أو RECENT
+                setTimeout(() => {
+                    if (!historySyncQueues.has(sessionId)) {
+                        void finalizeHistoryImport(sessionId, companyId).catch((error) => {
+                            console.error(`❌ [HISTORY] Failed to finalize import for ${sessionId}:`, error.message);
+                        });
+                    }
+                }, 2000);
             }
         }
     }).catch(() => {});
@@ -2338,13 +2398,21 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         }
     }
 
-    // تخزين جهات اتصال الـ history كلها (بالأسماء) حتى يمكن عرض اسم الراسل
-    // داخل رسائل الجروبات (المرسل يصل بصيغة LID أو رقم تلفون).
+    // تخزين جهات اتصال الـ history المرتبطة بمحادثات فعلية أو رسائل
+    // لتفادي إغراق قاعدة البيانات بآلاف جهات الاتصال غير النشطة من دفتر الهاتف
+    const activeJids = new Set([
+        ...chats.map(c => c.id).filter(Boolean),
+        ...messages.map(m => m.key?.remoteJid).filter(Boolean),
+        ...messages.map(m => m.key?.participant || m.participant).filter(Boolean)
+    ]);
+
     let importedContacts = 0;
     const contactImportQueue = [];
     for (const c of contacts) {
         const contactJid = c.id || c.lid;
         if (!contactJid || contactJid === 'status@broadcast' || isJidNewsletter?.(contactJid)) continue;
+        if (!activeJids.has(contactJid) && !activeJids.has(c.id) && !activeJids.has(c.lid)) continue;
+
         contactImportQueue.push(() => upsertHistoryContact(sessionId, contactJid, {
             name: c.name || c.notify || c.verifiedName
         }));
@@ -2356,7 +2424,7 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         await historyYield();
     }
     if (importedContacts > 0) {
-        console.log(`📜 [WHATSAPP-HISTORY] Imported ${importedContacts} contact names for session ${sessionId}`);
+        console.log(`📜 [WHATSAPP-HISTORY] Imported ${importedContacts} active contact names for session ${sessionId}`);
     }
 
     // ====== Sprint 3: Batch processing with bounded chunks ======
@@ -2658,6 +2726,14 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 select: { id: true }
             });
             const isNewMessage = !existingMessage;
+
+            // إذا كانت رسالة صادرة ومحفوظة مسبقاً عبر WhatsAppMessageHandler، نتخطى التكرار
+            // لتفادي مضاعفة عمليات قاعدة البيانات وأحداث السوكيت الناتجة عن emitOwnEvents: true
+            if (fromMe && !isNewMessage && !importHistory) {
+                result.skipped++;
+                continue;
+            }
+
             const savedMessage = await prisma.whatsAppMessage.upsert({
                 where: { messageId },
                 update: {
@@ -4040,6 +4116,7 @@ async function requestHistorySync(sessionId, companyId) {
     });
 
     if (!outcome.alreadyRunning) {
+        scheduleHistorySyncRequestTimeout(sessionId, companyId);
         await requestReconnect(sessionId, companyId, 'manual_history_sync', {}, 250);
     }
 

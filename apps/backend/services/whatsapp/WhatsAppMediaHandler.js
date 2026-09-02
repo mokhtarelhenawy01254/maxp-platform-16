@@ -170,7 +170,7 @@ async function downloadMedia(message, sessionId) {
             {},
             {
                 logger: console,
-                reuploadRequest: session.sock.updateMediaMessage
+                reuploadRequest: typeof session.sock?.updateMediaMessage === 'function' ? session.sock.updateMediaMessage : undefined
             }
         );
 
