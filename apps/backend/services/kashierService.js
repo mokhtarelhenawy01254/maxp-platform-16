@@ -119,9 +119,15 @@ class KashierService {
       apiKey = overrideConfig.apiKey;
       secretKey = overrideConfig.secretKey;
     } else if (companyId) {
-      const { config } = await getCompanyKashierConfig(companyId);
-      apiKey = config?.apiKey || apiKey;
-      secretKey = config?.secretKey || secretKey;
+      const { config, hasConfig } = await getCompanyKashierConfig(companyId);
+      if (hasConfig && config?.apiKey && config?.secretKey) {
+        apiKey = config.apiKey;
+        secretKey = config.secretKey;
+      } else {
+        const platformConfig = await getPlatformKashierConfig();
+        apiKey = platformConfig.apiKey || apiKey;
+        secretKey = platformConfig.secretKey || secretKey;
+      }
     } else {
       const platformConfig = await getPlatformKashierConfig();
       apiKey = platformConfig.apiKey || apiKey;
@@ -144,11 +150,19 @@ class KashierService {
       secretKey = overrideConfig.secretKey;
       mode = overrideConfig.mode;
     } else if (companyId) {
-      const { config } = await getCompanyKashierConfig(companyId);
-      merchantId = config?.merchantId || process.env.KASHIER_MERCHANT_ID;
-      apiKey = config?.apiKey || process.env.KASHIER_API_KEY;
-      secretKey = config?.secretKey || process.env.KASHIER_SECRET_KEY;
-      mode = config?.mode || KASHIER_MODE();
+      const { config, hasConfig } = await getCompanyKashierConfig(companyId);
+      if (hasConfig && config?.merchantId && config?.apiKey && config?.secretKey) {
+        merchantId = config.merchantId;
+        apiKey = config.apiKey;
+        secretKey = config.secretKey;
+        mode = config.mode || KASHIER_MODE();
+      } else {
+        const platformConfig = await getPlatformKashierConfig();
+        merchantId = platformConfig.merchantId || process.env.KASHIER_MERCHANT_ID;
+        apiKey = platformConfig.apiKey || process.env.KASHIER_API_KEY;
+        secretKey = platformConfig.secretKey || process.env.KASHIER_SECRET_KEY;
+        mode = platformConfig.mode || KASHIER_MODE();
+      }
     } else {
       const platformConfig = await getPlatformKashierConfig();
       merchantId = platformConfig.merchantId || process.env.KASHIER_MERCHANT_ID;

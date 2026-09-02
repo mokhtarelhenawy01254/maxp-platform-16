@@ -869,7 +869,7 @@ class WalletController {
           webhookUrl,
           description: `شحن المحفظة: ${amount} جنيه`,
         },
-        companyId,
+        null,
       );
 
       if (!session.success) {
