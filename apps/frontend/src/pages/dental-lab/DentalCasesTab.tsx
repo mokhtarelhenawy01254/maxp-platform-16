@@ -9,7 +9,7 @@ import {
   DentalLabCase, DentalLabDoctor, DentalTechnician, DentalWorkType, DentalCasePriority,
   fetchCases, fetchDoctors, fetchWorkTypes, fetchTechnicians,
   createCase, updateCase, advanceCase, assignCase, uploadCaseAttachment, uploadCaseAttachments, parseScan,
-  createInvoice, addInvoicePayment,
+  createInvoice, addInvoicePayment, kioskScanCase,
   fmtMoney, fmtDate, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
@@ -42,6 +42,9 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
   const [teeth, setTeeth] = useState(initial?.teeth ?? "");
   const [shade, setShade] = useState(initial?.shade ?? "");
   const [material, setMaterial] = useState(initial?.material ?? "");
+  const [lotNumber, setLotNumber] = useState(initial?.lotNumber ?? "");
+  const [materialBrand, setMaterialBrand] = useState(initial?.materialBrand ?? "");
+  const [warrantyYears, setWarrantyYears] = useState(initial?.warrantyYears ?? 0);
   const [dueDate, setDueDate] = useState(initial?.dueDate ? initial.dueDate.slice(0, 10) : "");
   const [priority, setPriority] = useState(initial?.priority ?? "NORMAL");
   const [discount, setDiscount] = useState(initial?.discount ?? 0);
@@ -104,6 +107,9 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
         teeth: teeth.trim() || undefined,
         shade: shade.trim() || undefined,
         material: material.trim() || undefined,
+        lotNumber: lotNumber.trim() || undefined,
+        materialBrand: materialBrand.trim() || undefined,
+        warrantyYears: Number(warrantyYears) >= 0 ? Number(warrantyYears) : 0,
         priceSnapshot: Number(priceSnapshot) || 0,
         discount: Number(discount) || 0,
         dueDate: dueDate || undefined,
@@ -192,7 +198,19 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
           </div>
           <div>
             <label className={labelCls}>{t("dentalLab.cases.material")}</label>
-            <input className={inputCls} value={material} onChange={e => setMaterial(e.target.value)} placeholder="مثال: زيركون" />
+            <input className={inputCls} value={material} onChange={e => setMaterial(e.target.value)} placeholder="مثال: زيركون 3D Pro" />
+          </div>
+          <div>
+            <label className={labelCls}>الشركة المصنعة / الماركة</label>
+            <input className={inputCls} value={materialBrand} onChange={e => setMaterialBrand(e.target.value)} placeholder="مثال: Ivoclar, Aidite, Wieland" />
+          </div>
+          <div>
+            <label className={labelCls}>رقم التشغيلة (Lot #)</label>
+            <input className={inputCls} value={lotNumber} onChange={e => setLotNumber(e.target.value)} placeholder="مثال: LOT-2026-88" />
+          </div>
+          <div>
+            <label className={labelCls}>سنوات الضمان (Warranty)</label>
+            <input className={inputCls} type="number" min="0" max="20" value={warrantyYears} onChange={e => setWarrantyYears(Number(e.target.value))} />
           </div>
           <div>
             <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")}</label>
@@ -454,6 +472,193 @@ function InvoiceModal({ caseData, onClose, onSaved }: InvoiceModalProps) {
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("dentalLab.common.save")}
           </button>
         </div>
+interface KioskScannerModalProps {
+  technicians: DentalTechnician[];
+  onClose: () => void;
+  onScanned: () => void;
+}
+
+function KioskScannerModal({ technicians, onClose, onScanned }: KioskScannerModalProps) {
+  const [barcode, setBarcode] = useState("");
+  const [technicianId, setTechnicianId] = useState("");
+  const [scanning, setScanning] = useState(false);
+  const [lastScanned, setLastScanned] = useState<{
+    caseNumber?: string;
+    patientName?: string;
+    doctorName?: string;
+    newStatus: string;
+    completedStage?: string;
+    technicianName?: string;
+  } | null>(null);
+  const [scanHistory, setScanHistory] = useState<Array<{
+    code: string;
+    time: string;
+    newStatus: string;
+    caseNumber?: string;
+    success: boolean;
+    error?: string;
+  }>>([]);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const handleScan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = barcode.trim();
+    if (!code || scanning) return;
+
+    setScanning(true);
+    try {
+      const res = await kioskScanCase({ barcode: code, technicianId: technicianId || undefined });
+      toast.success(`تم مسح الحالة ${res.case?.caseNumber || code} وترقيتها بنجاح`);
+      setLastScanned({
+        caseNumber: res.case?.caseNumber,
+        patientName: res.case?.patientName,
+        doctorName: res.case?.doctorName || undefined,
+        newStatus: res.newStatus,
+        completedStage: res.completedStage,
+        technicianName: res.technicianName,
+      });
+      setScanHistory(prev => [
+        {
+          code,
+          time: new Date().toLocaleTimeString("ar-EG"),
+          newStatus: res.newStatus,
+          caseNumber: res.case?.caseNumber,
+          success: true,
+        },
+        ...prev.slice(0, 19),
+      ]);
+      setBarcode("");
+      onScanned();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "رمز غير موجود";
+      toast.error(msg);
+      setScanHistory(prev => [
+        {
+          code,
+          time: new Date().toLocaleTimeString("ar-EG"),
+          newStatus: "فشل",
+          success: false,
+          error: msg,
+        },
+        ...prev.slice(0, 19),
+      ]);
+    } finally {
+      setScanning(false);
+      setTimeout(() => inputRef.current?.focus(), 50);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => !scanning && onClose()}>
+      <div className={`${MODAL_CONTENT_CLS} !max-w-2xl max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4 pb-3 border-b dark:border-gray-800">
+          <div className="flex items-center gap-2">
+            <span className="p-2 rounded-lg bg-blue-600 text-white"><ScanLine className="w-5 h-5" /></span>
+            <div>
+              <h3 className="text-lg font-bold">محطة المسح السريع بالباركود (Barcode Kiosk)</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">مرر قارئ الباركود على ملصق الحالة لترقية المرحلة فوراً</p>
+            </div>
+          </div>
+          <button onClick={() => !scanning && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">الفني المنفذ الحالي:</label>
+            <select
+              className={`${MODAL_INPUT_CLS} !w-auto flex-1 text-sm`}
+              value={technicianId}
+              onChange={e => {
+                setTechnicianId(e.target.value);
+                setTimeout(() => inputRef.current?.focus(), 50);
+              }}
+            >
+              <option value="">تلقائي (حسب المرحلة الحالية للحالة)</option>
+              {technicians.filter(t => t.isActive).map(t => (
+                <option key={t.id} value={t.id}>{t.name} ({ROLE_CONFIG[t.role]?.label || t.role})</option>
+              ))}
+            </select>
+          </div>
+
+          <form onSubmit={handleScan} className="relative">
+            <input
+              ref={inputRef}
+              type="text"
+              value={barcode}
+              onChange={e => setBarcode(e.target.value)}
+              placeholder="امسح الباركود أو اكتب رقم الحالة ثم اضغط Enter..."
+              className="w-full text-lg font-mono px-4 py-3 border-2 border-blue-500 rounded-xl focus:ring-4 focus:ring-blue-100 dark:bg-gray-800 dark:border-blue-400 dark:text-gray-100 placeholder:text-sm placeholder:font-sans"
+              autoFocus
+              disabled={scanning}
+            />
+            <button
+              type="submit"
+              disabled={scanning || !barcode.trim()}
+              className="absolute left-2 top-2 bottom-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold disabled:opacity-50 flex items-center gap-1.5"
+            >
+              {scanning ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />} مسح
+            </button>
+          </form>
+
+          {lastScanned && (
+            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800 animate-in fade-in duration-200">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-emerald-800 dark:text-emerald-300 uppercase">آخر حالة ممسوحة بنجاح</span>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-600 text-white">
+                  {lastScanned.newStatus}
+                </span>
+              </div>
+              <div className="mt-2 text-sm text-gray-900 dark:text-gray-100 font-semibold flex flex-wrap gap-4">
+                <span>رقم: <b className="font-mono">{lastScanned.caseNumber}</b></span>
+                <span>المريض: <b>{lastScanned.patientName || "—"}</b></span>
+                {lastScanned.doctorName && <span>الطبيب: <b>{lastScanned.doctorName}</b></span>}
+                {lastScanned.completedStage && <span>المرحلة المكتملة: <b>{lastScanned.completedStage}</b></span>}
+                {lastScanned.technicianName && <span>الفني: <b>{lastScanned.technicianName}</b></span>}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <h4 className="text-xs font-bold text-gray-500 dark:text-gray-400 mb-2">سجل المسح في هذه الجلسة ({scanHistory.length})</h4>
+            {scanHistory.length === 0 ? (
+              <p className="text-xs text-gray-400 text-center py-4 border dark:border-gray-800 rounded-lg">لم يتم مسح أي حالة بعد في هذه الجلسة</p>
+            ) : (
+              <div className="space-y-1.5 max-h-48 overflow-y-auto text-xs">
+                {scanHistory.map((sh, idx) => (
+                  <div
+                    key={idx}
+                    className={`p-2 rounded-lg flex items-center justify-between border ${
+                      sh.success
+                        ? "bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700"
+                        : "bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-gray-800 dark:text-gray-200">{sh.caseNumber || sh.code}</span>
+                      <span className="text-gray-400">{sh.time}</span>
+                      {sh.error && <span className="text-red-500 font-medium">({sh.error})</span>}
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${sh.success ? "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" : "bg-red-100 text-red-800"}`}>
+                      {sh.newStatus}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 mt-6 pt-3 border-t dark:border-gray-800">
+          <button onClick={onClose} className="px-4 py-2 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium">
+            إغلاق المحطة
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -476,6 +681,7 @@ export default function DentalCasesTab() {
   const [technicians, setTechnicians] = useState<DentalTechnician[]>([]);
 
   const [createOpen, setCreateOpen] = useState(false);
+  const [kioskOpen, setKioskOpen] = useState(false);
   const [editingCase, setEditingCase] = useState<DentalLabCase | null>(null);
   const [advanceCaseData, setAdvanceCaseData] = useState<DentalLabCase | null>(null);
   const [assignCaseData, setAssignCaseData] = useState<DentalLabCase | null>(null);
@@ -558,6 +764,14 @@ export default function DentalCasesTab() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 className="text-xl font-bold">{t("dentalLab.cases.title")}</h2>
         <div className="flex items-center gap-2">
+          <button
+            onClick={() => setKioskOpen(true)}
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50/70 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm font-semibold shadow-sm"
+            title="فتح محطة المسح السريع بالباركود للإنتاج"
+          >
+            <ScanLine className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            محطة الباركود (Kiosk)
+          </button>
           <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
@@ -674,6 +888,9 @@ export default function DentalCasesTab() {
 
       {createOpen && (
         <CreateCaseModal initial={editingCase} doctors={doctors} workTypes={workTypes} onClose={() => { setCreateOpen(false); setEditingCase(null); }} onSaved={handleSaved} />
+      )}
+      {kioskOpen && (
+        <KioskScannerModal technicians={technicians} onClose={() => setKioskOpen(false)} onScanned={() => refresh({ silent: true })} />
       )}
       {quickOrderOpen && (
         <QuickOrderModal
