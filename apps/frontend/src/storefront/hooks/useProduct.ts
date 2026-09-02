@@ -120,6 +120,13 @@ const fetchPreviewProductFromAdminApi = async (
       getPreviewApiBaseUrl(),
       getPreviewRequestHeaders(),
     ]);
+
+    // If no access token is available (e.g. running on a merchant's store subdomain),
+    // skip the admin API to prevent 401 errors and proceed directly to public storefront fetch.
+    if (!headers.Authorization) {
+      return null;
+    }
+
     const response = await fetch(
       `${apiBaseUrl}/products/${encodeURIComponent(idOrSlug)}`,
       {
@@ -152,9 +159,11 @@ const fetchPublicStorefrontProduct = async (
   idOrSlug: string,
   presentationSlug?: string,
 ): Promise<Product> => {
+  const isPreview = resolveStorefrontProductPreviewMode();
+  const queryParam = isPreview ? '?preview=1' : '';
   const endpoint = presentationSlug
-    ? `/products/${encodeURIComponent(idOrSlug)}/${encodeURIComponent(presentationSlug)}`
-    : `/products/${encodeURIComponent(idOrSlug)}`;
+    ? `/products/${encodeURIComponent(idOrSlug)}/${encodeURIComponent(presentationSlug)}${queryParam}`
+    : `/products/${encodeURIComponent(idOrSlug)}${queryParam}`;
   const response = await storefrontFetch(endpoint);
   if (response.success) {
     const product = normalizeStorefrontProduct(response.data);

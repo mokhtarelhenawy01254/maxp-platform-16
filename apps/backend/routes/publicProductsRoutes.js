@@ -1764,6 +1764,8 @@ router.get('/:id/volume-discounts', async (req, res) => {
 router.get('/:id/:presentationSlug', async (req, res) => {
   try {
     const { id, presentationSlug } = req.params;
+    const isPreview =
+      req.query.preview === '1' || req.query.productPreview === '1';
     const orConditions = [{ slug: id }];
 
     if (id.length > 20) {
@@ -1775,12 +1777,15 @@ router.get('/:id/:presentationSlug', async (req, res) => {
       where: withPublicActiveProductFilter({
         OR: orConditions,
         companyId: req.companyId,
-        isActive: true,
+        ...(isPreview ? {} : { isActive: true }),
       }),
       select: {
         ...PUBLIC_PRODUCT_SELECT,
         productPresentations: {
-          where: { slug: presentationSlug, isActive: true },
+          where: {
+            slug: presentationSlug,
+            ...(isPreview ? {} : { isActive: true }),
+          },
           select: {
             id: true,
             name: true,
@@ -1796,8 +1801,6 @@ router.get('/:id/:presentationSlug', async (req, res) => {
     });
 
     if (!product) {
-      // منتج محوّل (تحويل منتج مكرر إلى عرض تقديمي) — نرجّع بيانات المنتج
-      // الأصلي كـ JSON والـ frontend يعمل redirect بنفسه.
       const converted = await loadConvertedProductPayload(
         prisma,
         req.companyId,
@@ -1858,6 +1861,10 @@ router.get('/:id/:presentationSlug', async (req, res) => {
     };
     result.canonicalSlug = product.slug;
 
+    if (isPreview) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    }
+
     res.json({
       success: true,
       data: result,
@@ -1874,6 +1881,8 @@ router.get('/:id/:presentationSlug', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const { id } = req.params;
+    const isPreview =
+      req.query.preview === '1' || req.query.productPreview === '1';
     const orConditions = [{ slug: id }];
 
     if (id.length > 20) {
@@ -1885,7 +1894,7 @@ router.get('/:id', async (req, res) => {
       where: withPublicActiveProductFilter({
         OR: orConditions,
         companyId: req.companyId,
-        isActive: true,
+        ...(isPreview ? {} : { isActive: true }),
       }),
       select: PUBLIC_PRODUCT_SELECT,
     });
@@ -1935,7 +1944,11 @@ router.get('/:id', async (req, res) => {
       amazonBuyUrl,
     });
 
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
+    if (isPreview) {
+      res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    } else {
+      res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
+    }
     res.json({
       success: true,
       data: applyAffiliatePricing(formattedProduct, affiliatePricing),

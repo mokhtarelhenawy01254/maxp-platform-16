@@ -215,27 +215,33 @@ export const useProductApi = () => {
         if (result.success) {
           const savedProduct = result.data || null;
 
-          // Delete removed variants
-          for (const variantId of deletedVariantIds) {
-            try {
-              await apiClient.delete(`/products/${id}/variants/${variantId}`);
-            } catch (err) {
-              console.error(`Error deleting variant ${variantId}:`, err);
-            }
+          // Delete removed variants in parallel
+          if (deletedVariantIds.length > 0) {
+            await Promise.all(
+              deletedVariantIds.map((variantId) =>
+                apiClient.delete(`/products/${id}/variants/${variantId}`).catch((err) => {
+                  console.error(`Error deleting variant ${variantId}:`, err);
+                })
+              )
+            );
           }
 
-          // Update/Create variants
-          for (const variant of variants) {
-            const cleanedVariant = cleanVariantData(variant, { canEditStock });
-            try {
-              if (variant.id) {
-                await apiClient.put(`/products/${id}/variants/${variant.id}`, cleanedVariant);
-              } else {
-                await productApi.createVariant(id, cleanedVariant);
-              }
-            } catch (err) {
-              console.error(`Error processing variant:`, err);
-            }
+          // Update/Create variants in parallel
+          if (variants.length > 0) {
+            await Promise.all(
+              variants.map(async (variant) => {
+                const cleanedVariant = cleanVariantData(variant, { canEditStock });
+                try {
+                  if (variant.id) {
+                    await apiClient.put(`/products/${id}/variants/${variant.id}`, cleanedVariant);
+                  } else {
+                    await productApi.createVariant(id, cleanedVariant);
+                  }
+                } catch (err) {
+                  console.error(`Error processing variant:`, err);
+                }
+              })
+            );
           }
 
           setSuccessMessage(t("products.messages.productUpdated"));
@@ -271,14 +277,16 @@ export const useProductApi = () => {
           const productId = result.data?.id;
           const savedProduct = result.data || null;
           if (variants.length > 0 && productId) {
-            for (const variant of variants) {
-              try {
-                const variantData = cleanVariantData(variant, { canEditStock });
-                await productApi.createVariant(productId, variantData);
-              } catch (err) {
-                console.error(`Error creating variant:`, err);
-              }
-            }
+            await Promise.all(
+              variants.map(async (variant) => {
+                try {
+                  const variantData = cleanVariantData(variant, { canEditStock });
+                  await productApi.createVariant(productId, variantData);
+                } catch (err) {
+                  console.error(`Error creating variant:`, err);
+                }
+              })
+            );
           }
 
           // WhatsApp Trigger

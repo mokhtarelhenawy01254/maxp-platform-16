@@ -37,6 +37,9 @@ const getConfiguredLocalBaseDomain = (): string => {
  * Get the base domain
  */
 export const getBaseDomain = (): string => {
+  if (typeof window === "undefined" || !window.location?.hostname) {
+    return "maxp.online";
+  }
   const hostname = window.location.hostname;
   const normalizedHostname = hostname.toLowerCase();
 
@@ -105,15 +108,20 @@ export const buildStoreUrl = (
   const safeIdentifier = (identifier || "").trim().toLowerCase();
   const safeCompanyId = (companyId || "").trim();
   const baseDomain = getBaseDomain();
+  const hasWin = typeof window !== "undefined";
   const protocol = isLocalLikeDomain(baseDomain)
     ? "http:"
-    : window.location.protocol;
+    : hasWin && window.location?.protocol
+      ? window.location.protocol
+      : "https:";
 
   // حفظ companyId في localStorage عندما يكون متاحًا، وإلا استخدم identifier كحل أخير.
-  if (safeCompanyId) {
-    localStorage.setItem("storefront_companyId", safeCompanyId);
-  } else if (safeIdentifier) {
-    localStorage.setItem("storefront_companyId", safeIdentifier);
+  if (hasWin && window.localStorage) {
+    if (safeCompanyId) {
+      localStorage.setItem("storefront_companyId", safeCompanyId);
+    } else if (safeIdentifier) {
+      localStorage.setItem("storefront_companyId", safeIdentifier);
+    }
   }
 
   const cleanPath = normalizeStorePath(path);
@@ -124,7 +132,8 @@ export const buildStoreUrl = (
   }
 
   if (!safeIdentifier) {
-    return `${window.location.origin}${cleanPath}`;
+    const origin = hasWin && window.location?.origin ? window.location.origin : "https://maxp.online";
+    return `${origin}${cleanPath}`;
   }
 
   return `${protocol}//${safeIdentifier}.${baseDomain}${cleanPath}`;

@@ -52,4 +52,26 @@ describe("product preview url helpers", () => {
       "https://maxp.online/store/product/nova-sneakers?companyId=cmleybpf70028juo2wwpmp8rt&preview=1",
     );
   });
+
+  it("builds the preview url directly on the merchant subdomain when companySlug is provided", () => {
+    expect(
+      buildProductPreviewUrl({
+        productId: "cmtjen0th000ejuzw1kag9zpw",
+        productSlug: "swan-shoe",
+        companySlug: "swan",
+      }),
+    ).toBe("https://swan.maxp.online/product/swan-shoe?preview=1");
+  });
+
+  it("builds the preview url on a custom domain when customDomain is provided", () => {
+    expect(
+      buildProductPreviewUrl({
+        productId: "cmtjen0th000ejuzw1kag9zpw",
+        productSlug: "swan-shoe",
+        companySlug: "swan",
+        customDomain: "myshop.com",
+      }),
+    ).toBe("https://myshop.com/product/swan-shoe?preview=1");
+  });
 });
+

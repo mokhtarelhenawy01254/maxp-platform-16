@@ -94,7 +94,7 @@ describe('fetchStorefrontProduct preview mode', () => {
 
     expect(product.id).toBe('public-prod123');
     expect(mocks.storefrontFetch).toHaveBeenCalledWith(
-      '/products/nova-sneakers',
+      '/products/nova-sneakers?preview=1',
     );
   });
 });

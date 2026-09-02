@@ -1,3 +1,5 @@
+import { buildStoreUrl } from "../../../utils/storeUrl";
+
 type ResolveProductPreviewCompanyIdArgs = {
   productCompanyId?: string | null;
   userCompanyId?: string | null;
@@ -5,11 +7,13 @@ type ResolveProductPreviewCompanyIdArgs = {
   queryCompanyId?: string | null;
 };
 
-type BuildProductPreviewUrlArgs = {
-  origin: string;
+export type BuildProductPreviewUrlArgs = {
+  origin?: string;
   productId: string;
   productSlug?: string | null;
   companyId?: string | null;
+  companySlug?: string | null;
+  customDomain?: string | null;
 };
 
 const normalizeValue = (value?: string | null): string | null => {
@@ -36,18 +40,39 @@ export const buildProductPreviewUrl = ({
   productId,
   productSlug,
   companyId,
+  companySlug,
+  customDomain,
 }: BuildProductPreviewUrlArgs): string => {
   const normalizedProductId = normalizeValue(productId);
   if (!normalizedProductId) {
     return "";
   }
   const productRouteKey = normalizeValue(productSlug) || normalizedProductId;
+  const normalizedCompanySlug = normalizeValue(companySlug);
+  const normalizedCustomDomain = normalizeValue(customDomain);
+  const normalizedCompanyId = normalizeValue(companyId);
+
+  // If company slug or custom domain is available, preview directly on the merchant's store subdomain
+  if (normalizedCompanySlug || normalizedCustomDomain) {
+    const rawStoreUrl = buildStoreUrl(
+      normalizedCompanySlug || "",
+      `/product/${encodeURIComponent(productRouteKey)}`,
+      normalizedCustomDomain || undefined,
+      normalizedCompanyId,
+    );
+    const storeUrl = new URL(rawStoreUrl);
+    storeUrl.searchParams.set("preview", "1");
+    return storeUrl.toString();
+  }
+
+  const fallbackOrigin =
+    normalizeValue(origin) ||
+    (typeof window !== "undefined" ? window.location.origin : "https://maxp.online");
 
   const url = new URL(
     `/store/product/${encodeURIComponent(productRouteKey)}`,
-    origin,
+    fallbackOrigin,
   );
-  const normalizedCompanyId = normalizeValue(companyId);
 
   if (normalizedCompanyId) {
     url.searchParams.set("companyId", normalizedCompanyId);
@@ -63,18 +88,36 @@ export const buildProductPublicUrl = ({
   productId,
   productSlug,
   companyId,
+  companySlug,
+  customDomain,
 }: BuildProductPreviewUrlArgs): string => {
   const normalizedProductId = normalizeValue(productId);
   if (!normalizedProductId) {
     return "";
   }
   const productRouteKey = normalizeValue(productSlug) || normalizedProductId;
+  const normalizedCompanySlug = normalizeValue(companySlug);
+  const normalizedCustomDomain = normalizeValue(customDomain);
+  const normalizedCompanyId = normalizeValue(companyId);
+
+  // Direct public link on the merchant's store subdomain
+  if (normalizedCompanySlug || normalizedCustomDomain) {
+    return buildStoreUrl(
+      normalizedCompanySlug || "",
+      `/product/${encodeURIComponent(productRouteKey)}`,
+      normalizedCustomDomain || undefined,
+      normalizedCompanyId,
+    );
+  }
+
+  const fallbackOrigin =
+    normalizeValue(origin) ||
+    (typeof window !== "undefined" ? window.location.origin : "https://maxp.online");
 
   const url = new URL(
     `/store/product/${encodeURIComponent(productRouteKey)}`,
-    origin,
+    fallbackOrigin,
   );
-  const normalizedCompanyId = normalizeValue(companyId);
 
   if (normalizedCompanyId) {
     url.searchParams.set("companyId", normalizedCompanyId);
@@ -82,3 +125,4 @@ export const buildProductPublicUrl = ({
 
   return url.toString();
 };
+
