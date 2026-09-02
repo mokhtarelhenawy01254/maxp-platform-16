@@ -469,12 +469,28 @@ export const PAYMENT_STATUS_MAP: Record<DentalPaymentStatus, { label: string; co
   PAID: { label: "مدفوعة", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
 };
 
-export const INVOICE_STATUS_MAP: Record<string, { label: string; color: string }> = {
-  OPEN: { label: "مش مدفوعة", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
-  PARTIAL: { label: "جزئية", color: "bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300" },
-  PAID: { label: "مدفوعة", color: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300" },
-  VOID: { label: "ملغية", color: "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300" },
-};
+export const VITA_SHADES = [
+  "A1", "A2", "A3", "A3.5", "A4",
+  "B1", "B2", "B3", "B4",
+  "C1", "C2", "C3", "C4",
+  "D2", "D3", "D4",
+];
+
+export const BLEACH_SHADES = ["BL1", "BL2", "BL3", "BL4", "OM1", "OM2", "OM3"];
+
+export const IMPRESSION_TYPES = [
+  { id: "SILICONE", label: "طبعة سيليكون فيزيائية", icon: "🦷" },
+  { id: "PLASTER_MODEL", label: "كاست / موديل جبس", icon: "🏺" },
+  { id: "DIGITAL_SCAN", label: "سكانر رقمي (3D Scan STL)", icon: "💻" },
+  { id: "BITE", label: "عضة شمع / تسجيل إطباق", icon: "📏" },
+];
+
+export const CASE_INTENTS = [
+  { id: "FINAL", label: "تسليم نهائي مباشر (Final Delivery)", desc: "إنهاء كامل وتلميع وتسليم" },
+  { id: "WAX_TRY_IN", label: "بروفة شمع (Wax Try-in)", desc: "تجربة رص الأسنان وعضة الشمع" },
+  { id: "COPING_TRY_IN", label: "بروفة كوبينج / فريم (Coping / Framework)", desc: "تجربة الهيكل المعدني أو الزيركون" },
+  { id: "SPECIAL_TRAY", label: "ملعقة خاصة / بيز بليت (Special Tray)", desc: "صناعة تري خاصة قبل الطبعة النهائية" },
+];
 
 export const STAGE_STATUS_MAP: Record<string, { label: string; color: string }> = {
   PENDING: { label: "مستنى", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },

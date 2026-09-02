@@ -10,22 +10,28 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Building2,
+  Calendar,
   Check,
   CheckCircle2,
   ChevronRight,
   CreditCard,
   FileText,
+  History,
   Image as ImageIcon,
   Loader2,
+  Package,
   Plus,
   ScanLine,
   Search,
+  Sparkles,
   Stethoscope,
   Trash2,
   Upload,
+  User,
   UserPlus,
   Users2,
   Wallet,
@@ -46,7 +52,12 @@ import {
   uploadCaseAttachments,
   MODAL_CONTENT_CLS,
   MODAL_INPUT_CLS,
+  VITA_SHADES,
+  BLEACH_SHADES,
+  IMPRESSION_TYPES,
+  CASE_INTENTS,
 } from "./shared";
+import OdontogramChart from "./OdontogramChart";
 
 type Step = 1 | 2 | 3;
 
@@ -69,18 +80,18 @@ function fileIcon(name: string) {
   const ext = (name.split(".").pop() || "").toLowerCase();
   if (["jpg", "jpeg", "png", "webp", "gif", "bmp"].includes(ext)) return <ImageIcon className="w-4 h-4 text-blue-500" />;
   if (ext === "pdf") return <FileText className="w-4 h-4 text-red-500" />;
-  if (["stl", "ply", "dxf", "dcm"].includes(ext)) return <span className="w-4 h-4 inline-flex items-center justify-center text-[10px] font-bold text-indigo-500">3D</span>;
+  if (["stl", "ply", "dxf", "dcm"].includes(ext)) return <span className="w-4 h-4 inline-flex items-center justify-center text-[10px] font-bold text-indigo-500 bg-indigo-50 dark:bg-indigo-900/40 rounded">3D</span>;
   if (["json", "txt"].includes(ext)) return <FileText className="w-4 h-4 text-amber-500" />;
   return <FileText className="w-4 h-4 text-gray-400" />;
 }
 
-function stepLabel(t: (k: string) => string, step: Step): string {
-  if (step === 1) return t("dentalLab.cases.stepServices");
-  if (step === 2) return t("dentalLab.cases.stepDoctor");
-  return t("dentalLab.cases.stepPatient");
+function stepLabel(step: Step): string {
+  if (step === 1) return "الطبيب والعيادة";
+  if (step === 2) return "الخدمة والأسنان واللون";
+  return "المريض والملفات";
 }
 
-function StepIndicator({ current, t }: { current: Step; t: (k: string) => string }) {
+function StepIndicator({ current }: { current: Step }) {
   const steps: Step[] = [1, 2, 3];
   return (
     <div className="flex items-center justify-center gap-2 mb-5">
@@ -91,23 +102,23 @@ function StepIndicator({ current, t }: { current: Step; t: (k: string) => string
           <div key={s} className="flex items-center gap-2">
             <div
               className={[
-                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2",
+                "w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold border-2 transition-colors",
                 done
                   ? "bg-emerald-500 border-emerald-500 text-white"
                   : active
-                    ? "bg-blue-600 border-blue-600 text-white"
+                    ? "bg-blue-600 border-blue-600 text-white shadow-sm"
                     : "border-gray-300 dark:border-gray-600 text-gray-400",
               ].join(" ")}
             >
-              {done ? <Check className="w-4 h-4" /> : s}
+              {done ? <Check className="w-4 h-4 stroke-[3]" /> : s}
             </div>
             <span
               className={[
-                "text-sm",
-                active ? "font-semibold text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400",
+                "text-xs sm:text-sm font-medium",
+                active ? "font-bold text-blue-600 dark:text-blue-400" : "text-gray-500 dark:text-gray-400",
               ].join(" ")}
             >
-              {stepLabel(t, s)}
+              {stepLabel(s)}
             </span>
             {idx < steps.length - 1 && <ChevronRight className="w-4 h-4 text-gray-300 dark:text-gray-600" />}
           </div>
@@ -121,58 +132,58 @@ function DoctorCard({
   doctor,
   selected,
   onSelect,
-  t,
 }: {
   doctor: DentalLabDoctor;
   selected: boolean;
   onSelect: () => void;
-  t: (k: string) => string;
 }) {
   return (
     <button
       type="button"
       onClick={onSelect}
       className={[
-        "w-full text-right rounded-xl border-2 p-3 transition",
+        "w-full text-right rounded-xl border-2 p-3 transition text-start",
         selected
-          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-          : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700",
+          ? "border-blue-500 bg-blue-50/70 dark:bg-blue-900/25 ring-1 ring-blue-400"
+          : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700 bg-white dark:bg-gray-800",
       ].join(" ")}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="font-semibold text-gray-900 dark:text-gray-100">{doctor.name}</div>
-        {selected && <CheckCircle2 className="w-5 h-5 text-blue-500 shrink-0" />}
+        <div className="font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-1.5">
+          <Stethoscope className="w-4 h-4 text-blue-600" />
+          {doctor.name}
+        </div>
+        {selected && <CheckCircle2 className="w-5 h-5 text-blue-600 shrink-0" />}
       </div>
       {doctor.clinicName && (
-        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-          <Building2 className="w-3 h-3" />{doctor.clinicName}
+        <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-1">
+          <Building2 className="w-3.5 h-3.5 text-gray-400" />
+          {doctor.clinicName}
         </div>
       )}
-      {doctor.phone && <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5" dir="ltr">{doctor.phone}</div>}
-      <div className="grid grid-cols-3 gap-1 mt-2 text-[11px]">
-        <div className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 text-center">
-          <div className="text-gray-400">{t("dentalLab.cases.doctorOutstanding")}</div>
-          <div className="font-semibold text-amber-600 dark:text-amber-400" dir="ltr">{fmtMoney(doctor.outstanding)}</div>
+      {doctor.phone && <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 font-mono" dir="ltr">{doctor.phone}</div>}
+      <div className="grid grid-cols-3 gap-1.5 mt-2.5 text-[11px]">
+        <div className="bg-gray-50 dark:bg-gray-900/40 rounded p-1.5 text-center">
+          <div className="text-gray-400">الرصيد المعلق</div>
+          <div className={`font-bold ${Number(doctor.outstanding) > 0 ? "text-amber-600 dark:text-amber-400" : "text-gray-600"}`} dir="ltr">
+            {fmtMoney(doctor.outstanding)}
+          </div>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 text-center">
-          <div className="text-gray-400">{t("dentalLab.cases.doctorActiveCases")}</div>
-          <div className="font-semibold text-blue-600 dark:text-blue-400" dir="ltr">{doctor.activeCases ?? 0}</div>
+        <div className="bg-gray-50 dark:bg-gray-900/40 rounded p-1.5 text-center">
+          <div className="text-gray-400">حالات نشطة</div>
+          <div className="font-bold text-blue-600 dark:text-blue-400" dir="ltr">{doctor.activeCases ?? 0}</div>
         </div>
-        <div className="bg-gray-50 dark:bg-gray-800 rounded px-2 py-1 text-center">
-          <div className="text-gray-400">{t("dentalLab.cases.doctorCreditLimit")}</div>
-          <div className="font-semibold text-emerald-600 dark:text-emerald-400" dir="ltr">
+        <div className="bg-gray-50 dark:bg-gray-900/40 rounded p-1.5 text-center">
+          <div className="text-gray-400">حد الائتمان</div>
+          <div className="font-bold text-emerald-600 dark:text-emerald-400" dir="ltr">
             {doctor.creditLimit ? fmtMoney(doctor.creditLimit) : "—"}
           </div>
         </div>
       </div>
-      {(doctor.overdueCases ?? 0) > 0 && (
-        <div className="text-[11px] text-red-600 dark:text-red-400 mt-1">
-          {t("dentalLab.cases.doctorOverdue")}: {doctor.overdueCases}
-        </div>
-      )}
       {doctor.creditExceeded && (
-        <div className="text-[11px] text-red-600 dark:text-red-400 font-semibold mt-1">
-          ⚠ {t("dentalLab.cases.creditExceeded")}
+        <div className="text-[11px] text-red-600 dark:text-red-400 font-semibold mt-1.5 flex items-center gap-1">
+          <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+          <span>تنبيه: الطبيب تجاوز حد الائتمان المسموح</span>
         </div>
       )}
     </button>
@@ -182,53 +193,52 @@ function DoctorCard({
 function NewDoctorInline({
   onCreated,
   onCancel,
-  t,
 }: {
   onCreated: (d: DentalLabDoctor) => void;
   onCancel: () => void;
-  t: (k: string) => string;
 }) {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [clinicName, setClinicName] = useState("");
   const [saving, setSaving] = useState(false);
   const save = async () => {
-    if (!name.trim()) { toast.error(t("dentalLab.cases.doctorNamePh")); return; }
+    if (!name.trim()) { toast.error("اسم الطبيب مطلوب"); return; }
     setSaving(true);
     try {
       const created = await createDoctor({ name: name.trim(), phone: phone.trim() || undefined, clinicName: clinicName.trim() || undefined, isActive: true });
-      toast.success(t("dentalLab.common.saved"));
+      toast.success("تمت إضافة الطبيب بنجاح");
       onCreated(created);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+      toast.error(e instanceof Error ? e.message : "فشل حفظ الطبيب");
     } finally {
       setSaving(false);
     }
   };
   return (
-    <div className="rounded-xl border-2 border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/40 dark:bg-emerald-900/10 p-3 space-y-2">
+    <div className="rounded-xl border-2 border-dashed border-emerald-300 dark:border-emerald-700 bg-emerald-50/40 dark:bg-emerald-900/10 p-3.5 space-y-2.5">
       <div className="flex items-center justify-between">
-        <div className="font-semibold text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-          <UserPlus className="w-4 h-4" />{t("dentalLab.cases.newDoctorInlineTitle")}
+        <div className="font-semibold text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+          <UserPlus className="w-4 h-4" />
+          إضافة طبيب وعيادة جديدة فوراً
         </div>
         <button type="button" onClick={onCancel} className="text-gray-400 hover:text-gray-600">
           <XMarkIcon className="w-4 h-4" />
         </button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        <input className={inputCls} placeholder={t("dentalLab.cases.doctorNamePh")} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
-        <input className={inputCls} placeholder={t("dentalLab.cases.doctorPhonePh")} value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
-        <input className={`${inputCls} sm:col-span-2`} placeholder={t("dentalLab.cases.doctorClinicPh")} value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
+        <input className={inputCls} placeholder="اسم الطبيب (د. فلان) *" value={name} onChange={(e) => setName(e.target.value)} autoFocus />
+        <input className={inputCls} placeholder="رقم الهاتف (01xxxxxxxxx)" value={phone} onChange={(e) => setPhone(e.target.value)} dir="ltr" />
+        <input className={`${inputCls} sm:col-span-2`} placeholder="اسم العيادة أو المركز الطبي" value={clinicName} onChange={(e) => setClinicName(e.target.value)} />
       </div>
       <div className="flex justify-end">
         <button
           type="button"
           onClick={save}
           disabled={saving || !name.trim()}
-          className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1"
+          className="px-4 py-1.5 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1 shadow-sm"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-          {t("dentalLab.common.save")}
+          حفظ واختيار الطبيب
         </button>
       </div>
     </div>
@@ -244,24 +254,28 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
   const [allDoctors, setAllDoctors] = useState<DentalLabDoctor[]>([]);
   const [refsLoading, setRefsLoading] = useState(true);
 
-  // Step 1: services
-  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
-
-  // Step 2: doctor
+  // Step 1: Doctor selection & financial check
   const [doctorSearch, setDoctorSearch] = useState("");
   const [selectedDoctor, setSelectedDoctor] = useState<DentalLabDoctor | null>(null);
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
+  const [bypassCreditCheck, setBypassCreditCheck] = useState(false);
 
-  // Step 3: patient + files
-  const [patientName, setPatientName] = useState("");
-  const [patientPhone, setPatientPhone] = useState("");
+  // Step 2: Services, Teeth, Shade, Impression & Try-in
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [selectedTeeth, setSelectedTeeth] = useState<string[]>([]);
   const [unitsCount, setUnitsCount] = useState(1);
-  const [teeth, setTeeth] = useState("");
   const [shade, setShade] = useState("");
+  const [customShade, setCustomShade] = useState("");
   const [material, setMaterial] = useState("");
+  const [impressionType, setImpressionType] = useState("SILICONE");
+  const [caseIntent, setCaseIntent] = useState("FINAL");
   const [priceSnapshot, setPriceSnapshot] = useState(0);
   const [discount, setDiscount] = useState(0);
+
+  // Step 3: Patient, Due Date, Priority, Notes & Files
+  const [patientName, setPatientName] = useState("");
+  const [patientPhone, setPatientPhone] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"NORMAL" | "URGENT" | "STAT">("NORMAL");
   const [notes, setNotes] = useState("");
@@ -270,13 +284,14 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
   const [parseMsg, setParseMsg] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  // per-file upload progress (name -> pct 0-100) + status; total progress separate
+
+  // Per-file upload progress
   const [upProgress, setUpProgress] = useState<Record<string, number>>({});
   const [upStatus, setUpStatus] = useState<Record<string, "uploading" | "done" | "error">>({});
   const [upTotalPct, setUpTotalPct] = useState(0);
   const [upDoneCount, setUpDoneCount] = useState(0);
 
-  // load refs once
+  // Load Initial Refs
   useEffect(() => {
     let mounted = true;
     setRefsLoading(true);
@@ -287,16 +302,19 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
         setAllDoctors(Array.isArray(docs) ? docs : []);
       })
       .catch(() => {
-        toast.error(t("dentalLab.common.noData"));
+        toast.error("فشل تحميل البيانات المرجعية");
       })
       .finally(() => mounted && setRefsLoading(false));
     return () => { mounted = false; };
-  }, [t]);
+  }, []);
 
-  // debounced doctor search
+  // Debounced Doctor Search
   useEffect(() => {
-    if (step !== 2) return;
-    if (doctorSearch.trim().length === 0) { setAllDoctors([]); return; }
+    if (step !== 1) return;
+    if (doctorSearch.trim().length === 0) {
+      fetchDoctors().then(docs => setAllDoctors(Array.isArray(docs) ? docs : [])).catch(() => {});
+      return;
+    }
     let cancelled = false;
     setDoctorsLoading(true);
     const t2 = setTimeout(() => {
@@ -304,7 +322,7 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
         .then((docs) => { if (!cancelled) setAllDoctors(Array.isArray(docs) ? docs : []); })
         .catch(() => { if (!cancelled) setAllDoctors([]); })
         .finally(() => { if (!cancelled) setDoctorsLoading(false); });
-    }, 280);
+    }, 250);
     return () => { cancelled = true; clearTimeout(t2); };
   }, [doctorSearch, step]);
 
@@ -315,53 +333,48 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
     [workTypes, selectedServiceIds],
   );
 
-  const subtotal = useMemo(
-    () => selectedServices.reduce((s, w) => s + (Number(w.price) || 0), 0),
-    [selectedServices],
-  );
+  const primaryService = selectedServices[0] || null;
 
+  // Toggle Services in Step 2
   const toggleService = (id: string) => {
     setSelectedServiceIds((prev) => {
-      if (prev.includes(id)) return prev.filter((x) => x !== id);
-      // الـ schema الحالي يقبل workTypeId واحد فقط — نخلي أول واحد هو الأساسي
-      const next = prev.length === 0 ? [id] : [prev[0], id];
-      return Array.from(new Set(next));
+      if (prev.includes(id)) {
+        const next = prev.filter((x) => x !== id);
+        return next;
+      }
+      return [id, ...prev]; // make newest primary
     });
   };
 
-  // عند اختيار أول خدمة، عبّي السعر والخامة وعدد الكراونات تلقائياً
+  // Recalculate price when service, unitsCount, or teeth change
   useEffect(() => {
-    if (selectedServiceIds.length > 0) {
-      const primary = workTypes.find((w) => w.id === selectedServiceIds[0]);
-      if (primary) {
-        if (primary.defaultMaterial && !material) setMaterial(primary.defaultMaterial);
-        const initUnits = primary.defaultCrownCount || 1;
-        setUnitsCount(initUnits);
-        const isPerUnit = (primary.pricingMode || "PER_UNIT") === "PER_UNIT";
-        setPriceSnapshot(isPerUnit ? initUnits * (Number(primary.price) || 0) : Number(primary.price) || 0);
+    if (primaryService) {
+      if (primaryService.defaultMaterial && !material) {
+        setMaterial(primaryService.defaultMaterial);
       }
+      const count = selectedTeeth.length > 0 ? selectedTeeth.length : (primaryService.defaultCrownCount || 1);
+      setUnitsCount(count);
+      const isPerUnit = (primaryService.pricingMode || "PER_UNIT") === "PER_UNIT";
+      const basePrice = Number(primaryService.price) || 0;
+      setPriceSnapshot(isPerUnit ? count * basePrice : basePrice);
     }
   }, [selectedServiceIds, workTypes]);
 
-  const handleTeethChange = (val: string) => {
-    setTeeth(val);
-    const parts = val.split(/[,،\s]+/).filter(Boolean);
-    if (parts.length > 0) {
-      const count = parts.length;
-      setUnitsCount(count);
-      const primary = workTypes.find((w) => w.id === selectedServiceIds[0]);
-      if (primary && (primary.pricingMode || "PER_UNIT") === "PER_UNIT") {
-        setPriceSnapshot(count * (Number(primary.price) || 0));
-      }
+  // Handle Tooth Selection from Odontogram
+  const handleTeethChange = (teethArr: string[]) => {
+    setSelectedTeeth(teethArr);
+    const count = teethArr.length > 0 ? teethArr.length : 1;
+    setUnitsCount(count);
+    if (primaryService && (primaryService.pricingMode || "PER_UNIT") === "PER_UNIT") {
+      setPriceSnapshot(count * (Number(primaryService.price) || 0));
     }
   };
 
-  const handleUnitsCountChange = (val: number) => {
-    const count = Math.max(1, val);
+  const handleManualUnitsChange = (n: number) => {
+    const count = Math.max(1, n);
     setUnitsCount(count);
-    const primary = workTypes.find((w) => w.id === selectedServiceIds[0]);
-    if (primary && (primary.pricingMode || "PER_UNIT") === "PER_UNIT") {
-      setPriceSnapshot(count * (Number(primary.price) || 0));
+    if (primaryService && (primaryService.pricingMode || "PER_UNIT") === "PER_UNIT") {
+      setPriceSnapshot(count * (Number(primaryService.price) || 0));
     }
   };
 
@@ -378,66 +391,80 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
   const onDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
-    if (e.dataTransfer?.files) addFiles(e.dataTransfer.files);
+    if (e.dataTransfer.files) addFiles(e.dataTransfer.files);
   };
 
-  const handleParseFile = async (file: File) => {
-    setParseMsg("");
+  const handleParseFile = async (f: File) => {
     try {
-      const result: ScanParseResult = await parseScan(file);
-      if (result.patientName) setPatientName((p) => p || String(result.patientName));
-      if (result.teeth) setTeeth((p) => p || String(result.teeth));
-      if (result.shade) setShade((p) => p || String(result.shade));
-      if (result.material) setMaterial((p) => p || String(result.material));
-      if (result.workTypeHint) {
-        const match = workTypes.find((w) =>
-          w.name && String(result.workTypeHint).toLowerCase().includes(w.name.toLowerCase()),
-        );
-        if (match) {
-          setSelectedServiceIds((prev) => (prev.includes(match.id) ? prev : [...prev, match.id]));
-        }
+      setParseMsg("جاري فحص وتفسير الملف بالذكاء الاصطناعي...");
+      const res: ScanParseResult = await parseScan(f);
+      if (res.patientName && !patientName) setPatientName(res.patientName);
+      if (res.teeth && selectedTeeth.length === 0) {
+        const parts = res.teeth.split(/[,،\s]+/).filter(Boolean);
+        handleTeethChange(parts);
       }
-      if (result.dueDate) {
-        const d = new Date(result.dueDate);
-        if (!Number.isNaN(d.getTime())) {
-          const iso = d.toISOString().slice(0, 10);
-          setDueDate((p) => p || iso);
-        }
-      }
-      if (result.notes) setNotes((p) => p || String(result.notes));
-      setParseMsg(t("dentalLab.cases.scanDone"));
-      toast.success(t("dentalLab.cases.scanDone"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("dentalLab.cases.scanFailed"));
+      if (res.shade && !shade) setShade(res.shade);
+      if (res.material && !material) setMaterial(res.material);
+      setParseMsg("تم استخراج بيانات الحالة من الملف بنجاح!");
+      setTimeout(() => setParseMsg(""), 4000);
+    } catch {
+      setParseMsg("تعذر القراءة الآلية، يرجى ملء الحقول يدوياً");
+      setTimeout(() => setParseMsg(""), 3500);
     }
   };
 
-  const canNextFromStep1 = selectedServiceIds.length > 0;
-  const canNextFromStep2 = selectedDoctor !== null;
-
-  const submit = async () => {
+  // Submit Quick Order
+  const submitOrder = async () => {
     if (submitting) return;
-    if (!patientName.trim()) { toast.error(t("dentalLab.cases.patientNamePh")); setStep(3); return; }
+    if (!selectedDoctor) {
+      toast.error("يرجى اختيار الطبيب أولاً");
+      setStep(1);
+      return;
+    }
+    if (selectedServiceIds.length === 0) {
+      toast.error("يرجى اختيار نوع الشغل المطلوب");
+      setStep(2);
+      return;
+    }
+    if (!patientName.trim()) {
+      toast.error("اسم المريض مطلوب");
+      setStep(3);
+      return;
+    }
+
     const primaryId = selectedServiceIds[0];
     const primary = workTypes.find((w) => w.id === primaryId);
     const extraNames = selectedServices
       .filter((s) => s.id !== primaryId)
       .map((s) => s.name)
       .join("، ");
-    const finalNotes = [notes.trim(), extraNames && `خدمات إضافية: ${extraNames}`].filter(Boolean).join(" | ") || undefined;
+
+    const finalShade = customShade.trim() || shade.trim() || undefined;
+    const impressionLabel = IMPRESSION_TYPES.find(i => i.id === impressionType)?.label || impressionType;
+    const intentLabel = CASE_INTENTS.find(c => c.id === caseIntent)?.label || caseIntent;
+
+    const metadataParts = [
+      `نوع الطبعة: ${impressionLabel}`,
+      `نوع الطلب: ${intentLabel}`,
+      extraNames && `خدمات إضافية: ${extraNames}`,
+      notes.trim(),
+    ].filter(Boolean);
+
+    const finalNotes = metadataParts.join(" | ") || undefined;
+    const teethStr = selectedTeeth.length > 0 ? selectedTeeth.join(", ") : undefined;
 
     setSubmitting(true);
     try {
       const created = await createCase({
-        doctorId: selectedDoctor?.id,
+        doctorId: selectedDoctor.id,
         patientName: patientName.trim(),
         patientPhone: patientPhone.trim() || undefined,
         workTypeId: primaryId,
         workTypeName: primary?.name,
         unitsCount: Math.max(1, Number(unitsCount) || 1),
         unitPrice: primary ? Number(primary.price) : undefined,
-        teeth: teeth.trim() || undefined,
-        shade: shade.trim() || undefined,
+        teeth: teethStr,
+        shade: finalShade,
         material: material.trim() || undefined,
         priceSnapshot: Number(priceSnapshot) || 0,
         discount: Number(discount) || 0,
@@ -449,7 +476,6 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
 
       if (files.length > 0) {
         try {
-          // ارفع كل ملف لوحده (بدون ذكاء اصطناعي) مع نسبة لكل ملف + الإجمالي
           const { apiClient } = await import("@/services/api");
           const totalBytes = files.reduce((s, f) => s + f.size, 0);
           let doneBytes = 0;
@@ -471,411 +497,518 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
               setUpProgress((p) => ({ ...p, [f.name]: 100 }));
               doneBytes += f.size;
               done += 1;
-            } catch (err) {
+            } catch {
               setUpStatus((p) => ({ ...p, [f.name]: "error" }));
               errors += 1;
             }
-            setUpTotalPct(Math.round((doneBytes * 100) / totalBytes));
+            setUpTotalPct(Math.round((doneBytes * 100) / (totalBytes || 1)));
             setUpDoneCount(done);
           }
           if (errors === 0) {
-            toast.success(t("dentalLab.cases.filesUploaded", { count: files.length }));
-          } else if (done > 0) {
-            toast.warning(`تم رفع ${done}، فشل ${errors} ملف`);
+            toast.success(`تم إنشاء الحالة ورفع ${files.length} ملفات بنجاح`);
           } else {
-            toast.error(`فشل رفع ${errors} ملف`);
+            toast.warning(`تم إنشاء الحالة، ورُفع ${done} ملف (تعذر رفع ${errors})`);
           }
         } catch (err) {
-          toast.error(`اتعملت الحالة لكن فشل رفع بعض الملفات: ${err instanceof Error ? err.message : ""}`);
+          toast.error(`تم إنشاء الحالة لكن تعذر رفع بعض المرفقات: ${err instanceof Error ? err.message : ""}`);
         }
+      } else {
+        toast.success("تم إنشاء أمر الشغل السريع بنجاح!");
       }
-      toast.success(t("dentalLab.common.saved"));
+
       onSaved(created);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+      toast.error(e instanceof Error ? e.message : "فشل إنشاء الحالة");
     } finally {
       setSubmitting(false);
     }
   };
 
+  const netTotal = Math.max(0, (Number(priceSnapshot) || 0) - (Number(discount) || 0));
+
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center" onClick={() => !submitting && onClose()}>
-      <div className={`${MODAL_CONTENT_CLS} !max-w-3xl max-h-[92vh] overflow-y-auto`} onClick={(e) => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3" onClick={() => !submitting && onClose()}>
+      <div className={`${MODAL_CONTENT_CLS} !max-w-4xl max-h-[92vh] flex flex-col overflow-hidden`} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between p-4 sm:p-5 border-b dark:border-gray-700 shrink-0">
           <div>
             <h3 className="text-lg font-bold flex items-center gap-2">
               <Stethoscope className="w-5 h-5 text-blue-600" />
-              {t("dentalLab.cases.quickOrder")}
+              الطلب السريع لأمر الشغل (Quick Order 2026)
             </h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{t("dentalLab.cases.quickOrderSubtitle")}</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              تسجيل حالة جديدة، تحديد الأسنان، التحقق من الائتمان، ورفع الملفات في 3 خطوات بسيطة
+            </p>
           </div>
           <button
             type="button"
             onClick={() => !submitting && onClose()}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"
-            aria-label="close"
           >
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        <StepIndicator current={step} t={t} />
+        <div className="p-4 sm:p-5 overflow-y-auto flex-1 space-y-4">
+          <StepIndicator current={step} />
 
-        {/* Step 1: Services */}
-        {step === 1 && (
-          <div className="space-y-4">
-            <p className="text-sm text-gray-600 dark:text-gray-400">{t("dentalLab.cases.servicesHint")}</p>
-            {refsLoading ? (
-              <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
-            ) : activeWorkTypes.length === 0 ? (
-              <p className="text-center text-sm text-gray-400 py-6">{t("dentalLab.common.noData")}</p>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[50vh] overflow-y-auto">
-                {activeWorkTypes.map((w) => {
-                  const checked = selectedServiceIds.includes(w.id);
-                  return (
-                    <button
-                      key={w.id}
-                      type="button"
-                      onClick={() => toggleService(w.id)}
-                      className={[
-                        "text-right rounded-xl border-2 p-3 transition",
-                        checked
-                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                          : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-700",
-                      ].join(" ")}
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="font-semibold text-sm">{w.name}</div>
-                        {checked && <CheckCircle2 className="w-4 h-4 text-blue-500 shrink-0" />}
-                      </div>
-                      <div className="flex items-center justify-between mt-1 text-xs text-gray-500 dark:text-gray-400">
-                        <span className="font-mono" dir="ltr">{fmtMoney(w.price)} ج.م</span>
-                        {w.leadTimeDays != null && <span>{w.leadTimeDays} يوم</span>}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {selectedServices.length > 0 && (
-              <div className="rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 p-3 text-sm">
-                <div className="flex items-center justify-between">
-                  <div className="font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
-                    <Wallet className="w-4 h-4" />{t("dentalLab.cases.subtotal")}
-                  </div>
-                  <div className="font-bold text-emerald-700 dark:text-emerald-300" dir="ltr">{fmtMoney(subtotal)} ج.م</div>
-                </div>
-                <ul className="mt-2 space-y-0.5 text-xs text-emerald-700 dark:text-emerald-300">
-                  {selectedServices.map((s) => (
-                    <li key={s.id} className="flex items-center justify-between">
-                      <span>{s.name}</span>
-                      <span dir="ltr">{fmtMoney(s.price)}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 2: Doctor */}
-        {step === 2 && (
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute right-3 top-2.5 text-gray-400" />
-              <input
-                className={`${inputCls} pr-9`}
-                placeholder={t("dentalLab.cases.doctorSearch")}
-                value={doctorSearch}
-                onChange={(e) => setDoctorSearch(e.target.value)}
-                autoFocus
-              />
-            </div>
-
-            {doctorsLoading ? (
-              <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
-            ) : (
-              <>
-                {doctorSearch.trim() && allDoctors.length === 0 && !showNewDoctor && (
-                  <p className="text-xs text-amber-600 dark:text-amber-400">{t("dentalLab.cases.noDoctorFound")}</p>
+          {/* STEP 1: DOCTOR & FINANCIAL STATUS */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">
+                  اختر الطبيب أو العيادة المرسلة لأمر الشغل:
+                </p>
+                {!showNewDoctor && (
+                  <button
+                    type="button"
+                    onClick={() => setShowNewDoctor(true)}
+                    className="flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    طبيب / عيادة جديدة
+                  </button>
                 )}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto">
-                  {allDoctors.slice(0, 12).map((d) => (
+              </div>
+
+              {showNewDoctor && (
+                <NewDoctorInline
+                  onCreated={(d) => {
+                    setAllDoctors((prev) => [d, ...prev]);
+                    setSelectedDoctor(d);
+                    setShowNewDoctor(false);
+                  }}
+                  onCancel={() => setShowNewDoctor(false)}
+                />
+              )}
+
+              <div className="relative">
+                <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-3 text-gray-400" />
+                <input
+                  className={`${inputCls} pr-9`}
+                  placeholder="بحث باسم الطبيب، العيادة، أو رقم الهاتف..."
+                  value={doctorSearch}
+                  onChange={(e) => setDoctorSearch(e.target.value)}
+                  autoFocus
+                />
+              </div>
+
+              {selectedDoctor && (
+                <div className="p-3.5 rounded-xl border-2 border-blue-500 bg-blue-50/40 dark:bg-blue-900/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                        د
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-blue-900 dark:text-blue-100">{selectedDoctor.name}</div>
+                        <div className="text-xs text-blue-700 dark:text-blue-300">{selectedDoctor.clinicName || "عيادة خاصة"}</div>
+                      </div>
+                    </div>
+                    <div className="text-end">
+                      <span className="text-[11px] text-gray-500 dark:text-gray-400">الرصيد المستحق: </span>
+                      <span className="font-bold text-sm text-amber-600 dark:text-amber-400">{fmtMoney(selectedDoctor.outstanding)} ج.م</span>
+                    </div>
+                  </div>
+
+                  {selectedDoctor.creditExceeded && (
+                    <div className="mt-3 p-2.5 rounded-lg bg-red-100 dark:bg-red-900/40 border border-red-200 dark:border-red-800 text-xs text-red-800 dark:text-red-200 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5">
+                        <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>تحذير: الطبيب تجاوز حد الائتمان المحدد ({fmtMoney(selectedDoctor.creditLimit)} ج.م)</span>
+                      </div>
+                      <label className="flex items-center gap-1 text-[11px] font-bold cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={bypassCreditCheck}
+                          onChange={(e) => setBypassCreditCheck(e.target.checked)}
+                          className="rounded text-red-600"
+                        />
+                        موافقة على الاستثناء
+                      </label>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {doctorsLoading ? (
+                <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+              ) : allDoctors.length === 0 ? (
+                <div className="text-center py-6 text-sm text-gray-400">لا يوجد أطباء مطابقين للبحث</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[40vh] overflow-y-auto">
+                  {allDoctors.map((doc) => (
                     <DoctorCard
-                      key={d.id}
-                      doctor={d}
-                      selected={selectedDoctor?.id === d.id}
-                      onSelect={() => { setSelectedDoctor(d); setShowNewDoctor(false); }}
-                      t={t}
+                      key={doc.id}
+                      doctor={doc}
+                      selected={selectedDoctor?.id === doc.id}
+                      onSelect={() => setSelectedDoctor(doc)}
                     />
                   ))}
                 </div>
-              </>
-            )}
-
-            {showNewDoctor ? (
-              <NewDoctorInline
-                t={t}
-                onCancel={() => setShowNewDoctor(false)}
-                onCreated={(d) => { setAllDoctors((prev) => [d, ...prev]); setSelectedDoctor(d); setShowNewDoctor(false); }}
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowNewDoctor(true)}
-                className="w-full rounded-xl border-2 border-dashed border-emerald-300 dark:border-emerald-700 text-emerald-700 dark:text-emerald-300 p-3 text-sm hover:bg-emerald-50 dark:hover:bg-emerald-900/10 flex items-center justify-center gap-1"
-              >
-                <UserPlus className="w-4 h-4" />{t("dentalLab.cases.addNewDoctor")}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Patient + files */}
-        {step === 3 && (
-          <div className="space-y-4">
-            {/* Summary box */}
-            <div className="rounded-xl bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-3 text-sm">
-              <div className="font-semibold text-blue-700 dark:text-blue-300 mb-1">{t("dentalLab.cases.summary")}</div>
-              <ul className="text-xs text-blue-800 dark:text-blue-200 space-y-0.5">
-                <li>
-                  <Users2 className="w-3 h-3 inline" /> {t("dentalLab.cases.doctorSummary")}: <b>{selectedDoctor?.name || "—"}</b>
-                </li>
-                <li>
-                  <Stethoscope className="w-3 h-3 inline" /> {selectedServices.length} {t("dentalLab.cases.service")} ·{" "}
-                  <span dir="ltr">{fmtMoney(subtotal)}</span>
-                </li>
-                {dueDate && (
-                  <li>
-                    <CreditCard className="w-3 h-3 inline" /> {t("dentalLab.cases.dueDateSummary")}: {fmtDate(dueDate)}
-                  </li>
-                )}
-              </ul>
+              )}
             </div>
+          )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* STEP 2: SERVICES, ODONTOGRAM, SHADES & INTENT */}
+          {step === 2 && (
+            <div className="space-y-4">
+              {/* Service Picker */}
               <div>
-                <label className={labelCls}>{t("dentalLab.cases.patientNamePh")} *</label>
-                <input className={inputCls} value={patientName} onChange={(e) => setPatientName(e.target.value)} autoFocus />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.patientPhonePh")}</label>
-                <input className={inputCls} value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} dir="ltr" placeholder="01xxxxxxxxx" />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.teeth")}</label>
-                <input className={inputCls} value={teeth} onChange={(e) => handleTeethChange(e.target.value)} placeholder="مثال: 16, 26 أو 11-21" />
-              </div>
-              <div>
-                <label className={labelCls}>عدد الكراونات / الوحدات (Units)</label>
-                <input className={inputCls} type="number" min="1" value={unitsCount} onChange={(e) => handleUnitsCountChange(Number(e.target.value))} />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.shade")}</label>
-                <input className={inputCls} value={shade} onChange={(e) => setShade(e.target.value)} placeholder="مثال: 2M3 / A2" />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.material")}</label>
-                <input className={inputCls} value={material} onChange={(e) => setMaterial(e.target.value)} placeholder="مثال: زيركون متعدد الطبقات" />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")} (الإجمالي)</label>
-                <input className={inputCls} type="number" value={priceSnapshot} onChange={(e) => setPriceSnapshot(Number(e.target.value))} />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.discount")}</label>
-                <input className={inputCls} type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.dueDate")}</label>
-                <input className={inputCls} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-              </div>
-              <div>
-                <label className={labelCls}>{t("dentalLab.cases.priority")}</label>
-                <select className={inputCls} value={priority} onChange={(e) => setPriority(e.target.value as "NORMAL" | "URGENT" | "STAT")}>
-                  {(Object.keys(PRIORITY_CONFIG) as Array<keyof typeof PRIORITY_CONFIG>).map((k) => (
-                    <option key={k} value={k}>{PRIORITY_CONFIG[k].label}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <label className={labelCls}>{t("dentalLab.common.notes")}</label>
-              <textarea
-                className={`${inputCls} min-h-[60px] resize-y`}
-                placeholder={t("dentalLab.cases.notesHint")}
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-              />
-            </div>
-
-            {/* Multi-file drop zone */}
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className={labelCls + " mb-0"}>{t("dentalLab.cases.uploadMulti")}</label>
-                <span className="text-[11px] text-gray-400">{t("dentalLab.cases.filesHint")}</span>
-              </div>
-              <div
-                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                onDragLeave={() => setDragOver(false)}
-                onDrop={onDrop}
-                onClick={() => fileInputRef.current?.click()}
-                role="button"
-                tabIndex={0}
-                className={[
-                  "rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition",
-                  dragOver
-                    ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                    : "border-gray-300 dark:border-gray-600 hover:border-blue-400",
-                ].join(" ")}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e: ChangeEvent<HTMLInputElement>) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
-                />
-                <Upload className="w-7 h-7 mx-auto text-gray-400" />
-                <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{t("dentalLab.cases.dropFiles")}</p>
-                {parseMsg && <p className="text-xs text-emerald-600 mt-1">{parseMsg}</p>}
-              </div>
-
-              {files.length > 0 && (
-                <>
-                  {submitting && (
-                    <div className="mt-2 rounded-lg border dark:border-gray-700 p-2.5 bg-white dark:bg-gray-800">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">الإجمالي: {upTotalPct}%</span>
-                        <span className="text-[10px] text-gray-400">{upDoneCount}/{files.length} ملف مكتمل</span>
-                      </div>
-                      <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
-                        <div className={`h-full transition-all ${upTotalPct >= 100 ? "bg-green-500" : "bg-indigo-500"}`} style={{ width: `${upTotalPct}%` }} />
-                      </div>
-                    </div>
-                  )}
-                  <ul className="mt-2 space-y-1 max-h-32 overflow-y-auto">
-                    {files.map((f, idx) => {
-                      const pct = upProgress[f.name] ?? 0;
-                      const st = upStatus[f.name];
+                <label className={labelCls}>نوع الشغل والخدمة الأساسية *</label>
+                {refsLoading ? (
+                  <div className="flex justify-center py-4"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-36 overflow-y-auto p-1 border dark:border-gray-700 rounded-xl">
+                    {activeWorkTypes.map((w) => {
+                      const checked = selectedServiceIds.includes(w.id);
                       return (
-                        <li key={`${f.name}-${idx}`} className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 text-xs">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 min-w-0">
-                              {fileIcon(f.name)}
-                              <span className="truncate">{f.name}</span>
-                              <span className="text-gray-400 shrink-0" dir="ltr">{fmtBytes(f.size)}</span>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {st === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
-                              {st === "uploading" && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
-                              {st === "error" && <XMarkIcon className="w-3.5 h-3.5 text-red-500" />}
-                              {!submitting && (
-                                <>
-                                  <button
-                                    type="button"
-                                    title={t("dentalLab.cases.scanParse")}
-                                    onClick={(e) => { e.stopPropagation(); handleParseFile(f); }}
-                                    className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
-                                  >
-                                    <ScanLine className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    type="button"
-                                    onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                                    className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </>
-                              )}
+                        <button
+                          key={w.id}
+                          type="button"
+                          onClick={() => toggleService(w.id)}
+                          className={[
+                            "p-2.5 rounded-lg border text-right transition flex items-center justify-between text-xs",
+                            checked
+                              ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-bold"
+                              : "border-gray-200 dark:border-gray-700 hover:border-blue-300 bg-white dark:bg-gray-800",
+                          ].join(" ")}
+                        >
+                          <div className="truncate">
+                            <div>{w.name}</div>
+                            <div className="text-[10px] text-gray-400 font-normal">
+                              {w.price ? `${fmtMoney(w.price)} ج.م` : "—"} {w.pricingMode === "PER_UNIT" ? "/ كراون" : ""}
                             </div>
                           </div>
-                          {(st === "uploading" || st === "done") && (
-                            <div className="flex items-center gap-2 mt-1">
-                              <div className="h-1 flex-1 bg-gray-200 dark:bg-gray-700 rounded overflow-hidden">
-                                <div className={`h-full transition-all ${st === "done" ? "bg-green-500" : "bg-blue-500"}`} style={{ width: `${pct}%` }} />
-                              </div>
-                              <span className="text-[10px] text-gray-500 w-8 text-left">{pct}%</span>
-                            </div>
-                          )}
-                          {st === "error" && (
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
-                              className="text-[10px] text-red-500 mt-1 underline"
-                            >
-                              إزالة الفاشل
-                            </button>
-                          )}
+                          {checked && <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Interactive FDI Odontogram */}
+              <div>
+                <OdontogramChart
+                  selectedTeeth={selectedTeeth}
+                  onChange={handleTeethChange}
+                />
+              </div>
+
+              {/* Shade Selector (VITA & Bleach) */}
+              <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
+                    دليل لون الأسنان (VITA Shade Guide)
+                  </label>
+                  {(shade || customShade) && (
+                    <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                      اللون المختار: {customShade || shade}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-1">
+                  {VITA_SHADES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => { setShade(s); setCustomShade(""); }}
+                      className={[
+                        "px-2.5 py-1 rounded text-xs font-mono font-bold transition",
+                        shade === s && !customShade
+                          ? "bg-amber-500 text-white shadow-sm ring-1 ring-amber-300"
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-amber-100 dark:hover:bg-amber-900/30",
+                      ].join(" ")}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                  <div className="h-4 w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+                  {BLEACH_SHADES.map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => { setShade(s); setCustomShade(""); }}
+                      className={[
+                        "px-2 py-1 rounded text-[11px] font-mono font-bold transition",
+                        shade === s && !customShade
+                          ? "bg-purple-600 text-white shadow-sm ring-1 ring-purple-300"
+                          : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100",
+                      ].join(" ")}
+                    >
+                      {s}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="pt-1">
+                  <input
+                    className={inputCls}
+                    placeholder="أو اكتب لوناً مخصصاً (مثال: 2M2, 3D Master, Gingiva Shade)..."
+                    value={customShade}
+                    onChange={(e) => { setCustomShade(e.target.value); if (e.target.value) setShade(e.target.value); }}
+                  />
+                </div>
+              </div>
+
+              {/* Impression Type & Case Intent */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-2">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">نوع الطبعة المستلمة</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {IMPRESSION_TYPES.map((imp) => (
+                      <button
+                        key={imp.id}
+                        type="button"
+                        onClick={() => setImpressionType(imp.id)}
+                        className={[
+                          "p-2 rounded-lg text-start text-xs font-medium border transition flex items-center gap-1.5",
+                          impressionType === imp.id
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-bold"
+                            : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700",
+                        ].join(" ")}
+                      >
+                        <span>{imp.icon}</span>
+                        <span className="truncate">{imp.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-2">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 block">نوع مرحلة التسليم (Try-in / Final)</label>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {CASE_INTENTS.map((intent) => (
+                      <button
+                        key={intent.id}
+                        type="button"
+                        onClick={() => setCaseIntent(intent.id)}
+                        className={[
+                          "p-2 rounded-lg text-start text-xs font-medium border transition flex flex-col",
+                          caseIntent === intent.id
+                            ? "border-indigo-500 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-900 dark:text-indigo-100 font-bold"
+                            : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700",
+                        ].join(" ")}
+                      >
+                        <span className="truncate">{intent.label}</span>
+                        <span className="text-[10px] text-gray-400 font-normal truncate">{intent.desc}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Material & Live Price */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label className={labelCls}>الخامة الطبية</label>
+                  <input className={inputCls} placeholder="مثال: زيركون Katana" value={material} onChange={(e) => setMaterial(e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>عدد الكراونات / الوحدات</label>
+                  <input className={inputCls} type="number" min="1" value={unitsCount} onChange={(e) => handleManualUnitsChange(Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className={labelCls}>سعر الطلب (قبل الخصم)</label>
+                  <input className={inputCls} type="number" value={priceSnapshot} onChange={(e) => setPriceSnapshot(Number(e.target.value))} />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* STEP 3: PATIENT, DUE DATE, 3D FILES & DISPATCH */}
+          {step === 3 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className={labelCls}>اسم المريض *</label>
+                  <input className={inputCls} placeholder="اسم المريض ثلاثي" value={patientName} onChange={(e) => setPatientName(e.target.value)} autoFocus />
+                </div>
+                <div>
+                  <label className={labelCls}>رقم هاتف المريض (اختياري)</label>
+                  <input className={inputCls} placeholder="01xxxxxxxxx" value={patientPhone} onChange={(e) => setPatientPhone(e.target.value)} dir="ltr" />
+                </div>
+                <div>
+                  <label className={labelCls}>تاريخ التسليم المطلوب</label>
+                  <input className={inputCls} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                </div>
+                <div>
+                  <label className={labelCls}>الأولوية والاستعجال</label>
+                  <select className={inputCls} value={priority} onChange={(e) => setPriority(e.target.value as "NORMAL" | "URGENT" | "STAT")}>
+                    {(Object.keys(PRIORITY_CONFIG) as Array<keyof typeof PRIORITY_CONFIG>).map((k) => (
+                      <option key={k} value={k}>{PRIORITY_CONFIG[k].label}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelCls}>ملاحظات فنية إضافية للمعمل</label>
+                <textarea
+                  className={`${inputCls} min-h-[55px] resize-y`}
+                  placeholder="تعليمات الطبيب، تفاصيل الإطباق، تشريح الحواف..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Multi-file drop zone */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className={labelCls + " mb-0"}>رفع ملفات المسح ثلاثي الأبعاد والصور (STL, PLY, PDF)</label>
+                  <span className="text-[11px] text-gray-400">سحب وإفلات الملفات هنا</span>
+                </div>
+                <div
+                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragLeave={() => setDragOver(false)}
+                  onDrop={onDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  role="button"
+                  tabIndex={0}
+                  className={[
+                    "rounded-xl border-2 border-dashed p-4 text-center cursor-pointer transition",
+                    dragOver
+                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                      : "border-gray-300 dark:border-gray-600 hover:border-blue-400 bg-white dark:bg-gray-800",
+                  ].join(" ")}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e: ChangeEvent<HTMLInputElement>) => { if (e.target.files) addFiles(e.target.files); e.target.value = ""; }}
+                  />
+                  <Upload className="w-6 h-6 mx-auto text-blue-600 mb-1" />
+                  <p className="text-xs text-gray-600 dark:text-gray-300 font-medium">انقر لاختيار ملفات الـ STL، صور الكاميرا الفموية، أو الـ PDF</p>
+                  {parseMsg && <p className="text-xs text-emerald-600 mt-1">{parseMsg}</p>}
+                </div>
+
+                {files.length > 0 && (
+                  <ul className="mt-2 space-y-1 max-h-28 overflow-y-auto">
+                    {files.map((f, idx) => {
+                      const st = upStatus[f.name];
+                      return (
+                        <li key={`${f.name}-${idx}`} className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-1.5 text-xs flex items-center justify-between">
+                          <div className="flex items-center gap-2 min-w-0">
+                            {fileIcon(f.name)}
+                            <span className="truncate">{f.name}</span>
+                            <span className="text-gray-400 shrink-0 font-mono" dir="ltr">{fmtBytes(f.size)}</span>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {st === "done" && <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />}
+                            {st === "uploading" && <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />}
+                            {!submitting && (
+                              <>
+                                <button
+                                  type="button"
+                                  title="قراءة ذكية"
+                                  onClick={(e) => { e.stopPropagation(); handleParseFile(f); }}
+                                  className="p-1 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded"
+                                >
+                                  <ScanLine className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); removeFile(idx); }}
+                                  className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </li>
                       );
                     })}
                   </ul>
-                </>
-              )}
-            </div>
-          </div>
-        )}
+                )}
+              </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between gap-3 mt-6 pt-4 border-t dark:border-gray-700">
-          <div className="text-xs text-gray-500 dark:text-gray-400">
-            {files.length > 0 && step === 3 && (
-              <span><Upload className="w-3 h-3 inline" /> {files.length} {t("dentalLab.cases.filesSelected")}</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
+              {/* Order Summary & Pricing Breakdown */}
+              <div className="rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/30 p-3.5 space-y-2 text-xs">
+                <div className="font-bold text-blue-900 dark:text-blue-100 flex items-center justify-between border-b border-blue-200/60 dark:border-blue-800/60 pb-1.5">
+                  <span>ملخص أمر الشغل النهائي</span>
+                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                    صافي الإجمالي: {fmtMoney(netTotal)} ج.م
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-gray-700 dark:text-gray-300">
+                  <div><span className="text-gray-400">الطبيب: </span>{selectedDoctor?.name || "—"}</div>
+                  <div><span className="text-gray-400">الخدمة: </span>{primaryService?.name || "—"}</div>
+                  <div><span className="text-gray-400">الأسنان: </span>{selectedTeeth.join(", ") || "—"}</div>
+                  <div><span className="text-gray-400">عدد الكراونات: </span>{unitsCount}</div>
+                  <div><span className="text-gray-400">اللون: </span>{customShade || shade || "غير محدد"}</div>
+                  <div><span className="text-gray-400">الخامة: </span>{material || "—"}</div>
+                  <div><span className="text-gray-400">الخصم: </span>{fmtMoney(discount)} ج.م</div>
+                  <div><span className="text-gray-400">الأولوية: </span>{PRIORITY_CONFIG[priority].label}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer Navigation */}
+        <div className="p-4 border-t dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800/60 shrink-0">
+          <div>
             {step > 1 && (
               <button
                 type="button"
                 onClick={() => setStep((s) => (s - 1) as Step)}
                 disabled={submitting}
-                className="px-4 py-2 text-sm border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 flex items-center gap-1"
+                className="px-4 py-2 border dark:border-gray-600 rounded-lg text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1.5"
               >
-                <ArrowRight className="w-4 h-4" />{t("dentalLab.cases.back")}
+                <ArrowRight className="w-4 h-4" />
+                السابق
               </button>
             )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => onClose()}
+              disabled={submitting}
+              className="px-4 py-2 border dark:border-gray-600 rounded-lg text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+            >
+              إلغاء
+            </button>
+
             {step < 3 ? (
               <button
                 type="button"
-                onClick={() => setStep((s) => (s + 1) as Step)}
-                disabled={(step === 1 && !canNextFromStep1) || (step === 2 && !canNextFromStep2)}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1"
+                onClick={() => {
+                  if (step === 1 && !selectedDoctor) {
+                    toast.error("يرجى اختيار الطبيب للمتابعة");
+                    return;
+                  }
+                  if (step === 2 && selectedServiceIds.length === 0) {
+                    toast.error("يرجى اختيار نوع الشغل للمتابعة");
+                    return;
+                  }
+                  setStep((s) => (s + 1) as Step);
+                }}
+                className="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 flex items-center gap-1.5 shadow-sm"
               >
-                {t("dentalLab.cases.next")}<ArrowLeft className="w-4 h-4" />
+                التالي
+                <ArrowLeft className="w-4 h-4" />
               </button>
             ) : (
               <button
                 type="button"
-                onClick={submit}
+                onClick={submitOrder}
                 disabled={submitting || !patientName.trim()}
-                className="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1"
+                className="px-6 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
               >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                {submitting ? t("dentalLab.cases.creating") : t("dentalLab.cases.createAndUpload")}
+                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                حفظ وإرسال أمر الشغل
               </button>
             )}
-            <button
-              type="button"
-              onClick={() => !submitting && onClose()}
-              disabled={submitting}
-              className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
-            >
-              {t("dentalLab.common.cancel")}
-            </button>
           </div>
         </div>
       </div>
     </div>
   );
-}
-
-function fmtDate(iso?: string): string {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("ar-EG");
 }
