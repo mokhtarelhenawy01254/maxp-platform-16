@@ -472,6 +472,11 @@ function InvoiceModal({ caseData, onClose, onSaved }: InvoiceModalProps) {
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("dentalLab.common.save")}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
 interface KioskScannerModalProps {
   technicians: DentalTechnician[];
   onClose: () => void;
