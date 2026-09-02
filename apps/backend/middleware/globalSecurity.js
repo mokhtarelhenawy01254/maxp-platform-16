@@ -467,6 +467,9 @@ const PUBLIC_ROUTES = [
   'GET /api/v1/public/coupons/*',
   'POST /api/v1/public/coupons/*',
 
+  // Operator: admin funnel publisher (auth via x-admin-secret header, checked in route handler)
+  'POST /api/v1/funnels/admin/publish-by-product',
+
   // Public service order and services (no authentication required)
   'GET /api/v1/services',
   'POST /api/v1/service-orders',
