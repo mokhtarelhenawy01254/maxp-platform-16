@@ -607,6 +607,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   );
 
   const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
+  const handleSelectVariantAttribute = (name: string, value: string) => {
+    setSelectedAttributes((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
   const quantity = usePdpSelectionStore((state) => state.quantity);
   const setQuantity = usePdpSelectionStore((state) => state.setQuantity);
   const syncPdpSelection = usePdpSelectionStore((state) => state.syncSelection);
