@@ -2980,6 +2980,23 @@ export default function TemplateCenter({ config }: { config: TemplateScopeConfig
         onConfirm={() => unbindTarget && unbindMeta(unbindTarget)}
         onCancel={() => setUnbindTarget(null)}
       />
+
+      {linkingOccasion && (
+        <MetaTemplatesModal
+          open={!!linkingOccasion}
+          onClose={() => setLinkingOccasion(null)}
+          onPick={async (_content: string, template?: { id?: string }) => {
+            if (!template?.id) {
+              toast.error("اختاري قالب ميتا معتمد");
+              return;
+            }
+            const occ = linkingOccasion;
+            setLinkingOccasion(null);
+            await linkOccasionToTemplate(occ.id, template.id);
+          }}
+          title={`ربط مناسبة: ${linkingOccasion.name}`}
+        />
+      )}
     </div>
   );
 }
@@ -4093,22 +4110,6 @@ function StatusReportTab({ statuses, config }: { statuses: StatusWithTemplate[];
             </div>
           </div>
         </>
-      )}
-      {linkingOccasion && (
-        <MetaTemplatesModal
-          open={!!linkingOccasion}
-          onClose={() => setLinkingOccasion(null)}
-          onPick={async (_content: string, template?: { id?: string }) => {
-            if (!template?.id) {
-              toast.error("اختاري قالب ميتا معتمد");
-              return;
-            }
-            const occ = linkingOccasion;
-            setLinkingOccasion(null);
-            await linkOccasionToTemplate(occ.id, template.id);
-          }}
-          title={`ربط مناسبة: ${linkingOccasion.name}`}
-        />
       )}
     </div>
   );
