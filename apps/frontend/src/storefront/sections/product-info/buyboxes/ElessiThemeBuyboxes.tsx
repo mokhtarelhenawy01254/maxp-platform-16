@@ -30,6 +30,8 @@ export interface ElessiThemeBuyboxesProps {
   isElessiGarageBuybox: boolean;
   isAnyElessiBuybox: boolean;
   isElessiDigitalBuybox: boolean;
+  isElessiSpecBuybox: boolean;
+  isElessiCareBuybox: boolean;
   prefersArabicCopy: boolean;
   currency: string;
   activePrice: number;
@@ -110,6 +112,8 @@ export const ElessiThemeBuyboxes: React.FC<ElessiThemeBuyboxesProps> = (props) =
     isElessiGarageBuybox,
     isAnyElessiBuybox,
     isElessiDigitalBuybox,
+    isElessiSpecBuybox,
+    isElessiCareBuybox,
     prefersArabicCopy,
     currency,
     activePrice,
