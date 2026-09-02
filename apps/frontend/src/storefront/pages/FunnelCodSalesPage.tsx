@@ -693,8 +693,8 @@ const FunnelCodSalesPage: React.FC = () => {
               >
                 <option value="">اختار المحافظة</option>
                 {EGYPT_GOVERNORATES.map((g) => (
-                  <option key={g.value ?? g} value={g.value ?? g}>
-                    {g.label ?? g}
+                  <option key={g.id} value={g.id}>
+                    {g.nameAr}
                   </option>
                 ))}
               </select>
