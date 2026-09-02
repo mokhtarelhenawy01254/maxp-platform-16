@@ -45,7 +45,34 @@ const createPublic = async (req, res) => {
     const data = await getSharedPrismaClient().serviceOrder.create({
       data: { companyId: cid, serviceId, customerName, phone, description, referenceFiles: referenceFiles || [] }
     });
-    res.json({ success: true, data });
+
+    // جلب رقم تواصل الشركة لتسهيل تواصل العميل عبر واتساب فوراً
+    let companyContactPhone = null;
+    try {
+      const activeSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+        where: { companyId: cid, status: 'CONNECTED' },
+        select: { phoneNumber: true }
+      });
+      const company = await getSharedPrismaClient().company.findUnique({
+        where: { id: cid },
+        select: { phone: true }
+      });
+      companyContactPhone = activeSession?.phoneNumber || company?.phone || null;
+    } catch (contactErr) {
+      // ignore
+    }
+
+    // إرسال إشعارات واتساب تلقائية للعميل وللإدارة (fire-and-forget)
+    try {
+      const { notifyOrderCreated } = require('../services/whatsapp/serviceOrderNotificationService');
+      notifyOrderCreated({ order: data, service, companyId: cid }).catch(err => {
+        console.error('⚠️ [SERVICE-ORDER] Async notification error:', err.message);
+      });
+    } catch (notifyErr) {
+      console.error('⚠️ [SERVICE-ORDER] Notification init error:', notifyErr.message);
+    }
+
+    res.json({ success: true, data: { ...data, companyContactPhone } });
   } catch (error) {
     console.error('Error creating order:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الطلب' });
@@ -79,9 +106,29 @@ const updateStatus = async (req, res) => {
     const { status } = req.body;
     const validStatuses = ['NEW', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
     if (!validStatuses.includes(status)) return res.status(400).json({ success: false, error: 'حالة غير صالحة' });
-    const existing = await getSharedPrismaClient().serviceOrder.findFirst({ where: { id, companyId } });
+    const existing = await getSharedPrismaClient().serviceOrder.findFirst({
+      where: { id, companyId },
+      include: { service: true }
+    });
     if (!existing) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
-    const data = await getSharedPrismaClient().serviceOrder.update({ where: { id }, data: { status } });
+    const data = await getSharedPrismaClient().serviceOrder.update({
+      where: { id },
+      data: { status },
+      include: { service: true }
+    });
+
+    // إرسال إشعار واتساب للعميل عند تغير الحالة
+    if (existing.status !== status) {
+      try {
+        const { notifyStatusChanged } = require('../services/whatsapp/serviceOrderNotificationService');
+        notifyStatusChanged({ order: data, oldStatus: existing.status, newStatus: status, companyId }).catch(err => {
+          console.error('⚠️ [SERVICE-ORDER] Status change notification error:', err.message);
+        });
+      } catch (notifyErr) {
+        console.error('⚠️ [SERVICE-ORDER] Status notification init error:', notifyErr.message);
+      }
+    }
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating order status:', error);

@@ -1051,6 +1051,69 @@ const DEFAULT_TEMPLATES = {
 
 يمكنك استخدام رصيدك في طلبك القادم 💙`,
     variables: ['customerName', 'voucherAmount', 'currency']
+  },
+
+  SERVICE_ORDER_CREATED: {
+    name: 'تأكيد طلب خدمة',
+    content: `مرحباً بك {customerName} ✨
+
+شكراً لطلبك من خلالنا! لقد استلمنا طلبك لخدمة: *{serviceName}* بنجاح.
+
+📋 تفاصيل الطلب:
+🆔 رقم الطلب: #{orderId}
+🛠️ الخدمة: {serviceName}
+{priceInfo}
+📝 وصف الطلب:
+{description}
+
+فريقنا يقوم حالياً بمراجعة التفاصيل والمرفقات، وسيتم التواصل معك ومتابعة التنفيذ في أقرب وقت بإذن الله 🙏✨`,
+    variables: ['customerName', 'serviceName', 'orderId', 'priceInfo', 'description']
+  },
+
+  SERVICE_ORDER_IN_PROGRESS: {
+    name: 'بدء تنفيذ طلب الخدمة',
+    content: `مرحباً {customerName} 🚀
+
+يسعدنا إبلاغك بأنه تم البدء في تنفيذ طلبك لخدمة: *{serviceName}* (رقم #{orderId}).
+
+سنوافيك بالتحديثات والنتيجة فور الانتهاء بإذن الله ✨`,
+    variables: ['customerName', 'serviceName', 'orderId']
+  },
+
+  SERVICE_ORDER_COMPLETED: {
+    name: 'اكتمال طلب الخدمة',
+    content: `مرحباً {customerName} 🎉
+
+تم إنجاز طلبك لخدمة: *{serviceName}* (رقم #{orderId}) بنجاح وهو الآن جاهز للتسليم!
+
+نشكرك على ثقتك بنا، ويسعدنا دائماً خدمتك 🙏✨`,
+    variables: ['customerName', 'serviceName', 'orderId']
+  },
+
+  SERVICE_ORDER_CANCELLED: {
+    name: 'إلغاء طلب الخدمة',
+    content: `مرحباً {customerName} ⚠️
+
+نود إبلاغك بأنه تم إلغاء طلب الخدمة: *{serviceName}* (رقم #{orderId}).
+
+إذا كان لديك أي استفسار أو ترغب في تعديل الطلب، لا تتردد بالتواصل معنا مباشرة 🙏`,
+    variables: ['customerName', 'serviceName', 'orderId']
+  },
+
+  SERVICE_ORDER_ADMIN_ALERT: {
+    name: 'تنبيه طلب خدمة جديد للإدارة',
+    content: `🔔 *طلب خدمة جديد وارد!*
+
+👤 العميل: {customerName}
+📱 الهاتف: {customerPhone}
+🛠️ الخدمة: {serviceName}
+{priceInfo}
+📎 المرفقات: {filesCount} ملف
+📝 الوصف:
+{description}
+
+يمكنك مراجعة الطلب والمرفقات عبر لوحة التحكم 🚀`,
+    variables: ['customerName', 'customerPhone', 'serviceName', 'priceInfo', 'filesCount', 'description']
   }
 }
 

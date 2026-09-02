@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import { EyeIcon, XMarkIcon } from "@heroicons/react/24/outline";
+import { EyeIcon, XMarkIcon, ChatBubbleLeftRightIcon } from "@heroicons/react/24/outline";
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
   NEW: { label: "جديد", color: "bg-blue-100 text-blue-700" },
@@ -41,10 +41,22 @@ export default function ServiceOrdersPage() {
     } catch (e) { tToast.error("ServiceOrdersPage.error_error_1393"); }
   };
 
+  const openWhatsAppChat = (order: any) => {
+    if (!order.phone) return;
+    let cleanPhone = order.phone.replace(/\D/g, "");
+    if (cleanPhone.startsWith("01")) {
+      cleanPhone = "2" + cleanPhone;
+    }
+    const serviceName = order.service?.name || "الخدمة";
+    const orderNum = order.id ? `#${order.id.slice(-6).toUpperCase()}` : "";
+    const text = `مرحباً ${order.customerName || "عميلنا العزيز"}، نتواصل معك بخصوص طلبك لخدمة (${serviceName}) ${orderNum}.`;
+    window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(text)}`, "_blank");
+  };
+
   if (loading) return <div className="p-8 text-center text-gray-500">جاري التحميل...</div>;
 
   return (
-    <div className="p-6 max-w-6xl mx-auto rtl" dir="rtl">
+    <div className="p-3 sm:p-6 max-w-6xl mx-auto rtl" dir="rtl">
       <h1 className="text-2xl font-bold mb-6">طلبات الخدمات</h1>
 
       {orders.length === 0 ? (
@@ -66,12 +78,20 @@ export default function ServiceOrdersPage() {
                   </div>
                   <div className="text-xs text-gray-400 mt-1">{new Date(o.createdAt).toLocaleDateString("ar-EG")}</div>
                 </div>
-                <div className="flex gap-2 items-center">
-                  <select className="border rounded-lg px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600" value={o.status} onChange={e => updateStatus(o.id, e.target.value)}>
+                <div className="flex gap-2 items-center flex-wrap sm:flex-nowrap">
+                  <button
+                    onClick={() => openWhatsAppChat(o)}
+                    title="محادثة واتساب سريعة مع العميل"
+                    className="flex items-center gap-1 px-2.5 py-1.5 min-h-[38px] bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-lg text-xs font-medium transition-colors"
+                  >
+                    <ChatBubbleLeftRightIcon className="w-4 h-4" />
+                    <span>واتساب</span>
+                  </button>
+                  <select className="border rounded-lg px-2 py-1 text-sm dark:bg-gray-700 dark:border-gray-600 min-h-[38px]" value={o.status} onChange={e => updateStatus(o.id, e.target.value)}>
                     {Object.entries(STATUS_MAP).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                   </select>
                   {(o.referenceFiles?.length > 0) && (
-                    <button onClick={() => setSelected(o)} className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200"><EyeIcon className="w-4 h-4" /></button>
+                    <button onClick={() => setSelected(o)} className="p-2 min-h-[38px] min-w-[38px] flex items-center justify-center bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700"><EyeIcon className="w-4 h-4" /></button>
                   )}
                 </div>
               </div>

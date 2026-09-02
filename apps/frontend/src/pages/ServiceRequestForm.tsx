@@ -8,6 +8,7 @@ export default function ServiceRequestForm() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [createdOrder, setCreatedOrder] = useState<any>(null);
   const [files, setFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [form, setForm] = useState({ companyId: "", serviceId: "", customerName: "", phone: "", description: "" });
@@ -70,24 +71,58 @@ export default function ServiceRequestForm() {
         body: JSON.stringify({ ...form, referenceFiles }),
       });
       const d = await r.json();
-      if (d.success) { setDone(true); tToast.success("ServiceRequestForm.success_send_7517"); }
+      if (d.success) {
+        setCreatedOrder(d.data);
+        setDone(true);
+        tToast.success("ServiceRequestForm.success_send_7517");
+      }
       else toast.error(d.error);
     } catch (e) { tToast.error("ServiceRequestForm.error_error_7eca"); }
     finally { setSubmitting(false); }
   };
 
-  if (done) return (
-    <div className="flex items-center justify-center p-12" dir="rtl">
-      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-8 max-w-md text-center">
-        <div className="text-5xl mb-4">✅</div>
-        <h1 className="text-2xl font-bold mb-2">تم استلام الطلب!</h1>
-        <p className="text-gray-500 dark:text-gray-400">سيتم متابعته من فريق الخدمات</p>
+  if (done) {
+    const contactPhone = createdOrder?.companyContactPhone;
+    const cleanPhone = contactPhone ? contactPhone.replace(/\D/g, "") : null;
+    const formattedContact = cleanPhone?.startsWith("01") ? "2" + cleanPhone : cleanPhone;
+    const serviceObj = services.find(s => s.id === form.serviceId);
+    const serviceName = serviceObj?.name || "الخدمة";
+    const shortId = createdOrder?.id ? `#${createdOrder.id.slice(-6).toUpperCase()}` : "";
+    const waText = `مرحباً، قمت بتقديم طلب خدمة (${serviceName}) ${shortId}، أود المتابعة معكم بخصوص التفاصيل.`;
+    const waLink = formattedContact ? `https://wa.me/${formattedContact}?text=${encodeURIComponent(waText)}` : null;
+
+    return (
+      <div className="flex items-center justify-center p-3 sm:p-12 min-h-[60vh]" dir="rtl">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6 sm:p-8 max-w-md w-full text-center border border-gray-100 dark:border-gray-700">
+          <div className="w-16 h-16 bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 font-bold">
+            ✓
+          </div>
+          <h1 className="text-2xl font-bold mb-2">تم استلام الطلب بنجاح!</h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mb-6 leading-relaxed">
+            سيتم مراجعة طلبك والمرفقات والتواصل معك لمتابعة التنفيذ في أقرب وقت.
+          </p>
+          {waLink ? (
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium transition-colors shadow-sm min-h-[44px]"
+            >
+              <span>متابعة الطلب عبر واتساب</span>
+            </a>
+          ) : (
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 rounded-xl text-xs flex items-center justify-center gap-1.5">
+              <span>💬</span>
+              <span>سيصلك إشعار تأكيد وتحديثات حالة الطلب مباشرة على رقم هاتفك عبر واتساب</span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="p-6" dir="rtl">
+    <div className="p-3 sm:p-6" dir="rtl">
       <div className="max-w-lg mx-auto bg-white dark:bg-gray-800 rounded-2xl shadow-lg p-6">
         <h1 className="text-2xl font-bold mb-6">طلب خدمة جديد</h1>
 
