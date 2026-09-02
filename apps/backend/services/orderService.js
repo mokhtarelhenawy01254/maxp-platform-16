@@ -692,43 +692,42 @@ class OrderService {
 
     const prisma = this.getPrisma();
 
-    // Use transaction to ensure atomicity
-    const result = await prisma.$transaction(async (tx) => {
-      // Get or create settings
-      let settings = await tx.orderInvoiceSettings.findUnique({
-        where: { companyId: effectiveCompanyId }
-      });
+    // 🚀 Fast atomic allocation (single round-trip, zero interactive lock queueing)
+    try {
+      const rows = await prisma.$queryRaw`
+        UPDATE "order_invoice_settings"
+        SET "nextOrderNumber" = "nextOrderNumber" + 1, "updatedAt" = NOW()
+        WHERE "companyId" = ${effectiveCompanyId}
+        RETURNING "orderPrefix", ("nextOrderNumber" - 1) AS "allocatedNumber"
+      `;
 
-      if (!settings) {
-        // Create default settings if not exists
-        settings = await tx.orderInvoiceSettings.create({
-          data: {
-            companyId: effectiveCompanyId,
-            enableSequentialOrders: true,
-            orderPrefix: 'ORD',
-            nextOrderNumber: 1,
-            orderNumberFormat: 'PREFIX-XXXXXX'
-          }
-        });
+      if (rows && rows.length > 0) {
+        const prefix = rows[0].orderPrefix || 'ORD';
+        const allocated = rows[0].allocatedNumber;
+        return `${prefix}-${allocated}`;
       }
+    } catch (atomicErr) {
+      console.warn('⚠️ [ORDER-NUMBER] Atomic sequential update fallback:', atomicErr?.message);
+    }
 
-      const currentNumber = settings.nextOrderNumber;
-      const prefix = settings.orderPrefix || 'ORD';
-
-      // Format number without leading zeros
-      const paddedNumber = currentNumber.toString();
-      const orderNumber = `${prefix}-${paddedNumber}`;
-
-      // Increment for next order
-      await tx.orderInvoiceSettings.update({
-        where: { companyId: effectiveCompanyId },
-        data: { nextOrderNumber: currentNumber + 1 }
-      });
-
-      return orderNumber;
+    // Fallback: create or retrieve if settings row didn't exist yet
+    const settings = await prisma.orderInvoiceSettings.upsert({
+      where: { companyId: effectiveCompanyId },
+      create: {
+        companyId: effectiveCompanyId,
+        enableSequentialOrders: true,
+        orderPrefix: 'ORD',
+        nextOrderNumber: 2,
+        orderNumberFormat: 'PREFIX-XXXXXX'
+      },
+      update: {
+        nextOrderNumber: { increment: 1 }
+      }
     });
 
-    return result;
+    const prefix = settings.orderPrefix || 'ORD';
+    const orderNumber = `${prefix}-${settings.nextOrderNumber - 1}`;
+    return orderNumber;
   }
 
   // Get order settings

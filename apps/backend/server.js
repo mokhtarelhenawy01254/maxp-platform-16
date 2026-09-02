@@ -1081,11 +1081,13 @@ app.use("/api/v1/wallet", walletRoutes);
 // Protected Platform Subscription routes
 app.use("/api/v1/platform-subscription", platformSubscriptionRoutes);
 
-// Start Billing Cron Service
-try {
-  billingCronService.start();
-  console.log("✅ [BILLING-CRON] Billing Cron Service started");
-} catch (error) {
+// Start Background Schedulers & Crons (singleton owner only)
+if (shouldOwnSingletonWork()) {
+  // Start Billing Cron Service
+  try {
+    billingCronService.start();
+    console.log("✅ [BILLING-CRON] Billing Cron Service started");
+  } catch (error) {
   console.error(
     "❌ [BILLING-CRON] Failed to start Billing Cron Service:",
     error,
@@ -1361,6 +1363,11 @@ try {
 } catch (error) {
   console.error("❌ [NOTIF-QUEUE] Failed to start notification queue worker:", error);
 }
+} else {
+  console.log(
+    `ℹ️ [SERVER] Background cron schedulers skipped for worker instance ${getProcessInstanceId()} (dedicated to HTTP requests)`,
+  );
+}
 
 
 // AI Provider Health Check — delegated to Python ai-service
@@ -1535,25 +1542,25 @@ async function startServer() {
       );
     }
 
-    // 🚀 Start sync queue processor (polls every 5s)
-    const syncQueueService = require('./services/syncQueueService');
-    setInterval(() => syncQueueService.processBatch(5), 5000);
-    console.log("✅ [SERVER] Sync queue processor started (5s interval)");
-
-    await telegramBotService.initialize();
-    console.log("✅ [SERVER] Telegram Bot initialized");
-
     if (shouldOwnSingletonWork()) {
+      // 🚀 Start sync queue processor (polls every 5s)
+      const syncQueueService = require('./services/syncQueueService');
+      setInterval(() => syncQueueService.processBatch(5), 5000);
+      console.log("✅ [SERVER] Sync queue processor started (5s interval)");
+
+      await telegramBotService.initialize();
+      console.log("✅ [SERVER] Telegram Bot initialized");
+
       await WhatsAppManager.restoreAllSessions();
       console.log("✅ [SERVER] WhatsApp Sessions Restored");
+
+      const { startTelegramScheduler } = require("./cron/telegramScheduler");
+      startTelegramScheduler();
     } else {
       console.log(
-        `WhatsApp session restore skipped for process instance ${getProcessInstanceId()}`,
+        `Singleton work (WhatsApp / Telegram / Sync Queue) skipped for process instance ${getProcessInstanceId()}`,
       );
     }
-
-    const { startTelegramScheduler } = require("./cron/telegramScheduler");
-    startTelegramScheduler();
 
     server.listen(PORT, "0.0.0.0", () => {
       console.log(`🚀🚀🚀 STABLE SERVER STARTED ON PORT ${PORT} 🚀🚀🚀`);
