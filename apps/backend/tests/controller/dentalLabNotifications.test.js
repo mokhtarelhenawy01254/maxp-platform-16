@@ -68,7 +68,7 @@ describe('dentalLabNotificationService', () => {
   });
 
   describe('getNotificationSchedule', () => {
-    test('returns 4 defaults, persists them and seeds the 4 default templates', async () => {
+    test('returns 5 defaults, persists them and seeds the 5 default templates', async () => {
       const prisma = createPrisma();
       prisma.whatsAppNotificationTemplate.findMany.mockResolvedValue([]);
       prisma.whatsAppNotificationTemplate.create.mockResolvedValue({});
@@ -78,15 +78,17 @@ describe('dentalLabNotificationService', () => {
 
       const schedule = await service.getNotificationSchedule('company-1');
 
-      expect(schedule).toHaveLength(4);
+      expect(schedule).toHaveLength(5);
       expect(schedule.map((s) => s.eventType)).toEqual([
         service.DENTAL_NOTIFICATION_EVENTS.CASE_RECEIVED,
         service.DENTAL_NOTIFICATION_EVENTS.CASE_READY,
         service.DENTAL_NOTIFICATION_EVENTS.CASE_DELIVERED,
         service.DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE,
+        service.DENTAL_NOTIFICATION_EVENTS.MONTHLY_BILLING_REMINDER,
       ]);
       expect(schedule[0]).toMatchObject({ enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'استلام الحالة' });
       expect(schedule[3]).toMatchObject({ label: 'تأخير الحالة', trigger: 'case_overdue' });
+      expect(schedule[4]).toMatchObject({ label: 'تنبيه الفوترة الشهرية', trigger: 'billing_cycle' });
 
       // persisted defaults under the notificationSchedule key
       expect(prisma.dentalSetting.upsert).toHaveBeenCalledWith(
@@ -96,11 +98,11 @@ describe('dentalLabNotificationService', () => {
         })
       );
 
-      // seeded 4 WhatsAppNotificationTemplate rows with category DENTAL_LAB
+      // seeded 5 WhatsAppNotificationTemplate rows with category DENTAL_LAB
       expect(prisma.whatsAppNotificationTemplate.findMany).toHaveBeenCalledWith(
         expect.objectContaining({ where: { companyId: 'company-1', category: 'DENTAL_LAB' } })
       );
-      expect(prisma.whatsAppNotificationTemplate.create).toHaveBeenCalledTimes(4);
+      expect(prisma.whatsAppNotificationTemplate.create).toHaveBeenCalledTimes(5);
       expect(prisma.whatsAppNotificationTemplate.create).toHaveBeenCalledWith(
         expect.objectContaining({
           data: expect.objectContaining({ category: 'DENTAL_LAB', channel: 'AUTO', isActive: true, isDefault: false }),
@@ -121,7 +123,7 @@ describe('dentalLabNotificationService', () => {
 
       const schedule = await service.getNotificationSchedule('company-1');
 
-      expect(schedule).toHaveLength(4);
+      expect(schedule).toHaveLength(5);
       expect(schedule.find((s) => s.eventType === service.DENTAL_NOTIFICATION_EVENTS.CASE_READY)).toMatchObject({
         enabled: false,
         activeChannel: 'BAILEYS',
@@ -152,7 +154,7 @@ describe('dentalLabNotificationService', () => {
         delayUnit: 'HOURS',
       });
 
-      expect(updated).toHaveLength(4);
+      expect(updated).toHaveLength(5);
       expect(updated.find((s) => s.eventType === service.DENTAL_NOTIFICATION_EVENTS.CASE_READY)).toMatchObject({
         enabled: false,
         activeChannel: 'BAILEYS',
@@ -179,7 +181,7 @@ describe('dentalLabNotificationService', () => {
         enabled: true,
       });
 
-      expect(updated).toHaveLength(4);
+      expect(updated).toHaveLength(5);
       expect(updated.find((s) => s.eventType === service.DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE).enabled).toBe(true);
     });
   });

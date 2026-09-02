@@ -13,6 +13,8 @@ export interface OrderStatusDisplay {
 
 /** All known system order statuses with display info */
 const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colorClass: string }> = {
+  NEW:                  { label: 'طلب جديد',             labelKey: 'orders.new',               colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' },
+  IN_PROGRESS:          { label: 'قيد التنفيذ',           labelKey: 'orders.inProgress',        colorClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
   PENDING:              { label: 'قيد الانتظار',         labelKey: 'orders.pending',           colorClass: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' },
   DRAFT:                { label: 'مسودة',                labelKey: 'orders.draft',             colorClass: 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
   CONFIRMED:            { label: 'مؤكد',                 labelKey: 'orders.confirmed',         colorClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400' },

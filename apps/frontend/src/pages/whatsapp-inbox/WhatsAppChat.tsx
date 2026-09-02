@@ -12,6 +12,7 @@ import { getWhatsAppInboxWorkspaceCopy } from './workspaceCopy';
 import QuickOrderModal from '../../components/facebook-inbox/Modals/QuickOrderModal';
 import QuickCreateTaskModal from '../../components/facebook-inbox/Modals/QuickCreateTaskModal';
 import ProductImagePickerModal from '../../components/facebook-inbox/ProductImagePicker/ProductImagePickerModal';
+import CreateServiceOrderModal from '../../components/facebook-inbox/Modals/CreateServiceOrderModal';
 
 type ConversationDetail = {
   id: string;
@@ -119,6 +120,7 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
   const [selectedMentionIds, setSelectedMentionIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showServiceOrderModal, setShowServiceOrderModal] = useState(false);
   const [showQuickCreateTaskModal, setShowQuickCreateTaskModal] = useState(false);
   const [customerOrders, setCustomerOrders] = useState<Array<{ id: string; orderNumber?: string; status?: string; createdAt?: string; items?: unknown[]; total?: number }>>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
@@ -822,6 +824,15 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                 </button>
                 <button
                   type="button"
+                  onClick={() => setShowServiceOrderModal(true)}
+                  className="business-icon-button business-icon-button--sm"
+                  data-tone="primary"
+                  title="إنشاء طلب خدمة للعميل"
+                >
+                  <span className="text-xs">🛠️</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowOrderModal(true)}
                   className="business-icon-button business-icon-button--sm"
                   data-tone="warning"
@@ -859,11 +870,23 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                     >
                       <div className="flex items-start justify-between mb-1.5">
                         <div>
-                          <div className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>
-                            #{order.orderNumber}
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold" style={{ color: 'var(--color-foreground)' }}>
+                              #{order.orderNumber}
+                            </span>
+                            {(order as any).type === 'SERVICE' && (
+                              <span className="rounded px-1.5 py-0.5 text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                                🛠️ خدمة
+                              </span>
+                            )}
                           </div>
                           <div className="text-[11px]" style={{ color: 'var(--color-muted-foreground)' }}>
                             {formatDate(order.createdAt)}
+                            {(order as any).type === 'SERVICE' && (order as any).serviceName && (
+                              <span className="mr-1 text-purple-600 dark:text-purple-400 font-medium">
+                                • {(order as any).serviceName}
+                              </span>
+                            )}
                           </div>
                         </div>
                         <span className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold" style={{ ...theme }}>
@@ -872,7 +895,9 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
                       </div>
                       <div className="flex items-center justify-between text-xs">
                         <span style={{ color: 'var(--color-muted-foreground)' }}>
-                          {itemsCount} {itemsCount === 1 ? copy.chat.orders.itemsOne : copy.chat.orders.itemsOther}
+                          {(order as any).type === 'SERVICE'
+                            ? ((order as any).serviceName || 'طلب خدمة')
+                            : `${itemsCount} ${itemsCount === 1 ? copy.chat.orders.itemsOne : copy.chat.orders.itemsOther}`}
                         </span>
                         <span className="font-bold" style={{ color: 'var(--color-foreground)' }}>
                           {Number(order.total).toLocaleString()} ج.م

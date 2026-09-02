@@ -1,4 +1,5 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
+const redisCacheService = require('../services/redisCacheService');
 
 /**
  * @route GET /api/v1/my-apps
@@ -292,6 +293,12 @@ exports.updateSettings = async (req, res) => {
       });
     });
 
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (cacheErr) {
+      console.error('⚠️ [REDIS] error deleting storefront settings cache:', cacheErr);
+    }
+
     res.json({
       success: true,
       message: 'تم تحديث الإعدادات بنجاح',
@@ -426,6 +433,12 @@ exports.cancelApp = async (req, res) => {
         }
       });
     });
+
+    try {
+      await redisCacheService.del(`storefront_settings:${companyId}`);
+    } catch (cacheErr) {
+      console.error('⚠️ [REDIS] error deleting storefront settings cache:', cacheErr);
+    }
 
     res.json({
       success: true,

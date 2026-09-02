@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Banknote, CreditCard, FileText, Link2, Loader2, Plus, RefreshCw, X as XMarkIcon } from "lucide-react";
+import { Banknote, CalendarClock, CheckSquare, CreditCard, FileText, Link2, Loader2, Plus, RefreshCw, Sparkles, Square, X as XMarkIcon } from "lucide-react";
 import {
   DentalInvoice, DentalLabCase, PAYMENT_STATUS_MAP, INVOICE_STATUS_MAP,
   fetchInvoices, fetchCases, createInvoice, addInvoicePayment, fetchInvoicePdf, fetchInvoicePaymentLink,
+  fetchUninvoicedSummary, batchCreateMonthlyInvoices, UninvoicedSummaryResult,
   fmtMoney, MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
 
@@ -238,6 +239,15 @@ export default function DentalInvoicesTab() {
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("dentalLab.subtitle")}</p>
         </div>
         <div className="flex items-center gap-2">
+          {uninvoicedSummary && uninvoicedSummary.totalCases > 0 && (
+            <button
+              onClick={() => setBatchOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/50"
+            >
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>فوترة مجمعة ({uninvoicedSummary.totalCases})</span>
+            </button>
+          )}
           <button onClick={() => refresh()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
@@ -246,6 +256,36 @@ export default function DentalInvoicesTab() {
           </button>
         </div>
       </div>
+
+      {uninvoicedSummary && uninvoicedSummary.totalCases > 0 && (
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-start gap-3">
+            <div className="p-2.5 bg-blue-600 text-white rounded-xl shadow-sm">
+              <CalendarClock className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h4 className="font-bold text-gray-900 dark:text-gray-100 text-base">دورة الفوترة الشهرية وتصفية الحسابات</h4>
+                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300">
+                  {uninvoicedSummary.totalCases} حالة معلقة
+                </span>
+              </div>
+              <p className="text-xs text-gray-600 dark:text-gray-300 mt-1">
+                يوجد {uninvoicedSummary.totalCases} حالة مكتملة/مسلمة لـ {uninvoicedSummary.totalDoctors} طبيب بإجمالي{" "}
+                <span className="font-bold text-blue-700 dark:text-blue-300">{fmtMoney(uninvoicedSummary.totalAmount)} {t("dentalLab.common.egp")}</span>{" "}
+                بانتظار إصدار الفواتير الشهرية المجمعة.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setBatchOpen(true)}
+            className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-semibold hover:from-blue-700 hover:to-indigo-700 shadow-sm flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>إصدار الفواتير المجمعة بنقرة واحدة</span>
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="flex items-center justify-between bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-800 rounded-lg px-4 py-2 text-sm">
@@ -336,6 +376,13 @@ export default function DentalInvoicesTab() {
       )}
       {paymentInvoice && (
         <PaymentModal invoice={paymentInvoice} onClose={() => setPaymentInvoice(null)} onSaved={() => { setPaymentInvoice(null); refresh({ silent: true }); }} />
+      )}
+      {batchOpen && uninvoicedSummary && (
+        <BatchMonthlyInvoiceModal
+          summary={uninvoicedSummary}
+          onClose={() => setBatchOpen(false)}
+          onSaved={() => { setBatchOpen(false); refresh({ silent: true }); }}
+        />
       )}
     </div>
   );

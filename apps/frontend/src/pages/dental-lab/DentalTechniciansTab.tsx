@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Users, Wallet, X as XMarkIcon } from "lucide-react";
+import { Loader2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2, Users, Wallet, X as XMarkIcon } from "lucide-react";
 import {
   DentalTechnician, DentalTechnicianRole, fetchTechnicians, createTechnician, updateTechnician, deleteTechnician,
   fetchTeam, TeamMember,
@@ -65,7 +65,7 @@ export default function DentalTechniciansTab() {
 
   const openCreate = () => {
     setError(null);
-    setModal({ name: "", phone: "", role: "TECHNICIAN", userId: "", wagePerStage: "", isActive: true });
+    setModal({ name: "", phone: "", role: "CAD_DESIGNER", userId: "", wagePerStage: "", isActive: true });
   };
 
   const openEdit = (x: DentalTechnician) => {
@@ -74,7 +74,7 @@ export default function DentalTechniciansTab() {
       id: x.id,
       name: x.name,
       phone: x.phone || "",
-      role: x.role,
+      role: x.role || "GENERAL_TECHNICIAN",
       userId: x.userId || "",
       wagePerStage: x.wagePerStage != null ? String(x.wagePerStage) : "",
       isActive: x.isActive,
@@ -84,7 +84,7 @@ export default function DentalTechniciansTab() {
   const save = async () => {
     if (!modal || saving) return;
     setError(null);
-    if (!modal.name.trim()) { setError(t("dentalLab.common.name")); return; }
+    if (!modal.name.trim()) { setError("اسم عضو الفريق مطلوب"); return; }
     setSaving(true);
     try {
       const payload = {
@@ -96,10 +96,10 @@ export default function DentalTechniciansTab() {
       };
       if (modal.id) {
         await updateTechnician(modal.id, { ...payload, isActive: modal.isActive });
-        toast.success(t("dentalLab.technicians.updated"));
+        toast.success("تم تحديث بيانات عضو فريق العمل بنجاح");
       } else {
         await createTechnician({ ...payload, isActive: true });
-        toast.success(t("dentalLab.technicians.created"));
+        toast.success("تمت إضافة عضو جديد لفريق العمل بنجاح");
       }
       setModal(null);
       await load(true);
@@ -112,11 +112,11 @@ export default function DentalTechniciansTab() {
 
   const remove = async (x: DentalTechnician) => {
     if (removingId) return;
-    if (!window.confirm(`${t("dentalLab.common.confirmDelete")} (${x.name})`)) return;
+    if (!window.confirm(`هل أنت متأكد من حذف (${x.name}) من فريق العمل؟`)) return;
     setRemovingId(x.id);
     try {
       await deleteTechnician(x.id);
-      toast.success(t("dentalLab.technicians.deleted"));
+      toast.success("تم حذف عضو الفريق بنجاح");
       await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
@@ -135,9 +135,9 @@ export default function DentalTechniciansTab() {
   };
 
   const roleBadge = (role: string) => {
-    const meta = ROLE_CONFIG[role as DentalTechnicianRole];
-    if (!meta) return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">{role}</span>;
-    return <span className={`px-2 py-0.5 rounded-full text-xs ${meta.color}`}>{meta.label}</span>;
+    const meta = ROLE_CONFIG[role];
+    if (!meta) return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300">{role}</span>;
+    return <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${meta.color}`}>{meta.label}</span>;
   };
 
   const teamName = (userId?: string) => {
@@ -154,15 +154,15 @@ export default function DentalTechniciansTab() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold">{t("dentalLab.technicians.title")}</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("dentalLab.subtitle")}</p>
+          <h2 className="text-xl font-bold">فريق العمل والمحطات</h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">إدارة تخصصات ومحطات فريق المعمل وأجور المراحل المكتملة</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => load()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
-          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-            <Plus className="w-4 h-4" />{t("dentalLab.technicians.newTechnician")}
+          <button onClick={openCreate} className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 shadow-sm">
+            <Plus className="w-4 h-4" />إضافة عضو جديد للفريق
           </button>
         </div>
       </div>
@@ -176,16 +176,16 @@ export default function DentalTechniciansTab() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.technicians.wages.defaultRate")}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">أجر المرحلة الافتراضي بالمعمل</p>
           <p className="text-xl font-bold mt-1">{fmtMoney(wageDefault)} {t("dentalLab.common.egp")}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.technicians.wages.totalWages")}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي مستحقات المراحل</p>
           <p className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{fmtMoney(totalWages)} {t("dentalLab.common.egp")}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.technicians.wages.count")}</p>
-          <p className="text-xl font-bold mt-1">{rows.length} {t("dentalLab.technicians.wages.techs")}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي أعضاء الفريق</p>
+          <p className="text-xl font-bold mt-1">{rows.length} عضو</p>
         </div>
       </div>
 
@@ -193,12 +193,12 @@ export default function DentalTechniciansTab() {
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            <h3 className="font-semibold">{t("dentalLab.technicians.title")}</h3>
+            <h3 className="font-semibold">أعضاء فريق العمل والتخصصات</h3>
             <Wallet className="w-4 h-4 text-gray-400" />
           </div>
           <div className="relative">
             <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-3 text-gray-400" />
-            <input className={`${inputCls} pr-9 w-64`} value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder={t("dentalLab.common.search")} />
+            <input className={`${inputCls} pr-9 w-64`} value={searchInput} onChange={e => setSearchInput(e.target.value)} placeholder="بحث بالاسم أو الهاتف..." />
           </div>
         </div>
 
@@ -214,20 +214,32 @@ export default function DentalTechniciansTab() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
-                  {[t("dentalLab.common.name"), t("dentalLab.common.phone"), t("dentalLab.technicians.role"), t("dentalLab.technicians.wages.rate"), t("dentalLab.technicians.wages.done"), t("dentalLab.technicians.wages.earned"), t("dentalLab.technicians.wages.account"), t("dentalLab.common.status"), t("dentalLab.common.actions")].map(h => (
-                    <th key={h} className="text-right py-3 px-3 whitespace-nowrap">{h}</th>
-                  ))}
+                  <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.name")}</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.phone")}</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">التخصص / المحطة</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">أجر المرحلة</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">المراحل المنجزة</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">إجمالي الأجر</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">حساب المنصة</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.status")}</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.actions")}</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map(x => (
                   <tr key={x.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="py-3 px-3 font-medium">{x.name}</td>
+                    <td className="py-3 px-3 font-medium text-gray-900 dark:text-gray-100">{x.name}</td>
                     <td className="py-3 px-3 text-gray-500 dark:text-gray-400" dir="ltr">{x.phone || "—"}</td>
                     <td className="py-3 px-3">{roleBadge(x.role)}</td>
-                    <td className="py-3 px-3">{x.wagePerStage != null ? fmtMoney(x.wagePerStage) : t("dentalLab.technicians.wages.default")}</td>
-                    <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{x.completedStages ?? 0}</td>
-                    <td className="py-3 px-3 font-semibold text-emerald-600 dark:text-emerald-400">{fmtMoney(x.totalEarnings)}</td>
+                    <td className="py-3 px-3">
+                      {x.wagePerStage != null ? (
+                        <span className="font-semibold text-gray-800 dark:text-gray-200">{fmtMoney(x.wagePerStage)} ج.م</span>
+                      ) : (
+                        <span className="text-xs text-gray-400">افتراضي ({fmtMoney(wageDefault)} ج.م)</span>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 font-mono font-medium text-blue-600 dark:text-blue-400">{x.completedStages ?? 0}</td>
+                    <td className="py-3 px-3 font-semibold text-emerald-600 dark:text-emerald-400">{fmtMoney(x.totalEarnings)} ج.م</td>
                     <td className="py-3 px-3 text-xs text-gray-500 dark:text-gray-400">{teamName(x.userId)}</td>
                     <td className="py-3 px-3">
                       <button
@@ -256,10 +268,13 @@ export default function DentalTechniciansTab() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => !saving && setModal(null)}>
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3" onClick={() => !saving && setModal(null)}>
           <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold">{modal.id ? t("dentalLab.technicians.editTitle") : t("dentalLab.technicians.createTitle")}</h3>
+            <div className="flex items-center justify-between mb-5 border-b pb-3 dark:border-gray-700">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-blue-600" />
+                <h3 className="text-lg font-bold">{modal.id ? "تعديل بيانات عضو الفريق" : "إضافة عضو جديد لفريق العمل"}</h3>
+              </div>
               <button onClick={() => !saving && setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
                 <XMarkIcon className="w-5 h-5" />
               </button>
@@ -267,46 +282,54 @@ export default function DentalTechniciansTab() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className={labelCls}>{t("dentalLab.common.name")} *</label>
-                <input className={inputCls} value={modal.name} onChange={e => setModal({ ...modal, name: e.target.value })} />
+                <input className={inputCls} placeholder="مثال: أحمد محمود" value={modal.name} onChange={e => setModal({ ...modal, name: e.target.value })} />
               </div>
               <div>
                 <label className={labelCls}>{t("dentalLab.common.phone")}</label>
-                <input className={inputCls} value={modal.phone} onChange={e => setModal({ ...modal, phone: e.target.value })} dir="ltr" />
+                <input className={inputCls} placeholder="01xxxxxxxxx" value={modal.phone} onChange={e => setModal({ ...modal, phone: e.target.value })} dir="ltr" />
               </div>
               <div>
-                <label className={labelCls}>{t("dentalLab.technicians.role")}</label>
+                <label className={labelCls}>التخصص / المحطة الأساسية *</label>
                 <select className={inputCls} value={modal.role} onChange={e => setModal({ ...modal, role: e.target.value as DentalTechnicianRole })}>
-                  {(Object.keys(ROLE_CONFIG) as DentalTechnicianRole[]).map(r => (
-                    <option key={r} value={r}>{ROLE_CONFIG[r].label}</option>
-                  ))}
+                  <option value="CAD_DESIGNER">مصمم CAD/CAM (CAD Designer)</option>
+                  <option value="CERAMIST">فني خزف وبورسلين (Ceramist)</option>
+                  <option value="MODEL_WAX">فني شمع وموديلات (Model & Wax Tech)</option>
+                  <option value="METAL_CASTING">فني ميتال وكاستينج (Metal & Casting)</option>
+                  <option value="FINISHING_POLISHING">فني فينشنج وتلميع (Finishing & Polish)</option>
+                  <option value="QC_INSPECTOR">أخصائي مراقبة جودة (QC Inspector)</option>
+                  <option value="RECEPTION_LOGISTICS">استقبال ولوجستيات (Reception)</option>
+                  <option value="SUPERVISOR">مشرف الإنتاج / Master Tech</option>
+                  <option value="GENERAL_TECHNICIAN">فني أسنان عام (General)</option>
                 </select>
               </div>
               <div>
-                <label className={labelCls}>{t("dentalLab.technicians.wages.rate")}</label>
-                <input className={inputCls} type="number" value={modal.wagePerStage} onChange={e => setModal({ ...modal, wagePerStage: e.target.value })} placeholder={t("dentalLab.technicians.wages.defaultHint")} />
+                <label className={labelCls}>أجر المرحلة المكتملة (ج.م)</label>
+                <input className={inputCls} type="number" min="0" value={modal.wagePerStage} onChange={e => setModal({ ...modal, wagePerStage: e.target.value })} placeholder="فارغ = المعدل الافتراضي" />
               </div>
               <div className="sm:col-span-2">
-                <label className={labelCls}>{t("dentalLab.technicians.wages.account")}</label>
+                <label className={labelCls}>ربط بحساب مستخدم بالمنصة (اختياري)</label>
                 <select className={inputCls} value={modal.userId} onChange={e => setModal({ ...modal, userId: e.target.value })}>
-                  <option value="">{t("dentalLab.technicians.wages.noAccount")}</option>
+                  <option value="">بدون حساب منصة مرتبط</option>
                   {team.map(m => (
                     <option key={m.userId} value={m.userId}>{m.name || m.email || m.userId}</option>
                   ))}
                 </select>
-                <p className="text-xs text-gray-400 mt-1">{t("dentalLab.technicians.wages.accountHint")}</p>
+                <p className="text-xs text-gray-400 mt-1">يتيح للعضو تسجيل الدخول لبوابة الفنيين ومسح باركود الحالات.</p>
               </div>
               {modal.id && (
-                <label className="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300 sm:col-span-2">
-                  <input type="checkbox" checked={modal.isActive} onChange={e => setModal({ ...modal, isActive: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600" />
-                  {t("dentalLab.common.active")}
-                </label>
+                <div className="sm:col-span-2 flex items-center gap-2 pt-2">
+                  <input type="checkbox" id="tech-active" checked={modal.isActive} onChange={e => setModal({ ...modal, isActive: e.target.checked })} className="rounded border-gray-300 dark:border-gray-600 text-blue-600" />
+                  <label htmlFor="tech-active" className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
+                    عضو نشط (متاح لتعيين مراحل الشغل له)
+                  </label>
+                </div>
               )}
             </div>
-            <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setModal(null)} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
+            <div className="flex justify-end gap-3 mt-6 border-t pt-3 dark:border-gray-700">
+              <button onClick={() => setModal(null)} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50 text-sm">
                 {t("dentalLab.common.cancel")}
               </button>
-              <button onClick={save} disabled={saving || !modal.name.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
+              <button onClick={save} disabled={saving || !modal.name.trim()} className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm shadow-sm">
                 {saving ? t("dentalLab.common.saving") : t("dentalLab.common.save")}
               </button>
             </div>

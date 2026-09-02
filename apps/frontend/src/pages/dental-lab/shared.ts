@@ -11,7 +11,7 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "cases", label: "dentalLab.tabs.cases", icon: ListChecks },
   { id: "doctors", label: "dentalLab.tabs.doctors", icon: Users },
   { id: "work-types", label: "dentalLab.tabs.work-types", icon: Wrench },
-  { id: "technicians", label: "dentalLab.tabs.technicians", icon: Users },
+  { id: "technicians", label: "dentalLab.tabs.team", icon: Users },
   { id: "invoices", label: "dentalLab.tabs.invoices", icon: CreditCard },
   { id: "settings", label: "dentalLab.tabs.settings", icon: Settings },
   { id: "notifications", label: "dentalLab.notifications.title", icon: Bell },
@@ -21,7 +21,20 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
 export type DentalCaseStatus = "RECEIVED" | "DESIGN" | "MANUFACTURING" | "QC" | "READY" | "DELIVERED" | "CLOSED";
 export type DentalCasePriority = "NORMAL" | "URGENT" | "STAT";
 export type DentalPaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
-export type DentalTechnicianRole = "RECEPTION" | "CAD" | "TECHNICIAN" | "QC";
+export type DentalTechnicianRole =
+  | "CAD_DESIGNER"
+  | "CERAMIST"
+  | "MODEL_WAX"
+  | "METAL_CASTING"
+  | "FINISHING_POLISHING"
+  | "QC_INSPECTOR"
+  | "RECEPTION_LOGISTICS"
+  | "SUPERVISOR"
+  | "GENERAL_TECHNICIAN"
+  | "CAD"
+  | "RECEPTION"
+  | "TECHNICIAN"
+  | "QC";
 
 export interface DentalLabDoctor {
   id: string;
@@ -46,8 +59,12 @@ export interface DentalWorkType {
   id: string;
   name: string;
   category?: string;
+  pricingMode?: "PER_UNIT" | "FLAT";
   price: number;
   leadTimeDays?: number;
+  defaultMaterial?: string;
+  defaultWarrantyYears?: number;
+  defaultCrownCount?: number;
   isActive: boolean;
   sortOrder?: number;
   createdAt?: string;
@@ -63,6 +80,7 @@ export interface DentalTechnician {
   isActive: boolean;
   createdAt?: string;
   completedStages?: number;
+  completedUnits?: number;
   totalEarnings?: number;
 }
 
@@ -215,9 +233,17 @@ export interface DoctorStatement {
 export interface TechnicianProductivity {
   technicianId?: string;
   name?: string;
+  phone?: string;
+  role?: string;
+  isActive?: boolean;
   assignedCases?: number;
   completedStages?: number;
+  completedUnits?: number;
+  avgHoursPerStage?: number;
   avgDaysPerStage?: number;
+  wagePerStage?: number;
+  earnedWages?: number;
+  remakesCount?: number;
 }
 
 export interface WorkTypeRevenue {
@@ -258,6 +284,8 @@ export interface DentalLabCase {
   patientPhone?: string;
   workTypeId?: string;
   workTypeName?: string;
+  unitsCount?: number;
+  unitPrice?: number;
   teeth?: string;
   shade?: string;
   material?: string;
@@ -418,11 +446,21 @@ export const PRIORITY_CONFIG: Record<DentalCasePriority, { label: string; color:
   STAT: { label: "استعجالي جداً", color: "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300" },
 };
 
-export const ROLE_CONFIG: Record<DentalTechnicianRole, { label: string; color: string }> = {
-  RECEPTION: { label: "استقبال", color: "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300" },
-  CAD: { label: "تصميم CAD", color: "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300" },
-  TECHNICIAN: { label: "فني", color: "bg-indigo-100 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300" },
-  QC: { label: "فحص جودة", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/40 dark:text-yellow-300" },
+export const ROLE_CONFIG: Record<string, { label: string; color: string }> = {
+  CAD_DESIGNER: { label: "مصمم CAD/CAM", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
+  CERAMIST: { label: "فني خزف وبورسلين", color: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300" },
+  MODEL_WAX: { label: "فني شمع وموديلات", color: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300" },
+  METAL_CASTING: { label: "فني ميتال وكاستينج", color: "bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300" },
+  FINISHING_POLISHING: { label: "فني فينشنج وتلميع", color: "bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300" },
+  QC_INSPECTOR: { label: "مراقب جودة QC", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" },
+  RECEPTION_LOGISTICS: { label: "استقبال ولوجستيات", color: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300" },
+  SUPERVISOR: { label: "مشرف المعمل / Master", color: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300" },
+  GENERAL_TECHNICIAN: { label: "فني أسنان عام", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  // Backward compatibility
+  RECEPTION: { label: "استقبال ولوجستيات", color: "bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300" },
+  CAD: { label: "مصمم CAD/CAM", color: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" },
+  TECHNICIAN: { label: "فني أسنان عام", color: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300" },
+  QC: { label: "مراقب جودة QC", color: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" },
 };
 
 export const PAYMENT_STATUS_MAP: Record<DentalPaymentStatus, { label: string; color: string }> = {
@@ -479,8 +517,9 @@ const unwrapListEnvelope = <T>(res: AxiosResponse): T[] => {
   return [] as T[];
 };
 
-export const fetchDoctors = async (search?: string): Promise<DentalLabDoctor[]> => {
-  const res = await apiClient.get("/dental-lab/doctors", { params: search ? { search } : {} });
+export const fetchDoctors = async (params?: string | { search?: string; isActive?: boolean | string; archived?: boolean; all?: boolean; page?: number; limit?: number }): Promise<DentalLabDoctor[]> => {
+  const queryParams = typeof params === "string" ? (params ? { search: params } : {}) : (params || {});
+  const res = await apiClient.get("/dental-lab/doctors", { params: queryParams });
   // /dental-lab/doctors بيرجع { items, total, page, limit } (وليس array مباشرة)
   const body = asRecord(res.data) ?? {};
   const data = body["data"];
@@ -491,9 +530,62 @@ export const fetchDoctors = async (search?: string): Promise<DentalLabDoctor[]> 
   }
   return unwrapListEnvelope<DentalLabDoctor>(res);
 };
+
+export const fetchDoctorsFull = async (params?: { search?: string; isActive?: boolean | string; archived?: boolean; all?: boolean; page?: number; limit?: number }): Promise<{ items: DentalLabDoctor[]; total: number; activeCount: number; archivedCount: number }> => {
+  const res = await apiClient.get("/dental-lab/doctors", { params });
+  const body = asRecord(res.data) ?? {};
+  const data = (body["data"] as Record<string, unknown>) || {};
+  return {
+    items: Array.isArray(data["items"]) ? (data["items"] as DentalLabDoctor[]) : [],
+    total: typeof data["total"] === "number" ? data["total"] : 0,
+    activeCount: typeof data["activeCount"] === "number" ? data["activeCount"] : 0,
+    archivedCount: typeof data["archivedCount"] === "number" ? data["archivedCount"] : 0,
+  };
+};
+
 export const createDoctor = async (body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.post("/dental-lab/doctors", body));
 export const updateDoctor = async (id: string, body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.put(`/dental-lab/doctors/${id}`, body));
-export const deleteDoctor = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/doctors/${id}`); };
+export const deleteDoctor = async (id: string): Promise<{ success: boolean; mode?: string; message?: string }> => {
+  const res = await apiClient.delete(`/dental-lab/doctors/${id}`);
+  return res.data as { success: boolean; mode?: string; message?: string };
+};
+export const restoreDoctor = async (id: string): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.post(`/dental-lab/doctors/${id}/restore`));
+export const permanentDeleteDoctor = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/doctors/${id}/permanent`); };
+
+export interface UninvoicedDoctorSummary {
+  doctorId: string | null;
+  doctorName: string;
+  phone?: string | null;
+  clinicName?: string | null;
+  casesCount: number;
+  totalAmount: number;
+  cases: {
+    id: string;
+    caseNumber: string;
+    patientName: string;
+    workTypeName: string;
+    dueDate?: string;
+    deliveredAt?: string;
+    status: string;
+    total: number;
+  }[];
+}
+
+export interface UninvoicedSummaryResult {
+  doctors: UninvoicedDoctorSummary[];
+  totalDoctors: number;
+  totalCases: number;
+  totalAmount: number;
+}
+
+export const fetchUninvoicedSummary = async (): Promise<UninvoicedSummaryResult> =>
+  unwrapEnvelope<UninvoicedSummaryResult>(await apiClient.get("/dental-lab/invoices/uninvoiced-summary"));
+
+export const batchCreateMonthlyInvoices = async (body?: { doctorIds?: string[]; dueDate?: string; notes?: string }): Promise<{ createdCount: number; invoicedCasesCount: number }> =>
+  unwrapEnvelope<{ createdCount: number; invoicedCasesCount: number }>(await apiClient.post("/dental-lab/invoices/batch-create", body || {}));
+
+export const triggerBillingCycleScan = async (force: boolean = true): Promise<unknown> =>
+  unwrapEnvelope<unknown>(await apiClient.post("/dental-lab/notifications/scan-billing-cycle", { force }));
 
 export const fetchWorkTypes = async (): Promise<DentalWorkType[]> => unwrapListEnvelope<DentalWorkType>(await apiClient.get("/dental-lab/work-types"));
 export const createWorkType = async (body: Partial<DentalWorkType>): Promise<DentalWorkType> => unwrapEnvelope<DentalWorkType>(await apiClient.post("/dental-lab/work-types", body));

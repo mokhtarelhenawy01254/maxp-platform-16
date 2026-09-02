@@ -86,6 +86,8 @@ router.post('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER',
 router.post('/doctors/:id/bulk-payment', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.recordDoctorBulkPayment);
 router.put('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateDoctor);
 router.delete('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteDoctor);
+router.post('/doctors/:id/restore', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.restoreDoctor);
+router.delete('/doctors/:id/permanent', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.permanentDeleteDoctor);
 
 // Work types
 router.get('/work-types', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.listWorkTypes);
@@ -132,9 +134,12 @@ router.get('/my-wage', verifyToken.authenticateToken, dentalRoleGuard(['TECHNICI
 // Invoices
 router.get('/invoices', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.listInvoices);
 router.post('/invoices', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.createInvoice);
+router.get('/invoices/uninvoiced-summary', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getUninvoicedSummary);
+router.post('/invoices/batch-create', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.batchCreateMonthlyInvoices);
 router.post('/invoices/:id/payments', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.recordInvoicePayment);
 router.get('/invoices/:id/pdf', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getInvoicePdf);
 router.get('/invoices/:id/payment-link', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getInvoicePaymentLink);
+router.post('/notifications/scan-billing-cycle', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.scanBillingCycle);
 
 // Doctor pricing (rate sheet)
 router.get('/doctors/:id/pricing', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getDoctorPricing);

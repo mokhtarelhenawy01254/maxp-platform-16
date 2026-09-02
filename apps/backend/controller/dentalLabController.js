@@ -175,8 +175,19 @@ const listDoctors = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
-    const { search, page, limit } = req.query;
+    const { search, page, limit, isActive, archived, all } = req.query;
     const where = { companyId };
+
+    if (all === 'true') {
+      // return both active and inactive
+    } else if (archived === 'true' || isActive === 'false' || isActive === false) {
+      where.isActive = false;
+    } else if (isActive === 'true' || isActive === true) {
+      where.isActive = true;
+    } else if (isActive !== undefined && isActive !== '') {
+      where.isActive = normalizeBool(isActive);
+    }
+
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -186,9 +197,11 @@ const listDoctors = async (req, res) => {
     }
     const { pageNum, limitNum, skip } = parsePagination(req.query);
     const prisma = getSharedPrismaClient();
-    const [items, total] = await Promise.all([
+    const [items, total, activeCount, archivedCount] = await Promise.all([
       prisma.dentalLabDoctor.findMany({ where, orderBy: { createdAt: 'desc' }, skip, take: limitNum }),
       prisma.dentalLabDoctor.count({ where }),
+      prisma.dentalLabDoctor.count({ where: { companyId, isActive: true } }),
+      prisma.dentalLabDoctor.count({ where: { companyId, isActive: false } }),
     ]);
 
     // دفتر الذمم: حساب كل طبيب (عميل) — الفواتير غير الملغاة + الحالات النشطة - الائتمانات
@@ -201,7 +214,7 @@ const listDoctors = async (req, res) => {
       }),
       prisma.dentalLabCase.groupBy({
         by: ['doctorId'],
-        where: { companyId, doctorId: { in: ids }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
+        where: { companyId, doctorId: { in: ids }, isDeleted: false, status: { notIn: ['DELIVERED', 'CLOSED'] } },
         _count: { _all: true },
       }),
       prisma.dentalCreditNote.groupBy({
@@ -214,7 +227,7 @@ const listDoctors = async (req, res) => {
     const casesByDoctor = new Map(caseAgg.map((r) => [r.doctorId, r._count._all || 0]));
     const creditByDoctor = new Map(creditAgg.map((r) => [r.doctorId, Number(r._sum.amount) || 0]));
     const overdueRows = await prisma.dentalLabCase.findMany({
-      where: { companyId, doctorId: { in: ids }, dueDate: { lt: new Date() }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
+      where: { companyId, doctorId: { in: ids }, isDeleted: false, dueDate: { lt: new Date() }, status: { notIn: ['DELIVERED', 'CLOSED'] } },
       select: { doctorId: true },
     });
     const overdueCount = {};
@@ -236,7 +249,7 @@ const listDoctors = async (req, res) => {
       };
     });
 
-    res.json({ success: true, data: { items: enriched, total, page: pageNum, limit: limitNum } });
+    res.json({ success: true, data: { items: enriched, total, activeCount, archivedCount, page: pageNum, limit: limitNum } });
   } catch (error) {
     console.error('Error listing dental doctors:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في جلب الأطباء' });
@@ -335,11 +348,76 @@ const deleteDoctor = async (req, res) => {
     const prisma = getSharedPrismaClient();
     const existing = await prisma.dentalLabDoctor.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
+
+    // Check associated cases and invoices
+    const [casesCount, invoicesCount] = await Promise.all([
+      prisma.dentalLabCase.count({ where: { doctorId: id, companyId } }),
+      prisma.dentalInvoice.count({ where: { doctorId: id, companyId } }),
+    ]);
+
+    if (casesCount === 0 && invoicesCount === 0) {
+      // Safe hard delete: no history
+      await prisma.dentalLabDoctor.delete({ where: { id } });
+      return res.json({ success: true, mode: 'DELETED', message: 'تم حذف الطبيب نهائياً من النظام' });
+    }
+
+    // Doctor has history -> Soft Archive to protect financial ledger
     const doctor = await prisma.dentalLabDoctor.update({ where: { id }, data: { isActive: false } });
-    res.json({ success: true, data: doctor });
+    res.json({
+      success: true,
+      mode: 'ARCHIVED',
+      data: doctor,
+      message: `تم نقل الطبيب إلى الأرشيف لحماية سجلاته المالية (${casesCount} حالة و ${invoicesCount} فاتورة)`,
+    });
   } catch (error) {
     console.error('Error deleting dental doctor:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في حذف الطبيب' });
+  }
+};
+
+const restoreDoctor = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalLabDoctor.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
+
+    const doctor = await prisma.dentalLabDoctor.update({ where: { id }, data: { isActive: true } });
+    res.json({ success: true, data: doctor, message: 'تمت استعادة الطبيب إلى القائمة النشطة بنجاح' });
+  } catch (error) {
+    console.error('Error restoring dental doctor:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في استعادة الطبيب' });
+  }
+};
+
+const permanentDeleteDoctor = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalLabDoctor.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
+
+    const [casesCount, invoicesCount] = await Promise.all([
+      prisma.dentalLabCase.count({ where: { doctorId: id, companyId } }),
+      prisma.dentalInvoice.count({ where: { doctorId: id, companyId } }),
+    ]);
+
+    if (casesCount > 0 || invoicesCount > 0) {
+      return res.status(400).json({
+        success: false,
+        error: `لا يمكن الحذف النهائي للطبيب لوجود ${casesCount} حالة و ${invoicesCount} فاتورة مسجلة باسمه لحماية القيود المالية. يمكنك إبقاؤه في الأرشيف فقط.`,
+      });
+    }
+
+    await prisma.dentalLabDoctor.delete({ where: { id } });
+    res.json({ success: true, message: 'تم حذف الطبيب نهائياً من قاعدة البيانات' });
+  } catch (error) {
+    console.error('Error permanently deleting dental doctor:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في الحذف النهائي للطبيب' });
   }
 };
 
@@ -377,14 +455,23 @@ const createWorkType = async (req, res) => {
     const priceResult = toNonNegativeNumber(body.price, 0);
     if (!priceResult.valid) return res.status(400).json({ success: false, error: 'سعر نوع الشغل غير صحيح' });
 
+    const pricingMode = body.pricingMode === 'FLAT' ? 'FLAT' : 'PER_UNIT';
+    const defaultMaterial = body.defaultMaterial ? String(body.defaultMaterial).trim() : null;
+    const defaultWarrantyYears = Number.isFinite(parseInt(body.defaultWarrantyYears, 10)) ? Math.max(0, parseInt(body.defaultWarrantyYears, 10)) : 0;
+    const defaultCrownCount = Number.isFinite(parseInt(body.defaultCrownCount, 10)) ? Math.max(1, parseInt(body.defaultCrownCount, 10)) : 1;
+
     const prisma = getSharedPrismaClient();
     const workType = await prisma.dentalWorkType.create({
       data: {
         companyId,
         name,
         category: body.category ? String(body.category) : null,
+        pricingMode,
         price: priceResult.value,
         leadTimeDays: Number.isFinite(parseInt(body.leadTimeDays, 10)) ? parseInt(body.leadTimeDays, 10) : 5,
+        defaultMaterial,
+        defaultWarrantyYears,
+        defaultCrownCount,
         isActive: normalizeBool(body.isActive, true),
         sortOrder: Number.isFinite(parseInt(body.sortOrder, 10)) ? parseInt(body.sortOrder, 10) : 0,
       },
@@ -396,7 +483,7 @@ const createWorkType = async (req, res) => {
   }
 };
 
-const WORK_TYPE_UPDATE_FIELDS = ['name', 'category', 'price', 'leadTimeDays', 'isActive', 'sortOrder'];
+const WORK_TYPE_UPDATE_FIELDS = ['name', 'category', 'pricingMode', 'price', 'leadTimeDays', 'defaultMaterial', 'defaultWarrantyYears', 'defaultCrownCount', 'isActive', 'sortOrder'];
 
 const updateWorkType = async (req, res) => {
   try {
@@ -417,12 +504,17 @@ const updateWorkType = async (req, res) => {
       if (!name) return res.status(400).json({ success: false, error: 'اسم نوع الشغل مطلوب' });
       data.name = name;
     }
+    if ('pricingMode' in data) {
+      data.pricingMode = data.pricingMode === 'FLAT' ? 'FLAT' : 'PER_UNIT';
+    }
     if ('price' in data) {
       const priceResult = toNonNegativeNumber(data.price, 0);
       if (!priceResult.valid) return res.status(400).json({ success: false, error: 'سعر نوع الشغل غير صحيح' });
       data.price = priceResult.value;
     }
     if ('leadTimeDays' in data) data.leadTimeDays = parseInt(data.leadTimeDays, 10) || 5;
+    if ('defaultWarrantyYears' in data) data.defaultWarrantyYears = Math.max(0, parseInt(data.defaultWarrantyYears, 10) || 0);
+    if ('defaultCrownCount' in data) data.defaultCrownCount = Math.max(1, parseInt(data.defaultCrownCount, 10) || 1);
     if ('sortOrder' in data) data.sortOrder = parseInt(data.sortOrder, 10) || 0;
     if ('isActive' in data) data.isActive = normalizeBool(data.isActive, true);
 
@@ -677,9 +769,29 @@ const createCase = async (req, res) => {
       dueDate = await suggestDueDate(prisma, companyId, body.workTypeId);
     }
 
-let priceSnapshot = workType ? (Number(workType.price) || 0) : 0;
+    // Calculation of unitsCount & unitPrice
+    const teethStr = body.teeth ? String(body.teeth).trim() : null;
+    let unitsCount = Number.isFinite(parseInt(body.unitsCount, 10)) ? Math.max(1, parseInt(body.unitsCount, 10)) : null;
+    if (!unitsCount && teethStr) {
+      const parsedTeeth = teethStr.split(',').map((s) => s.trim()).filter(Boolean);
+      if (parsedTeeth.length > 0) unitsCount = parsedTeeth.length;
+    }
+    if (!unitsCount) unitsCount = (workType && workType.defaultCrownCount) || 1;
+
+    let unitPrice = workType ? (Number(workType.price) || 0) : 0;
+    if (body.unitPrice !== undefined && body.unitPrice !== null && body.unitPrice !== '') {
+      const upRes = toNonNegativeNumber(body.unitPrice);
+      if (upRes.valid) unitPrice = upRes.value;
+    }
+
+    const pricingMode = (workType && workType.pricingMode) || 'PER_UNIT';
+    let basePrice = pricingMode === 'FLAT' ? unitPrice : round2(unitPrice * unitsCount);
+
+    let priceSnapshot = basePrice;
     if ((body.priceSnapshot === undefined || body.priceSnapshot === null || body.priceSnapshot === '') && doctorId && workType) {
-      priceSnapshot = await resolveDoctorWorkTypePrice(prisma, companyId, doctorId, workType);
+      const resolvedDocPrice = await resolveDoctorWorkTypePrice(prisma, companyId, doctorId, workType);
+      unitPrice = resolvedDocPrice;
+      priceSnapshot = pricingMode === 'FLAT' ? resolvedDocPrice : round2(resolvedDocPrice * unitsCount);
     }
     if (body.priceSnapshot !== undefined && body.priceSnapshot !== null && body.priceSnapshot !== '') {
       const priceResult = toNonNegativeNumber(body.priceSnapshot);
@@ -706,7 +818,7 @@ let priceSnapshot = workType ? (Number(workType.price) || 0) : 0;
     const stageNames = await getStageTemplates(prisma, companyId, workType ? workType.category : null);
     const stagesData = buildStagesData(companyId, stageNames);
 
-const doctorRow = doctorId
+    const doctorRow = doctorId
       ? await prisma.dentalLabDoctor.findFirst({ where: { id: doctorId, companyId }, select: { name: true } })
       : null;
 
@@ -721,6 +833,9 @@ const doctorRow = doctorId
       }
     }
 
+    const material = body.material ? String(body.material) : (workType ? workType.defaultMaterial : null);
+    const warrantyYears = Number(body.warrantyYears) >= 0 ? Number(body.warrantyYears) : (workType ? workType.defaultWarrantyYears || 0 : 0);
+
     let dentalCase = null;
     for (let attempt = 0; attempt < 4; attempt++) {
       try {
@@ -734,12 +849,14 @@ const doctorRow = doctorId
             patientPhone: body.patientPhone ? String(body.patientPhone) : null,
             workTypeId: body.workTypeId || null,
             workTypeName,
+            unitsCount,
+            unitPrice,
             teeth: body.teeth ? String(body.teeth) : null,
             shade: body.shade ? String(body.shade) : null,
-            material: body.material ? String(body.material) : null,
+            material,
             lotNumber: body.lotNumber ? String(body.lotNumber).trim() : null,
             materialBrand: body.materialBrand ? String(body.materialBrand).trim() : null,
-            warrantyYears: Number(body.warrantyYears) >= 0 ? Number(body.warrantyYears) : 0,
+            warrantyYears,
             status: 'RECEIVED',
             orderStatus: 'PENDING',
             priority,
@@ -1605,7 +1722,7 @@ const prisma = getSharedPrismaClient();
       throw error;
     }
 
-if (invoice.caseId) {
+    if (invoice.caseId) {
       await syncCasePayments(prisma, companyId, invoice.caseId, {
         changedBy: req.user?.id || req.user?.email || null,
         userName: adminDisplayName(req),
@@ -1617,6 +1734,192 @@ if (invoice.caseId) {
   } catch (error) {
     console.error('Error recording dental payment:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });
+  }
+};
+
+const getUninvoicedSummary = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const prisma = getSharedPrismaClient();
+
+    const cases = await prisma.dentalLabCase.findMany({
+      where: {
+        companyId,
+        isDeleted: false,
+        status: { in: ['DELIVERED', 'COMPLETED', 'READY'] },
+        invoices: { none: {} },
+      },
+      include: {
+        doctor: { select: { id: true, name: true, phone: true, clinicName: true } },
+        workType: { select: { id: true, name: true } },
+      },
+      orderBy: { dueDate: 'asc' },
+    });
+
+    const byDoctorMap = new Map();
+    for (const c of cases) {
+      const docId = c.doctorId || 'unknown';
+      const docName = c.doctorName || (c.doctor && c.doctor.name) || 'غير محدد';
+      const docPhone = c.doctor && c.doctor.phone;
+      const clinicName = c.doctor && c.doctor.clinicName;
+
+      if (!byDoctorMap.has(docId)) {
+        byDoctorMap.set(docId, {
+          doctorId: c.doctorId,
+          doctorName: docName,
+          phone: docPhone,
+          clinicName,
+          casesCount: 0,
+          totalAmount: 0,
+          cases: [],
+        });
+      }
+
+      const docGroup = byDoctorMap.get(docId);
+      docGroup.casesCount++;
+      const caseTotal = Number(c.total) || 0;
+      docGroup.totalAmount = round2(docGroup.totalAmount + caseTotal);
+      docGroup.cases.push({
+        id: c.id,
+        caseNumber: c.caseNumber || c.id.slice(0, 8),
+        patientName: c.patientName,
+        workTypeName: c.workTypeName || (c.workType && c.workType.name) || '—',
+        dueDate: c.dueDate,
+        deliveredAt: c.deliveredAt,
+        status: c.status,
+        total: caseTotal,
+      });
+    }
+
+    const doctors = Array.from(byDoctorMap.values()).sort((a, b) => b.totalAmount - a.totalAmount);
+    const totalCases = cases.length;
+    const totalAmount = round2(doctors.reduce((sum, d) => sum + d.totalAmount, 0));
+
+    res.json({
+      success: true,
+      data: {
+        doctors,
+        totalDoctors: doctors.length,
+        totalCases,
+        totalAmount,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting uninvoiced summary:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تقرير الحالات غير المفوترة' });
+  }
+};
+
+const batchCreateMonthlyInvoices = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const prisma = getSharedPrismaClient();
+    const { doctorIds, dueDate, notes } = req.body || {};
+
+    const where = {
+      companyId,
+      isDeleted: false,
+      status: { in: ['DELIVERED', 'COMPLETED', 'READY'] },
+      invoices: { none: {} },
+    };
+    if (Array.isArray(doctorIds) && doctorIds.length > 0) {
+      where.doctorId = { in: doctorIds };
+    }
+
+    const cases = await prisma.dentalLabCase.findMany({
+      where,
+      include: {
+        doctor: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (!cases.length) {
+      return res.status(400).json({ success: false, error: 'لا توجد حالات غير مفوترة لهؤلاء الأطباء' });
+    }
+
+    // Group cases by doctor
+    const byDoctor = new Map();
+    for (const c of cases) {
+      const docId = c.doctorId || 'unknown';
+      if (!byDoctor.has(docId)) byDoctor.set(docId, []);
+      byDoctor.get(docId).push(c);
+    }
+
+    const createdInvoices = [];
+    const now = new Date();
+    const monthYear = `${now.getMonth() + 1}/${now.getFullYear()}`;
+
+    for (const [docId, docCases] of byDoctor.entries()) {
+      const doctorName = docCases[0]?.doctorName || docCases[0]?.doctor?.name || 'غير محدد';
+      const totalAmount = round2(docCases.reduce((sum, c) => sum + (Number(c.total) || 0), 0));
+      const totalDiscount = round2(docCases.reduce((sum, c) => sum + (Number(c.discount) || 0), 0));
+      const totalPaid = round2(docCases.reduce((sum, c) => sum + (Number(c.paid) || 0), 0));
+      const remaining = round2(Math.max(0, totalAmount - totalPaid));
+      const status = deriveInvoiceStatus(totalAmount, totalPaid);
+      const invoiceNotes = notes ? `${notes} (تجميع حالات شهر ${monthYear} - ${docCases.length} حالة)` : `فاتورة مجمعة لشهر ${monthYear} (${docCases.length} حالة)`;
+
+      const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
+      const invoice = await prisma.dentalInvoice.create({
+        data: {
+          companyId,
+          invoiceNumber,
+          doctorId: docId !== 'unknown' ? docId : null,
+          doctorName,
+          total: totalAmount,
+          discount: totalDiscount,
+          paid: totalPaid,
+          remaining,
+          status,
+          dueDate: parseDate(dueDate) || new Date(now.getFullYear(), now.getMonth() + 1, 10),
+          notes: invoiceNotes,
+        },
+      });
+
+      for (const c of docCases) {
+        await prisma.dentalCaseStatusHistory.create({
+          data: {
+            companyId,
+            caseId: c.id,
+            dimension: 'PAYMENT',
+            status: 'INVOICED',
+            changedBy: req.user?.id || req.user?.email || null,
+            userName: adminDisplayName(req),
+            reason: `تم تضمين الحالة في الفاتورة المجمعة رقم ${invoiceNumber}`,
+          },
+        }).catch(() => null);
+      }
+
+      createdInvoices.push(invoice);
+    }
+
+    res.json({
+      success: true,
+      data: {
+        createdCount: createdInvoices.length,
+        invoicedCasesCount: cases.length,
+        invoices: createdInvoices,
+      },
+      message: `تم إنشاء ${createdInvoices.length} فاتورة مجمعة بنجاح لـ ${cases.length} حالة`,
+    });
+  } catch (error) {
+    console.error('Error batch creating monthly invoices:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الفواتير المجمعة' });
+  }
+};
+
+const scanBillingCycle = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { scanUninvoicedBillingCycle } = require('../services/dentalLabNotificationService');
+    const result = await scanUninvoicedBillingCycle(companyId, { force: req.body?.force === true });
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Error scanning billing cycle:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في فحص دورة الفوترة' });
   }
 };
 
@@ -2461,11 +2764,11 @@ const getTechnicianProductivity = async (req, res) => {
       stageWhere.completedAt = { ...(stageWhere.completedAt || {}), lte: toDate };
     }
 
-    const [technicians, assignmentRows, doneStages] = await Promise.all([
+    const [technicians, assignmentRows, doneStages, wageSetting, remakes] = await Promise.all([
       prisma.dentalTechnician.findMany({
         where: { companyId },
         orderBy: { createdAt: 'asc' },
-        select: { id: true, name: true, role: true },
+        select: { id: true, name: true, phone: true, role: true, wagePerStage: true, isActive: true },
       }),
       prisma.dentalCaseAssignment.groupBy({
         by: ['technicianId'],
@@ -2474,9 +2777,35 @@ const getTechnicianProductivity = async (req, res) => {
       }),
       prisma.dentalCaseStage.findMany({
         where: stageWhere,
-        select: { id: true, assigneeId: true, startedAt: true, completedAt: true },
+        select: {
+          id: true,
+          assigneeId: true,
+          startedAt: true,
+          completedAt: true,
+          name: true,
+          case: {
+            select: { id: true, unitsCount: true, teeth: true, workTypeName: true },
+          },
+        },
       }),
+      prisma.dentalSetting.findFirst({
+        where: { companyId, key: 'wageDefaults' },
+      }).catch(() => null),
+      prisma.dentalRefabrication.findMany({
+        where: { companyId },
+        select: {
+          id: true,
+          caseId: true,
+          case: {
+            select: {
+              stages: { select: { assigneeId: true } },
+            },
+          },
+        },
+      }).catch(() => []),
     ]);
+
+    const defaultWagePerStage = (wageSetting && wageSetting.value && Number(wageSetting.value.defaultPerStage)) || 0;
 
     const assignmentCounts = {};
     for (const row of assignmentRows || []) {
@@ -2484,31 +2813,64 @@ const getTechnicianProductivity = async (req, res) => {
     }
 
     const stageCounts = {};
-    const durationSum = {};
+    const unitCounts = {};
+    const durationSumHours = {};
     const durationCount = {};
     for (const stage of doneStages || []) {
       const techId = stage.assigneeId;
       if (!techId) continue;
       stageCounts[techId] = (stageCounts[techId] || 0) + 1;
+
+      const units = (stage.case && stage.case.unitsCount) || (stage.case && stage.case.teeth ? stage.case.teeth.split(',').length : 1);
+      unitCounts[techId] = (unitCounts[techId] || 0) + Math.max(1, units);
+
       if (stage.startedAt && stage.completedAt) {
-        const days = (new Date(stage.completedAt) - new Date(stage.startedAt)) / 86400000;
-        durationSum[techId] = (durationSum[techId] || 0) + days;
+        const hours = Math.max(0.1, (new Date(stage.completedAt) - new Date(stage.startedAt)) / 3600000);
+        durationSumHours[techId] = (durationSumHours[techId] || 0) + hours;
         durationCount[techId] = (durationCount[techId] || 0) + 1;
       }
     }
 
-    const data = (technicians || []).map((tech) => ({
-      technicianId: tech.id,
-      name: tech.name,
-      role: tech.role,
-      assignedCases: assignmentCounts[tech.id] || 0,
-      completedStages: stageCounts[tech.id] || 0,
-      avgDaysPerStage: durationCount[tech.id] ? round2(durationSum[tech.id] / durationCount[tech.id]) : 0,
-    }));
+    // Attribute remakes to technicians
+    const remakesMap = {};
+    for (const r of remakes || []) {
+      const stageAssignees = (r.case && r.case.stages) ? r.case.stages.map((s) => s.assigneeId).filter(Boolean) : [];
+      for (const tId of new Set(stageAssignees)) {
+        remakesMap[tId] = (remakesMap[tId] || 0) + 1;
+      }
+    }
+
+    const data = (technicians || []).map((tech) => {
+      const completedStages = stageCounts[tech.id] || 0;
+      const completedUnits = unitCounts[tech.id] || 0;
+      const count = durationCount[tech.id] || 0;
+      const avgHoursPerStage = count ? round2(durationSumHours[tech.id] / count) : 0;
+      const avgDaysPerStage = count ? round2((durationSumHours[tech.id] / 24) / count) : 0;
+      const wageRate = tech.wagePerStage != null ? Number(tech.wagePerStage) : defaultWagePerStage;
+      const earnedWages = round2(completedStages * wageRate);
+      const techRemakes = remakesMap[tech.id] || 0;
+
+      return {
+        technicianId: tech.id,
+        name: tech.name,
+        phone: tech.phone || null,
+        role: tech.role,
+        isActive: tech.isActive,
+        assignedCases: assignmentCounts[tech.id] || 0,
+        completedStages,
+        completedUnits,
+        avgHoursPerStage,
+        avgDaysPerStage,
+        wagePerStage: wageRate,
+        earnedWages,
+        remakesCount: techRemakes,
+      };
+    });
+
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error fetching dental technician productivity:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في جلب إنتاجية الفنيين' });
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب إنتاجية وتحليلات فريق العمل' });
   }
 };
 
@@ -3341,6 +3703,8 @@ module.exports = {
   createDoctor,
   updateDoctor,
   deleteDoctor,
+  restoreDoctor,
+  permanentDeleteDoctor,
   listWorkTypes,
   createWorkType,
   updateWorkType,
@@ -3363,6 +3727,9 @@ module.exports = {
   listInvoices,
   createInvoice,
   recordInvoicePayment,
+  getUninvoicedSummary,
+  batchCreateMonthlyInvoices,
+  scanBillingCycle,
   getDashboard,
   getSettings,
   updateSettings,

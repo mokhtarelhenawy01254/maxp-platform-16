@@ -29,6 +29,7 @@ const createPrisma = (overrides = {}) => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      delete: jest.fn(),
     },
     dentalWorkType: {
       findMany: jest.fn(),
@@ -214,7 +215,7 @@ describe('dentalLabController', () => {
 
     test('uses workType price snapshot and category-specific stage templates from settings', async () => {
       const prisma = createPrisma();
-      prisma.dentalWorkType.findFirst.mockResolvedValue({ id: 'wt-1', name: 'جسر', price: 300, category: 'جسر' });
+      prisma.dentalWorkType.findFirst.mockResolvedValue({ id: 'wt-1', name: 'جسر', price: 300, category: 'جسر', pricingMode: 'FLAT' });
       prisma.dentalSetting.findMany.mockResolvedValue([
         { key: 'stageTemplates', value: { 'جسر': ['أخذ مقاس', 'تركيب'] } },
       ]);
@@ -233,6 +234,42 @@ describe('dentalLabController', () => {
       expect(data.priceSnapshot).toBe(300);
       expect(data.total).toBe(300);
       expect(data.stages.create.map((s) => s.name)).toEqual(['أخذ مقاس', 'تركيب']);
+    });
+
+    test('multiplies unitPrice by unitsCount when pricingMode is PER_UNIT and derives from teeth', async () => {
+      const prisma = createPrisma();
+      prisma.dentalWorkType.findFirst.mockResolvedValue({
+        id: 'wt-crown',
+        name: 'تاج زيركون',
+        price: 500,
+        category: 'CROWN',
+        pricingMode: 'PER_UNIT',
+        defaultMaterial: 'Zirconia Katana',
+        defaultWarrantyYears: 5,
+      });
+      prisma.dentalSetting.findMany.mockResolvedValue([]);
+      prisma.dentalLabCase.findFirst.mockResolvedValue(null);
+      prisma.dentalLabCase.create.mockResolvedValue(makeCase({ unitsCount: 3, unitPrice: 500, priceSnapshot: 1500, total: 1500 }));
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createCase(req({
+        body: {
+          workTypeId: 'wt-crown',
+          patientName: 'عمر خالد',
+          teeth: '11, 12, 13',
+        },
+      }), res);
+
+      expect(res.statusCode).toBe(200);
+      const data = prisma.dentalLabCase.create.mock.calls[0][0].data;
+      expect(data.unitsCount).toBe(3);
+      expect(data.unitPrice).toBe(500);
+      expect(data.priceSnapshot).toBe(1500); // 3 * 500
+      expect(data.total).toBe(1500);
+      expect(data.material).toBe('Zirconia Katana');
+      expect(data.warrantyYears).toBe(5);
     });
 
 test('rejects when workTypeName is missing and no workTypeId', async () => {
@@ -838,9 +875,27 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       });
     });
 
-    test('deleteDoctor performs a soft delete', async () => {
+    test('deleteDoctor performs hard delete when doctor has 0 cases and 0 invoices', async () => {
       const prisma = createPrisma();
       prisma.dentalLabDoctor.findFirst.mockResolvedValue({ id: 'doc-1', companyId: 'company-1' });
+      prisma.dentalLabCase.count.mockResolvedValue(0);
+      prisma.dentalInvoice.count.mockResolvedValue(0);
+      prisma.dentalLabDoctor.delete.mockResolvedValue({ id: 'doc-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.deleteDoctor(req({ params: { id: 'doc-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.mode).toBe('DELETED');
+      expect(prisma.dentalLabDoctor.delete).toHaveBeenCalledWith({ where: { id: 'doc-1' } });
+    });
+
+    test('deleteDoctor performs soft archive when doctor has associated cases', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findFirst.mockResolvedValue({ id: 'doc-1', companyId: 'company-1' });
+      prisma.dentalLabCase.count.mockResolvedValue(3);
+      prisma.dentalInvoice.count.mockResolvedValue(1);
       prisma.dentalLabDoctor.update.mockResolvedValue({ id: 'doc-1', isActive: false });
       getSharedPrismaClient.mockReturnValue(prisma);
 
@@ -848,10 +903,56 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       await controller.deleteDoctor(req({ params: { id: 'doc-1' } }), res);
 
       expect(res.statusCode).toBe(200);
+      expect(res.payload.mode).toBe('ARCHIVED');
       expect(prisma.dentalLabDoctor.update).toHaveBeenCalledWith({
         where: { id: 'doc-1' },
         data: { isActive: false },
       });
+    });
+
+    test('restoreDoctor sets isActive to true', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findFirst.mockResolvedValue({ id: 'doc-1', companyId: 'company-1', isActive: false });
+      prisma.dentalLabDoctor.update.mockResolvedValue({ id: 'doc-1', isActive: true });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.restoreDoctor(req({ params: { id: 'doc-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalLabDoctor.update).toHaveBeenCalledWith({
+        where: { id: 'doc-1' },
+        data: { isActive: true },
+      });
+    });
+
+    test('permanentDeleteDoctor deletes doctor without records', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findFirst.mockResolvedValue({ id: 'doc-1', companyId: 'company-1' });
+      prisma.dentalLabCase.count.mockResolvedValue(0);
+      prisma.dentalInvoice.count.mockResolvedValue(0);
+      prisma.dentalLabDoctor.delete.mockResolvedValue({ id: 'doc-1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.permanentDeleteDoctor(req({ params: { id: 'doc-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalLabDoctor.delete).toHaveBeenCalledWith({ where: { id: 'doc-1' } });
+    });
+
+    test('permanentDeleteDoctor blocks deletion when records exist', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findFirst.mockResolvedValue({ id: 'doc-1', companyId: 'company-1' });
+      prisma.dentalLabCase.count.mockResolvedValue(2);
+      prisma.dentalInvoice.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.permanentDeleteDoctor(req({ params: { id: 'doc-1' } }), res);
+
+      expect(res.statusCode).toBe(400);
+      expect(prisma.dentalLabDoctor.delete).not.toHaveBeenCalled();
     });
 
     test('deleteDoctor returns 404 for a foreign doctor', async () => {
@@ -961,6 +1062,59 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       expect(res.payload.data.freeCount).toBe(2);
       expect(res.payload.data.byCategory.DOCTOR_IMPRESSION).toBe(2);
       expect(res.payload.data.byCategory.LAB_FIT_MARGIN).toBe(1);
+    });
+  });
+
+  describe('Monthly Invoicing & Uninvoiced Cases Cadence', () => {
+    test('getUninvoicedSummary groups cases by doctor and computes totals', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findMany.mockResolvedValue([
+        { id: 'case-1', caseNumber: 'DL-1', doctorId: 'doc-1', doctorName: 'د. أحمد', total: 1000, status: 'DELIVERED', doctor: { id: 'doc-1', name: 'د. أحمد', phone: '0100', clinicName: 'عيادة 1' }, workType: { id: 'wt-1', name: 'Zirconia' } },
+        { id: 'case-2', caseNumber: 'DL-2', doctorId: 'doc-1', doctorName: 'د. أحمد', total: 500, status: 'READY', doctor: { id: 'doc-1', name: 'د. أحمد', phone: '0100', clinicName: 'عيادة 1' }, workType: { id: 'wt-1', name: 'Zirconia' } },
+        { id: 'case-3', caseNumber: 'DL-3', doctorId: 'doc-2', doctorName: 'د. منى', total: 800, status: 'DELIVERED', doctor: { id: 'doc-2', name: 'د. منى', phone: '0101', clinicName: 'عيادة 2' }, workType: { id: 'wt-2', name: 'Emax' } },
+      ]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.getUninvoicedSummary(req(), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.totalCases).toBe(3);
+      expect(res.payload.data.totalAmount).toBe(2300);
+      expect(res.payload.data.totalDoctors).toBe(2);
+      expect(res.payload.data.doctors[0].doctorId).toBe('doc-1');
+      expect(res.payload.data.doctors[0].casesCount).toBe(2);
+      expect(res.payload.data.doctors[0].totalAmount).toBe(1500);
+    });
+
+    test('batchCreateMonthlyInvoices creates aggregated invoices for doctors', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findMany.mockResolvedValue([
+        { id: 'case-1', caseNumber: 'DL-1', doctorId: 'doc-1', doctorName: 'د. أحمد', total: 1000, discount: 0, paid: 200, status: 'DELIVERED', doctor: { id: 'doc-1', name: 'د. أحمد' } },
+        { id: 'case-2', caseNumber: 'DL-2', doctorId: 'doc-1', doctorName: 'د. أحمد', total: 500, discount: 50, paid: 0, status: 'READY', doctor: { id: 'doc-1', name: 'د. أحمد' } },
+      ]);
+      prisma.dentalInvoice.count.mockResolvedValue(10);
+      prisma.dentalInvoice.create.mockResolvedValue({ id: 'inv-101', invoiceNumber: 'INV-101', total: 1500, remaining: 1300 });
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.batchCreateMonthlyInvoices(req({ body: { doctorIds: ['doc-1'] } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.createdCount).toBe(1);
+      expect(res.payload.data.invoicedCasesCount).toBe(2);
+      expect(prisma.dentalInvoice.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            doctorId: 'doc-1',
+            total: 1500,
+            remaining: 1300,
+          }),
+        })
+      );
     });
   });
 

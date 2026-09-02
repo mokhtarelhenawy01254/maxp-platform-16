@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { BadgePercent, Banknote, Loader2, Pencil, Plus, RefreshCw, Search, Trash2, Users, X as XMarkIcon } from "lucide-react";
+import { Archive, BadgePercent, Banknote, Loader2, Pencil, Plus, RefreshCw, RotateCcw, Search, Trash2, Users, X as XMarkIcon } from "lucide-react";
 import {
-  DentalLabDoctor, DentalWorkType, fetchDoctors, createDoctor, updateDoctor, deleteDoctor,
+  DentalLabDoctor, DentalWorkType, fetchDoctors, fetchDoctorsFull, createDoctor, updateDoctor, deleteDoctor,
+  restoreDoctor, permanentDeleteDoctor,
   fetchWorkTypes, fetchDoctorPricing, saveDoctorPricing, recordDoctorBulkPayment,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney,
 } from "./shared";
@@ -212,6 +213,9 @@ export default function DentalDoctorsTab() {
   const [error, setError] = useState<string | null>(null);
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"ACTIVE" | "ARCHIVED">("ACTIVE");
+  const [activeCount, setActiveCount] = useState(0);
+  const [archivedCount, setArchivedCount] = useState(0);
   const [modal, setModal] = useState<DoctorForm | null>(null);
   const [pricingDoctor, setPricingDoctor] = useState<DentalLabDoctor | null>(null);
   const [bulkDoctor, setBulkDoctor] = useState<DentalLabDoctor | null>(null);
@@ -221,19 +225,20 @@ export default function DentalDoctorsTab() {
   const load = useCallback(async (quiet = false) => {
     setLoading(true);
     try {
-      let data = await fetchDoctors();
-      if (search.trim()) {
-        const q = search.trim();
-        data = data.filter(d => d.name.includes(q) || (d.phone || "").includes(q) || (d.clinicName || "").includes(q));
-      }
-      setRows(data);
+      const res = await fetchDoctorsFull({
+        search: search.trim() || undefined,
+        archived: viewMode === "ARCHIVED",
+      });
+      setRows(res.items);
+      setActiveCount(res.activeCount);
+      setArchivedCount(res.archivedCount);
       setError(null);
     } catch (e) {
       if (!quiet) setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
     } finally {
       setLoading(false);
     }
-  }, [search, t]);
+  }, [search, viewMode, t]);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 350);
@@ -300,8 +305,37 @@ export default function DentalDoctorsTab() {
     if (!window.confirm(`${t("dentalLab.common.confirmDelete")} (${d.name})`)) return;
     setRemovingId(d.id);
     try {
-      await deleteDoctor(d.id);
-      toast.success(t("dentalLab.doctors.deleted"));
+      const res = await deleteDoctor(d.id);
+      toast.success(res.message || t("dentalLab.doctors.deleted"));
+      await load(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const handleRestore = async (d: DentalLabDoctor) => {
+    if (removingId) return;
+    setRemovingId(d.id);
+    try {
+      await restoreDoctor(d.id);
+      toast.success("تمت استعادة الطبيب إلى القائمة النشطة بنجاح");
+      await load(true);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setRemovingId(null);
+    }
+  };
+
+  const handlePermanentDelete = async (d: DentalLabDoctor) => {
+    if (removingId) return;
+    if (!window.confirm(`تحذير: هل أنت متأكد من الحذف النهائي للطبيب (${d.name}) من قاعدة البيانات بالكامل؟`)) return;
+    setRemovingId(d.id);
+    try {
+      await permanentDeleteDoctor(d.id);
+      toast.success("تم حذف الطبيب نهائياً من قاعدة البيانات");
       await load(true);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
@@ -346,6 +380,48 @@ export default function DentalDoctorsTab() {
         </div>
       )}
 
+      {/* View Switcher Pills */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-1.5 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl border dark:border-gray-700 w-fit">
+          <button
+            onClick={() => setViewMode("ACTIVE")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewMode === "ACTIVE"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>الأطباء النشطين</span>
+            <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold">
+              {activeCount}
+            </span>
+          </button>
+          <button
+            onClick={() => setViewMode("ARCHIVED")}
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              viewMode === "ARCHIVED"
+                ? "bg-white dark:bg-gray-700 text-amber-600 dark:text-amber-400 shadow-sm"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
+            }`}
+          >
+            <Archive className="w-4 h-4" />
+            <span>الأطباء المؤرشفين</span>
+            {archivedCount > 0 && (
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300 font-bold">
+                {archivedCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {viewMode === "ARCHIVED" && (
+          <div className="text-xs text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 px-3 py-1.5 rounded-lg">
+            الأطباء المؤرشفين محتفظ بسجلاتهم المالية السابقة ولا يمكن تعيين حالات جديدة لهم.
+          </div>
+        )}
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
           <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.doctors.ledger.totalOutstanding")}</p>
@@ -367,7 +443,7 @@ export default function DentalDoctorsTab() {
         <div className="flex flex-wrap items-center justify-between gap-3 p-4 border-b dark:border-gray-700">
           <div className="flex items-center gap-2">
             <Users className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-            <h3 className="font-semibold">{t("dentalLab.doctors.title")}</h3>
+            <h3 className="font-semibold">{viewMode === "ACTIVE" ? t("dentalLab.doctors.title") : "الأطباء المؤرشفين"}</h3>
             <span className="text-xs text-gray-400 dark:text-gray-500">{t("dentalLab.doctors.ledger.title")}</span>
           </div>
           <div className="relative">
@@ -380,8 +456,17 @@ export default function DentalDoctorsTab() {
           <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
         ) : rows.length === 0 ? (
           <div className="p-12 text-center text-gray-400 dark:text-gray-500">
-            <Users className="w-10 h-10 mx-auto mb-3" />
-            {t("dentalLab.common.noResults")}
+            {viewMode === "ACTIVE" ? (
+              <>
+                <Users className="w-10 h-10 mx-auto mb-3" />
+                {t("dentalLab.common.noResults")}
+              </>
+            ) : (
+              <>
+                <Archive className="w-10 h-10 mx-auto mb-3 text-gray-400" />
+                <p>لا يوجد أطباء في الأرشيف</p>
+              </>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -433,18 +518,34 @@ export default function DentalDoctorsTab() {
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex gap-1">
-                        <button onClick={() => openEdit(d)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title={t("dentalLab.common.edit")}>
-                          <Pencil className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => setBulkDoctor(d)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg" title="تحصيل دفعة على الحساب">
-                          <Banknote className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => setPricingDoctor(d)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg" title={t("dentalLab.doctors.pricing.title")}>
-                          <BadgePercent className="w-4 h-4" />
-                        </button>
-                        <button onClick={() => remove(d)} disabled={removingId !== null} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-40" title={t("dentalLab.common.delete")}>
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {viewMode === "ACTIVE" ? (
+                          <>
+                            <button onClick={() => openEdit(d)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title={t("dentalLab.common.edit")}>
+                              <Pencil className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setBulkDoctor(d)} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg" title="تحصيل دفعة على الحساب">
+                              <Banknote className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setPricingDoctor(d)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg" title={t("dentalLab.doctors.pricing.title")}>
+                              <BadgePercent className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => remove(d)} disabled={removingId !== null} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-40" title="أرشفة / حذف الطبيب">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleRestore(d)} disabled={removingId !== null} className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg disabled:opacity-40" title="استعادة إلى القائمة النشطة">
+                              <RotateCcw className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => setPricingDoctor(d)} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg" title={t("dentalLab.doctors.pricing.title")}>
+                              <BadgePercent className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handlePermanentDelete(d)} disabled={removingId !== null} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-40" title="حذف نهائي من قاعدة البيانات">
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>

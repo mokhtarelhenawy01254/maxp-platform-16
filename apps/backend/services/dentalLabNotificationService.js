@@ -6,6 +6,7 @@ const DENTAL_NOTIFICATION_EVENTS = {
   CASE_READY: 'DENTAL_CASE_READY',
   CASE_DELIVERED: 'DENTAL_CASE_DELIVERED',
   CASE_OVERDUE: 'DENTAL_CASE_OVERDUE',
+  MONTHLY_BILLING_REMINDER: 'DENTAL_MONTHLY_BILLING_REMINDER',
 };
 
 const DEFAULT_TEMPLATES = {
@@ -69,6 +70,14 @@ const DEFAULT_TEMPLATES = {
 🦷 الأسنان: {teeth}
 
 جاري العمل عليها بأقصى سرعة لإنجازها في أقرب وقت. نعتذر عن أي تأخير ونشكرك على تفهمك 🌟`,
+
+  [DENTAL_NOTIFICATION_EVENTS.MONTHLY_BILLING_REMINDER]: `📅 تنبيه دورة الفوترة الشهرية
+
+أهلاً د. {doctorName} 👋
+
+نود تذكيركم بإغلاق دورة الفوترة الشهرية لحالاتكم المكتملة في المعمل بإجمالي {totalAmount} ج.م.
+
+شاكرين تعاونكم وثقتكم المستمرة 🌟`,
 };
 
 const SCHEDULE_KEY = 'notificationSchedule';
@@ -78,6 +87,7 @@ const DEFAULT_SCHEDULE = [
   { eventType: DENTAL_NOTIFICATION_EVENTS.CASE_READY, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'الحالة جاهزة', trigger: 'case_ready' },
   { eventType: DENTAL_NOTIFICATION_EVENTS.CASE_DELIVERED, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'تم التسليم', trigger: 'case_delivered' },
   { eventType: DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'تأخير الحالة', trigger: 'case_overdue' },
+  { eventType: DENTAL_NOTIFICATION_EVENTS.MONTHLY_BILLING_REMINDER, enabled: true, activeChannel: 'AUTO', delayValue: 0, delayUnit: 'HOURS', label: 'تنبيه الفوترة الشهرية', trigger: 'billing_cycle' },
 ];
 
 const TEMPLATE_NAMES = {
@@ -85,6 +95,7 @@ const TEMPLATE_NAMES = {
   [DENTAL_NOTIFICATION_EVENTS.CASE_READY]: 'الحالة جاهزة',
   [DENTAL_NOTIFICATION_EVENTS.CASE_DELIVERED]: 'تم تسليم الحالة',
   [DENTAL_NOTIFICATION_EVENTS.CASE_OVERDUE]: 'تأخير الحالة',
+  [DENTAL_NOTIFICATION_EVENTS.MONTHLY_BILLING_REMINDER]: 'تنبيه الفوترة الشهرية',
 };
 
 function replaceVariables(template, vars) {
@@ -520,6 +531,101 @@ async function runDunningCheck(companyId) {
   }
 }
 
+async function scanUninvoicedBillingCycle(companyId = null, options = {}) {
+  const prisma = getSharedPrismaClient();
+  const now = new Date();
+  const dayOfMonth = now.getDate();
+  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+  const isBillingWindow = options.force || dayOfMonth >= Math.min(30, lastDayOfMonth) || dayOfMonth <= 5;
+  if (!isBillingWindow) {
+    return { enabled: true, isBillingWindow: false, message: 'خارج نافذة دورة الفوترة الشهرية' };
+  }
+
+  const dayOfGrace = dayOfMonth <= 5 ? dayOfMonth : 0;
+
+  const where = {
+    status: { in: ['READY', 'DELIVERED', 'COMPLETED'] },
+    isDeleted: false,
+    invoices: { none: {} },
+  };
+  if (companyId) where.companyId = companyId;
+
+  try {
+    const uninvoicedCases = await prisma.dentalLabCase.findMany({
+      where,
+      include: {
+        doctor: { select: { id: true, name: true, phone: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (!uninvoicedCases || uninvoicedCases.length === 0) {
+      return { enabled: true, isBillingWindow: true, uninvoicedCount: 0, uninvoicedTotal: 0, internalNotifsCreated: 0 };
+    }
+
+    const byCompany = {};
+    for (const c of uninvoicedCases) {
+      const cid = c.companyId;
+      if (!cid) continue;
+      if (!byCompany[cid]) byCompany[cid] = [];
+      byCompany[cid].push(c);
+    }
+
+    let internalNotifsCreated = 0;
+
+    for (const [cid, cases] of Object.entries(byCompany)) {
+      const doctorsSet = new Set(cases.map((c) => c.doctorId).filter(Boolean));
+      const doctorsCount = doctorsSet.size || 1;
+      const totalAmount = Math.round(cases.reduce((sum, c) => sum + (Number(c.total) || 0), 0));
+      const casesCount = cases.length;
+
+      if (prisma && prisma.notification && typeof prisma.notification.create === 'function') {
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        const existingNotif = await prisma.notification.findFirst({
+          where: {
+            companyId: cid,
+            type: 'DENTAL_MONTHLY_BILLING_REMINDER',
+            createdAt: { gte: startOfToday },
+          },
+        }).catch(() => null);
+
+        if (!existingNotif) {
+          const dayLabel = dayOfGrace === 0 ? 'يوم الفوترة (30 في الشهر)' : `اليوم ${dayOfGrace} من 5 في مهلة الفوترة`;
+          await prisma.notification.create({
+            data: {
+              companyId: cid,
+              title: `📅 دورة الفوترة الشهرية (${dayLabel})`,
+              message: `تنبيه الفوترة: يوجد ${casesCount} حالة غير مفوترة لـ ${doctorsCount} طبيب بقيمة إجمالية ${totalAmount} ج.م بانتظار إصدار الفواتير.`,
+              type: 'DENTAL_MONTHLY_BILLING_REMINDER',
+              data: {
+                uninvoicedCount: casesCount,
+                uninvoicedTotal: totalAmount,
+                doctorsCount,
+                dayOfGrace,
+                maxGraceDays: 5,
+                url: '/dental-lab/invoices?tab=uninvoiced',
+              },
+            },
+          }).catch((err) => console.error('[DentalNotification] billing notification create error:', err.message));
+          internalNotifsCreated++;
+        }
+      }
+    }
+
+    return {
+      enabled: true,
+      isBillingWindow: true,
+      dayOfGrace,
+      uninvoicedCount: uninvoicedCases.length,
+      internalNotifsCreated,
+    };
+  } catch (error) {
+    console.error('[DentalNotification] scanUninvoicedBillingCycle error:', error.message);
+    return { enabled: true, error: error.message };
+  }
+}
+
 module.exports = {
   DENTAL_NOTIFICATION_EVENTS,
   DEFAULT_TEMPLATES,
@@ -533,5 +639,6 @@ module.exports = {
   notifyCaseDelivered,
   notifyCaseOverdue,
   scanOverdueCases,
+  scanUninvoicedBillingCycle,
   runDunningCheck,
 };

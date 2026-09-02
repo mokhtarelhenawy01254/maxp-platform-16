@@ -844,9 +844,67 @@ const getCustomerOrders = async (req, res) => {
       };
     });
 
+    // جلب طلبات الخدمات الخاصة بالعميل (حسب رقم هاتفه)
+    let formattedServiceOrders = [];
+    try {
+      const phonesToMatch = [customer.phone, customer.phoneNormalized, orderPhone].filter(Boolean);
+      const phoneFilters = [];
+      for (const p of phonesToMatch) {
+        phoneFilters.push({ phone: p });
+        const digits = p.replace(/\D/g, '');
+        if (digits.length >= 8) {
+          phoneFilters.push({ phone: { contains: digits.slice(-8) } });
+        }
+      }
+
+      if (phoneFilters.length > 0) {
+        const serviceOrders = await getSharedPrismaClient().serviceOrder.findMany({
+          where: {
+            companyId: companyId,
+            OR: phoneFilters
+          },
+          include: {
+            service: true
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20
+        });
+
+        formattedServiceOrders = serviceOrders.map(so => ({
+          id: so.id,
+          orderNumber: `SRV-${so.id.slice(-6).toUpperCase()}`,
+          status: (so.status || 'NEW').toLowerCase(),
+          total: so.service?.price ? parseFloat(so.service.price) : 0,
+          createdAt: so.createdAt,
+          type: 'SERVICE',
+          serviceName: so.service?.name || 'طلب خدمة',
+          serviceCategory: so.service?.category || 'other',
+          serviceIcon: so.service?.icon || '🛠️',
+          description: so.description,
+          items: [{
+            name: `${so.service?.icon ? so.service.icon + ' ' : ''}${so.service?.name || 'طلب خدمة'}`,
+            quantity: 1,
+            price: so.service?.price ? parseFloat(so.service.price) : 0,
+            image: null
+          }]
+        }));
+      }
+    } catch (soErr) {
+      console.warn('⚠️ [CUSTOMER-ORDERS] Failed to query service orders:', soErr.message);
+    }
+
+    // دمج طلبات المتجر وطلبات الخدمات وترتيبها زمنياً من الأحدث للأقدم
+    const allOrders = [...formattedOrders, ...formattedServiceOrders].sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+    );
+
     res.json({
       success: true,
-      data: formattedOrders
+      data: allOrders,
+      productOrders: formattedOrders,
+      serviceOrders: formattedServiceOrders,
+      serviceOrdersCount: formattedServiceOrders.length,
+      productOrdersCount: formattedOrders.length
     });
   } catch (error) {
     console.error('❌ Error fetching customer orders:', error);

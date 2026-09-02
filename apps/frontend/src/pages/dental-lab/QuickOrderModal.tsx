@@ -256,6 +256,7 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
   // Step 3: patient + files
   const [patientName, setPatientName] = useState("");
   const [patientPhone, setPatientPhone] = useState("");
+  const [unitsCount, setUnitsCount] = useState(1);
   const [teeth, setTeeth] = useState("");
   const [shade, setShade] = useState("");
   const [material, setMaterial] = useState("");
@@ -328,13 +329,41 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
     });
   };
 
-  // عند اختيار أول خدمة، عبّي السعر تلقائياً
+  // عند اختيار أول خدمة، عبّي السعر والخامة وعدد الكراونات تلقائياً
   useEffect(() => {
     if (selectedServiceIds.length > 0) {
       const primary = workTypes.find((w) => w.id === selectedServiceIds[0]);
-      if (primary && primary.price != null) setPriceSnapshot(Number(primary.price) || 0);
+      if (primary) {
+        if (primary.defaultMaterial && !material) setMaterial(primary.defaultMaterial);
+        const initUnits = primary.defaultCrownCount || 1;
+        setUnitsCount(initUnits);
+        const isPerUnit = (primary.pricingMode || "PER_UNIT") === "PER_UNIT";
+        setPriceSnapshot(isPerUnit ? initUnits * (Number(primary.price) || 0) : Number(primary.price) || 0);
+      }
     }
   }, [selectedServiceIds, workTypes]);
+
+  const handleTeethChange = (val: string) => {
+    setTeeth(val);
+    const parts = val.split(/[,،\s]+/).filter(Boolean);
+    if (parts.length > 0) {
+      const count = parts.length;
+      setUnitsCount(count);
+      const primary = workTypes.find((w) => w.id === selectedServiceIds[0]);
+      if (primary && (primary.pricingMode || "PER_UNIT") === "PER_UNIT") {
+        setPriceSnapshot(count * (Number(primary.price) || 0));
+      }
+    }
+  };
+
+  const handleUnitsCountChange = (val: number) => {
+    const count = Math.max(1, val);
+    setUnitsCount(count);
+    const primary = workTypes.find((w) => w.id === selectedServiceIds[0]);
+    if (primary && (primary.pricingMode || "PER_UNIT") === "PER_UNIT") {
+      setPriceSnapshot(count * (Number(primary.price) || 0));
+    }
+  };
 
   const addFiles = (picked: FileList | File[]) => {
     const arr = Array.from(picked);
@@ -405,6 +434,8 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
         patientPhone: patientPhone.trim() || undefined,
         workTypeId: primaryId,
         workTypeName: primary?.name,
+        unitsCount: Math.max(1, Number(unitsCount) || 1),
+        unitPrice: primary ? Number(primary.price) : undefined,
         teeth: teeth.trim() || undefined,
         shade: shade.trim() || undefined,
         material: material.trim() || undefined,
@@ -636,18 +667,22 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
               </div>
               <div>
                 <label className={labelCls}>{t("dentalLab.cases.teeth")}</label>
-                <input className={inputCls} value={teeth} onChange={(e) => setTeeth(e.target.value)} placeholder="مثال: 16, 26" />
+                <input className={inputCls} value={teeth} onChange={(e) => handleTeethChange(e.target.value)} placeholder="مثال: 16, 26 أو 11-21" />
+              </div>
+              <div>
+                <label className={labelCls}>عدد الكراونات / الوحدات (Units)</label>
+                <input className={inputCls} type="number" min="1" value={unitsCount} onChange={(e) => handleUnitsCountChange(Number(e.target.value))} />
               </div>
               <div>
                 <label className={labelCls}>{t("dentalLab.cases.shade")}</label>
-                <input className={inputCls} value={shade} onChange={(e) => setShade(e.target.value)} placeholder="مثال: 2M3" />
+                <input className={inputCls} value={shade} onChange={(e) => setShade(e.target.value)} placeholder="مثال: 2M3 / A2" />
               </div>
               <div>
                 <label className={labelCls}>{t("dentalLab.cases.material")}</label>
-                <input className={inputCls} value={material} onChange={(e) => setMaterial(e.target.value)} placeholder="مثال: زيركون" />
+                <input className={inputCls} value={material} onChange={(e) => setMaterial(e.target.value)} placeholder="مثال: زيركون متعدد الطبقات" />
               </div>
               <div>
-                <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")}</label>
+                <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")} (الإجمالي)</label>
                 <input className={inputCls} type="number" value={priceSnapshot} onChange={(e) => setPriceSnapshot(Number(e.target.value))} />
               </div>
               <div>
