@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Check, PackagePlus } from 'lucide-react';
+import { Check, PackagePlus, Plus, ShoppingBag } from 'lucide-react';
 import { storefrontFetch } from '../../utils/storefrontApi';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { useProduct } from '../hooks/useProduct';
@@ -304,24 +304,24 @@ const getCardClassName = (
   disabled: boolean,
 ) => {
   const stateClassName = disabled
-    ? 'opacity-80'
+    ? 'opacity-75'
     : selected
-      ? 'border-primary/35 shadow-[0_20px_60px_-45px_hsl(var(--primary)/0.5)]'
-      : 'border-border';
+      ? 'border-primary/45 shadow-[0_16px_40px_-24px_hsl(var(--primary)/0.25)] ring-1 ring-primary/25'
+      : 'border-border/80 hover:border-primary/30';
 
   switch (variant) {
     case 'compact':
-      return `rounded-xl border bg-background p-3 ${stateClassName}`;
+      return `rounded-2xl border bg-card p-3 sm:p-4 transition-all duration-300 ${stateClassName}`;
     case 'editorial':
-      return `rounded-[1.4rem] border bg-background/90 p-4 ${stateClassName}`;
+      return `rounded-[1.5rem] border bg-card/95 p-3.5 sm:p-5 transition-all duration-300 ${stateClassName}`;
     case 'complete-look':
-      return `rounded-[1.6rem] border bg-[linear-gradient(180deg,#ffffff_0%,#fff8f6_100%)] p-4 shadow-[0_24px_80px_-62px_rgba(107,33,49,0.14)] ${stateClassName}`;
+      return `rounded-[1.5rem] border bg-gradient-to-b from-card to-card/60 p-3.5 sm:p-5 shadow-[0_20px_50px_-36px_rgba(107,33,49,0.12)] transition-all duration-300 ${stateClassName}`;
     case 'pairing-rail':
-      return `rounded-[1.25rem] border bg-white p-3 shadow-[0_14px_36px_-34px_rgba(107,33,49,0.12)] ${stateClassName}`;
+      return `rounded-[1.35rem] border bg-card p-3 sm:p-4 shadow-[0_14px_36px_-34px_rgba(107,33,49,0.12)] transition-all duration-300 ${stateClassName}`;
     case 'gift-pairings':
-      return `rounded-[1.35rem] border bg-[linear-gradient(180deg,#ffffff_0%,#fffaf6_100%)] p-3 shadow-[0_16px_40px_-34px_rgba(61,41,44,0.14)] ${stateClassName}`;
+      return `rounded-[1.4rem] border bg-gradient-to-b from-card to-card/60 p-3.5 sm:p-4 shadow-[0_16px_40px_-34px_rgba(61,41,44,0.14)] transition-all duration-300 ${stateClassName}`;
     default:
-      return `rounded-[1.25rem] border bg-background p-4 ${stateClassName}`;
+      return `rounded-[1.4rem] border bg-card p-3.5 sm:p-5 transition-all duration-300 ${stateClassName}`;
   }
 };
 
@@ -472,8 +472,12 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
     englishFallback:
       'Choose the color or size for each add-on from the same card before adding the bundle.',
     arabicFallback:
-      'اختَر اللون أو المقاس لكل إضافة من نفس الكارت قبل إضافة الباقة.',
+      'اختاري المقاس أو اللون للإضافات المحددة قبل إضافة الباقة.',
     prefersArabicCopy,
+    legacyEnglishValues: [
+      'Products with variants still need to be configured from their own product page.',
+      'Choose the color or size for each add-on from the same card before adding the bundle.',
+    ],
   });
 
   useEffect(() => {
@@ -649,8 +653,8 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
   const includedText = prefersArabicCopy
     ? 'يتم تضمين هذا المنتج تلقائيًا عند إضافة الباقة.'
     : 'Included automatically when you add the bundle.';
-  const selectedStateText = prefersArabicCopy ? 'محدد' : 'Selected';
-  const selectStateText = prefersArabicCopy ? 'اختيار' : 'Select';
+  const selectedStateText = prefersArabicCopy ? 'محدد في الباقة' : 'Selected';
+  const selectStateText = prefersArabicCopy ? 'أضف للباقة' : 'Add to bundle';
   const bundleSummaryText = prefersArabicCopy
     ? `تشمل الباقة المنتج الحالي + ${selectedRecommendations.length} إضافة`
     : `Bundle includes the current product + ${selectedRecommendations.length} add-ons`;
@@ -691,14 +695,20 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
     () => (product ? [product, ...recommendations] : recommendations),
     [product, recommendations],
   );
-  const bundleGridClassName =
-    bundleItems.length <= 1
-      ? 'mt-8 mx-auto grid max-w-md grid-cols-1 gap-4'
-      : bundleItems.length === 2
-        ? 'mt-8 mx-auto grid max-w-4xl grid-cols-1 gap-4 md:grid-cols-2'
-        : bundleItems.length === 3
-          ? 'mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3'
-          : 'mt-8 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4';
+  const bundleGridClassName = useMemo(() => {
+    const baseMobile =
+      'mt-6 sm:mt-8 flex overflow-x-auto pb-4 pt-1 px-1 sm:p-0 sm:overflow-visible snap-x snap-mandatory gap-3.5 sm:gap-5 scrollbar-none';
+    if (bundleItems.length <= 1) {
+      return 'mt-6 sm:mt-8 mx-auto grid max-w-sm grid-cols-1 gap-4';
+    }
+    if (bundleItems.length === 2) {
+      return `${baseMobile} max-w-2xl mx-auto sm:grid sm:grid-cols-2`;
+    }
+    if (bundleItems.length === 3) {
+      return `${baseMobile} max-w-5xl mx-auto sm:grid sm:grid-cols-2 lg:grid-cols-3`;
+    }
+    return `${baseMobile} sm:grid sm:grid-cols-2 lg:grid-cols-4`;
+  }, [bundleItems.length]);
 
   const handleToggleSelection = (item: Product) => {
     setSelectedIds((current) => {
@@ -934,18 +944,18 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
       ? 'حددي الإضافة ثم اختاري اللون أو المقاس.'
       : 'Select the add-on, then choose color or size.';
   const effectiveBundleGridClassName = isCompactPairingRail
-    ? bundleGridClassName.replace('mt-8', 'mt-5').replaceAll('gap-4', 'gap-3')
+    ? bundleGridClassName.replace('mt-6 sm:mt-8', 'mt-4 sm:mt-6').replaceAll('gap-5', 'gap-3.5')
     : bundleGridClassName;
 
   return (
     <section
       className={`w-full border-t border-border bg-background ${
-        isCompactPairingRail ? 'py-8 md:py-12' : 'py-12 md:py-16'
+        isCompactPairingRail ? 'py-8 md:py-12' : 'py-10 md:py-16'
       }`}
     >
-      <div className="container px-4 md:px-6">
+      <div className="container px-3.5 sm:px-6">
         <div className={wrapperClassName}>
-          <div className={isCompactPairingRail ? 'px-3.5 sm:px-4 md:px-6' : 'px-4 md:px-6'}>
+          <div className={isCompactPairingRail ? 'px-3.5 sm:px-5 md:px-6' : 'px-4 sm:px-6 md:px-8'}>
             <div className={`flex flex-col ${isCompactPairingRail ? 'gap-3' : 'gap-4'} ${isContentCentered ? 'items-center text-center' : 'lg:flex-row lg:items-end lg:justify-between'}`}>
               <div className={`${isCompactPairingRail ? 'space-y-1.5' : 'space-y-2'} ${isContentCentered ? 'mx-auto max-w-3xl text-center' : ''}`}>
                 <span className={`inline-flex rounded-full bg-primary/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-primary ${isContentCentered ? 'mx-auto' : ''}`}>
@@ -954,34 +964,34 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
                 <div className={isCompactPairingRail ? 'space-y-1.5' : 'space-y-2'}>
                   <h2
                     className={`font-heading font-black tracking-tight text-foreground ${
-                      isCompactPairingRail ? 'text-[1.35rem] sm:text-2xl' : 'text-2xl'
+                      isCompactPairingRail ? 'text-[1.35rem] sm:text-2xl' : 'text-xl sm:text-2xl lg:text-3xl'
                     }`}
                   >
                     {title}
                   </h2>
                   <p
-                    className={`text-muted-foreground ${isCompactPairingRail ? 'line-clamp-2 text-[12px] leading-6 sm:line-clamp-none sm:text-sm md:text-base' : 'text-sm leading-7 md:text-base'} ${isContentCentered ? 'mx-auto max-w-2xl' : 'max-w-2xl'}`}
+                    className={`text-muted-foreground ${isCompactPairingRail ? 'line-clamp-2 text-[12px] leading-6 sm:line-clamp-none sm:text-sm md:text-base' : 'text-xs sm:text-sm leading-6 md:text-base'} ${isContentCentered ? 'mx-auto max-w-2xl' : 'max-w-2xl'}`}
                   >
                     {subtitle}
                   </p>
                 </div>
               </div>
 
-              <div className={`rounded-[1.1rem] border ${isCompactPairingRail ? 'w-full px-3.5 py-2.5 sm:w-auto sm:px-4 sm:py-3' : 'px-4 py-3'} ${isGiftPairings ? 'border-[#eadfd7] bg-white/92 shadow-[0_20px_50px_-44px_rgba(61,41,44,0.12)]' : isCompleteLook ? 'border-[#f0d7d2] bg-white/92 shadow-[0_20px_50px_-44px_rgba(107,33,49,0.14)]' : 'border-border bg-background/80'} ${isContentCentered ? 'text-center' : ''}`}>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              <div className={`rounded-2xl border ${isCompactPairingRail ? 'w-full px-3.5 py-2.5 sm:w-auto sm:px-4 sm:py-3' : 'w-full sm:w-auto px-4 py-3'} ${isGiftPairings ? 'border-[#eadfd7] bg-card shadow-[0_20px_50px_-44px_rgba(61,41,44,0.12)]' : isCompleteLook ? 'border-[#edd8d5] bg-card shadow-[0_20px_50px_-44px_rgba(107,33,49,0.14)]' : 'border-border/80 bg-card'} ${isContentCentered ? 'text-center' : ''}`}>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
                   {totalLabel}
                 </p>
-                <p className={`mt-1 font-black text-foreground ${isCompactPairingRail ? 'text-xl sm:text-2xl' : 'text-2xl'}`}>
+                <p className={`mt-0.5 font-black text-primary ${isCompactPairingRail ? 'text-xl sm:text-2xl' : 'text-2xl'}`}>
                   {formatStorefrontCurrency(bundleTotal, currency)}
                 </p>
-                <p className={`mt-1 text-muted-foreground ${isCompactPairingRail ? 'text-[11px] leading-5' : 'text-xs'}`}>
+                <p className={`mt-0.5 text-muted-foreground ${isCompactPairingRail ? 'text-[11px] leading-5' : 'text-xs'}`}>
                   {selectedCountText}
                 </p>
               </div>
             </div>
 
             <div className={effectiveBundleGridClassName}>
-              {bundleItems.map((item) => {
+              {bundleItems.map((item, index) => {
                 const isCurrentProduct = item.id === product.id;
                 const isVariantProduct = hasVariants(item);
                 const isSelected = isCurrentProduct || selectedIds.has(item.id);
@@ -1008,39 +1018,52 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
                 return (
                   <div
                     key={item.id}
-                    className={getCardClassName(
+                    className={`w-[78vw] max-w-[285px] shrink-0 snap-start sm:w-auto sm:max-w-none sm:shrink flex flex-col justify-between ${getCardClassName(
                       sectionVariant,
                       isSelected,
                       false,
-                    )}
+                    )}`}
                   >
-                    <div className={isCompactPairingRail ? 'grid grid-cols-[4.75rem_minmax(0,1fr)] gap-2.5 items-start sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-3' : isCompleteLook || isPairingRail || isGiftPairings ? 'grid grid-cols-[5.5rem_minmax(0,1fr)] gap-3 items-start' : ''}>
-                      <div className={`relative overflow-hidden rounded-[1rem] border ${isGiftPairings ? 'border-[#eadfd7] bg-[#fffaf6]' : isCompleteLook || isPairingRail ? 'border-[#f2dfdc] bg-[#fff7f5]' : 'border-border bg-muted'}`}>
+                    <div className="flex flex-col h-full">
+                      {/* Product Image Box */}
+                      <div className="relative w-full aspect-[4/5] overflow-hidden rounded-xl sm:rounded-2xl border border-border/50 bg-muted/40 group">
                         <StorefrontProductImage
                           candidates={getRecommendationImageCandidates(item)}
                           alt={item.name}
                           width="420"
-                          height="420"
-                          className={isCompleteLook || isPairingRail || isGiftPairings ? 'aspect-[4/5] w-full object-cover' : 'aspect-square w-full object-cover'}
+                          height="525"
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                           fallback={
-                            <div className={`flex w-full items-center justify-center text-xs text-muted-foreground ${isCompleteLook || isPairingRail || isGiftPairings ? 'aspect-[4/5]' : 'aspect-square'}`}>
+                            <div className="flex w-full h-full items-center justify-center text-xs text-muted-foreground">
                               IMG
                             </div>
                           }
                         />
 
-                        <span className={`absolute left-2 top-2 inline-flex rounded-full px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] ${isGiftPairings ? 'bg-white/92 text-[#8b623e]' : isCompleteLook || isPairingRail ? 'bg-white/92 text-[#8b3d33]' : 'bg-background/90 text-foreground'}`}>
+                        {/* Top Badge */}
+                        <span
+                          className={`absolute top-2.5 start-2.5 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[10px] font-black uppercase tracking-wider shadow-sm backdrop-blur-md ${
+                            isCurrentProduct
+                              ? 'bg-foreground text-background'
+                              : isGiftPairings
+                                ? 'bg-white/95 text-[#8b623e] dark:bg-card/90 dark:text-[#d4a373]'
+                                : isCompleteLook || isPairingRail
+                                  ? 'bg-white/95 text-[#8b3d33] dark:bg-card/90 dark:text-[#e07a5f]'
+                                  : 'bg-background/90 text-foreground'
+                          }`}
+                        >
                           {isCurrentProduct ? currentProductLabel : recommendationLabel}
                         </span>
 
+                        {/* Checkbox Toggle Button for Recommendations */}
                         {!isCurrentProduct ? (
                           <button
                             type="button"
                             onClick={() => handleToggleSelection(item)}
-                            className={`absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-full border transition-colors ${
+                            className={`absolute top-2.5 end-2.5 inline-flex h-8 w-8 items-center justify-center rounded-full border shadow-sm transition-all duration-200 ${
                               isSelected
-                                ? 'border-primary bg-primary text-primary-foreground'
-                                : 'border-border bg-background/90 text-foreground hover:border-primary/35'
+                                ? 'border-primary bg-primary text-primary-foreground scale-105'
+                                : 'border-border/80 bg-background/90 text-muted-foreground hover:text-foreground hover:border-primary/50 backdrop-blur-sm'
                             }`}
                             aria-pressed={isSelected}
                             aria-label={
@@ -1053,143 +1076,205 @@ const BoughtTogetherSection: React.FC<BoughtTogetherSectionProps> = ({
                                   : `Add ${item.name} to bundle`
                             }
                           >
-                            <Check size={15} />
+                            <Check size={16} strokeWidth={2.5} />
                           </button>
                         ) : null}
                       </div>
 
-                      <div className={isCompactPairingRail ? 'min-w-0 space-y-1.5 sm:space-y-2' : isCompleteLook || isPairingRail || isGiftPairings ? 'space-y-2 min-w-0' : 'mt-4 space-y-3'}>
-                      <div>
-                        <Link
-                          to={productPath}
-                          className={isCompactPairingRail ? 'line-clamp-2 text-sm font-bold text-foreground hover:text-primary sm:text-base' : 'line-clamp-2 text-base font-bold text-foreground hover:text-primary'}
-                        >
-                          {item.name}
-                        </Link>
-                        <p className={isCompactPairingRail ? 'mt-1.5 text-sm font-semibold text-primary' : 'mt-2 text-sm font-semibold text-primary'}>
-                          {formatStorefrontCurrency(
-                            isVariantProduct ? getRecommendationPrice(item) : Number(item.price) || 0,
-                            currency,
-                          )}
-                        </p>
-                      </div>
+                      {/* Content Area */}
+                      <div className="mt-3.5 flex flex-col flex-1 justify-between gap-3 min-w-0">
+                        <div className="space-y-1.5 min-w-0">
+                          <Link
+                            to={productPath}
+                            className="line-clamp-2 text-sm sm:text-base font-bold text-foreground hover:text-primary transition-colors leading-snug"
+                            title={item.name}
+                          >
+                            {item.name}
+                          </Link>
 
-                      {isCurrentProduct ? (
-                        <div className={`rounded-xl border border-border bg-secondary/40 px-3 py-2 text-muted-foreground ${isCompleteLook || isPairingRail || isGiftPairings ? 'text-xs leading-5' : 'text-sm'}`}>
-                          {includedText}
+                          <div className="flex items-baseline gap-2 pt-0.5">
+                            <span className="text-base sm:text-lg font-extrabold text-primary">
+                              {formatStorefrontCurrency(
+                                isVariantProduct ? getRecommendationPrice(item) : Number(item.price) || 0,
+                                currency,
+                              )}
+                            </span>
+                            {Number(item.compareAtPrice || item.comparePrice) > Number(item.price) && (
+                              <span className="text-xs text-muted-foreground line-through">
+                                {formatStorefrontCurrency(Number(item.compareAtPrice || item.comparePrice), currency)}
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      ) : isVariantProduct ? (
-                        <div className={isCompleteLook || isPairingRail || isGiftPairings ? 'space-y-2' : 'space-y-3'}>
-                          <div className="flex gap-2">
+
+                        {/* Variants & Actions */}
+                        {isCurrentProduct ? (
+                          <div className="space-y-2 pt-1">
+                            <div className="rounded-xl border border-border/60 bg-muted/40 px-3 py-2 text-center text-xs font-semibold text-muted-foreground leading-5">
+                              {includedText}
+                            </div>
+                          </div>
+                        ) : isVariantProduct ? (
+                          <div className="space-y-2.5 pt-1 min-w-0">
+                            {isSelected ? (
+                              <div className="space-y-2 rounded-xl border border-border/60 bg-secondary/20 p-2.5">
+                                <VariantSelector
+                                  variants={itemVariants}
+                                  selectedAttributes={selectedAttributes}
+                                  onChange={(nextAttributes) =>
+                                    updateRecommendationAttributes(item.id, nextAttributes)
+                                  }
+                                  density="compact"
+                                  variantSettings={recommendationVariantSettings}
+                                />
+                                <p className="text-[11px] leading-5 text-muted-foreground">
+                                  {selectedVariant ? (
+                                    <span className="inline-flex items-center gap-1 font-medium text-foreground/85">
+                                      <span>{prefersArabicCopy ? 'النسخة المحددة:' : 'Selected:'}</span>
+                                      <span className="font-bold text-primary">{selectedVariantSummary}</span>
+                                    </span>
+                                  ) : (
+                                    <span className="text-amber-600 dark:text-amber-400 font-medium">
+                                      {variantAttributeLabels.selectionHint || (prefersArabicCopy ? 'يرجى اختيار المقاس أو اللون' : 'Please choose size or color')}
+                                    </span>
+                                  )}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-[11px] text-muted-foreground/80 py-0.5">
+                                {prefersArabicCopy ? 'متوفر بعدة مقاسات وألوان' : 'Available in multiple options'}
+                              </p>
+                            )}
+
+                            <div className="flex flex-col gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleToggleSelection(item)}
+                                className={`inline-flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs sm:text-sm font-bold transition-all ${
+                                  isSelected
+                                    ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                                    : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted'
+                                }`}
+                              >
+                                {isSelected ? (
+                                  <>
+                                    <Check size={14} strokeWidth={2.5} />
+                                    <span>{selectedStateText}</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus size={14} strokeWidth={2.5} />
+                                    <span>{selectStateText}</span>
+                                  </>
+                                )}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => handleQuickAdd(item)}
+                                disabled={!selectedVariant}
+                                className="inline-flex items-center justify-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors py-1 disabled:opacity-40 disabled:hover:text-muted-foreground"
+                              >
+                                <ShoppingBag size={12} />
+                                <span>{quickAddText}</span>
+                              </button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-1.5 pt-1 min-w-0">
                             <button
                               type="button"
                               onClick={() => handleToggleSelection(item)}
-                              className={`inline-flex flex-1 items-center justify-center rounded-xl border px-3 ${isCompleteLook || isPairingRail || isGiftPairings ? 'py-2 text-xs' : 'py-2 text-sm'} font-semibold transition-colors ${
+                              className={`inline-flex w-full items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-xs sm:text-sm font-bold transition-all ${
                                 isSelected
-                                  ? 'border-primary/25 bg-primary/10 text-primary'
-                                  : 'border-border text-foreground hover:bg-muted'
+                                  ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/20'
+                                  : 'border-border bg-background text-foreground hover:border-primary/40 hover:bg-muted'
                               }`}
                             >
-                              {isSelected ? selectedStateText : selectStateText}
+                              {isSelected ? (
+                                <>
+                                  <Check size={14} strokeWidth={2.5} />
+                                  <span>{selectedStateText}</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Plus size={14} strokeWidth={2.5} />
+                                  <span>{selectStateText}</span>
+                                </>
+                              )}
                             </button>
+
                             <button
                               type="button"
                               onClick={() => handleQuickAdd(item)}
-                              disabled={!selectedVariant}
-                              className={`inline-flex items-center justify-center rounded-xl bg-primary px-3 ${isCompleteLook || isPairingRail || isGiftPairings ? 'py-2 text-xs' : 'py-2 text-sm'} font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50`}
+                              className="inline-flex w-full items-center justify-center gap-1 text-[11px] text-muted-foreground hover:text-primary transition-colors py-1"
                             >
-                              {quickAddText}
+                              <ShoppingBag size={12} />
+                              <span>{quickAddText}</span>
                             </button>
                           </div>
-
-                          {isSelected ? (
-                            <div
-                              className={
-                                isGiftPairings
-                                  ? 'space-y-2 border-t border-[#efe4dd] pt-2'
-                                  : isPairingRail
-                                  ? 'space-y-2 border-t border-[#efe4e2] pt-2'
-                                  : `space-y-3 rounded-[1rem] border border-border bg-secondary/20 ${isCompleteLook ? 'p-2.5' : 'p-3'}`
-                              }
-                            >
-                              <VariantSelector
-                                variants={itemVariants}
-                                selectedAttributes={selectedAttributes}
-                                onChange={(nextAttributes) =>
-                                  updateRecommendationAttributes(item.id, nextAttributes)
-                                }
-                                density="compact"
-                                variantSettings={recommendationVariantSettings}
-                              />
-
-                              <p className="text-xs leading-6 text-muted-foreground">
-                                {selectedVariant
-                                  ? prefersArabicCopy
-                                    ? `النسخة المحددة: ${selectedVariantSummary}`
-                                    : `Selected variant: ${selectedVariantSummary}`
-                                  : isCompactPairingRail
-                                    ? compactBundleHintText
-                                    : settings?.bundleVariantHint || bundleVariantHint || variantAttributeLabels.selectionHint}
-                              </p>
-                            </div>
-                          ) : (
-                            <p className="text-xs leading-6 text-muted-foreground">
-                              {isCompactPairingRail
-                                ? compactBundleHintText
-                                : settings?.bundleVariantHint || bundleVariantHint || variantAttributeLabels.selectionHint}
-                            </p>
-                          )}
-                        </div>
-                      ) : (
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleToggleSelection(item)}
-                            className={`inline-flex flex-1 items-center justify-center rounded-xl border px-3 ${isCompleteLook || isPairingRail || isGiftPairings ? 'py-2 text-xs' : 'py-2 text-sm'} font-semibold transition-colors ${
-                              isSelected
-                                ? 'border-primary/25 bg-primary/10 text-primary'
-                                : 'border-border text-foreground hover:bg-muted'
-                            }`}
-                          >
-                            {isSelected ? selectedStateText : selectStateText}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleQuickAdd(item)}
-                            className={`inline-flex items-center justify-center rounded-xl bg-primary px-3 ${isCompleteLook || isPairingRail || isGiftPairings ? 'py-2 text-xs' : 'py-2 text-sm'} font-bold text-primary-foreground hover:opacity-90`}
-                          >
-                            {quickAddText}
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            <div className={`flex flex-col rounded-[1.25rem] border ${isCompactPairingRail ? 'mt-5 gap-3 p-3 sm:p-4' : 'mt-8 gap-4 p-4'} ${isGiftPairings ? 'border-[#eadfd7] bg-white/92' : 'border-border bg-background/85'} ${isContentCentered ? 'items-center text-center' : 'md:flex-row md:items-center md:justify-between'}`}>
-              <div className={`space-y-1 ${isContentCentered ? 'text-center' : ''}`}>
-                <div className={`inline-flex items-center gap-2 text-sm font-semibold text-foreground ${isContentCentered ? 'justify-center' : ''}`}>
-                  <PackagePlus size={16} className="text-primary" />
+            {/* Bottom Bundle Summary & CTA Bar */}
+            <div
+              className={`flex flex-col rounded-2xl border ${
+                isCompactPairingRail ? 'mt-6 gap-3.5 p-4' : 'mt-8 gap-4 p-4 sm:p-6'
+              } ${
+                isGiftPairings
+                  ? 'border-[#eadfd7] bg-gradient-to-r from-card via-card/90 to-card shadow-[0_16px_40px_-32px_rgba(61,41,44,0.12)]'
+                  : isCompleteLook
+                    ? 'border-[#edd8d5] bg-gradient-to-r from-card via-card/90 to-card shadow-[0_20px_50px_-36px_rgba(107,33,49,0.12)]'
+                    : 'border-border/80 bg-card shadow-sm'
+              } ${
+                isContentCentered ? 'items-center text-center' : 'md:flex-row md:items-center md:justify-between'
+              }`}
+            >
+              <div className={`space-y-1.5 ${isContentCentered ? 'text-center' : ''}`}>
+                <div
+                  className={`inline-flex items-center gap-2 text-sm sm:text-base font-bold text-foreground ${
+                    isContentCentered ? 'justify-center' : ''
+                  }`}
+                >
+                  <PackagePlus size={18} className="text-primary shrink-0" />
                   <span>{bundleSummaryText}</span>
                 </div>
-                <p className={isCompactPairingRail ? 'text-[12px] leading-6 text-muted-foreground' : 'text-sm text-muted-foreground'}>
-                  {selectableRecommendations.length > 0
-                    ? bundleHelpText
-                    : bundleVariantHint}
+                <p
+                  className={
+                    isCompactPairingRail
+                      ? 'text-xs text-muted-foreground'
+                      : 'text-xs sm:text-sm text-muted-foreground'
+                  }
+                >
+                  {selectableRecommendations.length > 0 ? bundleHelpText : bundleVariantHint}
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={handleAddBundle}
-                disabled={selectedRecommendations.length === 0}
-                className={`inline-flex items-center justify-center rounded-[1rem] bg-primary px-5 py-3 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50 ${isCompactPairingRail ? 'w-full sm:w-auto' : ''}`}
-              >
-                {addBundleText}
-              </button>
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                <div className="text-start sm:text-end sm:px-3">
+                  <span className="text-[11px] font-semibold text-muted-foreground block uppercase tracking-wider">
+                    {totalLabel}
+                  </span>
+                  <span className="text-xl sm:text-2xl font-black text-primary">
+                    {formatStorefrontCurrency(bundleTotal, currency)}
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleAddBundle}
+                  disabled={selectedRecommendations.length === 0}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-6 py-3.5 text-sm sm:text-base font-bold text-primary-foreground shadow-md transition-all hover:bg-primary/90 hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 min-h-[44px]"
+                >
+                  <ShoppingBag size={18} />
+                  <span>{addBundleText}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

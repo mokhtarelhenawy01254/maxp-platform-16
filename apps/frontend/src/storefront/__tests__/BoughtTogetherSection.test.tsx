@@ -33,36 +33,38 @@ const mockMainProduct = {
   ],
 };
 
-const mockRecommendations = [
-  {
-    id: 'city-white-court',
-    name: 'سنيك Court أبيض',
-    description: '',
-    price: 1590,
-    images: ['/court.jpg'],
-    slug: 'city-white-court',
-    productVariants: [
-      {
-        id: 'city-white-court-orange-42',
-        name: 'Orange / 42',
-        price: 1590,
-        attributes: {
-          Color: 'Orange',
-          Size: '42',
+const { mockRecommendations } = vi.hoisted(() => ({
+  mockRecommendations: [
+    {
+      id: 'city-white-court',
+      name: 'سنيك Court أبيض',
+      description: '',
+      price: 1590,
+      images: ['/court.jpg'],
+      slug: 'city-white-court',
+      productVariants: [
+        {
+          id: 'city-white-court-orange-42',
+          name: 'Orange / 42',
+          price: 1590,
+          attributes: {
+            Color: 'Orange',
+            Size: '42',
+          },
         },
-      },
-      {
-        id: 'city-white-court-white-43',
-        name: 'White / 43',
-        price: 1690,
-        attributes: {
-          Color: 'White',
-          Size: '43',
+        {
+          id: 'city-white-court-white-43',
+          name: 'White / 43',
+          price: 1690,
+          attributes: {
+            Color: 'White',
+            Size: '43',
+          },
         },
-      },
-    ],
-  },
-];
+      ],
+    },
+  ],
+}));
 
 let mockUseProductState: {
   product: typeof mockMainProduct | null;
@@ -130,6 +132,14 @@ vi.mock('../engine/ThemeProvider', () => ({
 vi.mock('../preview/themePreviewData', () => ({
   resolveActiveThemePreviewDataset: () => null,
   getThemePreviewProductRecommendations: () => [],
+}));
+
+vi.mock('../../utils/storefrontApi', () => ({
+  storefrontFetch: vi.fn().mockResolvedValue({
+    success: true,
+    data: mockRecommendations,
+  }),
+  getStorefrontScope: () => 'storefront',
 }));
 
 vi.mock('../preview/marketplaceSampleData', () => ({
