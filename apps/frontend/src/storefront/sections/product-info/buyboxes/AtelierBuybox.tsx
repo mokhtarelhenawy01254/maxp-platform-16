@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, ShieldCheck, Truck, RefreshCw, Eye, Sparkles } from 'lucide-react';
 import type { Product } from '../../../hooks/useProducts';
 import type { StorefrontTheme } from '../../../types/theme.types';
 import { formatStorefrontCurrency } from '../../../utils/currency';
-import VariantSelector from '../../components/VariantSelector';
-import QuantitySelector from '../../components/QuantitySelector';
-import Button from '../../components/Button';
-import StorefrontProductImage from '../../components/StorefrontProductImage';
+import { sanitizeStorefrontHtml } from '../../../utils/html';
+import VariantSelector from '../../../components/VariantSelector';
+import QuantitySelector from '../../../components/QuantitySelector';
+import Button from '../../../components/Button';
+import StorefrontProductImage from '../../../components/StorefrontProductImage';
 import { getProductImageCandidates } from '../../../utils/productImages';
 import { buildStorefrontPath } from '../../../utils/paths';
+import ProductDescription from '../components/ProductDescription';
 
 export interface AtelierBuyboxProps {
   product: Product;
@@ -71,9 +73,12 @@ export const AtelierBuybox: React.FC<AtelierBuyboxProps> = (props) => {
     settings,
     onOpenSizeGuide,
     onOpenShipping,
-    onOpenQuestion,
   } = props;
-    const boutiqueRating =
+
+  const [isMobileDescriptionExpanded, setIsMobileDescriptionExpanded] = useState(false);
+  const safeDescription = sanitizeStorefrontHtml(product.description);
+
+  const boutiqueRating =
       typeof product.rating === 'number'
         ? product.rating
         : typeof product.reviewSummary?.averageRating === 'number'

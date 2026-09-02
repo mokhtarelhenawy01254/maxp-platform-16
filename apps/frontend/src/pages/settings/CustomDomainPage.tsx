@@ -209,45 +209,59 @@ const CustomDomainPage: React.FC = () => {
 
             {/* Step 2: DNS Configuration */}
             <div className="border-t border-gray-100 dark:border-gray-700 pt-4">
-              <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-700 rounded-xl p-3.5 sm:p-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex items-center gap-2.5 shrink-0">
-                    <span className="px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs sm:text-sm font-bold uppercase tracking-wider">
-                      CNAME
-                    </span>
-                    <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {t("customDomain.dnsHostValue")}
-                    </span>
-                  </div>
+              <div className="overflow-hidden rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40">
+                <div className="p-3.5 sm:p-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                    {/* Record Type & Host */}
+                    <div className="sm:col-span-4 flex items-center gap-2.5">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold tracking-wider">
+                        CNAME
+                      </span>
+                      <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {t("customDomain.dnsHostValue")}
+                      </span>
+                    </div>
 
-                  <div className="flex-1 min-w-0 w-full">
-                    <code
-                      dir="ltr"
-                      className="block w-full px-3 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-xs sm:text-sm font-mono text-gray-900 dark:text-white truncate text-left select-all"
-                    >
-                      {cnameTarget}
-                    </code>
-                  </div>
+                    {/* Value / Target */}
+                    <div className="sm:col-span-5 min-w-0">
+                      <div className="flex items-center rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2">
+                        <code
+                          dir="ltr"
+                          className="w-full truncate text-left font-mono text-xs sm:text-sm text-gray-900 dark:text-white select-all"
+                        >
+                          {cnameTarget}
+                        </code>
+                      </div>
+                    </div>
 
-                  <button
-                    type="button"
-                    aria-label={
-                      copied === "cname"
-                        ? t("customDomain.cnameCopied")
-                        : t("customDomain.copyCname")
-                    }
-                    onClick={() => copyToClipboard(cnameTarget, "cname")}
-                    className="inline-flex items-center justify-center gap-1.5 min-h-10 w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs sm:text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors shrink-0 shadow-sm"
-                  >
-                    {copied === "cname" ? (
-                      <ClipboardDocumentCheckIcon className="h-4 w-4 text-green-500" />
-                    ) : (
-                      <ClipboardIcon className="h-4 w-4" />
-                    )}
-                    {copied === "cname"
-                      ? t("customDomain.cnameCopied")
-                      : t("customDomain.copyCname")}
-                  </button>
+                    {/* Action Button */}
+                    <div className="sm:col-span-3 flex sm:justify-end">
+                      <button
+                        type="button"
+                        aria-label={
+                          copied === "cname"
+                            ? t("customDomain.cnameCopied")
+                            : t("customDomain.copyCname")
+                        }
+                        onClick={() => copyToClipboard(cnameTarget, "cname")}
+                        className="inline-flex w-full sm:w-auto items-center justify-center gap-1.5 min-h-9 px-3.5 py-1.5 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 text-xs sm:text-sm font-medium text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 transition-colors shadow-sm"
+                      >
+                        {copied === "cname" ? (
+                          <>
+                            <ClipboardDocumentCheckIcon className="h-4 w-4 text-green-500 shrink-0" />
+                            <span className="text-green-600 dark:text-green-400">
+                              {t("customDomain.cnameCopied")}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <ClipboardIcon className="h-4 w-4 shrink-0" />
+                            <span>{t("customDomain.copyCname")}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>

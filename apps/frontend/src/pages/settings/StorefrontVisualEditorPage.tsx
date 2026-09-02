@@ -60,7 +60,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [storefrontSettings, setStorefrontSettings] = useState<StorefrontSettings | null>(null);
+  const [savedTokensSignature, setSavedTokensSignature] = useState("{}");
   const [savedThemeId, setSavedThemeId] = useState(DEFAULT_STOREFRONT_THEME_ID);
   const [savedContentSignature, setSavedContentSignature] = useState("{}");
   const [savedPageSignature, setSavedPageSignature] = useState("{}");
@@ -79,6 +79,7 @@ const StorefrontVisualEditorPage: React.FC = () => {
       const nextSettings = response.data;
       setStorefrontSettings(nextSettings);
       setSavedThemeId(resolveStorefrontThemeId(nextSettings));
+      setSavedTokensSignature(JSON.stringify(nextSettings?.designTokens || {}));
       setSavedContentSignature(getStorefrontContentSignature(nextSettings));
       setSavedPageSignature(getStorefrontPageSignature(nextSettings));
     } catch (error) {
@@ -102,13 +103,15 @@ const StorefrontVisualEditorPage: React.FC = () => {
       ? queryThemeId
       : resolveStorefrontThemeId(storefrontSettings);
 
+  const currentTokensSignature = JSON.stringify(storefrontSettings?.designTokens || {});
   const currentContentSignature = getStorefrontContentSignature(storefrontSettings);
   const currentPageSignature = getStorefrontPageSignature(storefrontSettings);
   const hasUnsavedStorefrontTheme = activeStorefrontThemeId !== savedThemeId;
+  const hasUnsavedTokens = currentTokensSignature !== savedTokensSignature;
   const hasUnsavedStorefrontContent = currentContentSignature !== savedContentSignature;
   const hasUnsavedStorefrontPages = currentPageSignature !== savedPageSignature;
   const hasPendingChanges =
-    hasUnsavedStorefrontTheme || hasUnsavedStorefrontContent || hasUnsavedStorefrontPages;
+    hasUnsavedStorefrontTheme || hasUnsavedTokens || hasUnsavedStorefrontContent || hasUnsavedStorefrontPages;
 
   const storefrontPreviewUrl = useMemo(() => {
     if (!storefrontSettings?.companyId) return null;
@@ -123,17 +126,29 @@ const StorefrontVisualEditorPage: React.FC = () => {
 
     setSaving(true);
     try {
+      const tokensToSave = {
+        ...(storefrontSettings.designTokens || {}),
+        themeId: activeStorefrontThemeId,
+      };
+
       await storefrontSettingsService.updateSettings({
         themeId: activeStorefrontThemeId,
-        designTokens: {
-          ...(storefrontSettings.designTokens || {}),
-          themeId: activeStorefrontThemeId,
-        },
+        designTokens: tokensToSave,
       });
 
       setSavedThemeId(activeStorefrontThemeId);
+      setSavedTokensSignature(JSON.stringify(tokensToSave));
       setSavedContentSignature(getStorefrontContentSignature(storefrontSettings));
       setSavedPageSignature(getStorefrontPageSignature(storefrontSettings));
+      setStorefrontSettings((cur) =>
+        cur
+          ? {
+              ...cur,
+              themeId: activeStorefrontThemeId,
+              designTokens: tokensToSave,
+            }
+          : cur,
+      );
       toast.success("تم حفظ تعديلات المتجر بنجاح ✨");
     } catch (error) {
       toast.error(getErrorMessage(error, "حدث خطأ أثناء حفظ التعديلات"));

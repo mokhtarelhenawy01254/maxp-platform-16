@@ -153,6 +153,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
     const nextPages = {
       ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pageOverrides as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
@@ -162,6 +163,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleDesignTokensChange({
       ...currentDesignTokens,
       pages: nextPages,
+      pageOverrides: nextPages,
     });
   };
 
@@ -178,6 +180,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
     const nextPages = {
       ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pageOverrides as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
@@ -187,6 +190,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleDesignTokensChange({
       ...currentDesignTokens,
       pages: nextPages,
+      pageOverrides: nextPages,
     });
   };
 
@@ -202,6 +206,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
     const nextPages = {
       ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pageOverrides as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
@@ -211,6 +216,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleDesignTokensChange({
       ...currentDesignTokens,
       pages: nextPages,
+      pageOverrides: nextPages,
     });
   };
 
@@ -227,6 +233,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
     const nextPages = {
       ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pageOverrides as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
@@ -238,6 +245,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleDesignTokensChange({
       ...currentDesignTokens,
       pages: nextPages,
+      pageOverrides: nextPages,
     });
   };
 
@@ -262,6 +270,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
 
     const nextPages = {
       ...(currentDesignTokens?.pages as Record<string, unknown> || {}),
+      ...(currentDesignTokens?.pageOverrides as Record<string, unknown> || {}),
       [activePageKey]: {
         ...activePageConfig,
         sections: nextSections,
@@ -271,6 +280,7 @@ export const StorefrontStudioShell: React.FC<StorefrontStudioShellProps> = ({
     handleDesignTokensChange({
       ...currentDesignTokens,
       pages: nextPages,
+      pageOverrides: nextPages,
     });
   };
 
