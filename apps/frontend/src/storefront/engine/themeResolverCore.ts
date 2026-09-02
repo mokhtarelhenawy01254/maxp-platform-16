@@ -270,6 +270,18 @@ const extractPageOverrides = (input?: StorefrontThemeInput): Record<string, unkn
     : {};
 
   return {
+    ...(isRecord(settingsDesignTokens["pages"])
+      ? (settingsDesignTokens["pages"] as Record<string, unknown>)
+      : {}),
+    ...(isRecord(topLevelDesignTokens["pages"])
+      ? (topLevelDesignTokens["pages"] as Record<string, unknown>)
+      : {}),
+    ...(isRecord(settings["pages"])
+      ? (settings["pages"] as Record<string, unknown>)
+      : {}),
+    ...(isRecord(inputRecord["pages"]) && !Array.isArray(inputRecord["pages"])
+      ? (inputRecord["pages"] as Record<string, unknown>)
+      : {}),
     ...(isRecord(settingsDesignTokens["pageOverrides"])
       ? (settingsDesignTokens["pageOverrides"] as Record<string, unknown>)
       : {}),

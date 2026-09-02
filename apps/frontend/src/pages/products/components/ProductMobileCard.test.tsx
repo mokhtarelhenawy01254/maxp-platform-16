@@ -76,11 +76,13 @@ const renderCard = (product: Product = baseProduct, isEditing = false) =>
   );
 
 describe("ProductMobileCard", () => {
-  it("renders product name as a link to full product edit page", () => {
+  it("renders product name and image as links to full product edit page", () => {
     renderCard();
-    const nameLink = screen.getByRole("link", { name: /سنيكرات سوان/i });
-    expect(nameLink).toBeInTheDocument();
-    expect(nameLink).toHaveAttribute("href", "/products/product-101/edit");
+    const links = screen.getAllByRole("link", { name: /سنيكرات سوان/i });
+    expect(links.length).toBeGreaterThanOrEqual(1);
+    links.forEach((l) => {
+      expect(l).toHaveAttribute("href", "/products/product-101/edit");
+    });
   });
 
   it("renders a dedicated full Edit button pointing to /products/:id/edit", () => {

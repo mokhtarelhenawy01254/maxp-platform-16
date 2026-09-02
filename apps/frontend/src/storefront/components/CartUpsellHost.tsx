@@ -67,6 +67,9 @@ const resolveDirectionalCopy = ({
     return trimmedValue;
   }
 
+  return prefersArabicCopy ? arabicFallback : englishFallback;
+};
+
 interface KhemetCinematicUpsellCardProps {
   product: Product;
   label: string;

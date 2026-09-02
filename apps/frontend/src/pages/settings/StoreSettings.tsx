@@ -1087,7 +1087,37 @@ const StoreSettings: React.FC<StoreSettingsProps> = ({
     }
   };
 
+  const handleToggleWishlist = async (enabled: boolean) => {
+    try {
+      const updated = {
+        ...storefrontSettings,
+        wishlistEnabled: enabled,
+      };
+      setStorefrontSettings(updated);
+      await storefrontSettingsService.updateSettings({
+        wishlistEnabled: enabled,
+      });
+      toast.success(enabled ? t("storeSettings.wishlistEnabledSuccess", "تم تفعيل زر المفضلة") : t("storeSettings.wishlistDisabledSuccess", "تم إيقاف زر المفضلة"));
+    } catch (error) {
+      toast.error(t("storeSettings.saveFailed", "تعذر حفظ التغيير"));
+    }
+  };
 
+  const handleToggleComparison = async (enabled: boolean) => {
+    try {
+      const updated = {
+        ...storefrontSettings,
+        comparisonEnabled: enabled,
+      };
+      setStorefrontSettings(updated);
+      await storefrontSettingsService.updateSettings({
+        comparisonEnabled: enabled,
+      });
+      toast.success(enabled ? t("storeSettings.comparisonEnabledSuccess", "تم تفعيل زر المقارنة") : t("storeSettings.comparisonDisabledSuccess", "تم إيقاف زر المقارنة"));
+    } catch (error) {
+      toast.error(t("storeSettings.saveFailed", "تعذر حفظ التغيير"));
+    }
+  };
 
   if (loading) {
     return (
