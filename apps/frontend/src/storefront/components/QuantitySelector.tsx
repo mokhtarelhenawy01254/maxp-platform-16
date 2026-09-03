@@ -40,6 +40,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
       } ${className || ''}`}
     >
       <button
+        type="button"
         onClick={decrement}
         disabled={value <= min}
         className={`flex items-center justify-center text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
@@ -59,6 +60,7 @@ const QuantitySelector: React.FC<QuantitySelectorProps> = ({
         {value}
       </span>
       <button
+        type="button"
         onClick={increment}
         disabled={value >= max}
         className={`flex items-center justify-center text-foreground transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${

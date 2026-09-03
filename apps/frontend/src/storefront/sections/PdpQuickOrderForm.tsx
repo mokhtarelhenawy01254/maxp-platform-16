@@ -528,12 +528,6 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   }, [activeQuantityOffer, product.id, trackingItem]);
 
   useEffect(() => {
-    if (!showQuantityBlock && quantity !== 1) {
-      setQuantity(1);
-    }
-  }, [showQuantityBlock, quantity, setQuantity]);
-
-  useEffect(() => {
     let cancelled = false;
 
     const loadShipping = async () => {
