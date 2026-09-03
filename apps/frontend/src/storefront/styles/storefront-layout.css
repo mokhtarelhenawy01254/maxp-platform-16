@@ -124,3 +124,24 @@
     transition: none;
   }
 }
+
+/* Quill text alignment guarantees in storefront layout */
+.storefront-shell .ql-align-center,
+.storefront-page-composer .ql-align-center {
+  text-align: center !important;
+}
+
+.storefront-shell .ql-align-right,
+.storefront-page-composer .ql-align-right {
+  text-align: right !important;
+}
+
+.storefront-shell .ql-align-left,
+.storefront-page-composer .ql-align-left {
+  text-align: left !important;
+}
+
+.storefront-shell .ql-align-justify,
+.storefront-page-composer .ql-align-justify {
+  text-align: justify !important;
+}

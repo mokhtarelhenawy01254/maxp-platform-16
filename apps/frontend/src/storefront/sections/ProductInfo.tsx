@@ -2470,17 +2470,22 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       'لوفر',
     ].some((token) => sizeGuideCategoryValue.includes(token.toLowerCase())) ||
     (variantSizeValues.length > 0 && variantSizeValues.every((value) => /^\d{1,2}$/.test(value)));
+  const hasCustomProductSizeGuide = Boolean(product?.sizeGuide && product.sizeGuide.trim());
   const showSizeGuide =
     sizeGuideVisibility === 'hidden'
       ? false
-      : sizeGuideVisibility === 'shoes-only'
-        ? productLooksLikeShoes
-        : true;
+      : hasCustomProductSizeGuide
+        ? true
+        : sizeGuideVisibility === 'shoes-only'
+          ? productLooksLikeShoes
+          : true;
   const fitNote = showSizeGuide ? rawFitNote : '';
   const sizeGuideHref = showSizeGuide ? rawSizeGuideHref : '';
   const sizeGuideQuickRows = showSizeGuide ? rawSizeGuideQuickRows : [];
   const sizeGuideQuickNote = showSizeGuide ? rawSizeGuideQuickNote : '';
-  const canOpenSizeGuide = Boolean(sizeGuideHref || sizeGuideQuickRows.length > 0 || fitNote);
+  const canOpenSizeGuide = Boolean(
+    hasCustomProductSizeGuide || sizeGuideHref || sizeGuideQuickRows.length > 0 || fitNote,
+  );
   const breadcrumbHomeLabel = prefersArabicCopy ? 'الرئيسية' : 'Home';
   const breadcrumbShopLabel = prefersArabicCopy ? 'المتجر' : 'Shop';
   const breadcrumbClassName = isBiteRush
@@ -3427,10 +3432,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       <button
         type="button"
         onClick={() => {
-          if (sizeGuideInteraction === 'modal') {
-            setIsSizeGuideDialogOpen(true);
-            return;
-          }
+          setIsSizeGuideDialogOpen(true);
         }}
         className={sizeGuideWrapperClassName}
       >
@@ -3467,6 +3469,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       quickNote={sizeGuideQuickNote}
       guideHref={sizeGuideHref}
       isExternalHref={isExternalHref}
+      customSizeGuide={product.sizeGuide || null}
     />
   );
 

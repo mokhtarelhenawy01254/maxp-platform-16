@@ -3,12 +3,14 @@ import { Link, useLocation, useParams } from 'react-router-dom';
 import { useProduct } from '../hooks/useProduct';
 import { buildStorefrontPath } from '../utils/paths';
 import {
+  formatCustomSizeGuide,
   parseSizeGuideOverrides,
   parseSizeGuideRows,
   resolveSizeGuideOverrideForProduct,
   resolveSizeGuideRowsForProduct,
 } from '../utils/dynamicSectionContent';
 import { resolveSectionVariant } from '../variants';
+
 
 interface SizeGuideProps {
   section?: {
@@ -152,30 +154,45 @@ const SizeGuide: React.FC<SizeGuideProps> = ({ section, settings }) => {
   const isQuick = variant === 'quick';
   const baseRows = resolvedGuideRows.length > 0 ? resolvedGuideRows : SIZE_ROWS;
   const rows = isCompact ? baseRows.slice(0, 4) : baseRows;
+  const customProductSizeGuideHtml = product?.sizeGuide
+    ? formatCustomSizeGuide(product.sizeGuide)
+    : '';
 
   const sizeTable = (
-    <div className="overflow-hidden rounded-[var(--radius)] border border-border">
-      <table className="w-full border-collapse text-sm" aria-label={badge}>
-        <caption className="sr-only">{title}</caption>
-        <thead className={`bg-secondary text-secondary-foreground ${isQuick ? 'text-xs uppercase tracking-wider' : ''}`}>
-          <tr>
-            <th scope="col" className="px-4 py-3 text-start font-black">EU</th>
-            <th scope="col" className="px-4 py-3 text-start font-black">UK</th>
-            <th scope="col" className="px-4 py-3 text-start font-black">US</th>
-            <th scope="col" className="px-4 py-3 text-start font-black">CM</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.eu} className={`border-t border-border bg-card ${isQuick ? 'hover:bg-muted/50 transition-colors' : ''}`}>
-              <td className="px-4 py-3 font-bold text-foreground">{row.eu}</td>
-              <td className="px-4 py-3 text-muted-foreground">{row.uk}</td>
-              <td className="px-4 py-3 text-muted-foreground">{row.us}</td>
-              <td className="px-4 py-3 text-muted-foreground">{row.cm}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="space-y-4">
+      {customProductSizeGuideHtml ? (
+        <div className="rounded-[var(--radius)] border border-border bg-secondary/15 p-4 sm:p-5">
+          <div
+            className="product-rich-description text-sm leading-relaxed text-foreground prose prose-sm dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: customProductSizeGuideHtml }}
+          />
+        </div>
+      ) : null}
+      {!customProductSizeGuideHtml ? (
+        <div className="overflow-hidden rounded-[var(--radius)] border border-border">
+          <table className="w-full border-collapse text-sm" aria-label={badge}>
+            <caption className="sr-only">{title}</caption>
+            <thead className={`bg-secondary text-secondary-foreground ${isQuick ? 'text-xs uppercase tracking-wider' : ''}`}>
+              <tr>
+                <th scope="col" className="px-4 py-3 text-start font-black">EU</th>
+                <th scope="col" className="px-4 py-3 text-start font-black">UK</th>
+                <th scope="col" className="px-4 py-3 text-start font-black">US</th>
+                <th scope="col" className="px-4 py-3 text-start font-black">CM</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.eu} className={`border-t border-border bg-card ${isQuick ? 'hover:bg-muted/50 transition-colors' : ''}`}>
+                  <td className="px-4 py-3 font-bold text-foreground">{row.eu}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{row.uk}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{row.us}</td>
+                  <td className="px-4 py-3 text-muted-foreground">{row.cm}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </div>
   );
 
@@ -190,6 +207,7 @@ const SizeGuide: React.FC<SizeGuideProps> = ({ section, settings }) => {
       </div>
     );
   }
+
 
   return (
     <section className="w-full bg-background py-10 md:py-14" aria-label={badge}>

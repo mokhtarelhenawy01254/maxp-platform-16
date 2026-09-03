@@ -199,13 +199,15 @@ select {
   }
 }
 
-/* Product Description Styles */
-.product-description {
+/* Product Description & Rich Text Content Styles */
+.product-description,
+.product-rich-description {
   direction: rtl;
-  text-align: right;
+  width: 100%;
 }
 
-.product-description img {
+.product-description img,
+.product-rich-description img {
   max-width: 100%;
   height: auto;
   display: block;
@@ -213,9 +215,135 @@ select {
   border-radius: 0.5rem;
 }
 
-.product-description p {
-  margin-bottom: 1rem;
-  line-height: 1.7;
+.product-description p,
+.product-rich-description p {
+  margin-bottom: 0.75rem;
+  line-height: 1.75;
+}
+
+/* Quill Alignment Styles - ensure priority over Tailwind prose and theme defaults */
+.ql-align-center,
+.prose .ql-align-center,
+.product-rich-description .ql-align-center,
+[dir] .ql-align-center {
+  text-align: center !important;
+}
+
+.ql-align-right,
+.prose .ql-align-right,
+.product-rich-description .ql-align-right,
+[dir] .ql-align-right {
+  text-align: right !important;
+}
+
+.ql-align-left,
+.prose .ql-align-left,
+.product-rich-description .ql-align-left,
+[dir] .ql-align-left {
+  text-align: left !important;
+}
+
+.ql-align-justify,
+.prose .ql-align-justify,
+.product-rich-description .ql-align-justify,
+[dir] .ql-align-justify {
+  text-align: justify !important;
+}
+
+.ql-direction-rtl,
+.prose .ql-direction-rtl,
+.product-rich-description .ql-direction-rtl {
+  direction: rtl !important;
+  text-align: inherit;
+}
+
+.ql-direction-ltr,
+.prose .ql-direction-ltr,
+.product-rich-description .ql-direction-ltr {
+  direction: ltr !important;
+  text-align: inherit;
+}
+
+.ql-size-small,
+.prose .ql-size-small,
+.product-rich-description .ql-size-small {
+  font-size: 0.75em !important;
+}
+
+.ql-size-large,
+.prose .ql-size-large,
+.product-rich-description .ql-size-large {
+  font-size: 1.35em !important;
+  font-weight: 700;
+}
+
+.ql-size-huge,
+.prose .ql-size-huge,
+.product-rich-description .ql-size-huge {
+  font-size: 1.85em !important;
+  font-weight: 800;
+}
+
+.ql-indent-1,
+.prose .ql-indent-1,
+.product-rich-description .ql-indent-1 {
+  padding-inline-start: 1.5rem !important;
+}
+
+.ql-indent-2,
+.prose .ql-indent-2,
+.product-rich-description .ql-indent-2 {
+  padding-inline-start: 3rem !important;
+}
+
+.ql-indent-3,
+.prose .ql-indent-3,
+.product-rich-description .ql-indent-3 {
+  padding-inline-start: 4.5rem !important;
+}
+
+.ql-indent-4,
+.prose .ql-indent-4,
+.product-rich-description .ql-indent-4 {
+  padding-inline-start: 6rem !important;
+}
+
+.ql-video,
+.prose iframe.ql-video,
+.product-rich-description iframe.ql-video {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+}
+
+.product-rich-description ul,
+.prose .product-rich-description ul {
+  list-style-type: disc;
+  padding-inline-start: 1.25rem;
+  margin-block: 0.75rem;
+}
+
+.product-rich-description ol,
+.prose .product-rich-description ol {
+  list-style-type: decimal;
+  padding-inline-start: 1.25rem;
+  margin-block: 0.75rem;
+}
+
+.product-rich-description li,
+.prose .product-rich-description li {
+  margin-block: 0.25rem;
+}
+
+.product-rich-description blockquote,
+.prose .product-rich-description blockquote {
+  border-inline-start: 3px solid var(--color-border, #d1d5db);
+  padding-inline-start: 1rem;
+  font-style: italic;
+  margin-block: 0.75rem;
 }
 
 @layer base {
@@ -226,3 +354,4 @@ select {
     @apply bg-background text-foreground;
   }
 }
+

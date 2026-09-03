@@ -1977,6 +1977,7 @@ export const ProductNewFinal: React.FC = () => {
               <AdvancedTab
                 formData={formData}
                 handleInputChange={handleInputChange}
+                setFormData={setFormData}
                 shippingClassOptions={resolvedShippingClassOptions}
                 t={t}
                 allProducts={allProducts}

@@ -2,6 +2,7 @@ import React from "react";
 import { ProductFormData } from "../../types";
 import { ProductSelect } from "../shared/ProductSelect";
 import { ShippingClassOption } from "../../../../constants/shippingClasses";
+import { RichTextEditor } from "../../../../../components/RichTextEditor";
 
 interface AdvancedTabProps {
   formData: ProductFormData;
@@ -10,6 +11,7 @@ interface AdvancedTabProps {
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
     >,
   ) => void;
+  setFormData?: React.Dispatch<React.SetStateAction<ProductFormData>>;
   shippingClassOptions: ShippingClassOption[];
   t: any;
   allProducts: any[];
@@ -25,6 +27,7 @@ interface AdvancedTabProps {
 export const AdvancedTab: React.FC<AdvancedTabProps> = ({
   formData,
   handleInputChange,
+  setFormData,
   shippingClassOptions,
   t,
   allProducts,
@@ -358,17 +361,31 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
           >
             دليل المقاسات
           </label>
-          <textarea
-            id="sizeGuide"
-            name="sizeGuide"
-            value={formData.sizeGuide}
-            onChange={handleInputChange}
-            rows={8}
-            className="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
-            placeholder="أدخل دليل المقاسات هنا... يمكنك استخدام Markdown أو HTML"
-          />
+          {setFormData ? (
+            <RichTextEditor
+              value={formData.sizeGuide}
+              onChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  sizeGuide: value,
+                }))
+              }
+              placeholder="أدخل دليل المقاسات هنا... يمكنك تنسيق النصوص واستخدام القوائم والجداول"
+              minHeight="160px"
+            />
+          ) : (
+            <textarea
+              id="sizeGuide"
+              name="sizeGuide"
+              value={formData.sizeGuide}
+              onChange={handleInputChange}
+              rows={6}
+              className="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+              placeholder="أدخل دليل المقاسات هنا... يمكنك استخدام Markdown أو HTML"
+            />
+          )}
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            يمكنك إضافة جدول مقاسات للمنتج. سيظهر للعملاء في صفحة المنتج.
+            يمكنك إضافة تفاصيل وجدول مقاسات للمنتج. سيظهر للعملاء في صفحة المنتج ونافذة المقاسات.
           </p>
         </div>
       </div>

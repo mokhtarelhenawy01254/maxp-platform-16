@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  formatCustomSizeGuide,
   parseCategoryLookbookCards,
   parseSizeGuideOverrides,
   parseSizeGuideRows,
@@ -8,7 +9,23 @@ import {
 } from "../utils/dynamicSectionContent";
 
 describe("dynamic storefront section content", () => {
+  it("formats custom size guide markdown and plain text into clean html", () => {
+    const markdown = [
+      "دليل المقاسات",
+      "**الطول الكلي للفستان:** 145 سم",
+      "* **مقاس XL:** يلبس من وزن 55 إلى 65 كجم",
+      "* **مقاس 2XL:** يلبس من وزن 66 إلى 80 كجم",
+    ].join("\n");
+
+    const html = formatCustomSizeGuide(markdown);
+    expect(html).toContain("<strong>الطول الكلي للفستان:</strong>");
+    expect(html).toContain("<strong>مقاس XL:</strong>");
+    expect(html).toContain("<ul");
+    expect(html).toContain("<li");
+  });
+
   it("parses category lookbook cards from textarea-friendly lines", () => {
+
     expect(
       parseCategoryLookbookCards(
         [

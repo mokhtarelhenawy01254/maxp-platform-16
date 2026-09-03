@@ -89,6 +89,37 @@ export const BasicTab: React.FC<BasicTabProps> = ({
           </div>
         </div>
 
+        {/* Size Guide - دليل المقاسات */}
+        <div className="col-span-1 sm:col-span-2">
+          <div className="flex items-center justify-between mb-1">
+            <label
+              htmlFor="sizeGuide"
+              className="block text-sm font-semibold text-gray-700 dark:text-gray-300"
+            >
+              📏 دليل المقاسات
+            </label>
+            <span className="text-xs text-muted-foreground">
+              (يظهر في صفحة المنتج ونافذة المقاسات)
+            </span>
+          </div>
+          <div className="mt-1">
+            <RichTextEditor
+              value={formData.sizeGuide}
+              onChange={(value) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  sizeGuide: value,
+                }))
+              }
+              placeholder="اكتب دليل المقاسات هنا... يمكنك تنسيق النصوص وتوسيطها وكتابة جداول أو نقاط للمقاسات والأوزان والأطوال"
+              minHeight="140px"
+            />
+          </div>
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            أدخل مقاسات المنتج وطريقة القياس. سيظهر هذا المحتوى لعملائك عند الضغط على زر &quot;دليل المقاسات&quot;.
+          </p>
+        </div>
+
         {/* Category */}
         <div className="col-span-1">
           <div className="flex items-center justify-between mb-1">

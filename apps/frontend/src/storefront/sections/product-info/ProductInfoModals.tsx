@@ -1,7 +1,8 @@
-﻿import React from 'react';
+import React from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { Link } from 'react-router-dom';
 import { X, Truck, RotateCcw } from 'lucide-react';
+import { formatCustomSizeGuide } from '../../utils/dynamicSectionContent';
 
 interface PolicyDetail {
   label: string;
@@ -141,6 +142,7 @@ export interface ProductInfoSizeGuideDialogProps {
   quickNote: string;
   guideHref?: string;
   isExternalHref: (href: string) => boolean;
+  customSizeGuide?: string | null;
 }
 
 export const ProductInfoSizeGuideDialog: React.FC<ProductInfoSizeGuideDialogProps> = ({
@@ -153,7 +155,10 @@ export const ProductInfoSizeGuideDialog: React.FC<ProductInfoSizeGuideDialogProp
   quickNote,
   guideHref,
   isExternalHref,
+  customSizeGuide,
 }) => {
+  const formattedCustomGuide = customSizeGuide ? formatCustomSizeGuide(customSizeGuide) : '';
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -173,13 +178,22 @@ export const ProductInfoSizeGuideDialog: React.FC<ProductInfoSizeGuideDialogProp
               </DialogPrimitive.Title>
               <DialogPrimitive.Description className="text-sm leading-6 text-muted-foreground">
                 {prefersArabicCopy
-                  ? 'مرجع سريع فقط للمقاس الأنسب، من غير شرح طويل أو تكرار داخل الصفحة.'
-                  : 'A short size reference without extra copy or repetition on the page.'}
+                  ? 'مرجع سريع للمقاس الأنسب قبل إتمام الطلب.'
+                  : 'A quick size reference to choose the perfect fit.'}
               </DialogPrimitive.Description>
             </div>
 
             <div className="mt-5 space-y-4">
-              {rows.length > 0 ? (
+              {formattedCustomGuide ? (
+                <div className="rounded-[1.1rem] border border-border bg-secondary/15 p-4 sm:p-5">
+                  <div
+                    className="product-rich-description text-sm leading-relaxed text-foreground prose prose-sm dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: formattedCustomGuide }}
+                  />
+                </div>
+              ) : null}
+
+              {!formattedCustomGuide && rows.length > 0 ? (
                 <div className="overflow-hidden rounded-[1.1rem] border border-border">
                   <table className="w-full border-collapse text-sm">
                     <thead className="bg-secondary text-secondary-foreground">
@@ -204,12 +218,14 @@ export const ProductInfoSizeGuideDialog: React.FC<ProductInfoSizeGuideDialogProp
                 </div>
               ) : null}
 
-              <div className="rounded-[1.1rem] border border-border bg-secondary/20 px-4 py-4">
-                <p className="text-sm font-black text-foreground">
-                  {prefersArabicCopy ? 'ملاحظة سريعة' : 'Quick note'}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-muted-foreground">{quickNote}</p>
-              </div>
+              {!formattedCustomGuide && quickNote ? (
+                <div className="rounded-[1.1rem] border border-border bg-secondary/20 px-4 py-4">
+                  <p className="text-sm font-black text-foreground">
+                    {prefersArabicCopy ? 'ملاحظة سريعة' : 'Quick note'}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{quickNote}</p>
+                </div>
+              ) : null}
 
               {guideHref ? (
                 isExternalHref(guideHref) ? (

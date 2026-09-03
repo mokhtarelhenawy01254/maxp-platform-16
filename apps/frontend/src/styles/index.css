@@ -6668,3 +6668,102 @@ select {
   background: transparent !important;
   color: inherit !important;
 }
+
+/* Quill Alignment & Rich Text Styles across Admin & Previews */
+.ql-align-center,
+.prose .ql-align-center,
+.product-rich-description .ql-align-center,
+[dir] .ql-align-center {
+  text-align: center !important;
+}
+
+.ql-align-right,
+.prose .ql-align-right,
+.product-rich-description .ql-align-right,
+[dir] .ql-align-right {
+  text-align: right !important;
+}
+
+.ql-align-left,
+.prose .ql-align-left,
+.product-rich-description .ql-align-left,
+[dir] .ql-align-left {
+  text-align: left !important;
+}
+
+.ql-align-justify,
+.prose .ql-align-justify,
+.product-rich-description .ql-align-justify,
+[dir] .ql-align-justify {
+  text-align: justify !important;
+}
+
+.ql-direction-rtl,
+.prose .ql-direction-rtl,
+.product-rich-description .ql-direction-rtl {
+  direction: rtl !important;
+  text-align: inherit;
+}
+
+.ql-direction-ltr,
+.prose .ql-direction-ltr,
+.product-rich-description .ql-direction-ltr {
+  direction: ltr !important;
+  text-align: inherit;
+}
+
+.ql-size-small,
+.prose .ql-size-small,
+.product-rich-description .ql-size-small {
+  font-size: 0.75em !important;
+}
+
+.ql-size-large,
+.prose .ql-size-large,
+.product-rich-description .ql-size-large {
+  font-size: 1.35em !important;
+  font-weight: 700;
+}
+
+.ql-size-huge,
+.prose .ql-size-huge,
+.product-rich-description .ql-size-huge {
+  font-size: 1.85em !important;
+  font-weight: 800;
+}
+
+.ql-indent-1,
+.prose .ql-indent-1,
+.product-rich-description .ql-indent-1 {
+  padding-inline-start: 1.5rem !important;
+}
+
+.ql-indent-2,
+.prose .ql-indent-2,
+.product-rich-description .ql-indent-2 {
+  padding-inline-start: 3rem !important;
+}
+
+.ql-indent-3,
+.prose .ql-indent-3,
+.product-rich-description .ql-indent-3 {
+  padding-inline-start: 4.5rem !important;
+}
+
+.ql-indent-4,
+.prose .ql-indent-4,
+.product-rich-description .ql-indent-4 {
+  padding-inline-start: 6rem !important;
+}
+
+.ql-video,
+.prose iframe.ql-video,
+.product-rich-description iframe.ql-video {
+  display: block;
+  max-width: 100%;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.75rem;
+  margin: 1rem 0;
+}
+
