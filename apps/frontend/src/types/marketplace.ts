@@ -56,6 +56,8 @@ export interface MarketplaceApp {
   activePricingModel?: string;
   isInstalled?: boolean;
   reviews?: Review[];
+  mainRoute?: string | null;
+  adminRoute?: string | null;
   pricingRules?: PricingRule[];
   relatedApps?: string[];
   frequentlyInstalledWith?: string[];
@@ -155,6 +157,14 @@ export interface InstalledApp {
   };
   createdAt: string;
   app: MarketplaceApp;
+  usageLogs?: Array<{
+    id: string;
+    feature?: string | null;
+    quantity: number;
+    totalCost: number | string;
+    createdAt: string;
+    metadata?: Record<string, unknown> | null;
+  }>;
 }
 
 export interface MarketplaceSpecialty {

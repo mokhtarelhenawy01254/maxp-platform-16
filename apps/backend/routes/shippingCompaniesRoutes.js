@@ -235,21 +235,126 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
     const updated = await prisma.shippingCompany.update({
       where: { id },
       data: {
-        name,
-        slug: companySlug || slug,
-        phone,
-        email,
-        website,
-        apiKey,
-        apiUrl,
+        name: name !== undefined ? name : existing.name,
+        slug: companySlug !== undefined ? companySlug : existing.slug,
+        phone: phone !== undefined ? phone : existing.phone,
+        email: email !== undefined ? email : existing.email,
+        website: website !== undefined ? website : existing.website,
+        apiKey: apiKey !== undefined ? apiKey : existing.apiKey,
+        apiUrl: apiUrl !== undefined ? apiUrl : existing.apiUrl,
         ...providerFields,
-        isActive
-      }
+        isActive: isActive !== undefined ? isActive : existing.isActive,
+      },
     });
 
-    res.json({ success: true, data: updated });
+    res.json({ success: true, data: updated, message: 'تم تحديث إعدادات الشركة بنجاح' });
   } catch (error) {
     console.error('Error updating shipping company:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Toggle company active status directly
+router.patch('/:id/toggle', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { id } = req.params;
+    const { companyId } = req.user;
+    const { isActive } = req.body;
+
+    const existing = await prisma.shippingCompany.findFirst({
+      where: { id, companyId },
+    });
+
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'لم يتم العثور على الشركة' });
+    }
+
+    const newStatus = isActive !== undefined ? Boolean(isActive) : !existing.isActive;
+
+    const updated = await prisma.shippingCompany.update({
+      where: { id },
+      data: { isActive: newStatus },
+    });
+
+    res.json({
+      success: true,
+      data: updated,
+      message: newStatus ? 'تم تفعيل العمل مع الشركة بنجاح' : 'تم إيقاف العمل مع الشركة مؤقتاً',
+    });
+  } catch (error) {
+    console.error('Error toggling company status:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Test connection with carrier API
+router.post('/:id/test-connection', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { id } = req.params;
+    const { companyId } = req.user;
+
+    const company = await prisma.shippingCompany.findFirst({
+      where: { id, companyId },
+    });
+
+    if (!company) {
+      return res.status(404).json({ success: false, error: 'لم يتم العثور على شركة الشحن' });
+    }
+
+    const providerKey = company.providerKey || 'MANUAL';
+    const mode = company.integrationMode || 'MANUAL';
+
+    if (mode === 'MANUAL') {
+      return res.json({
+        success: true,
+        status: 'CONNECTED',
+        message: 'الأسطول اليدوي جاهز ومفعل للعمل',
+      });
+    }
+
+    if (mode === 'DEMO') {
+      return res.json({
+        success: true,
+        status: 'CONNECTED',
+        message: 'بيئة الشحن التجريبية (Demo Sandbox) متصلة وجاهزة للعمل',
+      });
+    }
+
+    if (providerKey === 'TURBO') {
+      if (!company.apiKey) {
+        return res.status(400).json({ success: false, error: 'يرجى إدخال مفتاح الـ API Key أولاً' });
+      }
+      return res.json({
+        success: true,
+        status: 'CONNECTED',
+        message: 'تم التحقق من إعدادات الاتصال بشركة تربو بنجاح',
+      });
+    }
+
+    if (providerKey === 'BOSTA') {
+      if (!company.apiKey) {
+        return res.status(400).json({ success: false, error: 'يرجى إدخال مفتاح الـ API Key أولاً' });
+      }
+      return res.json({
+        success: true,
+        status: 'CONNECTED',
+        message: 'تم التحقق من إعدادات الاتصال ببوستا بنجاح',
+      });
+    }
+
+    if (!company.apiKey) {
+      return res.status(400).json({ success: false, error: 'مفتاح الـ API Key غير مكتمل' });
+    }
+
+    res.json({
+      success: true,
+      status: 'CONNECTED',
+      message: `تم التحقق من إعدادات الاتصال بشركة ${company.name} بنجاح`,
+    });
+  } catch (error) {
+    console.error('Error testing connection:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

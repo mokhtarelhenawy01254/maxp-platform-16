@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { apiClient } from '../../../services/apiClient';
+import { MediaUploadZone, ServiceMediaFile } from '../../services/MediaUploadZone';
+import { CreditCard, Users, Loader2 } from 'lucide-react';
 
 interface CreateServiceOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   customerName?: string;
   customerPhone?: string;
+  sessionId?: string;
   onOrderCreated?: (order: any) => void;
 }
 
@@ -16,6 +19,7 @@ export default function CreateServiceOrderModal({
   onClose,
   customerName = '',
   customerPhone = '',
+  sessionId = '',
   onOrderCreated
 }: CreateServiceOrderModalProps) {
   const [services, setServices] = useState<any[]>([]);
@@ -24,6 +28,17 @@ export default function CreateServiceOrderModal({
   const [name, setName] = useState(customerName);
   const [phone, setPhone] = useState(customerPhone);
   const [description, setDescription] = useState('');
+  const [notes, setNotes] = useState('');
+  const [assignedTo, setAssignedTo] = useState('');
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+
+  // Financial fields
+  const [totalAmount, setTotalAmount] = useState<string>('');
+  const [paidAmount, setPaidAmount] = useState<string>('');
+  const [paymentMethod, setPaymentMethod] = useState<string>('VODAFONE_CASH');
+
+  // Media files
+  const [mediaFiles, setMediaFiles] = useState<ServiceMediaFile[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -31,7 +46,13 @@ export default function CreateServiceOrderModal({
       setName(customerName);
       setPhone(customerPhone);
       setDescription('');
+      setNotes('');
+      setAssignedTo('');
+      setTotalAmount('');
+      setPaidAmount('');
+      setMediaFiles([]);
       fetchServices();
+      fetchTeamMembers();
     }
   }, [isOpen, customerName, customerPhone]);
 
@@ -40,9 +61,13 @@ export default function CreateServiceOrderModal({
     try {
       const res: any = await apiClient.get('/services');
       if (res.data?.success && Array.isArray(res.data.data)) {
-        setServices(res.data.data);
-        if (res.data.data.length > 0 && !selectedServiceId) {
-          setSelectedServiceId(res.data.data[0].id);
+        const active = res.data.data.filter((s: any) => s.isActive);
+        setServices(active);
+        if (active.length > 0 && !selectedServiceId) {
+          setSelectedServiceId(active[0].id);
+          if (active[0].price) {
+            setTotalAmount(String(active[0].price));
+          }
         }
       }
     } catch (err: any) {
@@ -53,9 +78,26 @@ export default function CreateServiceOrderModal({
     }
   };
 
+  const fetchTeamMembers = async () => {
+    try {
+      const res: any = await apiClient.get('/service-orders/team-members');
+      if (res.data?.success && Array.isArray(res.data.data)) {
+        setTeamMembers(res.data.data);
+      }
+    } catch (e) {}
+  };
+
+  const handleServiceChange = (serviceId: string) => {
+    setSelectedServiceId(serviceId);
+    const service = services.find((s) => s.id === serviceId);
+    if (service?.price) {
+      setTotalAmount(String(service.price));
+    }
+  };
+
   if (!isOpen) return null;
 
-  const selectedService = services.find(s => s.id === selectedServiceId);
+  const selectedService = services.find((s) => s.id === selectedServiceId);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,12 +110,26 @@ export default function CreateServiceOrderModal({
 
     setSubmitting(true);
     try {
-      const res: any = await apiClient.post('/service-orders', {
+      const totalVal = totalAmount ? Number(totalAmount) : (selectedService?.price || 0);
+      const paidVal = paidAmount ? Number(paidAmount) : 0;
+
+      const payload = {
         serviceId: selectedServiceId,
         customerName: name.trim(),
         phone: phone.trim(),
-        description: description.trim()
-      });
+        description: description.trim(),
+        notes: notes.trim() || undefined,
+        assignedTo: assignedTo || undefined,
+        referenceFiles: mediaFiles,
+        payment: {
+          totalAmount: totalVal,
+          paidAmount: paidVal,
+          paymentMethod
+        },
+        whatsAppSessionId: sessionId || undefined
+      };
+
+      const res: any = await apiClient.post('/service-orders', payload);
 
       if (res.data?.success) {
         toast.success('تم إنشاء طلب الخدمة بنجاح وإرسال إشعار تأكيد للعميل على الواتساب');
@@ -94,20 +150,20 @@ export default function CreateServiceOrderModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-3 sm:p-6 backdrop-blur-sm rtl"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-3 sm:p-6 backdrop-blur-sm rtl overflow-y-auto"
       dir="rtl"
       onClick={onClose}
     >
       <div
-        className="relative w-full max-w-lg rounded-2xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden"
-        onClick={e => e.stopPropagation()}
+        className="relative w-full max-w-xl rounded-2xl bg-white dark:bg-gray-800 shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden max-h-[92vh] flex flex-col my-auto"
+        onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 p-4 sm:px-6">
+        <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-700 p-4 sm:px-6 shrink-0">
           <div className="flex items-center gap-2">
             <span className="text-xl">🛠️</span>
             <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-              إنشاء طلب خدمة للعميل
+              إنشاء طلب خدمة للعميل من الشات
             </h2>
           </div>
           <button
@@ -119,11 +175,11 @@ export default function CreateServiceOrderModal({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 overflow-y-auto flex-1">
           {/* Service Selector */}
           <div>
             <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              الخدمة المطلوبة *
+              الخدمة المطلوبة <span className="text-rose-500">*</span>
             </label>
             {loadingServices ? (
               <div className="py-3 text-center text-xs text-gray-400">جاري تحميل الخدمات...</div>
@@ -134,87 +190,172 @@ export default function CreateServiceOrderModal({
             ) : (
               <select
                 value={selectedServiceId}
-                onChange={e => setSelectedServiceId(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-sm focus:border-blue-500 focus:outline-none dark:text-white min-h-[44px]"
+                onChange={(e) => handleServiceChange(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2.5 text-sm focus:border-primary-500 focus:outline-hidden dark:text-white min-h-[44px]"
                 required
               >
-                {services.map(s => (
+                {services.map((s) => (
                   <option key={s.id} value={s.id}>
                     {s.icon || '📋'} {s.name} {s.price ? `(${s.price} ج.م)` : ''}
                   </option>
                 ))}
               </select>
             )}
-            {selectedService?.price && (
-              <p className="mt-1 text-xs text-blue-600 dark:text-blue-400 font-medium">
-                سعر الخدمة الافتراضي: {selectedService.price} ج.م
-              </p>
-            )}
           </div>
 
-          {/* Customer Name */}
-          <div>
-            <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              اسم العميل *
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:text-white min-h-[40px]"
-              placeholder="اسم العميل"
-              required
-            />
+          {/* Customer Name & Phone */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                اسم العميل <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs sm:text-sm focus:border-primary-500 focus:outline-hidden dark:text-white min-h-[40px]"
+                placeholder="اسم العميل"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                رقم الهاتف (الواتساب) <span className="text-rose-500">*</span>
+              </label>
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs sm:text-sm focus:border-primary-500 focus:outline-hidden dark:text-white min-h-[40px] text-left"
+                placeholder="01xxxxxxxxx"
+                dir="ltr"
+                required
+              />
+            </div>
           </div>
 
-          {/* Customer Phone */}
-          <div>
-            <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              رقم الهاتف (الواتساب) *
-            </label>
-            <input
-              type="text"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:text-white min-h-[40px] text-left"
-              placeholder="01xxxxxxxxx"
-              dir="ltr"
-              required
-            />
+          {/* Financials & Payment */}
+          <div className="p-3.5 rounded-2xl bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-gray-800 dark:text-gray-200">
+              <CreditCard className="w-4 h-4 text-emerald-600" />
+              <span>الماليات والاتفاق مع العميل:</span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  السعر المتفق عليه (ج.م):
+                </label>
+                <input
+                  type="number"
+                  value={totalAmount}
+                  onChange={(e) => setTotalAmount(e.target.value)}
+                  placeholder="السعر الإجمالي"
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-800 dark:text-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  المدفوع / العربون (ج.م):
+                </label>
+                <input
+                  type="number"
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
+                  placeholder="مثال: 500"
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-800 dark:text-gray-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-gray-600 dark:text-gray-400 mb-1">
+                  طريقة التحصيل:
+                </label>
+                <select
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-2.5 py-1.5 text-xs text-gray-800 dark:text-gray-200"
+                >
+                  <option value="VODAFONE_CASH">فودافون كاش / محافظ</option>
+                  <option value="INSTAPAY">إنستاباي (InstaPay)</option>
+                  <option value="CASH">نقداً (كاش)</option>
+                  <option value="BANK_TRANSFER">تحويل بنكي</option>
+                </select>
+              </div>
+            </div>
           </div>
 
-          {/* Description & Requirements */}
+          {/* Description */}
           <div>
-            <label className="block text-xs sm:text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5">
-              تفاصيل ومتطلبات الطلب
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              تفاصيل ومتطلبات الخدمة
             </label>
             <textarea
               value={description}
-              onChange={e => setDescription(e.target.value)}
-              rows={3}
-              className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none dark:text-white"
-              placeholder="اكتب ما تم الاتفاق عليه في المحادثة مع العميل..."
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+              className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs sm:text-sm focus:border-primary-500 focus:outline-hidden dark:text-white"
+              placeholder="اكتب ما تم الاتفاق عليه في شات الواتساب مع العميل..."
             />
+          </div>
+
+          {/* Media Upload with Audio/Video Preview */}
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+            <MediaUploadZone
+              files={mediaFiles}
+              onChange={setMediaFiles}
+              label="المرفقات من الشات (موسيقى، فيديو، صور، ملفات)"
+              helperText="يمكنك إرفاق المراجع الصوتية أو الفيديوهات أو الصور التي أرسلها العميل في المحادثة."
+            />
+          </div>
+
+          {/* Team Member Assignment */}
+          <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+            <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-primary-600" />
+              <span>تكليف موظف مسؤول عن الطلب:</span>
+            </label>
+            <select
+              value={assignedTo}
+              onChange={(e) => setAssignedTo(e.target.value)}
+              className="w-full rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-xs sm:text-sm text-gray-800 dark:text-gray-200"
+            >
+              <option value="">-- التكليف التلقائي حسب إعدادات المرحلة --</option>
+              {teamMembers.map((m) => (
+                <option key={m.id} value={m.name}>
+                  {m.name} ({m.role})
+                </option>
+              ))}
+            </select>
           </div>
 
           <div className="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs flex items-center gap-2">
             <span>💬</span>
-            <span>سيتم إرسال رسالة تأكيد رسمية بالطلب تلقائياً على رقم واتساب العميل فور الحفظ</span>
+            <span>سيتم إرسال رسالة تأكيد رسمية بالطلب وحسابه المالي تلقائياً على رقم واتساب العميل فور الحفظ</span>
           </div>
 
           {/* Footer Actions */}
-          <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <div className="flex gap-2 pt-2 border-t border-gray-100 dark:border-gray-700 shrink-0">
             <button
               type="submit"
               disabled={submitting || loadingServices || services.length === 0}
-              className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-medium text-sm transition-colors disabled:opacity-50 min-h-[44px]"
+              className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs sm:text-sm transition-colors disabled:opacity-50 min-h-[44px] flex items-center justify-center gap-2"
             >
-              {submitting ? 'جاري إنشاء الطلب...' : 'تأكيد وحفظ الطلب'}
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>جاري إنشاء الطلب...</span>
+                </>
+              ) : (
+                <span>تأكيد وحفظ الطلب</span>
+              )}
             </button>
             <button
               type="button"
               onClick={onClose}
-              className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-sm font-medium transition-colors min-h-[44px]"
+              className="py-2.5 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-xl text-xs sm:text-sm font-semibold transition-colors min-h-[44px]"
             >
               إلغاء
             </button>

@@ -870,24 +870,45 @@ const getCustomerOrders = async (req, res) => {
           take: 20
         });
 
-        formattedServiceOrders = serviceOrders.map(so => ({
-          id: so.id,
-          orderNumber: `SRV-${so.id.slice(-6).toUpperCase()}`,
-          status: (so.status || 'NEW').toLowerCase(),
-          total: so.service?.price ? parseFloat(so.service.price) : 0,
-          createdAt: so.createdAt,
-          type: 'SERVICE',
-          serviceName: so.service?.name || 'طلب خدمة',
-          serviceCategory: so.service?.category || 'other',
-          serviceIcon: so.service?.icon || '🛠️',
-          description: so.description,
-          items: [{
-            name: `${so.service?.icon ? so.service.icon + ' ' : ''}${so.service?.name || 'طلب خدمة'}`,
-            quantity: 1,
-            price: so.service?.price ? parseFloat(so.service.price) : 0,
-            image: null
-          }]
-        }));
+        formattedServiceOrders = serviceOrders.map(so => {
+          let total = so.service?.price ? parseFloat(so.service.price) : 0;
+          let paid = 0;
+          let remaining = total;
+          let paymentStatus = 'UNPAID';
+          let invoiceNumber = `SRV-${so.id.slice(-6).toUpperCase()}`;
+
+          if (so.referenceFiles && typeof so.referenceFiles === 'object' && !Array.isArray(so.referenceFiles)) {
+            if (so.referenceFiles.payment) {
+              total = Number(so.referenceFiles.payment.totalAmount) || total;
+              paid = Number(so.referenceFiles.payment.paidAmount) || 0;
+              remaining = Number(so.referenceFiles.payment.remainingAmount) || Math.max(0, total - paid);
+              paymentStatus = so.referenceFiles.payment.paymentStatus || paymentStatus;
+              invoiceNumber = so.referenceFiles.payment.invoiceNumber || invoiceNumber;
+            }
+          }
+
+          return {
+            id: so.id,
+            orderNumber: invoiceNumber,
+            status: (so.status || 'NEW').toLowerCase(),
+            total,
+            paid,
+            remaining,
+            paymentStatus,
+            createdAt: so.createdAt,
+            type: 'SERVICE',
+            serviceName: so.service?.name || 'طلب خدمة',
+            serviceCategory: so.service?.category || 'other',
+            serviceIcon: so.service?.icon || '🛠️',
+            description: so.description,
+            items: [{
+              name: `${so.service?.icon ? so.service.icon + ' ' : ''}${so.service?.name || 'طلب خدمة'}`,
+              quantity: 1,
+              price: total,
+              image: null
+            }]
+          };
+        });
       }
     } catch (soErr) {
       console.warn('⚠️ [CUSTOMER-ORDERS] Failed to query service orders:', soErr.message);

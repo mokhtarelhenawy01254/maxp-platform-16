@@ -1163,6 +1163,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/admin/services', icon: SquarePen, label: t('sidebar.serviceManagement') },
                 { to: '/admin/service-orders', icon: ClipboardList, label: t('sidebar.serviceOrders') },
+                { to: '/admin/services/settings', icon: Settings, label: 'إعدادات الخدمات' },
             ]
         },
 

@@ -10850,7 +10850,7 @@
       "cases": "الحالات",
       "doctors": "الدكاترة",
       "work-types": "أنواع الشغل",
-      "technicians": "الفنيين",
+      "technicians": "فريق العمل",
       "invoices": "الفواتير",
       "settings": "الإعدادات"
     },
@@ -16903,7 +16903,7 @@
     "dentalLabCases": "الحالات",
     "dentalLabDoctors": "الأطباء",
     "dentalLabWorkTypes": "أنواع الشغل",
-    "dentalLabTechnicians": "الفنيون",
+    "dentalLabTechnicians": "فريق العمل",
     "dentalLabInvoices": "الفواتير",
     "dentalLabSettings": "الإعدادات",
     "dentalLabNotifications": "إشعارات واتساب",

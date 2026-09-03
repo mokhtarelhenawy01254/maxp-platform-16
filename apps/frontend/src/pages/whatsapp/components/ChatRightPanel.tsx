@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { User, Mail, Clock, ShoppingBag, Activity, X, MapPin, Tag, Plus, Sparkles, Loader2, Check, SquarePen, Pencil, FileText, Undo2 } from 'lucide-react';
+import { User, Mail, Clock, ShoppingBag, Activity, X, MapPin, Tag, Plus, Sparkles, Loader2, Check, SquarePen, Pencil, FileText, Undo2, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCustomerProfile } from '../../../hooks/inbox/useCustomerProfile';
 import { getInboxExternalImageUrl } from '../../../utils/imageUrl';
@@ -891,9 +891,22 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                                     #{order.orderNumber}
                                   </p>
                                   {(order as any).type === 'SERVICE' && (
-                                    <span className="rounded px-1.5 py-0.5 text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
-                                      🛠️ خدمة
-                                    </span>
+                                    <div className="flex items-center gap-1.5">
+                                      <span className="rounded px-1.5 py-0.5 text-[9px] font-bold bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+                                        🛠️ خدمة
+                                      </span>
+                                      <a
+                                        href={`/admin/service-orders/${order.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-[10px] text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5"
+                                        onClick={(e) => e.stopPropagation()}
+                                        title="فتح صفحة تفاصيل طلب الخدمة"
+                                      >
+                                        <span>تفاصيل</span>
+                                        <ExternalLink className="size-2.5" />
+                                      </a>
+                                    </div>
                                   )}
                                 </div>
                                 <p className="text-xs text-muted-foreground">
@@ -915,7 +928,14 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                                   ? ((order as any).serviceName || 'طلب خدمة')
                                   : `${order.items?.length || 0} منتجات`}
                               </span>
-                              <span className="font-bold text-primary">{order.total?.toLocaleString() || 0} ج.م</span>
+                              <div className="text-left">
+                                <span className="font-bold text-primary">{order.total?.toLocaleString() || 0} ج.م</span>
+                                {(order as any).type === 'SERVICE' && (order as any).paid > 0 && (
+                                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 block font-normal">
+                                    (مدفوع: {(order as any).paid} ج.م)
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
                         );

@@ -211,13 +211,20 @@ export default function DentalInvoicesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
+  const [uninvoicedSummary, setUninvoicedSummary] = useState<UninvoicedSummaryResult | null>(null);
   const [paymentInvoice, setPaymentInvoice] = useState<DentalInvoice | null>(null);
 
   const refresh = useCallback(async (opts?: { silent?: boolean }) => {
     try {
-      const [invs, cs] = await Promise.all([fetchInvoices(), fetchCases({ limit: 100 })]);
+      const [invs, cs, uninv] = await Promise.all([
+        fetchInvoices(),
+        fetchCases({ limit: 100 }),
+        fetchUninvoicedSummary().catch(() => null),
+      ]);
       setRows(invs);
       setCases(cs.data);
+      if (uninv) setUninvoicedSummary(uninv);
     } catch (e) {
       if (!opts?.silent) {
         setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));

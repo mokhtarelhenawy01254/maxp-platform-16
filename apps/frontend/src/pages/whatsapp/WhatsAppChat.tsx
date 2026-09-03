@@ -3305,6 +3305,7 @@ const WhatsAppChatContent: React.FC = () => {
         onClose={() => setShowServiceOrderModal(false)}
         customerName={selectedContact ? getContactName(selectedContact) : undefined}
         customerPhone={selectedContactPhoneNumber || undefined}
+        sessionId={targetSessionId || undefined}
         onOrderCreated={() => {
           setOrdersRefreshToken((prev) => prev + 1);
         }}

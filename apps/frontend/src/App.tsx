@@ -1138,6 +1138,9 @@ const ServiceOrderDetailPage = React.lazy(
 const ServiceManagementPage = React.lazy(
   () => import("./pages/admin/ServiceManagementPage"),
 );
+const ServiceOrdersSettingsPage = React.lazy(
+  () => import("./pages/admin/ServiceOrdersSettingsPage"),
+);
 const ServiceRequestForm = React.lazy(
   () => import("./pages/ServiceRequestForm"),
 );
@@ -7570,6 +7573,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <ServiceManagementPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/services/settings"
+                  element={
+                    <Layout fullWidth>
+                      <ServiceOrdersSettingsPage />
                     </Layout>
                   }
                 />

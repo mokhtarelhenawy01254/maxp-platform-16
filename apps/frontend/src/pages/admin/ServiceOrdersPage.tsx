@@ -5,14 +5,8 @@ import {
   Plus,
   Search,
   MessageCircle,
-  Share2,
   Trash2,
-  ExternalLink,
   ChevronLeft,
-  Clock,
-  CheckCircle2,
-  AlertCircle,
-  XCircle,
   Music,
   Video,
   FileText,
@@ -20,7 +14,10 @@ import {
   Loader2,
   X,
   Layers,
-  Sparkles
+  Settings,
+  CreditCard,
+  Receipt,
+  UserCheck
 } from "lucide-react";
 import { MediaUploadZone, ServiceMediaFile } from "../../components/services/MediaUploadZone";
 
@@ -47,6 +44,29 @@ const STATUS_MAP: Record<string, { label: string; color: string; badge: string }
   },
 };
 
+const PAYMENT_STATUS_MAP: Record<string, { label: string; color: string; badge: string }> = {
+  UNPAID: {
+    label: "غير مدفوع",
+    color: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300",
+    badge: "bg-rose-500"
+  },
+  PARTIALLY_PAID: {
+    label: "عربون / جزئي",
+    color: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300",
+    badge: "bg-amber-500"
+  },
+  PAID: {
+    label: "مدفوع بالكامل",
+    color: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300",
+    badge: "bg-emerald-500"
+  },
+  REFUNDED: {
+    label: "مسترد",
+    color: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300",
+    badge: "bg-gray-400"
+  }
+};
+
 const authHeaders = () => ({
   Authorization: `Bearer ${localStorage.getItem("token")}`,
   "Content-Type": "application/json"
@@ -56,9 +76,11 @@ export default function ServiceOrdersPage() {
   const navigate = useNavigate();
   const [orders, setOrders] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [paymentFilter, setPaymentFilter] = useState<string>("ALL");
 
   // Create Order Modal State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -69,13 +91,17 @@ export default function ServiceOrdersPage() {
     phone: "",
     description: "",
     notes: "",
-    assignedTo: ""
+    assignedTo: "",
+    totalAmount: "",
+    paidAmount: "",
+    paymentMethod: "VODAFONE_CASH"
   });
   const [createFiles, setCreateFiles] = useState<ServiceMediaFile[]>([]);
 
   useEffect(() => {
     fetchOrders();
     fetchServices();
+    fetchTeamMembers();
   }, []);
 
   const fetchOrders = async () => {
@@ -106,6 +132,16 @@ export default function ServiceOrdersPage() {
     }
   };
 
+  const fetchTeamMembers = async () => {
+    try {
+      const res = await fetch("/api/v1/service-orders/team-members", { headers: authHeaders() as any });
+      const data = await res.json();
+      if (data.success && Array.isArray(data.data)) {
+        setTeamMembers(data.data);
+      }
+    } catch (e) {}
+  };
+
   const updateStatus = async (id: string, status: string, e?: React.ChangeEvent<HTMLSelectElement>) => {
     if (e) e.stopPropagation();
     try {
@@ -117,7 +153,7 @@ export default function ServiceOrdersPage() {
       const data = await res.json();
       if (data.success) {
         toast.success("تم تحديث حالة الطلب");
-        setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+        setOrders((prev) => prev.map((o) => (o.id === id ? data.data : o)));
       } else {
         toast.error(data.error || "فشل تحديث الحالة");
       }
@@ -191,6 +227,9 @@ export default function ServiceOrdersPage() {
         } catch {}
       }
 
+      const totalVal = createForm.totalAmount ? Number(createForm.totalAmount) : undefined;
+      const paidVal = createForm.paidAmount ? Number(createForm.paidAmount) : 0;
+
       const res = await fetch("/api/v1/service-orders", {
         method: "POST",
         headers: authHeaders() as any,
@@ -201,8 +240,13 @@ export default function ServiceOrdersPage() {
           phone: createForm.phone.trim(),
           description: createForm.description.trim() || undefined,
           notes: createForm.notes.trim() || undefined,
-          assignedTo: createForm.assignedTo.trim() || undefined,
-          referenceFiles: createFiles
+          assignedTo: createForm.assignedTo || undefined,
+          referenceFiles: createFiles,
+          payment: {
+            totalAmount: totalVal,
+            paidAmount: paidVal,
+            paymentMethod: createForm.paymentMethod
+          }
         })
       });
 
@@ -216,7 +260,10 @@ export default function ServiceOrdersPage() {
           phone: "",
           description: "",
           notes: "",
-          assignedTo: ""
+          assignedTo: "",
+          totalAmount: "",
+          paidAmount: "",
+          paymentMethod: "VODAFONE_CASH"
         });
         setCreateFiles([]);
         fetchOrders();
@@ -236,23 +283,31 @@ export default function ServiceOrdersPage() {
       const matchesStatus =
         statusFilter === "ALL" ? true : order.status === statusFilter;
 
+      const orderPaymentStatus = order.payment?.paymentStatus || "UNPAID";
+      const matchesPayment =
+        paymentFilter === "ALL" ? true : orderPaymentStatus === paymentFilter;
+
       const q = searchQuery.toLowerCase().trim();
-      if (!q) return matchesStatus;
+      if (!q) return matchesStatus && matchesPayment;
 
       const shortId = (order.id || "").toLowerCase();
       const customerName = (order.customerName || "").toLowerCase();
       const phone = (order.phone || "").toLowerCase();
       const serviceName = (order.service?.name || "").toLowerCase();
+      const assigned = (order.assignedTo || "").toLowerCase();
+      const invoiceNo = (order.payment?.invoiceNumber || "").toLowerCase();
 
       const matchesSearch =
         shortId.includes(q) ||
         customerName.includes(q) ||
         phone.includes(q) ||
-        serviceName.includes(q);
+        serviceName.includes(q) ||
+        assigned.includes(q) ||
+        invoiceNo.includes(q);
 
-      return matchesStatus && matchesSearch;
+      return matchesStatus && matchesPayment && matchesSearch;
     });
-  }, [orders, statusFilter, searchQuery]);
+  }, [orders, statusFilter, paymentFilter, searchQuery]);
 
   // Metric stats
   const stats = useMemo(() => {
@@ -260,8 +315,9 @@ export default function ServiceOrdersPage() {
     const countNew = orders.filter((o) => o.status === "NEW").length;
     const inProgress = orders.filter((o) => o.status === "IN_PROGRESS").length;
     const completed = orders.filter((o) => o.status === "COMPLETED").length;
-    const cancelled = orders.filter((o) => o.status === "CANCELLED").length;
-    return { total, countNew, inProgress, completed, cancelled };
+    const unpaidCount = orders.filter((o) => (o.payment?.paymentStatus || "UNPAID") === "UNPAID").length;
+    const totalRevenue = orders.reduce((sum, o) => sum + (Number(o.payment?.paidAmount) || 0), 0);
+    return { total, countNew, inProgress, completed, unpaidCount, totalRevenue };
   }, [orders]);
 
   if (loading && orders.length === 0) {
@@ -285,25 +341,34 @@ export default function ServiceOrdersPage() {
             </span>
           </h1>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            إدارة ومتابعة طلبات الخدمات الإبداعية والمخصصة، معاينة وسائط العملاء، وتسليم الأعمال.
+            إدارة رحلة طلبات الخدمات، المرفقات الصوتية والمرئية، التحصيل المالي والفواتير، وتكليف فريق العمل.
           </p>
         </div>
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            to="/admin/services/settings"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 shadow-xs transition-colors"
+            title="إعدادات فريق العمل، الواتساب، والفواتير"
+          >
+            <Settings className="w-3.5 h-3.5 text-gray-600" />
+            <span>الإعدادات</span>
+          </Link>
+
           <button
             type="button"
             onClick={copyPublicLink}
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 shadow-xs transition-colors"
             title="نسخ رابط صفحة طلب الخدمة للعملاء"
           >
             <Copy className="w-3.5 h-3.5 text-primary-600" />
-            <span>رابط الطلب للعملاء</span>
+            <span>رابط الطلب</span>
           </button>
 
           <Link
             to="/admin/services"
-            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/60 shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 hover:bg-gray-50 shadow-xs transition-colors"
           >
             <Layers className="w-3.5 h-3.5 text-indigo-600" />
             <span>كتالوج الخدمات</span>
@@ -323,9 +388,9 @@ export default function ServiceOrdersPage() {
       {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3.5">
         <div
-          onClick={() => setStatusFilter("ALL")}
+          onClick={() => { setStatusFilter("ALL"); setPaymentFilter("ALL"); }}
           className={`p-3 rounded-2xl border cursor-pointer transition-all ${
-            statusFilter === "ALL"
+            statusFilter === "ALL" && paymentFilter === "ALL"
               ? "bg-primary-50/70 border-primary-300 dark:bg-primary-950/40 dark:border-primary-800 shadow-xs"
               : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300"
           }`}
@@ -379,37 +444,33 @@ export default function ServiceOrdersPage() {
         </div>
 
         <div
-          onClick={() => setStatusFilter("CANCELLED")}
+          onClick={() => setPaymentFilter(paymentFilter === "UNPAID" ? "ALL" : "UNPAID")}
           className={`p-3 rounded-2xl border cursor-pointer transition-all ${
-            statusFilter === "CANCELLED"
+            paymentFilter === "UNPAID"
               ? "bg-rose-50/70 border-rose-300 dark:bg-rose-950/40 dark:border-rose-800 shadow-xs"
               : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300"
           }`}
         >
-          <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 block">ملغية</span>
+          <span className="text-[11px] font-medium text-rose-600 dark:text-rose-400 block">بانتظار التحصيل</span>
           <span className="text-lg sm:text-xl font-bold text-rose-700 dark:text-rose-300 mt-0.5 block">
-            {stats.cancelled}
+            {stats.unpaidCount} طلب
           </span>
         </div>
       </div>
 
-      {/* Search Bar & Status Tabs */}
+      {/* Search Bar & Filters */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-gray-800 p-3 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xs">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="بحث برقم الطلب، اسم العميل، رقم الهاتف، أو اسم الخدمة..."
-            className="w-full pr-9 pl-3 py-2 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 focus:ring-2 focus:ring-primary-500 outline-hidden transition-all"
+            placeholder="بحث برقم الطلب، الفاتورة، العميل، الهاتف، الخدمة، أو المسؤول..."
+            className="w-full pr-9 pl-3 py-2 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 outline-hidden focus:ring-2 focus:ring-primary-500"
           />
           {searchQuery && (
-            <button
-              onClick={() => setSearchQuery("")}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={() => setSearchQuery("")} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
@@ -430,7 +491,7 @@ export default function ServiceOrdersPage() {
               className={`px-3 py-1.5 text-xs font-semibold rounded-xl whitespace-nowrap transition-all ${
                 statusFilter === tab.id
                   ? "bg-primary-600 text-white shadow-xs"
-                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
               }`}
             >
               {tab.label}
@@ -451,29 +512,14 @@ export default function ServiceOrdersPage() {
               ? "يمكنك البدء بإنشاء أول طلب خدمة يدوي، أو نسخ رابط صفحة الطلبات لمشاركتها مع عملائك عبر منصات التواصل."
               : "جرّب تغيير كلمات البحث أو إعادة ضبط فلتر الحالات للوصول إلى طلبات أخرى."}
           </p>
-          {orders.length === 0 && (
-            <div className="flex justify-center gap-2 pt-2">
-              <button
-                onClick={() => setShowCreateModal(true)}
-                className="px-4 py-2 bg-primary-600 text-white text-xs font-bold rounded-xl shadow-xs"
-              >
-                إنشاء أول طلب
-              </button>
-              <button
-                onClick={copyPublicLink}
-                className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-bold rounded-xl"
-              >
-                نسخ رابط الطلب
-              </button>
-            </div>
-          )}
         </div>
       ) : (
         <div className="space-y-3">
           {filteredOrders.map((o) => {
             const shortId = o.id ? `#${o.id.slice(-6).toUpperCase()}` : "";
             const statusConfig = STATUS_MAP[o.status] || STATUS_MAP.NEW;
-            const files = o.referenceFiles || [];
+            const payStatusConfig = PAYMENT_STATUS_MAP[o.payment?.paymentStatus] || PAYMENT_STATUS_MAP.UNPAID;
+            const files = o.files || o.referenceFiles || [];
 
             const audioCount = files.filter(
               (f: any) => f.type === "audio" || /\.(mp3|wav|ogg|m4a|aac)$/i.test(f.url)
@@ -492,7 +538,7 @@ export default function ServiceOrdersPage() {
                 className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 p-4 hover:border-primary-300 dark:hover:border-primary-700 shadow-xs hover:shadow-md transition-all cursor-pointer space-y-3"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  {/* Left info */}
+                  {/* Left Info */}
                   <div className="flex items-start gap-3 min-w-0 flex-1">
                     <div className="w-10 h-10 rounded-xl bg-primary-50 dark:bg-primary-950/40 text-primary-600 flex items-center justify-center text-lg font-bold shrink-0">
                       {o.service?.icon || "📋"}
@@ -509,11 +555,17 @@ export default function ServiceOrdersPage() {
                         <span className="text-xs text-gray-400" dir="ltr">
                           {o.phone}
                         </span>
-                        <span
-                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${statusConfig.color}`}
-                        >
+
+                        {/* Status Badge */}
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${statusConfig.color}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.badge}`}></span>
                           {statusConfig.label}
+                        </span>
+
+                        {/* Payment Status Badge */}
+                        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold border ${payStatusConfig.color}`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${payStatusConfig.badge}`}></span>
+                          {payStatusConfig.label}
                         </span>
                       </div>
 
@@ -521,6 +573,16 @@ export default function ServiceOrdersPage() {
                         <span className="font-semibold text-primary-700 dark:text-primary-400">
                           {o.service?.name || "خدمة"}
                         </span>
+                        {o.payment?.totalAmount > 0 && (
+                          <span className="font-bold text-gray-800 dark:text-gray-200">
+                            • {o.payment.totalAmount} ج.م
+                            {o.payment.paidAmount > 0 && (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-normal mr-1">
+                                (مدفوع: {o.payment.paidAmount} ج.م)
+                              </span>
+                            )}
+                          </span>
+                        )}
                         {o.description && (
                           <span className="text-gray-400 line-clamp-1">
                             — {o.description}
@@ -528,29 +590,30 @@ export default function ServiceOrdersPage() {
                         )}
                       </div>
 
-                      {/* Media Badges & Meta */}
-                      <div className="flex items-center gap-2.5 mt-2 text-[11px] text-gray-400 flex-wrap">
+                      {/* Meta Badges */}
+                      <div className="flex items-center gap-2 mt-2 text-[11px] text-gray-400 flex-wrap">
                         <span>{new Date(o.createdAt).toLocaleDateString("ar-EG")}</span>
                         {audioCount > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 rounded-md font-medium">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 text-purple-700 dark:bg-purple-950/40 rounded-md font-medium">
                             <Music className="w-3 h-3" />
-                            {audioCount} ملف صوتي
+                            {audioCount} صوت
                           </span>
                         )}
                         {videoCount > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300 rounded-md font-medium">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-rose-50 text-rose-700 dark:bg-rose-950/40 rounded-md font-medium">
                             <Video className="w-3 h-3" />
                             {videoCount} فيديو
                           </span>
                         )}
                         {imageCount > 0 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 rounded-md font-medium">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 text-blue-700 dark:bg-blue-950/40 rounded-md font-medium">
                             {imageCount} صور
                           </span>
                         )}
                         {o.assignedTo && (
-                          <span className="text-gray-500 dark:text-gray-400 font-medium">
-                            • المسؤول: {o.assignedTo}
+                          <span className="inline-flex items-center gap-1 text-gray-600 dark:text-gray-300 font-medium">
+                            <UserCheck className="w-3 h-3 text-primary-600" />
+                            المسؤول: {o.assignedTo}
                           </span>
                         )}
                       </div>
@@ -565,8 +628,8 @@ export default function ServiceOrdersPage() {
                     <button
                       type="button"
                       onClick={(e) => openWhatsAppChat(o, e)}
-                      title="محادثة واتساب سريعة مع العميل"
-                      className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-xl text-xs font-semibold transition-colors"
+                      title="محادثة واتساب سريعة"
+                      className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 rounded-xl text-xs font-semibold"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       <span>واتساب</span>
@@ -586,7 +649,7 @@ export default function ServiceOrdersPage() {
 
                     <Link
                       to={`/admin/service-orders/${o.id}`}
-                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-800 dark:text-gray-200 rounded-xl text-xs font-semibold transition-colors"
+                      className="flex items-center gap-1 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-xl text-xs font-semibold"
                       title="عرض تفاصيل الطلب الكاملة"
                     >
                       <span>تفاصيل</span>
@@ -596,7 +659,7 @@ export default function ServiceOrdersPage() {
                     <button
                       type="button"
                       onClick={(e) => deleteOrder(o.id, e)}
-                      className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors"
+                      className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl"
                       title="حذف الطلب"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -620,7 +683,6 @@ export default function ServiceOrdersPage() {
             onClick={(e) => e.stopPropagation()}
             dir="rtl"
           >
-            {/* Modal Header */}
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 dark:border-gray-700">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-primary-100 dark:bg-primary-950 text-primary-600 flex items-center justify-center">
@@ -633,13 +695,12 @@ export default function ServiceOrdersPage() {
               <button
                 type="button"
                 onClick={() => setShowCreateModal(false)}
-                className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg"
+                className="p-1.5 text-gray-400 hover:text-gray-600 rounded-lg"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Form */}
             <form onSubmit={handleCreateOrder} className="space-y-4">
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
@@ -648,8 +709,15 @@ export default function ServiceOrdersPage() {
                 <select
                   required
                   value={createForm.serviceId}
-                  onChange={(e) => setCreateForm({ ...createForm, serviceId: e.target.value })}
-                  className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500 outline-hidden"
+                  onChange={(e) => {
+                    const sel = services.find((s) => s.id === e.target.value);
+                    setCreateForm({
+                      ...createForm,
+                      serviceId: e.target.value,
+                      totalAmount: sel?.price ? String(sel.price) : createForm.totalAmount
+                    });
+                  }}
+                  className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
                 >
                   <option value="">-- اختر الخدمة المطلوبة --</option>
                   {services.map((s) => (
@@ -671,7 +739,7 @@ export default function ServiceOrdersPage() {
                     placeholder="الاسم الكامل للعميل"
                     value={createForm.customerName}
                     onChange={(e) => setCreateForm({ ...createForm, customerName: e.target.value })}
-                    className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500 outline-hidden"
+                    className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
                   />
                 </div>
 
@@ -685,9 +753,48 @@ export default function ServiceOrdersPage() {
                     placeholder="مثال: 01012345678"
                     value={createForm.phone}
                     onChange={(e) => setCreateForm({ ...createForm, phone: e.target.value })}
-                    className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500 outline-hidden"
+                    className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
                     dir="ltr"
                   />
+                </div>
+              </div>
+
+              {/* Financial Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-2xl bg-gray-50 dark:bg-gray-900/40 border border-gray-100 dark:border-gray-700">
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">السعر المتفق عليه (ج.م):</label>
+                  <input
+                    type="number"
+                    placeholder="مثال: 1500"
+                    value={createForm.totalAmount}
+                    onChange={(e) => setCreateForm({ ...createForm, totalAmount: e.target.value })}
+                    className="w-full p-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">المدفوع الآن (العربون):</label>
+                  <input
+                    type="number"
+                    placeholder="مثال: 500"
+                    value={createForm.paidAmount}
+                    onChange={(e) => setCreateForm({ ...createForm, paidAmount: e.target.value })}
+                    className="w-full p-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">طريقة التحصيل:</label>
+                  <select
+                    value={createForm.paymentMethod}
+                    onChange={(e) => setCreateForm({ ...createForm, paymentMethod: e.target.value })}
+                    className="w-full p-2 text-xs rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+                  >
+                    <option value="VODAFONE_CASH">فودافون كاش / محافظ</option>
+                    <option value="INSTAPAY">إنستاباي (InstaPay)</option>
+                    <option value="CASH">نقداً (كاش)</option>
+                    <option value="BANK_TRANSFER">تحويل بنكي</option>
+                  </select>
                 </div>
               </div>
 
@@ -697,20 +804,20 @@ export default function ServiceOrdersPage() {
                 </label>
                 <textarea
                   rows={2}
-                  placeholder="وصف تفاصيل الخدمة المتفق عليها، الشروط الخاصة، المراجع..."
+                  placeholder="وصف تفاصيل الخدمة المتفق عليها، الشروط الخاصة..."
                   value={createForm.description}
                   onChange={(e) => setCreateForm({ ...createForm, description: e.target.value })}
-                  className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200 focus:ring-2 focus:ring-primary-500 outline-hidden"
+                  className="w-full p-2.5 text-xs sm:text-sm rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
                 />
               </div>
 
-              {/* Rich Media Upload for audio, video, images */}
+              {/* Media upload */}
               <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
                 <MediaUploadZone
                   files={createFiles}
                   onChange={setCreateFiles}
                   label="رفع مرفقات الطلب (موسيقى، فيديوهات، صور، ملفات)"
-                  helperText="يمكنك رفع المراجع الموسيقية، لقطات الفيديو، أو ملفات التصميم المرتبطة بالطلب لمعاينتها فوراً."
+                  helperText="يمكنك رفع المراجع الموسيقية أو الفيديوهات أو ملفات التصميم المرتبطة بالطلب."
                 />
               </div>
 
@@ -724,7 +831,7 @@ export default function ServiceOrdersPage() {
                     placeholder="ملاحظات لا يراها العميل"
                     value={createForm.notes}
                     onChange={(e) => setCreateForm({ ...createForm, notes: e.target.value })}
-                    className="w-full p-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200"
+                    className="w-full p-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
                   />
                 </div>
 
@@ -732,13 +839,18 @@ export default function ServiceOrdersPage() {
                   <label className="text-xs font-semibold text-gray-700 dark:text-gray-300">
                     الموظف أو المنفّذ المسؤول
                   </label>
-                  <input
-                    type="text"
-                    placeholder="اسم المسؤول عن التنفيذ"
+                  <select
                     value={createForm.assignedTo}
                     onChange={(e) => setCreateForm({ ...createForm, assignedTo: e.target.value })}
-                    className="w-full p-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 text-gray-800 dark:text-gray-200"
-                  />
+                    className="w-full p-2.5 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50"
+                  >
+                    <option value="">-- اختيار مسؤول (أو اتركه للتكليف التلقائي) --</option>
+                    {teamMembers.map((m) => (
+                      <option key={m.id} value={m.name}>
+                        {m.name} ({m.role})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -747,14 +859,14 @@ export default function ServiceOrdersPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-xs font-semibold rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="px-4 py-2 text-xs font-semibold rounded-xl text-gray-600 dark:text-gray-300 hover:bg-gray-100"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={creating}
-                  className="flex items-center gap-1.5 px-5 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+                  className="flex items-center gap-1.5 px-5 py-2 bg-primary-600 hover:bg-primary-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-xs"
                 >
                   {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                   <span>حفظ وإنشاء الطلب</span>

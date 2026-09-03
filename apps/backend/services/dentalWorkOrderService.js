@@ -33,13 +33,10 @@ const fmtDate = (d) => {
   if (!d) return '—';
   const date = new Date(d);
   if (Number.isNaN(date.getTime())) return '—';
-  return date.toLocaleString('ar-EG', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}/${mm}/${dd}`;
 };
 
 const money = (v) => `${Math.round(Number(v) || 0)} ج.م`;
@@ -96,50 +93,54 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
       [AR('الحالة'), AR(STATUS_LABEL[c.status] || c.status || '—')],
     ];
 
-    const rowH = 18;
+    const rowH = 20;
     const halfW = pageWidth / 2;
     doc.rect(40, 118, pageWidth, rowH * 5 + 12).fill('#f9fafb').stroke('#e5e7eb');
     for (let i = 0; i < info.length; i++) {
       const [k, v] = info[i];
-      const col = i % 2;
+      const col = i % 2; // 0 = right column, 1 = left column in RTL
       const row = Math.floor(i / 2);
-      const x = 52 + col * halfW;
+      const colX = col === 0 ? 40 + halfW : 40;
       const yy = 124 + row * rowH;
-      doc.fontSize(8).fillColor('#6b7280').text(k, x, yy);
-      doc.fontSize(9).fillColor('#111827').text(v, x + 80, yy);
+      const labelW = 85;
+      const valW = halfW - labelW - 16;
+      doc.fontSize(8.5).fillColor('#6b7280').text(k, colX + valW + 4, yy, { width: labelW, align: 'right' });
+      doc.fontSize(9).fillColor('#111827').text(v, colX + 8, yy, { width: valW, align: 'right' });
     }
 
     // ── Amounts ──────────────────────────────────────────────
     let y = 124 + rowH * 5 + 20;
-    doc.fontSize(11).fillColor('#2563eb').text(AR('الملخص المالي'), 40, y);
+    doc.fontSize(11).fillColor('#2563eb').text(AR('الملخص المالي'), 40, y, { align: 'right', width: pageWidth });
     y += 18;
     const amounts = [
-      [AR('الإجمالي'), AR(money(c.total))],
-      [AR('المدفوع'), AR(money(c.paid))],
-      [AR('المتبقي'), AR(money(c.remaining))],
+      [AR('الإجمالي:'), AR(money(c.total))],
+      [AR('المدفوع:'), AR(money(c.paid))],
+      [AR('المتبقي:'), AR(money(c.remaining))],
     ];
-    doc.rect(40, y, pageWidth, 18 * amounts.length + 8).fill('#eff6ff').stroke('#bfdbfe');
+    doc.rect(40, y, pageWidth, 20 * amounts.length + 8).fill('#eff6ff').stroke('#bfdbfe');
     amounts.forEach(([k, v], i) => {
-      const yy = y + 6 + i * 18;
-      doc.fontSize(9).fillColor('#1e40af').text(k, 52, yy);
-      doc.fontSize(9).fillColor('#111827').text(v, 52 + 80, yy);
+      const yy = y + 6 + i * 20;
+      doc.fontSize(9).fillColor('#1e40af').text(k, 40 + pageWidth - 110, yy, { width: 100, align: 'right' });
+      doc.fontSize(9.5).fillColor('#111827').text(v, 52, yy, { width: pageWidth - 120, align: 'left' });
     });
-    y += 18 * amounts.length + 20;
+    y += 20 * amounts.length + 20;
 
     // ── Production stages ────────────────────────────────────
-    doc.fontSize(11).fillColor('#2563eb').text(AR('مراحل الإنتاج'), 40, y);
+    doc.fontSize(11).fillColor('#2563eb').text(AR('مراحل الإنتاج والتكليفات'), 40, y, { align: 'right', width: pageWidth });
     y += 18;
     const stages = Array.isArray(c.stages) ? c.stages : [];
     if (stages.length) {
-      const colW = [pageWidth * 0.45, pageWidth * 0.3, pageWidth * 0.25];
+      const colW = [pageWidth * 0.40, pageWidth * 0.30, pageWidth * 0.30];
       const tableX = 40;
       doc.rect(tableX, y, pageWidth, 20).fill('#eff6ff').stroke('#bfdbfe');
-      const headers = [AR('المرحلة'), AR('الحالة'), AR('المسؤول')];
-      let hx = tableX;
+      const headers = [
+        { title: AR('المسؤول'), x: tableX, w: colW[2] },
+        { title: AR('الحالة'), x: tableX + colW[2], w: colW[1] },
+        { title: AR('المرحلة'), x: tableX + colW[2] + colW[1], w: colW[0] },
+      ];
       doc.fontSize(9).fillColor('#1e40af');
-      headers.forEach((h, i) => {
-        doc.text(h, hx + 4, y + 6, { width: colW[i] - 8 });
-        hx += colW[i];
+      headers.forEach((h) => {
+        doc.text(h.title, h.x + 4, y + 6, { width: h.w - 8, align: 'right' });
       });
       y += 20;
       stages.forEach((stage, idx) => {
@@ -147,13 +148,13 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
         if (idx % 2 === 1) doc.rect(tableX, y, pageWidth, 18).fill('#fafafa');
         doc.rect(tableX, y, pageWidth, 18).stroke('#e5e7eb');
         doc.fontSize(9);
-        doc.fillColor('#111827').text(AR(stage.name || '—'), tableX + 4, y + 5, { width: colW[0] - 8 });
-        doc.fillColor('#374151').text(AR(STAGE_STATUS_LABEL[stage.status] || stage.status || '—'), tableX + colW[0] + 4, y + 5, { width: colW[1] - 8 });
-        doc.fillColor('#4b5563').text(AR(stage.assigneeName || '—'), tableX + colW[0] + colW[1] + 4, y + 5, { width: colW[2] - 8 });
+        doc.fillColor('#4b5563').text(AR(stage.assigneeName || '—'), tableX + 4, y + 5, { width: colW[2] - 8, align: 'right' });
+        doc.fillColor('#374151').text(AR(STAGE_STATUS_LABEL[stage.status] || stage.status || '—'), tableX + colW[2] + 4, y + 5, { width: colW[1] - 8, align: 'right' });
+        doc.fillColor('#111827').text(AR(stage.name || '—'), tableX + colW[2] + colW[1] + 4, y + 5, { width: colW[0] - 8, align: 'right' });
         y += 18;
       });
     } else {
-      doc.fontSize(9).fillColor('#9ca3af').text(AR('لا توجد مراحل'), 40, y);
+      doc.fontSize(9).fillColor('#9ca3af').text(AR('لا توجد مراحل'), 40, y, { align: 'right', width: pageWidth });
       y += 20;
     }
 
@@ -309,9 +310,10 @@ async function generatePanLabelPdf({ company, caseRow, workOrderHeader }) {
 
     const printLine = (label, val, bold = false) => {
       if (!val || val === '—') return;
-      doc.fontSize(7).fillColor('#4b5563').text(AR(label + ':'), rightX, y, { width: 32, align: 'right' });
-      doc.fontSize(bold ? 8 : 7.5).fillColor('#111827').text(AR(val), rightX + 34, y, { width: rightW - 34, align: 'right' });
-      y += 12;
+      const lineText = `${label}: ${val}`;
+      doc.fontSize(bold ? 8 : 7.5).fillColor(bold ? '#1e40af' : '#111827');
+      doc.text(AR(lineText), rightX, y, { width: rightW, align: 'right' });
+      y += 13;
     };
 
     printLine('الطبيب', c.doctorName || (c.doctor && c.doctor.name) || '—', true);
@@ -320,7 +322,7 @@ async function generatePanLabelPdf({ company, caseRow, workOrderHeader }) {
     printLine('الأسنان', [c.teeth, c.shade && `(${c.shade})`].filter(Boolean).join(' '));
 
     const priorityStr = c.priority && c.priority !== 'NORMAL' ? `[${PRIORITY_LABEL[c.priority] || c.priority}] ` : '';
-    const dueStr = c.dueDate ? new Date(c.dueDate).toLocaleDateString('ar-EG') : '—';
+    const dueStr = c.dueDate ? fmtDate(c.dueDate) : '—';
     printLine('التسليم', priorityStr + dueStr, Boolean(priorityStr));
 
     doc.end();
