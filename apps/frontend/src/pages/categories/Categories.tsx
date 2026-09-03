@@ -192,8 +192,7 @@ const Categories: React.FC = () => {
             )}
           </div>
         ) : (
-          <>
-            {/* Mobile cards — visible only on small screens */}
+          <React.Fragment>
             <div className="cat-cards-list">
               {filteredCategories.map((cat) => (
                 <div key={cat.id} className="cat-card">
@@ -242,8 +241,6 @@ const Categories: React.FC = () => {
                 </div>
               ))}
             </div>
-
-            {/* Desktop table — hidden on mobile */}
             <div className="table-responsive">
               <table className="categories-table">
                 <thead>
@@ -304,7 +301,7 @@ const Categories: React.FC = () => {
                 </tbody>
               </table>
             </div>
-          </>
+          </React.Fragment>
         )}
       </div>
 
