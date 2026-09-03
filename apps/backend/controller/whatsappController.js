@@ -2317,9 +2317,9 @@ async function deleteMessage(req, res) {
 async function forwardMessage(req, res) {
     try {
         const { companyId } = req.user;
-        const { sessionId, to, message } = req.body;
+        const { sessionId, to, message, messageId } = req.body;
 
-        if (!sessionId || !to || !message) {
+        if (!sessionId || !to || (!message && !messageId)) {
             return res.status(400).json({ error: 'البيانات غير مكتملة' });
         }
 
@@ -2333,12 +2333,51 @@ async function forwardMessage(req, res) {
             return res.status(404).json({ error: 'الجلسة غير موجودة' });
         }
 
-        await WhatsAppManager.forwardMessage(targetSessionId, to, message);
+        if (message) {
+            await WhatsAppManager.forwardMessage(targetSessionId, to, message);
+            return res.json({ success: true });
+        }
+
+        if (messageId) {
+            const dbMsg = await getSharedPrismaClient().whatsAppMessage.findFirst({
+                where: { messageId }
+            });
+
+            if (!dbMsg) {
+                return res.status(404).json({ error: 'الرسالة غير موجودة' });
+            }
+
+            const senderId = req.body.userId || req.user?.userId;
+
+            if (dbMsg.mediaUrl) {
+                const mediaType = (dbMsg.mediaType || dbMsg.messageType || 'IMAGE').toUpperCase();
+                let sentMsg;
+                if (mediaType.includes('IMAGE')) {
+                    sentMsg = await WhatsAppMessageHandler.sendImage(targetSessionId, to, dbMsg.mediaUrl, dbMsg.content);
+                } else if (mediaType.includes('VIDEO')) {
+                    sentMsg = await WhatsAppMessageHandler.sendVideo(targetSessionId, to, dbMsg.mediaUrl, dbMsg.content);
+                } else if (mediaType.includes('AUDIO')) {
+                    sentMsg = await WhatsAppMessageHandler.sendAudio(targetSessionId, to, dbMsg.mediaUrl);
+                } else {
+                    sentMsg = await WhatsAppMessageHandler.sendDocument(targetSessionId, to, dbMsg.mediaUrl, {
+                        caption: dbMsg.content,
+                        fileName: dbMsg.mediaFileName
+                    });
+                }
+                return res.json({ success: true, message: sentMsg });
+            } else {
+                const sentMsg = await WhatsAppMessageHandler.sendText(targetSessionId, to, dbMsg.content || '', {
+                    senderId,
+                    typingSimulation: false
+                });
+                return res.json({ success: true, message: sentMsg });
+            }
+        }
 
         res.json({ success: true });
     } catch (error) {
         console.error('❌ Error forwarding message:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء إعادة توجيه الرسالة' });
+        res.status(500).json({ error: error?.message || 'حدث خطأ أثناء إعادة توجيه الرسالة' });
     }
 }
 

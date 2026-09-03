@@ -3,8 +3,8 @@ module.exports = {
         {
             name: 'maxp-backend',
             script: 'server.js',
-            instances: 3,
-            exec_mode: 'cluster',
+            instances: 1,
+            exec_mode: 'fork',
             autorestart: true,
             watch: false,
             // 2026 hardening: baseline RSS is ~800-1100MB (WhatsApp sessions +
