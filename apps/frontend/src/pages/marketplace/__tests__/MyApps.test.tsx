@@ -246,5 +246,41 @@ describe("MyApps Page Redesign", () => {
         expect(screen.getByText("تصفح متجر التطبيقات الآن")).toBeDefined();
       });
     });
+
+    it("supports bulk selection and toggles bulk actions bar", async () => {
+      mockApiGet.mockResolvedValue({
+        data: {
+          success: true,
+          data: mockApps,
+        },
+      });
+
+      render(
+        <MemoryRouter>
+          <MyApps />
+        </MemoryRouter>
+      );
+
+      await screen.findByText("عروض الكميات المتقدمة");
+
+      // Initially no bulk bar
+      expect(screen.queryByTestId("bulk-actions-bar")).toBeNull();
+
+      // Click select all
+      const selectAllBtn = await screen.findByTestId("select-all-btn");
+      fireEvent.click(selectAllBtn);
+
+      // Bulk bar appears with count 3
+      const bulkBar = await screen.findByTestId("bulk-actions-bar");
+      expect(bulkBar).toBeDefined();
+      expect(screen.getByTestId("bulk-export-btn")).toBeDefined();
+      expect(screen.getByTestId("bulk-uninstall-btn")).toBeDefined();
+
+      // Clear selection
+      const clearBtn = screen.getByTestId("bulk-clear-btn");
+      fireEvent.click(clearBtn);
+
+      expect(screen.queryByTestId("bulk-actions-bar")).toBeNull();
+    });
   });
 });

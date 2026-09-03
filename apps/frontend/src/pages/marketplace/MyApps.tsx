@@ -11,13 +11,15 @@ import {
   ExternalLink, Sparkles, TrendingUp,
   SlidersHorizontal, Users, MessageSquare,
   Bot, DollarSign, Layers, Truck, Activity,
-  ChevronLeft, ArrowUpDown, Plus
+  ChevronLeft, ArrowUpDown, Plus,
+  Download, Trash2, CheckSquare, Square
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -207,6 +209,11 @@ export function MyApps() {
   const [confirmUninstall, setConfirmUninstall] = useState<InstalledApp | null>(null);
   const [selectedAppForDrawer, setSelectedAppForDrawer] = useState<InstalledApp | null>(null);
 
+  // Bulk Actions State
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBulkUninstall, setConfirmBulkUninstall] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+
   const fetchApps = useCallback(async (showRefreshingSpinner = false) => {
     if (showRefreshingSpinner) setIsRefreshing(true);
     else setLoading(true);
@@ -250,6 +257,69 @@ export function MyApps() {
       setUninstallingId(null);
       setConfirmUninstall(null);
     }
+  };
+
+  const toggleSelectApp = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkUninstall = async () => {
+    if (selectedIds.size === 0) return;
+    setIsBulkDeleting(true);
+    const selectedApps = apps.filter((a) => selectedIds.has(a.id));
+    let successCount = 0;
+
+    await Promise.allSettled(
+      selectedApps.map(async (installed) => {
+        try {
+          await apiClient.post(`/marketplace/apps/${installed.app.slug}/uninstall`);
+          successCount++;
+        } catch (e) {
+          console.error("Failed to uninstall", installed.app.slug, e);
+        }
+      })
+    );
+
+    toast.success(`تم إلغاء تفعيل ${successCount} أداة بنجاح`);
+    setApps((prev) => prev.filter((a) => !selectedIds.has(a.id)));
+    setSelectedIds(new Set());
+    setIsBulkDeleting(false);
+    setConfirmBulkUninstall(false);
+  };
+
+  const handleExportSelected = () => {
+    const selectedApps = apps.filter((a) => selectedIds.has(a.id));
+    if (selectedApps.length === 0) return;
+    const headers = "اسم الأداة,الفئة,الحالة,نموذج التسعير,استهلاك الشهر (ج.م)\n";
+    const rows = selectedApps.map((a) => {
+      const name = `"${(a.app.name || "").replace(/"/g, '""')}"`;
+      const category = `"${a.app.category || ""}"`;
+      const status = a.status === "ACTIVE" ? "نشط" : a.status === "TRIAL" ? "تجريبي" : "متوقف";
+      const pricing = a.activePricingModel === "FREE" ? "مجاني" : a.activePricingModel === "PAY_PER_USE" ? "حسب الاستخدام" : "شهري";
+      const cost = Number(a.monthlyUsage?.totalCost || 0).toFixed(2);
+      return `${name},${category},${status},${pricing},${cost}`;
+    }).join("\n");
+
+    const blob = new Blob(["\uFEFF" + headers + rows], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `selected_apps_${new Date().toISOString().split("T")[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success("تم تصدير ملخص الأدوات المحددة بنجاح");
   };
 
   // Extract categories dynamically
@@ -319,6 +389,29 @@ export function MyApps() {
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
   }, [apps, statusFilter, categoryFilter, search, sortBy]);
+
+  const isAllVisibleSelected = useMemo(() => {
+    if (filteredApps.length === 0) return false;
+    return filteredApps.every((a) => selectedIds.has(a.id));
+  }, [filteredApps, selectedIds]);
+
+  const toggleSelectAllVisible = useCallback(() => {
+    const visibleIds = filteredApps.map((a) => a.id);
+    const allSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visibleIds.forEach((id) => next.delete(id));
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        visibleIds.forEach((id) => next.add(id));
+        return next;
+      });
+    }
+  }, [filteredApps, selectedIds]);
 
   const renderSkeleton = () => (
     <div className="min-h-full bg-background">
@@ -540,6 +633,33 @@ export function MyApps() {
                   <List size={16} />
                 </button>
               </div>
+
+              {/* Select All Visible */}
+              {filteredApps.length > 0 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={toggleSelectAllVisible}
+                  data-testid="select-all-btn"
+                  className={cn(
+                    "h-9 rounded-2xl text-xs font-bold gap-1.5 px-3 border-border/50 transition-all",
+                    isAllVisibleSelected
+                      ? "bg-primary/10 text-primary border-primary/30"
+                      : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title={isAllVisibleSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
+                >
+                  {isAllVisibleSelected ? (
+                    <CheckSquare size={14} className="text-primary" />
+                  ) : (
+                    <Square size={14} />
+                  )}
+                  <span className="hidden sm:inline">
+                    {isAllVisibleSelected ? "إلغاء التحديد" : "تحديد الكل"}
+                  </span>
+                </Button>
+              )}
             </div>
           </div>
 
@@ -730,11 +850,17 @@ export function MyApps() {
               const trialDays = getDaysRemaining(installed.trialEndsAt);
               const destination = getAppDestination(installed.app);
               const catConf = CATEGORY_CONFIG[installed.app.category?.toUpperCase() || ""];
+              const isSelected = selectedIds.has(installed.id);
 
               return (
                 <div
                   key={installed.id}
-                  className="group relative rounded-2xl border border-border/30 bg-card hover:shadow-md hover:border-border/60 transition-all duration-200 flex flex-col justify-between overflow-hidden"
+                  className={cn(
+                    "group relative rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden",
+                    isSelected
+                      ? "border-primary ring-2 ring-primary/20 bg-primary/[0.03] shadow-md"
+                      : "border-border/30 bg-card hover:shadow-md hover:border-border/60"
+                  )}
                 >
                   {/* Status Indicator Bar */}
                   <div className={cn("h-1 w-full shrink-0", statusConf.barClass)} />
@@ -743,7 +869,18 @@ export function MyApps() {
                     {/* Header */}
                     <div>
                       <div className="flex items-start justify-between gap-2 mb-2.5">
-                        <div className="flex items-center gap-3 min-w-0">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div
+                            onClick={(e) => toggleSelectApp(installed.id, e)}
+                            className="cursor-pointer shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors"
+                            title={isSelected ? "إلغاء تحديد الأداة" : "تحديد الأداة"}
+                          >
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => toggleSelectApp(installed.id)}
+                              className="size-4 rounded-md cursor-pointer"
+                            />
+                          </div>
                           <div className={cn("size-11 rounded-2xl flex items-center justify-center shrink-0 border border-border/30 bg-muted/30 overflow-hidden")}>
                             {installed.app.icon && installed.app.icon.startsWith("http") ? (
                               <img src={installed.app.icon} alt="" className="size-7 object-contain rounded" />
@@ -912,13 +1049,28 @@ export function MyApps() {
               const trialDays = getDaysRemaining(installed.trialEndsAt);
               const destination = getAppDestination(installed.app);
               const catConf = CATEGORY_CONFIG[installed.app.category?.toUpperCase() || ""];
+              const isSelected = selectedIds.has(installed.id);
 
               return (
                 <div
                   key={installed.id}
-                  className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-muted/20 transition-colors"
+                  className={cn(
+                    "p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors",
+                    isSelected ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-muted/20"
+                  )}
                 >
-                  <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      onClick={(e) => toggleSelectApp(installed.id, e)}
+                      className="cursor-pointer shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors"
+                      title={isSelected ? "إلغاء تحديد الأداة" : "تحديد الأداة"}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelectApp(installed.id)}
+                        className="size-4 rounded-md cursor-pointer"
+                      />
+                    </div>
                     <div className="size-10 rounded-xl bg-muted/40 border border-border/30 flex items-center justify-center shrink-0">
                       {installed.app.icon && installed.app.icon.startsWith("http") ? (
                         <img src={installed.app.icon} alt="" className="size-6 object-contain rounded" />
@@ -1197,6 +1349,106 @@ export function MyApps() {
               className="rounded-xl bg-destructive hover:bg-destructive/90 font-bold text-xs flex-1"
             >
               {t("marketplace.confirmDeactivation", "تأكيد إلغاء التفعيل")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Floating Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div
+          data-testid="bulk-actions-bar"
+          className="fixed bottom-5 left-1/2 -translate-x-1/2 z-40 bg-card/95 backdrop-blur-md border border-border/80 shadow-2xl rounded-2xl p-3 px-4 sm:px-5 flex items-center gap-2.5 sm:gap-4 max-w-[95vw] sm:max-w-2xl animate-in fade-in slide-in-from-bottom-5"
+          dir="rtl"
+        >
+          <div className="flex items-center gap-2 shrink-0">
+            <Badge className="bg-primary text-primary-foreground font-black px-2.5 py-1 text-xs rounded-lg">
+              {selectedIds.size}
+            </Badge>
+            <span className="text-xs font-bold text-foreground hidden sm:inline">أدوات محددة</span>
+          </div>
+
+          <div className="h-4 w-px bg-border/80 hidden sm:block shrink-0" />
+
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 rounded-xl text-xs font-bold gap-1.5 px-3"
+              onClick={handleExportSelected}
+              data-testid="bulk-export-btn"
+            >
+              <Download size={13} />
+              <span>تصدير CSV</span>
+            </Button>
+
+            <Button
+              size="sm"
+              variant="destructive"
+              className="h-8 rounded-xl text-xs font-bold gap-1.5 px-3 bg-destructive hover:bg-destructive/90"
+              onClick={() => setConfirmBulkUninstall(true)}
+              data-testid="bulk-uninstall-btn"
+            >
+              <Trash2 size={13} />
+              <span>إلغاء التفعيل للمحددة</span>
+            </Button>
+
+            <Button
+              size="sm"
+              variant="ghost"
+              className="h-8 rounded-xl text-xs text-muted-foreground hover:text-foreground px-2"
+              onClick={clearSelection}
+              data-testid="bulk-clear-btn"
+            >
+              <X size={13} />
+              <span className="hidden sm:inline">إلغاء التحديد</span>
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialog for Bulk Uninstall */}
+      <AlertDialog open={confirmBulkUninstall} onOpenChange={setConfirmBulkUninstall}>
+        <AlertDialogContent className="rounded-2xl text-right max-w-md" dir="rtl">
+          <AlertDialogHeader>
+            <div className="mx-auto mb-3 flex size-14 items-center justify-center rounded-full bg-destructive/10">
+              <Trash2 size={28} className="text-destructive" />
+            </div>
+            <AlertDialogTitle className="text-center font-black text-base sm:text-lg">
+              إلغاء تفعيل {selectedIds.size} أداة دفعة واحدة؟
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-center text-xs text-muted-foreground leading-relaxed">
+              سيتم إيقاف التطبيقات المحددة وإلغاء تفعيلها من متجرك. يمكنك دائماً إعادة تفعيلها من المتجر في أي وقت.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <div className="max-h-44 overflow-y-auto rounded-xl bg-muted/40 p-2.5 space-y-1.5 text-xs">
+            {apps
+              .filter((a) => selectedIds.has(a.id))
+              .map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center justify-between text-muted-foreground font-semibold px-2.5 py-1.5 bg-card rounded-lg border border-border/30"
+                >
+                  <span className="text-foreground font-bold">{a.app.name}</span>
+                  <Badge variant="outline" className="text-[10px] font-semibold">
+                    {a.app.category || "عام"}
+                  </Badge>
+                </div>
+              ))}
+          </div>
+
+          <AlertDialogFooter className="gap-2 sm:gap-3 flex-row justify-center pt-2">
+            <AlertDialogCancel className="rounded-xl font-semibold text-xs flex-1" disabled={isBulkDeleting}>
+              إلغاء
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleBulkUninstall}
+              disabled={isBulkDeleting}
+              className="rounded-xl bg-destructive hover:bg-destructive/90 font-bold text-xs flex-1 gap-1.5"
+            >
+              {isBulkDeleting && <Loader2 size={13} className="animate-spin" />}
+              <span>تأكيد الإلغاء الجماعي</span>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
