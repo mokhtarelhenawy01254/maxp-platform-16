@@ -299,6 +299,7 @@ const applyPdpQuickOrderSettingsToStorefrontSettings = (
               surfaceMode: normalizedSettings.surfaceMode,
               showQuantity: normalizedSettings.showQuantity,
               showOrderSummary: normalizedSettings.showOrderSummary,
+              autoSelectVariants: normalizedSettings.autoSelectVariants,
               fields: normalizedSettings.fields,
             },
           };

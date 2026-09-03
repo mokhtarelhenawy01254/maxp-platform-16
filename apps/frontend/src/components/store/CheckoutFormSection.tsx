@@ -57,7 +57,10 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
       return;
     }
 
-    const currentField = pdpQuickOrderSettings.fields[fieldKey];
+    const currentField =
+      pdpQuickOrderSettings.fields?.[fieldKey] ||
+      DEFAULT_PDP_QUICK_ORDER_SETTINGS.fields[fieldKey] ||
+      { enabled: true, required: true };
     const nextField = {
       ...currentField,
       [settingKey]: value,
@@ -70,7 +73,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
     onPdpQuickOrderSettingsChange({
       ...pdpQuickOrderSettings,
       fields: {
-        ...pdpQuickOrderSettings.fields,
+        ...(pdpQuickOrderSettings.fields || {}),
         [fieldKey]: nextField,
       },
     });
@@ -101,7 +104,10 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
       return null;
     }
 
-    const fieldSettings = pdpQuickOrderSettings.fields[fieldKey];
+    const fieldSettings =
+      pdpQuickOrderSettings.fields?.[fieldKey] ||
+      DEFAULT_PDP_QUICK_ORDER_SETTINGS.fields[fieldKey] ||
+      { enabled: true, required: true };
 
     return (
       <div className="group bg-white dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300">
@@ -119,7 +125,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
           <div className="flex items-center gap-6 bg-gray-50 dark:bg-gray-900/40 p-2 px-4 rounded-xl shrink-0">
             <ToggleSetting
               label={t("storeCheckout.enable")}
-              value={fieldSettings.enabled}
+              value={fieldSettings.enabled ?? false}
               onChange={(value) =>
                 handleQuickOrderFieldToggle(fieldKey, "enabled", value)
               }
@@ -133,7 +139,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
             {fieldSettings.enabled ? (
               <ToggleSetting
                 label={t("storeCheckout.mandatory")}
-                value={fieldSettings.required}
+                value={fieldSettings.required ?? false}
                 onChange={(value) =>
                   handleQuickOrderFieldToggle(fieldKey, "required", value)
                 }
@@ -278,7 +284,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
               <div className="group bg-white dark:bg-gray-800/50 rounded-2xl p-5 border border-gray-100 dark:border-gray-700/50 hover:border-indigo-200 dark:hover:border-indigo-500/30 transition-all duration-300 space-y-4">
                 <ToggleSetting
                   label={t("storeCheckout.showQuantity")}
-                  value={pdpQuickOrderSettings.showQuantity}
+                  value={pdpQuickOrderSettings.showQuantity ?? true}
                   onChange={(value) =>
                     onPdpQuickOrderSettingsChange({
                       ...pdpQuickOrderSettings,
@@ -289,7 +295,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                 />
                 <ToggleSetting
                   label={t("storeCheckout.showOrderSummary")}
-                  value={pdpQuickOrderSettings.showOrderSummary}
+                  value={pdpQuickOrderSettings.showOrderSummary ?? true}
                   onChange={(value) =>
                     onPdpQuickOrderSettingsChange({
                       ...pdpQuickOrderSettings,
@@ -300,7 +306,7 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                 />
                 <ToggleSetting
                   label={t("storeCheckout.autoSelectVariants")}
-                  value={pdpQuickOrderSettings.autoSelectVariants}
+                  value={pdpQuickOrderSettings.autoSelectVariants ?? true}
                   onChange={(value) =>
                     onPdpQuickOrderSettingsChange({
                       ...pdpQuickOrderSettings,
