@@ -995,7 +995,7 @@ const OrderDetails: React.FC = () => {
           {/* Unified Multi-Carrier Shipping Panel */}
           <UnifiedShippingCard
             order={order}
-            onOrderUpdated={fetchOrder}
+            onOrderUpdated={fetchOrderDetails}
             canManageShipments={canManageTurboShipping}
           />
         </div>
