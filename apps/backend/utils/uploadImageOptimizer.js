@@ -42,17 +42,25 @@ const isOptimizableUploadImage = (sourceFilePath) => {
   return OPTIMIZABLE_EXTENSIONS.has(extension);
 };
 
-const parseUploadOptimizationQuery = (query = {}) => {
+const parseUploadOptimizationQuery = (query = {}, acceptHeader = '', sourceFilePath = '') => {
   const hasTransformHint = ['w', 'width', 'q', 'quality', 'format', 'fm'].some((key) => {
     const value = query?.[key];
     return value !== undefined && value !== null && value !== '';
   });
 
-  if (!hasTransformHint) {
+  const ext = sourceFilePath ? path.extname(sourceFilePath).toLowerCase() : '';
+  const canAutoWebp =
+    (ext === '.jpg' || ext === '.jpeg' || ext === '.png') &&
+    typeof acceptHeader === 'string' &&
+    acceptHeader.includes('image/webp');
+
+  if (!hasTransformHint && !canAutoWebp) {
     return null;
   }
 
-  const requestedFormat = String(query.format || query.fm || DEFAULT_FORMAT).trim().toLowerCase();
+  const requestedFormat = String(
+    query.format || query.fm || (canAutoWebp ? 'webp' : DEFAULT_FORMAT)
+  ).trim().toLowerCase();
   const width = clampInteger(query.w ?? query.width, MIN_WIDTH, MAX_WIDTH) ?? DEFAULT_WIDTH;
   const quality = clampInteger(query.q ?? query.quality, MIN_QUALITY, MAX_QUALITY) ?? DEFAULT_QUALITY;
 
@@ -136,8 +144,9 @@ const writeOptimizedVariant = async (sourceFilePath, variantFilePath, options) =
 const resolveOptimizedUploadVariant = async ({
   sourceFilePath,
   query,
+  acceptHeader,
 }) => {
-  const options = parseUploadOptimizationQuery(query);
+  const options = parseUploadOptimizationQuery(query, acceptHeader, sourceFilePath);
   if (!options || !isOptimizableUploadImage(sourceFilePath)) {
     return null;
   }

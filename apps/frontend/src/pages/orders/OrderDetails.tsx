@@ -17,6 +17,7 @@ import OrderItemsCard from "./components/OrderItemsCard";
 import CustomerInfoCard from "./components/CustomerInfoCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
 import BostaShippingPanel from "./components/BostaShippingPanel";
+import UnifiedShippingCard from "./components/UnifiedShippingCard";
 import OrderActivityLog from "./components/OrderActivityLog";
 import OrderSourceCard from "./components/OrderSourceCard";
 import OrderAttributionCard from "./components/OrderAttributionCard";
@@ -991,36 +992,10 @@ const OrderDetails: React.FC = () => {
             />
           )}
 
-          {/* Bosta Shipping Panel */}
-          {showPartnerOperationsCard && (
-            <BostaShippingPanel
-              order={order}
-              bostaShipment={bostaShipment}
-              bostaLoading={bostaLoading}
-              onCreateShipment={createBostaShipment}
-              onPrintAWB={printBostaAWB}
-              onCancelShipment={cancelBostaShipment}
-              canManageShipments={canManageTurboShipping}
-            />
-          )}
-
-          {/* Turbo Shipping Panel */}
-          <TurboShippingPanel
+          {/* Unified Multi-Carrier Shipping Panel */}
+          <UnifiedShippingCard
             order={order}
-            turboTrackingData={turboTrackingData}
-            shippingComparison={shippingComparison}
-            loadingComparison={false}
-            turboLoading={turboLoading}
-            onCreateShipment={handleCreateShipment}
-            onUpdateShipment={updateShipment}
-            onSyncStatus={syncStatus}
-            onPrintWaybill={() => {
-              void getWaybill();
-            }}
-            onCancelShipment={() => setShowCancelShipmentModal(true)}
-            onUnlinkShipment={() => setShowUnlinkShipmentModal(true)}
-            onRecreateShipment={() => setShowRecreateShipmentModal(true)}
-            onCalculateShipping={handleCalculateShipping}
+            onOrderUpdated={fetchOrder}
             canManageShipments={canManageTurboShipping}
           />
         </div>

@@ -759,12 +759,14 @@ app.use("/uploads", async (req, res, next) => {
     const optimizedVariant = await resolveOptimizedUploadVariant({
       sourceFilePath: resolvedUploadFile,
       query: req.query,
+      acceptHeader: req.headers['accept'],
     });
 
     const fileToSend = optimizedVariant?.filePath || resolvedUploadFile;
     const cacheControl =
       optimizedVariant?.cacheControl || "public, max-age=2592000, immutable";
 
+    res.setHeader("Vary", "Accept");
     res.setHeader("Cache-Control", cacheControl);
     if (optimizedVariant?.contentType) {
       res.setHeader("Content-Type", optimizedVariant.contentType);

@@ -383,6 +383,9 @@ const TurboTickets = React.lazy(() => import("./pages/tickets/TurboTickets"));
 const ShippingCompanies = React.lazy(
   () => import("./pages/shipping/ShippingCompanies"),
 );
+const UnifiedShipmentsPage = React.lazy(
+  () => import("./pages/orders/UnifiedShipmentsPage"),
+);
 const ShippingCompanyDetail = React.lazy(
   () => import("./pages/shipping/ShippingCompanyDetail"),
 );
@@ -4589,10 +4592,26 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/orders/shipments"
+                  element={
+                    <Layout>
+                      <UnifiedShipmentsPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/orders/turbo-records"
                   element={
                     <Layout>
-                      <TurboRecords />
+                      <UnifiedShipmentsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/orders/bosta-records"
+                  element={
+                    <Layout>
+                      <UnifiedShipmentsPage />
                     </Layout>
                   }
                 />
