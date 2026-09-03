@@ -102,7 +102,7 @@ describe('analyticsService.getProductSalesPerformance - trash and invalid exclus
         where: expect.objectContaining({
           order: {
             is: expect.objectContaining({
-              status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
+              status: { not: 'TRASH' }
             })
           }
         })

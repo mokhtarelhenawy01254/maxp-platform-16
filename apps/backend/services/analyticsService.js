@@ -326,7 +326,7 @@ class AnalyticsService {
             is: {
               companyId,
               createdAt: { gte: startDate, lte: endDate },
-              status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
+              status: { not: 'TRASH' }
             }
           }
         },
@@ -416,7 +416,7 @@ class AnalyticsService {
             is: {
               companyId,
               createdAt: { gte: startDate, lte: endDate },
-              status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
+              status: { not: 'TRASH' }
             }
           }
         },

@@ -672,7 +672,7 @@ const getDetailedOrderReport = async (req, res) => {
                 where: {
                     companyId,
                     createdAt: { gte: start, lte: end },
-                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
+                    status: { not: 'TRASH' }
                 },
                 _count: { id: true },
                 _sum: { total: true }
@@ -682,7 +682,7 @@ const getDetailedOrderReport = async (req, res) => {
                 where: {
                     companyId,
                     createdAt: { gte: start, lte: end },
-                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
+                    status: { not: 'TRASH' }
                 },
                 _count: { id: true }
             }),
@@ -691,7 +691,7 @@ const getDetailedOrderReport = async (req, res) => {
                 where: {
                     companyId,
                     createdAt: { gte: start, lte: end },
-                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] },
+                    status: { not: 'TRASH' },
                     governorate: { not: null }
                 },
                 _count: { id: true }
@@ -701,7 +701,7 @@ const getDetailedOrderReport = async (req, res) => {
                 where: {
                     companyId,
                     createdAt: { gte: start, lte: end },
-                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
+                    status: { not: 'TRASH' }
                 },
                 _count: { id: true }
             }),
@@ -710,7 +710,7 @@ const getDetailedOrderReport = async (req, res) => {
                     order: {
                         companyId,
                         createdAt: { gte: start, lte: end },
-                        status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
+                        status: { not: 'TRASH' }
                     }
                 },
                 _sum: { quantity: true }
@@ -749,7 +749,7 @@ const getDetailedOrderReport = async (req, res) => {
                 WHERE o."companyId" = ${companyId}
                   AND o."createdAt" >= ${start}
                   AND o."createdAt" <= ${end}
-                  AND o."status" NOT IN ('TRASH', 'TRASH_ORDER', 'DELETED')
+                  AND o."status" NOT IN ('TRASH')
                 GROUP BY o."status"
             `;
             if (Array.isArray(statusPiecesRows)) {
