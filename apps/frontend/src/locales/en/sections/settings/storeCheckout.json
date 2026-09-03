@@ -32,6 +32,8 @@
   "formOrderSurfaceModeDesc": "Choose between a standalone form, or merge it with the buy box (variants and purchase buttons).",
   "showQuantity": "Show Quantity Selector",
   "showOrderSummary": "Show Shipping & Total Summary",
+  "autoSelectVariants": "Auto-select Size & Color",
+  "autoSelectVariantsDesc": "Automatically pre-select the first size and color on product page load, or disable to require the customer to manually select.",
   "pdpFullName": "Full Name",
   "pdpFullNameDesc": "Customer name in the quick order form on the product page.",
   "pdpPhone": "Phone Number",
