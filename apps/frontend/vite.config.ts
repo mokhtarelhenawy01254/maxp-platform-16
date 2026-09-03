@@ -58,7 +58,7 @@ const STOREFRONT_THEME_PRESET_MODULE_PATTERN = /\/src\/storefront\/themes\//;
 const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
   /\/src\/storefront\/engine\/themeDefaults\.ts$/;
 const STOREFRONT_RUNTIME_THEME_MODULE_PATTERN =
-  /\/src\/storefront\/themes\/(?:modern-minimal|khemet-luxe-eg|khemet-luxe-v2)\.json(?:\?url)?$/;
+  /\/src\/storefront\/themes\/(?:modern-minimal|khemet-luxe-eg|khemet-luxe-v2|khemet-fashion-eg)\.json(?:\?url)?$/;
 const APP_UI_PRIMITIVES_MODULE_PATTERN =
   /\/src\/(?:components\/ui\/|lib\/utils\.ts$)/;
 
@@ -87,7 +87,7 @@ const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
 // /tokenManager-/, /vendor-toast-/ and /vendor-icons-/ names, expecting these
 // to be standalone chunks.
 const APP_SHARED_CORE_MODULE_PATTERN =
-  /\/src\/(?:services\/(?:apiClient|uploadService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:tokenManager|i18n-toast|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+  /\/src\/(?:services\/(?:apiClient|uploadService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:tokenManager|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
 
 // Shared business-page shell components (BusinessPageShell, BusinessSurface,
 // BusinessFilters, BusinessMetrics). Default placement merged them into the
@@ -670,6 +670,10 @@ export default defineConfig(({ mode }) => {
 
             if (APP_I18N_MODULE_PATTERN.test(normalizedId)) {
               return 'app-i18n';
+            }
+
+            if (normalizedId.includes('/src/utils/i18n-toast.ts')) {
+              return 'admin-i18n-toast';
             }
 
             if (APP_SHARED_CORE_MODULE_PATTERN.test(normalizedId)) {
