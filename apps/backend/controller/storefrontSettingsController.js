@@ -17,7 +17,7 @@ const { isPlaceholderPhone } = require('../utils/placeholderContact');
 const DEFAULT_THEME_ID = DEFAULT_STOREFRONT_THEME_ID || 'modern-minimal';
 const DEFAULT_SUPPORTED_LANGUAGES = 'ar,en';
 const FACEBOOK_GRAPH_VERSION = getMetaGraphApiVersion();
-const PIXEL_ID_PATTERN = /^\d{16}$/;
+const PIXEL_ID_PATTERN = /^\d{14,18}$/;
 const REQUIRED_FACEBOOK_PIXEL_PERMISSIONS = [
   'business_management',
   'ads_read',
@@ -819,7 +819,7 @@ const testFacebookPixel = async (req, res) => {
 
       return res.json({
         success: false,
-        message: 'Pixel ID يجب أن يكون 16 رقم',
+        message: 'Pixel ID يجب أن يتكون من 14 إلى 18 رقماً',
       });
     }
 
@@ -1166,7 +1166,7 @@ const addPixel = async (req, res) => {
     if (!PIXEL_ID_PATTERN.test(pixelId)) {
       return res.status(400).json({
         success: false,
-        message: 'Pixel ID يجب أن يكون 16 رقم',
+        message: 'Pixel ID يجب أن يتكون من 14 إلى 18 رقماً',
       });
     }
 
@@ -1281,7 +1281,7 @@ const updatePixel = async (req, res) => {
         }
 
         if (payload.pixelId && !PIXEL_ID_PATTERN.test(payload.pixelId)) {
-          const validationError = new Error('Pixel ID must be 16 digits');
+          const validationError = new Error('Pixel ID must be 14-18 digits');
           validationError.statusCode = 400;
           throw validationError;
         }
