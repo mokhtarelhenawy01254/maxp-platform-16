@@ -36,14 +36,23 @@ const getById = async (req, res) => {
 const createPublic = async (req, res) => {
   try {
     const cid = req.body.companyId || req.user?.companyId;
-    const { serviceId, customerName, phone, description, referenceFiles } = req.body;
+    const { serviceId, customerName, phone, description, referenceFiles, notes, assignedTo } = req.body;
     if (!cid || !serviceId || !customerName || !phone) {
       return res.status(400).json({ success: false, error: 'جميع الحقول المطلوبة: الشركة، الخدمة، الاسم، الهاتف' });
     }
     const service = await getSharedPrismaClient().service.findFirst({ where: { id: serviceId, companyId: cid, isActive: true } });
     if (!service) return res.status(404).json({ success: false, error: 'الخدمة غير موجودة' });
     const data = await getSharedPrismaClient().serviceOrder.create({
-      data: { companyId: cid, serviceId, customerName, phone, description, referenceFiles: referenceFiles || [] }
+      data: {
+        companyId: cid,
+        serviceId,
+        customerName,
+        phone,
+        description,
+        referenceFiles: referenceFiles || [],
+        notes: notes || null,
+        assignedTo: assignedTo || null
+      }
     });
 
     // جلب رقم تواصل الشركة لتسهيل تواصل العميل عبر واتساب فوراً
@@ -84,17 +93,37 @@ const update = async (req, res) => {
     const companyId = req.user?.companyId;
     if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
     const { id } = req.params;
-    const { customerName, phone, description, notes, assignedTo } = req.body;
+    const { customerName, phone, description, notes, assignedTo, referenceFiles } = req.body;
     const existing = await getSharedPrismaClient().serviceOrder.findFirst({ where: { id, companyId } });
     if (!existing) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+    const updateData = { customerName, phone, description, notes, assignedTo };
+    if (referenceFiles !== undefined) {
+      updateData.referenceFiles = referenceFiles;
+    }
     const data = await getSharedPrismaClient().serviceOrder.update({
       where: { id },
-      data: { customerName, phone, description, notes, assignedTo }
+      data: updateData,
+      include: { service: true }
     });
     res.json({ success: true, data });
   } catch (error) {
     console.error('Error updating order:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الطلب' });
+  }
+};
+
+const deleteOrder = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, error: 'غير مصرح' });
+    const { id } = req.params;
+    const existing = await getSharedPrismaClient().serviceOrder.findFirst({ where: { id, companyId } });
+    if (!existing) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
+    await getSharedPrismaClient().serviceOrder.delete({ where: { id } });
+    res.json({ success: true, message: 'تم حذف الطلب بنجاح' });
+  } catch (error) {
+    console.error('Error deleting order:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف الطلب' });
   }
 };
 
@@ -136,4 +165,4 @@ const updateStatus = async (req, res) => {
   }
 };
 
-module.exports = { getAll, getById, createPublic, update, updateStatus };
+module.exports = { getAll, getById, createPublic, update, updateStatus, deleteOrder };

@@ -5,7 +5,7 @@ import { useWishlistStore } from '../store/useWishlistStore';
 import { Product } from '../hooks/useProducts';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
-import { ShoppingCart, Heart, Eye, Plus, Sparkles, ArrowUpRight, Star } from 'lucide-react';
+import { ShoppingCart, Heart, Eye, Plus, Sparkles, ArrowUpRight, Star, Zap } from 'lucide-react';
 import QuickViewModal from './QuickViewModal';
 import StorefrontProductImage from './StorefrontProductImage';
 import { formatStorefrontCurrency } from '../utils/currency';
@@ -194,7 +194,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     e.stopPropagation();
 
     if (hasVariantChoices) {
-      openProductPath();
+      setIsQuickViewOpen(true);
       return;
     }
 
@@ -216,6 +216,37 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       quantity: 1,
       category: product.category?.name,
     });
+  };
+
+  const handleQuickBuy = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (hasVariantChoices) {
+      setIsQuickViewOpen(true);
+      return;
+    }
+
+    addItem({
+      productId: id,
+      name,
+      price: typeof price === 'string' ? parseFloat(price) : price,
+      basePrice: typeof price === 'string' ? parseFloat(price) : price,
+      comparePrice: typeof numericComparePrice === 'number' ? numericComparePrice : undefined,
+      quantity: 1,
+      imageUrl: getPrimaryProductImage(product),
+      volumeDiscounts: getProductVolumeDiscounts(product),
+    });
+
+    trackAddToCartEvent({
+      id,
+      name,
+      price: typeof price === 'string' ? parseFloat(price) : price,
+      quantity: 1,
+      category: product.category?.name,
+    });
+
+    navigate(buildStorefrontPath(location.pathname, '/checkout', location.search));
   };
 
   const handleQuickView = (e: React.MouseEvent) => {
@@ -2698,15 +2729,24 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
               </div>
             ) : null}
 
-            <div className="mt-3 flex w-full items-center justify-center gap-2">
+            <div className="mt-3.5 flex w-full flex-col gap-1.5 px-1 sm:px-2">
               <button
                 onClick={handleAddToCart}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#ead7d2] bg-white px-3 py-1.5 text-[11px] font-semibold text-[#201915] shadow-[0_14px_28px_-24px_rgba(59,33,28,0.16)] transition-colors hover:border-[#201915]"
+                className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#201915] hover:bg-[#352a23] text-white px-3 py-2 text-xs font-bold shadow-sm transition-all active:scale-95"
                 title={actionLabel}
                 aria-label={actionLabel}
               >
-                <Plus size={14} />
-                {theme.direction === 'rtl' ? 'أضيفي' : 'Add'}
+                <ShoppingCart size={14} />
+                <span>{hasVariantChoices ? (isRtl ? 'اختيار المقاس / أضف' : 'Select Size') : (isRtl ? 'أضف للسلة' : 'Add to Cart')}</span>
+              </button>
+              <button
+                onClick={handleQuickBuy}
+                className="flex w-full items-center justify-center gap-1 rounded-full border border-amber-500/40 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 text-[11px] font-bold shadow-sm transition-all active:scale-95"
+                title={isRtl ? 'طلب سريع' : 'Fast Order'}
+                aria-label={isRtl ? 'طلب سريع' : 'Fast Order'}
+              >
+                <Zap size={13} className="fill-amber-500 text-amber-500" />
+                <span>{isRtl ? '⚡ طلب سريع' : '⚡ Quick Order'}</span>
               </button>
             </div>
 
@@ -3278,21 +3318,24 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 <Plus size={20} />
               </button>
             ) : (
-              <button
-                onClick={handleAddToCart}
-                className={`relative z-10 flex w-full translate-y-2 items-center justify-center gap-2 rounded-[var(--button-radius,0.375rem)] py-2.5 text-sm transition-all duration-500 ${
-                  isAirlume
-                    ? 'rounded-full bg-[linear-gradient(135deg,#0f172a_0%,hsl(var(--primary))_58%,#60a5fa_100%)] font-black text-white shadow-[0_22px_60px_-32px_hsl(var(--primary)/0.68)] hover:opacity-95'
-                    : isSoleaFemme
-                    ? 'bg-primary font-black text-primary-foreground shadow-[0_18px_45px_-28px_hsl(var(--primary)/0.9)] hover:bg-primary/92'
-                    : isFakhama
-                      ? 'bg-primary font-bold text-primary-foreground shadow-lg hover:bg-primary/95 md:group-hover:translate-y-0 md:group-hover:opacity-100 md:translate-y-4 md:opacity-0'
-                      : 'bg-primary font-medium text-primary-foreground hover:bg-primary/90 md:opacity-0 md:group-hover:translate-y-0 md:group-hover:opacity-100'
-                }`}
-              >
-                <ShoppingCart size={16} />
-                {actionLabel}
-              </button>
+              <div className="relative z-10 flex flex-col sm:flex-row items-center gap-1.5 w-full mt-1">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex flex-1 w-full items-center justify-center gap-1.5 rounded-[var(--button-radius,0.375rem)] py-2 px-3 text-xs font-bold bg-primary text-primary-foreground shadow-sm hover:bg-primary/90 transition-all active:scale-95"
+                  title={actionLabel}
+                >
+                  <ShoppingCart size={14} />
+                  <span>{hasVariantChoices ? (isRtl ? 'اختر المقاس / أضف' : 'Select Size') : (isRtl ? 'أضف للسلة' : 'Add to Cart')}</span>
+                </button>
+                <button
+                  onClick={handleQuickBuy}
+                  className="flex w-full sm:w-auto items-center justify-center gap-1 rounded-[var(--button-radius,0.375rem)] py-2 px-2.5 text-[11px] font-bold border border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-300 hover:bg-amber-500/20 transition-all active:scale-95 shrink-0"
+                  title={isRtl ? 'طلب سريع' : 'Fast Order'}
+                >
+                  <Zap size={13} className="fill-amber-500 text-amber-500" />
+                  <span>{isRtl ? '⚡ طلب سريع' : '⚡ Buy Now'}</span>
+                </button>
+              </div>
             )}
           </div>
         </div>

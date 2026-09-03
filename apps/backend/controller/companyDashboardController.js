@@ -88,6 +88,120 @@ const withDashboardFallback = async (label, operation, fallbackValue) => {
     }
 };
 
+const fetchCompanySpecialtyAndApps = async (companyId, prisma) => {
+    let businessSpecialty = null;
+    let installedApps = [];
+    let specialtyMetrics = {};
+
+    try {
+        const companyWithSpecialty = await prisma.company.findUnique({
+            where: { id: companyId },
+            select: {
+                businessSpecialty: {
+                    select: {
+                        id: true,
+                        slug: true,
+                        nameAr: true,
+                        nameEn: true,
+                        icon: true,
+                        appSlugs: true
+                    }
+                }
+            }
+        });
+        businessSpecialty = companyWithSpecialty?.businessSpecialty || null;
+    } catch (e) {
+        console.warn('[DASHBOARD] Could not fetch businessSpecialty:', e.message);
+    }
+
+    try {
+        const rawApps = await prisma.companyApp.findMany({
+            where: {
+                companyId,
+                status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] }
+            },
+            include: {
+                app: {
+                    select: {
+                        id: true,
+                        slug: true,
+                        name: true,
+                        category: true,
+                        icon: true,
+                        monthlyPrice: true,
+                        pricingModel: true,
+                        description: true,
+                        trialDays: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
+        });
+
+        const now = new Date();
+        installedApps = rawApps.map(item => {
+            let daysLeft = null;
+            if (item.status?.toUpperCase() === 'TRIAL' && item.trialEndsAt) {
+                const diffMs = new Date(item.trialEndsAt).getTime() - now.getTime();
+                daysLeft = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+            }
+            return {
+                id: item.id,
+                appId: item.appId,
+                slug: item.app?.slug || item.appId,
+                name: item.app?.name || item.app?.slug || 'App',
+                category: item.app?.category || 'general',
+                icon: item.app?.icon || null,
+                status: item.status,
+                pricingModel: item.activePricingModel || item.app?.pricingModel || 'SUBSCRIPTION',
+                monthlyPrice: item.app?.monthlyPrice ?? null,
+                description: item.app?.description || null,
+                trialEndsAt: item.trialEndsAt,
+                daysRemainingInTrial: daysLeft,
+                settings: item.settings,
+                installedAt: item.createdAt
+            };
+        });
+    } catch (e) {
+        console.warn('[DASHBOARD] Could not fetch installedApps:', e.message);
+    }
+
+    try {
+        const hasMedical = installedApps.some(a => ['medical-system', 'booking-app'].includes(a.slug)) || businessSpecialty?.slug === 'medical-clinics';
+        if (hasMedical && prisma.appointment) {
+            const [appointmentsCount, todayAppointments] = await Promise.all([
+                prisma.appointment.count({ where: { companyId } }).catch(() => 0),
+                prisma.appointment.count({
+                    where: {
+                        companyId,
+                        date: { gte: startOfDay(new Date()), lte: endOfDay(new Date()) }
+                    }
+                }).catch(() => 0)
+            ]);
+            specialtyMetrics.medical = {
+                appointmentsCount,
+                todayAppointments
+            };
+        }
+    } catch (_) {}
+
+    try {
+        const hasDental = installedApps.some(a => a.slug === 'dental-lab-app') || businessSpecialty?.slug === 'dental-lab';
+        if (hasDental && prisma.dentalLabCase) {
+            const [activeCases, totalDoctors] = await Promise.all([
+                prisma.dentalLabCase.count({ where: { companyId, status: { notIn: ['DELIVERED', 'CANCELLED'] } } }).catch(() => 0),
+                prisma.dentalLabDoctor ? prisma.dentalLabDoctor.count({ where: { companyId } }).catch(() => 0) : 0
+            ]);
+            specialtyMetrics.dentalLab = {
+                activeCases,
+                totalDoctors
+            };
+        }
+    } catch (_) {}
+
+    return { businessSpecialty, installedApps, specialtyMetrics };
+};
+
 const companyDashboardOverview = async (req, res) => {
     try {
         const companyId = req.user.companyId;
@@ -464,6 +578,11 @@ const companyDashboardOverview = async (req, res) => {
             previousPeriod,
             revenueHistory
         };
+
+        const { businessSpecialty, installedApps, specialtyMetrics } = await fetchCompanySpecialtyAndApps(companyId, getSharedPrismaClient());
+        dashboardData.businessSpecialty = businessSpecialty;
+        dashboardData.installedApps = installedApps;
+        dashboardData.specialtyMetrics = specialtyMetrics;
 
         res.json({
             success: true,

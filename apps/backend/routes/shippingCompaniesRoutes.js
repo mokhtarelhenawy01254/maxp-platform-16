@@ -38,18 +38,71 @@ const buildProviderFields = (body, carrier = {}) => {
   };
 };
 
-// Get all shipping companies for the current company
+// Get all shipping companies for the current company with pagination and filters
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { companyId } = req.user;
+    const { page, limit, search, status, integrationMode, all } = req.query;
 
-    const companies = await prisma.shippingCompany.findMany({
-      where: { companyId },
-      orderBy: { createdAt: 'desc' }
+    const where = { companyId };
+
+    if (status === 'active') {
+      where.isActive = true;
+    } else if (status === 'inactive') {
+      where.isActive = false;
+    }
+
+    if (integrationMode && integrationMode !== 'ALL') {
+      where.integrationMode = integrationMode;
+    }
+
+    if (search && String(search).trim()) {
+      const q = String(search).trim();
+      where.OR = [
+        { name: { contains: q, mode: 'insensitive' } },
+        { slug: { contains: q, mode: 'insensitive' } },
+        { phone: { contains: q, mode: 'insensitive' } },
+      ];
+    }
+
+    // If 'all' is explicitly requested or no pagination query is passed, return full list (for dropdowns)
+    const isPaginated = page !== undefined || (limit !== undefined && all !== 'true');
+
+    if (!isPaginated) {
+      const companies = await prisma.shippingCompany.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+      });
+      return res.json({ success: true, data: companies });
+    }
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const take = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * take;
+
+    const [total, companies] = await Promise.all([
+      prisma.shippingCompany.count({ where }),
+      prisma.shippingCompany.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take,
+      }),
+    ]);
+
+    const totalPages = Math.ceil(total / take) || 1;
+
+    res.json({
+      success: true,
+      data: companies,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: take,
+        totalPages,
+      },
     });
-
-    res.json({ success: true, data: companies });
   } catch (error) {
     console.error('Error fetching shipping companies:', error);
     res.status(500).json({ success: false, error: error.message });

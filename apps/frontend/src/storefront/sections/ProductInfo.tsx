@@ -3596,11 +3596,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   ) : null;
 
   const commonPrice = (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <span className="text-4xl font-black text-foreground">{displayPrice}</span>
+        <span className="text-2xl sm:text-3xl lg:text-4xl font-black text-foreground">{displayPrice}</span>
         {(originalPrice || productComparePriceDisplay) && (
-          <span className="text-xl font-bold text-muted-foreground line-through decoration-red-400/70 decoration-2 opacity-70">
+          <span className="text-base sm:text-lg lg:text-xl font-bold text-muted-foreground line-through decoration-red-400/70 decoration-2 opacity-70">
             {originalPrice || productComparePriceDisplay}
           </span>
         )}
@@ -6907,17 +6907,21 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         {shippingPolicyDialog}
         {questionDialog}
         {mobileVariantSheet}
-        <section className="w-full overflow-hidden px-1 py-1.5 sm:py-4">
+        <section className="w-full overflow-hidden px-3 sm:px-5 py-1.5 sm:py-4">
           <div className={isKhemetLuxeTheme ? "space-y-2.5 sm:space-y-4" : "space-y-3.5 sm:space-y-5"}>
-            {commonHeader}
-
-            <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 border-b border-[#ead8ca] pb-2.5 sm:pb-4">
-              {elessiRatingSummary}
-              {elessiBrandSpotlightCard}
+            <div className="space-y-2.5 sm:space-y-3 border-b border-[#ead8ca] pb-3 sm:pb-4">
+              {commonHeader}
+              {commonPrice}
             </div>
 
-            <div className="space-y-2.5 sm:space-y-4 border-b border-[#ead8ca] pb-3 sm:pb-5">
-              {commonPrice}
+            {(elessiRatingSummary || elessiBrandSpotlightCard) ? (
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 border-b border-[#ead8ca] pb-2.5 sm:pb-4">
+                {elessiRatingSummary}
+                {elessiBrandSpotlightCard}
+              </div>
+            ) : null}
+
+            <div className="space-y-2.5 sm:space-y-4">
               {!isKhemetInlineQuickOrderBuybox && activeElessiSocialProof ? (
                 <StaticMotionDiv
                   key={`${activeElessiSocialProof.key}-${elessiSocialProofStep}-${activeElessiSocialProof.label}`}

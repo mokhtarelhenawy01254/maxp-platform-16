@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { useParams, useLocation } from "react-router-dom";
+import { useParams, useLocation, Link } from "react-router-dom";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import type { StorefrontPageConfig } from "../types/theme.types";
 import { PageComposer, type RenderSectionFrameArgs } from "../engine/PageComposer";
@@ -8,6 +8,8 @@ import { useStorePage } from "../../hooks/useStorePage";
 import StorefrontSkeleton from "../components/StorefrontSkeleton";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
 import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../layout/StorefrontSectionFrame";
+import { buildStorefrontPath } from "../utils/paths";
+import { sanitizeStorefrontHtml } from "../utils/html";
 const DynamicStorefrontPage: React.FC = () => {
   const { theme } = useStorefrontTheme();
   const { settings, isLoading: settingsLoading } = useStorefrontSettings();

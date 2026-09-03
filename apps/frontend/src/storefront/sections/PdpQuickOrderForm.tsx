@@ -1179,11 +1179,19 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     ? "رقم هاتف بديل"
     : "Alternate phone";
   const shippingLabel = prefersArabicCopy ? "تكلفة الشحن" : "Shipping";
-  const totalLabel = prefersArabicCopy ? "الإجمالي" : "Total";
-  const shippingMethodSummaryLabel = shippingMethodLabel
+  const cleanShippingMethodTitle = useMemo(() => {
+    if (!shippingMethodLabel) return "";
+    const trimmed = shippingMethodLabel.trim();
+    if (trimmed.includes("،") || trimmed.includes(",") || trimmed.length > 30) {
+      return "";
+    }
+    return trimmed;
+  }, [shippingMethodLabel]);
+
+  const shippingMethodSummaryLabel = cleanShippingMethodTitle
     ? prefersArabicCopy
-      ? `طريقة الشحن: ${shippingMethodLabel}`
-      : `Shipping method: ${shippingMethodLabel}`
+      ? `طريقة الشحن: ${cleanShippingMethodTitle}`
+      : `Shipping method: ${cleanShippingMethodTitle}`
     : "";
   const addToCartLabel =
     configuredAddToCartButtonText ||

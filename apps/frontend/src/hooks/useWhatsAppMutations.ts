@@ -31,6 +31,7 @@ interface SendMediaParams {
   file: File;
   caption?: string;
   userId?: string;
+  onProgress?: (progressEvent: any) => void;
 }
 
 interface MarkAsReadParams {
@@ -224,7 +225,8 @@ export const useSendMedia = (
         "/whatsapp/messages/upload-send",
         formData,
         {
-          // boundary set by browser
+          timeout: 300000, // 5 minutes for video upload & compression
+          onUploadProgress: params.onProgress,
         },
       );
       return response.data;

@@ -1348,12 +1348,25 @@ const WhatsAppChatContent: React.FC = () => {
     const file = files[0];
     if (!file) return;
 
+    if (file.size > 100 * 1024 * 1024) {
+      toast.error("حجم الملف يتجاوز الحد الأقصى المسموح (100 ميجابايت)");
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    if (file.type.startsWith('video/') || file.size > 5 * 1024 * 1024) {
+      toast.info("جاري رفع ومعالجة الوسائط، يرجى الانتظار...");
+    }
+
     sendMediaMutation.mutate({
       sessionId: targetSessionId,
       to: selectedContact.jid,
       file,
       userId: user?.id
     }, {
+      onSuccess: () => {
+        toast.success("تم إرسال الوسائط بنجاح");
+      },
       onError: (error: unknown) => {
         toast.error(getErrorMessage(error, i18n.t("whatsappChat.error_error_during_be74")));
       }
@@ -2306,6 +2319,7 @@ const WhatsAppChatContent: React.FC = () => {
           onTouchStart={handleChatTouchStart}
           onTouchEnd={handleChatTouchEnd}
           fileInputRef={fileInputRef}
+          isUploadingMedia={sendMediaMutation.isPending}
           messagesError={messagesError}
           onRetryMessages={() => refetchMessages()}
         />

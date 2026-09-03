@@ -294,18 +294,25 @@ class AnalyticsService {
     const { regularOrders, supplementalGuestOrders } =
       await this.getAnalyticsOrderSnapshots(companyId, startDate, endDate);
 
-    const ordersRevenue = regularOrders.reduce(
+    const validRegularOrders = regularOrders.filter(
+      (order) => !isInvalidAnalyticsOrderStatus(order.status),
+    );
+    const validGuestOrders = supplementalGuestOrders.filter(
+      (order) => !isInvalidAnalyticsOrderStatus(order.status),
+    );
+
+    const ordersRevenue = validRegularOrders.reduce(
       (sum, order) => sum + parseNumericValue(order.total),
       0,
     );
-    const guestRevenue = supplementalGuestOrders.reduce(
+    const guestRevenue = validGuestOrders.reduce(
       (sum, order) =>
         sum + parseNumericValue(order.finalTotal ?? order.total),
       0,
     );
 
     return {
-      count: regularOrders.length + supplementalGuestOrders.length,
+      count: validRegularOrders.length + validGuestOrders.length,
       revenue: parseNumericValue(ordersRevenue + guestRevenue),
     };
   }
@@ -318,7 +325,8 @@ class AnalyticsService {
           order: {
             is: {
               companyId,
-              createdAt: { gte: startDate, lte: endDate }
+              createdAt: { gte: startDate, lte: endDate },
+              status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
             }
           }
         },
@@ -358,6 +366,9 @@ class AnalyticsService {
     }
 
     for (const guestOrder of supplementalGuestOrders) {
+      if (isInvalidAnalyticsOrderStatus(guestOrder?.status)) {
+        continue;
+      }
       const guestOrderId = buildGuestAnalyticsOrderId(guestOrder);
       const items = parseGuestOrderItems(guestOrder.items);
 
@@ -404,7 +415,8 @@ class AnalyticsService {
           order: {
             is: {
               companyId,
-              createdAt: { gte: startDate, lte: endDate }
+              createdAt: { gte: startDate, lte: endDate },
+              status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
             }
           }
         },
@@ -446,6 +458,9 @@ class AnalyticsService {
     }
 
     for (const guestOrder of supplementalGuestOrders) {
+      if (isInvalidAnalyticsOrderStatus(guestOrder?.status)) {
+        continue;
+      }
       const guestOrderId = buildGuestAnalyticsOrderId(guestOrder);
       const items = parseGuestOrderItems(guestOrder.items);
 
@@ -525,8 +540,10 @@ class AnalyticsService {
       if (item.orderId) totalOrderIds.add(item.orderId);
     });
     supplementalGuestOrders.forEach((guestOrder) => {
-      const id = buildGuestAnalyticsOrderId(guestOrder);
-      if (id) totalOrderIds.add(id);
+      if (!isInvalidAnalyticsOrderStatus(guestOrder?.status)) {
+        const id = buildGuestAnalyticsOrderId(guestOrder);
+        if (id) totalOrderIds.add(id);
+      }
     });
 
     return {

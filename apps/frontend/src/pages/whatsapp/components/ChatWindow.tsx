@@ -88,6 +88,7 @@ interface ChatWindowProps {
   messagesError?: boolean;
   onRetryMessages?: () => void;
   onToggleAi?: (contact: Contact, aiEnabled: boolean) => void;
+  isUploadingMedia?: boolean;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -137,6 +138,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   messagesError,
   onRetryMessages,
   onToggleAi,
+  isUploadingMedia,
 }) => {
   const { t, i18n } = useTranslation();
   const [showRichTools, setShowRichTools] = useState(false);
@@ -476,9 +478,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 size="icon-sm"
                 className="rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
                 onClick={() => fileInputRef.current?.click()}
-                title={t("whatsapp.tooltips.attach") as string}
+                disabled={isUploadingMedia}
+                title={isUploadingMedia ? "جاري رفع الوسائط..." : (t("whatsapp.tooltips.attach") as string)}
               >
-                <Paperclip className="size-4" />
+                {isUploadingMedia ? <RefreshCw className="size-4 animate-spin text-primary" /> : <Paperclip className="size-4" />}
               </Button>
               <Button
                 variant="ghost"

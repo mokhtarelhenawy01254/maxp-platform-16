@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { useParams, useLocation, useSearchParams } from "react-router-dom";
+import { useParams, useLocation, useSearchParams, Link } from "react-router-dom";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import type { StorefrontPageConfig, StorefrontSectionConfig } from "../types/theme.types";
 import { PageComposer } from "../engine/PageComposer";
@@ -10,6 +10,7 @@ import { resolveCatalogCategoryBySlug } from "../utils/catalogCategories";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
 import { extractShopStudioConfig, hasShopStudioConfig, resolveShopPageLayoutHint } from "../../utils/shopPageStudioConfig";
 import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../layout/StorefrontSectionFrame";
+import { buildStorefrontPath } from "../utils/paths";
 const prettifyCollectionSlug = (slug: string, isRtl: boolean): string => {
   const normalized = slug.trim().replace(/[_-]+/g, " ").replace(/\s+/g, " ");
 

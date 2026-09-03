@@ -671,7 +671,8 @@ const getDetailedOrderReport = async (req, res) => {
             prisma.order.aggregate({
                 where: {
                     companyId,
-                    createdAt: { gte: start, lte: end }
+                    createdAt: { gte: start, lte: end },
+                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
                 },
                 _count: { id: true },
                 _sum: { total: true }
@@ -680,7 +681,8 @@ const getDetailedOrderReport = async (req, res) => {
                 by: ['status'],
                 where: {
                     companyId,
-                    createdAt: { gte: start, lte: end }
+                    createdAt: { gte: start, lte: end },
+                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
                 },
                 _count: { id: true }
             }),
@@ -689,6 +691,7 @@ const getDetailedOrderReport = async (req, res) => {
                 where: {
                     companyId,
                     createdAt: { gte: start, lte: end },
+                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] },
                     governorate: { not: null }
                 },
                 _count: { id: true }
@@ -697,7 +700,8 @@ const getDetailedOrderReport = async (req, res) => {
                 by: ['paymentMethod'],
                 where: {
                     companyId,
-                    createdAt: { gte: start, lte: end }
+                    createdAt: { gte: start, lte: end },
+                    status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
                 },
                 _count: { id: true }
             }),
@@ -705,7 +709,8 @@ const getDetailedOrderReport = async (req, res) => {
                 where: {
                     order: {
                         companyId,
-                        createdAt: { gte: start, lte: end }
+                        createdAt: { gte: start, lte: end },
+                        status: { notIn: ['TRASH', 'TRASH_ORDER', 'DELETED'] }
                     }
                 },
                 _sum: { quantity: true }
@@ -744,6 +749,7 @@ const getDetailedOrderReport = async (req, res) => {
                 WHERE o."companyId" = ${companyId}
                   AND o."createdAt" >= ${start}
                   AND o."createdAt" <= ${end}
+                  AND o."status" NOT IN ('TRASH', 'TRASH_ORDER', 'DELETED')
                 GROUP BY o."status"
             `;
             if (Array.isArray(statusPiecesRows)) {

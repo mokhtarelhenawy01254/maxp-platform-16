@@ -86,6 +86,47 @@ export type PreviousPeriod = {
   aov: number;
 };
 
+export type DashboardInstalledApp = {
+  id: string;
+  appId: string;
+  slug: string;
+  name: string;
+  category: string;
+  icon?: string | null;
+  status: string;
+  pricingModel: string;
+  monthlyPrice?: number | null;
+  description?: string | null;
+  trialEndsAt?: string | null;
+  daysRemainingInTrial?: number | null;
+  settings?: Record<string, unknown> | null;
+  installedAt?: string;
+};
+
+export type DashboardBusinessSpecialty = {
+  id: string;
+  slug: string;
+  nameAr?: string | null;
+  nameEn?: string | null;
+  icon?: string | null;
+  appSlugs?: string[];
+};
+
+export type DashboardSpecialtyMetrics = {
+  medical?: {
+    appointmentsCount?: number;
+    todayAppointments?: number;
+  };
+  dentalLab?: {
+    activeCases?: number;
+    totalDoctors?: number;
+  };
+  education?: {
+    sessionsCount?: number;
+    studentsCount?: number;
+  };
+};
+
 export type DashboardData = {
   company: DashboardCompany;
   dateRange?: { start?: string; end?: string };
@@ -99,6 +140,9 @@ export type DashboardData = {
   topProducts?: DashboardTopProduct[];
   revenueHistory?: RevenueHistoryPoint[];
   previousPeriod?: PreviousPeriod;
+  businessSpecialty?: DashboardBusinessSpecialty | null;
+  installedApps?: DashboardInstalledApp[];
+  specialtyMetrics?: DashboardSpecialtyMetrics;
 };
 
 export type DashboardResponse = {

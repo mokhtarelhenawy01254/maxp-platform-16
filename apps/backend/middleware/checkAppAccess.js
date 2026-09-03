@@ -20,7 +20,22 @@ const LEGACY_APP_SLUG_ALIASES = {
   'whatsapp-settings': ['whatsapp-business', 'whatsapp-integration'],
   'whatsapp-notifications': ['whatsapp-business', 'whatsapp-integration'],
   'whatsapp-templates': ['whatsapp-business', 'whatsapp-integration'],
-  'whatsapp-routing': ['whatsapp-business', 'whatsapp-integration']
+  'whatsapp-routing': ['whatsapp-business', 'whatsapp-integration'],
+  // Telegram apps aliases:
+  'telegram-business': ['telegram-integration', 'telegram'],
+  'telegram-integration': ['telegram-business', 'telegram'],
+  'telegram': ['telegram-business', 'telegram-integration'],
+  // CRM & Marketing aliases:
+  'crm-lite': ['crm-basic', 'crm'],
+  'crm-basic': ['crm-lite', 'crm'],
+  'facebook-pages-connect': ['facebook-ads-pro', 'crm-basic', 'crm-lite'],
+  // Analytics aliases:
+  'orders-analytics': ['analytics-basic', 'analytics-advanced', 'analytics'],
+  'analytics-basic': ['orders-analytics', 'analytics-advanced', 'analytics'],
+  'analytics-advanced': ['orders-analytics', 'analytics-basic', 'analytics'],
+  // Booking / Services aliases:
+  'booking-app': ['service-request-app', 'service-requests'],
+  'service-request-app': ['booking-app', 'service-requests']
 };
 
 const getCandidateAppSlugs = (appSlug) => {

@@ -51,6 +51,15 @@ const MIME_TYPE_MAP = {
     'video/mp4': 'mp4',
     'video/3gpp': '3gp',
     'video/quicktime': 'mov',
+    'video/x-matroska': 'mkv',
+    'video/avi': 'avi',
+    'video/x-msvideo': 'avi',
+    'video/msvideo': 'avi',
+    'video/x-ms-wmv': 'wmv',
+    'video/x-flv': 'flv',
+    'video/mpeg': 'mpeg',
+    'video/x-m4v': 'm4v',
+    'video/ogg': 'ogv',
     'audio/ogg': 'ogg',
     'audio/mp4': 'm4a',
     'audio/mpeg': 'mp3',
@@ -85,7 +94,11 @@ const storage = multer.diskStorage({
     },
     filename: (req, file, cb) => {
         const cleanMimetype = file.mimetype ? file.mimetype.split(';')[0].trim() : '';
-        const ext = MIME_TYPE_MAP[cleanMimetype] || 'bin';
+        let ext = MIME_TYPE_MAP[cleanMimetype];
+        if (!ext && cleanMimetype.startsWith('video/')) {
+            ext = 'mp4';
+        }
+        ext = ext || 'bin';
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
         cb(null, `${uniqueSuffix}.${ext}`);
     }
@@ -98,7 +111,7 @@ const upload = multer({
     },
     fileFilter: (req, file, cb) => {
         const cleanMimetype = file.mimetype ? file.mimetype.split(';')[0].trim() : '';
-        if (MIME_TYPE_MAP[cleanMimetype]) {
+        if (MIME_TYPE_MAP[cleanMimetype] || cleanMimetype.startsWith('video/') || cleanMimetype.startsWith('image/') || cleanMimetype.startsWith('audio/')) {
             cb(null, true);
         } else {
             console.error(`❌ [WhatsApp Upload] File rejected by Multer fileFilter: name="${file.originalname}", mimetype="${file.mimetype}", size="${file.size || 'unknown'}"`);

@@ -220,7 +220,7 @@ async function uploadMediaFile(sessionId, fileBuffer, mimetype, filename) {
       Authorization: `Bearer ${accessToken}`,
       ...form.getHeaders()
     },
-    timeout: 30000,
+    timeout: 120000,
     maxContentLength: Infinity,
     maxBodyLength: Infinity
   }));
@@ -282,11 +282,16 @@ async function sendMedia(sessionId, to, media, kind, options = {}) {
   if (mediaObj?.id || mediaObj?.mediaId) {
     mediaPayload.id = mediaObj.id || mediaObj.mediaId;
   } else if (mediaObj?.buffer && (kind === 'audio' || kind === 'video')) {
+    const uploadMime = kind === 'video'
+      ? (mediaObj.mimetype || 'video/mp4')
+      : (mediaObj.mimetype || 'audio/ogg');
+    const uploadFileName = mediaObj.fileName || (kind === 'video' ? 'video.mp4' : `voice_note.${uploadMime.split('/')[1] || 'ogg'}`);
+
     const mediaId = await uploadMediaFile(
       sessionId,
       mediaObj.buffer,
-      mediaObj.mimetype || 'audio/ogg',
-      mediaObj.fileName || `voice_note.${mediaObj.mimetype?.split('/')[1] || 'ogg'}`
+      uploadMime,
+      uploadFileName
     );
     if (mediaId) {
       mediaPayload.id = mediaId;

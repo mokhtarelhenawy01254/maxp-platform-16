@@ -18,6 +18,9 @@ import { DashboardAlertsHub } from "../../components/dashboard/DashboardAlertsHu
 import { DashboardSkeleton, OnboardingChecklist, DashboardExportMenu } from ".";
 import { SetupProgressBanner } from "./SetupProgressBanner";
 import DateRangeToolbar from "./DateRangeToolbar";
+import { InstalledAppsDashboard } from "../../components/dashboard/InstalledAppsDashboard";
+import { SpecialtyDashboardHeader } from "../../components/dashboard/SpecialtyDashboardHeader";
+import { ChartBarSquareIcon, CubeIcon } from "@heroicons/react/24/outline";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
 
@@ -104,6 +107,28 @@ export default function MainDashboardPage() {
   const isRtl = i18n.language === "ar";
   const activeWidgets = useMemo(() => getWidgetsForApps(activeApps), [activeApps]);
 
+  type DashboardTab = "specialty" | "installed-apps";
+  const [activeTab, setActiveTab] = useState<DashboardTab>("specialty");
+
+  const installedApps = useMemo(() => {
+    if (dashboard?.installedApps && dashboard.installedApps.length > 0) {
+      return dashboard.installedApps;
+    }
+    return activeApps.map((slug) => ({
+      id: slug,
+      appId: slug,
+      slug,
+      name: slug,
+      category: "general",
+      status: "ACTIVE",
+      pricingModel: "SUBSCRIPTION",
+    }));
+  }, [dashboard?.installedApps, activeApps]);
+
+  const hasStoreApp = useMemo(() => {
+    return activeApps.some((a) => ["store", "store-basic", "store-pro"].includes(a.toLowerCase()));
+  }, [activeApps]);
+
   const getWidgetData = useCallback(
     (widget: WidgetDefinition) => widget.fetchData(dashboard, widgetAppData?.[widget.id]),
     [dashboard, widgetAppData],
@@ -142,7 +167,7 @@ export default function MainDashboardPage() {
         </p>
         <button
           type="button"
-          onClick={() => navigate("/apps")}
+          onClick={() => refetch()}
           className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90 transition-colors"
         >
           {t("common.retry")}
@@ -151,102 +176,142 @@ export default function MainDashboardPage() {
     );
   }
 
-  if (isEmpty && dashboard) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            {dashboard.company?.name
-              ? t("companyDashboard.welcome", { name: dashboard.company.name })
-              : t("companyDashboard.title")}
-          </h1>
-        </div>
-        <OnboardingChecklist
-          dashboard={dashboard}
-          activeApps={activeApps}
-          onNavigate={(href) => navigate(href)}
-        />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6" style={{ viewTransitionName: "main-dashboard" }}>
-      <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-2 sm:gap-3">
+      {/* Top Welcome Bar with View Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-border/50">
         <div>
           <h1 className="text-xl sm:text-3xl font-bold text-foreground tracking-tight">
             {dashboard?.company?.name
               ? t("companyDashboard.welcome", { name: dashboard.company.name })
               : t("companyDashboard.title")}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1.5">
+          <p className="text-sm text-muted-foreground mt-1">
             {now.toLocaleDateString(locale, {
               weekday: "long", year: "numeric", month: "long", day: "numeric",
             })}
           </p>
         </div>
 
-        <DateRangeToolbar
-          start={customStart}
-          end={customEnd}
-          presets={presetsList}
-          selectedFilterId={period}
-          currentRangeLabel={PERIOD_LABEL_MAP[period] ? _t(PERIOD_LABEL_MAP[period]!) : _t("companyDashboard.presets.custom")}
-          currentRangeMeta=""
-          customPresetLabel={_t("companyDashboard.presets.custom")}
-          showCustomRangeInputs={period === "custom"}
-          isRefreshing={isFetching}
-          fromLabel={_t("companyDashboard.from")}
-          toLabel={_t("companyDashboard.to")}
-          rangeLabel={_t("companyDashboard.dateRangeLabel")}
-          refreshLabel={_t("companyDashboard.refresh")}
-          onStartChange={setCustomStart}
-          onEndChange={setCustomEnd}
-          onSelectFilter={(v: string) => setPeriod(v as PeriodPreset)}
-          onRefresh={() => refetch()}
-        />
-        {dashboard && (
-          <DashboardExportMenu
-            dashboard={dashboard}
-            periodLabel={PERIOD_LABEL_MAP[period] ? _t(PERIOD_LABEL_MAP[period]!) : _t("companyDashboard.presets.custom")}
-            disabled={isFetching}
-          />
-        )}
-      </div>
+        {/* Dashboard Mode Switcher */}
+        <div className="flex items-center gap-1.5 p-1 bg-muted/60 rounded-2xl border border-border/60 w-fit shrink-0">
+          <button
+            type="button"
+            onClick={() => setActiveTab("specialty")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === "specialty"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <ChartBarSquareIcon className="w-4 h-4" />
+            <span>لوحة التخصص والأعمال</span>
+          </button>
 
-      {dashboard && (
-        <DashboardStatusBar dashboard={dashboard} isRtl={isRtl} activeApps={activeApps} />
-      )}
-
-      {dashboard && !isEmpty && <SetupProgressBanner dashboard={dashboard} />}
-
-      <QuickActions
-        activeApps={activeApps}
-        badges={{
-          orders: dashboard?.orderHealth?.openOrders ?? 0,
-          inbox: dashboard?.recentActivity?.newConversations ?? 0,
-          products: (dashboard?.inventory?.lowStockCount ?? 0) + (dashboard?.inventory?.outOfStockCount ?? 0),
-        }}
-      />
-
-      <AppWidgetGrid
-        widgets={activeWidgets}
-        getData={getWidgetData}
-        companyId={user?.companyId}
-      />
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {dashboard && (
-          <DashboardActivityFeed
-            dashboard={dashboard}
-            liveActivities={live.activities}
-            liveCount={live.liveCount}
-          />
-        )}
-        <div className="lg:col-span-2">
-          <DashboardAlertsHub dashboard={dashboard} />
+          <button
+            type="button"
+            onClick={() => setActiveTab("installed-apps")}
+            className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+              activeTab === "installed-apps"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <CubeIcon className="w-4 h-4" />
+            <span>التطبيقات المثبتة ({installedApps.length})</span>
+          </button>
         </div>
       </div>
+
+      {activeTab === "installed-apps" ? (
+        <InstalledAppsDashboard
+          installedApps={installedApps}
+          businessSpecialty={dashboard?.businessSpecialty}
+          onRefresh={() => refetch()}
+          isRefreshing={isFetching}
+        />
+      ) : (
+        <>
+          {dashboard && <SpecialtyDashboardHeader dashboard={dashboard} />}
+
+          {/* Date range toolbar for metrics */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <DateRangeToolbar
+              start={customStart}
+              end={customEnd}
+              presets={presetsList}
+              selectedFilterId={period}
+              currentRangeLabel={PERIOD_LABEL_MAP[period] ? _t(PERIOD_LABEL_MAP[period]!) : _t("companyDashboard.presets.custom")}
+              currentRangeMeta=""
+              customPresetLabel={_t("companyDashboard.presets.custom")}
+              showCustomRangeInputs={period === "custom"}
+              isRefreshing={isFetching}
+              fromLabel={_t("companyDashboard.from")}
+              toLabel={_t("companyDashboard.to")}
+              rangeLabel={_t("companyDashboard.dateRangeLabel")}
+              refreshLabel={_t("companyDashboard.refresh")}
+              onStartChange={setCustomStart}
+              onEndChange={setCustomEnd}
+              onSelectFilter={(v: string) => setPeriod(v as PeriodPreset)}
+              onRefresh={() => refetch()}
+            />
+            {dashboard && (
+              <DashboardExportMenu
+                dashboard={dashboard}
+                periodLabel={PERIOD_LABEL_MAP[period] ? _t(PERIOD_LABEL_MAP[period]!) : _t("companyDashboard.presets.custom")}
+                disabled={isFetching}
+              />
+            )}
+          </div>
+
+          {dashboard && (
+            <DashboardStatusBar dashboard={dashboard} isRtl={isRtl} activeApps={activeApps} />
+          )}
+
+          {dashboard && hasStoreApp && (
+            isEmpty ? (
+              <OnboardingChecklist
+                dashboard={dashboard}
+                activeApps={activeApps}
+                onNavigate={(href) => navigate(href)}
+              />
+            ) : (
+              <SetupProgressBanner dashboard={dashboard} />
+            )
+          )}
+
+          {hasStoreApp && (
+            <QuickActions
+              activeApps={activeApps}
+              badges={{
+                orders: dashboard?.orderHealth?.openOrders ?? 0,
+                inbox: dashboard?.recentActivity?.newConversations ?? 0,
+                products: (dashboard?.inventory?.lowStockCount ?? 0) + (dashboard?.inventory?.outOfStockCount ?? 0),
+              }}
+            />
+          )}
+
+          <AppWidgetGrid
+            widgets={activeWidgets}
+            getData={getWidgetData}
+            companyId={user?.companyId}
+          />
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {dashboard && (
+              <DashboardActivityFeed
+                dashboard={dashboard}
+                liveActivities={live.activities}
+                liveCount={live.liveCount}
+              />
+            )}
+            <div className="lg:col-span-2">
+              <DashboardAlertsHub dashboard={dashboard} />
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

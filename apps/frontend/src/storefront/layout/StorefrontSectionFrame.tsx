@@ -16,6 +16,9 @@ export const StorefrontSectionFrame: React.FC<RenderSectionFrameArgs> = ({
   element,
   index,
 }) => {
+  if (!element) {
+    return null;
+  }
   const { theme } = useStorefrontTheme();
   const reveal = isRevealEnabledTheme(theme?.id);
   return (

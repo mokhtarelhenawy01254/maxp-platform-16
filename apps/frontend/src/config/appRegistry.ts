@@ -94,7 +94,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-blue-500 to-blue-600',
     sectionIds: ['facebook'],
     category: 'communication',
-    requiredApps: ['crm-basic'],
+    requiredApps: ['facebook-pages-connect', 'facebook-ads-pro', 'crm-lite', 'crm-basic'],
   },
   {
     id: 'whatsapp',
@@ -116,7 +116,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-sky-500 to-sky-600',
     sectionIds: ['telegram'],
     category: 'communication',
-    requiredApps: ['telegram-integration'],
+    requiredApps: ['telegram-business', 'telegram-integration'],
   },
   {
     id: 'orders',
@@ -227,7 +227,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-red-500 to-rose-500',
     sectionIds: ['marketing'],
     category: 'marketing',
-    requiredApps: ['facebook-ads-pro', 'crm-basic'],
+    requiredApps: ['facebook-ads-pro', 'facebook-pages-connect', 'crm-lite', 'crm-basic', 'campaign-attribution', 'conversion-suite'],
   },
   {
     id: 'my-account',
@@ -260,7 +260,6 @@ export const APP_REGISTRY: AppDefinition[] = [
     sectionIds: ['hr'],
     category: 'hr',
     requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'],
-    requiredApps: ['hr-basic'],
   },
   {
     id: 'business',
@@ -281,7 +280,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-blue-400 to-blue-500',
     sectionIds: ['analytics'],
     category: 'analytics',
-    requiredApps: ['analytics-advanced'],
+    requiredApps: ['analytics-basic', 'orders-analytics', 'analytics-advanced'],
   },
   {
     id: 'support',
@@ -407,7 +406,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-cyan-500 to-teal-500',
     sectionIds: ['service-requests'],
     category: 'operations',
-    requiredApps: ['service-request-app'],
+    requiredApps: ['booking-app', 'service-request-app'],
   },
   {
     id: 'order-automation',

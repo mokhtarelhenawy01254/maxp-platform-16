@@ -1129,6 +1129,9 @@ const FormsBuilderPage = React.lazy(
 const ServiceOrdersPage = React.lazy(
   () => import("./pages/admin/ServiceOrdersPage"),
 );
+const ServiceOrderDetailPage = React.lazy(
+  () => import("./pages/admin/ServiceOrderDetailPage"),
+);
 const ServiceManagementPage = React.lazy(
   () => import("./pages/admin/ServiceManagementPage"),
 );
@@ -7532,6 +7535,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <ServiceOrdersPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/admin/service-orders/:id"
+                  element={
+                    <Layout fullWidth>
+                      <ServiceOrderDetailPage />
                     </Layout>
                   }
                 />

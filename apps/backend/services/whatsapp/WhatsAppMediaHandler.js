@@ -50,7 +50,11 @@ const SIZE_LIMITS = {
 // أنواع الملفات المدعومة
 const SUPPORTED_TYPES = {
     image: ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml', 'image/bmp'],
-    video: ['video/mp4', 'video/3gpp', 'video/quicktime', 'video/webm'],
+    video: [
+        'video/mp4', 'video/3gpp', 'video/quicktime', 'video/webm',
+        'video/x-matroska', 'video/avi', 'video/x-msvideo', 'video/msvideo',
+        'video/x-ms-wmv', 'video/x-flv', 'video/mpeg', 'video/x-m4v', 'video/ogg'
+    ],
     audio: ['audio/ogg', 'audio/mp4', 'audio/mpeg', 'audio/amr', 'audio/webm', 'audio/wav', 'audio/x-wav', 'audio/wave', 'audio/x-pn-wav', 'audio/x-m4a', 'audio/aac', 'audio/x-aac'],
     document: [
         'application/pdf',
@@ -136,6 +140,99 @@ async function convertWebmToOgg(inputBuffer, sourceMime) {
         await fs.unlink(outputPath).catch(() => {});
         console.error('❌ Failed to convert webm to ogg:', error.message);
         throw error;
+    }
+}
+
+/**
+ * تحويل وضغط أي فيديو ليتوافق مع WhatsApp القياسي و Meta Cloud API
+ * - الصيغة: video/mp4
+ * - كوديك الفيديو: H.264 (libx264) مع yuv420p
+ * - كوديك الصوت: AAC (128k, 44100Hz)
+ * - movflags +faststart للبث الفوري دون انتظار تحميل الفيديو بالكامل
+ * - ضبط الأبعاد ومعدل البت للالتزام بحدود واتساب (خاصة 16MB لميتا)
+ * @param {Buffer} inputBuffer - بافر الفيديو
+ * @param {string} sourceMime - نوع الميديا الأصلي
+ * @param {string} originalName - اسم الملف الأصلي
+ * @returns {Promise<{ buffer: Buffer, mimetype: string }>}
+ */
+async function normalizeAndCompressVideo(inputBuffer, sourceMime, originalName = '') {
+    if (!inputBuffer || inputBuffer.length < 500) {
+        throw new Error('ملف الفيديو فارغ أو تالف (صغير جداً)');
+    }
+
+    const tempDir = path.join(MEDIA_DIR, 'temp');
+    await fs.mkdir(tempDir, { recursive: true });
+
+    const ts = Date.now();
+    const extMap = {
+        'video/mp4': 'mp4',
+        'video/quicktime': 'mov',
+        'video/3gpp': '3gp',
+        'video/webm': 'webm',
+        'video/x-matroska': 'mkv',
+        'video/avi': 'avi',
+        'video/x-msvideo': 'avi',
+        'video/msvideo': 'avi',
+        'video/x-ms-wmv': 'wmv',
+        'video/x-flv': 'flv',
+        'video/mpeg': 'mpeg',
+        'video/x-m4v': 'm4v',
+        'video/ogg': 'ogv'
+    };
+    const inExt = extMap[sourceMime] || (originalName && path.extname(originalName).replace('.', '')) || 'mp4';
+    const inputPath = path.join(tempDir, `vid_in_${ts}_${Math.random().toString(36).substr(2, 6)}.${inExt}`);
+    const outputPath = path.join(tempDir, `vid_out_${ts}_${Math.random().toString(36).substr(2, 6)}.mp4`);
+
+    await fs.writeFile(inputPath, inputBuffer);
+
+    // إذا كان الملف أكبر من 20MB نستخدم CRF أعلى مع تصغير العرض إلى 960px لضمان نزوله تحت 16MB
+    const isLarge = inputBuffer.length > 20 * 1024 * 1024;
+    const crf = isLarge ? '28' : '26';
+    const scaleFilter = isLarge ? "scale='min(960,iw)':-2" : "scale='min(1280,iw)':-2";
+
+    try {
+        await new Promise((resolve, reject) => {
+            execFile('ffmpeg', [
+                '-i', inputPath,
+                '-c:v', 'libx264',
+                '-preset', 'veryfast',
+                '-crf', crf,
+                '-vf', scaleFilter,
+                '-c:a', 'aac',
+                '-b:a', '128k',
+                '-ac', '2',
+                '-ar', '44100',
+                '-pix_fmt', 'yuv420p',
+                '-movflags', '+faststart',
+                '-y',
+                outputPath
+            ], { timeout: 180000 }, async (error) => {
+                await fs.unlink(inputPath).catch(() => {});
+                if (error) {
+                    await fs.unlink(outputPath).catch(() => {});
+                    reject(error);
+                } else {
+                    resolve();
+                }
+            });
+        });
+
+        const outputBuffer = await fs.readFile(outputPath);
+        await fs.unlink(outputPath).catch(() => {});
+        console.log(`🎥 Normalized & compressed video: ${formatSize(inputBuffer.length)} (${sourceMime}) → ${formatSize(outputBuffer.length)} (video/mp4)`);
+        return {
+            buffer: outputBuffer,
+            mimetype: 'video/mp4'
+        };
+    } catch (error) {
+        await fs.unlink(inputPath).catch(() => {});
+        await fs.unlink(outputPath).catch(() => {});
+        console.error('⚠️ Video transcoding failed, checking fallback:', error.message);
+        // في حال فشل ffmpeg ولكن الفيديو الأصلي كان mp4 وحجمه تحت 16MB، نمرره كما هو
+        if (sourceMime === 'video/mp4' && inputBuffer.length <= 16 * 1024 * 1024) {
+            return { buffer: inputBuffer, mimetype: 'video/mp4' };
+        }
+        throw new Error(`فشل معالجة وضغط الفيديو: ${error.message}`);
     }
 }
 
@@ -242,6 +339,13 @@ async function uploadMedia(source, mimetype, originalName = '') {
         // مش بيتغيّر mimetype عشان يفضل متحرّك.
         if (mediaType === 'image') {
             const normalized = await normalizeImageForWhatsApp(buffer, outputMime);
+            buffer = normalized.buffer;
+            outputMime = normalized.mimetype;
+        }
+
+        // 🎥 تحويل وضغط الفيديو ليتوافق مع WhatsApp القياسي و Meta Cloud API
+        if (mediaType === 'video') {
+            const normalized = await normalizeAndCompressVideo(buffer, outputMime, originalName);
             buffer = normalized.buffer;
             outputMime = normalized.mimetype;
         }
@@ -449,6 +553,15 @@ function getExtension(mimetype) {
         'video/3gpp': '3gp',
         'video/quicktime': 'mov',
         'video/webm': 'webm',
+        'video/x-matroska': 'mkv',
+        'video/avi': 'avi',
+        'video/x-msvideo': 'avi',
+        'video/msvideo': 'avi',
+        'video/x-ms-wmv': 'wmv',
+        'video/x-flv': 'flv',
+        'video/mpeg': 'mpeg',
+        'video/x-m4v': 'm4v',
+        'video/ogg': 'ogv',
         'audio/ogg': 'ogg',
         'audio/mp4': 'm4a',
         'audio/mpeg': 'mp3',
@@ -537,6 +650,7 @@ module.exports = {
     downloadMedia,
     uploadMedia,
     convertWebmToOgg,
+    normalizeAndCompressVideo,
     compressImage,
     createThumbnail,
     getImageInfo,
