@@ -49,6 +49,7 @@ const STOREFRONT_DEFERRED_PRELOAD_CHUNKS = [
   /(?:^|\/)StickyAddToCartHost-/,
   /(?:^|\/)marketplaceSampleData-/,
   /(?:^|\/)storefront-theme-presets-/,
+  /(?:^|\/)storefront-themes-/,
   /(?:^|\/)apiClient-/,
   /(?:^|\/)tokenManager-/,
   /(?:^|\/)app-i18n-/,

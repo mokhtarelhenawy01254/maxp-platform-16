@@ -1,4 +1,4 @@
-import { DEFAULT_STOREFRONT_THEME_ID } from "../themes";
+import { DEFAULT_STOREFRONT_THEME_ID } from "../engine/themeDefaults";
 import { resolveStorefrontTheme } from "../engine/themeResolver";
 import { validateStorefrontTheme } from "../engine/themeValidation";
 import {
