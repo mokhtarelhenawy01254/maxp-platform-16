@@ -395,8 +395,10 @@ async function generateWarrantyCertificatePdf({ company, caseRow, workOrderHeade
     doc.rect(margin + 12, currentY, w - 24, 195).fillAndStroke('#f8fafc', '#cbd5e1');
 
     const drawField = (label, value, y, highlight = false) => {
-      doc.fontSize(8.5).fillColor('#475569').text(AR(label + ':'), margin + 20, y, { width: 100, align: 'right' });
-      doc.fontSize(highlight ? 9.5 : 9).fillColor(highlight ? '#1e40af' : '#0f172a').text(AR(value || '—'), margin + 125, y, { width: w - 145, align: 'right' });
+      const labelW = 120;
+      const valW = w - 40 - labelW;
+      doc.fontSize(8.5).fillColor('#475569').text(AR(label + ':'), margin + 16 + valW, y, { width: labelW, align: 'right' });
+      doc.fontSize(highlight ? 9.5 : 9).fillColor(highlight ? '#1e40af' : '#0f172a').text(AR(value || '—'), margin + 16, y, { width: valW - 8, align: 'right' });
     };
 
     let fieldY = currentY + 10;
