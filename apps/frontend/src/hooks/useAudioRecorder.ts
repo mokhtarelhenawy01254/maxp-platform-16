@@ -38,24 +38,34 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       setStatus("acquiring_media");
       chunksRef.current = [];
 
+      if (typeof navigator === "undefined" || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new DOMException("Browser does not support media devices", "NotSupportedError");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       mediaStreamRef.current = stream;
 
-      let mimeType = "audio/webm";
-      if (!MediaRecorder.isTypeSupported("audio/webm")) {
-        if (MediaRecorder.isTypeSupported("audio/mp4")) {
-          mimeType = "audio/mp4";
-        } else {
-          mimeType = "audio/wav";
+      let options: MediaRecorderOptions = {};
+      const mimeCandidates = [
+        "audio/webm;codecs=opus",
+        "audio/webm",
+        "audio/ogg;codecs=opus",
+        "audio/mp4",
+        "audio/aac",
+      ];
+      for (const candidate of mimeCandidates) {
+        if (typeof MediaRecorder !== "undefined" && typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported(candidate)) {
+          options = { mimeType: candidate };
+          break;
         }
       }
-      mimeTypeRef.current = mimeType;
+      mimeTypeRef.current = options.mimeType || "audio/webm";
 
-      const recorder = new MediaRecorder(stream, { mimeType });
+      const recorder = options.mimeType ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
       mediaRecorderRef.current = recorder;
 
       recorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+        if (e.data && e.data.size > 0) {
           chunksRef.current.push(e.data);
         }
       };
@@ -84,8 +94,23 @@ export function useAudioRecorder(): UseAudioRecorderReturn {
       recorder.start();
       setStatus("recording");
     } catch (err: unknown) {
-      const name = err instanceof DOMException ? err.name : "unknown";
-      setError(name);
+      let errorType = "unknown";
+      if (err instanceof DOMException) {
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+          errorType = "permission_denied";
+        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+          errorType = "device_not_found";
+        } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+          errorType = "device_busy";
+        } else if (err.name === "NotSupportedError") {
+          errorType = "not_supported";
+        } else {
+          errorType = err.name;
+        }
+      } else if (err instanceof Error) {
+        errorType = err.message || "error";
+      }
+      setError(errorType);
       setStatus("error");
       if (mediaStreamRef.current) {
         mediaStreamRef.current.getTracks().forEach((track) => track.stop());

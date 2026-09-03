@@ -90,6 +90,28 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
     return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
   };
 
+  const getErrorMessage = (err: string) => {
+    switch (err) {
+      case "permission_denied":
+      case "NotAllowedError":
+      case "PermissionDeniedError":
+        return "تم حظر إذن الميكروفون - يرجى السماح به من إعدادات المتصفح";
+      case "device_not_found":
+      case "NotFoundError":
+      case "DevicesNotFoundError":
+        return "لم يتم العثور على ميكروفون متصل";
+      case "device_busy":
+      case "NotReadableError":
+      case "TrackStartError":
+        return "الميكروفون قيد الاستخدام بواسطة برنامج آخر";
+      case "not_supported":
+      case "NotSupportedError":
+        return "المتصفح لا يدعم تسجيل الصوت";
+      default:
+        return "تعذر الوصول إلى الميكروفون - تحقق من الإذن";
+    }
+  };
+
   return (
     <div className="flex w-full items-center gap-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-3 py-2 shadow-md">
       <Button
@@ -111,13 +133,22 @@ const AudioRecorder: React.FC<AudioRecorderProps> = ({ onSend, onCancel }) => {
           )}
         </div>
 
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-[color:var(--color-foreground)]">
             {formatTime(recordingTime)}
           </div>
           <div className="text-xs text-[color:var(--color-muted-foreground)]">
             {error ? (
-              <span className="text-rose-500">تعذر الوصول إلى الميكروفون - تحقق من الإذن</span>
+              <div className="flex items-center gap-2">
+                <span className="text-rose-500 truncate">{getErrorMessage(error)}</span>
+                <button
+                  type="button"
+                  onClick={() => startRecording()}
+                  className="shrink-0 text-primary underline hover:opacity-80 text-xs font-medium"
+                >
+                  إعادة المحاولة
+                </button>
+              </div>
             ) : (
               STATUS_LABELS[status] || "Processing..."
             )}
