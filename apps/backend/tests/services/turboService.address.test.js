@@ -2,6 +2,7 @@ const axios = require('axios');
 
 jest.mock('axios', () => ({
   post: jest.fn(),
+  get: jest.fn().mockResolvedValue({ data: { success: 1, feed: [] } }),
 }));
 
 jest.mock('../../services/sharedDatabase', () => ({

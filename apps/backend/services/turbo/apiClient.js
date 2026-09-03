@@ -116,7 +116,8 @@ class TurboApiClient {
 
   async post(endpoint, data, extraOptions = {}) {
     const headers = await this.getHeaders();
-    return axios.post(`${this.baseUrl}${endpoint}`, data, {
+    const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+    return axios.post(url, data, {
       headers,
       timeout: this.timeout,
       ...extraOptions
@@ -125,7 +126,8 @@ class TurboApiClient {
 
   async get(endpoint, params = {}, extraOptions = {}) {
     const headers = await this.getHeaders();
-    return axios.get(`${this.baseUrl}${endpoint}`, {
+    const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
+    return axios.get(url, {
       headers,
       params,
       timeout: this.timeout,

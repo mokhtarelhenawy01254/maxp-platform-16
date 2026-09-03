@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Turbo Address Parser Utilities
  * ╪»┘ê╪º┘ä ╪¬╪¡┘ä┘è┘ä ┘ê╪¬┘å╪╕┘è┘ü ╪º┘ä╪╣┘å┘ê╪º┘å ┘ä╪┤╪¡┘å Turbo
  */
@@ -204,8 +204,32 @@ function getBestShippingAddressFields(...shippingAddressCandidates) {
   return merged;
 }
 
+function unwrapAddressText(value) {
+  if (value === null || value === undefined) return '';
+  let text = String(value).trim();
+  while (text.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(text);
+      if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+        text = String(parsed.street || parsed.addressLine1 || parsed.address || parsed.address1 || parsed.address_1 || '').trim();
+      } else {
+        break;
+      }
+    } catch (e) {
+      break;
+    }
+  }
+  return text;
+}
+
 function extractCleanStreetAddress(addressFields, rawFallback = '', options = {}) {
-  let streetText = addressFields.formattedAddress || addressFields.primaryAddress || addressFields.parsedAddress?.street || addressFields.parsedAddress?.addressLine1 || addressFields.parsedAddress?.address || '';
+  let streetText = unwrapAddressText(addressFields.formattedAddress)
+    || unwrapAddressText(addressFields.primaryAddress)
+    || unwrapAddressText(addressFields.parsedAddress?.street)
+    || unwrapAddressText(addressFields.parsedAddress?.addressLine1)
+    || unwrapAddressText(addressFields.parsedAddress?.address)
+    || unwrapAddressText(addressFields.sourceValue)
+    || unwrapAddressText(rawFallback);
 
   if (typeof streetText !== 'string') {
     streetText = String(streetText || '');
@@ -213,29 +237,10 @@ function extractCleanStreetAddress(addressFields, rawFallback = '', options = {}
 
   streetText = streetText.trim();
 
-  if (streetText.startsWith('{')) {
-    try {
-      const parsed = JSON.parse(streetText);
-      streetText = parsed.street || parsed.addressLine1 || parsed.address || parsed.address_1 || '';
-    } catch (e) {
-      streetText = '';
-    }
-  }
-
-  if (!streetText || streetText.length < 3) {
-    streetText = addressFields.formattedAddress || addressFields.sourceValue || rawFallback || '';
-  }
-
-  if (typeof streetText !== 'string') {
-    streetText = String(streetText || '');
-  }
-
-  if (streetText.startsWith('{') || streetText.startsWith('[')) {
-    streetText = '';
-  }
-
+  // Strip standalone mobile numbers if embedded in the address text
   streetText = streetText.replace(/01[0-9]{9}/g, '');
 
+  // Strip customer name if embedded in the address
   if (options.customerName) {
     const nameParts = String(options.customerName).trim().split(/\s+/).filter(p => p.length > 2);
     if (nameParts.length > 0) {
@@ -244,33 +249,36 @@ function extractCleanStreetAddress(addressFields, rawFallback = '', options = {}
     }
   }
 
-  const commonGovWords = ['┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä┘é╪º┘ç╪▒┘ç', '┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä┘é╪º┘ç╪▒╪⌐', '┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä╪¼┘è╪▓╪⌐', '┘à╪¡╪º┘ü╪╕╪⌐ ╪º┘ä╪º╪│┘â┘å╪»╪▒┘è╪⌐', '╪ú╪╖╪▒╪º┘ü ╪º┘ä┘é╪º┘ç╪▒╪⌐ ┘ê╪º┘ä╪¼┘è╪▓╪⌐', '╪º┘ä┘é╪º┘ç╪▒╪⌐', '╪º┘ä╪¼┘è╪▓╪⌐', '╪º┘ä╪Ñ╪│┘â┘å╪»╪▒┘è╪⌐', 'Cairo', 'Giza', 'Alexandria'];
-  for (const govWord of commonGovWords) {
-    const gRegex = new RegExp(govWord.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'), 'gi');
-    streetText = streetText.replace(gRegex, '');
+  // Remove trailing city or governorate name only if it's trailing at the very end of the formatted address
+  const locWords = [
+    addressFields.governorate,
+    options.governorate,
+    addressFields.city,
+    options.city,
+    'Cairo', 'Giza', 'Alexandria'
+  ].filter(Boolean).map(s => cleanLocationName(String(s).trim())).filter(s => s.length > 2);
+
+  for (const loc of locWords) {
+    const locRegex = new RegExp(`[\\s,]+(${loc.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')})\\s*$`, 'i');
+    streetText = streetText.replace(locRegex, '');
   }
 
-  if (addressFields.city || options.city) {
-    const cityName = String(addressFields.city || options.city).trim();
-    if (cityName && cityName.length > 2) {
-      const cityRegex = new RegExp(`(┘à╪»┘è┘å╪⌐\\s+)?${cityName.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}`, 'gi');
-      streetText = streetText.replace(cityRegex, '');
-    }
-  }
-
+  // Clean up extra whitespace and punctuation without removing location/district text
   streetText = streetText
     .replace(/[\r\n]+/g, ' ')
-    .replace(/^[,\s\-\:\.\t╪î]+|[,\s\-\:\.\t╪î]+$/g, '')
-    .replace(/[╪î\s]*,[╪î\s]*,/g, ',')
+    .replace(/^[,\s\-\:\.\t،]+|[,\s\-\:\.\t،]+$/g, '')
+    .replace(/[،\s]*,[،\s]*,/g, ',')
     .replace(/\s+/g, ' ')
     .trim();
 
   if (streetText.length < 3) {
-    streetText = String(rawFallback || '').replace(/01[0-9]{9}/g, '').trim();
+    const fallbackClean = unwrapAddressText(rawFallback).replace(/01[0-9]{9}/g, '').trim();
+    if (fallbackClean.length >= 3) {
+      streetText = fallbackClean;
+    }
   }
 
-  // Never emit a raw JSON/blob as the street address (falls back to
-  // "area - governorate" in the caller when empty).
+  // Never emit a raw JSON blob as the street address
   if (streetText.startsWith('{') || streetText.startsWith('[')) {
     streetText = '';
   }

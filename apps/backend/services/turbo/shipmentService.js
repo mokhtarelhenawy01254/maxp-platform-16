@@ -4,6 +4,70 @@ const { getTurboGovernorateName, findGovernmentByCity } = require('../../utils/t
 const { handleError } = require('../../utils/turbo/errorHandler');
 
 
+function normalizeTextForMatching(text) {
+  return String(text || '').toLowerCase().trim()
+    .replace(/[أإآ]/g, 'ا')
+    .replace(/ة/g, 'ه')
+    .replace(/ى/g, 'ي')
+    .replace(/ؤ/g, 'و')
+    .replace(/ئ/g, 'ي')
+    .replace(/[^a-z0-9\u0600-\u06FF\s]/gi, ' ')
+    .replace(/\s+/g, ' ');
+}
+
+function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govName) {
+  if (!Array.isArray(areas) || areas.length === 0) {
+    return candidateArea || govName || 'المركز الرئيسي';
+  }
+
+  const nCandidate = normalizeTextForMatching(candidateArea);
+  const nGov = normalizeTextForMatching(govName);
+  const isCandidateJustGov = !nCandidate || nCandidate === nGov || ['cairo', 'giza', 'alexandria', 'sharqia', 'gharbia', 'dakahlia', 'qena', 'sohag', 'aswan', 'asyut'].includes(nCandidate);
+
+  // 1. Direct match on candidateArea if it is a specific area name
+  if (!isCandidateJustGov && nCandidate.length >= 2) {
+    const directMatch = areas.find(a => {
+      const na = normalizeTextForMatching(a.name);
+      return na === nCandidate || na.includes(nCandidate) || nCandidate.includes(na);
+    });
+    if (directMatch) return directMatch.name;
+  }
+
+  // 2. Smart search: match against full address text
+  const nAddress = normalizeTextForMatching((fullAddressText || '') + ' ' + (candidateArea || ''));
+  let bestMatch = null;
+  let maxMatchLength = 0;
+
+  for (const area of areas) {
+    const na = normalizeTextForMatching(area.name);
+    if (na.length >= 3 && nAddress.includes(na)) {
+      if (na.length > maxMatchLength) {
+        maxMatchLength = na.length;
+        bestMatch = area.name;
+      }
+    }
+  }
+
+  if (bestMatch) return bestMatch;
+
+  // 3. If candidateArea was provided and isn't just the governorate, retain it
+  if (!isCandidateJustGov && candidateArea && candidateArea.trim().length >= 2) {
+    return candidateArea.trim();
+  }
+
+  // 4. Default fallback to governorate or 'المركز الرئيسي'
+  return govName || 'المركز الرئيسي';
+}
+
+function rawShippingAddressString(shippingAddress, customerAddress) {
+  let text = '';
+  if (typeof shippingAddress === 'string') text += shippingAddress + ' ';
+  else if (shippingAddress && typeof shippingAddress === 'object') text += JSON.stringify(shippingAddress) + ' ';
+  if (typeof customerAddress === 'string') text += customerAddress + ' ';
+  else if (customerAddress && typeof customerAddress === 'object') text += JSON.stringify(customerAddress) + ' ';
+  return text;
+}
+
 class ShipmentService {
   constructor(apiClient) {
     this._client = apiClient;
@@ -56,24 +120,18 @@ class ShipmentService {
         }
       }
 
-      // Use the parsed area (district) when present — never fall back to the
-      // governorate/city as the area, otherwise Turbo receives an incorrect area.
-      let cleanArea = cleanLocationName(orderData.area || addressFields.area || addressFields.parsedAddress?.area || city || addressFields.city || '');
+      // Determine area: prioritize specific area, then smart match from address text against Turbo's canonical area list
+      let candidateArea = cleanLocationName(orderData.area || addressFields.area || addressFields.parsedAddress?.area || city || addressFields.city || '');
+      let cleanArea = candidateArea;
 
-      // Normalize the area against Turbo's canonical area list (mirrors updateShipment).
-      // Without this the first send (create) arrives with a wrong/incomplete area,
-      // while the re-send (update) corrects it.
-      if (matchedGovId && cleanArea) {
+      if (matchedGovId) {
         try {
           const areasResult = await this._client.get(`${this._client.baseUrl}/get-area/${matchedGovId}?main_client_code=${mainClientCode || 37321}&authentication_key=${encodeURIComponent(apiKey)}`);
           const aData = areasResult.data;
           let areas = [];
           if ((aData.success === true || aData.success === 1) && aData.feed) areas = Array.isArray(aData.feed) ? aData.feed : [];
           if (areas.length > 0) {
-            const cl = cleanArea.toLowerCase();
-            const ma = areas.find(a => a.name.toLowerCase() === cl)
-              || areas.find(a => a.name.toLowerCase().includes(cl) || cl.includes(a.name.toLowerCase()));
-            if (ma) cleanArea = ma.name;
+            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, `${cleanAddress} ${rawShippingAddressString(shippingAddress, customerAddress)}`, cleanGovernorate);
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
@@ -213,17 +271,18 @@ class ShipmentService {
         cleanGovernorate = findGovernmentByCity(formattedData.city, governments);
       }
 
-      let cleanArea = cleanLocationName(formattedData.area || addressFields.area || addressFields.parsedAddress?.area || formattedData.city || addressFields.city || '');
-      if (matchedGovId && cleanArea) {
+      // Determine area: prioritize specific area, then smart match from address text against Turbo's canonical area list
+      let candidateArea = cleanLocationName(formattedData.area || addressFields.area || addressFields.parsedAddress?.area || formattedData.city || addressFields.city || '');
+      let cleanArea = candidateArea;
+
+      if (matchedGovId) {
         try {
           const areasResult = await this._client.get(`${this._client.baseUrl}/get-area/${matchedGovId}?main_client_code=${mainClientCode || 37321}&authentication_key=${encodeURIComponent(apiKey)}`);
           const aData = areasResult.data;
           let areas = [];
           if ((aData.success === true || aData.success === 1) && aData.feed) areas = Array.isArray(aData.feed) ? aData.feed : [];
           if (areas.length > 0) {
-            const cl = cleanArea.toLowerCase();
-            const ma = areas.find(a => a.name.toLowerCase() === cl) || areas.find(a => a.name.toLowerCase().includes(cl) || cl.includes(a.name.toLowerCase()));
-            if (ma) cleanArea = ma.name;
+            cleanArea = matchBestAreaFromTurboList(areas, candidateArea, `${cleanAddress} ${rawShippingAddressString(formattedData.shippingAddress, formattedData.customerAddress)}`, cleanGovernorate);
           }
         } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
