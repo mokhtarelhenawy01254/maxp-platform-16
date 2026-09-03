@@ -264,12 +264,53 @@ const applyPdpQuickOrderSettingsToStorefrontSettings = (
     ...(currentSettings || ({} as StorefrontSettings)),
   };
 
+  const normalizedSettings =
+    pdpQuickOrderSettings || DEFAULT_PDP_QUICK_ORDER_SETTINGS;
+  const nextDesignTokens = upsertPdpQuickOrderSettingsInDesignTokens(
+    nextSettings.designTokens,
+    normalizedSettings,
+  );
+
+  if (
+    isRecord(nextDesignTokens) &&
+    isRecord(nextDesignTokens.pageOverrides) &&
+    isRecord((nextDesignTokens.pageOverrides as Record<string, unknown>).pdp)
+  ) {
+    const pdp = (nextDesignTokens.pageOverrides as Record<string, unknown>)
+      .pdp as Record<string, unknown>;
+    if (Array.isArray(pdp.sections)) {
+      pdp.sections = pdp.sections.map((sectionEntry: unknown) => {
+        if (
+          sectionEntry &&
+          typeof sectionEntry === 'object' &&
+          'type' in sectionEntry &&
+          ((sectionEntry as { type: string }).type === 'pdp-checkout' ||
+            (sectionEntry as { type: string }).type === 'pdpQuickOrder')
+        ) {
+          const currentSection = sectionEntry as {
+            type: string;
+            settings?: Record<string, unknown>;
+          };
+          return {
+            ...currentSection,
+            settings: {
+              ...(currentSection.settings || {}),
+              placement: normalizedSettings.placement,
+              surfaceMode: normalizedSettings.surfaceMode,
+              showQuantity: normalizedSettings.showQuantity,
+              showOrderSummary: normalizedSettings.showOrderSummary,
+              fields: normalizedSettings.fields,
+            },
+          };
+        }
+        return sectionEntry;
+      });
+    }
+  }
+
   return {
     ...nextSettings,
-    designTokens: upsertPdpQuickOrderSettingsInDesignTokens(
-      nextSettings.designTokens,
-      pdpQuickOrderSettings || DEFAULT_PDP_QUICK_ORDER_SETTINGS,
-    ),
+    designTokens: nextDesignTokens,
   };
 };
 

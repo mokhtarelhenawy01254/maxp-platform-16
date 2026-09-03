@@ -1870,3 +1870,21 @@
   - `apps/frontend/src/storefront/StorefrontShell.tsx`
   - `apps/frontend/src/storefront/__tests__/storefrontRuntimeImports.test.ts`
 
+### [FIX] Storefront PDP Quick-Order Form Ignored After-Description Placement (2026-09-03)
+- **Description**: In Store Settings -> Checkout tab (`/settings/store?tab=checkout`), selecting form placement "بعد الوصف" (after-description) and mode "كتلة مستقلة" (standalone) failed to render the checkout form after the product description on PDP pages like `https://swan.maxp.online/product/kotshy-soan-eskotsh`.
+- **Root Cause**:
+  1. In `apps/frontend/src/storefront/sections/ProductInfo.tsx`, `pdpQuickOrderSurfaceMode` evaluated `embeddedPdpCheckoutSettings?.surfaceMode === 'merged-buybox'` before checking `hasStoredPdpQuickOrderSettings`, permanently locking the surface mode into `merged-buybox` whenever theme defaults or stale page overrides contained merged-buybox.
+  2. Because `pdpQuickOrderSurfaceMode` was forced to `merged-buybox`, `shouldMergeInlinePdpQuickOrderIntoBuyBox` remained `true`, causing `inlinePdpQuickOrderAfterDescription` to evaluate to `null` and rendering the form above the description inside the top BuyBox.
+  3. In `apps/frontend/src/pages/settings/StoreSettings.tsx`, saving quick order settings updated `designTokens.pdpQuickOrder` without syncing matching `pdp-checkout` sections inside `designTokens.pageOverrides.pdp.sections`.
+- **Resolution**:
+  1. Updated `pdpQuickOrderSurfaceMode` in `ProductInfo.tsx` to prioritize user-configured `hasStoredPdpQuickOrderSettings` first before falling back to theme defaults.
+  2. Added a placement guard to `shouldMergeInlinePdpQuickOrderIntoBuyBox` so that `after-description` placement never merges into the top BuyBox.
+  3. Included `inlinePdpQuickOrderAfterDescription` in `hasElessiLowerDetails` to guarantee the lower details section renders when an after-description form exists.
+  4. Updated `applyPdpQuickOrderSettingsToStorefrontSettings` in `StoreSettings.tsx` to synchronize `pdp-checkout` sections inside `pageOverrides.pdp.sections`.
+- **Files Modified**:
+  - `apps/frontend/src/storefront/sections/ProductInfo.tsx`
+  - `apps/frontend/src/pages/settings/StoreSettings.tsx`
+  - `apps/backend/docs/storefront/bugs.md`
+
+
+

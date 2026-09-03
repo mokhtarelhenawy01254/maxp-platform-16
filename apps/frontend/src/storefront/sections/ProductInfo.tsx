@@ -782,10 +782,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         ? 'after-description'
         : pdpQuickOrderSettings.placement;
   const pdpQuickOrderSurfaceMode =
-    embeddedPdpCheckoutSettings?.surfaceMode === 'merged-buybox'
-      ? 'merged-buybox'
-      : hasStoredPdpQuickOrderSettings
+    hasStoredPdpQuickOrderSettings
       ? pdpQuickOrderSettings.surfaceMode
+      : embeddedPdpCheckoutSettings?.surfaceMode === 'merged-buybox'
+      ? 'merged-buybox'
       : 'standalone';
   const supportsInlineQuickOrderPlacement =
     !isIntruderNft &&
@@ -3231,7 +3231,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   );
   const shouldMergeInlinePdpQuickOrderIntoBuyBox =
     shouldRenderInlinePdpQuickOrder &&
-    pdpQuickOrderSurfaceMode === 'merged-buybox';
+    pdpQuickOrderSurfaceMode === 'merged-buybox' &&
+    pdpQuickOrderPlacement !== 'after-description';
   const mergedInlinePdpQuickOrder = shouldMergeInlinePdpQuickOrderIntoBuyBox
     ? inlinePdpQuickOrder
     : null;
@@ -6895,6 +6896,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         </details>
       ) : null;
     const hasElessiLowerDetails =
+      Boolean(inlinePdpQuickOrderAfterDescription) ||
       (Boolean(safeDescription) && !shouldHideDuplicateDescriptionSection) ||
       featureHighlights.length > 0 ||
       safeCheckoutItems.length > 0 ||
