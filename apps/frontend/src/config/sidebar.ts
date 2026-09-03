@@ -848,6 +848,7 @@ export const getSidebarConfig = (
                 { to: '/advertising/facebook-ads/ad-library', icon: Search, label: t('sidebar.adLibrary') },
                 { to: '/advertising/facebook-ads/overlay-campaigns', icon: Sparkles, label: t('sidebar.overlayCampaigns') },
                 { to: '/advertising/product-landing-pages', icon: Monitor, label: t('sidebar.productLandingPages') },
+                { to: '/advertising/funnel-wizard', icon: Rocket, label: t('sidebar.quickFunnel') },
                 { to: '/advertising/facebook-ads/tests', icon: FlaskConical, label: t('sidebar.abTests') },
                 { to: '/advertising/facebook-ads/audiences', icon: Users, label: t('sidebar.audiences') },
                 { to: '/advertising/facebook-ads/catalogs', icon: ShoppingBag, label: t('sidebar.productCatalogs') },

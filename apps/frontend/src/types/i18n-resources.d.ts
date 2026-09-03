@@ -16817,6 +16817,7 @@ declare module 'react-i18next' {
         adLibrary: string;
         overlayCampaigns: string;
         productLandingPages: string;
+        quickFunnel: string;
         facebookInbox: string;
         facebookIntegrationSettings: string;
         facebookBlocked: string;
