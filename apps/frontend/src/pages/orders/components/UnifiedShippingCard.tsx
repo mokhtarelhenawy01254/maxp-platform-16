@@ -10,6 +10,7 @@ import {
   ClockIcon,
   ArrowTopRightOnSquareIcon,
   ExclamationCircleIcon,
+  PaperAirplaneIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../../services/apiClient";
 import { useCurrency } from "../../../hooks/useCurrency";
@@ -195,6 +196,72 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     }
   };
 
+  // Re-send / Update Shipment Data with Courier
+  const [resending, setResending] = useState(false);
+  const handleResendShipment = async () => {
+    if (!canManageShipments) {
+      toast.error("ليس لديك صلاحية إدارة الشحن");
+      return;
+    }
+
+    setResending(true);
+    try {
+      const isTurbo =
+        existingCarrierName?.toLowerCase().includes("turbo") ||
+        Boolean(order?.turboTrackingNumber || order?.turboShipmentId);
+
+      if (isTurbo) {
+        const orderIdentifier = order?.orderNumber || order?.id;
+        let success = false;
+        let successMessage = "";
+
+        // First attempt: Update existing shipment in Turbo (PUT /api/turbo/orders/:orderId/shipment)
+        try {
+          const updateRes = await apiClient.put(`/turbo/orders/${orderIdentifier}/shipment`);
+          if (updateRes.data?.success) {
+            success = true;
+            successMessage = updateRes.data.message || "تم تحديث وإعادة إرسال بيانات الشحنة لتربو بنجاح";
+          }
+        } catch (updateErr: any) {
+          // If update fails (e.g. shipment was cancelled or needs recreation), try recreate (POST with replaceExisting: true)
+          const createRes = await apiClient.post(`/turbo/orders/${orderIdentifier}/shipment`, {
+            replaceExisting: true,
+          });
+          if (createRes.data?.success) {
+            success = true;
+            successMessage = "تم إنشاء وإعادة إرسال الشحنة لتربو بنجاح";
+          } else {
+            throw new Error(createRes.data?.error || "فشل إعادة إرسال الشحنة");
+          }
+        }
+
+        if (success) {
+          toast.success(successMessage);
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        }
+      } else if (shipment?.id) {
+        const res = await apiClient.post(`/shipments/${shipment.id}/sync`);
+        if (res.data?.success) {
+          toast.success(res.data.message || "تم تحديث ومزامنة بيانات الشحنة بنجاح");
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        }
+      }
+
+      toast.error("تعذر إعادة إرسال بيانات الشحنة");
+    } catch (err: any) {
+      toast.error(
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        err?.message ||
+        "فشل إعادة إرسال بيانات الشحنة"
+      );
+    } finally {
+      setResending(false);
+    }
+  };
+
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-4 sm:p-5 space-y-4">
       {/* Header */}
@@ -260,9 +327,20 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
               type="button"
+              onClick={handleResendShipment}
+              disabled={resending || syncing}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/60 transition disabled:opacity-50"
+              title="إعادة إرسال وتحديث بيانات الشحنة والعنوان لشركة الشحن"
+            >
+              <PaperAirplaneIcon className={`h-3.5 w-3.5 ${resending ? "animate-spin" : ""}`} />
+              <span>{resending ? "جاري الإرسال..." : "إعادة إرسال الشحنة"}</span>
+            </button>
+
+            <button
+              type="button"
               onClick={handleSyncStatus}
-              disabled={syncing}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              disabled={syncing || resending}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
             >
               <ArrowPathIcon className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
               <span>مزامنة الحالة</span>
