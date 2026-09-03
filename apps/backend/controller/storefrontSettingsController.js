@@ -946,6 +946,116 @@ const testFacebookCapi = async (req, res) => {
   }
 };
 
+const sendTestEvent = async (req, res) => {
+  try {
+    const companyId = resolveCompanyId(req);
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'Company context is required' });
+    }
+
+    const context = await getStorefrontContext(companyId);
+    if (!context) {
+      return res.status(404).json({ success: false, message: 'Storefront context not found' });
+    }
+
+    const { company, settings } = context;
+    const pixelId = trimToNull(settings.facebookPixelId);
+    if (!pixelId) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال Pixel ID أولاً' });
+    }
+
+    const accessToken = getPrimaryConversionsToken({ company, settings });
+    if (!accessToken) {
+      return res.status(400).json({ success: false, message: 'يرجى إضافة Access Token أولاً' });
+    }
+
+    const {
+      eventName = 'Purchase',
+      value = 150,
+      currency = 'EGP',
+      contentName = 'منتج تجريبي للتأكد من الربط',
+    } = req.body || {};
+
+    const testEventCode = trimToNull(settings.facebookConvApiTestCode);
+    const service = new FacebookConversionsService(pixelId, accessToken, testEventCode);
+
+    const eventId = `test_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+    const userData = {
+      email: 'test@example.com',
+      phone: '+201000000000',
+      firstName: 'MaxP',
+      lastName: 'Tester',
+      city: 'Cairo',
+      country: 'eg',
+      ip: req.ip || '127.0.0.1',
+      userAgent: req.headers['user-agent'] || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+      pageUrl: req.headers.referer || 'https://maxp.online',
+    };
+
+    let result;
+    if (eventName === 'Purchase') {
+      result = await service.trackPurchase(
+        userData,
+        {
+          id: eventId,
+          total: Number(value),
+          currency,
+          items: [{ productId: 'TEST-SKU-1', name: contentName, price: Number(value), quantity: 1 }],
+        },
+        eventId
+      );
+    } else if (eventName === 'AddToCart') {
+      result = await service.trackAddToCart(
+        userData,
+        {
+          id: 'TEST-PROD-1',
+          name: contentName,
+          price: Number(value),
+          category: 'Test Category',
+        },
+        eventId
+      );
+    } else if (eventName === 'ViewContent') {
+      result = await service.trackViewContent(
+        userData,
+        {
+          id: 'TEST-PROD-1',
+          name: contentName,
+          price: Number(value),
+          category: 'Test Category',
+        },
+        eventId
+      );
+    } else {
+      result = await service.trackPageView(
+        userData,
+        userData.pageUrl,
+        eventId
+      );
+    }
+
+    return res.json({
+      success: true,
+      message: `تم إرسال حدث ${eventName} بنجاح إلى Facebook Conversions API!`,
+      data: {
+        eventId,
+        eventName,
+        value,
+        currency,
+        pixelId,
+        testEventCode,
+        metaResult: result,
+      },
+    });
+  } catch (error) {
+    console.error('❌ [STOREFRONT-SETTINGS] Failed to send test event:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'فشل إرسال الحدث التجريبي',
+    });
+  }
+};
+
 const getPixelDiagnostics = async (req, res) => {
   try {
     const companyId = resolveCompanyId(req);
@@ -1775,6 +1885,7 @@ module.exports = {
   resetSettings,
   testFacebookPixel,
   testFacebookCapi,
+  sendTestEvent,
   getPixelDiagnostics,
   checkTokenPermissions,
   getPixels,

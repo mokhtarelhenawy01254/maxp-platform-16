@@ -56,9 +56,13 @@ export const useFacebookPixel = (
     ) {
       return;
     }
+ 
+    const additionalPixelIds = (storefrontSettings.facebookPixelConfigs || [])
+      .map((p) => p.pixelId)
+      .filter((id) => Boolean(id) && id !== storefrontSettings.facebookPixelId);
 
     const cleanupIdleTask = scheduleIdleTask(() => {
-      loadFacebookPixel(storefrontSettings.facebookPixelId!);
+      loadFacebookPixel(storefrontSettings.facebookPixelId!, additionalPixelIds);
       setPixelId(storefrontSettings.facebookPixelId!);
       setIsLoaded(true);
       setPageViewEnabled(storefrontSettings.pixelTrackPageView !== false);
@@ -68,6 +72,7 @@ export const useFacebookPixel = (
   }, [
     storefrontSettings?.facebookPixelEnabled,
     storefrontSettings?.facebookPixelId,
+    storefrontSettings?.facebookPixelConfigs,
     storefrontSettings?.gtmEnabled,
     storefrontSettings?.gtmSuppressPixels,
     storefrontSettings?.pixelTrackPageView,

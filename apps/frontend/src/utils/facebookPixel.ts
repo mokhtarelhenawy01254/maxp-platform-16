@@ -233,10 +233,22 @@ export const needsCAPIOnly = (): boolean => {
 /**
  * تحميل Facebook Pixel Script
  */
-export const loadFacebookPixel = (pixelIdParam: string) => {
+export const loadFacebookPixel = (
+  pixelIdParam: string,
+  additionalPixelIds: string[] = [],
+) => {
   const normalizedPixelId = pixelIdParam.trim();
 
   if (isInitialized) {
+    // If already initialized, still ensure any new additional pixels are registered
+    if (Array.isArray(additionalPixelIds) && additionalPixelIds.length > 0 && hasFbq()) {
+      additionalPixelIds.forEach((addId) => {
+        const trimmed = typeof addId === "string" ? addId.trim() : "";
+        if (trimmed && /^\d{14,18}$/.test(trimmed)) {
+          invokeFbq("init", trimmed);
+        }
+      });
+    }
     return;
   }
 
@@ -244,7 +256,7 @@ export const loadFacebookPixel = (pixelIdParam: string) => {
     return;
   }
 
-  if (!/^\d{15,16}$/.test(normalizedPixelId)) {
+  if (!/^\d{14,18}$/.test(normalizedPixelId)) {
     return;
   }
 
@@ -318,6 +330,15 @@ export const loadFacebookPixel = (pixelIdParam: string) => {
     }, 7000);
 
     invokeFbq("init", pixelId);
+
+    if (Array.isArray(additionalPixelIds) && additionalPixelIds.length > 0) {
+      additionalPixelIds.forEach((addId) => {
+        const trimmed = typeof addId === "string" ? addId.trim() : "";
+        if (trimmed && trimmed !== pixelId && /^\d{14,18}$/.test(trimmed)) {
+          invokeFbq("init", trimmed);
+        }
+      });
+    }
 
     const appendNoscript = () => {
       if (

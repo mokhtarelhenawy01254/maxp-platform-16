@@ -67,6 +67,13 @@ router.post(
   storefrontSettingsController.testFacebookCapi,
 );
 
+router.post(
+  '/send-test-event',
+  verifyToken.authenticateToken,
+  verifyToken.requireCompanyAccess,
+  storefrontSettingsController.sendTestEvent,
+);
+
 router.get(
   '/pixel-diagnostics',
   verifyToken.authenticateToken,

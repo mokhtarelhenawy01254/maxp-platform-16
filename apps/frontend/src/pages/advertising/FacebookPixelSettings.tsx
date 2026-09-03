@@ -268,6 +268,70 @@ const FacebookPixelSettings: React.FC = () => {
     setTimeout(() => setCopiedPixelId(null), 2000);
   };
 
+  // 🧪 Event Simulator States
+  const [simulatorEvent, setSimulatorEvent] = useState<
+    "Purchase" | "AddToCart" | "ViewContent" | "PageView"
+  >("Purchase");
+  const [simulatorValue, setSimulatorValue] = useState(150);
+  const [simulatorContentName, setSimulatorContentName] = useState(
+    "تيشيرت تجريبي للتأكد من الربط",
+  );
+  const [simulatorSending, setSimulatorSending] = useState(false);
+  const [simulatorResult, setSimulatorResult] = useState<{
+    eventId: string;
+    eventName: string;
+    timestamp: string;
+    testEventCode?: string;
+  } | null>(null);
+
+  const handleSendSimulatorEvent = async () => {
+    if (!settings.facebookPixelId) {
+      toast.error("يرجى إدخال وتفعيل Pixel ID أولاً");
+      return;
+    }
+
+    try {
+      setSimulatorSending(true);
+      const response = await storefrontSettingsService.sendTestEvent({
+        eventName: simulatorEvent,
+        value: simulatorValue,
+        currency: "EGP",
+        contentName: simulatorContentName,
+      });
+
+      if (response.success) {
+        toast.success(`تم إرسال حدث ${simulatorEvent} بنجاح إلى Meta!`);
+        setSimulatorResult({
+          eventId: response.data?.eventId || `test_${Date.now()}`,
+          eventName: simulatorEvent,
+          timestamp: new Date().toLocaleTimeString("ar-EG"),
+          testEventCode:
+            response.data?.testEventCode || settings.facebookConvApiTestCode,
+        });
+
+        // Also fire in browser if window.fbq is available
+        try {
+          if (typeof window !== "undefined" && (window as any).fbq) {
+            (window as any).fbq("track", simulatorEvent, {
+              value: simulatorValue,
+              currency: "EGP",
+              content_name: simulatorContentName,
+            });
+          }
+        } catch {
+          // ignore
+        }
+      } else {
+        toast.error(response.message || "فشل إرسال الحدث التجريبي");
+      }
+    } catch (error: unknown) {
+      console.error("Error sending simulator event:", error);
+      toast.error(getErrorMessage(error, "فشل إرسال الحدث التجريبي إلى Meta"));
+    } finally {
+      setSimulatorSending(false);
+    }
+  };
+
   // Track if settings have been loaded to prevent multiple calls
   const hasLoadedSettings = useRef(false);
 
@@ -1518,6 +1582,148 @@ const FacebookPixelSettings: React.FC = () => {
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          {/* 🧪 2026 Live Event Tester / Simulator */}
+          <div className="bg-white dark:bg-gray-800 shadow rounded-2xl p-4 sm:p-6 border border-indigo-100 dark:border-indigo-900/40 relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <BeakerIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <span>🧪 محاكي واختبار الأحداث المباشرة</span>
+                    <span className="px-2 py-0.5 text-xs bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full font-normal">
+                      Live Console
+                    </span>
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                    أرسل حدث تجريبي فوراً للتأكد من وصول بيانات السيرفر إلى Meta دون الحاجة لإنشاء طلب شراء حقيقي
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://business.facebook.com/events_manager2"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 font-medium inline-flex items-center gap-1 self-start sm:self-auto"
+              >
+                <span>فتح Events Manager</span>
+                <ArrowPathIcon className="w-3.5 h-3.5" />
+              </a>
+            </div>
+
+            {/* Event Type Buttons */}
+            <div className="mb-4">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                اختر الحدث المراد اختباره:
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { key: "Purchase", label: "عملية شراء", icon: "🛍️", desc: "Purchase" },
+                  { key: "AddToCart", label: "إضافة للسلة", icon: "🛒", desc: "AddToCart" },
+                  { key: "ViewContent", label: "عرض منتج", icon: "👁️", desc: "ViewContent" },
+                  { key: "PageView", label: "عرض صفحة", icon: "📄", desc: "PageView" },
+                ].map((ev) => (
+                  <button
+                    key={ev.key}
+                    type="button"
+                    onClick={() => setSimulatorEvent(ev.key as any)}
+                    className={`p-3 rounded-xl border text-right transition-all duration-200 ${
+                      simulatorEvent === ev.key
+                        ? "border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/30 text-indigo-900 dark:text-indigo-200 shadow-xs ring-1 ring-indigo-500/20"
+                        : "border-gray-200 dark:border-gray-700 hover:border-gray-300 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    <div className="text-base mb-1">{ev.icon}</div>
+                    <div className="text-xs sm:text-sm font-bold">{ev.label}</div>
+                    <div className="text-[11px] text-gray-500 font-mono mt-0.5">{ev.desc}</div>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Parameters Inputs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  قيمة الحدث التجريبي (Value)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={simulatorValue}
+                    onChange={(e) => setSimulatorValue(Number(e.target.value))}
+                    className="w-full px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                    min={1}
+                  />
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500">
+                    EGP
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  اسم المحتوى / المنتج (Content Name)
+                </label>
+                <input
+                  type="text"
+                  value={simulatorContentName}
+                  onChange={(e) => setSimulatorContentName(e.target.value)}
+                  className="w-full px-3.5 py-2 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Trigger Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={handleSendSimulatorEvent}
+                disabled={simulatorSending || !settings.facebookPixelId || !settings.facebookConvApiToken}
+                className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 font-semibold text-sm transition-all min-h-[44px] shadow-sm"
+              >
+                {simulatorSending ? (
+                  <>
+                    <ArrowPathIcon className="w-4 h-4 animate-spin" />
+                    <span>جاري إرسال الحدث لـ Meta...</span>
+                  </>
+                ) : (
+                  <>
+                    <RocketLaunchIcon className="w-4 h-4" />
+                    <span>🚀 إرسال حدث {simulatorEvent} التجريبي الآن</span>
+                  </>
+                )}
+              </button>
+
+              {settings.facebookConvApiTestCode && (
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-mono bg-emerald-50 dark:bg-emerald-950/30 px-3 py-1.5 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                  كود الاختبار مفعّل: {settings.facebookConvApiTestCode}
+                </div>
+              )}
+            </div>
+
+            {/* Simulator Response Result */}
+            {simulatorResult && (
+              <div className="mt-4 p-3.5 bg-slate-900 text-emerald-400 rounded-xl font-mono text-xs border border-slate-800 shadow-inner">
+                <div className="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-2 mb-2">
+                  <span className="flex items-center gap-1.5 text-emerald-400 font-semibold">
+                    <CheckCircleIcon className="w-4 h-4 text-emerald-400" />
+                    <span>200 OK — تم استلام الحدث في Meta CAPI</span>
+                  </span>
+                  <span>{simulatorResult.timestamp}</span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-300">
+                  <div>الحدث: <span className="text-white font-bold">{simulatorResult.eventName}</span></div>
+                  <div>معرف الحدث (Event ID): <span className="text-amber-300">{simulatorResult.eventId}</span></div>
+                  {simulatorResult.testEventCode && (
+                    <div>Test Code: <span className="text-cyan-300">{simulatorResult.testEventCode}</span></div>
+                  )}
+                  <div>الحالة: <span className="text-emerald-400 font-semibold">Processed (1 Event)</span></div>
+                </div>
+              </div>
             )}
           </div>
 

@@ -230,6 +230,25 @@ const getPublicStorefrontSettingsSelect = (prisma) => {
     }
   }
 
+  if (availableFields.has('facebookPixelConfigs')) {
+    select.facebookPixelConfigs = {
+      where: { isActive: true },
+      select: {
+        id: true,
+        pixelId: true,
+        pixelName: true,
+        isPrimary: true,
+        trackPageView: true,
+        trackViewContent: true,
+        trackAddToCart: true,
+        trackInitiateCheckout: true,
+        trackPurchase: true,
+        trackSearch: true,
+        trackAddToWishlist: true,
+      },
+    };
+  }
+
   return select;
 };
 

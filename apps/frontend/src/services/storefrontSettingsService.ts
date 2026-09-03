@@ -45,6 +45,19 @@ export interface StorefrontSettings {
   pixelTrackPurchase?: boolean;
   pixelTrackSearch?: boolean;
   pixelTrackAddToWishlist?: boolean;
+  facebookPixelConfigs?: Array<{
+    id?: string;
+    pixelId: string;
+    pixelName?: string;
+    isPrimary?: boolean;
+    trackPageView?: boolean;
+    trackViewContent?: boolean;
+    trackAddToCart?: boolean;
+    trackInitiateCheckout?: boolean;
+    trackPurchase?: boolean;
+    trackSearch?: boolean;
+    trackAddToWishlist?: boolean;
+  }>;
   facebookConvApiEnabled?: boolean;
   facebookConvApiToken?: string;
   facebookConvApiTestCode?: string;
@@ -354,6 +367,16 @@ export const storefrontSettingsService = {
 
   testFacebookCapi: async () => {
     const response = await apiClient.post("/storefront-settings/test-facebook-capi", {});
+    return response.data;
+  },
+
+  sendTestEvent: async (data: {
+    eventName: string;
+    value?: number;
+    currency?: string;
+    contentName?: string;
+  }) => {
+    const response = await apiClient.post("/storefront-settings/send-test-event", data);
     return response.data;
   },
 
