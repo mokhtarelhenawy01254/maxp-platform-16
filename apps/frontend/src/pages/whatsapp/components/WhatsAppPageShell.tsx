@@ -110,7 +110,7 @@ export function WhatsAppPageShell({
                 <div className="min-w-0 space-y-1 sm:space-y-2">
                   <Badge
                     variant="outline"
-                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2 text-[9px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)] sm:px-2.5 sm:text-[10px]"
+                    className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-muted)] px-2 text-[9px] font-medium text-[color:var(--color-muted-foreground)] sm:px-2.5 sm:text-[10px]"
                   >
                     {eyebrow}
                   </Badge>
@@ -192,7 +192,7 @@ export function WhatsAppMetricCard({
     <Card className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] shadow-sm sm:rounded-3xl sm:shadow-md">
       <CardContent className="flex items-start justify-between gap-3 px-3 py-3 sm:gap-4 sm:px-5 sm:py-5">
         <div className="space-y-1 sm:space-y-2">
-          <p className="text-[10px] font-medium uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)] sm:text-xs">
+          <p className="text-[11px] font-medium text-[color:var(--color-muted-foreground)] sm:text-xs">
             {label}
           </p>
           <div className="text-xl font-semibold tracking-tight text-[color:var(--color-foreground)] sm:text-3xl">

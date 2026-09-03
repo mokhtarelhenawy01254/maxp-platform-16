@@ -30,9 +30,21 @@ import {
   ChevronRight,
   ChevronLeft,
   Info,
+  MoreVertical,
+  ExternalLink,
+  ShieldCheck,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { QRCodeSVG } from "qrcode.react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import {
   getContactDisplayPhone,
@@ -138,6 +150,7 @@ interface Session {
   metaQualityRating?: string | null;
   metaMessagingLimit?: number | null;
   metaApiVersion?: string | null;
+  metadata?: string | null;
   _count: {
     messages: number;
     contacts: number;
@@ -211,8 +224,8 @@ interface ApiErrorShape {
 }
 
 const providerLabels: Record<WhatsAppProvider, string> = {
-  BAILEYS: "Baileys",
-  META_CLOUD: "Meta Cloud API",
+  BAILEYS: "ربط الهاتف المباشر (QR)",
+  META_CLOUD: "ميتا كلاود الرسمي",
 };
 
 const statusBadgeClasses: Record<string, string> = {
@@ -450,6 +463,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
   const [createSessionDialogOpen, setCreateSessionDialogOpen] = useState(false);
   const [wizardStep, setWizardStep] = useState(1);
   const [showAdvancedMeta, setShowAdvancedMeta] = useState(false);
+  const [showManualMeta, setShowManualMeta] = useState(false);
   const [editingSession, setEditingSession] = useState<Session | null>(null);
   const [quickReplyDialogOpen, setQuickReplyDialogOpen] = useState(false);
   const [editingQuickReply, setEditingQuickReply] =
@@ -594,6 +608,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     setNewMetaDisplayPhoneNumber("");
     setWizardStep(1);
     setShowAdvancedMeta(false);
+    setShowManualMeta(false);
   }, []);
 
   const loadData = useCallback(async () => {
@@ -1444,7 +1459,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
             <AlertDescription>{t("whatsappSettings.noSessions")}</AlertDescription>
           </Alert>
         ) : (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="divide-y divide-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] sm:divide-y-0 sm:grid sm:gap-4 md:grid-cols-2 xl:grid-cols-3">
             {sessions.map((session) => {
               const statusValue = (session.liveStatus || session.status || "DISCONNECTED").toUpperCase();
               const phoneLabel =
@@ -1457,11 +1472,11 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
               return (
                 <div
                   key={session.id}
-                  className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] p-3 shadow-sm sm:rounded-3xl sm:p-5 sm:shadow-md"
+                  className="py-4 first:pt-0 last:pb-0 sm:py-5 sm:rounded-3xl sm:border sm:border-[color:var(--shell-control-border)] sm:bg-[color:var(--color-card)] sm:p-5 sm:shadow-sm transition-all"
                 >
                   <div className="flex items-start justify-between gap-2 sm:gap-4">
-                    <div className="flex items-center gap-2 sm:gap-3">
-                      <Avatar size="lg" className="bg-primary/10">
+                    <div className="flex items-center gap-2.5 sm:gap-3">
+                      <Avatar size="lg" className="bg-primary/10 ring-2 ring-primary/10">
                         <AvatarFallback className="bg-transparent text-[color:var(--color-primary)]">
                           <Smartphone className="size-5" />
                         </AvatarFallback>
@@ -1488,20 +1503,20 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       </Avatar>
 
                       <div className="space-y-0.5 sm:space-y-1">
-                        <div className="flex flex-wrap items-center gap-1 sm:gap-2">
+                        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                           <p className="text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
                             {session.name}
                           </p>
                           {session.isDefault ? (
                             <Badge
                               variant="outline"
-                              className="rounded-full border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:text-blue-200 text-[10px] sm:text-xs"
+                              className="rounded-full border-blue-300/70 bg-blue-500/10 text-blue-800 dark:border-blue-500/40 dark:text-blue-200 text-[10px] sm:text-xs font-medium"
                             >
                               {t("whatsappSettings.default")}
                             </Badge>
                           ) : null}
                         </div>
-                        <p className="text-xs text-[color:var(--color-muted-foreground)] sm:text-sm">
+                        <p className="text-xs text-[color:var(--color-muted-foreground)] sm:text-sm" dir="ltr">
                           {phoneLabel}
                         </p>
                       </div>
@@ -1510,7 +1525,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     <Badge
                       variant="outline"
                       className={cn(
-                        "rounded-full shrink-0 text-[11px] sm:text-xs",
+                        "rounded-full shrink-0 text-[11px] sm:text-xs font-medium",
                         statusBadgeClasses[statusValue as keyof typeof statusBadgeClasses] ||
                           statusBadgeClasses['DISCONNECTED'],
                       )}
@@ -1522,37 +1537,41 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   <div className="mt-3 flex flex-wrap gap-1.5 sm:mt-4 sm:gap-2">
                     <Badge
                       variant="outline"
-                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[11px] sm:text-xs"
+                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[11px] sm:text-xs font-medium"
                     >
                       {providerLabels[session.provider || "BAILEYS"]}
                     </Badge>
                     {session.autoReply ? (
                       <Badge
                         variant="outline"
-                        className="rounded-full border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200 text-[11px] sm:text-xs"
+                        className="rounded-full border-amber-300/70 bg-amber-500/10 text-amber-800 dark:border-amber-500/40 dark:text-amber-200 text-[11px] sm:text-xs font-medium"
                       >
                         {t("whatsappSettings.dialogs.autoReply")}
                       </Badge>
                     ) : null}
                   </div>
 
-                  <div className="mt-3 grid grid-cols-2 gap-2 sm:mt-4 sm:gap-3">
-                    <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-3">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)] sm:text-xs">
-                        المحادثات الظاهرة
-                      </p>
-                      <p className="mt-0.5 text-base font-semibold text-[color:var(--color-foreground)] sm:mt-1 sm:text-lg">
-                        {session._count?.contacts || 0}
-                      </p>
+                  <div className="mt-3 flex items-center justify-between rounded-xl bg-[color:var(--color-muted)]/60 px-3 py-2 text-xs sm:mt-4 sm:px-4 sm:py-2.5">
+                    <div className="flex items-center gap-1.5 text-[color:var(--color-muted-foreground)]">
+                      <Users className="size-3.5 text-primary" />
+                      <span>المحادثات:</span>
+                      <span className="font-semibold text-[color:var(--color-foreground)]">{session._count?.contacts || 0}</span>
                     </div>
-                    <div className="rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[color:var(--color-muted)] px-3 py-2 sm:rounded-2xl sm:px-4 sm:py-3">
-                      <p className="text-[10px] uppercase tracking-[0.18em] text-[color:var(--color-muted-foreground)] sm:text-xs">
-                        {t("whatsappSettings.messages")}
-                      </p>
-                      <p className="mt-0.5 text-base font-semibold text-[color:var(--color-foreground)] sm:mt-1 sm:text-lg">
-                        {session._count?.messages || 0}
-                      </p>
+                    <div className="h-3.5 w-px bg-[color:var(--shell-control-border)]" />
+                    <div className="flex items-center gap-1.5 text-[color:var(--color-muted-foreground)]">
+                      <MessageSquareText className="size-3.5 text-primary" />
+                      <span>الرسائل:</span>
+                      <span className="font-semibold text-[color:var(--color-foreground)]">{session._count?.messages || 0}</span>
                     </div>
+                    {session.provider === "META_CLOUD" && (
+                      <>
+                        <div className="h-3.5 w-px bg-[color:var(--shell-control-border)]" />
+                        <div className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium text-[11px]">
+                          <ShieldCheck className="size-3.5" />
+                          <span>سحابي رسمي</span>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {session.historyImport && ['REQUESTED', 'IN_PROGRESS'].includes(session.historyImport.status) ? (
@@ -1570,36 +1589,38 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </div>
                   ) : null}
 
-                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3 sm:mt-5 sm:gap-2 sm:pt-4">
+                  <div className="mt-3 flex items-center gap-2 border-t border-[color:color-mix(in_srgb,var(--shell-control-border)_72%,transparent)] pt-3 sm:mt-4 sm:pt-4">
                     {isConnectedStatus(statusValue) ? (
                       <Button
                         variant="outline"
-                        className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
+                        size="sm"
+                        className="flex-1 rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200 text-xs sm:text-sm font-medium h-9"
                         onClick={() => void handleDisconnectSession(session.id)}
                       >
-                        <Link2Off className="size-4" />
+                        <Link2Off className="size-3.5 ms-1" />
                         {t("whatsappSettings.disconnect")}
                       </Button>
                     ) : isReconnectingStatus(statusValue) ? (
                       <Button
                         variant="outline"
-                        className="rounded-full border-violet-300/70 bg-violet-500/10 text-violet-800 hover:bg-violet-500/15 dark:border-violet-500/40 dark:text-violet-200"
+                        size="sm"
+                        className="flex-1 rounded-full border-violet-300/70 bg-violet-500/10 text-violet-800 hover:bg-violet-500/15 dark:border-violet-500/40 dark:text-violet-200 text-xs sm:text-sm font-medium h-9"
                         disabled
                       >
-                        <RefreshCw className="size-4 animate-spin" />
+                        <RefreshCw className="size-3.5 ms-1 animate-spin" />
                         {t("whatsappSettings.reconnecting") || "Reconnecting..."}
                       </Button>
                     ) : (
                       <Button
-                        variant="outline"
-                        className="rounded-full border-emerald-300/70 bg-emerald-500/10 text-emerald-800 hover:bg-emerald-500/15 dark:border-emerald-500/40 dark:text-emerald-200"
+                        size="sm"
+                        className="flex-1 rounded-full bg-[color:var(--business-success)] text-white hover:brightness-90 text-xs sm:text-sm font-medium h-9 shadow-sm"
                         onClick={() => void handleConnectSession(session)}
                         disabled={connectingSessionId === session.id}
                       >
                         {connectingSessionId === session.id ? (
-                          <RefreshCw className="size-4 animate-spin" />
+                          <RefreshCw className="size-3.5 ms-1 animate-spin" />
                         ) : (
-                          <Link2 className="size-4" />
+                          <Link2 className="size-3.5 ms-1" />
                         )}
                         {t("whatsappSettings.connect")}
                       </Button>
@@ -1607,36 +1628,68 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
                     <Button
                       variant="outline"
-                      className="rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-card)]"
+                      size="sm"
+                      className="hidden sm:inline-flex rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] text-xs font-medium h-9 px-3"
                       onClick={() => setEditingSession({ ...session })}
                     >
-                      <Edit className="size-4" />
+                      <Edit className="size-3.5 ms-1" />
                       {t("whatsappSettings.edit")}
                     </Button>
 
-                    <Button
-                      variant="outline"
-                      className="rounded-full border-rose-300/70 bg-rose-500/10 text-rose-800 hover:bg-rose-500/15 dark:border-rose-500/40 dark:text-rose-200"
-                      onClick={() => {
-                        let defaultKeep = true;
-                        const sessMeta = (session as any).metadata;
-                        if (sessMeta) {
-                          try {
-                            const meta = JSON.parse(sessMeta);
-                            if (typeof meta.keepHistoryOnDelete === "boolean") {
-                              defaultKeep = meta.keepHistoryOnDelete;
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="size-9 rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] shrink-0"
+                          aria-label="خيارات الجلسة"
+                        >
+                          <MoreVertical className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-44 rounded-2xl p-1.5 shadow-lg border-[color:var(--shell-control-border)]">
+                        <DropdownMenuItem
+                          onClick={() => setEditingSession({ ...session })}
+                          className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm py-2 rounded-xl"
+                        >
+                          <Edit className="size-4 text-[color:var(--color-primary)]" />
+                          <span>{t("whatsappSettings.edit")}</span>
+                        </DropdownMenuItem>
+                        {session.provider === "BAILEYS" && isConnectedStatus(statusValue) && (
+                          <DropdownMenuItem
+                            onClick={() => void handleConnectSession(session)}
+                            className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm py-2 rounded-xl"
+                          >
+                            <RefreshCw className="size-4 text-[color:var(--color-muted-foreground)]" />
+                            <span>إعادة المزامنة</span>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator className="my-1" />
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => {
+                            let defaultKeep = true;
+                            const sessMeta = session.metadata;
+                            if (sessMeta) {
+                              try {
+                                const meta = JSON.parse(sessMeta);
+                                if (typeof meta.keepHistoryOnDelete === "boolean") {
+                                  defaultKeep = meta.keepHistoryOnDelete;
+                                }
+                              } catch {
+                                defaultKeep = true;
+                              }
                             }
-                          } catch {
-                            defaultKeep = true;
-                          }
-                        }
-                        setKeepHistory(defaultKeep);
-                        setDeleteState({ kind: "session", id: session.id });
-                      }}
-                    >
-                      <Trash2 className="size-4" />
-                      {t("whatsappSettings.delete")}
-                    </Button>
+                            setKeepHistory(defaultKeep);
+                            setDeleteState({ kind: "session", id: session.id });
+                          }}
+                          className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm py-2 rounded-xl text-rose-600 focus:text-rose-600 focus:bg-rose-50 dark:focus:bg-rose-950/30"
+                        >
+                          <Trash2 className="size-4" />
+                          <span>{t("whatsappSettings.delete")}</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               );
@@ -1858,11 +1911,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         ) : businessProfile ? (
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">
-              <WhatsAppSurfaceCard
-                title={ts("whatsappSettings.businessInfo")}
-                description={currentScopedSession?.name || ts("whatsappSettings.businessProfile")}
-                className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
-              >
+              <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[color:var(--color-card)]/70 p-4 sm:p-5 space-y-4 shadow-none">
+                <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pb-3">
+                  <h3 className="text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
+                    {ts("whatsappSettings.businessInfo")}
+                  </h3>
+                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                    {currentScopedSession?.name || ts("whatsappSettings.businessProfile")}
+                  </p>
+                </div>
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="business-description">
@@ -1939,13 +1996,17 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </Select>
                   </div>
                 </div>
-              </WhatsAppSurfaceCard>
+              </div>
 
-              <WhatsAppSurfaceCard
-                title={ts("whatsappSettings.websites")}
-                description={ts("whatsappSettings.addWebsite")}
-                className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
-              >
+              <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[color:var(--color-card)]/70 p-4 sm:p-5 space-y-4 shadow-none">
+                <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pb-3">
+                  <h3 className="text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
+                    {ts("whatsappSettings.websites")}
+                  </h3>
+                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                    {ts("whatsappSettings.addWebsite")}
+                  </p>
+                </div>
                 <div className="space-y-3">
                   {(businessProfile.websites || []).length > 0 ? (
                     businessProfile.websites.map((website, index) => (
@@ -2012,7 +2073,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     {t("whatsappSettings.addWebsite")}
                   </Button>
                 </div>
-              </WhatsAppSurfaceCard>
+              </div>
             </div>
 
             <Button
@@ -2063,11 +2124,15 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
         ) : privacySettings ? (
           <div className="space-y-4">
             <div className="grid gap-4 xl:grid-cols-2">
-              <WhatsAppSurfaceCard
-                title={ts("whatsappSettings.privacySettings")}
-                description={currentScopedSession?.name || ts("whatsappSettings.privacy")}
-                className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
-              >
+              <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[color:var(--color-card)]/70 p-4 sm:p-5 space-y-4 shadow-none">
+                <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pb-3">
+                  <h3 className="text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
+                    {ts("whatsappSettings.privacySettings")}
+                  </h3>
+                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                    {currentScopedSession?.name || ts("whatsappSettings.privacy")}
+                  </p>
+                </div>
                 <div className="grid gap-4 md:grid-cols-2">
                   {[
                     { key: "lastSeen", label: t("whatsappSettings.lastSeen") },
@@ -2111,13 +2176,17 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     </div>
                   ))}
                 </div>
-              </WhatsAppSurfaceCard>
+              </div>
 
-              <WhatsAppSurfaceCard
-                title={ts("whatsappSettings.blocklist")}
-                description={ts("whatsappSettings.noBlocked")}
-                className="border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] shadow-none"
-              >
+              <div className="rounded-2xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_80%,transparent)] bg-[color:var(--color-card)]/70 p-4 sm:p-5 space-y-4 shadow-none">
+                <div className="border-b border-[color:color-mix(in_srgb,var(--shell-control-border)_60%,transparent)] pb-3">
+                  <h3 className="text-sm font-semibold text-[color:var(--color-foreground)] sm:text-base">
+                    {ts("whatsappSettings.blocklist")}
+                  </h3>
+                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                    {ts("whatsappSettings.noBlocked")}
+                  </p>
+                </div>
                 {blocklist.length === 0 ? (
                   <Alert className="rounded-2xl border-[color:var(--shell-control-border)] bg-[color:var(--color-card)]">
                     <AlertCircle className="size-4 text-[color:var(--color-warning)]" />
@@ -2147,7 +2216,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                     ))}
                   </div>
                 )}
-              </WhatsAppSurfaceCard>
+              </div>
             </div>
 
             <Button
@@ -2337,27 +2406,29 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
       </div>
 
       <div className="block xl:hidden">
-        <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-          {tabs.map((tab) => {
-            const selected = activeTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => handleTabChange(tab.id)}
-                className={cn(
-                  "flex shrink-0 items-center gap-2 rounded-full px-4 py-2.5 text-sm font-medium transition-all whitespace-nowrap",
-                  selected
-                    ? "bg-[color:var(--business-success)] text-white shadow-md"
-                    : "bg-[color:var(--color-muted)] text-[color:var(--color-foreground)] hover:bg-[color:color-mix(in_srgb,var(--color-muted)_80%,var(--color-card))]",
-                )}
-              >
-                <Icon className="size-4" />
-                {tab.label}
-              </button>
-            );
-          })}
+        <div className="relative">
+          <div className="flex gap-2 overflow-x-auto pb-1.5 scrollbar-none touch-pan-x px-0.5">
+            {tabs.map((tab) => {
+              const selected = activeTab === tab.id;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => handleTabChange(tab.id)}
+                  className={cn(
+                    "flex shrink-0 items-center gap-2 rounded-full px-3.5 py-2 text-xs sm:text-sm font-medium transition-all whitespace-nowrap active:scale-95",
+                    selected
+                      ? "bg-[color:var(--business-success)] text-white shadow-sm ring-2 ring-[color:var(--business-success)]/20"
+                      : "border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] text-[color:var(--color-foreground)] hover:bg-[color:var(--color-muted)]",
+                  )}
+                >
+                  <Icon className="size-3.5 sm:size-4" />
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -2427,10 +2498,13 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
           {/* Stepper progress indicator */}
           <div className="px-6 pt-4">
             <div className="relative flex items-center justify-between px-2 pt-2">
-              <div className="absolute top-[18px] left-[10%] right-[10%] h-0.5 bg-[color:var(--shell-control-border)] -z-10">
+              <div className="absolute top-[18px] left-[10%] right-[10%] h-0.5 bg-[color:var(--shell-control-border)] -z-10 overflow-hidden">
                 <div
                   className="h-full bg-[color:var(--color-primary)] transition-all duration-300"
-                  style={{ width: `${((wizardStep - 1) / 2) * 100}%` }}
+                  style={{
+                    width: `${((wizardStep - 1) / 2) * 100}%`,
+                    float: i18n.dir() === "rtl" ? "right" : "left",
+                  }}
                 />
               </div>
 
@@ -2463,7 +2537,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       )}
                     </button>
                     <span className={cn(
-                      "text-xs font-medium",
+                      "text-[11px] sm:text-xs font-medium text-center",
                       isActive ? "text-[color:var(--color-primary)] font-semibold" : "text-[color:var(--color-muted-foreground)]"
                     )}>
                       {step.label}
@@ -2623,157 +2697,157 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
 
             {/* Step 2: Meta Cloud API Settings */}
             {wizardStep === 2 && newSessionProvider === "META_CLOUD" && (
-              <div className="space-y-5 animate-in fade-in-50 duration-200">
-                <Alert className="bg-primary/5 border-primary/20">
-                  <Globe className="size-4 text-[color:var(--color-primary)]" />
-                  <AlertTitle className="text-[color:var(--color-primary)] font-semibold flex items-center gap-1">
-                    هل تريد تسهيل الربط؟
-                  </AlertTitle>
-                  <AlertDescription className="text-xs leading-relaxed mt-1 text-[color:var(--color-foreground)]">
-                    يمكنك استخدام{" "}
-                    <button
-                      type="button"
-                      onClick={() => navigate(`/whatsapp/cloud-connect?sessionName=${encodeURIComponent(newSessionName)}`)}
-                      className="underline font-semibold text-[color:var(--color-primary)] hover:opacity-80 inline bg-transparent p-0 border-0 cursor-pointer"
-                    >
-                      معالج ربط فيسبوك التلقائي (Embedded Sign-up)
-                    </button>{" "}
-                    لربط رقم الهاتف وحساب الأعمال بضغطة زر واحدة دون الحاجة لإدخال هذه المعرفات يدوياً.
-                  </AlertDescription>
-                </Alert>
-
-                {/* Auth Details Card */}
-                <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
-                  <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
-                    <Key className="size-4 text-[color:var(--color-primary)]" />
-                    {t("whatsappSettings.dialogs.authDetails")}
-                  </h4>
-
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5" htmlFor="meta-phone-id">
-                        {t("whatsappSettings.dialogs.metaPhoneNumberId")}
-                        <span className="text-red-500">*</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="size-3.5 text-[color:var(--color-muted-foreground)] cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {t("whatsappSettings.dialogs.metaPhoneNumberIdHelper")}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </Label>
-                      <Input
-                        id="meta-phone-id"
-                        value={newMetaPhoneNumberId}
-                        onChange={(event) =>
-                          setNewMetaPhoneNumberId(event.target.value.replace(/[^0-9]/g, ""))
-                        }
-                        placeholder="e.g. 1151868711348740"
-                        className={cn(
-                          "h-11 bg-[color:var(--color-card)]",
-                          newMetaPhoneNumberId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
-                        )}
-                      />
+              <div className="space-y-4 animate-in fade-in-50 duration-200">
+                {/* 1-Click Embedded Sign-up Hero */}
+                <div className="rounded-2xl border-2 border-emerald-500/30 bg-emerald-500/5 p-4 sm:p-5 space-y-3.5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-sm">
+                        <Globe className="size-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm sm:text-base font-semibold text-[color:var(--color-foreground)]">
+                          الربط التلقائي السريع مع فيسبوك
+                        </h4>
+                        <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                          ربط مباشر لحسابك التجاري ورقمك بضغطة زر واحدة (Embedded Sign-up)
+                        </p>
+                      </div>
                     </div>
+                    <Badge variant="outline" className="rounded-full border-emerald-300 bg-emerald-500/10 text-emerald-800 dark:border-emerald-500/40 dark:text-emerald-200 text-[10px] shrink-0 font-medium">
+                      موصى به
+                    </Badge>
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5" htmlFor="meta-access-token">
-                        {t("whatsappSettings.dialogs.metaAccessToken")}
-                        <span className="text-red-500">*</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="size-3.5 text-[color:var(--color-muted-foreground)] cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {t("whatsappSettings.dialogs.metaAccessTokenHelper")}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </Label>
-                      <Input
-                        id="meta-access-token"
-                        type="password"
-                        value={newMetaAccessToken}
-                        onChange={(event) =>
-                          setNewMetaAccessToken(event.target.value)
-                        }
-                        placeholder="EAA..."
-                        className={cn(
-                          "h-11 bg-[color:var(--color-card)]",
-                          newMetaAccessToken.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
-                        )}
-                      />
+                  <div className="grid grid-cols-2 gap-2 text-xs text-[color:var(--color-muted-foreground)] py-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>توثيق رسمي ومعتمد</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <CheckCircle2 className="size-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>يعمل 24/7 دون هاتف</span>
                     </div>
                   </div>
+
+                  <Button
+                    type="button"
+                    className="w-full rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium h-10 sm:h-11 shadow-sm gap-2 text-xs sm:text-sm"
+                    onClick={() => navigate(`/whatsapp/cloud-connect?sessionName=${encodeURIComponent(newSessionName)}`)}
+                  >
+                    <Zap className="size-4" />
+                    بدء الربط التلقائي الآن
+                    <ExternalLink className="size-3.5 ms-1" />
+                  </Button>
                 </div>
 
-                {/* Account Info Card */}
-                <div className="rounded-2xl border border-[color:var(--shell-control-border)] p-5 space-y-4 bg-[color:var(--color-card)]">
-                  <h4 className="flex items-center gap-2 text-sm font-semibold text-[color:var(--color-foreground)]">
-                    <Briefcase className="size-4 text-[color:var(--color-primary)]" />
-                    {t("whatsappSettings.dialogs.accountDetails")}
-                  </h4>
+                {/* Collapsible Manual Setup */}
+                <div className="rounded-2xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setShowManualMeta(!showManualMeta)}
+                    className="flex w-full items-center justify-between px-4 py-3.5 text-start font-medium text-[color:var(--color-foreground)] hover:bg-[color:var(--color-muted)] transition-colors cursor-pointer"
+                  >
+                    <span className="flex items-center gap-2 text-xs sm:text-sm text-[color:var(--color-muted-foreground)]">
+                      <Key className="size-4 text-[color:var(--color-primary)]" />
+                      إدخال المفاتيح والرموز يدوياً (للمطورين)
+                    </span>
+                    <ChevronRight className={cn("size-4 transition-transform duration-200", showManualMeta ? "-rotate-90" : "")} />
+                  </button>
 
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5" htmlFor="meta-waba-id">
-                        {t("whatsappSettings.dialogs.metaWabaId")}
-                        <span className="text-red-500">*</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="size-3.5 text-[color:var(--color-muted-foreground)] cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {t("whatsappSettings.dialogs.metaWabaIdHelper")}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </Label>
-                      <Input
-                        id="meta-waba-id"
-                        value={newMetaWabaId}
-                        onChange={(event) => setNewMetaWabaId(event.target.value.replace(/[^0-9]/g, ""))}
-                        placeholder="e.g. 1482240533647516"
-                        className={cn(
-                          "h-11 bg-[color:var(--color-card)]",
-                          newMetaWabaId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
-                        )}
-                      />
+                  {showManualMeta && (
+                    <div className="border-t border-[color:var(--shell-control-border)] p-4 sm:p-5 space-y-4 bg-[var(--app-panel-bg)] animate-in fade-in-50 duration-200">
+                      {/* Auth Details */}
+                      <div className="space-y-3">
+                        <h5 className="text-xs font-semibold text-[color:var(--color-foreground)] uppercase">
+                          {t("whatsappSettings.dialogs.authDetails")}
+                        </h5>
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-xs" htmlFor="meta-phone-id">
+                              {t("whatsappSettings.dialogs.metaPhoneNumberId")}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="meta-phone-id"
+                              value={newMetaPhoneNumberId}
+                              onChange={(event) =>
+                                setNewMetaPhoneNumberId(event.target.value.replace(/[^0-9]/g, ""))
+                              }
+                              placeholder="e.g. 1151868711348740"
+                              className={cn(
+                                "h-10 bg-[color:var(--color-card)] text-sm",
+                                newMetaPhoneNumberId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
+                              )}
+                            />
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-xs" htmlFor="meta-access-token">
+                              {t("whatsappSettings.dialogs.metaAccessToken")}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="meta-access-token"
+                              type="password"
+                              value={newMetaAccessToken}
+                              onChange={(event) =>
+                                setNewMetaAccessToken(event.target.value)
+                              }
+                              placeholder="EAA..."
+                              className={cn(
+                                "h-10 bg-[color:var(--color-card)] text-sm",
+                                newMetaAccessToken.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Account Details */}
+                      <div className="space-y-3 border-t border-[color:var(--shell-control-border)] pt-3">
+                        <h5 className="text-xs font-semibold text-[color:var(--color-foreground)] uppercase">
+                          {t("whatsappSettings.dialogs.accountDetails")}
+                        </h5>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-xs" htmlFor="meta-waba-id">
+                              {t("whatsappSettings.dialogs.metaWabaId")}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="meta-waba-id"
+                              value={newMetaWabaId}
+                              onChange={(event) => setNewMetaWabaId(event.target.value.replace(/[^0-9]/g, ""))}
+                              placeholder="e.g. 1482240533647516"
+                              className={cn(
+                                "h-10 bg-[color:var(--color-card)] text-sm",
+                                newMetaWabaId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
+                              )}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="flex items-center gap-1.5 text-xs" htmlFor="meta-business-id">
+                              {t("whatsappSettings.dialogs.metaBusinessId")}
+                              <span className="text-red-500">*</span>
+                            </Label>
+                            <Input
+                              id="meta-business-id"
+                              value={newMetaBusinessId}
+                              onChange={(event) =>
+                                setNewMetaBusinessId(event.target.value.replace(/[^0-9]/g, ""))
+                              }
+                              placeholder="e.g. 2381274910237"
+                              className={cn(
+                                "h-10 bg-[color:var(--color-card)] text-sm",
+                                newMetaBusinessId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
+                              )}
+                            />
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5" htmlFor="meta-business-id">
-                        {t("whatsappSettings.dialogs.metaBusinessId")}
-                        <span className="text-red-500">*</span>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <HelpCircle className="size-3.5 text-[color:var(--color-muted-foreground)] cursor-help" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              {t("whatsappSettings.dialogs.metaBusinessIdHelper")}
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </Label>
-                      <Input
-                        id="meta-business-id"
-                        value={newMetaBusinessId}
-                        onChange={(event) =>
-                          setNewMetaBusinessId(event.target.value.replace(/[^0-9]/g, ""))
-                        }
-                        placeholder="e.g. 2381274910237"
-                        className={cn(
-                          "h-11 bg-[color:var(--color-card)]",
-                          newMetaBusinessId.trim() ? "border-emerald-500/50 focus-visible:ring-emerald-500" : ""
-                        )}
-                      />
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Collapsible Advanced Settings */}
