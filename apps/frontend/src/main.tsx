@@ -128,15 +128,20 @@ const isStorefrontRequest = (): boolean => {
 };
 
 // Remove initial loading screen
-const removeLoadingScreen = (): void => {
+const removeLoadingScreen = (instant = false): void => {
   const loadingElement = document.getElementById("initial-loading");
   if (loadingElement) {
+    if (instant) {
+      loadingElement.remove();
+      document.body.classList.add("app-ready");
+      return;
+    }
     loadingElement.style.opacity = "0";
-    loadingElement.style.transition = "opacity 0.3s ease-out";
+    loadingElement.style.transition = "opacity 0.2s ease-out";
     setTimeout(() => {
       loadingElement.remove();
       document.body.classList.add("app-ready");
-    }, 300);
+    }, 200);
   }
 };
 
@@ -212,8 +217,11 @@ void bootstrapApp()
   .then(() => {
     // Healthy boot: re-arm one-shot chunk recovery for future deploy cycles.
     resetChunkLoadRecovery();
-    // Remove loading screen after a tiny delay to let the initial React render paint
-    setTimeout(removeLoadingScreen, 50);
+    if (isStorefrontRequest()) {
+      removeLoadingScreen(true);
+    } else {
+      setTimeout(removeLoadingScreen, 50);
+    }
   })
   .catch((error) => {
     if (recoverFromChunkLoadError(error, "bootstrap")) {

@@ -14,6 +14,8 @@ const RUNTIME_THEME_ASSET_LOADERS: Record<string, () => Promise<string>> = {
     import('../themes/modern-minimal.json?url').then((module) => module.default),
   'khemet-luxe-eg': () =>
     import('../themes/khemet-luxe-eg.json?url').then((module) => module.default),
+  'khemet-fashion-eg': () =>
+    import('../themes/khemet-fashion-eg.json?url').then((module) => module.default),
 };
 
 const cloneThemePresetData = <T,>(value: T): T =>
