@@ -37,8 +37,6 @@ const ADMIN_CRITICAL_GOOGLE_FONTS_ID = "admin-critical-google-fonts";
 const ADMIN_CRITICAL_GOOGLE_FONTS_HREF =
   "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700;800;900&display=swap";
 
-let adminShellAssetsPromise: Promise<void> | null = null;
-
 type RootWindow = Window & typeof globalThis & { __MAXP_APP_ROOT__?: Root; __SW_UPDATE_PENDING__?: boolean };
 
 // Get root element
@@ -56,19 +54,6 @@ installChunkLoadRecovery();
 const root = rootWindow.__MAXP_APP_ROOT__ ?? createRoot(rootElement);
 rootWindow.__MAXP_APP_ROOT__ = root;
 
-const loadAdminShellAssets = async (): Promise<void> => {
-  if (!adminShellAssetsPromise) {
-    adminShellAssetsPromise = Promise.all([
-      import("./styles/index.css"),
-      import("./styles/app-dashboard.css"),
-      import("./i18n").catch((error) => {
-        console.warn("[bootstrap] Failed to load i18n. Continuing without it.", error);
-      }),
-    ]).then(() => undefined);
-  }
-
-  await adminShellAssetsPromise;
-};
 
 const ensureGoogleFontsPreconnect = (): void => {
   if (!document.querySelector('link[rel="preconnect"][href="https://fonts.googleapis.com"]')) {
@@ -207,7 +192,6 @@ const bootstrapApp = async (): Promise<void> => {
   }
 
   loadAdminCriticalGoogleFonts();
-  await loadAdminShellAssets();
   const { default: AdminAppBootstrap } = await import(
     "./bootstrap/AdminAppBootstrap"
   );

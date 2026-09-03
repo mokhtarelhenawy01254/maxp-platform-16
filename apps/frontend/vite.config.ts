@@ -51,6 +51,8 @@ const STOREFRONT_DEFERRED_PRELOAD_CHUNKS = [
   /(?:^|\/)storefront-theme-presets-/,
   /(?:^|\/)apiClient-/,
   /(?:^|\/)tokenManager-/,
+  /(?:^|\/)app-i18n-/,
+  /(?:^|\/)route-storefront-studio-/,
 ];
 const STOREFRONT_THEME_PRESET_MODULE_PATTERN = /\/src\/storefront\/themes\//;
 const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
@@ -85,7 +87,7 @@ const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
 // /tokenManager-/, /vendor-toast-/ and /vendor-icons-/ names, expecting these
 // to be standalone chunks.
 const APP_SHARED_CORE_MODULE_PATTERN =
-  /\/src\/(?:services\/apiClient|hooks\/useAuthSimple|utils\/(?:tokenManager|i18n-toast|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+  /\/src\/(?:services\/(?:apiClient|uploadService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:tokenManager|i18n-toast|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
 
 // Shared business-page shell components (BusinessPageShell, BusinessSurface,
 // BusinessFilters, BusinessMetrics). Default placement merged them into the
@@ -720,6 +722,7 @@ if (normalizedId.includes('SuperAdminAIKeyManager')) return 'route-ai-key-manage
               if (normalizedId.includes('/src/storefront/blueprints/')) return 'storefront-blueprints';
               if (normalizedId.includes('/src/storefront/engine/')) return 'storefront-engine';
               if (normalizedId.includes('/src/storefront/components/')) return 'storefront-components';
+              if (normalizedId.includes('/src/storefront/studio/')) return 'route-storefront-studio';
               if (normalizedId.includes('/src/storefront/')) return 'route-storefront';
               if (normalizedId.includes('/src/pages/profile/')) return 'route-profile';
               if (normalizedId.includes('/src/pages/dashboard/')) return 'route-dashboard';

@@ -5,6 +5,10 @@ import { queryClient } from "../utils/queryClient";
 import { toast, Toaster } from "sonner";
 import { flushSWCacheAndReload } from "../utils/swCacheFlush";
 
+import "../styles/index.css";
+import "../styles/app-dashboard.css";
+import "../i18n";
+
 import ErrorBoundary from "../components/ErrorBoundary";
 import { ThemeProvider } from "../components/theme-provider";
 import AppRoot from "../AppRoot";
