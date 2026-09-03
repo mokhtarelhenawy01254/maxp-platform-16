@@ -125,24 +125,52 @@ function ComboboxContent({
 
       const triggerRect = trigger.getBoundingClientRect();
       const contentRect = content.getBoundingClientRect();
-      const isRtl = document.documentElement.dir === "rtl";
-      const left = isRtl
-        ? triggerRect.right - contentRect.width
-        : triggerRect.left;
+      if (contentRect.width === 0) return;
+
+      const padding = 8;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      const effectiveAlignOffset = typeof alignOffset === "number" ? alignOffset : 0;
+      let rawLeft: number;
+      if (align === "center") {
+        rawLeft = triggerRect.left + (triggerRect.width - contentRect.width) / 2;
+      } else if (align === "end") {
+        rawLeft = triggerRect.right - contentRect.width - effectiveAlignOffset;
+      } else {
+        // align === "start"
+        rawLeft = triggerRect.left + effectiveAlignOffset;
+      }
+
+      // Clamp horizontally within viewport
+      const maxLeft = Math.max(padding, viewportWidth - contentRect.width - padding);
+      const clampedLeft = Math.max(padding, Math.min(rawLeft, maxLeft));
+
       const offset = typeof sideOffset === "number" ? sideOffset : 4;
-      const top =
-        side === "top"
-          ? triggerRect.top - contentRect.height - offset
-          : triggerRect.bottom + offset;
+      let top: number;
+      if (side === "top") {
+        top = triggerRect.top - contentRect.height - offset;
+        if (top < padding && triggerRect.bottom + offset + contentRect.height <= viewportHeight - padding) {
+          top = triggerRect.bottom + offset;
+        }
+      } else {
+        top = triggerRect.bottom + offset;
+        if (top + contentRect.height > viewportHeight - padding && triggerRect.top - offset - contentRect.height >= padding) {
+          top = triggerRect.top - contentRect.height - offset;
+        }
+      }
+      // Clamp vertically within viewport
+      const maxTop = Math.max(padding, viewportHeight - contentRect.height - padding);
+      const clampedTop = Math.max(padding, Math.min(top, maxTop));
 
       if (positioner.style.position !== "fixed") {
         positioner.style.position = "fixed";
       }
-      if (positioner.style.left !== `${left}px`) {
-        positioner.style.left = `${left}px`;
+      if (positioner.style.left !== `${clampedLeft}px`) {
+        positioner.style.left = `${clampedLeft}px`;
       }
-      if (positioner.style.top !== `${top}px`) {
-        positioner.style.top = `${top}px`;
+      if (positioner.style.top !== `${clampedTop}px`) {
+        positioner.style.top = `${clampedTop}px`;
       }
       if (positioner.style.transform !== "none") {
         positioner.style.transform = "none";
@@ -164,7 +192,7 @@ function ComboboxContent({
       observer.disconnect();
       window.removeEventListener("resize", applyFallback);
     };
-  }, [positionerEl, side, sideOffset]);
+  }, [positionerEl, side, sideOffset, align, alignOffset]);
 
   return (
     <ComboboxPrimitive.Portal>
@@ -180,7 +208,7 @@ function ComboboxContent({
         <ComboboxPrimitive.Popup
           data-slot="combobox-content"
           data-chips={!!anchor}
-          className={cn("group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-(--available-width) min-w-[calc(var(--anchor-width)+--spacing(7))] origin-(--transform-origin) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[chips=true]:min-w-(--anchor-width) data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 *:data-[slot=input-group]:m-1 *:data-[slot=input-group]:mb-0 *:data-[slot=input-group]:h-8 *:data-[slot=input-group]:border-input/30 *:data-[slot=input-group]:bg-input/30 *:data-[slot=input-group]:shadow-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
+          className={cn("group/combobox-content relative max-h-(--available-height) w-(--anchor-width) max-w-[calc(100vw-16px)] min-w-[calc(var(--anchor-width)+--spacing(7))] origin-(--transform-origin) overflow-hidden rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[chips=true]:min-w-(--anchor-width) data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 *:data-[slot=input-group]:m-1 *:data-[slot=input-group]:mb-0 *:data-[slot=input-group]:h-8 *:data-[slot=input-group]:border-input/30 *:data-[slot=input-group]:bg-input/30 *:data-[slot=input-group]:shadow-none data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95", className )}
           {...props}
         />
       </ComboboxPrimitive.Positioner>

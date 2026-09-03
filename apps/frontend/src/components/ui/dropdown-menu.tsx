@@ -86,24 +86,52 @@ function DropdownMenuContent({
 
       const triggerRect = trigger.getBoundingClientRect();
       const menuRect = menu.getBoundingClientRect();
-      const isRtl = document.documentElement.dir === "rtl";
-      const left = isRtl
-        ? triggerRect.right - menuRect.width
-        : triggerRect.left;
+      if (menuRect.width === 0) return;
+
+      const padding = 8;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+
+      const effectiveAlignOffset = typeof alignOffset === "number" ? alignOffset : 0;
+      let rawLeft: number;
+      if (align === "center") {
+        rawLeft = triggerRect.left + (triggerRect.width - menuRect.width) / 2;
+      } else if (align === "end") {
+        rawLeft = triggerRect.right - menuRect.width - effectiveAlignOffset;
+      } else {
+        // align === "start"
+        rawLeft = triggerRect.left + effectiveAlignOffset;
+      }
+
+      // Clamp horizontally within viewport
+      const maxLeft = Math.max(padding, viewportWidth - menuRect.width - padding);
+      const clampedLeft = Math.max(padding, Math.min(rawLeft, maxLeft));
+
       const offset = typeof sideOffset === "number" ? sideOffset : 4;
-      const top =
-        side === "top"
-          ? triggerRect.top - menuRect.height - offset
-          : triggerRect.bottom + offset;
+      let top: number;
+      if (side === "top") {
+        top = triggerRect.top - menuRect.height - offset;
+        if (top < padding && triggerRect.bottom + offset + menuRect.height <= viewportHeight - padding) {
+          top = triggerRect.bottom + offset;
+        }
+      } else {
+        top = triggerRect.bottom + offset;
+        if (top + menuRect.height > viewportHeight - padding && triggerRect.top - offset - menuRect.height >= padding) {
+          top = triggerRect.top - menuRect.height - offset;
+        }
+      }
+      // Clamp vertically within viewport
+      const maxTop = Math.max(padding, viewportHeight - menuRect.height - padding);
+      const clampedTop = Math.max(padding, Math.min(top, maxTop));
 
       if (positioner.style.position !== "fixed") {
         positioner.style.position = "fixed";
       }
-      if (positioner.style.left !== `${left}px`) {
-        positioner.style.left = `${left}px`;
+      if (positioner.style.left !== `${clampedLeft}px`) {
+        positioner.style.left = `${clampedLeft}px`;
       }
-      if (positioner.style.top !== `${top}px`) {
-        positioner.style.top = `${top}px`;
+      if (positioner.style.top !== `${clampedTop}px`) {
+        positioner.style.top = `${clampedTop}px`;
       }
       if (positioner.style.transform !== "none") {
         positioner.style.transform = "none";
@@ -125,7 +153,7 @@ function DropdownMenuContent({
       observer.disconnect();
       window.removeEventListener("resize", applyFallback);
     };
-  }, [positionerEl, side, sideOffset]);
+  }, [positionerEl, side, sideOffset, align, alignOffset]);
 
   return (
     <MenuPrimitive.Portal>
@@ -140,7 +168,7 @@ function DropdownMenuContent({
         <MenuPrimitive.Popup
           data-slot="dropdown-menu-content"
           className={cn(
-            "z-50 max-h-(--available-height) w-(--anchor-width) min-w-40 origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[calc(var(--theme-radius)+10px)] border border-[color:var(--shell-overlay-border)] bg-[var(--shell-overlay-bg)] p-1.5 text-[color:var(--shell-overlay-foreground)] shadow-[var(--shell-overlay-shadow)] ring-1 ring-[color:var(--shell-overlay-edge)] duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:overflow-hidden data-closed:fade-out-0 data-closed:zoom-out-95",
+            "z-50 max-h-(--available-height) w-(--anchor-width) min-w-40 max-w-[calc(100vw-16px)] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-[calc(var(--theme-radius)+10px)] border border-[color:var(--shell-overlay-border)] bg-[var(--shell-overlay-bg)] p-1.5 text-[color:var(--shell-overlay-foreground)] shadow-[var(--shell-overlay-shadow)] ring-1 ring-[color:var(--shell-overlay-edge)] duration-100 outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:overflow-hidden data-closed:fade-out-0 data-closed:zoom-out-95",
             className,
           )}
           {...props}
