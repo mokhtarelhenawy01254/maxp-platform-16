@@ -192,66 +192,119 @@ const Categories: React.FC = () => {
             )}
           </div>
         ) : (
-          <div className="table-responsive">
-            <table className="categories-table">
-              <thead>
-                <tr>
-                  <th style={{ width: '60px' }}>{t('categories.management.table.image', 'Image')}</th>
-                  <th>{t('categories.management.table.name')}</th>
-                  <th>{t('categories.management.table.slug')}</th>
-                  <th>{t('categories.management.table.status')}</th>
-                  <th>{t('categories.management.table.products')}</th>
-                  <th>{t('categories.management.table.actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredCategories.map((cat) => (
-                  <tr key={cat.id}>
-                    <td>
-                      <div className="cat-image-cell">
-                        {cat.image ? (
-                          <img src={getImageUrl(cat.image) || ""} alt={cat.name} className="cat-thumbnail" />
-                        ) : (
-                          <div className="cat-placeholder-thumbnail">
-                            <ImageIcon size={20} />
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td>
-                      <div className="cat-name-cell">
-                        <span className="cat-name">{cat.name}</span>
-                        {cat.description && <span className="cat-desc-hint">{cat.description}</span>}
-                      </div>
-                    </td>
-                    <td><code>{cat.slug}</code></td>
-                    <td>
+          <>
+            {/* Mobile cards — visible only on small screens */}
+            <div className="cat-cards-list">
+              {filteredCategories.map((cat) => (
+                <div key={cat.id} className="cat-card">
+                  <div className="cat-card-top">
+                    <div className="cat-image-cell">
+                      {cat.image ? (
+                        <img src={getImageUrl(cat.image) || ""} alt={cat.name} className="cat-thumbnail" />
+                      ) : (
+                        <div className="cat-placeholder-thumbnail">
+                          <ImageIcon size={20} />
+                        </div>
+                      )}
+                    </div>
+                    <div className="cat-card-info">
+                      <span className="cat-name">{cat.name}</span>
+                      <code className="cat-card-slug">{cat.slug}</code>
+                      {cat.description && (
+                        <span className="cat-desc-hint">{cat.description}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="cat-card-bottom">
+                    <div className="cat-card-meta">
                       <span className={`status-badge ${cat.isActive ? 'active' : 'inactive'}`}>
                         {cat.isActive ? t('categories.management.status.active') : t('categories.management.status.inactive')}
                       </span>
-                    </td>
-                    <td>
-                      <span className="product-count">{cat._count?.products || 0}</span>
-                    </td>
-                    <td>
-                      <div className="action-buttons">
-                        <button className="edit-btn" onClick={() => handleOpenModal(cat)} title={t('common.edit') as string}>
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          className="delete-btn"
-                          onClick={() => handleDelete(cat.id, cat._count?.products || 0)}
-                          title={t('common.delete') as string}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </td>
+                      <span className="product-count">
+                        {cat._count?.products || 0} {t('categories.management.table.products')}
+                      </span>
+                    </div>
+                    <div className="action-buttons">
+                      <button className="edit-btn" onClick={() => handleOpenModal(cat)} title={t('common.edit') as string}>
+                        <Pencil size={16} />
+                        <span className="btn-label">{t('common.edit')}</span>
+                      </button>
+                      <button
+                        className="delete-btn"
+                        onClick={() => handleDelete(cat.id, cat._count?.products || 0)}
+                        title={t('common.delete') as string}
+                      >
+                        <Trash2 size={16} />
+                        <span className="btn-label">{t('common.delete')}</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop table — hidden on mobile */}
+            <div className="table-responsive">
+              <table className="categories-table">
+                <thead>
+                  <tr>
+                    <th style={{ width: '60px' }}>{t('categories.management.table.image', 'Image')}</th>
+                    <th>{t('categories.management.table.name')}</th>
+                    <th>{t('categories.management.table.slug')}</th>
+                    <th>{t('categories.management.table.status')}</th>
+                    <th>{t('categories.management.table.products')}</th>
+                    <th>{t('categories.management.table.actions')}</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {filteredCategories.map((cat) => (
+                    <tr key={cat.id}>
+                      <td>
+                        <div className="cat-image-cell">
+                          {cat.image ? (
+                            <img src={getImageUrl(cat.image) || ""} alt={cat.name} className="cat-thumbnail" />
+                          ) : (
+                            <div className="cat-placeholder-thumbnail">
+                              <ImageIcon size={20} />
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td>
+                        <div className="cat-name-cell">
+                          <span className="cat-name">{cat.name}</span>
+                          {cat.description && <span className="cat-desc-hint">{cat.description}</span>}
+                        </div>
+                      </td>
+                      <td><code>{cat.slug}</code></td>
+                      <td>
+                        <span className={`status-badge ${cat.isActive ? 'active' : 'inactive'}`}>
+                          {cat.isActive ? t('categories.management.status.active') : t('categories.management.status.inactive')}
+                        </span>
+                      </td>
+                      <td>
+                        <span className="product-count">{cat._count?.products || 0}</span>
+                      </td>
+                      <td>
+                        <div className="action-buttons">
+                          <button className="edit-btn" onClick={() => handleOpenModal(cat)} title={t('common.edit') as string}>
+                            <Pencil size={16} />
+                          </button>
+                          <button
+                            className="delete-btn"
+                            onClick={() => handleDelete(cat.id, cat._count?.products || 0)}
+                            title={t('common.delete') as string}
+                          >
+                            <Trash2 size={16} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
 
