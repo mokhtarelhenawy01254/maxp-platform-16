@@ -53,8 +53,14 @@ jest.mock("../../../hooks/useWidgetData", () => ({
   useWidgetData: () => ({ data: {} }),
 }));
 
-jest.mock("../OnboardingChecklist", () => ({
+jest.mock("../../../components/dashboard/QuickActions", () => ({
+  QuickActions: () => <div data-testid="quick-actions">Quick Actions</div>,
+}));
+
+jest.mock("..", () => ({
+  DashboardSkeleton: () => <div data-testid="skeleton">Skeleton</div>,
   OnboardingChecklist: () => <div data-testid="onboarding-checklist">Onboarding Checklist</div>,
+  DashboardExportMenu: () => <div data-testid="export-menu">Export</div>,
 }));
 
 jest.mock("../../../components/dashboard/SpecialtyDashboardHeader", () => ({
@@ -69,9 +75,21 @@ jest.mock("../../../components/dashboard/InstalledAppsDashboard", () => ({
   InstalledAppsDashboard: () => <div data-testid="installed-apps">Installed Apps</div>,
 }));
 
-jest.mock("../../../components/dashboard/widgets/AppWidgetGrid", () => ({
-  __esModule: true,
-  default: () => <div data-testid="app-widget-grid">Widget Grid</div>,
+jest.mock("../../../components/dashboard/widgets", () => ({
+  AppWidgetGrid: () => <div data-testid="app-widget-grid">Widget Grid</div>,
+  getWidgetsForApps: () => [],
+}));
+
+jest.mock("../../../components/dashboard/DashboardActivityFeed", () => ({
+  DashboardActivityFeed: () => <div data-testid="activity-feed">Activity Feed</div>,
+}));
+
+jest.mock("../../../components/dashboard/DashboardAlertsHub", () => ({
+  DashboardAlertsHub: () => <div data-testid="alerts-hub">Alerts Hub</div>,
+}));
+
+jest.mock("../SetupProgressBanner", () => ({
+  SetupProgressBanner: () => <div data-testid="setup-progress">Setup Progress</div>,
 }));
 
 jest.mock("../DateRangeToolbar", () => ({
