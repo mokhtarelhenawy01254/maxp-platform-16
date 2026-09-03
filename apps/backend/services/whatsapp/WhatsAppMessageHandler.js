@@ -271,12 +271,11 @@ async function sendText(sessionId, to, text, options = {}) {
         // نعيد تعيين jid للـ JID المحلول ونكمل المسار العادي.
         if (jid.includes('@lid')) {
             const resolved = await WhatsAppManager.resolveOutgoingRemoteJid(sessionId, jid);
-            if (!resolved || String(resolved).includes('@lid')) {
-                const err = new Error('المرسل إليه يستخدم معرّف جهاز مرتبط (LID) غير محلول بعد');
-                err.code = 'WA_RECIPIENT_LID_UNRESOLVED';
-                throw err;
+            if (resolved && !String(resolved).includes('@lid')) {
+                jid = resolved;
+            } else {
+                console.log(`ℹ️ [SEND] Sending directly to LID JID: ${jid}`);
             }
-            jid = resolved;
         }
 
         // إرسال حالة الكتابة

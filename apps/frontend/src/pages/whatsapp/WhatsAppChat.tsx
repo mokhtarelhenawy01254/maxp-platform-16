@@ -172,6 +172,8 @@ interface MessagesPage {
 interface IncomingMessageEvent {
   sessionId: string;
   message: Message;
+  contact?: Contact;
+  conversationId?: string | null;
 }
 
 interface NotificationEventPayload {
@@ -1018,6 +1020,28 @@ const WhatsAppChatContent: React.FC = () => {
             pages: [{
               ...firstPage,
               conversations: [...pinned, ...unpinned]
+            }, ...old.pages.slice(1)]
+          };
+        } else if (data.contact) {
+          // 🆕 Prepend new contact to first page so it appears immediately in the sidebar
+          const newContact: Contact = {
+            ...data.contact,
+            lastMessage: {
+              content: message.content,
+              messageType: message.messageType,
+              fromMe: message.fromMe,
+              timestamp: message.timestamp
+            },
+            lastMessageAt: message.timestamp,
+            unreadCount: isCurrentChat ? 0 : 1
+          };
+          const pinned = firstPage.conversations.filter((c: Contact) => c.isPinned);
+          const unpinned = firstPage.conversations.filter((c: Contact) => !c.isPinned);
+          return {
+            ...old,
+            pages: [{
+              ...firstPage,
+              conversations: [...pinned, newContact, ...unpinned]
             }, ...old.pages.slice(1)]
           };
         }

@@ -298,14 +298,14 @@ describe('WhatsAppManager message capture helpers', () => {
             }
         })).toMatchObject({ alive: true, stale: false });
 
-        // Socket readyState is OPEN (1) but stale (no messages for > 15 mins)
+        // Socket readyState is OPEN (1) (Baileys handles ping/pong, do not mark stale solely on idle messages)
         expect(classifySessionSocketHealth({
             status: 'connected',
             sock: {
                 ws: { readyState: 1 },
                 lastReceivedMessageTimestamp: Date.now() - 20 * 60 * 1000
             }
-        })).toMatchObject({ alive: true, stale: true });
+        })).toMatchObject({ alive: true, stale: false });
 
         // Socket readyState is CLOSED (3)
         expect(classifySessionSocketHealth({

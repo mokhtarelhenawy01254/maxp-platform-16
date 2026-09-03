@@ -210,10 +210,32 @@ const resolveActiveSessionId = async (companyId, sessionId, options = {}) => {
         if (!session) throw new Error('الجلسة غير موجودة أو لا تنتمي لهذه الشركة');
 
         const isMetaCloud = session.provider === 'META_CLOUD';
-        const memSession = WhatsAppManager.getSession(sessionId);
-        const isAvailable = isMetaCloud
+        let memSession = WhatsAppManager.getSession(sessionId);
+        let isAvailable = isMetaCloud
             ? session.status === 'CONNECTED' && !!session.metaAccessToken
             : !!(memSession && memSession.status === 'connected');
+
+        // 🛡️ RECONNECT GRACE PERIOD: لو الجلسة بتعمل reconnecting أو socket flap
+        // لا نرفض فوراً بـ "الجلسة غير متصلة... الجلسات المتاحة: لا توجد" — ننتظر حتى 5 ثواني
+        if (!isAvailable && !isMetaCloud) {
+            const isReconnectingOrPending =
+                session.status === 'CONNECTED' ||
+                session.status === 'CONNECTING' ||
+                memSession?.status === 'connecting' ||
+                (typeof WhatsAppManager.isSessionReconnecting === 'function' && WhatsAppManager.isSessionReconnecting(sessionId));
+
+            if (isReconnectingOrPending) {
+                const deadline = Date.now() + 5000;
+                while (Date.now() < deadline) {
+                    await new Promise(r => setTimeout(r, 400));
+                    memSession = WhatsAppManager.getSession(sessionId);
+                    if (memSession && memSession.status === 'connected') {
+                        isAvailable = true;
+                        break;
+                    }
+                }
+            }
+        }
 
         if (!isAvailable) {
             // Try safe auto-migration: old session is dead, try to find a connected one
@@ -251,8 +273,9 @@ const resolveActiveSessionId = async (companyId, sessionId, options = {}) => {
         return sessionId;
     }
 
-    const activeSession = await getSharedPrismaClient().whatsAppSession.findFirst({
-        where: { companyId, status: 'CONNECTED' }
+    let activeSession = await getSharedPrismaClient().whatsAppSession.findFirst({
+        where: { companyId, status: { in: ['CONNECTED', 'CONNECTING'] } },
+        orderBy: { updatedAt: 'desc' }
     });
 
     if (!activeSession) {
@@ -260,9 +283,17 @@ const resolveActiveSessionId = async (companyId, sessionId, options = {}) => {
     }
 
     if (activeSession.provider !== 'META_CLOUD') {
-        const inMemory = WhatsAppManager.getSession(activeSession.id);
+        let inMemory = WhatsAppManager.getSession(activeSession.id);
         if (!inMemory || inMemory.status !== 'connected') {
-            throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+            const deadline = Date.now() + 5000;
+            while (Date.now() < deadline) {
+                await new Promise(r => setTimeout(r, 400));
+                inMemory = WhatsAppManager.getSession(activeSession.id);
+                if (inMemory && inMemory.status === 'connected') break;
+            }
+            if (!inMemory || inMemory.status !== 'connected') {
+                throw new Error('الجلسة غير متصلة حالياً. يرجى إعادة الاتصال.');
+            }
         }
     }
 
@@ -313,8 +344,7 @@ const fetchSessionsWithLegacySchemaSupport = async (companyId) => {
                         whatsAppMessages: { where: { isHidden: false } },
                         whatsAppContacts: {
                             where: {
-                                totalMessages: { gt: 0 },
-                                NOT: { jid: { contains: '@lid' } }
+                                totalMessages: { gt: 0 }
                             }
                         }
                     }
@@ -677,8 +707,7 @@ async function getSession(req, res) {
                         whatsAppMessages: { where: { isHidden: false } },
                         whatsAppContacts: {
                             where: {
-                                totalMessages: { gt: 0 },
-                                NOT: { jid: { contains: '@lid' } }
+                                totalMessages: { gt: 0 }
                             }
                         }
                     }
@@ -1034,8 +1063,7 @@ async function getConversations(req, res) {
         const where = {
             sessionId: { in: sessionIds },
             isArchived: archived === 'true',
-            totalMessages: { gt: 0 },
-            NOT: { jid: { contains: '@lid' } }
+            totalMessages: { gt: 0 }
         };
 
         if (search) {
@@ -1086,8 +1114,7 @@ async function getConversations(req, res) {
         // عدّادات دقيقة لكل الفلاتر على مستوى الجلسة (مش بتتأثر بالـ search/filter الحالي)
         const activeCountWhere = {
             sessionId: { in: sessionIds },
-            totalMessages: { gt: 0 },
-            NOT: { jid: { contains: '@lid' } }
+            totalMessages: { gt: 0 }
         };
 
         // تحسين: تشغيل استعلام المحادثات والعدد الكلي والعدادات بشكل متزامن

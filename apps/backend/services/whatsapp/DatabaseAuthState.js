@@ -105,7 +105,7 @@ async function clearDatabaseAuthState(sessionId) {
             fs.mkdirSync(backupDir, { recursive: true });
             fs.writeFileSync(
                 path.join(backupDir, `${sessionId}_${Date.now()}.json`),
-                encryptField(session.authState),
+                session.authState,
                 'utf-8'
             );
         }

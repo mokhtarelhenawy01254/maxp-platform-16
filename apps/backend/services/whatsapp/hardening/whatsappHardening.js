@@ -20,7 +20,7 @@
 const path = require('path');
 
 const DEFAULT_AUTH_KEY_MAX_AGE_DAYS = 30;
-const DEFAULT_AUTH_KEY_MAX_PER_CATEGORY = 200;
+const DEFAULT_AUTH_KEY_MAX_PER_CATEGORY = 2000;
 const DEFAULT_MAX_AUTH_STATE_BYTES = 4 * 1024 * 1024; // 4 MB
 const DEFAULT_BACKUP_ROOT = path.join(process.cwd(), 'data', 'whatsapp-sessions', '_backups');
 

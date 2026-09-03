@@ -1907,28 +1907,28 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (shouldReconnect=true)`);
                 // 🚨 PRODUCTION-FIX: عداد فشل تراكمي عبر إعادة الإنشاء —
                 // لو بلغ السقف نستسلم (مسح auth + QR_PENDING + تنبيه) بدل
-                // إعادة محاولة لا نهائية تعرّض الرقم لـ rate-limit/block.
                 const failureCount = incrementReconnectFailureCount(sessionId);
                 if (failureCount >= MAX_RECONNECT_ATTEMPTS) {
                     await giveUpOnReconnect(sessionId, companyId, sessionData?.phoneNumber);
                     return;
                 }
                 WA_LOG.reconnect(sessionId, `Reconnect failure count ${failureCount}/${MAX_RECONNECT_ATTEMPTS}`);
-                const currentData = sessionData ? { syncFullHistory: sessionData.syncFullHistory } : { syncFullHistory: false };
-                activeSessions.delete(sessionId);
                 if (sessionData?.sock) {
                     cleanupSocketListeners(sessionData.sock);
                     await endSocketQuietly(sessionData.sock, 'Connection closed - reconnecting');
                     sessionData.sock = null;
                 }
+                if (sessionData) {
+                    sessionData.status = 'connecting';
+                    sessionData.isReconnecting = true;
+                }
                 cleanupSessionState(sessionId, companyId);
                 sessionHealthChecks.delete(sessionId);
                 // 440 = connectionReplaced, 515 = stream error, 428 = connection closed —
-                // كلها عابرة: backoff موحّد 30s (بدل 3s) + jitter يوزّع عبر الجلسات
-                // لتفادي thundering herd وقت أعطال واتساب.
+                // كلها عابرة: backoff سريع (5s) بدلاً من 30s لتقليل وقت الانقطاع
                 const TRANSIENT_CLOSE_CODES = new Set([440, 515, 428, 500, 502, 503, 504]);
-                const transientBackoffBase = TRANSIENT_CLOSE_CODES.has(statusCode) ? 30000 : 5000;
-                const jitteredBackoff = transientBackoffBase + Math.round(Math.random() * Math.min(transientBackoffBase * 0.3, 3000));
+                const transientBackoffBase = TRANSIENT_CLOSE_CODES.has(statusCode) ? 5000 : 3000;
+                const jitteredBackoff = transientBackoffBase + Math.round(Math.random() * Math.min(transientBackoffBase * 0.3, 1500));
                 const reconnectDelay = jitteredBackoff;
                 requestReconnect(sessionId, companyId, 'socket_close', {}, reconnectDelay);
             } else if (requiresFreshLink) {
@@ -2608,12 +2608,9 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                         remoteJid = resolvedJid;
                     } else if (fromMe) {
                         console.log(`⚠️ Outgoing message to unresolved LID ${remoteJid}. Keeping LID until a phone mapping is known.`);
-                    } else if (importHistory) {
-                        // في history sync، نخزن الرسالة مع LID بدل ما نسكت — عشان نرجع نresolveها بعدين
-                        console.log(`⚠️ History message from unresolved LID ${remoteJid}. Storing with LID for later resolution.`);
                     } else {
-                        console.log(`⚠️ Skipping message from LID without participant/senderPn: ${remoteJid}`);
-                        continue;
+                        // 🌟 Store with LID so incoming customer message is NOT lost, will merge when phone mapping arrives
+                        console.log(`ℹ️ Incoming message from LID ${remoteJid}. Storing with LID until phone mapping is resolved.`);
                     }
                 }
             }
@@ -2858,8 +2855,11 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     payload: {
                         sessionId,
                         message: savedMessage,
+                        contact,
+                        conversationId: syncedConversation?.id || null,
                         raw: msg
-                    }
+                    },
+                    fallbackToCompany: true
                 });
             }
 
@@ -2932,7 +2932,8 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                             timestamp: savedMessage.timestamp,
                             soundEnabled,
                             notificationsEnabled
-                        }
+                        },
+                        fallbackToCompany: true
                     });
 
                     // console.log(`🔔 [NOTIFICATION] Sent WhatsApp message notification for company ${companyId}`, {
@@ -5682,8 +5683,7 @@ async function getLabelContacts(sessionId, labelId, options = {}) {
 
     const where = {
         sessionId,
-        labels: { contains: `"${labelId}"` },
-        NOT: { jid: { contains: '@lid' } }
+        labels: { contains: `"${labelId}"` }
     };
     if (search) {
         where.OR = [
@@ -5714,7 +5714,7 @@ async function getLabelContacts(sessionId, labelId, options = {}) {
     // المصدر الأساسي: الارتباطات اللحظية من الذاكرة (الموجودة من أحداث واتساب)
     // الـ DB لوحده مش كفاية لأن الـ associations بتتخزن فيه بعد ما الـ contacts نفسها تتخزن.
     const sourceJids = inMemoryJids && inMemoryJids.size > 0
-        ? [...inMemoryJids].filter(jid => !String(jid).includes('@lid'))
+        ? [...inMemoryJids]
         : [];
 
     // لو في بحث، نرشح الـ jids على الـ contact details من الداتابيز

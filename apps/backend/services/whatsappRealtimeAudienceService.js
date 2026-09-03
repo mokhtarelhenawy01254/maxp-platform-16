@@ -199,9 +199,9 @@ function emitToAudience(
     fallbackToCompany = false
   }
 ) {
-  const deliveredToUsers = emitToUsers(io, userIds, eventName, payload);
+  emitToUsers(io, userIds, eventName, payload);
 
-  if (!deliveredToUsers && fallbackToCompany && companyId) {
+  if (companyId && (fallbackToCompany || !userIds || userIds.length === 0)) {
     io?.to(`company_${companyId}`).emit(eventName, payload);
   }
 }
