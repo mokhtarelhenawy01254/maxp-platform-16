@@ -2,7 +2,8 @@ import React from "react";
 import { ProductFormData } from "../../types";
 import { ProductSelect } from "../shared/ProductSelect";
 import { ShippingClassOption } from "../../../../constants/shippingClasses";
-import { RichTextEditor } from "../../../../../components/RichTextEditor";
+import RichTextEditor from "../../../../components/RichTextEditor";
+
 
 interface AdvancedTabProps {
   formData: ProductFormData;
