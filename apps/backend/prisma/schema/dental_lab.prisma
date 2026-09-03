@@ -28,8 +28,11 @@ model DentalWorkType {
   category             String?   // تلبيس | جسر | طقم | زراعة | تجميلي | أخرى
   pricingMode          String   @default("PER_UNIT") // PER_UNIT | FLAT
   price                Float    @default(0) // سعر الكراون/الوحدة أو السعر الثابت
+  costPrice            Float?   @default(0) // تكلفة المواد الخام التقديرية للمعمل
   leadTimeDays         Int      @default(5)
   defaultMaterial      String?  // خامة افتراضية
+  materialBrand        String?  // ماركة أو شركة الخامة المعتمدة
+  instructions         String?  // إرشادات التحضير والملاحظات الفنية
   defaultWarrantyYears Int?     @default(0)
   defaultCrownCount    Int?     @default(1)
   isActive             Boolean  @default(true)

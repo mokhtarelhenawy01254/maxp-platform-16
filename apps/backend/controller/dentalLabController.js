@@ -456,7 +456,10 @@ const createWorkType = async (req, res) => {
     if (!priceResult.valid) return res.status(400).json({ success: false, error: 'سعر نوع الشغل غير صحيح' });
 
     const pricingMode = body.pricingMode === 'FLAT' ? 'FLAT' : 'PER_UNIT';
+    const costPriceResult = toNonNegativeNumber(body.costPrice, 0);
     const defaultMaterial = body.defaultMaterial ? String(body.defaultMaterial).trim() : null;
+    const materialBrand = body.materialBrand ? String(body.materialBrand).trim() : null;
+    const instructions = body.instructions ? String(body.instructions).trim() : null;
     const defaultWarrantyYears = Number.isFinite(parseInt(body.defaultWarrantyYears, 10)) ? Math.max(0, parseInt(body.defaultWarrantyYears, 10)) : 0;
     const defaultCrownCount = Number.isFinite(parseInt(body.defaultCrownCount, 10)) ? Math.max(1, parseInt(body.defaultCrownCount, 10)) : 1;
 
@@ -468,8 +471,11 @@ const createWorkType = async (req, res) => {
         category: body.category ? String(body.category) : null,
         pricingMode,
         price: priceResult.value,
+        costPrice: costPriceResult.value,
         leadTimeDays: Number.isFinite(parseInt(body.leadTimeDays, 10)) ? parseInt(body.leadTimeDays, 10) : 5,
         defaultMaterial,
+        materialBrand,
+        instructions,
         defaultWarrantyYears,
         defaultCrownCount,
         isActive: normalizeBool(body.isActive, true),
@@ -483,7 +489,7 @@ const createWorkType = async (req, res) => {
   }
 };
 
-const WORK_TYPE_UPDATE_FIELDS = ['name', 'category', 'pricingMode', 'price', 'leadTimeDays', 'defaultMaterial', 'defaultWarrantyYears', 'defaultCrownCount', 'isActive', 'sortOrder'];
+const WORK_TYPE_UPDATE_FIELDS = ['name', 'category', 'pricingMode', 'price', 'costPrice', 'leadTimeDays', 'defaultMaterial', 'materialBrand', 'instructions', 'defaultWarrantyYears', 'defaultCrownCount', 'isActive', 'sortOrder'];
 
 const updateWorkType = async (req, res) => {
   try {
@@ -511,6 +517,16 @@ const updateWorkType = async (req, res) => {
       const priceResult = toNonNegativeNumber(data.price, 0);
       if (!priceResult.valid) return res.status(400).json({ success: false, error: 'سعر نوع الشغل غير صحيح' });
       data.price = priceResult.value;
+    }
+    if ('costPrice' in data) {
+      const costResult = toNonNegativeNumber(data.costPrice, 0);
+      data.costPrice = costResult.value;
+    }
+    if ('materialBrand' in data) {
+      data.materialBrand = data.materialBrand ? String(data.materialBrand).trim() : null;
+    }
+    if ('instructions' in data) {
+      data.instructions = data.instructions ? String(data.instructions).trim() : null;
     }
     if ('leadTimeDays' in data) data.leadTimeDays = parseInt(data.leadTimeDays, 10) || 5;
     if ('defaultWarrantyYears' in data) data.defaultWarrantyYears = Math.max(0, parseInt(data.defaultWarrantyYears, 10) || 0);
@@ -855,7 +871,7 @@ const createCase = async (req, res) => {
             shade: body.shade ? String(body.shade) : null,
             material,
             lotNumber: body.lotNumber ? String(body.lotNumber).trim() : null,
-            materialBrand: body.materialBrand ? String(body.materialBrand).trim() : null,
+            materialBrand: body.materialBrand ? String(body.materialBrand).trim() : (workType ? workType.materialBrand : null),
             warrantyYears,
             status: 'RECEIVED',
             orderStatus: 'PENDING',

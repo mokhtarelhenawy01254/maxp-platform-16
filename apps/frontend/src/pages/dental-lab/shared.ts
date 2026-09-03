@@ -61,8 +61,11 @@ export interface DentalWorkType {
   category?: string;
   pricingMode?: "PER_UNIT" | "FLAT";
   price: number;
+  costPrice?: number;
   leadTimeDays?: number;
   defaultMaterial?: string;
+  materialBrand?: string;
+  instructions?: string;
   defaultWarrantyYears?: number;
   defaultCrownCount?: number;
   isActive: boolean;
