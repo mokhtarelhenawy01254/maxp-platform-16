@@ -15,6 +15,7 @@ import { getOrderAttributionPayload } from '../utils/orderAttribution';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { useCheckoutShippingQuote } from '../hooks/useCheckoutShippingQuote';
 import TierProgressBanner from '../components/TierProgressBanner';
+import { isValidStorefrontPhone } from '../utils/phoneValidation';
 
 interface PaymentSectionProps {
   section?: {
@@ -271,7 +272,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     formData.notes?.trim(),
   );
   const requiresShippingSelection = subtotal > 0 && !trimmedGovernorate;
-  const isPhoneValid = /^01\d{9}$/.test((formData.phone || '').replace(/\s+/g, ''));
+  const isPhoneValid = isValidStorefrontPhone(formData.phone || '');
   const isEmailValid = !formData.email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
   const variant = normalizeVariant(section?.variant);
   const isMarketPayment = variant === 'market-payment';
@@ -363,7 +364,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     'صيغة البريد الإلكتروني غير صحيحة. اتركه فارغًا أو أدخل عنوان صحيح.';
   const invalidPhoneText =
     sectionSettings?.invalidPhoneText ||
-    'رقم الهاتف يجب أن يكون رقم موبايل مصري صحيحًا من 11 رقمًا.';
+    'رقم الهاتف غير صحيح. يرجى إدخال رقم هاتف صحيح (مثال: 01xxxxxxxxx أو +201xxxxxxxxx).';
   const securityText =
     sectionSettings?.securityText ||
     (isBiteRush
@@ -815,7 +816,7 @@ const PaymentSection: React.FC<PaymentSectionProps> = ({
     const errors: string[] = [];
     if (!formData.customerName?.trim()) errors.push('يرجى إدخال الاسم الكامل.');
     if (!formData.phone?.trim()) errors.push('يرجى إدخال رقم الهاتف.');
-    else if (!isPhoneValid) errors.push('رقم الهاتف يجب أن يكون رقم موبايل مصري صحيح من 11 رقمًا.');
+    else if (!isPhoneValid) errors.push('رقم الهاتف غير صحيح. يرجى إدخال رقم هاتف صحيح (مثال: 01xxxxxxxxx أو +201xxxxxxxxx).');
     if (!formData.address?.trim()) errors.push('يرجى إدخال عنوان الشحن.');
     if (!trimmedGovernorate) errors.push('يرجى اختيار المحافظة.');
     if (!isEmailValid) errors.push('صيغة البريد الإلكتروني غير صحيحة. اتركه فارغًا أو أدخل عنوان صحيح.');

@@ -771,7 +771,6 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     autoComplete="tel"
                     required
                     aria-required="true"
-                    pattern="^01[0-9]{9}$"
                     className={inputClassName}
                   />
                   <TierProgressBanner />
@@ -819,7 +818,6 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
                     autoComplete="tel"
                     required
                     aria-required="true"
-                    pattern="^01[0-9]{9}$"
                     className={inputClassName}
                   />
                 </div>

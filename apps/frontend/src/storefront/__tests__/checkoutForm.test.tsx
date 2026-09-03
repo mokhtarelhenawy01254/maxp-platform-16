@@ -45,6 +45,7 @@ describe('CheckoutForm semantics', () => {
     expect(screen.getByLabelText('الاسم الكامل')).toHaveAttribute('autocomplete', 'name');
     expect(screen.getByLabelText('البريد الإلكتروني')).toHaveAttribute('autocomplete', 'email');
     expect(screen.getByLabelText('رقم الهاتف')).toHaveAttribute('autocomplete', 'tel');
+    expect(screen.getByLabelText('رقم الهاتف')).not.toHaveAttribute('pattern');
     expect(screen.getByLabelText('العنوان بالتفصيل')).toHaveAttribute('autocomplete', 'street-address');
     expect(screen.getByLabelText('المدينة')).toHaveAttribute('autocomplete', 'address-level2');
     expect(screen.getByLabelText('المحافظة')).toHaveAttribute('autocomplete', 'address-level1');

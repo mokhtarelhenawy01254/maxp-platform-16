@@ -27,6 +27,7 @@ import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
 import type { CartItem } from "../store/useCartStore";
 import type { Product } from "../hooks/useProducts";
 import { resolvePreviewThemeId } from "../preview/previewContext";
+import { isValidStorefrontPhone } from "../utils/phoneValidation";
 
 interface PdpQuickOrderFormProps {
   product: Product & {
@@ -101,7 +102,7 @@ const buildQuickOrderNote = ({
 };
 
 const isValidEgyptianPhone = (value: string) =>
-  /^01\d{9}$/.test(value.replace(/\s+/g, ""));
+  isValidStorefrontPhone(value);
 
 const inputClassName =
   "w-full rounded-[1rem] border border-border/80 bg-background px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15";

@@ -10,6 +10,7 @@ import { formatStorefrontCurrency } from "../utils/currency";
 import { getPrimaryProductImage } from "../utils/productImages";
 import { buildStorefrontPath } from "../utils/paths";
 import { persistPurchaseTracking } from "../utils/purchaseTrackingStorage";
+import { isValidStorefrontPhone } from "../utils/phoneValidation";
 import "./ProductImageLandingPage.css";
 
 type LandingSlice = {
@@ -232,7 +233,7 @@ const sortVariantValues = (values: string[]) =>
   });
 
 const isValidEgyptianPhone = (value: string) =>
-  /^01\d{9}$/.test(value.replace(/\s+/g, ""));
+  isValidStorefrontPhone(value);
 
 const formatPrice = (value: number, currency: string): string =>
   formatStorefrontCurrency(value, currency).replace("EGP", "جنيه");
