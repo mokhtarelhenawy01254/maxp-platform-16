@@ -17461,6 +17461,8 @@ declare module 'react-i18next' {
         formOrderSurfaceModeDesc: string;
         showQuantity: string;
         showOrderSummary: string;
+        autoSelectVariants: string;
+        autoSelectVariantsDesc: string;
         pdpFullName: string;
         pdpFullNameDesc: string;
         pdpPhone: string;

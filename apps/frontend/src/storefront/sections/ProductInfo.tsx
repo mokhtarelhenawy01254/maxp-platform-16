@@ -853,14 +853,23 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     getPrimaryProductImage(product) ||
     '';
 
+  const autoSelectVariants = pdpQuickOrderSettings.autoSelectVariants ?? true;
+
   useEffect(() => {
+    setSelectedAttributes({});
+  }, [product?.id]);
+
+  useEffect(() => {
+    if (!autoSelectVariants) {
+      return;
+    }
     if (product?.productVariants?.length && Object.keys(selectedAttributes).length === 0) {
       const firstVariantAttributes = getVariantAttributes(product.productVariants[0]);
       if (Object.keys(firstVariantAttributes).length > 0) {
         setSelectedAttributes(firstVariantAttributes);
       }
     }
-  }, [product?.productVariants, selectedAttributes]);
+  }, [autoSelectVariants, product?.productVariants, selectedAttributes]);
 
   useEffect(() => {
     setQuantity(1);

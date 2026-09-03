@@ -18,6 +18,7 @@ export interface PdpQuickOrderSettings {
   surfaceMode: PdpQuickOrderSurfaceMode;
   showQuantity: boolean;
   showOrderSummary: boolean;
+  autoSelectVariants: boolean;
   fields: Record<PdpQuickOrderFieldKey, PdpQuickOrderFieldSettings>;
 }
 
@@ -26,6 +27,7 @@ export const DEFAULT_PDP_QUICK_ORDER_SETTINGS: PdpQuickOrderSettings = {
   surfaceMode: "standalone",
   showQuantity: true,
   showOrderSummary: true,
+  autoSelectVariants: true,
   fields: {
     fullName: { enabled: true, required: true },
     phone: { enabled: true, required: true },
@@ -91,6 +93,10 @@ export const normalizePdpQuickOrderSettings = (
       typeof candidate["showOrderSummary"] === "boolean"
         ? candidate["showOrderSummary"]
         : DEFAULT_PDP_QUICK_ORDER_SETTINGS.showOrderSummary,
+    autoSelectVariants:
+      typeof candidate["autoSelectVariants"] === "boolean"
+        ? candidate["autoSelectVariants"]
+        : DEFAULT_PDP_QUICK_ORDER_SETTINGS.autoSelectVariants,
     fields: {
       fullName: normalizeFieldSettings(
         rawFields["fullName"],

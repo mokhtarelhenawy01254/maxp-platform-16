@@ -298,6 +298,17 @@ export const CheckoutFormSection: React.FC<CheckoutFormSectionProps> = ({
                   }
                   disabled={loading}
                 />
+                <ToggleSetting
+                  label={t("storeCheckout.autoSelectVariants")}
+                  value={pdpQuickOrderSettings.autoSelectVariants}
+                  onChange={(value) =>
+                    onPdpQuickOrderSettingsChange({
+                      ...pdpQuickOrderSettings,
+                      autoSelectVariants: value,
+                    })
+                  }
+                  disabled={loading}
+                />
               </div>
             </div>
           </section>
