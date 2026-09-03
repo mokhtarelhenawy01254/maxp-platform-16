@@ -1179,6 +1179,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     ? "رقم هاتف بديل"
     : "Alternate phone";
   const shippingLabel = prefersArabicCopy ? "تكلفة الشحن" : "Shipping";
+  const totalLabel = prefersArabicCopy ? "الإجمالي" : "Total";
   const cleanShippingMethodTitle = useMemo(() => {
     if (!shippingMethodLabel) return "";
     const trimmed = shippingMethodLabel.trim();

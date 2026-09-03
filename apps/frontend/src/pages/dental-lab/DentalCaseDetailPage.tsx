@@ -1189,6 +1189,8 @@ export default function DentalCaseDetailPage() {
             <RotateCcw className="w-4 h-4" /> استلام الحالة من البروفة
           </button>
         </div>
+      )}
+
       {(() => {
         const designAtt = attachments.find(a => a.kind === "DESIGN_REVIEW");
         if (!designAtt) return null;
