@@ -621,6 +621,14 @@ export default function DentalCaseDetailPage() {
   const [refabOpen, setRefabOpen] = useState(false);
   const [refabBusyId, setRefabBusyId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const designReviewInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handleDesignReviewUpload = (e: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    startUpload(files, files.map(() => "DESIGN_REVIEW"));
+    e.target.value = "";
+  };
 
   const openWorkOrder = async () => {
     if (!id || workOrderLoading) return;
@@ -1181,7 +1189,51 @@ export default function DentalCaseDetailPage() {
             <RotateCcw className="w-4 h-4" /> استلام الحالة من البروفة
           </button>
         </div>
-      )}
+      {(() => {
+        const designAtt = attachments.find(a => a.kind === "DESIGN_REVIEW");
+        if (!designAtt) return null;
+        const designHist = history.find(h => h.dimension === "DESIGN_REVIEW");
+        const isApproved = designHist?.status === "APPROVED";
+        const isChanges = designHist?.status === "CHANGES_REQUESTED";
+        return (
+          <div className={`mb-6 p-4 rounded-xl border flex flex-wrap items-center justify-between gap-4 ${
+            isApproved
+              ? "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200"
+              : isChanges
+              ? "bg-amber-50 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800 text-amber-900 dark:text-amber-200"
+              : "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-300 dark:border-indigo-800 text-indigo-900 dark:text-indigo-200"
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl text-white font-bold ${isApproved ? "bg-emerald-600" : isChanges ? "bg-amber-600" : "bg-indigo-600"}`}>
+                <Box className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm">
+                  {isApproved
+                    ? `تم اعتماد تصميم الـ 3D من الطبيب المعالج (${designHist?.userName || "الطبيب"})`
+                    : isChanges
+                    ? `الطبيب طلب تعديل على تصميم الـ 3D`
+                    : `تصميم الـ 3D مرفوع وبانتظار اعتماد الطبيب المعالج عبر البوابة`}
+                </h4>
+                <p className="text-xs opacity-90 mt-0.5">
+                  {designHist?.reason ? `ملاحظات الطبيب: "${designHist.reason}"` : `الملف المرفق: ${designAtt.fileName}`}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setSelectedModel({
+                  name: designAtt.fileName,
+                  url: `/api/v1/dental-lab/files/${designAtt.storedPath}`,
+                })}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-white dark:bg-gray-800 border rounded-lg text-xs font-semibold shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700"
+              >
+                <Eye className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" /> معاينة التصميم ثلاثي الأبعاد
+              </button>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         <div className="xl:col-span-2 space-y-6">
@@ -1226,9 +1278,21 @@ export default function DentalCaseDetailPage() {
                     </div>
                     <div className="flex-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        {badge(CASE_STATUS_MAP, h.fromStatus)}
-                        <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
-                        {badge(CASE_STATUS_MAP, h.toStatus)}
+                        {h.dimension === "DESIGN_REVIEW" ? (
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                            h.status === "APPROVED"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              : "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+                          }`}>
+                            {h.status === "APPROVED" ? "✅ اعتماد تصميم الـ 3D من الطبيب" : "⚠️ طلب تعديل على تصميم الـ 3D"}
+                          </span>
+                        ) : (
+                          <>
+                            {badge(CASE_STATUS_MAP, h.fromStatus)}
+                            <ArrowRight className="w-3.5 h-3.5 text-gray-400" />
+                            {badge(CASE_STATUS_MAP, h.toStatus)}
+                          </>
+                        )}
                         <span className="text-xs text-gray-400 dark:text-gray-500">{fmtDateTime(h.createdAt)}</span>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -1408,6 +1472,22 @@ export default function DentalCaseDetailPage() {
                     <Download className="w-3.5 h-3.5" />تحميل الكل (ZIP)
                   </button>
                 )}
+                <button
+                  onClick={() => designReviewInputRef.current?.click()}
+                  disabled={uploading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs hover:bg-indigo-700 disabled:opacity-50 shadow-sm"
+                  title="رفع تصميم ثلاثي الأبعاد (HTML Exocad أو STL) لاعتماده من الطبيب قبل البدء بالتفريز"
+                >
+                  <Box className="w-3.5 h-3.5" />
+                  رفع تصميم 3D للاعتماد
+                </button>
+                <input
+                  ref={designReviewInputRef}
+                  type="file"
+                  className="hidden"
+                  accept=".html,.htm,.stl,.ply,.obj"
+                  onChange={handleDesignReviewUpload}
+                />
                 <button onClick={() => fileInputRef.current?.click()} disabled={uploading} className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 disabled:opacity-50">
                   {uploading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}{t("dentalLab.detail.uploadFile")}
                 </button>
