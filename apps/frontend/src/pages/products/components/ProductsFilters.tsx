@@ -164,8 +164,27 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
         </button>
       </div>
 
-      {/* Quick Filter Chips (Scrollable row) */}
+      {/* Quick Filter Chips + Category Dropdown (always visible, scrollable row) */}
       <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+        {/* Category select — always visible */}
+        {categories.length > 0 && (
+          <select
+            value={filters.categoryFilter}
+            onChange={(e) => onFilterChange("categoryFilter", e.target.value)}
+            aria-label="تصفية حسب الفئة"
+            className={`shrink-0 px-2.5 py-1 text-[11px] sm:text-xs font-semibold border rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer ${
+              filters.categoryFilter !== "all"
+                ? "bg-indigo-600 text-white border-indigo-600"
+                : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-200 dark:hover:bg-gray-600"
+            }`}
+          >
+            <option value="all">جميع الفئات</option>
+            {categories.map((cat) => (
+              <option key={cat} value={cat}>{cat}</option>
+            ))}
+          </select>
+        )}
+
         {quickChips.map((chip) => (
           <button
             key={chip.label}
