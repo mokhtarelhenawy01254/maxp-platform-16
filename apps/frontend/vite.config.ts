@@ -251,9 +251,13 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
     return 'vendor-class-utils';
   }
 
-  // Isolate Base UI & MUI.
+  // Isolate Base UI independently from MUI so storefront does not pull MUI + Emotion (~1.3MB)
+  if (packageName === '@base-ui/react') {
+    return 'vendor-base-ui';
+  }
+
+  // Isolate heavy admin MUI & Emotion
   if (
-    packageName === '@base-ui/react' ||
     packageName.startsWith('@mui/') ||
     packageName.startsWith('@emotion/')
   ) {

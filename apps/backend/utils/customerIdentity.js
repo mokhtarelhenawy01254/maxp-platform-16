@@ -65,7 +65,15 @@ async function createCustomerByPhone(prisma, { companyId, phone, data = {} }) {
   if (!where) {
     // مفيش رقم صالح → create عادي (مع P2002 fallback على أي unique تاني زي facebookId)
     try {
-      return await prisma.customer.create({ data: { ...data, companyId } });
+      const createData = { ...data };
+      if (companyId && !createData.company) {
+        createData.company = { connect: { id: companyId } };
+        delete createData.companyId;
+      }
+      if (createData.lastName === null || createData.lastName === undefined) {
+        createData.lastName = '';
+      }
+      return await prisma.customer.create({ data: createData });
     } catch (err) {
       if (err?.code === 'P2002') {
         const fallbackWhere = { companyId };
@@ -85,10 +93,16 @@ async function createCustomerByPhone(prisma, { companyId, phone, data = {} }) {
 
     const createData = {
       ...data,
-      companyId,
       phone: phone || null,
       phoneNormalized: data.phoneNormalized || canonical,
     };
+    if (companyId && !createData.company) {
+      createData.company = { connect: { id: companyId } };
+      delete createData.companyId;
+    }
+    if (createData.lastName === null || createData.lastName === undefined) {
+      createData.lastName = '';
+    }
     try {
       return await prisma.customer.create({ data: createData });
     } catch (err) {
@@ -107,8 +121,21 @@ async function createCustomerByPhone(prisma, { companyId, phone, data = {} }) {
  * بدل ما يرمي 500 ويكسر الفلو (طلب/فورم/تسجيل).
  */
 async function safeCreateCustomer(prisma, createArgs, fallbackWhere) {
+  let normalizedArgs = createArgs;
+  if (createArgs && createArgs.data) {
+    const d = { ...createArgs.data };
+    if (d.companyId && !d.company) {
+      d.company = { connect: { id: d.companyId } };
+      delete d.companyId;
+    }
+    if (d.lastName === null || d.lastName === undefined) {
+      d.lastName = '';
+    }
+    normalizedArgs = { ...createArgs, data: d };
+  }
+
   try {
-    return await prisma.customer.create(createArgs);
+    return await prisma.customer.create(normalizedArgs);
   } catch (err) {
     if (err?.code === 'P2002' && fallbackWhere) {
       const existing = await prisma.customer.findFirst({ where: fallbackWhere });

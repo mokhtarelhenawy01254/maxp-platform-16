@@ -1630,15 +1630,17 @@ router.post('/', async (req, res) => {
             let customer = await findCustomerByPhone(prisma, guestPhone, company.id);
 
             if (!customer) {
+              const nameParts = splitCustomerName(guestName);
               customer = await safeCreateCustomer(
                 prisma,
                 {
                   data: {
-                    ...splitCustomerName(guestName),
+                    firstName: nameParts.firstName || 'عميل',
+                    lastName: nameParts.lastName || '',
                     phone: guestPhone,
                     phoneNormalized: toCanonicalE164(guestPhone),
-                    email: guestEmail,
-                    companyId: company.id,
+                    email: guestEmail || null,
+                    company: { connect: { id: company.id } },
                     status: 'ACTIVE'
                   }
                 },
@@ -2196,12 +2198,12 @@ router.post('/', async (req, res) => {
           prisma,
           {
             data: {
-              firstName: firstName,
-              lastName: lastName || null,
+              firstName: firstName || 'عميل',
+              lastName: lastName || '',
               phone: order.guestPhone,
               phoneNormalized: toCanonicalE164(order.guestPhone),
               email: order.guestEmail || null,
-              companyId: company.id,
+              company: { connect: { id: company.id } },
               status: 'ACTIVE',
               metadata: JSON.stringify({ source: 'guest_order', guestOrderId: order.id })
             }
