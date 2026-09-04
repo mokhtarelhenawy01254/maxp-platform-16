@@ -683,6 +683,7 @@ export default function MindMapPage() {
       {/* Main Canvas Area */}
       <div
         ref={viewportRef}
+        dir="ltr"
         className="relative flex-1 w-full h-full overflow-hidden bg-slate-950"
         style={{
           backgroundImage: "radial-gradient(#334155 1.5px, transparent 1.5px)",
@@ -812,6 +813,7 @@ export default function MindMapPage() {
               return (
                 <div
                   key={node.id}
+                  dir="rtl"
                   className={`map-node absolute rounded-2xl border p-3.5 flex flex-col justify-between shadow-2xl backdrop-blur w-72 bg-slate-900/95 cursor-grab active:cursor-grabbing transition-all duration-150 ${
                     node.color
                   } ${
