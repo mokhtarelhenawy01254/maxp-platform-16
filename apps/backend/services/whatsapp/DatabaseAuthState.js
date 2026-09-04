@@ -48,6 +48,7 @@ function setCachedAuthState(sessionId, data) {
 
 // Debounce timer للحفظ لتقليل استعلامات قاعدة البيانات
 const saveTimers = new Map();
+const pendingSavers = new Map(); // sessionId -> doSave function for shutdown flushing
 const SAVE_DEBOUNCE_MS = 1000; // حفظ بعد ثانية واحدة من آخر تحديث
 const SAVE_IMMEDIATE_DEBOUNCE_MS = 50; // debounce قصير للحالات الفورية
 
@@ -89,6 +90,7 @@ async function clearDatabaseAuthState(sessionId) {
         clearTimeout(saveTimers.get(sessionId));
         saveTimers.delete(sessionId);
     }
+    pendingSavers.delete(sessionId);
 
     authStateCache.delete(sessionId);
 
@@ -326,15 +328,50 @@ async function useDatabaseAuthState(sessionId) {
         await doSave();
     };
 
+    pendingSavers.set(sessionId, doSave);
+
     return {
         state,
         saveCreds
     };
 }
 
+async function flushDatabaseAuthState(sessionId) {
+    if (saveTimers.has(sessionId)) {
+        clearTimeout(saveTimers.get(sessionId));
+        saveTimers.delete(sessionId);
+    }
+    const saver = pendingSavers.get(sessionId);
+    if (saver) {
+        await saver();
+        return true;
+    }
+    return false;
+}
+
+async function flushAllDatabaseAuthStates() {
+    let flushed = 0;
+    for (const [sessionId, saver] of pendingSavers) {
+        if (saveTimers.has(sessionId)) {
+            clearTimeout(saveTimers.get(sessionId));
+            saveTimers.delete(sessionId);
+        }
+        try {
+            await saver();
+            flushed++;
+        } catch (e) {
+            AUTH_LOG.error(sessionId, `Failed to flush auth state on shutdown: ${e.message}`);
+        }
+    }
+    AUTH_LOG.ok(null, `Flushed auth state for ${flushed} session(s) to DB`);
+    return flushed;
+}
+
 module.exports = {
     useDatabaseAuthState,
     clearDatabaseAuthState,
+    flushDatabaseAuthState,
+    flushAllDatabaseAuthStates,
     __testing: {
         applyKeyUpdates,
         hardening

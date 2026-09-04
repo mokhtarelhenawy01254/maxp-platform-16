@@ -80,10 +80,10 @@ const profilePicFetchRunning = new Set(); // sessionId
 const lastReconnectTime = new Map();
 const RECONNECT_COOLDOWN_MS = 30000;
 
-// 🚨 PRODUCTION-FIX: سقف لمحاولات إعادة الاتصال المتتالية الفاشلة.
+// 🚨 PRODUCTION-FIX: سقف لمحاولات إعادة الاتصال المتتالية الفاشلة (25 محاولة بتدرج زمني يغطي >30 دقيقة).
 // بعدها الجلسة auth state محطّمة على الأرجح — نوقف التكرار (الذي يستدعي
 // rate-limit/block من واتساب)، نمسح auth state ونحوّل لـ QR_PENDING مع تنبيه.
-const MAX_RECONNECT_ATTEMPTS = 10;
+const MAX_RECONNECT_ATTEMPTS = 25;
 
 // عداد تراكمي دائم عبر إعادة إنشاء sessionData — لا يُعاد لأي سبب إلا عند نجاح
 // اتصال فعلي (open). لازم دائم لأنه sessionData/state.attempt بيتعملهم reset
@@ -1054,7 +1054,29 @@ async function resolveOutgoingRemoteJid(sessionId, to) {
     if (persisted) return persisted;
 
     const heuristic = await findPhoneJidForLinkedDeviceJid(sessionId, normalizedJid);
-    return heuristic || null;
+    if (heuristic) return heuristic;
+
+    try {
+        const contact = await getSharedPrismaClient().whatsAppContact.findUnique({
+            where: {
+                sessionId_jid: {
+                    sessionId,
+                    jid: normalizedJid
+                }
+            },
+            select: { phoneNumber: true }
+        });
+        if (contact?.phoneNumber && !contact.phoneNumber.startsWith('lid:') && !contact.phoneNumber.startsWith('group:')) {
+            const cleaned = contact.phoneNumber.replace(/\D/g, '');
+            if (cleaned.length >= 7) {
+                const phoneJid = `${cleaned}@s.whatsapp.net`;
+                await persistHistoryLidMappings(sessionId, [{ pnJid: phoneJid, lidJid: normalizedJid }]);
+                return phoneJid;
+            }
+        }
+    } catch (e) {}
+
+    return null;
 }
 
 async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, options = {}) {
@@ -1926,13 +1948,14 @@ async function handleConnectionUpdate(sessionId, companyId, update, sock) {
                     sessionData.isReconnecting = true;
                 }
                 cleanupSessionState(sessionId, companyId);
-                sessionHealthChecks.delete(sessionId);
                 // 440 = connectionReplaced, 515 = stream error, 428 = connection closed —
-                // كلها عابرة: backoff سريع (5s) بدلاً من 30s لتقليل وقت الانقطاع
+                // تدرج تصاعدي ذكي (Exponential Backoff): يبدأ بـ 5 ثوانٍ ويتصاعد تدريجياً ليتيح وقتاً كافياً لعودة الإنترنت
                 const TRANSIENT_CLOSE_CODES = new Set([440, 515, 428, 500, 502, 503, 504]);
-                const transientBackoffBase = TRANSIENT_CLOSE_CODES.has(statusCode) ? 5000 : 3000;
-                const jitteredBackoff = transientBackoffBase + Math.round(Math.random() * Math.min(transientBackoffBase * 0.3, 1500));
-                const reconnectDelay = jitteredBackoff;
+                const failureFactor = Math.min(Math.max(0, failureCount - 1), 8);
+                const exponentialBase = 5000 * Math.pow(1.35, failureFactor);
+                const transientBackoffBase = TRANSIENT_CLOSE_CODES.has(statusCode) ? exponentialBase : Math.max(3000, exponentialBase * 0.7);
+                const jitteredBackoff = transientBackoffBase + Math.round(Math.random() * Math.min(transientBackoffBase * 0.3, 2500));
+                const reconnectDelay = Math.round(jitteredBackoff);
                 requestReconnect(sessionId, companyId, 'socket_close', {}, reconnectDelay);
             } else if (requiresFreshLink) {
                 WA_LOG.reconnect(sessionId, `Reconnecting after close (requiresFreshLink=true) - will show QR`);
@@ -6523,6 +6546,13 @@ async function disconnectAllSessions() {
 
 async function flushAllAuthStates() {
     let flushed = 0;
+    try {
+        if (typeof databaseAuthState.flushAllDatabaseAuthStates === 'function') {
+            flushed += await databaseAuthState.flushAllDatabaseAuthStates();
+        }
+    } catch (e) {
+        WA_LOG.error(null, `databaseAuthState.flushAllDatabaseAuthStates error: ${e.message}`);
+    }
     for (const [sessionId, session] of activeSessions) {
         try {
             if (session?.saveCreds?.flush) {

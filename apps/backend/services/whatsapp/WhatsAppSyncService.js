@@ -66,20 +66,28 @@ const WhatsAppSyncService = {
 
     const nameParts = splitCustomerName(pushName);
 
-    // Per-key lock: رسايل متزامنة لنفس الرقم تنفذ واحدة ورا التانية (منع الـ duplicate customers)
-    const lockKey = `customer:${companyId}:${canonicalPhone || cleanPhone}`;
+    // Per-key lock: رسايل متزامنة لنفس الرقم/الـ LID تنفذ واحدة ورا التانية (منع الـ duplicate customers)
+    const lockTarget = canonicalPhone || cleanPhone || (phoneNumber ? String(phoneNumber) : 'unknown');
+    const lockKey = `customer:${companyId}:${lockTarget}`;
     return withKeyLock(lockKey, async () => {
       // executeWithRetry: خطأ DB مؤقت يعيد المحاولة بدل ما الرسالة تضيع من الـ CRM
       // (find-or-create idempotent + متزامن بـ mutex → retry آمن)
       return executeWithRetry(async () => {
+        const orConditions = [];
+        if (cleanPhone) {
+          orConditions.push({ phone: cleanPhone });
+          orConditions.push({ whatsappId: cleanPhone });
+          if (canonicalPhone) {
+            orConditions.push({ phoneNormalized: canonicalPhone });
+          }
+          orConditions.push({ phone: { in: require('../../utils/phoneNormalization').getPhoneVariants(cleanPhone) } });
+        } else if (phoneNumber) {
+          orConditions.push({ whatsappId: String(phoneNumber) });
+        }
+
         const where = {
           companyId,
-          OR: [
-            { phone: cleanPhone },
-            { whatsappId: cleanPhone },
-            { phoneNormalized: canonicalPhone },
-            ...(cleanPhone ? [{ phone: { in: require('../../utils/phoneNormalization').getPhoneVariants(cleanPhone) } }] : [])
-          ]
+          OR: orConditions.length > 0 ? orConditions : [{ id: '__non_existent__' }]
         };
 
         let customer = await prisma.customer.findFirst({ where });
@@ -95,6 +103,8 @@ const WhatsAppSyncService = {
           }
           if (cleanPhone && customer.whatsappId !== cleanPhone) {
             patchData.whatsappId = cleanPhone;
+          } else if (!customer.whatsappId && phoneNumber) {
+            patchData.whatsappId = String(phoneNumber);
           }
           if (Object.keys(patchData).length > 0) {
             customer = await prisma.customer.update({
@@ -103,9 +113,7 @@ const WhatsAppSyncService = {
             });
           }
         } else if (!cleanPhone) {
-          // مفيش رقم (مجموعة/LID غير محلول) — create عادي بـ phone null.
-          // مفيش unique constraint على (companyId, phone) لسه مطبق في الـ DB،
-          // والـ unique على whatsappId/phone بيقبل null متعدد.
+          // مفيش رقم هاتف صريح (LID أو مجموعة) — حفظ الـ whatsappId بالـ JID لمنع تكرار العميل في الرسائل اللاحقة
           customer = await prisma.customer.create({
             data: {
               companyId,
@@ -113,7 +121,7 @@ const WhatsAppSyncService = {
               lastName: nameParts.lastName,
               phone: null,
               phoneNormalized: null,
-              whatsappId: null,
+              whatsappId: phoneNumber ? String(phoneNumber) : null,
               avatar: profilePicUrl,
               status: 'LEAD'
             }

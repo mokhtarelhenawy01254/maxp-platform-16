@@ -128,6 +128,24 @@ function assertSessionReadyAfterPrep(sessionId, phase) {
     return session;
 }
 
+// 🛡️ Per-session serial send queue to avoid concurrent Baileys WebSocket frame collisions
+// and enforce safe spacing between outgoing messages
+const sessionSendQueues = new Map();
+
+async function enqueueSessionSend(sessionId, sendFn, minDelayMs = 600) {
+    const prev = sessionSendQueues.get(sessionId) || Promise.resolve();
+    const current = prev.catch(() => {}).then(async () => {
+        const res = await sendFn();
+        if (minDelayMs > 0) {
+            const jitter = Math.floor(Math.random() * 300);
+            await delay(minDelayMs + jitter);
+        }
+        return res;
+    });
+    sessionSendQueues.set(sessionId, current);
+    return current;
+}
+
 function getBaileysSendReconnectWaitMs() {
     const configured = Number(process.env.WHATSAPP_SEND_RECONNECT_WAIT_MS);
     return Number.isFinite(configured) && configured >= 0
@@ -267,14 +285,13 @@ async function sendText(sessionId, to, text, options = {}) {
         let jid = formatJid(to);
 
         // 🚨 PRODUCTION-FIX (C3): الـ LID غير محلول لا يمكن الإرسال إليه — نرفض مبكراً
-        // بدل الإرسال في فراغ ثم كتابة SENT وهمي. الحل لا يستخدم recursion:
-        // نعيد تعيين jid للـ JID المحلول ونكمل المسار العادي.
+        // بدل الإرسال في فراغ ثم كتابة SENT وهمي يضلل التاجر.
         if (jid.includes('@lid')) {
             const resolved = await WhatsAppManager.resolveOutgoingRemoteJid(sessionId, jid);
             if (resolved && !String(resolved).includes('@lid')) {
                 jid = resolved;
             } else {
-                console.log(`ℹ️ [SEND] Sending directly to LID JID: ${jid}`);
+                throw new Error('لا يمكن إرسال رسالة إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى إدخال رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية.');
             }
         }
 
@@ -308,7 +325,7 @@ async function sendText(sessionId, to, text, options = {}) {
         let result;
         try {
             session = assertSessionReadyAfterPrep(sessionId, 'typing delay');
-            result = await session.sock.sendMessage(jid, messageOptions);
+            result = await enqueueSessionSend(sessionId, () => session.sock.sendMessage(jid, messageOptions));
         } catch (sendError) {
             console.error(`❌ [WA-SEND:${sessionId}] Send failed: ${sendError.message}. No blind retry (would duplicate customer messages).`);
             throw sendError;
@@ -400,7 +417,7 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
         }
 
         session = assertSessionReadyAfterPrep(sessionId, 'media prep');
-        const result = await session.sock.sendMessage(jid, messageOptions);
+        const result = await enqueueSessionSend(sessionId, () => session.sock.sendMessage(jid, messageOptions));
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
             messageId: result.key.id,
@@ -456,7 +473,7 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
         };
 
         session = assertSessionReadyAfterPrep(sessionId, 'media prep');
-        const result = await session.sock.sendMessage(jid, messageOptions);
+        const result = await enqueueSessionSend(sessionId, () => session.sock.sendMessage(jid, messageOptions));
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
             messageId: result.key.id,
@@ -512,7 +529,7 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
         };
 
         session = assertSessionReadyAfterPrep(sessionId, 'media prep');
-        const result = await session.sock.sendMessage(jid, messageOptions);
+        const result = await enqueueSessionSend(sessionId, () => session.sock.sendMessage(jid, messageOptions));
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
             messageId: result.key.id,
@@ -571,7 +588,7 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
         };
 
         session = assertSessionReadyAfterPrep(sessionId, 'media prep');
-        const result = await session.sock.sendMessage(jid, messageOptions);
+        const result = await enqueueSessionSend(sessionId, () => session.sock.sendMessage(jid, messageOptions));
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
             messageId: result.key.id,
@@ -632,7 +649,7 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
         };
 
         session = assertSessionReadyAfterPrep(sessionId, 'media prep');
-        const result = await session.sock.sendMessage(jid, messageOptions);
+        const result = await enqueueSessionSend(sessionId, () => session.sock.sendMessage(jid, messageOptions));
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
             messageId: result.key.id,
@@ -701,7 +718,7 @@ END:VCARD`;
         };
 
         session = assertSessionReadyAfterPrep(sessionId, 'media prep');
-        const result = await session.sock.sendMessage(jid, messageOptions);
+        const result = await enqueueSessionSend(sessionId, () => session.sock.sendMessage(jid, messageOptions));
 
         const savedMessage = await saveOutgoingMessage(sessionId, jid, {
             messageId: result.key.id,

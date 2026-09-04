@@ -1747,7 +1747,7 @@ async function updateContact(req, res) {
     try {
         const { companyId } = req.user;
         const { id } = req.params;
-        const { name, category, leadCategoryId, tags, notes, customerId, isArchived, isPinned, isMuted } = req.body;
+        const { name, category, leadCategoryId, tags, notes, customerId, isArchived, isPinned, isMuted, phoneNumber } = req.body;
 
         // التحقق من الملكية
         const contact = await getSharedPrismaClient().whatsAppContact.findFirst({
@@ -1762,15 +1762,108 @@ async function updateContact(req, res) {
         }
 
         const newLeadCategoryId = leadCategoryId || null;
+        let activeContactId = id;
+        let mergedPhoneJid = null;
+
+        // إذا تم إرسال رقم هاتف
+        if (phoneNumber && typeof phoneNumber === 'string' && phoneNumber.trim()) {
+            let cleanDigits = phoneNumber.trim().replace(/\D/g, '');
+            if (cleanDigits.startsWith('00')) {
+                cleanDigits = cleanDigits.slice(2);
+            } else if (cleanDigits.startsWith('01') && cleanDigits.length === 11) {
+                cleanDigits = '2' + cleanDigits;
+            }
+
+            if (cleanDigits.length >= 7) {
+                const targetPhoneJid = `${cleanDigits}@s.whatsapp.net`;
+
+                // إذا كانت جهة الاتصال مسجلة بـ LID (غير مربوطة برقم حقيقي)
+                if (contact.jid.includes('@lid')) {
+                    const WhatsAppManager = require('../services/whatsapp/WhatsAppManager');
+                    const prisma = getSharedPrismaClient();
+
+                    // حفظ الربط في whatsAppLidMapping
+                    if (prisma.whatsAppLidMapping) {
+                        await prisma.whatsAppLidMapping.upsert({
+                            where: {
+                                sessionId_lidJid: {
+                                    sessionId: contact.sessionId,
+                                    lidJid: contact.jid
+                                }
+                            },
+                            create: {
+                                sessionId: contact.sessionId,
+                                lidJid: contact.jid,
+                                phoneJid: targetPhoneJid
+                            },
+                            update: {
+                                phoneJid: targetPhoneJid,
+                                updatedAt: new Date()
+                            }
+                        });
+                    }
+
+                    // دمج المحادثة مع رقم الهاتف ونقل الرسائل
+                    await WhatsAppManager.mergeLinkedDeviceConversation(
+                        contact.sessionId,
+                        contact.jid,
+                        targetPhoneJid,
+                        { pushName: name || contact.pushName || contact.name }
+                    );
+
+                    // البحث عن جهة الاتصال بعد الدمج
+                    const mergedContact = await prisma.whatsAppContact.findUnique({
+                        where: {
+                            sessionId_jid: {
+                                sessionId: contact.sessionId,
+                                jid: targetPhoneJid
+                            }
+                        }
+                    });
+
+                    if (mergedContact) {
+                        activeContactId = mergedContact.id;
+                        mergedPhoneJid = targetPhoneJid;
+                    }
+                } else {
+                    // إذا لم تكن LID، تحديث رقم الهاتف مباشرة
+                    await getSharedPrismaClient().whatsAppContact.update({
+                        where: { id: activeContactId },
+                        data: { phoneNumber: cleanDigits }
+                    });
+                }
+            }
+        }
+
+        // البحث التلقائي عن عميل مطابق إذا لم يتم تحديد عميل
+        let resolvedCustomerId = customerId;
+        if (!resolvedCustomerId && mergedPhoneJid) {
+            const cleanDigits = mergedPhoneJid.split('@')[0];
+            const existingCustomer = await getSharedPrismaClient().customer.findFirst({
+                where: {
+                    companyId,
+                    OR: [
+                        { phone: cleanDigits },
+                        { phone: cleanDigits.replace(/^20/, '0') },
+                        { phone: { endsWith: cleanDigits.slice(-9) } }
+                    ]
+                },
+                select: { id: true }
+            });
+            if (existingCustomer) {
+                resolvedCustomerId = existingCustomer.id;
+            }
+        }
+
         const updatedContact = await getSharedPrismaClient().whatsAppContact.update({
-            where: { id },
+            where: { id: activeContactId },
             data: {
                 name,
                 category,
                 leadCategoryId: newLeadCategoryId,
                 tags: Array.isArray(tags) ? JSON.stringify(tags) : undefined,
                 notes,
-                customerId,
+                customerId: resolvedCustomerId,
                 isArchived,
                 isPinned,
                 isMuted
@@ -1795,7 +1888,7 @@ async function updateContact(req, res) {
                 await WhatsAppJourneyService.reEnrollFromCategory(
                     companyId,
                     updatedContact.customerId,
-                    id,
+                    activeContactId,
                     newLeadCategoryId
                 );
             } catch (err) {
@@ -1803,7 +1896,7 @@ async function updateContact(req, res) {
             }
         }
 
-        res.json({ success: true, contact: updatedContact });
+        res.json({ success: true, contact: updatedContact, mergedPhoneJid });
     } catch (error) {
         console.error('❌ Error updating contact:', error);
         res.status(500).json({ error: 'حدث خطأ أثناء تحديث جهة الاتصال' });
