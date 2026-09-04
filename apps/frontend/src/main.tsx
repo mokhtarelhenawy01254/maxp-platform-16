@@ -244,6 +244,13 @@ void bootstrapApp()
     }
   })
   .catch((error) => {
+    const errorMsg = String(error instanceof Error ? error.message : error || "").toLowerCase();
+    if (errorMsg.includes("unable to preload css")) {
+      console.warn("[bootstrap] Suppressed non-fatal CSS preload error during bootstrap:", error);
+      removeLoadingScreen();
+      return;
+    }
+
     if (recoverFromChunkLoadError(error, "bootstrap")) {
       return;
     }

@@ -231,6 +231,14 @@ export const installChunkLoadRecovery = (): (() => void) => {
 
   const handleVitePreloadError = (event: Event): void => {
     const error = resolvePreloadError(event as VitePreloadErrorEvent);
+    const normalized = stringifyError(error).toLowerCase();
+
+    // 🛡️ CSS preloading failure should never crash the JavaScript application.
+    if (normalized.includes("unable to preload css")) {
+      console.warn("[vite:preloadError] Suppressed non-fatal CSS preload failure:", error);
+      event.preventDefault();
+      return;
+    }
 
     if (recoverFromChunkLoadError(error ?? event, "vite-preload")) {
       event.preventDefault();
@@ -238,6 +246,15 @@ export const installChunkLoadRecovery = (): (() => void) => {
   };
 
   const handleUnhandledRejection = (event: PromiseRejectionEvent): void => {
+    const normalized = stringifyError(event.reason).toLowerCase();
+
+    // 🛡️ CSS preload rejections should never crash the frontend.
+    if (normalized.includes("unable to preload css")) {
+      console.warn("[unhandledrejection] Suppressed non-fatal CSS preload rejection:", event.reason);
+      event.preventDefault();
+      return;
+    }
+
     if (recoverFromChunkLoadError(event.reason, "unhandled-rejection")) {
       event.preventDefault();
     }
