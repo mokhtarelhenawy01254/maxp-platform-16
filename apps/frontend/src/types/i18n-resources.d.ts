@@ -16672,6 +16672,11 @@ declare module 'react-i18next' {
         loadingDescription: string;
       };
       sidebar: {
+        marketingAgencySection: string;
+        agencyOverview: string;
+        agencyClients: string;
+        agencyApprovals: string;
+        agencySuite: string;
         abTests: string;
         abandonedCart: string;
         activatedApps: string;

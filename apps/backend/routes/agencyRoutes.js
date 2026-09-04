@@ -21,6 +21,17 @@ router.post('/clients', agencyAuth, agencyController.createClient);
 router.put('/clients/:clientId', agencyAuth, agencyController.updateClient);
 router.delete('/clients/:clientId', agencyAuth, agencyController.deleteClient);
 
+// Monthly performance & manual entry (for on-platform and off-platform clients)
+router.post('/clients/:clientId/performance', agencyAuth, agencyController.logClientPerformance);
+
+// Extra billable services / add-on line items (logo design, video, photoshoot, expenses)
+router.post('/clients/:clientId/extra-services', agencyAuth, agencyController.addExtraService);
+router.delete('/clients/:clientId/extra-services/:serviceId', agencyAuth, agencyController.deleteExtraService);
+
+// Billing statements & invoices
+router.get('/invoices', agencyAuth, agencyController.getInvoices);
+router.patch('/clients/:clientId/invoices/:month/status', agencyAuth, agencyController.toggleInvoiceStatus);
+
 // Creative approval pipeline
 router.get('/approvals', agencyAuth, agencyController.getApprovals);
 router.post('/approvals', agencyAuth, agencyController.createApproval);
