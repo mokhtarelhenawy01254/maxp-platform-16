@@ -1126,6 +1126,31 @@ async function getMessages(sessionId, remoteJid, options = {}) {
         const { page = 1, limit = 50, before, after } = options;
         const remoteJids = getRemoteJidLookupValues(remoteJid);
 
+        const prisma = getSharedPrismaClient();
+        if (prisma.whatsAppLidMapping && sessionId && remoteJid) {
+            try {
+                if (String(remoteJid).includes('@lid')) {
+                    const map = await prisma.whatsAppLidMapping.findUnique({
+                        where: { sessionId_lidJid: { sessionId, lidJid: remoteJid } },
+                        select: { phoneJid: true }
+                    });
+                    if (map?.phoneJid && !remoteJids.includes(map.phoneJid)) {
+                        remoteJids.push(map.phoneJid);
+                    }
+                } else {
+                    const maps = await prisma.whatsAppLidMapping.findMany({
+                        where: { sessionId, phoneJid: remoteJid },
+                        select: { lidJid: true }
+                    });
+                    for (const m of maps) {
+                        if (m.lidJid && !remoteJids.includes(m.lidJid)) {
+                            remoteJids.push(m.lidJid);
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
         const where = {
             sessionId,
             remoteJid: remoteJids.length > 1 ? { in: remoteJids } : remoteJids[0],
