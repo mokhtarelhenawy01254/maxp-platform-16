@@ -14,7 +14,7 @@ inputs:
 runs:
   using: 'composite'
   steps:
-    - name: Install SSH key
+    - name: Install SSH key and force IPv4
       shell: bash
       env:
         SSH_KEY: ${{ inputs.key }}
@@ -23,7 +23,15 @@ runs:
         printf '%s\n' "$SSH_KEY" | tr -d '\r' > ~/.ssh/maxp_deploy_key
         chmod 600 ~/.ssh/maxp_deploy_key
 
+        cat << 'EOF' > ~/.ssh/config
+        Host *
+          AddressFamily inet
+          ServerAliveInterval 30
+          ServerAliveCountMax 10
+        EOF
+        chmod 600 ~/.ssh/config
+
     - name: Accept host key
       shell: bash
       run: |
-        ssh-keyscan -p '${{ inputs.port }}' -H '${{ inputs.host }}' >> ~/.ssh/known_hosts 2>/dev/null || true
+        ssh-keyscan -4 -p '${{ inputs.port }}' -H '${{ inputs.host }}' >> ~/.ssh/known_hosts 2>/dev/null || true
