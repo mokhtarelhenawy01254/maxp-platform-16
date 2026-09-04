@@ -21,11 +21,52 @@ const formatMinimumOrderMessage = (
     .replace(/\{amount\}/g, formatStorefrontCurrency(amount, currency))
     .replace(/\{remaining\}/g, formatStorefrontCurrency(remaining, currency));
 
+let _cachedSettingsPromise: Promise<MinimumOrderSettings | null> | null = null;
+let _cachedSettingsValue: MinimumOrderSettings | null = null;
+let _cachedSettingsTimestamp = 0;
+const SETTINGS_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+
+export const getCachedMinimumOrderSettings = async (): Promise<MinimumOrderSettings | null> => {
+  const now = Date.now();
+  if (_cachedSettingsValue && now - _cachedSettingsTimestamp < SETTINGS_CACHE_TTL_MS) {
+    return _cachedSettingsValue;
+  }
+  if (_cachedSettingsPromise) {
+    return _cachedSettingsPromise;
+  }
+
+  _cachedSettingsPromise = (async () => {
+    try {
+      const response = await storefrontApi.getMinimumOrderSettings();
+      const data = response?.data || {};
+      if (response?.success) {
+        _cachedSettingsValue = {
+          enabled: Boolean(data.enabled),
+          amount: Number(data.amount || 0),
+          message: String(data.message || DEFAULT_MINIMUM_ORDER_MESSAGE),
+        };
+        _cachedSettingsTimestamp = Date.now();
+        return _cachedSettingsValue;
+      }
+      return null;
+    } catch (error) {
+      console.error("Error fetching minimum order settings:", error);
+      return null;
+    } finally {
+      _cachedSettingsPromise = null;
+    }
+  })();
+
+  return _cachedSettingsPromise;
+};
+
 export const useMinimumOrderSettings = (
   subtotal: number,
   currency = "EGP",
 ) => {
-  const [settings, setSettings] = useState<MinimumOrderSettings | null>(null);
+  const [settings, setSettings] = useState<MinimumOrderSettings | null>(
+    _cachedSettingsValue,
+  );
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -33,16 +74,16 @@ export const useMinimumOrderSettings = (
 
     const loadSettings = async () => {
       try {
-        setIsLoading(true);
-        const response = await storefrontApi.getMinimumOrderSettings();
-        const data = response?.data || {};
+        if (_cachedSettingsValue && Date.now() - _cachedSettingsTimestamp < SETTINGS_CACHE_TTL_MS) {
+          setSettings(_cachedSettingsValue);
+          return;
+        }
 
-        if (!cancelled && response?.success) {
-          setSettings({
-            enabled: Boolean(data.enabled),
-            amount: Number(data.amount || 0),
-            message: String(data.message || DEFAULT_MINIMUM_ORDER_MESSAGE),
-          });
+        setIsLoading(true);
+        const data = await getCachedMinimumOrderSettings();
+
+        if (!cancelled && data) {
+          setSettings(data);
         }
       } catch (error) {
         console.error("Error fetching minimum order settings:", error);

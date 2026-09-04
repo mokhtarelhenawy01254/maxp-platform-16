@@ -127,6 +127,40 @@ describe("storefrontSeoService", () => {
     expect(updated).toContain('rel="canonical" href="https://swan.maxp.online/"');
   });
 
+  test("injects product JSON-LD schema and hero image preload for product routes", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/product/swan-motion",
+      currentUrl: "https://swan.maxp.online/product/swan-motion",
+      company: { name: "Swan", currency: "EGP" },
+      product: {
+        name: "Swan Motion",
+        price: 499,
+        currency: "EGP",
+        mainImage: "/uploads/products/swan-motion.jpg",
+      },
+    });
+
+    expect(metadata.jsonLd).toMatchObject({
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: "Swan Motion",
+      offers: {
+        "@type": "Offer",
+        price: 499,
+        priceCurrency: "EGP",
+        availability: "https://schema.org/InStock",
+      },
+    });
+
+    const html = `<!DOCTYPE html><html><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+
+    expect(updated).toContain('rel="preload" as="image"');
+    expect(updated).toContain('fetchpriority="high"');
+    expect(updated).toContain('application/ld+json');
+    expect(updated).toContain('"@type":"Product"');
+  });
+
   test("treats HEAD storefront shell probes as HTML route requests", () => {
     expect(
       isHtmlRouteRequest({

@@ -25,10 +25,17 @@ export const useSearch = (initialQuery = ''): UseSearchResult => {
   }, [query]);
 
   // Only query if debouncedQuery has at least 3 chars
-  const { products, isLoading } = useProducts({ 
-    search: debouncedQuery.length > 2 ? debouncedQuery : undefined, 
-    limit: 5 
-  });
+  const hasValidQuery = debouncedQuery.trim().length > 2;
+  const { products, isLoading } = useProducts(
+    { 
+      search: hasValidQuery ? debouncedQuery.trim() : undefined, 
+      limit: 5,
+    },
+    undefined,
+    {
+      enabled: hasValidQuery,
+    },
+  );
 
   const close = () => {
     setIsOpen(false);

@@ -100,6 +100,8 @@ exports.handleStorefrontShell = async (req, res, next) => {
       "image",
       "mainImage",
       "images",
+      "price",
+      "currency",
     ]);
 
     const [template, storefrontSettings, product, storePage, indexHtml] =
@@ -170,7 +172,10 @@ exports.handleStorefrontShell = async (req, res, next) => {
     const html = injectStorefrontSeoTags(indexHtml, metadata);
 
     res.set("Content-Type", "text/html; charset=utf-8");
-    res.set("Cache-Control", "no-store, no-cache, must-revalidate");
+    res.set(
+      "Cache-Control",
+      "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+    );
     return res.status(200).send(html);
   } catch (error) {
     console.error("❌ [STOREFRONT-HTML] Failed to render storefront shell:", error);

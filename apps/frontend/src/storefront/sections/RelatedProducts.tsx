@@ -348,13 +348,6 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ section, settings }) 
     () => isMarketplaceThemePreview(location.search),
     [location.search],
   );
-  const { products, isLoading, error } = useProducts({
-    limit: limit + 1,
-    category: product?.categoryId,
-  }, undefined, {
-    enabled: isActive && Boolean(product?.categoryId),
-  });
-
   const conversionEnabled = isStorefrontMarketplaceAppEnabled(
     storefrontSettings,
     'conversion-suite',
@@ -366,6 +359,17 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ section, settings }) 
   const modules = (conversionSettings['modules'] as Record<string, unknown> | undefined) || {};
   const copy = (conversionSettings['copy'] as Record<string, unknown> | undefined) || {};
   const crossSellEnabled = conversionEnabled && modules['crossSell'] !== false;
+
+  const { products, isLoading, error } = useProducts(
+    {
+      limit: limit + 1,
+      category: product?.categoryId,
+    },
+    undefined,
+    {
+      enabled: isActive && Boolean(product?.categoryId) && !crossSellEnabled,
+    },
+  );
   const prefersArabicCopy = theme.direction === 'rtl';
   const isWomenFashionTheme = theme.id === 'women-fashion-eg';
   const isContentCentered =

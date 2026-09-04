@@ -169,12 +169,21 @@ export const StorefrontHead: React.FC = () => {
       PAGE_NAME_MAP[pageSegment] ||
       pageSegment.charAt(0).toUpperCase() + pageSegment.slice(1);
 
-    // Apply Title
+    // Apply Title (Do not overwrite specific product title with generic "المنتج" fallback)
     const finalTitle = pageSegment
       ? applyTitleTemplate(titleTemplate, pageTitle, storeName)
       : storeName;
     const originalTitle = document.title;
-    document.title = finalTitle;
+    const isProductRoute = pageSegment === 'product';
+    const isGenericProductTitle =
+      originalTitle.trim() === 'المنتج' ||
+      originalTitle.trim() === `المنتج | ${storeName}`;
+    const shouldPreserveExistingTitle =
+      isProductRoute && Boolean(originalTitle.trim()) && !isGenericProductTitle;
+
+    if (!shouldPreserveExistingTitle) {
+      document.title = finalTitle;
+    }
 
     // Meta Description
     setMetaTag('meta[name="description"]', 'name', 'description', defaultDescription);

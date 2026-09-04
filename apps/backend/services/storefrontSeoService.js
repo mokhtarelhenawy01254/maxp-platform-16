@@ -108,8 +108,8 @@ const resolveStoreName = ({ company, storefrontSettings, templateSettings, templ
 
   return (
     trimToNull(designTokens.storeName) ||
-    trimToNull(templateSettings.storeName) ||
-    trimToNull(templateContent.storeName) ||
+    trimToNull(templateSettings?.storeName) ||
+    trimToNull(templateContent?.storeName) ||
     trimToNull(company?.name) ||
     "Storefront"
   );
@@ -118,7 +118,7 @@ const resolveStoreName = ({ company, storefrontSettings, templateSettings, templ
 const resolveCompanyDescription = ({ company, storefrontSettings, templateSettings }) => {
   const companySettings = parseJsonObject(company?.settings);
   const designTokens = parseJsonObject(storefrontSettings?.designTokens);
-  const templateSeo = parseJsonObject(templateSettings.seo);
+  const templateSeo = parseJsonObject(templateSettings?.seo);
 
   return (
     trimToNull(templateSeo.description) ||
@@ -302,6 +302,7 @@ const buildStorefrontSeoMetadata = ({
   let description = fallbackDescription;
   let image = defaultImage;
   let type = "website";
+  let jsonLd = null;
 
   if (product) {
     const productWithSeoOverrides = resolveProductSeoOverrides(product);
@@ -318,6 +319,22 @@ const buildStorefrontSeoMetadata = ({
       fallbackDescription;
     image = resolveProductImage(productWithSeoOverrides, currentUrl) || defaultImage;
     type = "product";
+
+    const priceNumber = Number(product.price);
+    jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Product",
+      name: productTitle,
+      description: description,
+      image: image ? [image] : [],
+      offers: {
+        "@type": "Offer",
+        price: Number.isFinite(priceNumber) && priceNumber > 0 ? priceNumber : undefined,
+        priceCurrency: product.currency || company?.currency || "EGP",
+        availability: "https://schema.org/InStock",
+        url: currentUrl,
+      },
+    };
   } else if (storePage) {
     const pageTitle =
       trimToNull(storePage.metaTitle) ||
@@ -346,6 +363,7 @@ const buildStorefrontSeoMetadata = ({
     type,
     themeId,
     routeContext,
+    jsonLd,
   };
 };
 
@@ -376,6 +394,23 @@ const injectStorefrontSeoTags = (html, metadata) => {
   }
 
   nextHtml = setLinkTag(nextHtml, "canonical", metadata.url);
+
+  if (metadata.type === "product" && metadata.image) {
+    nextHtml = upsertTag(
+      nextHtml,
+      /<link[^>]+rel=["']preload["'][^>]+as=["']image["'][^>]*>/i,
+      `<link rel="preload" as="image" href="${escapeHtml(metadata.image)}" fetchpriority="high" />`,
+    );
+  }
+
+  if (metadata.jsonLd) {
+    const jsonLdString = JSON.stringify(metadata.jsonLd).replace(/</g, "\\u003c");
+    nextHtml = upsertTag(
+      nextHtml,
+      /<script[^>]+type=["']application\/ld\+json["'][^>]*>.*?<\/script>/is,
+      `<script type="application/ld+json">${jsonLdString}</script>`,
+    );
+  }
 
   if (metadata.faviconUrl) {
     nextHtml = upsertTag(

@@ -522,6 +522,8 @@ import ConfigurableTrustBadges from './product-info/components/ConfigurableTrust
 import StickyMobileCTA from './product-info/components/StickyMobileCTA';
 import PlayfulStory from './product-info/components/PlayfulStory';
 
+const CASHBACK_PREVIEW_CACHE = new Map<string, { cashback: number; currency: string }>();
+
 const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSettings }) => {
   const { id } = useParams<{ id: string }>();
   const variant = section?.variant || 'standard';
@@ -1486,9 +1488,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       categoryId: categoryId ? String(categoryId) : '',
       amount: String(amount),
     });
+    const cacheKey = params.toString();
+
+    const cached = CASHBACK_PREVIEW_CACHE.get(cacheKey);
+    if (cached) {
+      setCashbackPreview(cached);
+      return undefined;
+    }
 
     apiClient
-      .get(`/loyalty/cashback-preview?${params.toString()}`)
+      .get(`/loyalty/cashback-preview?${cacheKey}`)
       .then((response: any) => {
         if (cancelled) {
           return;
@@ -1501,10 +1510,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
         if (!Number.isFinite(cashback) || cashback <= 0) {
           return;
         }
-        setCashbackPreview({
+        const result = {
           cashback,
           currency: payload.currency || currency,
-        });
+        };
+        CASHBACK_PREVIEW_CACHE.set(cacheKey, result);
+        setCashbackPreview(result);
       })
       .catch(() => {
         // Fail silently: the badge is hidden when the endpoint is unavailable
@@ -1514,7 +1525,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     return () => {
       cancelled = true;
     };
-  }, [product?.id, selectedVariant, quantity, storefrontSettings?.company?.id, currency]);
+  }, [product?.id, effectivePrice, quantity, storefrontSettings?.company?.id, currency]);
 
   if (isLoading) {
     return (

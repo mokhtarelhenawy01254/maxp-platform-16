@@ -255,15 +255,18 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ section, settings }) =>
     idleTimeout: isElessiStoryGrid ? 3500 : 10000,
     rootMargin: isElessiStoryGrid ? '1600px 0px' : '360px 0px',
   });
+  const { product } = useProduct(productId);
+  const targetReviewProductId = product?.id || productId;
   const {
     reviews: realReviews,
     totalCount: realTotalCount,
     averageRating: realAverageRating,
     ratingDistribution: realRatingDistribution,
     isLoading,
-  } = useProductReviews(productId, { enabled: isActive });
+  } = useProductReviews(targetReviewProductId, {
+    enabled: isActive && Boolean(targetReviewProductId),
+  });
   const { theme } = useStorefrontTheme();
-  const { product } = useProduct(productId);
   const { settings: storefrontSettings } = useStorefrontSettings();
   const prefersArabicCopy = theme.direction === 'rtl';
   const notAvailableText = prefersArabicCopy ? 'غير متوفر' : 'N/A';
