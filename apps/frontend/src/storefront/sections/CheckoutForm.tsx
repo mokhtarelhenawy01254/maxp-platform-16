@@ -192,6 +192,13 @@ const CheckoutForm: React.FC<CheckoutFormProps> = ({ section, settings }) => {
     refreshTierProgress(formData.phone);
   };
 
+  // ⚡ Automatically refresh tier progress & active voucher when phone is present (e.g. from WhatsApp link or restored session)
+  useEffect(() => {
+    if (formData.phone && formData.phone.trim().length >= 10) {
+      refreshTierProgress(formData.phone);
+    }
+  }, [formData.phone, refreshTierProgress]);
+
   const normalizeArabic = (value: string) =>
     value
       .toLowerCase()

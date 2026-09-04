@@ -27,6 +27,7 @@ import {
   resolveStorefrontPreviewAdminOrigin,
 } from "./utils/paths";
 import { useStorefrontSettings } from "./hooks/useStorefrontSettings";
+import tokenManager from "../utils/tokenManager";
 import { formatStorefrontCurrency } from "./utils/currency";
 import { sanitizeStorefrontHtml } from "./utils/html";
 import { StorefrontHead } from "./engine/StorefrontHead";
@@ -167,6 +168,10 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     const urlName = searchParams.get("name") || searchParams.get("customerName");
     if (urlName) {
       useCheckoutStore.getState().updateFormData({ customerName: urlName.trim() });
+    }
+    const urlToken = searchParams.get("token");
+    if (urlToken) {
+      tokenManager.setAccessToken(urlToken);
     }
   }, [location.pathname, location.search, searchParams]);
 
@@ -1337,6 +1342,8 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <Route index element={homePageElement} />
         )}
         <Route path={scopedPath("shop")} element={shopPageElement} />
+        <Route path={scopedPath("products")} element={shopPageElement} />
+        <Route path={scopedPath("catalog")} element={shopPageElement} />
         <Route path={scopedPath("product/:id")} element={productPageElement} />
         <Route path={scopedPath("products/:id")} element={productPageElement} />
         <Route path={scopedPath("product/:id/:presentationSlug")} element={<PresentationRouteWrapper element={productPageElement} />} />
