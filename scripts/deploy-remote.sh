@@ -339,6 +339,7 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     --exclude node_modules \
     --exclude prisma/generated \
     --exclude data/facebook-oauth-config.json \
+    --exclude ".last_*" \
     "$DEPLOY_STAGING/backend_extract/backend/" /var/www/backend2/
   sudo mkdir -p /var/www/backend2/logs
   sudo chown -R $USER:$USER /var/www/backend2

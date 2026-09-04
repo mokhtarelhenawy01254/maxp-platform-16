@@ -208,7 +208,7 @@ jobs:
         id: cache-frontend
         with:
           path: apps/frontend/node_modules
-          key: frontend-node-${{ hashFiles('apps/frontend/package-lock.json') }}-${{ hashFiles('apps/frontend/src/**/*.{ts,tsx,css,scss}') }}
+          key: frontend-node-${{ hashFiles('apps/frontend/package-lock.json') }}
           restore-keys: |
             frontend-node-
 
