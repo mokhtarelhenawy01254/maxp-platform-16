@@ -191,6 +191,20 @@ const FAILED_SHIPMENT_STATUSES = [
 const normalizeOrderRouteCode = (value) =>
   String(value || '').trim().toUpperCase();
 
+const companyHasActiveBillingHold = async (companyId) => {
+  if (!companyId) return false;
+  try {
+    const held = await getSharedPrismaClient().order.findFirst({
+      where: { companyId, billingHoldAt: { not: null } },
+      select: { id: true }
+    });
+    return Boolean(held);
+  } catch (err) {
+    console.error('⚠️ [ORDERS] Failed to check company billing hold status:', err.message);
+    return false;
+  }
+};
+
 const blockGuestOrdersForMerchantFilters = (guestWhereClause) => {
   if (!guestWhereClause.AND) guestWhereClause.AND = [];
   guestWhereClause.AND.push({
@@ -1489,6 +1503,19 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     const featureAccess = await getOrderDetailFeatureAccess(companyId);
     const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
 
+    // 🚧 الطلبات غير المكتملة محجوبة عند وجود تعليق فوترة (billing hold) حتى يُشحن الرصيد
+    const includeHeld = req.query.includeHeld === 'true';
+    if (!includeHeld && await companyHasActiveBillingHold(companyId)) {
+      return res.status(402).json({
+        success: false,
+        code: 'BILLING_HOLD',
+        message: 'الطلبات غير المكتملة معلّقة بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً لإظهار البيانات.',
+        data: [],
+        pagination: { total: 0, page: 1, limit: 20, pages: 0 },
+        stats: { total: 0, active: 0, lost: 0, totalValue: 0, activeValue: 0, lostValue: 0 }
+      });
+    }
+
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const status = (req.query.status || 'all').toString().toLowerCase();
@@ -1985,6 +2012,16 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     const featureAccess = await getOrderDetailFeatureAccess(companyId);
     const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
 
+    // 🚧 تفاصيل السلة غير المكتملة محجوبة عند وجود تعليق فوترة (billing hold)
+    const includeHeld = req.query.includeHeld === 'true';
+    if (!includeHeld && await companyHasActiveBillingHold(companyId)) {
+      return res.status(402).json({
+        success: false,
+        code: 'BILLING_HOLD',
+        message: 'الطلب معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً لإظهار البيانات.'
+      });
+    }
+
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
       return res.status(400).json({
@@ -2103,6 +2140,15 @@ router.post('/incomplete/:cartId/convert', verifyToken.authenticateToken, async 
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
       return res.status(400).json({ success: false, message: 'معرف السلة مطلوب' });
+    }
+
+    // 🚧 تحويل السلة غير المكتملة لطلب محظور أثناء وجود تعليق فوترة
+    if (await companyHasActiveBillingHold(companyId)) {
+      return res.status(402).json({
+        success: false,
+        code: 'BILLING_HOLD',
+        message: 'لا يمكن تحويل الطلب لأن المتجر معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً.'
+      });
     }
 
     const cart = await getSharedPrismaClient().guestCart.findFirst({
@@ -2378,6 +2424,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     // 🚧 الطلبات المعلّقة لسبب تحصيل الرصيد (billing hold) مخفية من القائمة
     // افتراضياً حتى يُشحن الرصيد ويتم الخصم تلقائياً. يمكن كشفها عبر includeHeld=true
     const includeHeldOrders = req.query.includeHeld === 'true';
+    const companyHasBillingHold = !includeHeldOrders && await companyHasActiveBillingHold(companyId);
     if (!includeHeldOrders) {
       whereClause.billingHoldAt = null;
     }
@@ -2601,18 +2648,26 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
     }
-    const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts;
+    if (companyHasBillingHold && incompleteFilterStatus === 'incomplete') {
+      return res.json({
+        success: true,
+        data: [],
+        pagination: { total: 0, page, limit, pages: 0 },
+        meta: { showIncompleteCartsInOrders: false, billingHold: true }
+      });
+    }
+    const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts && !companyHasBillingHold;
     if (incompleteOnlyView) {
       // عند الفلترة بـ "غير مكتمل" نعرض السلال النشطة فقط (بدون طلبات حقيقية)
       whereClause.id = '__incomplete_carts_only__';
       guestWhereClause.id = '__incomplete_carts_only__';
     }
-    if (incompleteFilterStatus === 'incomplete' && !showIncompleteCarts) {
+    if (incompleteFilterStatus === 'incomplete' && (!showIncompleteCarts || companyHasBillingHold)) {
       return res.json({
         success: true,
         data: [],
         pagination: { total: 0, page, limit, pages: 0 },
-        meta: { showIncompleteCartsInOrders: false }
+        meta: { showIncompleteCartsInOrders: false, ...(companyHasBillingHold ? { billingHold: true } : {}) }
       });
     }
 
@@ -2785,8 +2840,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد
+    // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد (وتُحجب عند وجود تعليق فوترة)
     const includeIncompleteCarts =
+      !companyHasBillingHold &&
       showIncompleteCarts &&
       !onlyUnseen &&
       (!status || String(status).toLowerCase() === 'all' || Boolean(incompleteFilterStatus));
