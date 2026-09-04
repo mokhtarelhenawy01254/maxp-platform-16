@@ -511,6 +511,16 @@ const PUBLIC_ROUTES = [
   // Dental Lab Doctor Portal (public login endpoint)
   'POST /api/v1/dental-lab/portal/login',
 
+  // Public Marketing Agency approvals portal
+  'GET /api/v1/agency/public/*',
+  'POST /api/v1/agency/public/*',
+  'GET /api/v1/agency/public-approval/*',
+  'POST /api/v1/agency/public-approval/*',
+  'GET /api/agency/public/*',
+  'POST /api/agency/public/*',
+  'GET /api/agency/public-approval/*',
+  'POST /api/agency/public-approval/*',
+
   // Public Support
   'GET /api/v1/support/faq',
 

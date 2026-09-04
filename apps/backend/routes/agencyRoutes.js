@@ -7,6 +7,8 @@ const { checkAppAccess } = require('../middleware/checkAppAccess');
 // Public portal routes for clients to review and approve (no authentication needed)
 router.get('/public/approval/:token', agencyController.getPublicApproval);
 router.post('/public/approval/:token', agencyController.respondPublicApproval);
+router.get('/public-approval/:token', agencyController.getPublicApproval);
+router.post('/public-approval/:token', agencyController.respondPublicApproval);
 
 // Authenticated Agency Hub routes
 const agencyAuth = [verifyToken.authenticateToken, checkAppAccess('marketing-agency-pro')];

@@ -137,11 +137,35 @@ export default function AgencyDashboard() {
       ]);
 
       if (ovRes.data?.success) {
-        setOverview(ovRes.data.data);
-        if (ovRes.data.data.currency) setCurrency(ovRes.data.data.currency);
+        const raw = ovRes.data.data || {};
+        const m = raw.metrics || raw;
+        const totalBudget = Number(m.totalBudget ?? m.totalMonthlyAdBudget) || 0;
+        const totalSpend = Number(m.totalSpend ?? m.totalCurrentAdSpend) || 0;
+        const pacingPct = totalBudget > 0 ? Math.round((totalSpend / totalBudget) * 100) : (Number(m.expectedPacingPercent) || 0);
+
+        setOverview({
+          totalClients: Number(m.totalClients) || 0,
+          activeRetainersSum: Number(m.totalRetainers ?? m.activeRetainersSum) || 0,
+          totalMonthlyAdBudget: totalBudget,
+          totalCurrentAdSpend: totalSpend,
+          adSpendPacingPct: pacingPct,
+          pendingApprovalsCount: Number(m.pendingApprovals ?? m.pendingApprovalsCount) || 0,
+          currency: raw.currency || "EGP"
+        });
+        if (raw.currency) setCurrency(raw.currency);
       }
-      if (clRes.data?.success) setClients(clRes.data.data);
-      if (apRes.data?.success) setApprovals(apRes.data.data);
+      if (clRes.data?.success && Array.isArray(clRes.data.data)) {
+        setClients(clRes.data.data.map((c: any) => ({
+          ...c,
+          monthlyRetainer: Number(c.monthlyRetainer) || 0,
+          monthlyAdBudget: Number(c.monthlyBudget ?? c.monthlyAdBudget) || 0,
+          currentAdSpend: Number(c.currentSpend ?? c.currentAdSpend) || 0,
+          status: (c.status || 'active').toLowerCase()
+        })));
+      }
+      if (apRes.data?.success && Array.isArray(apRes.data.data)) {
+        setApprovals(apRes.data.data);
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.message || "تعذر تحميل بيانات الوكالة");
     } finally {
@@ -367,7 +391,7 @@ export default function AgencyDashboard() {
                 <div>
                   <p className="text-xs font-black uppercase text-muted-foreground">الاشتراكات الشهرية (Retainers)</p>
                   <p className="text-2xl font-black mt-1 text-emerald-600">
-                    {overview.activeRetainersSum.toLocaleString()} {currency}
+                    {(overview.activeRetainersSum || 0).toLocaleString()} {currency}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">إيراد الوكالة الشهري الثابت</p>
                 </div>
@@ -382,7 +406,7 @@ export default function AgencyDashboard() {
                 <div>
                   <p className="text-xs font-black uppercase text-muted-foreground">ميزانيات الإعلانات المدارة</p>
                   <p className="text-2xl font-black mt-1 text-primary">
-                    {overview.totalCurrentAdSpend.toLocaleString()} / {overview.totalMonthlyAdBudget.toLocaleString()} {currency}
+                    {(overview.totalCurrentAdSpend || 0).toLocaleString()} / {(overview.totalMonthlyAdBudget || 0).toLocaleString()} {currency}
                   </p>
                   <div className="flex items-center gap-1.5 mt-1">
                     <span className="text-xs font-bold text-muted-foreground">معدل الاستهلاك:</span>

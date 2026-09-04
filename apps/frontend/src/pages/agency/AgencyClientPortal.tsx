@@ -54,9 +54,26 @@ export default function AgencyClientPortal() {
       setError(null);
       const res = await apiClient.get(`/agency/public-approval/${token}`);
       if (res.data?.success && res.data.data) {
-        setData(res.data.data);
-        if (res.data.data.status !== "pending") {
-          setSubmittedAction(res.data.data.status);
+        const raw = res.data.data;
+        const app = raw.approval || raw;
+        const agency = raw.agency || {};
+        const normalizedStatus = (app.status || "pending").toLowerCase();
+        setData({
+          id: app.id,
+          title: app.title,
+          description: app.description || "",
+          mediaUrl: app.creativeUrl || app.mediaUrl,
+          copyText: app.copyText,
+          channel: app.platform || app.channel || "social",
+          status: normalizedStatus === "approved" ? "approved" : normalizedStatus === "changes_requested" ? "changes_requested" : "pending",
+          feedback: app.clientFeedback || app.feedback,
+          scheduledDate: app.deadline || app.scheduledDate,
+          createdAt: app.createdAt,
+          clientName: app.clientName || "العميل",
+          agencyName: agency.agencyName || "وكالة التسويق"
+        });
+        if (normalizedStatus === "approved" || normalizedStatus === "changes_requested") {
+          setSubmittedAction(normalizedStatus);
         }
       } else {
         setError(res.data?.message || "طلب الموافقة غير موجود أو منتهي الصلاحية.");
@@ -80,8 +97,8 @@ export default function AgencyClientPortal() {
 
     try {
       setActionLoading(true);
-      const res = await apiClient.post(`/agency/public-approval/${token}/action`, {
-        action,
+      const res = await apiClient.post(`/agency/public-approval/${token}`, {
+        action: action === "approve" ? "APPROVED" : "CHANGES_REQUESTED",
         feedback: feedbackText.trim() || undefined
       });
 
