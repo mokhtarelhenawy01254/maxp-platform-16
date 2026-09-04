@@ -1,5 +1,8 @@
 name: Run radiology numbering backfill on server
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -35,16 +38,18 @@ jobs:
 
       - name: Execute backfill script on server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || '22' }}
           script_stop: true
+          envs: DRY_RUN
           script: |
             set -euo pipefail
             cd /var/www/backend2
             ls -la scripts/one-off/backfill-radiology-numbers.js
-            export DRY_RUN="${{ github.event.inputs.dry_run }}"
             echo "Running with DRY_RUN=$DRY_RUN"
             node scripts/one-off/backfill-radiology-numbers.js

@@ -1,5 +1,8 @@
 name: Fix Socket.IO (PM2 restart + logs)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -18,18 +21,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout (needed for local action)
-        uses: actions/checkout@v7
+        uses: actions/checkout@v5
 
       - name: Setup SSH key
         uses: ./.github/actions/setup-ssh
         with:
           host: ${{ secrets.SERVER_HOST }}
           port: ${{ secrets.SERVER_PORT || '22' }}
-          key: ${{ secrets.SSH_KEY }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
 
       - name: Run on server
         env:
           ACTION: ${{ github.event.inputs.action }}
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}
         run: |
           set -euo pipefail
           for i in 1 2 3 4 5; do

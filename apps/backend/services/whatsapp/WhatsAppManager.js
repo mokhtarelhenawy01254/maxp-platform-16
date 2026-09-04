@@ -1696,7 +1696,13 @@ async function createSession(sessionId, companyId, options = {}) {
             await handleGroupsUpdate(sessionId, companyId, updates);
         });
 
-        // معالجة أحداث جهات الاتصال
+        // معالجة أحداث جهات الاتصال (إضافة وتحديث من Baileys)
+        sock.ev.on('contacts.upsert', async (contacts) => {
+            markSocketActivity(sock);
+            await handleContactsUpsert(sessionId, companyId, contacts);
+        });
+
+        // معالجة تحديثات جهات الاتصال
         sock.ev.on('contacts.update', async (updates) => {
             markSocketActivity(sock);
             await handleContactsUpdate(sessionId, companyId, updates);
@@ -2141,6 +2147,7 @@ async function upsertHistoryContact(sessionId, jid, options = {}) {
 
     if (displayName) {
         updateData.pushName = displayName;
+        updateData.name = options.name || displayName;
     }
 
     if (lastMessageAt) {
@@ -2164,6 +2171,7 @@ async function upsertHistoryContact(sessionId, jid, options = {}) {
         create: {
             jid: normalizedJid,
             phoneNumber,
+            name: options.name || displayName,
             pushName: displayName,
             lastMessageAt: lastMessageAt || new Date(),
             unreadCount: 0,
@@ -2682,6 +2690,41 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 continue;
             }
 
+            // استخراج ربط الأرقام والأسماء من رسائل النظام/الـ Stubs (مثل تغيير الرقم أو اسم المستخدم)
+            if (msg.messageStubType) {
+                try {
+                    const stubType = String(msg.messageStubType);
+                    const stubs = Array.isArray(msg.messageStubParameters) ? msg.messageStubParameters : [];
+                    if (stubType === 'INDIVIDUAL_CHANGE_NUMBER' || stubType === '28') {
+                        const stubLid = stubs[0];
+                        const stubPhone = stubs[1];
+                        if (stubLid && stubLid.includes('@lid') && stubPhone && stubPhone.includes('@s.whatsapp.net')) {
+                            await persistHistoryLidMappings(sessionId, [{ pnJid: stubPhone, lidJid: stubLid }]);
+                            await mergeLinkedDeviceConversation(sessionId, stubLid, stubPhone, { pushName: msg.pushName });
+                        }
+                    } else if (stubType === 'CHANGE_USERNAME' || stubType === '213') {
+                        const stubLid = stubs[2] || remoteJid;
+                        let rawName = stubs[3] || stubs[1] || '';
+                        rawName = String(rawName).replace(/^[~ \s]+/, '').trim();
+                        if (stubLid && rawName) {
+                            await getSharedPrismaClient().whatsAppContact.updateMany({
+                                where: {
+                                    sessionId,
+                                    jid: stubLid,
+                                    OR: [
+                                        { name: null },
+                                        { name: { startsWith: 'اتصال واتساب' } }
+                                    ]
+                                },
+                                data: { name: rawName, pushName: rawName }
+                            });
+                        }
+                    }
+                } catch (stubErr) {
+                    console.warn('⚠️ Error parsing message stub in handleIncomingMessages:', stubErr.message);
+                }
+            }
+
             // استخراج محتوى الرسالة
             const messageContent = await extractMessageContent(msg, sock, sessionId, {
                 skipMediaDownload: Boolean(options.skipMediaDownload)
@@ -2778,6 +2821,29 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                 select: { id: true }
             });
             const isNewMessage = !existingMessage;
+
+            // استخراج اسم العميل تلقائياً من رسائل التأكيد الإدارية (مثل "تم تسجيل حضورك بنجاح Menna!")
+            if (fromMe && messageContent?.text && remoteJid) {
+                try {
+                    const match = messageContent.text.match(/تم تسجيل حضورك بنجاح\s+([^\n!.]+)/);
+                    if (match && match[1]) {
+                        const extractedName = match[1].trim();
+                        if (extractedName && extractedName.length >= 2) {
+                            await prisma.whatsAppContact.updateMany({
+                                where: {
+                                    sessionId,
+                                    jid: remoteJid,
+                                    OR: [
+                                        { name: null },
+                                        { name: { startsWith: 'اتصال واتساب' } }
+                                    ]
+                                },
+                                data: { name: extractedName }
+                            });
+                        }
+                    }
+                } catch (e) {}
+            }
 
             // إذا كانت رسالة صادرة ومحفوظة مسبقاً عبر WhatsAppMessageHandler، نتخطى التكرار
             // لتفادي مضاعفة عمليات قاعدة البيانات وأحداث السوكيت الناتجة عن emitOwnEvents: true
@@ -4055,7 +4121,11 @@ async function handleContactsUpdate(sessionId, companyId, updates) {
         try {
             if (update.id) {
                 const data = {};
-                if (update.notify || update.name) data.name = update.notify || update.name;
+                const displayName = update.notify || update.name;
+                if (displayName) {
+                    data.name = displayName;
+                    data.pushName = displayName;
+                }
                 if (update.imgUrl) data.profilePicUrl = update.imgUrl;
 
                 if (Object.keys(data).length > 0) {
@@ -4067,6 +4137,69 @@ async function handleContactsUpdate(sessionId, companyId, updates) {
             }
         } catch (error) {
             console.error('❌ Error updating contact:', error);
+        }
+    }
+}
+
+/**
+ * معالجة إضافة وتحديث جهات الاتصال من Baileys (contacts.upsert)
+ * يستخرج أرقام الهواتف ويدمج الـ LID مع الأرقام الحقيقية تلقائياً
+ */
+async function handleContactsUpsert(sessionId, companyId, contacts) {
+    if (!Array.isArray(contacts) || contacts.length === 0) return;
+    const prisma = getSharedPrismaClient();
+
+    for (const contact of contacts) {
+        try {
+            if (!contact?.id) continue;
+            const displayName = contact.name || contact.notify || contact.verifiedName || null;
+            const { normalizedJid, phoneNumber } = normalizeWhatsAppContactIdentity(contact.id);
+            if (!normalizedJid || normalizedJid === 'status@broadcast' || isJidNewsletter?.(normalizedJid)) continue;
+
+            const isGroup = normalizedJid.endsWith('@g.us');
+            const isLid = isLinkedDeviceJid(normalizedJid);
+
+            // استخراج الربط بين LID ورقم الهاتف إذا توافر الاثنان
+            const lid = contact.lid || (isLid ? normalizedJid : null);
+            const pn = contact.phoneNumber ? normalizePhoneJid(contact.phoneNumber) : (!isLid ? normalizedJid : null);
+
+            if (lid && pn && lid !== pn) {
+                await persistHistoryLidMappings(sessionId, [{ pnJid: pn, lidJid: lid }]);
+                await mergeLinkedDeviceConversation(sessionId, lid, pn, { pushName: displayName });
+            }
+
+            const updateData = { updatedAt: new Date() };
+            if (displayName) {
+                updateData.pushName = displayName;
+                updateData.name = displayName;
+            }
+            if (contact.imgUrl) {
+                updateData.profilePicUrl = contact.imgUrl;
+            }
+
+            await prisma.whatsAppContact.upsert({
+                where: {
+                    sessionId_jid: {
+                        sessionId,
+                        jid: normalizedJid
+                    }
+                },
+                update: updateData,
+                create: {
+                    sessionId,
+                    jid: normalizedJid,
+                    phoneNumber: phoneNumber || (isLid ? `lid:${normalizedJid.split('@')[0]}` : normalizedJid.split('@')[0]),
+                    name: displayName,
+                    pushName: displayName,
+                    profilePicUrl: contact.imgUrl || null,
+                    isGroup,
+                    unreadCount: 0,
+                    totalMessages: 0,
+                    updatedAt: new Date()
+                }
+            });
+        } catch (error) {
+            console.error('❌ Error handling contact upsert:', error.message);
         }
     }
 }
@@ -6778,6 +6911,13 @@ module.exports = {
     updateCallShieldSettings,
     getBaileysProto,
     getGenerateWAMessageFromContent,
+
+    // LID Resolution & Conversation Merge
+    mergeLinkedDeviceConversation,
+    resolveOutgoingRemoteJid,
+    persistHistoryLidMappings,
+    getPersistedLidMapping,
+    handleContactsUpsert,
 
     // System
     logEvent,

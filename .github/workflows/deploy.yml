@@ -1,5 +1,8 @@
 name: Deploy to Server
 
+permissions:
+  contents: read
+
 on:
   push:
     branches:
@@ -7,7 +10,13 @@ on:
     paths-ignore:
       - '*.md'
       - 'docs/**'
-  workflow_dispatch: # للسماح بالتشغيل اليدوي
+  workflow_dispatch:
+    inputs:
+      force_rebuild_all:
+        description: 'Force full rebuild and re-install of all components'
+        required: false
+        default: false
+        type: boolean
 
 env:
   NODE_VERSION: '20'
@@ -35,7 +44,11 @@ jobs:
       cancel-in-progress: false
     outputs:
       is-latest: ${{ steps.check-latest.outputs.is-latest }}
-      catalog-changed: ${{ steps.cat-check.outputs.cat-changed }}
+      catalog-changed: ${{ steps.diff-check.outputs.cat-changed }}
+      fe-needed: ${{ steps.diff-check.outputs.fe-needed }}
+      backend-deps-changed: ${{ steps.diff-check.outputs.backend-deps-changed }}
+      prisma-changed: ${{ steps.diff-check.outputs.prisma-changed }}
+      ai-changed: ${{ steps.diff-check.outputs.ai-changed }}
 
     steps:
       - name: Checkout code
@@ -93,63 +106,87 @@ jobs:
         run: node scripts/check-customer-portal-routing.js
         continue-on-error: false
 
-      # Diff base: github.event.before covers ALL commits in a multi-commit push
-      # (HEAD~1 only sees the last commit, silently skipping the rest).
-      - name: Check for Facebook Ads Changes
-        id: fb-check
+      # 🔍 Intelligent Component Change Detection
+      # Uses github.event.before to inspect ALL commits in a push
+      - name: Check Component Changes
+        id: diff-check
         shell: bash
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          FORCE_ALL="${{ github.event.inputs.force_rebuild_all || 'false' }}"
+          if [ "$FORCE_ALL" = "true" ]; then
+            echo "⚡ Force rebuild requested — marking all components changed"
             echo "fb-changed=true" >> "$GITHUB_OUTPUT"
+            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+            echo "backend-deps-changed=true" >> "$GITHUB_OUTPUT"
+            echo "prisma-changed=true" >> "$GITHUB_OUTPUT"
+            echo "ai-changed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
           BEFORE="${{ github.event.before }}"
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
-            echo "fb-changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
+            if git rev-parse HEAD~1 >/dev/null 2>&1; then
+              BEFORE="HEAD~1"
+            else
+              echo "⚠️ No parent commit found — marking all components changed"
+              echo "fb-changed=true" >> "$GITHUB_OUTPUT"
+              echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+              echo "cat-changed=true" >> "$GITHUB_OUTPUT"
+              echo "backend-deps-changed=true" >> "$GITHUB_OUTPUT"
+              echo "prisma-changed=true" >> "$GITHUB_OUTPUT"
+              echo "ai-changed=true" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
           fi
+
+          echo "🔎 Diffing changed files between $BEFORE and ${{ github.sha }}..."
           CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+
+          # 1. Facebook Ads Changes
           if echo "$CHANGED" | grep -qE "apps/backend/(controller/facebookAds|services/facebookAds|utils/.*facebook|tests/controller/facebookAds)"; then
             echo "fb-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "fb-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
-      # Backend-only deploys skip the frontend install/build/upload path (~70s).
-      # Conservative: frontend builds whenever ANY changed path is NOT backend-only,
-      # so an unexpected change still triggers the full build.
-      - name: Check if Frontend Needs Rebuild
-        id: fe-check
-        shell: bash
-        run: |
-          # Always rebuild the frontend. Stale chunk detection proved unreliable
-          # (partner custom-commission UI silently never shipped), so we force it.
-          echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+          # 2. Frontend Changes (apps/frontend, shared, nginx_configs, customer-portal guard)
+          if echo "$CHANGED" | grep -qE "^(apps/frontend/|shared/|nginx_configs/|scripts/check-customer-portal-routing\.js)"; then
+            echo "fe-needed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "fe-needed=false" >> "$GITHUB_OUTPUT"
+          fi
 
-      # Marketplace catalog files feed the DB via catalog:sync-target; only run it
-      # when they change (it still runs on every workflow_dispatch).
-      - name: Check if Marketplace Catalog Changed
-        id: cat-check
-        shell: bash
-        run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          BEFORE="${{ github.event.before }}"
-          if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
-            echo "cat-changed=true" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+          # 3. Marketplace Catalog Changes
           if echo "$CHANGED" | grep -qE "apps/backend/catalog/marketplace/|apps/backend/prisma/seeds/"; then
             echo "cat-changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "cat-changed=false" >> "$GITHUB_OUTPUT"
           fi
 
+          # 4. Backend Dependencies Changed
+          if echo "$CHANGED" | grep -qE "^apps/backend/package-lock\.json"; then
+            echo "backend-deps-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "backend-deps-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # 5. Prisma Schema Changed
+          if echo "$CHANGED" | grep -qE "^apps/backend/prisma/"; then
+            echo "prisma-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prisma-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+          # 6. Python AI Service Changed
+          if echo "$CHANGED" | grep -qE "^apps/ai-service/"; then
+            echo "ai-changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ai-changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Cache Backend node_modules
-        if: steps.fb-check.outputs.fb-changed == 'true'
+        if: steps.diff-check.outputs.fb-changed == 'true'
         uses: actions/cache@v4
         id: cache-backend
         with:
@@ -159,7 +196,7 @@ jobs:
             backend-node-
 
       - name: Cache Frontend node_modules
-        if: steps.fe-check.outputs.fe-needed == 'true'
+        if: steps.diff-check.outputs.fe-needed == 'true'
         uses: actions/cache@v4
         id: cache-frontend
         with:
@@ -171,10 +208,10 @@ jobs:
       # Only install backend deps + run the Facebook Ads regression when
       # facebook-related files actually changed — otherwise skip (saves ~56s/deploy).
       - name: Install Backend Test Dependencies
-        if: steps.fb-check.outputs.fb-changed == 'true'
+        if: steps.diff-check.outputs.fb-changed == 'true'
         working-directory: ./apps/backend
         run: |
-          npm ci
+          npm ci --ignore-scripts
         env:
           PUPPETEER_SKIP_DOWNLOAD: '1'
           PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: '1'
@@ -182,7 +219,7 @@ jobs:
         continue-on-error: false
 
       - name: Strip BOM from Prisma Schema files
-        if: steps.fb-check.outputs.fb-changed == 'true'
+        if: steps.diff-check.outputs.fb-changed == 'true'
         shell: bash
         working-directory: ./apps/backend
         run: |
@@ -197,14 +234,14 @@ jobs:
           done
 
       - name: Generate Prisma Client
-        if: steps.fb-check.outputs.fb-changed == 'true'
+        if: steps.diff-check.outputs.fb-changed == 'true'
         working-directory: ./apps/backend
         run: |
           npx prisma generate --schema=prisma/schema
         continue-on-error: false
 
       - name: Run Facebook Ads Regression Tests
-        if: steps.fb-check.outputs.fb-changed == 'true'
+        if: steps.diff-check.outputs.fb-changed == 'true'
         working-directory: ./apps/backend
         run: |
           npm test -- --testPathPattern="tests/controller/facebookAdsController.fullAd.test.js"
@@ -212,7 +249,7 @@ jobs:
 
       # Build Frontend (skipped when only backend files changed)
       - name: Install Frontend Dependencies
-        if: steps.fe-check.outputs.fe-needed == 'true'
+        if: steps.diff-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: |
           if [ "${{ steps.cache-frontend.outputs.cache-hit }}" != 'true' ] || [ ! -f node_modules/.bin/vite ]; then
@@ -227,7 +264,7 @@ jobs:
 
       # 🛡️ يمنع أي "icon: X" يستخدم معرّفاً غير مستورد في src/config (كان سبب انهيار الـ dashboard)
       - name: Check Frontend Icon Imports
-        if: steps.fe-check.outputs.fe-needed == 'true'
+        if: steps.diff-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: node scripts/check-icon-imports.cjs
         continue-on-error: false
@@ -235,13 +272,13 @@ jobs:
       # 🛡️ يمنع أسماء أيقونات heroicons غير موجودة في النسخة المتسطبة
       # (Loader2Icon/PackageSearchIcon كسروا build الـ vite على CI مرتين)
       - name: Check Heroicons Imports
-        if: steps.fe-check.outputs.fe-needed == 'true'
+        if: steps.diff-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: node scripts/check-heroicons.cjs
         continue-on-error: false
 
       - name: Build Frontend
-        if: steps.fe-check.outputs.fe-needed == 'true'
+        if: steps.diff-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: |
           # Force a clean build: drop any cached dist so stale chunks can never ship.
@@ -257,29 +294,32 @@ jobs:
         continue-on-error: false
 
       - name: Validate i18n Sections
+        if: steps.diff-check.outputs.fe-needed == 'true'
         run: node scripts/validate-i18n.js
         continue-on-error: false
 
       # 🛡️ يمنع الـ entry chunk من استيراد أي route chunk استيرادًا ساكنًا — الحادثة
       # دي زوّدت تحميل المتجر الأول ~2.5MB (كود المنصة كله نزل مع كل زائر متجر)
       - name: Check Entry Chunk Purity
-        if: steps.fe-check.outputs.fe-needed == 'true'
+        if: steps.diff-check.outputs.fe-needed == 'true'
         working-directory: ./apps/frontend
         run: node scripts/check-entry-chunks.cjs
         continue-on-error: false
 
       - name: Check i18n Consistency (AR vs EN)
+        if: steps.diff-check.outputs.fe-needed == 'true'
         run: node scripts/i18n-check.js
         continue-on-error: false
 
       - name: Generate i18n TypeScript Types
+        if: steps.diff-check.outputs.fe-needed == 'true'
         run: node scripts/generate-i18n-types.js
         continue-on-error: false
 
       # Packaging for reliable transfer (Optimized to exclude large node_modules)
       - name: Package Assets
         env:
-          FE_NEEDED: ${{ steps.fe-check.outputs.fe-needed }}
+          FE_NEEDED: ${{ steps.diff-check.outputs.fe-needed }}
         run: |
           if [ "$FE_NEEDED" == "true" ]; then
             echo "📦 Packaging Frontend..."
@@ -340,8 +380,8 @@ jobs:
               "echo '✅ SSH connection successful' && df -h \$HOME"; then
               exit 0
             fi
-            echo "⚠️ SSH attempt $i/5 failed — retrying in 30s..."
-            sleep 30
+            echo "⚠️ SSH attempt $i/5 failed — retrying in 12s..."
+            sleep 12
           done
           echo "❌ SSH unreachable after 5 attempts. Likely fail2ban/cloud-firewall ban of this runner IP."
           echo "   See apps/backend/docs/infrastructure/github-actions-ssh-firewall-2026-05-25.md"
@@ -434,10 +474,11 @@ jobs:
     needs: build
     # مش هينضاف للطابور غير لما الـ build يكون هو الأحدث على main.
     if: needs.build.outputs.is-latest == 'true'
+    environment: production
     concurrency:
       group: production-deploy-apply
       cancel-in-progress: false
-    timeout-minutes: 150
+    timeout-minutes: 45
 
     steps:
       - name: Skip deploy if superseded while waiting in queue
@@ -491,8 +532,8 @@ jobs:
               echo "✅ SSH reachable (attempt $i)"
               exit 0
             fi
-            echo "⚠️ Attempt $i/6 failed, backing off 30s..."
-            sleep 30
+            echo "⚠️ Attempt $i/6 failed, backing off 12s..."
+            sleep 12
           done
           echo "❌ SSH unreachable from this runner after 6 attempts over ~3 minutes."
           echo "   This matches the known fail2ban/Hostinger-firewall IP-ban pattern."
@@ -505,15 +546,19 @@ jobs:
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
           CATALOG_CHANGED: ${{ needs.build.outputs.catalog-changed }}
+          BACKEND_DEPS_CHANGED: ${{ needs.build.outputs.backend-deps-changed }}
+          PRISMA_CHANGED: ${{ needs.build.outputs.prisma-changed }}
+          AI_CHANGED: ${{ needs.build.outputs.ai-changed }}
+          FE_NEEDED: ${{ needs.build.outputs.fe-needed }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ env.SERVER_SSH_PORT }}
-          debug: true
-          timeout: 60m
-          command_timeout: 50m
-          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,CATALOG_CHANGED
+          debug: false
+          timeout: 40m
+          command_timeout: 35m
+          envs: GITHUB_RUN_ID,GITHUB_RUN_ATTEMPT,SUPER_ADMIN_EMAIL,SUPER_ADMIN_PASSWORD,CATALOG_CHANGED,BACKEND_DEPS_CHANGED,PRISMA_CHANGED,AI_CHANGED,FE_NEEDED
           script: |
             set -e
             sudo -n true || {

@@ -1,4 +1,8 @@
 name: SSH Command Runner
+
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:

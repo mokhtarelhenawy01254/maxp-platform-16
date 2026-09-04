@@ -310,7 +310,10 @@ async function sendText(sessionId, to, text, options = {}) {
             if (resolved && !String(resolved).includes('@lid')) {
                 jid = resolved;
             } else {
-                throw new Error('لا يمكن إرسال رسالة إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى إدخال رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية.');
+                const error = new Error('لا يمكن إرسال رسالة إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى إدخال رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية.');
+                error.statusCode = 400;
+                error.code = 'WA_UNRESOLVED_LID';
+                throw error;
             }
         }
 

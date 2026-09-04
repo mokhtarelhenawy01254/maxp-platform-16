@@ -1,9 +1,10 @@
 name: Quick Nginx Fix
+
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/apply_nginx_fix.yml'
 
 jobs:
   fix-nginx:

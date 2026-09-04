@@ -1,5 +1,8 @@
 name: Emergency Server Restart
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 

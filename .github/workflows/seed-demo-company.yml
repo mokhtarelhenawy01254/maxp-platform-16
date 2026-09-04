@@ -1,5 +1,8 @@
 name: Seed Demo Company (h@gmail.com)
 
+permissions:
+  contents: read
+
 on: workflow_dispatch
 
 jobs:

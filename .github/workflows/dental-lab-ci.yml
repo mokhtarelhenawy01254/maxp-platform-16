@@ -1,5 +1,8 @@
 name: dental-lab-ci
 
+permissions:
+  contents: read
+
 on:
   pull_request:
     paths:

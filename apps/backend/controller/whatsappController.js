@@ -1487,10 +1487,10 @@ async function sendMessage(req, res) {
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending message:', error);
-        const statusCode = error.code === 'WA_SESSION_NOT_READY' ? 409 : 500;
+        const statusCode = error.code === 'WA_SESSION_NOT_READY' ? 409 : (error.statusCode || 500);
         res.status(statusCode).json({
             error: error.message || 'حدث خطأ أثناء إرسال الرسالة',
-            code: error.code,
+            code: error.code || 'WA_SEND_ERROR',
             availableSessions: error.availableSessions
         });
     }

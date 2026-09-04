@@ -1,5 +1,8 @@
 name: Run backend one-off script (WhatsApp cleanup)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 

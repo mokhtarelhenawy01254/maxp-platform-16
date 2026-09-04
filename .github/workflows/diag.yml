@@ -1,11 +1,9 @@
 name: Remote Diagnosis
 
+permissions:
+  contents: read
+
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/diag.yml'
   workflow_dispatch:
 
 env:

@@ -1,5 +1,8 @@
 name: Backfill Facebook Account Connections
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 

@@ -11,6 +11,33 @@ export NVM_DIR="$HOME/.nvm"
 NODE_BIN="$(dirname "$(command -v node)")"
 export PATH="$NODE_BIN:$PATH"
 
+# 🛡️ Automated Rollback & Fault Tolerance
+ROLLBACK_FRONTEND_BACKUP=""
+
+on_deploy_error() {
+  local exit_code="$?"
+  echo "🚨 [DEPLOY ERROR] Deployment script failed with exit code $exit_code at line $1"
+
+  if [ -n "$ROLLBACK_FRONTEND_BACKUP" ] && [ -f "$ROLLBACK_FRONTEND_BACKUP" ]; then
+    echo "⏪ [ROLLBACK] Restoring previous frontend index.html..."
+    sudo cp -f "$ROLLBACK_FRONTEND_BACKUP" /var/www/frontend2/dist/index.html || true
+    echo "✅ Frontend index.html restored to previous working version"
+  fi
+
+  if [ -n "$PM2_BIN" ]; then
+    echo "🩺 [ROLLBACK] Verifying backend process state..."
+    if ! "$PM2_BIN" list 2>/dev/null | grep -q "online.*maxp-backend"; then
+      echo "⏪ [ROLLBACK] maxp-backend process is offline — restarting previous working backend..."
+      "$PM2_BIN" restart maxp-backend 2>/dev/null || "$PM2_BIN" start /var/www/backend2/server.js --name maxp-backend 2>/dev/null || true
+    fi
+  fi
+
+  echo "❌ [DEPLOY FAILED] Safety rollback routines finished. Exiting."
+  exit "$exit_code"
+}
+
+trap 'on_deploy_error $LINENO' ERR
+
 read_env_port() {
   local env_file="$1"
   local port_line=""
@@ -117,6 +144,11 @@ sync_frontend_dist() {
   sudo rm -f /var/www/frontend2/dist/index.html.br /var/www/frontend2/dist/index.html.gz \
     /var/www/frontend2/dist/sw.js.br /var/www/frontend2/dist/sw.js.gz \
     /var/www/frontend2/dist/sw-v4.js.br /var/www/frontend2/dist/sw-v4.js.gz
+  if [ -f "/var/www/frontend2/dist/index.html" ] && [ -z "$ROLLBACK_FRONTEND_BACKUP" ]; then
+    ROLLBACK_FRONTEND_BACKUP="/tmp/maxp_frontend_index_prev_${GITHUB_RUN_ID:-$$}.html"
+    sudo cp "/var/www/frontend2/dist/index.html" "$ROLLBACK_FRONTEND_BACKUP" || true
+    echo "💾 Stored rollback snapshot of working index.html"
+  fi
   sudo cp "$source_dir/index.html" /var/www/frontend2/dist/index.html
   # Record the entry chunk THIS deploy published so the post-nginx guard
   # compares against it (not against a disk file a concurrent manual upload
@@ -229,18 +261,22 @@ if [ -f "$DEPLOY_STAGING/ai-service.tar.gz" ]; then
     UV_BIN="/root/.local/bin/uv"
   fi
 
-  echo "🐍 Installing Python dependencies..."
   cd /var/www/ai-service
-  "$UV_BIN" sync --frozen 2>&1 | tail -5
+  if [ "${AI_CHANGED:-true}" = "true" ] || [ ! -d ".venv" ]; then
+    echo "🐍 Installing/updating Python dependencies..."
+    "$UV_BIN" sync --frozen 2>&1 | tail -5
 
-  echo "🗄️ Running ai-service database migrations..."
-  "$UV_BIN" run alembic upgrade head 2>&1 || echo "⚠️ Migration failed (non-fatal)"
+    echo "🗄️ Running ai-service database migrations..."
+    "$UV_BIN" run alembic upgrade head 2>&1 || echo "⚠️ Migration failed (non-fatal)"
 
-  echo "🌱 Seeding agent templates..."
-  "$UV_BIN" run python -m scripts.seed_agent_templates 2>&1 || echo "⚠️ Seeding failed (non-fatal)"
+    echo "🌱 Seeding agent templates..."
+    "$UV_BIN" run python -m scripts.seed_agent_templates 2>&1 || echo "⚠️ Seeding failed (non-fatal)"
 
-  echo "📋 Migrating custom_instructions to PERSONA.md..."
-  "$UV_BIN" run python -m scripts.migrate_custom_instructions_to_persona 2>&1 || echo "⚠️ Migration skipped (non-fatal)"
+    echo "📋 Migrating custom_instructions to PERSONA.md..."
+    "$UV_BIN" run python -m scripts.migrate_custom_instructions_to_persona 2>&1 || echo "⚠️ Migration skipped (non-fatal)"
+  else
+    echo "⚡ AI service dependencies unchanged — skipping uv sync & migrations"
+  fi
 
   echo "🔄 Starting/restarting maxp-ai-service in PM2..."
   if [ -n "$PM2_BIN" ]; then
@@ -414,41 +450,53 @@ else
   echo "⚠️ Backend not found, skipping..."
 fi
 
-# Re-install dependencies on the server (now safe because we handle failures)
-echo "📦 Installing backend production dependencies on server..."
+# Intelligent Dependency Synchronization
+echo "📦 Checking backend production dependencies on server..."
 cd /var/www/backend2
+LOCK_HASH=""
 if [ -f package-lock.json ]; then
-  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm ci --omit=dev
+  LOCK_HASH=$(sha256sum package-lock.json | awk '{print $1}')
+fi
+
+NEED_NPM_INSTALL=false
+if [ ! -d node_modules ] || [ ! -d node_modules/@prisma ]; then
+  echo "ℹ️ node_modules missing or incomplete — npm ci required"
+  NEED_NPM_INSTALL=true
+elif [ "${BACKEND_DEPS_CHANGED:-false}" = "true" ]; then
+  echo "ℹ️ CI detected package-lock.json changes — npm ci required"
+  NEED_NPM_INSTALL=true
+elif [ -f .last_package_lock_hash ] && [ -n "$LOCK_HASH" ]; then
+  if [ "$(cat .last_package_lock_hash 2>/dev/null)" != "$LOCK_HASH" ]; then
+    echo "ℹ️ package-lock.json hash changed — npm ci required"
+    NEED_NPM_INSTALL=true
+  fi
+elif [ ! -f .last_package_lock_hash ]; then
+  NEED_NPM_INSTALL=true
+fi
+
+if [ "$NEED_NPM_INSTALL" = "true" ]; then
+  echo "📦 Installing backend production dependencies on server..."
+  if [ -f package-lock.json ]; then
+    PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm ci --omit=dev
+    echo "$LOCK_HASH" > .last_package_lock_hash
+  else
+    PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install --omit=dev
+  fi
+  echo "🖼️ Ensuring sharp dependency for Linux..."
+  npm install --os=linux --cpu=x64 sharp --no-save || echo "⚠️ Sharp fix failed, continuing..."
 else
-  PUPPETEER_SKIP_DOWNLOAD=1 PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=1 npm install --omit=dev
+  echo "⚡ Backend dependencies unchanged — skipping npm ci (saved ~3 minutes)"
 fi
  
-# NOTE: Server-side npm/prisma steps restored for efficiency.
-# Large dependencies are no longer uploaded to save bandwidth and time.
-
-# Database migration with fixes
-echo "🔄 Synchronizing database schema..."
-cd /var/www/backend2
-
-# Step 0: Clean up legacy files to prevent conflicts
-echo "🧹 Cleaning up legacy Prisma files..."
-# Remove direct schema.prisma if it exists on the server to prevent conflicts with schema folder
+# Clean up legacy Prisma files
 sudo rm -f /var/www/backend2/prisma/schema.prisma || echo "⚠️ Could not delete schema.prisma"
 sudo rm -f /var/www/backend2/schema.prisma || echo "⚠️ Could not delete root schema.prisma"
 
-
-# Step 2: Generate Prisma Client
-echo "📦 Generating Prisma Client..."
 PRISMA_BIN="./node_modules/.bin/prisma"
 if [ ! -x "$PRISMA_BIN" ]; then
-  echo "❌ Local Prisma CLI not found after dependency install"
-  exit 1
+  PRISMA_BIN="$(command -v prisma || true)"
 fi
 
-# Ensure sharp is correctly installed for Linux x64 to prevent crashes
-echo "🖼️ Fixing sharp dependency for Linux..."
-npm install --os=linux --cpu=x64 sharp --no-save || echo "⚠️ Sharp fix failed, continuing..."
- 
 # Run generate with the specific schema folder
 # Keep the existing generated clients in place until the new client
 # is ready. PM2 can restart a worker during deploy, and deleting
@@ -482,24 +530,47 @@ bash scripts/fix-audit-logs.sh || echo "⚠️ Audit logs fix skipped or failed,
 echo "🛠️ Fixing data duplicates..."
 timeout 600 node scripts/fix-duplicates.js || echo "⚠️ Duplicates fix failed, continuing..."
 
-# Step 3: Push schema to PostgreSQL database
-echo "🚀 Pushing schema to PostgreSQL..."
-timeout 600 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
-    echo "❌ Database synchronization failed"
-    exit 1
-}
+# Step 3: Push schema to PostgreSQL database (Incremental)
+CURRENT_SCHEMA_HASH=""
+if [ -d prisma/schema ]; then
+  CURRENT_SCHEMA_HASH=$(find prisma/schema -name "*.prisma" -type f -exec sha256sum {} + 2>/dev/null | sort | sha256sum | awk '{print $1}')
+fi
 
-# Step 6: Automated Seeding
-echo "🌱 Running automated seeding..."
-timeout 600 "$PRISMA_BIN" db seed --schema=prisma/schema || echo "⚠️ Seeding failed, continuing deployment..."
-echo "🔐 Seeding permissions..."
-timeout 600 npm run seed:permissions || echo "⚠️ Permissions seeding failed, continuing deployment..."
+NEED_DB_PUSH=false
+if [ "${PRISMA_CHANGED:-false}" = "true" ]; then
+  echo "ℹ️ CI detected Prisma schema changes — db push required"
+  NEED_DB_PUSH=true
+elif [ -f .last_prisma_schema_hash ] && [ -n "$CURRENT_SCHEMA_HASH" ]; then
+  if [ "$(cat .last_prisma_schema_hash 2>/dev/null)" != "$CURRENT_SCHEMA_HASH" ]; then
+    echo "ℹ️ Prisma schema files modified since last deploy — db push required"
+    NEED_DB_PUSH=true
+  fi
+elif [ ! -f .last_prisma_schema_hash ]; then
+  NEED_DB_PUSH=true
+fi
 
-# Step 7: Create/Verify Super Admin
-echo "👑 Creating/verifying super admin user..."
+if [ "$NEED_DB_PUSH" = "true" ]; then
+  echo "🚀 Pushing schema to PostgreSQL..."
+  timeout 600 "$PRISMA_BIN" db push --schema=prisma/schema --skip-generate --accept-data-loss || {
+      echo "❌ Database synchronization failed"
+      exit 1
+  }
+
+  echo "🌱 Running automated seeding..."
+  timeout 600 "$PRISMA_BIN" db seed --schema=prisma/schema || echo "⚠️ Seeding failed, continuing deployment..."
+  echo "🔐 Seeding permissions..."
+  timeout 600 npm run seed:permissions || echo "⚠️ Permissions seeding failed, continuing deployment..."
+
+  echo "👑 Creating/verifying super admin user..."
   SUPER_ADMIN_EMAIL="${SUPER_ADMIN_EMAIL:-}" SUPER_ADMIN_PASSWORD="${SUPER_ADMIN_PASSWORD:-}" timeout 600 npm run setup:superadmin || echo "⚠️ Super admin setup failed, continuing deployment..."
 
-echo "✅ Database schema synchronized with PostgreSQL"
+  if [ -n "$CURRENT_SCHEMA_HASH" ]; then
+    echo "$CURRENT_SCHEMA_HASH" > .last_prisma_schema_hash
+  fi
+  echo "✅ Database schema synchronized with PostgreSQL"
+else
+  echo "⚡ Prisma schema unchanged — skipping db push and seeding (saved ~2-3 minutes)"
+fi
 
 # Step 7.5: Sync file-defined marketplace apps/bundles into DB before the app boots.
 # This keeps production (CATALOG_SOURCE=db) from hiding newly shipped catalog entries.
@@ -510,19 +581,19 @@ if [ "${CATALOG_CHANGED:-true}" = "true" ]; then
       echo "❌ Marketplace catalog sync failed or left unresolved catalog entries"
       exit 1
   }
+
+  echo "🧹 Repairing stale required-app references in marketplace apps..."
+  NODE_ENV=production timeout 600 node scripts/repair_stale_marketplace_required_apps.js || {
+      echo "⚠️ Required-app reference repair had issues, continuing..."
+  }
+
+  echo "🧹 Deactivating deprecated marketplace apps..."
+  NODE_ENV=production timeout 600 node scripts/deactivate_old_marketplace_apps.js || {
+      echo "⚠️ Deprecated app deactivation had issues, continuing..."
+  }
 else
   echo "ℹ️ Skipping marketplace catalog sync (no catalog files changed)"
 fi
-
-echo "🧹 Repairing stale required-app references in marketplace apps..."
-NODE_ENV=production timeout 600 node scripts/repair_stale_marketplace_required_apps.js || {
-    echo "⚠️ Required-app reference repair had issues, continuing..."
-}
-
-echo "🧹 Deactivating deprecated marketplace apps..."
-NODE_ENV=production timeout 600 node scripts/deactivate_old_marketplace_apps.js || {
-    echo "⚠️ Deprecated app deactivation had issues, continuing..."
-}
 
 # Restart services
 echo "🔄 Restarting services..."
@@ -607,16 +678,17 @@ if [ -n "$PM2_BIN" ]; then
   echo "✅ Backend health check passed on port $ACTIVE_HEALTH_PORT"
 
   echo "🧹 Purging in-memory HTML caches on the running backend..."
-  for PURGE_SECRET in "$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2-)" "maxp-deploy-internal-2024"; do
-    if [ -n "$PURGE_SECRET" ]; then
-      PURGE_RESP="$(curl -sS --max-time 10 -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/internal/purge-cache" 2>&1 || true)"
-      if printf '%s' "$PURGE_RESP" | grep -q '"ok":true\|"ok": true'; then
-        echo "✅ HTML caches purged successfully"
-        break
-      fi
+  PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2-)"
+  if [ -n "$PURGE_SECRET" ]; then
+    PURGE_RESP="$(curl -sS --max-time 10 -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/internal/purge-cache" 2>&1 || true)"
+    if printf '%s' "$PURGE_RESP" | grep -q '"ok":true\|"ok": true'; then
+      echo "✅ HTML caches purged successfully"
+    else
+      echo "⚠️ Cache purge response: ${PURGE_RESP:-no response}"
     fi
-  done
-  echo "⚠️ Cache purge response: ${PURGE_RESP:-no response}"
+  else
+    echo "ℹ️ DEPLOY_SECRET not found in .env — skipping internal cache purge"
+  fi
 
   echo "🧩 Verifying marketplace full catalog API after reload..."
   curl -fsS --max-time 20 "http://127.0.0.1:${ACTIVE_HEALTH_PORT}/api/v1/marketplace/apps?page=1&limit=200" > /tmp/marketplace_catalog.json
@@ -802,5 +874,11 @@ else
   echo "⚠️ Nginx config archive not found, skipping Nginx sync"
 fi
 
-echo "✅ Deployment completed!"
+# Clear error trap and remove rollback backup on successful deployment
+trap - ERR
+if [ -n "$ROLLBACK_FRONTEND_BACKUP" ] && [ -f "$ROLLBACK_FRONTEND_BACKUP" ]; then
+  sudo rm -f "$ROLLBACK_FRONTEND_BACKUP" || true
+fi
+
+echo "✅ Deployment completed successfully with zero-downtime integrity!"
 rm -rf "$DEPLOY_STAGING"

@@ -1,5 +1,8 @@
 name: Run backend one-off script (Swan pending → ready)
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
     inputs:
@@ -45,21 +48,23 @@ jobs:
 
       - name: Execute migration script on server
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          COMPANY_SLUG: ${{ github.event.inputs.company_slug }}
+          CUTOFF_DATE: ${{ github.event.inputs.cutoff_date }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || '22' }}
           script_stop: true
+          envs: COMPANY_SLUG,CUTOFF_DATE,DRY_RUN
           script: |
             set -euo pipefail
             cd /var/www/backend2
             echo "Current backend dir: $(pwd)"
             ls -la scripts/one-off/update-swan-pending-to-ready.js
 
-            export COMPANY_SLUG="${{ github.event.inputs.company_slug }}"
-            export CUTOFF_DATE="${{ github.event.inputs.cutoff_date }}"
-            export DRY_RUN="${{ github.event.inputs.dry_run }}"
             export SOURCE_STATUS="PENDING"
             export TARGET_STATUS="READY_FOR_PROCESSING"
 

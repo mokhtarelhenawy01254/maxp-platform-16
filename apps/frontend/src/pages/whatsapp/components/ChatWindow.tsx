@@ -182,6 +182,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const replyPreview = replyingTo?.content || replyingTo?.mediaType || t("whatsapp.window.message");
 
+  const isUnresolvedLid = Boolean(
+    selectedContact?.jid?.includes("@lid") &&
+      (!selectedContact?.phoneNumber ||
+        selectedContact.phoneNumber.startsWith("lid:") ||
+        selectedContact.phoneNumber.startsWith("group:"))
+  );
+
+  const handleAttemptSend = () => {
+    if (isUnresolvedLid) {
+      toast.error(
+        "لا يمكن إرسال رسالة إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى حفظ رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية."
+      );
+      if (onToggleRightPanel && !showRightPanel) {
+        onToggleRightPanel();
+      }
+      return;
+    }
+    onSendMessage();
+  };
+
   const handleCopyChatLink = () => {
     if (!selectedContact) return;
     const sessionId = selectedContact.sessionId || "";
@@ -431,6 +451,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         ) : null}
 
+        {isUnresolvedLid ? (
+          <div className="mb-2 flex items-center justify-between gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-800 dark:text-amber-200">
+            <div className="flex items-center gap-1.5 min-w-0">
+              <AlertTriangle className="size-4 shrink-0 text-amber-600 dark:text-amber-400" />
+              <span className="truncate sm:whitespace-normal">
+                جهة الاتصال هذه تستخدم معرّف واتساب مشفر (LID). لإرسال واستلام الرسائل بنجاح، يُرجى حفظ رقم هاتف العميل.
+              </span>
+            </div>
+            {onToggleRightPanel && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!showRightPanel) onToggleRightPanel();
+                }}
+                className="shrink-0 h-7 text-xs border-amber-500/40 text-amber-900 hover:bg-amber-500/20 dark:text-amber-100 font-medium"
+              >
+                {showRightPanel ? "اللوحة مفتوحة" : "إضافة رقم الهاتف"}
+              </Button>
+            )}
+          </div>
+        ) : null}
+
         {replyingTo ? (
           <div className="mb-2 flex items-start justify-between gap-3 rounded-xl border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface)] px-3 py-2">
             <div className="min-w-0 space-y-1">
@@ -634,7 +677,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               onKeyDown={(event) => {
                 if (event.key === "Enter" && !event.shiftKey) {
                   event.preventDefault();
-                  onSendMessage();
+                  handleAttemptSend();
                 }
               }}
             />
@@ -653,9 +696,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
             {newMessage.trim() ? (
               <Button
-                className="order-4 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white w-10 h-10 p-0 shrink-0 flex items-center justify-center shadow-sm"
-                onClick={onSendMessage}
+                className={cn(
+                  "order-4 rounded-full text-white w-10 h-10 p-0 shrink-0 flex items-center justify-center shadow-sm",
+                  isUnresolvedLid ? "bg-amber-600 hover:bg-amber-700" : "bg-emerald-600 hover:bg-emerald-700"
+                )}
+                onClick={handleAttemptSend}
                 disabled={isSendingMessage}
+                title={isUnresolvedLid ? "يرجى إضافة رقم الهاتف أولاً" : "إرسال"}
               >
                 {isSendingMessage ? (
                   <RefreshCw className="size-4 animate-spin" />

@@ -5,13 +5,11 @@ name: Diagnose Stale HTML (temporary)
 # (index-B7ISSXdp.js-era chunks + stale .gz/.br) into /var/www/frontend2/dist
 # seconds after every deploy. Safe to delete after the case closes.
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - '.github/workflows/diag-stale-html.yml'
 
 env:
   SERVER_SSH_PORT: ${{ secrets.SERVER_PORT || '22' }}

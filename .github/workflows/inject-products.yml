@@ -1,5 +1,8 @@
 name: Inject Products for Centr Fekrya
 
+permissions:
+  contents: read
+
 on: workflow_dispatch
 
 jobs:

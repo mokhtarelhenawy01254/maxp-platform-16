@@ -1,5 +1,8 @@
 name: Fix Frontend index.html
 
+permissions:
+  contents: read
+
 on:
   workflow_dispatch:
 
