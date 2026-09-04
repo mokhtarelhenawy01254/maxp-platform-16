@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, Printer, Radio, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, Printer, Radio, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -123,6 +123,8 @@ const DOMAIN_PERMISSIONS: Record<string, string[]> = {
     'products': ['products.view'],
     'procurement': ['finance.view', 'finance.invoices', 'finance.payments'],
     'analytics': ['reports.view'],
+    'marketing-agency': ['dashboard.view', 'settings.view'],
+    'marketing': ['dashboard.view', 'settings.view'],
     'notifications': ['settings.view', 'notifications.view']
 };
 
@@ -815,6 +817,20 @@ export const getSidebarConfig = (
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
+        },
+
+        // 4️⃣.9️⃣ وكالة التسويق (Agency OS)
+        {
+            id: 'marketing-agency',
+            title: t('sidebar.marketingAgencySection') || 'وكالة التسويق (Agency OS)',
+            icon: Briefcase,
+            items: [
+                { to: '/agency', icon: BarChart3, label: t('sidebar.agencyOverview') || 'لوحة تحكم الوكالة' },
+                { to: '/agency?tab=clients', icon: Users, label: t('sidebar.agencyClients') || 'العملاء وميزانيات الإعلانات' },
+                { to: '/agency?tab=approvals', icon: ClipboardCheck, label: t('sidebar.agencyApprovals') || 'موافقات التصاميم والمحتوى' },
+                { to: '/agency?tab=suite', icon: Briefcase, label: t('sidebar.agencySuite') || 'الأدوات المتكاملة' },
+            ],
+            hidden: user?.role === 'AFFILIATE' || !isAppActive('marketing-agency-pro'),
         },
 
         // 5️⃣ التسويق والإعلانات

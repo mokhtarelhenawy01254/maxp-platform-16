@@ -352,6 +352,21 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تطبيق مستقل للتكامل الرسمي مع TikTok.",
   },
   {
+    id: "marketing-agency",
+    area: "marketing",
+    label: "إدارة وكالات التسويق",
+    description: "لوحة عملاء الوكالة، متابعة الصرف والوتيرة الإعلانية، مسار إنتاج واعتماد المحتوى، وتوليد تقارير الأداء.",
+    status: "covered",
+    appSlug: "marketing-agency-pro",
+    appLabel: "إدارة وكالات التسويق",
+    currentGate: "marketing-agency-pro",
+    routes: [
+      { path: "/agency", label: "لوحة تحكم الوكالة" },
+      { path: "/agency/approvals", label: "اعتمادات المحتوى" },
+    ],
+    action: "تطبيق متخصص لإدارة شركات ووكالات التسويق والميديا بايرز.",
+  },
+  {
     id: "facebook-ads",
     area: "marketing",
     label: "إعلانات فيسبوك",

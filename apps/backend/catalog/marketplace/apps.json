@@ -3909,5 +3909,62 @@
     "engineCompatibility": null,
     "createdAt": "2026-09-04T00:00:00Z",
     "updatedAt": "2026-09-04T00:00:00Z"
+  },
+  {
+    "id": "cat-app-marketing-agency-pro",
+    "slug": "marketing-agency-pro",
+    "name": "إدارة وكالات التسويق",
+    "nameEn": "Marketing Agency Pro",
+    "description": "نظام متكامل لتنظيم وإدارة شركات ووكالات التسويق: لوحة تحكم عملاء الوكالة، متابعة الميزانيات والصرف الإعلاني، مسارات إنتاج المحتوى واعتماد العملاء، وتوليد تقارير أداء موحدة بنقرة زر.",
+    "descriptionEn": "Comprehensive operations for marketing agencies: client brand portfolio, ad spend pacing, creative approval pipelines, and white-label client performance reporting.",
+    "category": "MARKETING",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 149,
+    "yearlyPrice": 1490,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "شركات ووكالات التسويق الرقمي والميديا بايرز الذين يديرون عدة عملاء وحملات إعلانية.",
+      "surface": "داخل مساحة عمل الوكالة (/agency) — لوحة العملاء، الميزانيات، والاعتمادات.",
+      "outcome": "تحكم مركزي في ميزانيات العملاء، تسريع موافقة العملاء على التصاميم، وتقارير فورية احترافية."
+    },
+    "features": {
+      "clientHub": {
+        "enabled": true,
+        "name": "لوحة عملاء الوكالة",
+        "description": "إدارة ملفات العملاء، الميزانيات، الحسابات الإعلانية، والـ Retainers.",
+        "access": "PAID"
+      },
+      "adSpendPacing": {
+        "enabled": true,
+        "name": "متابعة الصرف والوتيرة",
+        "description": "مؤشرات Pacing % لتتبع استهلاك الميزانية الإعلانية وتنبيهات التجاوز.",
+        "access": "PAID"
+      },
+      "creativeApprovals": {
+        "enabled": true,
+        "name": "مسار إنتاج واعتماد المحتوى",
+        "description": "دورة عمل مراجعة التصاميم وموافقة العميل عبر رابط مخصص.",
+        "access": "PAID"
+      },
+      "whiteLabelReports": {
+        "enabled": true,
+        "name": "توليد تقارير الأداء",
+        "description": "استخراج تقارير أداء دورية موحدة للعميل بنقرة واحدة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "briefcase",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-04T00:00:00Z",
+    "updatedAt": "2026-09-04T00:00:00Z"
   }
 ]

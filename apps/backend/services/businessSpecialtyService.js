@@ -105,6 +105,30 @@ const DEFAULT_SPECIALTIES = [
       'crm-lite',
     ],
   },
+  {
+    id: 'bizsp_marketing_agency',
+    slug: 'marketing-agency',
+    nameAr: 'وكالة تسويق وإعلانات',
+    nameEn: 'Marketing & Advertising Agency',
+    descriptionAr: 'تنظيم شامل لشركات ووكالات التسويق: إدارة عملاء الوكالة، متابعة الميزانيات والصرف الإعلاني، مسارات إنتاج المحتوى واعتماد العملاء، وصندوق المحادثات الموحد.',
+    descriptionEn: 'Comprehensive operations for marketing agencies: client portfolio, ad spend pacing, creative approval pipelines, and unified client communication.',
+    icon: 'Briefcase',
+    sortOrder: 25,
+    appSlugs: [
+      'marketing-agency-pro',
+      'facebook-ads-pro',
+      'facebook-pixel-capi',
+      'facebook-pages-connect',
+      'facebook-post',
+      'unified-inbox',
+      'smart-scheduler',
+      'executable-mindmap',
+      'analytics-advanced',
+      'ugc-reviews-pro',
+      'crm-lite',
+      'notification-automation',
+    ],
+  },
 ];
 
 function getPrisma(prisma) {

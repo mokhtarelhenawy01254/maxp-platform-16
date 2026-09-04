@@ -119,6 +119,7 @@ export interface CompanyFormData {
   phone: string;
   website: string;
   currency: string;
+  businessSpecialtyId?: string;
   adminFirstName: string;
   adminLastName: string;
   adminEmail: string;
