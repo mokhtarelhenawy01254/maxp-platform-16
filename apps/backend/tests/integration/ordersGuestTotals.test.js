@@ -438,4 +438,35 @@ describe('Orders routes guest totals', () => {
     expect(trashListOrderNumbers).not.toContain(regularOrder.orderNumber);
     expect(trashListOrderNumbers).not.toContain(trashGuestOrder.orderNumber);
   });
+
+  test('POST /bulk/delete deletes incomplete carts (guestCart) and removes them', async () => {
+    const uniqueCart = Date.now();
+    const guestCart = await prisma.guestCart.create({
+      data: {
+        cartId: `cart_test_bulk_delete_${uniqueCart}`,
+        items: JSON.stringify([{ productId: 'prod_test', quantity: 1, price: 150 }]),
+        total: 150,
+        companyId: company.id,
+        expiresAt: new Date(Date.now() + 86400000),
+        checkoutData: JSON.stringify({ guestName: 'Cart User', guestPhone: '01012345678' })
+      }
+    });
+
+    const bulkDeleteRes = await request(app)
+      .post('/api/v1/orders-new/bulk/delete')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        orderIds: [guestCart.cartId]
+      });
+
+    expect(bulkDeleteRes.status).toBe(200);
+    expect(bulkDeleteRes.body.success).toBe(true);
+    expect(Number(bulkDeleteRes.body.data.successCount)).toBe(1);
+    expect(Number(bulkDeleteRes.body.data.cartDeleted)).toBe(1);
+
+    const storedCart = await prisma.guestCart.findUnique({
+      where: { id: guestCart.id }
+    });
+    expect(storedCart).toBeNull();
+  });
 });

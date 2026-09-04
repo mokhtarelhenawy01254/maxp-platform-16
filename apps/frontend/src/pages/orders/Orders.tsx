@@ -2160,13 +2160,33 @@ const Orders: React.FC = () => {
       });
 
       const data = response.data;
+      const results = data.data?.results ?? [];
+      const failedResults = results.filter((r: Record<string, unknown>) => !r.success);
+      const failedCount = failedResults.length;
+      const successCount = data.data?.successCount ?? 0;
+      const totalRequested = data.data?.totalRequested ?? selectedOrders.length;
 
-      if (data.success) {
-        alert(t(successKey));
+      if (successCount > 0) {
+        if (failedCount === 0) {
+          alert(t(successKey));
+        } else {
+          const errorSummary = failedResults
+            .slice(0, 5)
+            .map((r: Record<string, unknown>) => `${t("orders.orderLabel", { defaultValue: "طلب" })} ${r.id}: ${r.error || t('orders.unknownError', { defaultValue: "خطأ غير معروف" })}`)
+            .join('\n');
+          const moreText = failedCount > 5 ? `\n${t('orders.moreErrors', { count: failedCount - 5, defaultValue: `و ${failedCount - 5} أخطاء أخرى` })}` : '';
+          alert(`${t(isTrashView ? 'orders.permanentDeletedOrdersSummary' : 'orders.deletedOrdersSummary', {
+            success: successCount,
+            total: totalRequested,
+            defaultValue: `تمت معالجة ${successCount} من ${totalRequested} بنجاح`
+          })}\n\n${t('orders.failedOrdersLabel', { defaultValue: 'الطلبات التي تعذر حذفها' })}:\n${errorSummary}${moreText}`);
+        }
         await fetchOrders();
-        setSelectedOrders([]);
+        const failedIds: string[] = failedResults.map((r: Record<string, unknown>) => String(r.id));
+        setSelectedOrders(failedIds.length > 0 ? failedIds : []);
       } else {
-        alert(data.message || t(failedKey));
+        const errors: string[] = failedResults.map((r: Record<string, unknown>) => String(r.error ?? ''));
+        alert(errors.length > 0 ? errors.join('\n') : data.message || t(failedKey));
       }
     } catch (error: unknown) {
       console.error("Error bulk deleting:", error);

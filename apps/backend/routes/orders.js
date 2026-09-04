@@ -1053,6 +1053,47 @@ const checkOrderEditPermission = async (req, orderIdentifier) => {
   return true;
 };
 
+const createBulkOrderError = (message, statusCode = 400) => {
+  const error = new Error(message);
+  error.statusCode = statusCode;
+  return error;
+};
+
+const permanentlyDeleteIncompleteCart = async ({ orderIdentifier, companyId }) => {
+  const prisma = getSharedPrismaClient();
+  const cart = await prisma.guestCart.findFirst({
+    where: {
+      companyId,
+      OR: [
+        { id: orderIdentifier },
+        { cartId: orderIdentifier }
+      ]
+    },
+    select: {
+      id: true,
+      cartId: true
+    }
+  });
+
+  if (!cart) {
+    return null;
+  }
+
+  try {
+    await prisma.cartContactLog.deleteMany({
+      where: { companyId, cartId: cart.cartId }
+    });
+  } catch (_contactErr) {
+    // optional log cleanup
+  }
+
+  await prisma.guestCart.delete({
+    where: { id: cart.id }
+  });
+
+  return { orderType: 'cart', cart };
+};
+
 const updateAnyOrderStatus = async ({
   orderIdentifier,
   companyId,
@@ -1266,24 +1307,37 @@ const updateAnyOrderStatus = async ({
     }
   }
 
-  const guestOrder = await orderService.updateGuestOrderStatus(
-    orderIdentifier,
-    companyId,
-    status,
-    notes,
-    userId,
-    userName,
-    null,
-    { skipTransitionValidation }
-  );
+  try {
+    const guestOrder = await orderService.updateGuestOrderStatus(
+      orderIdentifier,
+      companyId,
+      status,
+      notes,
+      userId,
+      userName,
+      null,
+      { skipTransitionValidation }
+    );
 
-  return { orderType: 'guest', order: guestOrder };
-};
+    return { orderType: 'guest', order: guestOrder };
+  } catch (guestOrderError) {
+    if (guestOrderError?.statusCode !== 404) {
+      throw guestOrderError;
+    }
+  }
 
-const createBulkOrderError = (message, statusCode = 400) => {
-  const error = new Error(message);
-  error.statusCode = statusCode;
-  return error;
+  // If deleting/trashing, also check if it is an incomplete cart (guestCart)
+  if (normalizedStatus === 'TRASH') {
+    const cartDeleteResult = await permanentlyDeleteIncompleteCart({
+      orderIdentifier,
+      companyId
+    });
+    if (cartDeleteResult) {
+      return { orderType: 'cart', order: cartDeleteResult.cart };
+    }
+  }
+
+  throw createBulkOrderError('الطلب غير موجود', 404);
 };
 
 const isTrashOrderStatus = (status) => {
@@ -1397,6 +1451,15 @@ const permanentlyDeleteAnyOrder = async ({ orderIdentifier, companyId }) => {
 
   if (guestDeleteResult) {
     return guestDeleteResult;
+  }
+
+  const cartDeleteResult = await permanentlyDeleteIncompleteCart({
+    orderIdentifier,
+    companyId
+  });
+
+  if (cartDeleteResult) {
+    return cartDeleteResult;
   }
 
   throw createBulkOrderError('Order not found', 404);
@@ -6329,7 +6392,8 @@ router.post('/bulk/delete', verifyToken.authenticateToken, verifyToken.requireRo
 
     const regularCount = results.filter((result) => result.success && result.orderType === 'regular').length;
     const guestCount = results.filter((result) => result.success && result.orderType === 'guest').length;
-    const successCount = regularCount + guestCount;
+    const cartCount = results.filter((result) => result.success && result.orderType === 'cart').length;
+    const successCount = regularCount + guestCount + cartCount;
 
     res.json({
       success: true,
@@ -6342,6 +6406,7 @@ router.post('/bulk/delete', verifyToken.authenticateToken, verifyToken.requireRo
         action: shouldPermanentlyDelete ? 'permanent_delete' : 'move_to_trash',
         regularMoved: shouldPermanentlyDelete ? 0 : regularCount,
         guestMoved: shouldPermanentlyDelete ? 0 : guestCount,
+        cartDeleted: cartCount,
         regularDeleted: shouldPermanentlyDelete ? regularCount : 0,
         guestDeleted: shouldPermanentlyDelete ? guestCount : 0,
         results
