@@ -948,7 +948,10 @@ router.get('/magic-login', getCompanyFromSubdomain, async (req, res) => {
     // تنظيف أي token قديم من التخزين على نفس الرابط (حتى ما يفضلش مربوط بعميل تاني)
     res.clearCookie('refresh_token');
 
-    return res.redirect(`/account?token=${encodeURIComponent(authToken)}`);
+    const rawRedirect = String(req.query.redirect || req.query.next || '/account');
+    const safeRedirect = (rawRedirect.startsWith('/') && !rawRedirect.startsWith('//')) ? rawRedirect : '/account';
+    const delimiter = safeRedirect.includes('?') ? '&' : '?';
+    return res.redirect(`${safeRedirect}${delimiter}token=${encodeURIComponent(authToken)}`);
   } catch (error) {
     console.error('❌ [PUBLIC-CUSTOMER] Error in magic-login:', error);
     return res.redirect('/auth/customer-register?error=invalid_link');

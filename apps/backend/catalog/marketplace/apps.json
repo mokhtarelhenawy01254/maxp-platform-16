@@ -79,10 +79,30 @@
       "outcome": "إدارة كاملة لتفاعلات انستجرام من لوحة واحدة مع ردود تلقائية ذكية."
     },
     "features": {
-      "dmInbox": { "enabled": true, "name": "صندوق الرسائل", "description": "متابعة الـ DMs والرد عليها من لوحة موحدة.", "access": "PAID" },
-      "autoReply": { "enabled": true, "name": "الرد الآلي", "description": "ردود تلقائية ذكية على رسائل وتعليقات انستجرام.", "access": "PAID" },
-      "comments": { "enabled": true, "name": "إدارة التعليقات", "description": "متابعة والرد على تعليقات المنشورات.", "access": "PAID" },
-      "analytics": { "enabled": true, "name": "تحليلات التفاعل", "description": "تقارير عن التفاعل والمحادثات والأداء.", "access": "PAID" }
+      "dmInbox": {
+        "enabled": true,
+        "name": "صندوق الرسائل",
+        "description": "متابعة الـ DMs والرد عليها من لوحة موحدة.",
+        "access": "PAID"
+      },
+      "autoReply": {
+        "enabled": true,
+        "name": "الرد الآلي",
+        "description": "ردود تلقائية ذكية على رسائل وتعليقات انستجرام.",
+        "access": "PAID"
+      },
+      "comments": {
+        "enabled": true,
+        "name": "إدارة التعليقات",
+        "description": "متابعة والرد على تعليقات المنشورات.",
+        "access": "PAID"
+      },
+      "analytics": {
+        "enabled": true,
+        "name": "تحليلات التفاعل",
+        "description": "تقارير عن التفاعل والمحادثات والأداء.",
+        "access": "PAID"
+      }
     },
     "isActive": true,
     "isPublic": true,
@@ -116,10 +136,30 @@
       "outcome": "رد أسرع وأتمتة كاملة للتواصل عبر تليجرام مع تتبع التفاعل."
     },
     "features": {
-      "channels": { "enabled": true, "name": "إدارة القنوات والمجموعات", "description": "إدارة قنوات وجروبات تليجرام بسهولة.", "access": "PAID" },
-      "autoReply": { "enabled": true, "name": "الرد الآلي", "description": "ردود تلقائية ذكية على رسائل العملاء.", "access": "PAID" },
-      "scheduling": { "enabled": true, "name": "جدولة الرسائل", "description": "جدولة إرسال الرسائل في الأوقات المناسبة.", "access": "PAID" },
-      "campaigns": { "enabled": true, "name": "الحملات والرسائل الجماعية", "description": "إرسال رسائل جماعية للجروبات والعملاء.", "access": "PAID" }
+      "channels": {
+        "enabled": true,
+        "name": "إدارة القنوات والمجموعات",
+        "description": "إدارة قنوات وجروبات تليجرام بسهولة.",
+        "access": "PAID"
+      },
+      "autoReply": {
+        "enabled": true,
+        "name": "الرد الآلي",
+        "description": "ردود تلقائية ذكية على رسائل العملاء.",
+        "access": "PAID"
+      },
+      "scheduling": {
+        "enabled": true,
+        "name": "جدولة الرسائل",
+        "description": "جدولة إرسال الرسائل في الأوقات المناسبة.",
+        "access": "PAID"
+      },
+      "campaigns": {
+        "enabled": true,
+        "name": "الحملات والرسائل الجماعية",
+        "description": "إرسال رسائل جماعية للجروبات والعملاء.",
+        "access": "PAID"
+      }
     },
     "isActive": true,
     "isPublic": true,
@@ -153,11 +193,36 @@
       "outcome": "نشر أسرع، بيع عبر TikTok Shop، وتتبع دقيق للتحويلات دون مغادرة المنصة."
     },
     "features": {
-      "publish": { "enabled": true, "name": "نشر المحتوى", "description": "نشر فيديوهات مباشرة على حساب TikTok من لوحة التحكم.", "access": "FREE" },
-      "shop": { "enabled": true, "name": "متجر TikTok Shop", "description": "ربط متجر TikTok Shop ومزامنة الطلبات والمنتجات.", "access": "FREE" },
-      "loginKit": { "enabled": true, "name": "تسجيل دخول العملاء", "description": "تسجيل دخول عملاء المتجر بحساب TikTok.", "access": "FREE" },
-      "embed": { "enabled": true, "name": "عرض الفيديوهات في المتجر", "description": "عرض مقاطع TikTok داخل صفحات المتجر.", "access": "FREE" },
-      "events": { "enabled": true, "name": "تتبع أحداث الإعلانات", "description": "إرسال أحداث التحويل إلى TikTok Events API.", "access": "FREE" }
+      "publish": {
+        "enabled": true,
+        "name": "نشر المحتوى",
+        "description": "نشر فيديوهات مباشرة على حساب TikTok من لوحة التحكم.",
+        "access": "FREE"
+      },
+      "shop": {
+        "enabled": true,
+        "name": "متجر TikTok Shop",
+        "description": "ربط متجر TikTok Shop ومزامنة الطلبات والمنتجات.",
+        "access": "FREE"
+      },
+      "loginKit": {
+        "enabled": true,
+        "name": "تسجيل دخول العملاء",
+        "description": "تسجيل دخول عملاء المتجر بحساب TikTok.",
+        "access": "FREE"
+      },
+      "embed": {
+        "enabled": true,
+        "name": "عرض الفيديوهات في المتجر",
+        "description": "عرض مقاطع TikTok داخل صفحات المتجر.",
+        "access": "FREE"
+      },
+      "events": {
+        "enabled": true,
+        "name": "تتبع أحداث الإعلانات",
+        "description": "إرسال أحداث التحويل إلى TikTok Events API.",
+        "access": "FREE"
+      }
     },
     "isActive": true,
     "isPublic": true,
@@ -459,14 +524,54 @@
       "outcome": "رد آلي فوري على كل الرسائل، توفير وقت الفريق، وزيادة نسبة تحويل المتابعين لعملاء."
     },
     "features": {
-      "keywordRules": { "enabled": true, "name": "الردود الآلية", "description": "ردود بالكلمات المفتاحية مع أولوية واختيار القناة.", "access": "PAID" },
-      "welcomeDefault": { "enabled": true, "name": "الترحيب والرد الافتراضي", "description": "رسالة ترحيب أول رسالة + رد افتراضي.", "access": "PAID" },
-      "conversationStarters": { "enabled": true, "name": "بدء المحادثة", "description": "روابط wa.me و m.me برسالة جاهزة + QR.", "access": "PAID" },
-      "persistentMenu": { "enabled": true, "name": "قائمة المسنجر", "description": "قائمة ثابتة أسفل محادثة المسنجر.", "access": "PAID" },
-      "chatWidget": { "enabled": true, "name": "ودجت المحادثة", "description": "زر عائم يفتح محادثة واتساب أو مسنجر.", "access": "PAID" },
-      "interactiveFlows": { "enabled": true, "name": "الفلوهات التفاعلية", "description": "سلاسل تتفرع على رد العميل بالكلمات أو الأزرار.", "access": "PAID" },
-      "quickReplies": { "enabled": true, "name": "أزرار سريعة", "description": "أزرار Quick Replies على واتساب ومسنجر.", "access": "PAID" },
-      "optOut": { "enabled": true, "name": "إلغاء الاشتراك", "description": "إدارة STOP/Opt-out وشرائح الجمهور.", "access": "PAID" }
+      "keywordRules": {
+        "enabled": true,
+        "name": "الردود الآلية",
+        "description": "ردود بالكلمات المفتاحية مع أولوية واختيار القناة.",
+        "access": "PAID"
+      },
+      "welcomeDefault": {
+        "enabled": true,
+        "name": "الترحيب والرد الافتراضي",
+        "description": "رسالة ترحيب أول رسالة + رد افتراضي.",
+        "access": "PAID"
+      },
+      "conversationStarters": {
+        "enabled": true,
+        "name": "بدء المحادثة",
+        "description": "روابط wa.me و m.me برسالة جاهزة + QR.",
+        "access": "PAID"
+      },
+      "persistentMenu": {
+        "enabled": true,
+        "name": "قائمة المسنجر",
+        "description": "قائمة ثابتة أسفل محادثة المسنجر.",
+        "access": "PAID"
+      },
+      "chatWidget": {
+        "enabled": true,
+        "name": "ودجت المحادثة",
+        "description": "زر عائم يفتح محادثة واتساب أو مسنجر.",
+        "access": "PAID"
+      },
+      "interactiveFlows": {
+        "enabled": true,
+        "name": "الفلوهات التفاعلية",
+        "description": "سلاسل تتفرع على رد العميل بالكلمات أو الأزرار.",
+        "access": "PAID"
+      },
+      "quickReplies": {
+        "enabled": true,
+        "name": "أزرار سريعة",
+        "description": "أزرار Quick Replies على واتساب ومسنجر.",
+        "access": "PAID"
+      },
+      "optOut": {
+        "enabled": true,
+        "name": "إلغاء الاشتراك",
+        "description": "إدارة STOP/Opt-out وشرائح الجمهور.",
+        "access": "PAID"
+      }
     },
     "isActive": true,
     "isPublic": true,
@@ -3506,6 +3611,299 @@
     "isFeatured": true,
     "isPopular": true,
     "icon": "git-branch",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-04T00:00:00Z",
+    "updatedAt": "2026-09-04T00:00:00Z"
+  },
+  {
+    "id": "cat-app-hr-core",
+    "slug": "hr-core",
+    "name": "نظام HR الأساسي",
+    "nameEn": "Core HR Management",
+    "description": "إدارة بيانات الموظفين، الأقسام، الهيكل التنظيمي، ملفات ومستندات العمل، وسياسات الشركة — الأساس المتكامل لإدارة فريقك.",
+    "descriptionEn": "Employee directory, department hierarchy, organization charts, documents, and company policies.",
+    "category": "HR",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الشركات والمتاجر التي تريد تنظيم بيانات موظفيها وهيكلها الإداري في مكان واحد.",
+      "surface": "داخل قسم الموارد البشرية — لوحة تحكم HR وملفات الموظفين والأقسام.",
+      "outcome": "ملفات موظفين منظمة وهيكل إداري واضح يسهل إدارة فريق العمل."
+    },
+    "features": {
+      "employees": {
+        "enabled": true,
+        "name": "إدارة الموظفين",
+        "description": "ملفات كاملة لبيانات الموظفين وعقودهم ومستنداتهم.",
+        "access": "FREE"
+      },
+      "departments": {
+        "enabled": true,
+        "name": "الأقسام والمناصب",
+        "description": "تنظيم الأقسام والمسميات الوظيفية وهيكل الشركة.",
+        "access": "FREE"
+      },
+      "orgChart": {
+        "enabled": true,
+        "name": "الهيكل التنظيمي",
+        "description": "عرض شجري تفاعلي لتسلسل الإدارات والمسؤوليات.",
+        "access": "FREE"
+      },
+      "policies": {
+        "enabled": true,
+        "name": "سياسات الشركة",
+        "description": "نشر لوائح العمل والقوانين الداخلية للفريق.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "users",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-04T00:00:00Z",
+    "updatedAt": "2026-09-04T00:00:00Z"
+  },
+  {
+    "id": "cat-app-hr-attendance-pro",
+    "slug": "hr-attendance-pro",
+    "name": "الحضور والانصراف والورديات",
+    "nameEn": "Advanced Attendance & Shifts",
+    "description": "تتبع الحضور بالـ Geofencing/GPS و QR Code، جدول الورديات والمناوبات، إدارة الإجازات والأذونات، واحتساب التأخيرات وساعات العمل تلقائياً.",
+    "descriptionEn": "GPS geofencing attendance, QR check-in, shift scheduling, leaves & permissions management with automated delay tracking.",
+    "category": "HR",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 79,
+    "yearlyPrice": 790,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "hr-core"
+    ],
+    "positioning": {
+      "audience": "الشركات والمتاجر التي تحتاج ضبط أوقات دوام الموظفين والورديات الميدانية بدقة.",
+      "surface": "داخل قسم الحضور والورديات والإجازات، وبوابة الحضور الذاتية للموظف.",
+      "outcome": "انضباط كامل لمواعيد العمل واحتساب دقيق للتأخيرات والغياب بدون فوضى."
+    },
+    "features": {
+      "geofencingCheckin": {
+        "enabled": true,
+        "name": "حضور بالـ GPS و QR",
+        "description": "تسجيل الحضور والانصراف من الموقع الجغرافي المحدد أو مسح الكود.",
+        "access": "PAID"
+      },
+      "shiftManagement": {
+        "enabled": true,
+        "name": "إدارة الورديات والمناوبات",
+        "description": "جدولة وتوزيع ورديات العمل وتعيين الموظفين عليها.",
+        "access": "PAID"
+      },
+      "leaveRequests": {
+        "enabled": true,
+        "name": "إدارة الإجازات والأرصدة",
+        "description": "تقديم ومتابعة طلبات الإجازات مع دورة اعتماد وموافقة.",
+        "access": "PAID"
+      },
+      "permissions": {
+        "enabled": true,
+        "name": "أذونات التأخير والخروج",
+        "description": "إدارة أذونات التأخير وساعات الاستئذان المعتمدة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": true,
+    "icon": "clock",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-04T00:00:00Z",
+    "updatedAt": "2026-09-04T00:00:00Z"
+  },
+  {
+    "id": "cat-app-hr-payroll",
+    "slug": "hr-payroll",
+    "name": "مسير الرواتب والمستحقات",
+    "nameEn": "Payroll & Compensation",
+    "description": "حساب الرواتب الشهري التلقائي، إدارة السلف والخصومات والبدلات، كشوف الحسابات ومفردات المرتب، وتقارير الضرائب والتأمينات.",
+    "descriptionEn": "Automated monthly payroll calculation, salary advances, deductions, bonuses, payslips, and tax reporting.",
+    "category": "HR",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "hr-core"
+    ],
+    "positioning": {
+      "audience": "أصحاب الأعمال والمحاسبون الذين يريدون حساب الرواتب والخصومات بدقة وبدون أخطاء يدوية.",
+      "surface": "داخل قسم الرواتب والسلف والخصومات، وصفحة مسير الرواتب للموظف.",
+      "outcome": "صرف الرواتب بدقة وسرعة، مع توثيق السلف والخصومات والبدلات تلقائياً."
+    },
+    "features": {
+      "automatedPayroll": {
+        "enabled": true,
+        "name": "توليد الرواتب التلقائي",
+        "description": "احتساب الرواتب بناءً على الحضور والتأخيرات والبدلات بنقرة واحدة.",
+        "access": "PAID"
+      },
+      "advancesManagement": {
+        "enabled": true,
+        "name": "إدارة السلف",
+        "description": "استقبال طلبات السلف وسدادها وخصمها من الراتب تلقائياً.",
+        "access": "PAID"
+      },
+      "deductionsBonuses": {
+        "enabled": true,
+        "name": "الخصومات والمكافآت",
+        "description": "تسجيل الخصومات والجزاءات والمكافآت الإضافية للموظفين.",
+        "access": "PAID"
+      },
+      "payslips": {
+        "enabled": true,
+        "name": "كشوف مفردات المرتب",
+        "description": "تصدير كشوف الرواتب الشهرية بصيغ جاهزة للطباعة والبنوك.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": false,
+    "icon": "banknote",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-04T00:00:00Z",
+    "updatedAt": "2026-09-04T00:00:00Z"
+  },
+  {
+    "id": "cat-app-hr-recruitment",
+    "slug": "hr-recruitment",
+    "name": "نظام التوظيف واستبيانات العمل",
+    "nameEn": "Recruitment & Job Forms",
+    "description": "نشر الوظائف واستقبال طلبات التوظيف، استبيانات التقديم الديناميكية، مسار تتبع المتقدمين (ATS Pipeline)، وجدولة المقابلات والتقييم.",
+    "descriptionEn": "Job postings, dynamic application forms, candidate pipeline tracking (ATS), and interview scheduling.",
+    "category": "HR",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 129,
+    "yearlyPrice": 1290,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "hr-core"
+    ],
+    "positioning": {
+      "audience": "الشركات التي توظف بانتظام وتريد إدارة المتقدمين واستبيانات العمل باحترافية.",
+      "surface": "داخل قسم التوظيف واستبيانات العمل، وروابط التقديم العامة.",
+      "outcome": "استقطاب أفضل الكفاءات وتنظيم مراحل الفرز والمقابلات في خط زمني موحد."
+    },
+    "features": {
+      "jobPostings": {
+        "enabled": true,
+        "name": "نشر الوظائف",
+        "description": "إنشاء وإدارة إعلانات الوظائف وتحديد المتطلبات.",
+        "access": "PAID"
+      },
+      "candidatePipeline": {
+        "enabled": true,
+        "name": "مسار تتبع المتقدمين (ATS)",
+        "description": "نقل المرشحين بين مراحل الفرز، المقابلة، والعرض الوظيفي.",
+        "access": "PAID"
+      },
+      "applicationForms": {
+        "enabled": true,
+        "name": "نماذج التقديم واستبيانات العمل",
+        "description": "نماذج مخصصة لاستقبال السير الذاتية وإجابات المتقدمين.",
+        "access": "PAID"
+      },
+      "interviewScheduling": {
+        "enabled": true,
+        "name": "جدولة المقابلات",
+        "description": "تحديد مواعيد المقابلات وتقييم المرشحين وتدوين الملاحظات.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "briefcase",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-04T00:00:00Z",
+    "updatedAt": "2026-09-04T00:00:00Z"
+  },
+  {
+    "id": "cat-app-hr-assets",
+    "slug": "hr-assets",
+    "name": "إدارة العهد والأصول وتقييم الأداء",
+    "nameEn": "Assets, Custody & Performance",
+    "description": "تسجيل عهد وأصول الشركة وتسليمها للموظفين مع نماذج التصفية، بالإضافة لتقييمات الأداء الدورية، ومكافآت التقدير، وإجراءات المخالصة.",
+    "descriptionEn": "Asset tracking, employee custody handovers, periodic performance reviews, rewards, and clearance settlements.",
+    "category": "HR",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "hr-core"
+    ],
+    "positioning": {
+      "audience": "الشركات التي توفر أجهزة ومعدات لموظفيها وتهتم بمتابعة الأداء الوظيفي والعهد.",
+      "surface": "داخل قسم العهد والأصول وتقييم الأداء والمكافآت.",
+      "outcome": "حماية أصول الشركة من الفقد وتوثيق العهد والمخالصات بدقة مع قياس مستمر للأداء."
+    },
+    "features": {
+      "assetCustody": {
+        "enabled": true,
+        "name": "إدارة العهد والأجهزة",
+        "description": "تسجيل الأجهزة وتخصيصها ونماذج الاستلام والتسليم.",
+        "access": "PAID"
+      },
+      "performanceReviews": {
+        "enabled": true,
+        "name": "تقييمات الأداء الدورية",
+        "description": "نماذج تقييم أداء الموظفين وقياس مؤشرات النجاح.",
+        "access": "PAID"
+      },
+      "rewardsKudos": {
+        "enabled": true,
+        "name": "المكافآت والتقدير",
+        "description": "برنامج حوافز وتقدير وإرسال شارات الإنجاز للموظفين.",
+        "access": "PAID"
+      },
+      "clearanceSettlement": {
+        "enabled": true,
+        "name": "إخلاء الطرف والمخالصة",
+        "description": "قائمة تصفية العهد والمستحقات عند انتهاء خدمة الموظف.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "monitor",
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,

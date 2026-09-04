@@ -261,6 +261,70 @@ class WhatsAppJourneyService {
         }
 
         try {
+            // 🎁 خط أنابيب الحوافز والخصم التلقائي والنقاط والروابط الذكية
+            let discountPercent = '10';
+            let voucherAmount = '0.00';
+            let validityDays = '3';
+            let expiryDate = '';
+            let pointsBalance = '0';
+            let cashbackBalance = '0.00';
+            let storeLink = '';
+            let reorderLink = '';
+
+            try {
+                const autoDiscountService = require('../autoDiscountService');
+                const [activeVoucher, autoSettings, loyaltyRec, walletRec, company] = await Promise.all([
+                    autoDiscountService.getActiveVoucher(journey.customerId, journey.companyId).catch(() => null),
+                    autoDiscountService.getSettings(journey.companyId).catch(() => ({})),
+                    this.prisma.customerLoyaltyRecord.findFirst({
+                        where: { companyId: journey.companyId, customerId: journey.customerId },
+                        select: { currentPoints: true }
+                    }).catch(() => null),
+                    this.prisma.customerWallet.findFirst({
+                        where: { companyId: journey.companyId, customerId: journey.customerId },
+                        select: { balance: true }
+                    }).catch(() => null),
+                    this.prisma.company.findUnique({
+                        where: { id: journey.companyId },
+                        select: { id: true, slug: true, customDomain: true }
+                    }).catch(() => null)
+                ]);
+
+                if (activeVoucher) {
+                    discountPercent = String(Number(activeVoucher.percent || 10));
+                    voucherAmount = Number(activeVoucher.amount || 0).toFixed(2);
+                    expiryDate = activeVoucher.expiresAt ? new Date(activeVoucher.expiresAt).toISOString().slice(0, 10) : '';
+                } else if (autoSettings) {
+                    discountPercent = String(Number(autoSettings.discountPercent || 10));
+                }
+                if (autoSettings?.validityDays) {
+                    validityDays = String(autoSettings.validityDays);
+                }
+                if (loyaltyRec) {
+                    pointsBalance = String(loyaltyRec.currentPoints || 0);
+                }
+                if (walletRec) {
+                    cashbackBalance = Number(walletRec.balance || 0).toFixed(2);
+                }
+
+                if (company) {
+                    const magicLinkService = require('../customerMagicLinkService');
+                    const linkInfo = await magicLinkService.createMagicLink(this.prisma, {
+                        companyId: journey.companyId,
+                        customerId: journey.customerId,
+                        phone,
+                        ttlHours: 72
+                    }).catch(() => null);
+
+                    if (linkInfo) {
+                        storeLink = magicLinkService.buildMagicLinkUrl(company, linkInfo.token, phone, '/shop');
+                        reorderLink = magicLinkService.buildMagicLinkUrl(company, linkInfo.token, phone, '/checkout');
+                    }
+                }
+            } catch (enrichErr) {
+                console.warn(`⚠️ [JOURNEY-ENRICH] Could not enrich retention variables for customer ${journey.customerId}:`, enrichErr.message);
+            }
+
             // إرسال الرسالة باستخدام contentOverride
             const result = await WhatsAppNotificationService.sendNotification({
                 companyId: journey.companyId,
@@ -276,10 +340,18 @@ class WhatsAppJourneyService {
                 variables: {
                     firstName: journey.customer.firstName || '',
                     lastName: journey.customer.lastName || '',
-                    customerName: journey.customer.firstName,
+                    customerName: journey.customer.firstName || 'عميلنا العزيز',
                     reason: 'متابعة طلبك',
                     orderNumber: journey.order?.orderNumber || '',
-                    totalPrice: journey.order?.total?.toString() || '0'
+                    totalPrice: journey.order?.total?.toString() || '0',
+                    discountPercent,
+                    voucherAmount,
+                    validityDays,
+                    expiryDate,
+                    pointsBalance,
+                    cashbackBalance,
+                    storeLink: storeLink || '',
+                    reorderLink: reorderLink || storeLink || ''
                 },
                 orderId: journey.orderId,
                 customerId: journey.customerId

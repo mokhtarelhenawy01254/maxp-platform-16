@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ≡ƒöù Customer Magic Link Service
  * ╪▒┘ê╪º╪¿╪╖ ╪│╪▒┘è┘æ╪⌐ ╪¬╪│┘à╪¡ ┘ä┘ä╪╣┘à┘è┘ä ╪¿┘ü╪¬╪¡ ╪¿┘ê╪º╪¿╪⌐ ╪¡╪│╪º╪¿┘ç (╪╡┘ü╪¡╪¬┘ç) ┘à┘å ╪║┘è╪▒ ┘à╪º ┘è┘â╪¬╪¿ ╪▒┘é┘à ╪º┘ä┘à┘ê╪¿╪º┘è┘ä.
  * - ╪¿┘è╪¬┘à ╪¬┘ê┘ä┘è╪» ╪º┘ä╪¬┘ê┘â┘å ┘ê┘é╪¬ ╪Ñ╪▒╪│╪º┘ä ╪▒╪│╪º┘ä╪⌐ ╪º┘ä┘ê╪º╪¬╪│╪º╪¿ (╪▓╪▒ "╪╡┘ü╪¡╪⌐ ╪º┘ä╪╣┘à┘è┘ä").
@@ -70,13 +70,16 @@ async function validateMagicLink(prisma, { token, phone, companyId }) {
  * @param {string} token
  * @param {string} phone
  */
-function buildMagicLinkUrl(company, token, phone) {
+function buildMagicLinkUrl(company, token, phone, redirect) {
   const baseDomain = process.env.MAIN_DOMAIN || 'maxp.online';
   const host = (company.customDomain && String(company.customDomain).trim())
     ? String(company.customDomain).trim().replace(/^https?:\/\//, '')
     : `${String(company.slug || company.id).trim()}${baseDomain.startsWith('.') ? '' : '.'}${baseDomain}`;
 
   const qs = new URLSearchParams({ token, phone });
+  if (redirect) {
+    qs.set('redirect', redirect);
+  }
   return `https://${host}/api/v1/public/customers/magic-login?${qs.toString()}`;
 }
 

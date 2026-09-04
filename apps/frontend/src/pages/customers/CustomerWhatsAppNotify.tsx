@@ -13,7 +13,7 @@ import { formatCurrency } from '../../utils/currency';
 type Audience = 'all' | 'withOrders' | 'newCustomers' | 'activeCustomers';
 type NotifyMode = 'general' | 'birthday';
 
-import CustomerBirthdayWhatsAppNotify from './CustomerBirthdayWhatsAppNotify';
+import BirthdayWhatsAppNotify from './BirthdayWhatsAppNotify';
 
 interface CustomerWhatsAppNotifyProps {
     mode?: NotifyMode;
@@ -125,7 +125,7 @@ const CustomerWhatsAppNotify: React.FC<CustomerWhatsAppNotifyProps> = ({ mode = 
     const isBirthdayPage = mode === 'birthday';
 
     if (isBirthdayPage) {
-        return <CustomerBirthdayWhatsAppNotify />;
+        return <BirthdayWhatsAppNotify />;
     }
 
     const campaignStorageKey = isBirthdayPage ? 'active_birthday_campaign_id' : 'active_general_campaign_id';

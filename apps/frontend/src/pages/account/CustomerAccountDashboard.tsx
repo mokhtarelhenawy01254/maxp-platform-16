@@ -265,6 +265,17 @@ const AutoDiscountCard = ({ data }: { data: CustomerLoyaltySummary }) => {
               من الطلب {voucher.sourceOrderNumber}
             </div>
           ) : null}
+          <div className="mt-4 pt-3 border-t border-violet-100 dark:border-violet-900/60 flex items-center justify-between gap-3 flex-wrap">
+            <span className="text-xs text-violet-700 dark:text-violet-300 font-medium">
+              الخصم مفعل تلقائياً برقم هاتفك عند الدفع
+            </span>
+            <Link
+              to="/shop"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-violet-700"
+            >
+              تسوق واستفد من الخصم الآن ⚡
+            </Link>
+          </div>
         </div>
       ) : autoDiscount?.status === "PRE_ACTIVATION" ? (
         <div className="mt-6 rounded-2xl border border-dashed border-violet-300 bg-white/60 px-4 py-4 text-sm text-gray-600 dark:border-violet-800 dark:bg-gray-900/40 dark:text-gray-300">

@@ -15,6 +15,7 @@ import {
 import type { StorefrontThemeInput } from "./engine/runtimeThemeResolver";
 import { PageComposer, type RenderSectionFrameArgs } from "./engine/PageComposer";
 import { useCartStore } from "./store/useCartStore";
+import { useCheckoutStore } from "./store/useCheckoutStore";
 import {
   DEFAULT_STOREFRONT_CART_STORAGE_NAME,
   getStorefrontPreviewCartStorageName,
@@ -153,7 +154,21 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
 
   useEffect(() => {
     captureStorefrontAttribution();
-  }, [location.pathname, location.search]);
+
+    // ⚡ Auto-hydrate coupon, phone, and customer name from destination links
+    const urlCoupon = searchParams.get("coupon") || searchParams.get("apply_coupon");
+    if (urlCoupon) {
+      useCheckoutStore.getState().setPendingCouponCode(urlCoupon.trim().toUpperCase());
+    }
+    const urlPhone = searchParams.get("phone");
+    if (urlPhone) {
+      useCheckoutStore.getState().updateFormData({ phone: urlPhone.trim() });
+    }
+    const urlName = searchParams.get("name") || searchParams.get("customerName");
+    if (urlName) {
+      useCheckoutStore.getState().updateFormData({ customerName: urlName.trim() });
+    }
+  }, [location.pathname, location.search, searchParams]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

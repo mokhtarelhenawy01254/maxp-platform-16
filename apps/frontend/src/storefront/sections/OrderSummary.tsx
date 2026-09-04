@@ -317,7 +317,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     useCartStore();
   const persistedCartItemCount =
     items.length === 0 ? getPersistedCartItemCount() : 0;
-  const { appliedCoupon, setAppliedCoupon, clearAppliedCoupon, paymentMethod } =
+  const { appliedCoupon, setAppliedCoupon, clearAppliedCoupon, paymentMethod, pendingCouponCode, setPendingCouponCode } =
     useCheckoutStore();
   const { settings: storefrontSettings } = useStorefrontSettings();
   const { theme } = useStorefrontTheme();
@@ -947,6 +947,64 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
       clearAppliedCoupon();
     }
   }, [appliedCoupon, clearAppliedCoupon, subtotal]);
+
+  // ⚡ Auto-apply coupon from URL or pending state when cart has subtotal > 0
+  useEffect(() => {
+    const codeToApply =
+      pendingCouponCode ||
+      new URLSearchParams(location.search).get("coupon") ||
+      new URLSearchParams(location.search).get("apply_coupon");
+
+    const companyId = storefrontSettings?.company?.id;
+
+    if (
+      codeToApply &&
+      subtotal > 0 &&
+      companyId &&
+      (!appliedCoupon || appliedCoupon.code !== codeToApply.trim().toUpperCase()) &&
+      !isCouponLoading
+    ) {
+      const normalizedCode = codeToApply.trim().toUpperCase();
+      setCouponCode(normalizedCode);
+      void (async () => {
+        try {
+          setIsCouponLoading(true);
+          const response = await storefrontApi.validateCoupon(
+            companyId,
+            normalizedCode,
+            subtotal,
+          );
+          const coupon = response?.data?.coupon;
+          if (coupon) {
+            const discountAmount = Number(response?.data?.discountAmount || 0);
+            const finalAmount = Number(response?.data?.finalAmount || subtotal);
+            setAppliedCoupon({
+              code: String(coupon.code || normalizedCode).trim().toUpperCase(),
+              name: typeof coupon.name === "string" ? coupon.name : "",
+              discountAmount,
+              finalAmount,
+              orderAmount: subtotal,
+            });
+            setPendingCouponCode(null);
+            toast.success("تم تطبيق كوبون الخصم تلقائياً ✓");
+          }
+        } catch {
+          // Keep pending or fail silently if cart subtotal doesn't meet requirements yet
+        } finally {
+          setIsCouponLoading(false);
+        }
+      })();
+    }
+  }, [
+    subtotal,
+    pendingCouponCode,
+    storefrontSettings?.company?.id,
+    appliedCoupon,
+    isCouponLoading,
+    location.search,
+    setAppliedCoupon,
+    setPendingCouponCode,
+  ]);
 
   useEffect(() => {
     if (

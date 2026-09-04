@@ -76,5 +76,26 @@
     ],
     "createdAt": "2026-07-21T00:00:00.000Z",
     "updatedAt": "2026-07-21T00:00:00.000Z"
+  },
+  {
+    "id": "cat-bundle-hr-complete",
+    "slug": "hr-complete-bundle",
+    "name": "باقة الموارد البشرية المتكاملة",
+    "nameEn": "HR Complete Bundle",
+    "description": "المنظومة الشاملة لإدارة فريق العمل: الأساسيات + الحضور والورديات بالـ GPS + مسير الرواتب والسلف + التوظيف واستبيانات العمل + إدارة العهد وتقييم الأداء بتوفير 26%.",
+    "monthlyPrice": 299,
+    "yearlyPrice": 2990,
+    "discount": 26,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "hr-core",
+      "hr-attendance-pro",
+      "hr-payroll",
+      "hr-recruitment",
+      "hr-assets"
+    ],
+    "createdAt": "2026-09-04T00:00:00.000Z",
+    "updatedAt": "2026-09-04T00:00:00.000Z"
   }
 ]

@@ -59,12 +59,14 @@ interface CheckoutStore {
   formData: CheckoutFormData;
   paymentMethod: 'cod' | 'card' | 'wallet';
   appliedCoupon: AppliedCheckoutCoupon | null;
+  pendingCouponCode: string | null;
   tierProgress: StorefrontTierProgress | null;
 
   // Actions
   updateFormData: (data: Partial<CheckoutFormData>) => void;
   setPaymentMethod: (method: 'cod' | 'card' | 'wallet') => void;
   setAppliedCoupon: (coupon: AppliedCheckoutCoupon | null) => void;
+  setPendingCouponCode: (code: string | null) => void;
   clearAppliedCoupon: () => void;
   setTierProgress: (progress: StorefrontTierProgress | null) => void;
   resetCheckout: () => void;
@@ -86,6 +88,7 @@ export const useCheckoutStore = create<CheckoutStore>()(
       formData: initialFormData,
       paymentMethod: 'cod',
       appliedCoupon: null,
+      pendingCouponCode: null,
       tierProgress: null,
 
       updateFormData: (data) => {
@@ -102,6 +105,10 @@ export const useCheckoutStore = create<CheckoutStore>()(
         set({ appliedCoupon: coupon });
       },
 
+      setPendingCouponCode: (code) => {
+        set({ pendingCouponCode: code });
+      },
+
       clearAppliedCoupon: () => {
         set({ appliedCoupon: null });
       },
@@ -111,7 +118,7 @@ export const useCheckoutStore = create<CheckoutStore>()(
       },
 
       resetCheckout: () => {
-        set({ formData: initialFormData, paymentMethod: 'cod', appliedCoupon: null, tierProgress: null });
+        set({ formData: initialFormData, paymentMethod: 'cod', appliedCoupon: null, pendingCouponCode: null, tierProgress: null });
       },
     }),
     {
