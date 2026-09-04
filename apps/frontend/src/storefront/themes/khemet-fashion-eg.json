@@ -428,7 +428,7 @@
             "placement": "before-description",
             "surfaceMode": "merged-buybox",
             "showQuantity": false,
-            "showAddToCartButton": false,
+            "showAddToCartButton": true,
             "showOrderSummary": true,
             "fields": {
               "alternatePhone": {

@@ -586,7 +586,7 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
     listCardVariant ??
     (isKhemetLuxe &&
     isShopPage &&
-    (variant === 'boutique-shelf' || variant === 'editorial-card')
+    variant === 'editorial-card'
       ? 'editorial-bare'
       : cardVariant);
   const isHorizontalRail = variant === 'carousel' || variant === 'boutique-rail';

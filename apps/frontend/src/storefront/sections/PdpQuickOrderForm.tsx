@@ -1212,9 +1212,13 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       )}`
     : submitLabel;
   const showAddToCartButton =
-    configuredShowAddToCartButton === null
-      ? !isPrimaryQuantityOfferDecision
-      : configuredShowAddToCartButton;
+    product?.showAddToCartButton === false
+      ? false
+      : product?.showAddToCartButton === true
+        ? true
+        : configuredShowAddToCartButton === null
+          ? !isPrimaryQuantityOfferDecision
+          : configuredShowAddToCartButton;
   const staticShippingValueText =
     configuredShippingSummaryValueText ||
     (prefersArabicCopy ? "شحن مجاني" : "Free shipping");

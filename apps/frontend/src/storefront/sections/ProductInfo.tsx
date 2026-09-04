@@ -3238,6 +3238,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     images: selectedVariantGalleryImages.length > 0 ? selectedVariantGalleryImages : product.images,
     productVariants: product.productVariants,
     hasVariants: Boolean(product.productVariants?.length),
+    showAddToCartButton: product.showAddToCartButton,
   };
   const resolvedEmbeddedPdpCheckoutSettings = {
     ...(embeddedPdpCheckoutSettings || {}),
@@ -3247,6 +3248,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       typeof embeddedQuantityOffersSettings?.decisionMode === 'string'
         ? embeddedQuantityOffersSettings.decisionMode
         : undefined,
+    showAddToCartButton:
+      product.showAddToCartButton !== false &&
+      (embeddedPdpCheckoutSettings?.showAddToCartButton !== false),
   };
   const inlinePdpQuickOrder = (
     <PdpQuickOrderPanel

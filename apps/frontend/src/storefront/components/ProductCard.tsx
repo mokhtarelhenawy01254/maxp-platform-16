@@ -2815,6 +2815,27 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
                   {formattedPrice}
                 </span>
               </div>
+
+              <div className="mt-3.5 flex w-full flex-col gap-1.5 pt-1">
+                <button
+                  onClick={handleAddToCart}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-full bg-[#201915] hover:bg-[#352a23] text-white px-3 py-2 text-xs font-bold shadow-sm transition-all active:scale-95"
+                  title={actionLabel}
+                  aria-label={actionLabel}
+                >
+                  <ShoppingCart size={14} />
+                  <span>{hasVariantChoices ? (isRtl ? 'اختيار المقاس / أضف' : 'Select Size') : (isRtl ? 'أضف للسلة' : 'Add to Cart')}</span>
+                </button>
+                <button
+                  onClick={handleQuickBuy}
+                  className="flex w-full items-center justify-center gap-1 rounded-full border border-amber-500/40 bg-amber-50 hover:bg-amber-100 text-amber-900 px-3 py-1.5 text-[11px] font-bold shadow-sm transition-all active:scale-95"
+                  title={isRtl ? 'طلب سريع' : 'Fast Order'}
+                  aria-label={isRtl ? 'طلب سريع' : 'Fast Order'}
+                >
+                  <Zap size={13} className="fill-amber-500 text-amber-500" />
+                  <span>{isRtl ? '⚡ طلب سريع' : '⚡ Quick Order'}</span>
+                </button>
+              </div>
             </div>
           </CardShell>
 
