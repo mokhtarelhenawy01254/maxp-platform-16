@@ -1184,9 +1184,67 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
                 contactUpdate.profilePicUrl = lidContact.profilePicUrl;
             }
 
-            if (!phoneContact?.customerId && lidContact?.customerId) {
+            // الربط مع سجل العميل في الـ CRM وتحديث الـ whatsappId
+            let targetCustomerId = phoneContact?.customerId || lidContact?.customerId || null;
+            const sessionRecord = await tx.whatsAppSession.findUnique({
+                where: { id: sessionId },
+                select: { companyId: true }
+            });
+            const companyId = sessionRecord?.companyId;
+
+            if (companyId) {
+                const cleanPhone = phoneNumber ? phoneNumber.replace(/\D/g, '') : '';
+                if (!targetCustomerId && cleanPhone) {
+                    const existingCust = await tx.customer.findFirst({
+                        where: {
+                            companyId,
+                            OR: [
+                                { phone: cleanPhone },
+                                { phoneNormalized: cleanPhone },
+                                { phone: { endsWith: cleanPhone.slice(-9) } },
+                                { whatsappId: normalizedLidJid }
+                            ]
+                        },
+                        select: { id: true, firstName: true, lastName: true, whatsappId: true }
+                    });
+                    if (existingCust) {
+                        targetCustomerId = existingCust.id;
+                        if (existingCust.whatsappId !== normalizedLidJid) {
+                            await tx.customer.update({
+                                where: { id: existingCust.id },
+                                data: { whatsappId: normalizedLidJid }
+                            });
+                        }
+                        if (!contactUpdate.name) {
+                            const fullName = [existingCust.firstName, existingCust.lastName].filter(Boolean).join(' ').trim();
+                            if (fullName) contactUpdate.name = fullName;
+                        }
+                    } else if (cleanPhone.length >= 7) {
+                        const newCust = await tx.customer.create({
+                            data: {
+                                companyId,
+                                firstName: lidContact?.name || mergedPushName || 'عميل واتساب',
+                                lastName: '',
+                                phone: cleanPhone,
+                                phoneNormalized: cleanPhone,
+                                whatsappId: normalizedLidJid,
+                                status: 'LEAD'
+                            },
+                            select: { id: true }
+                        });
+                        targetCustomerId = newCust.id;
+                    }
+                } else if (targetCustomerId) {
+                    await tx.customer.update({
+                        where: { id: targetCustomerId },
+                        data: { whatsappId: normalizedLidJid }
+                    }).catch(() => {});
+                }
+            }
+
+            if (targetCustomerId) {
                 contactUpdate.customer = {
-                    connect: { id: lidContact.customerId }
+                    connect: { id: targetCustomerId }
                 };
             }
 
@@ -1271,12 +1329,74 @@ async function getPersistedLidMapping(sessionId, lidJid) {
     const prisma = getSharedPrismaClient();
     if (!prisma.whatsAppLidMapping || !sessionId || !lidJid) return null;
 
+    // 1. فحص الجلسة الحالية
     const mapping = await prisma.whatsAppLidMapping.findUnique({
         where: { sessionId_lidJid: { sessionId, lidJid } },
         select: { phoneJid: true }
     });
 
-    return normalizePhoneJid(mapping?.phoneJid);
+    if (mapping?.phoneJid) {
+        return normalizePhoneJid(mapping.phoneJid);
+    }
+
+    // 2. فحص سحابي عبر جلسات الشركة وسجل العملاء في الـ CRM
+    try {
+        const currentSession = await prisma.whatsAppSession.findUnique({
+            where: { id: sessionId },
+            select: { companyId: true }
+        });
+        if (currentSession?.companyId) {
+            // أ. البحث في أي جلسة أخرى تابعة لنفس الشركة
+            const companyMapping = await prisma.whatsAppLidMapping.findFirst({
+                where: {
+                    lidJid,
+                    whatsAppSession: { companyId: currentSession.companyId }
+                },
+                select: { phoneJid: true }
+            });
+            if (companyMapping?.phoneJid) {
+                const phoneJid = normalizePhoneJid(companyMapping.phoneJid);
+                await prisma.whatsAppLidMapping.upsert({
+                    where: { sessionId_lidJid: { sessionId, lidJid } },
+                    create: { sessionId, lidJid, phoneJid, source: 'COMPANY_CROSS_SESSION' },
+                    update: { phoneJid }
+                }).catch(() => {});
+                return phoneJid;
+            }
+
+            // ب. البحث في جدول العملاء Customer في الـ CRM
+            const matchedCustomer = await prisma.customer.findFirst({
+                where: {
+                    companyId: currentSession.companyId,
+                    OR: [
+                        { whatsappId: lidJid },
+                        { metadata: { contains: lidJid } }
+                    ]
+                },
+                select: { id: true, phone: true, phoneNormalized: true, firstName: true, lastName: true }
+            });
+
+            const rawPhone = matchedCustomer?.phoneNormalized || matchedCustomer?.phone;
+            if (rawPhone) {
+                let clean = rawPhone.replace(/\D/g, '');
+                if (clean.startsWith('00')) clean = clean.slice(2);
+                else if (clean.startsWith('01') && clean.length === 11) clean = '2' + clean;
+                if (clean.length >= 7) {
+                    const phoneJid = `${clean}@s.whatsapp.net`;
+                    await prisma.whatsAppLidMapping.upsert({
+                        where: { sessionId_lidJid: { sessionId, lidJid } },
+                        create: { sessionId, lidJid, phoneJid, source: 'CRM_CUSTOMER_MATCH' },
+                        update: { phoneJid }
+                    }).catch(() => {});
+                    return phoneJid;
+                }
+            }
+        }
+    } catch (err) {
+        console.warn('⚠️ Error in cross-session/CRM getPersistedLidMapping:', err.message);
+    }
+
+    return null;
 }
 
 async function shouldProcessMessageUpsertType(type, fromMe, messageId, options = {}) {
