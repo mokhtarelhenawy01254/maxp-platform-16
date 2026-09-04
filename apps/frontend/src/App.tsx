@@ -6800,11 +6800,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/customers/loyalty-members"
-                  element={
-                    <Layout>
-                      <LoyaltyMembers />
-                    </Layout>
-                  }
+                  element={<Navigate to="/customers/points-center" replace />}
                 />
                 <Route
                   path="/customers/loyalty-analytics"
@@ -6840,11 +6836,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/customers/auto-discount"
-                  element={
-                    <Layout>
-                      <CustomerAutoDiscount />
-                    </Layout>
-                  }
+                  element={<Navigate to="/customers/settings?tab=discount" replace />}
                 />
                 <Route
                   path="/customers/settings"

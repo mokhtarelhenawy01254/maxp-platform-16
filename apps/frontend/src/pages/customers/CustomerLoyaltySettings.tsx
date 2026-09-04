@@ -1,4 +1,5 @@
-import React, { lazy, Suspense, useState } from "react";
+import React, { lazy, Suspense, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { DollarSign, Coins, BadgePercent, Star, Settings2 } from "lucide-react";
 
 const CashbackSettings = lazy(() => import("./CashbackSettings"));
@@ -7,6 +8,8 @@ const AutoDiscountSettings = lazy(() => import("./AutoDiscountSettings"));
 const LoyaltyTiers = lazy(() => import("./LoyaltyTiers"));
 
 type TabKey = "cashback" | "points" | "discount" | "tiers";
+
+const VALID_TABS: TabKey[] = ["cashback", "points", "discount", "tiers"];
 
 const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
   { key: "cashback", label: "الكاش باك", icon: DollarSign },
@@ -20,7 +23,21 @@ const TABS: { key: TabKey; label: string; icon: React.ComponentType<{ className?
  * كل إعدادات نظام الولاء في مكان واحد (الكاش باك / النقاط / الخصم بعد البيع / المستويات).
  */
 const CustomerLoyaltySettings: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<TabKey>("cashback");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const urlTab = searchParams.get("tab") as TabKey | null;
+  const initialTab = urlTab && VALID_TABS.includes(urlTab) ? urlTab : "cashback";
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+
+  useEffect(() => {
+    if (urlTab && VALID_TABS.includes(urlTab) && urlTab !== activeTab) {
+      setActiveTab(urlTab);
+    }
+  }, [urlTab]);
+
+  const handleTabChange = (tab: TabKey) => {
+    setActiveTab(tab);
+    setSearchParams({ tab });
+  };
 
   return (
     <div className="space-y-6">
@@ -41,7 +58,7 @@ const CustomerLoyaltySettings: React.FC = () => {
         {TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleTabChange(tab.key)}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
               activeTab === tab.key
                 ? "bg-indigo-600 text-white shadow-sm"

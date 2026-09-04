@@ -71,7 +71,8 @@ const mergeSectionOverrides = (
             const dbItem = effectiveItems?.[itemId];
 
             // Check item-level requiredPermissions (from code, not DB)
-            const itemPermissionAccess = !item.requiredPermissions || item.requiredPermissions.length === 0 ||
+            const isSuperOrAdmin = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(userRole || '');
+            const itemPermissionAccess = isSuperOrAdmin || !item.requiredPermissions || item.requiredPermissions.length === 0 ||
                 (userPerms && item.requiredPermissions.some(p => userPerms.includes(p)));
 
             if (!dbItem) {
@@ -165,8 +166,9 @@ const applySidebarOverrides = (
         return permissionFilteredSections.map(section => ({
             ...section,
             items: section.items.map(item => {
+                const isSuperOrAdmin = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user?.role || '');
                 const userPerms = user?.permissions || [];
-                const itemPermissionAccess = !item.requiredPermissions || item.requiredPermissions.length === 0 ||
+                const itemPermissionAccess = isSuperOrAdmin || !item.requiredPermissions || item.requiredPermissions.length === 0 ||
                     userPerms.some(p => item.requiredPermissions!.includes(p));
                 return { ...item, hidden: !itemPermissionAccess || item.hidden === true };
             })
