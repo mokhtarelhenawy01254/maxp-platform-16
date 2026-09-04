@@ -189,7 +189,7 @@ export const OrdersMobileList: React.FC<OrdersMobileListProps> = ({
                       </div>
                     </div>
 
-                    {canSelectOrders && !order.metadata?.isIncompleteCart && (
+                    {canSelectOrders && (
                       <input
                         type="checkbox"
                         aria-label={String(t("orders.selectOrder", { orderNumber: order.orderNumber }))}

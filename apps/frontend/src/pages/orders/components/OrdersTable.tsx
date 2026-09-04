@@ -223,7 +223,7 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                         : ""
                       }`}
                   >
-                    {canSelectOrders && !order.metadata?.isIncompleteCart && (
+                    {canSelectOrders && (
                       <td
                         className="px-3 py-2.5 lg:px-4"
                         onClick={(e) => e.stopPropagation()}
@@ -240,12 +240,6 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                           }}
                         />
                       </td>
-                    )}
-                    {canSelectOrders && order.metadata?.isIncompleteCart && (
-                      <td
-                        className="w-10 px-3 py-2.5 lg:px-4"
-                        aria-hidden="true"
-                      />
                     )}
                     {columns.includes("orderNumber") && (
                       <td className="px-3 py-2.5 lg:px-4">

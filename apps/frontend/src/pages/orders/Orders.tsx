@@ -2037,8 +2037,6 @@ const Orders: React.FC = () => {
   };
 
   const toggleOrderSelection = (orderNumber: string) => {
-    const order = orders.find((o) => o.orderNumber === orderNumber);
-    if (order?.metadata?.isIncompleteCart) return;
     setSelectedOrders((prev) =>
       prev.includes(orderNumber)
         ? prev.filter((id) => id !== orderNumber)
@@ -2047,11 +2045,10 @@ const Orders: React.FC = () => {
   };
 
   const toggleAllSelection = () => {
-    const selectable = orders.filter((o) => !o.metadata?.isIncompleteCart);
-    if (selectable.every((o) => selectedOrders.includes(o.orderNumber))) {
+    if (orders.every((o) => selectedOrders.includes(o.orderNumber))) {
       setSelectedOrders([]);
     } else {
-      setSelectedOrders(selectable.map((o) => o.orderNumber));
+      setSelectedOrders(orders.map((o) => o.orderNumber));
     }
   };
 
