@@ -759,13 +759,13 @@ export default function MindMapPage() {
 
         {/* Infinite Transform Container */}
         <div
-          className="absolute inset-0 origin-center transition-transform duration-75 ease-out"
+          className="absolute top-0 left-0 w-[5000px] h-[5000px] origin-top-left transition-transform duration-75 ease-out"
           style={{
             transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
           }}
         >
           {/* SVG Edges */}
-          <svg className="absolute inset-0 w-[5000px] h-[5000px] pointer-events-none z-0">
+          <svg className="absolute top-0 left-0 w-[5000px] h-[5000px] pointer-events-none z-0">
             {nodes.map((node) => {
               if (!node.parentId) return null;
               const parent = nodes.find((n) => n.id === node.parentId);
@@ -804,7 +804,7 @@ export default function MindMapPage() {
           </svg>
 
           {/* Interactive HTML Nodes */}
-          <div className="absolute inset-0 w-[5000px] h-[5000px] z-10 pointer-events-auto">
+          <div className="absolute top-0 left-0 w-[5000px] h-[5000px] z-10 pointer-events-auto">
             {nodes.map((node) => {
               const isSelected = selectedNodeId === node.id;
               const isSpotlight = mode === "train" && trainStepIndex === node.stepOrder;
