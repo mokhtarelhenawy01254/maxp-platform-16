@@ -1462,6 +1462,11 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     currency: string;
   } | null>(null);
 
+  const effectivePrice =
+    typeof selectedVariant?.price === 'number' && Number.isFinite(selectedVariant.price)
+      ? selectedVariant.price
+      : product?.price;
+
   useEffect(() => {
     let cancelled = false;
     setCashbackPreview(null);
@@ -1470,10 +1475,6 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       return undefined;
     }
 
-    const effectivePrice =
-      typeof selectedVariant?.price === 'number' && Number.isFinite(selectedVariant.price)
-        ? selectedVariant.price
-        : product.price;
     const companyId = storefrontSettings?.company?.id;
     const categoryId = (product as { category?: { id?: string | number } })?.category?.id;
     const amount = Number(effectivePrice) * Number(quantity || 1);
