@@ -35,7 +35,32 @@ export const useStorefrontVisitTracking = (
     }
 
     persistStorefrontCompanyId(companyId);
-    void storefrontAnalytics.trackStoreVisit(location.pathname);
+
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const track = () => {
+      void storefrontAnalytics.trackStoreVisit(location.pathname);
+    };
+
+    let idleId: number | null = null;
+    let timerId: number | null = null;
+
+    if ("requestIdleCallback" in window) {
+      idleId = window.requestIdleCallback(track, { timeout: 4000 });
+    } else {
+      timerId = window.setTimeout(track, 2000);
+    }
+
+    return () => {
+      if (idleId !== null && "cancelIdleCallback" in window) {
+        window.cancelIdleCallback(idleId);
+      }
+      if (timerId !== null) {
+        window.clearTimeout(timerId);
+      }
+    };
   }, [companyId, isPreviewMode, isProductPreview, location.pathname]);
 };
 

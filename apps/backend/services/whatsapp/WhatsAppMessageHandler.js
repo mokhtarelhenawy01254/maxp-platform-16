@@ -244,6 +244,26 @@ function serializeOutgoingMetadata(metadata) {
 }
 
 /**
+ * 🔒 حل معرّف الواتساب قبل الإرسال والتحقق من أنه ليس LID مجهول بدون رقم هاتف.
+ * لو كان المعرّف @lid، يحاول استرجاع الرقم من جدول المطابقات أو جلسات الشركة أو CRM.
+ * لو فشل الحل، يرمي خطأ 400 (WA_UNRESOLVED_LID) لمنع الإرسال الوهمي والـ 500.
+ */
+async function resolveAndValidateOutgoingJid(sessionId, to) {
+    let jid = formatJid(to);
+    if (jid && jid.includes('@lid')) {
+        const resolved = await WhatsAppManager.resolveOutgoingRemoteJid(sessionId, jid);
+        if (resolved && !String(resolved).includes('@lid')) {
+            return resolved;
+        }
+        const error = new Error('لا يمكن إرسال رسالة إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى إدخال رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية.');
+        error.statusCode = 400;
+        error.code = 'WA_UNRESOLVED_LID';
+        throw error;
+    }
+    return jid;
+}
+
+/**
  * إرسال رسالة نصية
  * @param {string} sessionId - معرف الجلسة
  * @param {string} to - رقم المستلم
@@ -253,10 +273,11 @@ function serializeOutgoingMetadata(metadata) {
 async function sendText(sessionId, to, text, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
 
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
-            const result = await MetaCloudProvider.sendText(sessionId, to, text, {
+            const result = await MetaCloudProvider.sendText(sessionId, targetPhone, text, {
                 previewUrl: options.previewUrl
             });
 
@@ -300,22 +321,6 @@ async function sendText(sessionId, to, text, options = {}) {
             isConnected: session?.status === 'connected',
             hasSocket: !!session?.sock
         });
-
-        let jid = formatJid(to);
-
-        // 🚨 PRODUCTION-FIX (C3): الـ LID غير محلول لا يمكن الإرسال إليه — نرفض مبكراً
-        // بدل الإرسال في فراغ ثم كتابة SENT وهمي يضلل التاجر.
-        if (jid.includes('@lid')) {
-            const resolved = await WhatsAppManager.resolveOutgoingRemoteJid(sessionId, jid);
-            if (resolved && !String(resolved).includes('@lid')) {
-                jid = resolved;
-            } else {
-                const error = new Error('لا يمكن إرسال رسالة إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى إدخال رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية.');
-                error.statusCode = 400;
-                error.code = 'WA_UNRESOLVED_LID';
-                throw error;
-            }
-        }
 
         // إرسال حالة الكتابة
         await sendTypingSafely(sessionId, jid, true);
@@ -384,9 +389,11 @@ async function sendText(sessionId, to, text, options = {}) {
 async function sendImage(sessionId, to, imageSource, caption = '', options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
-            const result = await MetaCloudProvider.sendMedia(sessionId, to, imageSource, 'image', { caption });
+            const result = await MetaCloudProvider.sendMedia(sessionId, targetPhone, imageSource, 'image', { caption });
 
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
@@ -423,8 +430,6 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             image,
@@ -467,9 +472,11 @@ async function sendImage(sessionId, to, imageSource, caption = '', options = {})
 async function sendVideo(sessionId, to, videoSource, caption = '', options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
-            const result = await MetaCloudProvider.sendMedia(sessionId, to, videoSource, 'video', { caption });
+            const result = await MetaCloudProvider.sendMedia(sessionId, targetPhone, videoSource, 'video', { caption });
 
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
@@ -485,8 +492,6 @@ async function sendVideo(sessionId, to, videoSource, caption = '', options = {})
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             video: videoSource.buffer || { url: videoSource.filePath || videoSource.url },
@@ -524,9 +529,11 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
         const cleanMime = (audioSource.mimetype || 'audio/mp4').split(';')[0].trim();
 
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
-            const result = await MetaCloudProvider.sendMedia(sessionId, to, audioSource, 'audio', {});
+            const result = await MetaCloudProvider.sendMedia(sessionId, targetPhone, audioSource, 'audio', {});
 
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
@@ -541,8 +548,6 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             audio: audioSource.buffer || { url: audioSource.filePath || audioSource.url },
@@ -577,9 +582,11 @@ async function sendAudio(sessionId, to, audioSource, options = {}) {
 async function sendDocument(sessionId, to, documentSource, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
-            const result = await MetaCloudProvider.sendMedia(sessionId, to, documentSource, 'document', {
+            const result = await MetaCloudProvider.sendMedia(sessionId, targetPhone, documentSource, 'document', {
                 caption: options.caption,
                 fileName: documentSource.fileName
             });
@@ -599,8 +606,6 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             document: documentSource.buffer || { url: documentSource.filePath || documentSource.url },
@@ -638,9 +643,11 @@ async function sendDocument(sessionId, to, documentSource, options = {}) {
 async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
-            const result = await MetaCloudProvider.sendLocation(sessionId, to, {
+            const result = await MetaCloudProvider.sendLocation(sessionId, targetPhone, {
                 latitude,
                 longitude,
                 name: options.name,
@@ -658,8 +665,6 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             location: {
@@ -695,8 +700,10 @@ async function sendLocation(sessionId, to, latitude, longitude, options = {}) {
 async function sendContact(sessionId, to, contact, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
             const contactsPayload = [
                 {
                     name: { formatted_name: contact.fullName },
@@ -710,7 +717,7 @@ async function sendContact(sessionId, to, contact, options = {}) {
                 }
             ];
 
-            const result = await MetaCloudProvider.sendContacts(sessionId, to, contactsPayload);
+            const result = await MetaCloudProvider.sendContacts(sessionId, targetPhone, contactsPayload);
 
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
@@ -723,8 +730,6 @@ async function sendContact(sessionId, to, contact, options = {}) {
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const vcard = `BEGIN:VCARD
 VERSION:3.0
@@ -764,14 +769,15 @@ END:VCARD`;
 async function sendReaction(sessionId, to, messageId, emoji) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const result = await MetaCloudProvider.sendReaction(sessionId, to, messageId, emoji);
+            const result = await MetaCloudProvider.sendReaction(sessionId, targetPhone, messageId, emoji);
             return result;
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         session = assertSessionReadyAfterPrep(sessionId, 'reaction');
         const result = await session.sock.sendMessage(jid, {
@@ -802,8 +808,10 @@ async function sendReaction(sessionId, to, messageId, emoji) {
 async function sendButtons(sessionId, to, text, buttons, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
             const footer = options.footer || undefined;
 
             const limitedButtons = buttons.length > 3 ? buttons.slice(0, 3) : buttons;
@@ -824,7 +832,7 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
                 interactivePayload.footer = { text: footer };
             }
 
-            const result = await MetaCloudProvider.sendInteractive(sessionId, to, interactivePayload);
+            const result = await MetaCloudProvider.sendInteractive(sessionId, targetPhone, interactivePayload);
 
             // 🚨 PRODUCTION-FIX: حفظ الرسالة محلياً بعد نجاح إرسال ميتا الفعلي.
             // لو فشل الـ upsert (DB error)، لا يجب أن يحوّل إرسالاً وصل فعلاً إلى "فشل".
@@ -857,8 +865,6 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
         const footer = options.footer || '';
 
         // التحقق من عدد الأزرار (حد أقصى 3)
@@ -906,9 +912,10 @@ async function sendButtons(sessionId, to, text, buttons, options = {}) {
 async function sendList(sessionId, to, text, buttonText, sections, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
-        if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
 
+        if (provider === 'META_CLOUD') {
             // التحقق من عدد الأقسام (حد أقصى 10)
             if (sections.length > 10) {
                 throw new Error('الحد الأقصى للأقسام هو 10');
@@ -940,7 +947,7 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
                 interactivePayload.footer = { text: options.footer };
             }
 
-            const result = await MetaCloudProvider.sendInteractive(sessionId, to, interactivePayload);
+            const result = await MetaCloudProvider.sendInteractive(sessionId, targetPhone, interactivePayload);
 
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
@@ -955,8 +962,6 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         // التحقق من عدد الأقسام (حد أقصى 10)
         if (sections.length > 10) {
@@ -1011,11 +1016,13 @@ async function sendList(sessionId, to, text, buttonText, sections, options = {})
 async function sendProduct(sessionId, to, product, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
             const fallbackText = `*${product.name}*\n\n${product.description || ''}\n\n💰 السعر: ${product.price || 'غير محدد'}`;
 
-            const result = await MetaCloudProvider.sendText(sessionId, to, fallbackText, {});
+            const result = await MetaCloudProvider.sendText(sessionId, targetPhone, fallbackText, {});
 
             const savedMessage = await saveOutgoingMessage(sessionId, jid, {
                 messageId: result.messageId || `meta_${Date.now()}_${Math.random()}`,
@@ -1031,8 +1038,6 @@ async function sendProduct(sessionId, to, product, options = {}) {
         }
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         // بناء رسالة المنتج
         const messageOptions = {
@@ -1635,9 +1640,8 @@ function delay(ms) {
 async function sendPoll(sessionId, to, pollData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             poll: {
@@ -1682,9 +1686,8 @@ async function sendPoll(sessionId, to, pollData, options = {}) {
 async function sendOrder(sessionId, to, orderData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             order: orderData
@@ -1714,9 +1717,8 @@ async function sendOrder(sessionId, to, orderData, options = {}) {
 async function sendCatalog(sessionId, to, catalogData, options = {}) {
     try {
         const { session: dbSession } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
         let session = await getSendableBaileysSession(sessionId, dbSession);
-
-        const jid = formatJid(to);
 
         const messageOptions = {
             catalog: catalogData
@@ -1796,13 +1798,15 @@ async function getCart(sessionId, cartId) {
 async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
+        const targetPhone = jid.split('@')[0];
+
         if (provider === 'META_CLOUD') {
-            const jid = formatJid(to);
             const templateName = parameters?.name || templateId;
             const languageCode = parameters?.language || parameters?.languageCode || 'en';
             const components = parameters?.components || [];
 
-            const result = await MetaCloudProvider.sendTemplate(sessionId, to, templateName, languageCode, components);
+            const result = await MetaCloudProvider.sendTemplate(sessionId, targetPhone, templateName, languageCode, components);
 
             let templateBody = options?.templateBody || '';
             let templateButtons = null;

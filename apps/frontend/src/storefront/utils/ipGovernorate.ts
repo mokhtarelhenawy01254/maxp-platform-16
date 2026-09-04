@@ -121,7 +121,11 @@ const mapGeoToGovernorate = (geo: GeoPayload): string | null => {
 
 const hasWindow = typeof window !== "undefined";
 
-const readCache = (): { ip: string; result: IpGovernorateResult } | null => {
+const readCache = (): {
+  ip: string;
+  result: IpGovernorateResult;
+  retryAfter?: number;
+} | null => {
   if (!hasWindow) return null;
   try {
     const raw = window.localStorage.getItem(CACHE_KEY);
@@ -130,7 +134,15 @@ const readCache = (): { ip: string; result: IpGovernorateResult } | null => {
       ip?: string;
       result?: IpGovernorateResult;
       expired?: boolean;
+      retryAfter?: number;
     } | null;
+    if (parsed?.retryAfter && Date.now() < parsed.retryAfter) {
+      return {
+        ip: parsed.ip || "unknown",
+        result: { governorate: null, city: null },
+        retryAfter: parsed.retryAfter,
+      };
+    }
     if (parsed?.ip && parsed?.result && !parsed.expired) {
       return { ip: parsed.ip, result: parsed.result };
     }
@@ -145,7 +157,28 @@ const writeCache = (ip: string, result: IpGovernorateResult) => {
   try {
     window.localStorage.setItem(
       CACHE_KEY,
-      JSON.stringify({ ip, result, expired: false, ttl: Date.now() + 30 * 24 * 60 * 60 * 1000 }),
+      JSON.stringify({
+        ip,
+        result,
+        expired: false,
+        ttl: Date.now() + 30 * 24 * 60 * 60 * 1000,
+      }),
+    );
+  } catch {
+    // Ignore storage failures.
+  }
+};
+
+const writeNegativeCache = (ttlMs = 24 * 60 * 60 * 1000) => {
+  if (!hasWindow) return;
+  try {
+    window.localStorage.setItem(
+      CACHE_KEY,
+      JSON.stringify({
+        ip: "failed",
+        result: { governorate: null, city: null },
+        retryAfter: Date.now() + ttlMs,
+      }),
     );
   } catch {
     // Ignore storage failures.
@@ -156,9 +189,42 @@ const writeCache = (ip: string, result: IpGovernorateResult) => {
 // hook is mounted by multiple components.
 let inFlight: Promise<IpGovernorateResult> | null = null;
 
+const fetchBackendGeo = async (): Promise<GeoPayload | null> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 3000);
+
+  try {
+    const response = await fetch("/api/v1/public/storefront/geo", {
+      signal: controller.signal,
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as {
+      success?: boolean;
+      country?: string;
+      region?: string;
+      regionCode?: string;
+      city?: string;
+      ip?: string;
+    };
+    if (!data.success) return null;
+    return {
+      ip: data.ip,
+      country_code: data.country,
+      region: data.region,
+      region_code: data.regionCode,
+      city: data.city,
+    };
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+};
+
 const fetchGeo = async (): Promise<GeoPayload | null> => {
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
+  const timeout = setTimeout(() => controller.abort(), 4000);
 
   try {
     const response = await fetch(GEO_API_URL, {
@@ -180,6 +246,9 @@ export const detectGovernorateByIp = async (): Promise<IpGovernorateResult> => {
   if (!hasWindow) return { governorate: null, city: null };
 
   const cached = readCache();
+  if (cached?.retryAfter && Date.now() < cached.retryAfter) {
+    return { governorate: null, city: null };
+  }
   // Reuse the cached result only for the same IP across sessions.
   if (cached?.result?.governorate) {
     return cached.result;
@@ -190,8 +259,18 @@ export const detectGovernorateByIp = async (): Promise<IpGovernorateResult> => {
   }
 
   inFlight = (async (): Promise<IpGovernorateResult> => {
-    const geo = await fetchGeo();
-    if (!geo) return { governorate: null, city: null };
+    // 1. Try zero-latency Cloudflare-native backend endpoint first
+    let geo = await fetchBackendGeo();
+
+    // 2. If backend geo didn't provide region, try fallback
+    if (!geo) {
+      geo = await fetchGeo();
+    }
+
+    if (!geo) {
+      writeNegativeCache();
+      return { governorate: null, city: null };
+    }
 
     // Only autofill for Egypt — the storefront ships within Egypt only.
     if ((geo.country_code || "").toUpperCase() !== "EG") {

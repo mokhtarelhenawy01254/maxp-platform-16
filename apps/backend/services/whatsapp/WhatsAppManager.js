@@ -1259,12 +1259,14 @@ async function mergeLinkedDeviceConversation(sessionId, lidJid, phoneJid, option
                 create: {
                     jid: normalizedPhoneJid,
                     phoneNumber,
+                    name: contactUpdate.name || lidContact?.name || phoneContact?.name || null,
                     pushName: mergedPushName,
                     profilePicUrl: lidContact?.profilePicUrl || null,
                     lastMessageAt: contactUpdate.lastMessageAt,
                     unreadCount,
                     totalMessages,
                     isGroup: false,
+                    customer: targetCustomerId ? { connect: { id: targetCustomerId } } : undefined,
                     whatsAppSession: {
                         connect: { id: sessionId }
                     },

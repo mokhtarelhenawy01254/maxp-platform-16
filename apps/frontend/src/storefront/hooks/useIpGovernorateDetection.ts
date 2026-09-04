@@ -19,17 +19,27 @@ export const useIpGovernorateDetection = (): void => {
     if (formData?.governorate?.trim()) return;
 
     let active = true;
-    void detectGovernorateByIp().then(({ governorate, city }) => {
-      if (!active || !governorate) return;
 
-      const current = useCheckoutStore.getState().formData;
-      if (current.governorate?.trim()) return;
+    const runDetection = () => {
+      void detectGovernorateByIp().then(({ governorate, city }) => {
+        if (!active || !governorate) return;
 
-      updateFormData({
-        governorate,
-        ...(city ? { city } : {}),
+        const current = useCheckoutStore.getState().formData;
+        if (current.governorate?.trim()) return;
+
+        updateFormData({
+          governorate,
+          ...(city ? { city } : {}),
+        });
       });
-    });
+    };
+
+    // Defer detection to idle so it never competes with initial page render
+    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
+      window.requestIdleCallback(runDetection, { timeout: 3000 });
+    } else {
+      setTimeout(runDetection, 1500);
+    }
 
     return () => {
       active = false;

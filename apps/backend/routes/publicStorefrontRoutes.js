@@ -14,6 +14,7 @@ router.use(requireCompany);
 
 // GET /api/v1/public/storefront/settings
 router.get('/settings', publicStorefrontController.getStorefrontSettings);
+router.get('/geo', publicStorefrontController.detectCustomerGeo);
 router.post('/apps/:slug/track', publicStorefrontController.trackMarketplaceAppUsage);
 
 module.exports = router;

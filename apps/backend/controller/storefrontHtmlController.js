@@ -24,12 +24,16 @@ let cachedIndexHtmlPath = null;
 let cachedIndexHtmlMtimeMs = null;
 let cachedIndexHtmlSize = null;
 
+const HTML_CACHE_TTL_MS = 60 * 1000; // 60s in-memory TTL
+const htmlPageCache = new Map();
+
 // Called by deploy-remote.sh touch or /api/v1/internal/purge-storefront-cache
 function clearStorefrontHtmlCache() {
   cachedIndexHtml = null;
   cachedIndexHtmlPath = null;
   cachedIndexHtmlMtimeMs = null;
   cachedIndexHtmlSize = null;
+  htmlPageCache.clear();
 }
 
 const buildCompatibleSelect = (prisma, modelName, desiredFields) => {
@@ -90,6 +94,18 @@ exports.handleStorefrontShell = async (req, res, next) => {
     return next();
   }
 
+  const cacheKey = `${req.companyId}:${req.path}`;
+  const cached = htmlPageCache.get(cacheKey);
+  if (cached && Date.now() - cached.timestamp < HTML_CACHE_TTL_MS) {
+    res.set("Content-Type", "text/html; charset=utf-8");
+    res.set("X-HTML-Cache", "HIT");
+    res.set(
+      "Cache-Control",
+      "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",
+    );
+    return res.status(200).send(cached.html);
+  }
+
   try {
     const prisma = await getSharedPrismaClientAsync();
     const routeContext = resolveRouteContext(req.path);
@@ -104,21 +120,25 @@ exports.handleStorefrontShell = async (req, res, next) => {
       "currency",
     ]);
 
+    const isHomepage = !routeContext.productKey && !routeContext.storePageSlug;
+
     const [template, storefrontSettings, product, storePage, indexHtml] =
       await Promise.all([
-        safeQuery(() =>
-          prisma.homepageTemplate.findFirst({
-            where: {
-              companyId: req.companyId,
-              isActive: true,
-              pageType: "HOMEPAGE",
-            },
-            select: {
-              publishedContent: true,
-              content: true,
-            },
-          }),
-        ),
+        isHomepage
+          ? safeQuery(() =>
+              prisma.homepageTemplate.findFirst({
+                where: {
+                  companyId: req.companyId,
+                  isActive: true,
+                  pageType: "HOMEPAGE",
+                },
+                select: {
+                  publishedContent: true,
+                  content: true,
+                },
+              }),
+            )
+          : Promise.resolve(null),
         safeQuery(() =>
           prisma.storefrontSettings.findUnique({
             where: { companyId: req.companyId },
@@ -171,7 +191,18 @@ exports.handleStorefrontShell = async (req, res, next) => {
     });
     const html = injectStorefrontSeoTags(indexHtml, metadata);
 
+    // Evict oldest if cache exceeds 1000 items
+    if (htmlPageCache.size >= 1000) {
+      const oldestKey = htmlPageCache.keys().next().value;
+      if (oldestKey) htmlPageCache.delete(oldestKey);
+    }
+    htmlPageCache.set(cacheKey, {
+      html,
+      timestamp: Date.now(),
+    });
+
     res.set("Content-Type", "text/html; charset=utf-8");
+    res.set("X-HTML-Cache", "MISS");
     res.set(
       "Cache-Control",
       "public, max-age=60, s-maxage=300, stale-while-revalidate=86400",

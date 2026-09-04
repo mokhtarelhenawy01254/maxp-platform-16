@@ -622,3 +622,23 @@ exports.trackMarketplaceAppUsage = async (req, res) => {
     });
   }
 };
+
+exports.detectCustomerGeo = (req, res) => {
+  const country = (req.headers['cf-ipcountry'] || '').toUpperCase();
+  const region = req.headers['cf-region'] || null;
+  const regionCode = req.headers['cf-region-code'] || null;
+  const city = req.headers['cf-ipcity'] || null;
+  const ip =
+    req.headers['cf-connecting-ip'] ||
+    req.headers['x-forwarded-for']?.split(',')[0]?.trim() ||
+    req.ip;
+
+  return res.json({
+    success: true,
+    country,
+    region,
+    regionCode,
+    city,
+    ip,
+  });
+};
