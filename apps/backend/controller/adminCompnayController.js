@@ -1279,6 +1279,7 @@ const createNewCompany = async (req, res) => {
             phone,
             website,
             currency = 'EGP',
+            businessSpecialtyId,
             adminFirstName,
             adminLastName,
             adminEmail,
@@ -1317,6 +1318,16 @@ const createNewCompany = async (req, res) => {
             });
         }
 
+        let selectedSpecialty = null;
+        if (businessSpecialtyId) {
+            try {
+                const businessSpecialtyService = require('../services/businessSpecialtyService');
+                selectedSpecialty = await businessSpecialtyService.resolveSpecialtyForRegistration(businessSpecialtyId);
+            } catch (specErr) {
+                console.warn('⚠️ [SUPER_ADMIN_CREATE_COMPANY] Could not resolve specialty:', specErr.message);
+            }
+        }
+
         const uniqueSlug = await generateUniqueCompanySlug(name, {
             prisma: getSharedPrismaClient(),
             email
@@ -1353,6 +1364,9 @@ const createNewCompany = async (req, res) => {
                 sidebarLayout: defaultSidebarLayout,
                 registration_ip: registrationIp,
                 registration_user_agent: registrationUserAgent,
+                businessSpecialty: selectedSpecialty?.id
+                    ? { connect: { id: selectedSpecialty.id } }
+                    : undefined,
             }
         });
 
@@ -1373,6 +1387,38 @@ const createNewCompany = async (req, res) => {
                 emailVerifiedAt: new Date()
             }
         });
+
+        // Link UserCompany membership
+        try {
+            await getSharedPrismaClient().userCompany.create({
+                data: {
+                    userId: adminUser.id,
+                    companyId: company.id,
+                    role: 'COMPANY_ADMIN',
+                    isActive: true,
+                    isDefault: true,
+                }
+            });
+        } catch (ucErr) {
+            console.warn('⚠️ [SUPER_ADMIN_CREATE_COMPANY] UserCompany link error:', ucErr.message);
+        }
+
+        // Auto-install specialty apps
+        if (selectedSpecialty && Array.isArray(selectedSpecialty.appSlugs) && selectedSpecialty.appSlugs.length > 0) {
+            try {
+                const { initializeDefaultApps, initializeSaasTheme } = require('../utils/initializeCompanyDefaults');
+                await initializeDefaultApps(company.id, {
+                    specialtyAppSlugs: selectedSpecialty.appSlugs,
+                    specialtySlug: selectedSpecialty.slug,
+                    source: 'super-admin-specialty'
+                });
+                await initializeSaasTheme(company.id, {
+                    themeId: selectedSpecialty.themeId || null
+                });
+            } catch (initAppsErr) {
+                console.error('❌ [SUPER_ADMIN_CREATE_COMPANY] Failed to install specialty apps:', initAppsErr);
+            }
+        }
 
         res.status(201).json({
             success: true,

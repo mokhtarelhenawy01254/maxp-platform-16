@@ -28,6 +28,7 @@ const LEGACY_APP_SLUG_ALIASES = {
   // CRM & Marketing aliases:
   'crm-lite': ['crm-basic', 'crm'],
   'crm-basic': ['crm-lite', 'crm'],
+  'marketing-agency-pro': ['marketing-agency', 'marketing-sales'],
   'facebook-pages-connect': ['facebook-ads-pro', 'crm-basic', 'crm-lite'],
   // Analytics aliases:
   'orders-analytics': ['analytics-basic', 'analytics-advanced', 'analytics'],

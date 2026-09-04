@@ -39,7 +39,15 @@ import {
   AlertTriangle,
   AlertCircle,
   RefreshCw,
-  HelpCircle
+  HelpCircle,
+  Map as MapIcon,
+  ListTree,
+  Eye,
+  Maximize2,
+  SlidersHorizontal,
+  ChevronDown,
+  ChevronUp,
+  Activity
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -63,6 +71,89 @@ export interface MapNode {
   requiredAppSlug?: string;
   liveMetric?: { label: string; value: string; color: string };
 }
+
+export interface WorkflowStage {
+  id: string;
+  title: string;
+  subtitle: string;
+  badge: string;
+  color: string;
+  accentBorder: string;
+  bgGradient: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+// مسارات وحاويات المراحل الخمس الشاملة (Workflow Stage Swimlanes)
+export const WORKFLOW_STAGES: WorkflowStage[] = [
+  {
+    id: "stage-plan",
+    title: "1. الجدوى والتخطيط وتأهيل الفريق",
+    subtitle: "حساب نقطة التعادل، الـ CPA الأقصى، ودليل الـ SOP التدريبي",
+    badge: "المرحلة الأولى",
+    color: "text-blue-400",
+    accentBorder: "border-blue-500/25",
+    bgGradient: "from-blue-950/20 via-slate-900/40 to-slate-950/60",
+    x: 140,
+    y: -100,
+    width: 400,
+    height: 420
+  },
+  {
+    id: "stage-creative-store",
+    title: "2. صناعة المحتوى والمتجر السريع",
+    subtitle: "استوديو الصور بالـ AI وصفحة هبوط المنتج وعروض الخصم",
+    badge: "المرحلة الثانية",
+    color: "text-violet-400",
+    accentBorder: "border-violet-500/25",
+    bgGradient: "from-violet-950/20 via-slate-900/40 to-slate-950/60",
+    x: 580,
+    y: 40,
+    width: 820,
+    height: 280
+  },
+  {
+    id: "stage-ads-chat",
+    title: "3. إطلاق الإعلانات والمحادثات",
+    subtitle: "إعلانات ميتا وتيك توك، صندوق الرسائل الموحد، وردود واتساب",
+    badge: "المرحلة الثالثة",
+    color: "text-indigo-400",
+    accentBorder: "border-indigo-500/25",
+    bgGradient: "from-indigo-950/20 via-slate-900/40 to-slate-950/60",
+    x: 1420,
+    y: 40,
+    width: 380,
+    height: 520
+  },
+  {
+    id: "stage-ops-warehouse",
+    title: "4. التأكيد والتجهيز واللوجستيات",
+    subtitle: "تأكيد الطلبات، طباعة البوالص في المخزن، ومتابعة أسباب المرتجعات",
+    badge: "المرحلة الرابعة",
+    color: "text-amber-400",
+    accentBorder: "border-amber-500/25",
+    bgGradient: "from-amber-950/20 via-slate-900/40 to-slate-950/60",
+    x: 140,
+    y: 330,
+    width: 1240,
+    height: 230
+  },
+  {
+    id: "stage-finance-growth",
+    title: "5. التحصيل المالي والأرباح والنمو",
+    subtitle: "تحصيل كاش COD، قائمة الدخل P&L، وحساب الـ CLV للعميل",
+    badge: "المرحلة الخامسة",
+    color: "text-emerald-400",
+    accentBorder: "border-emerald-500/25",
+    bgGradient: "from-emerald-950/20 via-slate-900/40 to-slate-950/60",
+    x: 140,
+    y: 570,
+    width: 1240,
+    height: 230
+  }
+];
 
 // القالب الشامل: دورة التجارة الإلكترونية الكاملة (ديناميكي لاسم الشركة وتوافق التطبيقات)
 export const createMasterBlueprint = (companyName?: string): MapNode[] => [
@@ -261,10 +352,11 @@ export default function MindMapPage() {
 
   // فحص قائمة التطبيقات المفعلة للشركة
   const companyActiveApps = useMemo(() => {
-    const apps = Array.isArray(user?.company?.activeApps)
-      ? user.company.activeApps
-      : Array.isArray(user?.activeApps)
-        ? user.activeApps
+    const anyUser = user as any;
+    const apps = Array.isArray(anyUser?.company?.activeApps)
+      ? anyUser.company.activeApps
+      : Array.isArray(anyUser?.activeApps)
+        ? anyUser.activeApps
         : [];
     return apps.map((a: any) => String(a?.slug || a).toLowerCase().trim());
   }, [user]);
@@ -325,6 +417,18 @@ export default function MindMapPage() {
   const [isSidePanelOpen, setIsSidePanelOpen] = useState<boolean>(false);
   const [isDropHintVisible, setIsDropHintVisible] = useState<boolean>(false);
   const [draggedToolType, setDraggedToolType] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<"canvas" | "timeline">(() => {
+    return typeof window !== "undefined" && window.innerWidth < 640 ? "timeline" : "canvas";
+  });
+  const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
+  const [isMinimapOpen, setIsMinimapOpen] = useState<boolean>(true);
+  const [expandedStages, setExpandedStages] = useState<Record<string, boolean>>({
+    "stage-plan": true,
+    "stage-creative-store": true,
+    "stage-ads-chat": true,
+    "stage-ops-warehouse": true,
+    "stage-finance-growth": true
+  });
 
   const viewportRef = useRef<HTMLDivElement>(null);
   const draggingNodeRef = useRef<MapNode | null>(null);
@@ -690,402 +794,696 @@ export default function MindMapPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-64px)] w-full flex flex-col bg-slate-950 text-slate-100 select-none overflow-hidden" dir="rtl">
-      {/* Sub-header inside the app */}
-      <div className="h-14 border-b border-slate-800 bg-slate-900/90 px-4 flex items-center justify-between z-20 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow">
-            <GitBranch className="w-4 h-4 text-white" />
+    <div className="h-[calc(100vh-64px)] w-full flex flex-col bg-slate-950 text-slate-100 select-none overflow-hidden relative" dir="rtl">
+      {/* 2026 Floating Command Island */}
+      <header className="absolute top-3 left-1/2 -translate-x-1/2 z-40 w-[96%] max-w-6xl pointer-events-auto">
+        <div className="backdrop-blur-2xl bg-slate-900/85 border border-slate-700/60 shadow-[0_12px_40px_rgba(0,0,0,0.6)] rounded-2xl px-3.5 py-2 flex flex-wrap items-center justify-between gap-3">
+          {/* Left: Brand & Status */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-violet-600 via-indigo-600 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/20 shrink-0">
+              <GitBranch className="w-4 h-4 text-white" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-black text-sm text-white tracking-wide">الخرائط الذهنية ومسارات العمل</h1>
+                {isMindmapInstalled ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-emerald-950/80 border border-emerald-500/40 text-emerald-400 px-2 py-0.5 rounded-full shadow-sm">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                    <span>مفعّل لـ {companyName || "الشركة"}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-bold bg-amber-950/80 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-full shadow-sm">
+                    <Lock className="w-3 h-3 text-amber-400" />
+                    <span>معاينة (غير مفعّل)</span>
+                  </span>
+                )}
+              </div>
+              <p className="text-[10px] text-slate-400 hidden sm:block">دورة التجارة المتكاملة (12 مرحلة تنفيذية • 17 أداة حية)</p>
+            </div>
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="font-bold text-sm text-white">الخرائط الذهنية ومسارات العمل</h2>
-              {isMindmapInstalled ? (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 px-2 py-0.5 rounded-full">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-                  <span>مفعّل لـ {companyName || "الشركة"}</span>
-                </span>
+
+          {/* Center: Mode Switcher (Pill Style) */}
+          <div className="flex items-center bg-slate-950/80 border border-slate-800 p-1 rounded-xl backdrop-blur">
+            <button
+              onClick={() => switchMode("plan")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
+                mode === "plan" ? "bg-violet-600 text-white shadow-lg shadow-violet-600/30 scale-[1.02]" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <GitBranch className="w-3.5 h-3.5" />
+              <span>تخطيط</span>
+            </button>
+            <button
+              onClick={() => switchMode("train")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
+                mode === "train" ? "bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30 scale-[1.02]" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <GraduationCap className="w-3.5 h-3.5" />
+              <span>تدريب وشرح</span>
+            </button>
+            <button
+              onClick={() => switchMode("exec")}
+              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all duration-200 ${
+                mode === "exec" ? "bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/30 scale-[1.02]" : "text-slate-400 hover:text-white"
+              }`}
+            >
+              <PlayCircle className="w-3.5 h-3.5" />
+              <span>أتمتة وتنفيذ</span>
+            </button>
+          </div>
+
+          {/* Right: Quick Action Controls */}
+          <div className="flex items-center gap-2">
+            {/* View Mode Toggle: Canvas vs Timeline */}
+            <button
+              onClick={() => setViewMode(viewMode === "canvas" ? "timeline" : "canvas")}
+              className="flex items-center gap-1.5 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-700 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition"
+              title={viewMode === "canvas" ? "التبديل إلى عرض المسار الزمني (مناسب للموبايل)" : "التبديل إلى الكانفاس التفاعلي"}
+            >
+              {viewMode === "canvas" ? (
+                <>
+                  <ListTree className="w-3.5 h-3.5 text-cyan-400" />
+                  <span className="hidden sm:inline">مسار زمني</span>
+                </>
               ) : (
-                <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-950/70 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-full">
-                  <Lock className="w-3 h-3 text-amber-400" />
-                  <span>معاينة (غير مفعّل)</span>
-                </span>
+                <>
+                  <MapIcon className="w-3.5 h-3.5 text-violet-400" />
+                  <span className="hidden sm:inline">كانفاس</span>
+                </>
               )}
-            </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block">دورة التجارة الإلكترونية المتكاملة (17 أداة حية)</p>
+            </button>
+
+            {/* Blueprint Template Button */}
+            <button
+              onClick={handleReloadMasterBlueprint}
+              title="تحميل دورة التجارة الكاملة"
+              className="hidden md:flex items-center gap-1.5 bg-slate-800/90 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+              <span>قالب الدورة</span>
+            </button>
+
+            {/* Run Button with Glowing Pulse */}
+            <button
+              onClick={runExecutionSimulation}
+              disabled={isExecuting}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black px-3.5 py-1.5 rounded-xl text-xs transition shadow-lg shadow-emerald-500/20 active:scale-95"
+            >
+              <Play className={`w-3.5 h-3.5 fill-slate-950 ${isExecuting ? "animate-spin" : ""}`} />
+              <span>{isExecuting ? "جاري المحاكاة..." : "تشغيل المسار"}</span>
+            </button>
           </div>
         </div>
 
-        {/* Mode switcher tabs */}
-        <div className="flex items-center bg-slate-950 border border-slate-800 p-1 rounded-xl">
-          <button
-            onClick={() => switchMode("plan")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
-              mode === "plan" ? "bg-violet-600 text-white shadow" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <GitBranch className="w-3.5 h-3.5" />
-            <span>تخطيط</span>
-          </button>
-          <button
-            onClick={() => switchMode("train")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
-              mode === "train" ? "bg-amber-500 text-slate-950 shadow" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <GraduationCap className="w-3.5 h-3.5" />
-            <span>تدريب وشرح</span>
-          </button>
-          <button
-            onClick={() => switchMode("exec")}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
-              mode === "exec" ? "bg-emerald-600 text-white shadow" : "text-slate-400 hover:text-white"
-            }`}
-          >
-            <PlayCircle className="w-3.5 h-3.5" />
-            <span>أتمتة وتنفيذ</span>
-          </button>
-        </div>
-
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
-          {/* Blueprint Template Button */}
-          <button
-            onClick={handleReloadMasterBlueprint}
-            title="تحميل دورة التجارة الكاملة"
-            className="hidden md:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-            <span>قالب دورة التجارة الشاملة</span>
-          </button>
-
-          <button
-            onClick={runExecutionSimulation}
-            disabled={isExecuting}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white px-3.5 py-1.5 rounded-xl text-xs font-bold transition shadow"
-          >
-            <Play className={`w-3.5 h-3.5 fill-white ${isExecuting ? "animate-spin" : ""}`} />
-            <span>{isExecuting ? "جاري التشغيل..." : "تشغيل المسار"}</span>
-          </button>
-
-          <button
-            onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
-            className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
-          >
-            <Boxes className="w-4 h-4 text-violet-400" />
-            <span className="hidden sm:inline">أدوات السيناريو (17 أداة)</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Banner for Unactivated Company */}
-      {!isMindmapInstalled && (
-        <div className="bg-gradient-to-r from-amber-950/90 via-amber-900/70 to-slate-900 border-b border-amber-500/40 px-4 py-2.5 flex items-center justify-between gap-4 z-20 shrink-0 text-xs">
-          <div className="flex items-center gap-2.5 text-amber-200">
-            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
-            <span>
-              <strong>وضع المعاينة:</strong> تطبيق الخرائط الذهنية ومسارات العمل غير مفعّل حالياً لشركة{" "}
-              <strong>{companyName || "حسابك"}</strong>. يمكنك تصفح القالب، واضغط على الزر لتفعيله مجاناً لحفظ التعديلات والأتمتة.
-            </span>
-          </div>
-          <button
-            onClick={handleInstallMindmap}
-            disabled={isInstalling}
-            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition shadow shrink-0"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>{isInstalling ? "جاري التفعيل..." : "تفعيل التطبيق مجاناً بنقرة واحدة"}</span>
-          </button>
-        </div>
-      )}
-
-      {/* Main Canvas Area */}
-      <div
-        ref={viewportRef}
-        dir="ltr"
-        className="relative flex-1 w-full h-full overflow-hidden bg-slate-950"
-        style={{
-          backgroundImage: "radial-gradient(#334155 1.5px, transparent 1.5px)",
-          backgroundSize: "28px 28px"
-        }}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onWheel={handleWheel}
-        onDragOver={handleCanvasDragOver}
-        onDragLeave={handleCanvasDragLeave}
-        onDrop={handleCanvasDrop}
-      >
-        {/* Drop Hint Overlay */}
-        {isDropHintVisible && (
-          <div className="pointer-events-none absolute inset-4 border-2 border-dashed border-violet-500/60 rounded-3xl bg-violet-950/20 z-30 flex items-center justify-center">
-            <div className="bg-slate-900/90 border border-violet-500 px-5 py-2.5 rounded-2xl text-xs font-bold text-violet-300 flex items-center gap-2 shadow-2xl">
-              <ArrowDownCircle className="w-5 h-5 text-violet-400 animate-bounce" />
-              <span>أفلت أداة السيناريو هنا لتثبيتها وربطها بالمسار فوراً!</span>
-            </div>
-          </div>
-        )}
-
-        {/* Presentation Controller */}
-        {mode === "train" && (
-          <div className="absolute bottom-6 right-1/2 translate-x-1/2 z-30 bg-slate-900/95 border border-amber-500/50 p-2 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur">
-            <div className="flex items-center gap-2 px-3 text-amber-400 font-bold text-xs border-l border-slate-800">
-              <GraduationCap className="w-4 h-4" />
+        {/* Floating Unactivated Warning Pill */}
+        {!isMindmapInstalled && (
+          <div className="mt-2 backdrop-blur-2xl bg-amber-950/90 border border-amber-500/40 rounded-2xl px-4 py-2 flex items-center justify-between gap-4 text-xs shadow-xl animate-fade-in">
+            <div className="flex items-center gap-2 text-amber-200">
+              <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
               <span>
-                خطوة الشرح: {trainStepIndex} من {Math.max(...nodes.map((n) => n.stepOrder || 1))}
+                <strong>وضع المعاينة:</strong> تطبيق الخرائط غير مفعّل لشركة <strong>{companyName || "حسابك"}</strong>. فعّل مجاناً لتشغيل الأتمتة الكاملة.
               </span>
             </div>
             <button
-              onClick={prevTrainStep}
-              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
+              onClick={handleInstallMindmap}
+              disabled={isInstalling}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-amber-400 to-amber-500 text-slate-950 font-black px-3 py-1 rounded-xl text-xs transition shadow shrink-0 active:scale-95"
             >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-            <button
-              onClick={nextTrainStep}
-              className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
-            >
-              <span>الخطوة التالية</span>
-              <ChevronLeft className="w-4 h-4" />
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>{isInstalling ? "جاري التفعيل..." : "تفعيل مجاناً بنقرة واحدة"}</span>
             </button>
           </div>
         )}
+      </header>
 
-        {/* Canvas Zoom Tools */}
-        <div className="absolute bottom-6 left-6 z-20 flex flex-col gap-1.5 bg-slate-900/90 backdrop-blur border border-slate-800 p-1.5 rounded-2xl shadow-2xl">
-          <button
-            onClick={handleZoomIn}
-            title="تكبير"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:bg-slate-800 transition"
-          >
-            <ZoomIn className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleZoomOut}
-            title="تصغير"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:bg-slate-800 transition"
-          >
-            <ZoomOut className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleResetZoom}
-            title="إعادة ضبط الرؤية"
-            className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:bg-slate-800 transition"
-          >
-            <Scan className="w-4 h-4" />
-          </button>
-        </div>
+      {/* Main Mode Rendering: Timeline View vs Canvas View */}
+      {viewMode === "timeline" ? (
+        <div className="flex-1 w-full overflow-y-auto pt-36 sm:pt-24 pb-20 px-3 sm:px-4 max-w-4xl mx-auto space-y-4" dir="rtl">
+          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between backdrop-blur">
+            <div>
+              <h3 className="text-sm font-bold text-white">المسار الزمني التنفيذي لدورة التجارة</h3>
+              <p className="text-xs text-slate-400 mt-0.5">عرض متوافق مع الموبايل بنسبة 100% يوضح كافة المراحل والعمليات</p>
+            </div>
+            <button
+              onClick={() => setViewMode("canvas")}
+              className="flex items-center gap-1 text-xs text-violet-400 bg-violet-950/50 border border-violet-500/40 px-3 py-1.5 rounded-xl font-bold transition hover:bg-violet-900/50"
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+              <span>عرض الكانفاس</span>
+            </button>
+          </div>
 
-        {/* Infinite Transform Container */}
-        <div
-          className="absolute top-0 left-0 w-[5000px] h-[5000px] origin-top-left transition-transform duration-75 ease-out"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
-          }}
-        >
-          {/* SVG Edges */}
-          <svg className="absolute top-0 left-0 w-[5000px] h-[5000px] pointer-events-none z-0">
-            {nodes.map((node) => {
-              if (!node.parentId) return null;
-              const parent = nodes.find((n) => n.id === node.parentId);
-              if (!parent) return null;
+          {WORKFLOW_STAGES.map((stage) => {
+            const stageNodes = nodes.filter((n) => {
+              if (stage.id === "stage-plan") return n.stepOrder === 1 || n.stepOrder === 12 || n.category === "calc" || n.category === "training";
+              if (stage.id === "stage-creative-store") return n.stepOrder === 2 || n.stepOrder === 3 || n.category === "creative" || n.category === "store";
+              if (stage.id === "stage-ads-chat") return n.stepOrder === 4 || n.stepOrder === 5 || n.category === "ads" || n.category === "chat";
+              if (stage.id === "stage-ops-warehouse") return n.stepOrder === 6 || n.stepOrder === 7 || n.stepOrder === 8 || n.category === "ops";
+              if (stage.id === "stage-finance-growth") return n.stepOrder === 9 || n.stepOrder === 10 || n.stepOrder === 11 || n.category === "finance" || n.category === "growth";
+              return false;
+            });
 
-              const pWidth = 280;
-              const pHeight = 100;
-              const nWidth = 280;
-              const nHeight = 100;
+            const isExpanded = expandedStages[stage.id] ?? true;
 
-              const startX = parent.x + (node.x > parent.x ? pWidth : 0);
-              const startY = parent.y + pHeight / 2;
-              const endX = node.x + (node.x > parent.x ? 0 : nWidth);
-              const endY = node.y + nHeight / 2;
-
-              const deltaX = Math.abs(endX - startX) * 0.5;
-              const control1X = node.x > parent.x ? startX + deltaX : startX - deltaX;
-              const control2X = node.x > parent.x ? endX - deltaX : endX + deltaX;
-
-              const isEdgeActive = selectedNodeId === node.id || selectedNodeId === parent.id;
-
-              return (
-                <path
-                  key={`edge-${parent.id}-${node.id}`}
-                  d={`M ${startX} ${startY} C ${control1X} ${startY}, ${control2X} ${endY}, ${endX} ${endY}`}
-                  className={`fill-none transition-all duration-300 ${
-                    isExecuting
-                      ? "stroke-emerald-400 stroke-[4] [stroke-dasharray:8_4] animate-pulse"
-                      : isEdgeActive
-                      ? "stroke-violet-500 stroke-[3.5]"
-                      : "stroke-slate-700 stroke-[2.5]"
-                  }`}
-                />
-              );
-            })}
-          </svg>
-
-          {/* Interactive HTML Nodes */}
-          <div className="absolute top-0 left-0 w-[5000px] h-[5000px] z-10 pointer-events-auto">
-            {nodes.map((node) => {
-              const isSelected = selectedNodeId === node.id;
-              const isSpotlight = mode === "train" && trainStepIndex === node.stepOrder;
-              const isDimmed = mode === "train" && trainStepIndex !== node.stepOrder;
-
-              return (
+            return (
+              <div key={stage.id} className="rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur overflow-hidden shadow-xl">
                 <div
-                  key={node.id}
-                  dir="rtl"
-                  className={`map-node absolute rounded-2xl border p-3.5 flex flex-col justify-between shadow-2xl backdrop-blur w-72 bg-slate-900/95 cursor-grab active:cursor-grabbing transition-all duration-150 ${
-                    node.color
-                  } ${
-                    isSelected
-                      ? "ring-2 ring-violet-500 shadow-violet-500/20 scale-[1.02]"
-                      : ""
-                  } ${
-                    isSpotlight
-                      ? "ring-4 ring-amber-500 shadow-2xl scale-[1.06] z-50"
-                      : ""
-                  } ${isDimmed ? "opacity-25 grayscale-[60%] blur-[0.5px]" : ""}`}
-                  style={{
-                    left: `${node.x}px`,
-                    top: `${node.y}px`
-                  }}
-                  onMouseDown={(e) => handleNodeMouseDown(e, node)}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedNodeId(node.id);
-                  }}
+                  onClick={() => setExpandedStages((prev) => ({ ...prev, [stage.id]: !prev[stage.id] }))}
+                  className="p-3.5 sm:p-4 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition border-b border-slate-800/60"
                 >
-                  <div className="flex items-center justify-between gap-1 mb-1.5">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-800/80 border border-slate-700/80 flex items-center gap-1">
-                      <span>{node.badge}</span>
+                  <div className="flex items-center gap-3">
+                    <span className={`text-xs font-black px-2.5 py-1 rounded-xl bg-slate-950 border ${stage.accentBorder} ${stage.color}`}>
+                      {stage.badge}
                     </span>
-                    {mode === "train" && (
-                      <span className="w-5 h-5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black flex items-center justify-center">
-                        {node.stepOrder}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-xs font-bold text-white leading-snug">{node.title}</div>
-                  <div className="text-[11px] text-slate-400 mt-1 leading-normal">{node.subtitle}</div>
-
-                  {/* Live Metric Badge if present */}
-                  {node.liveMetric && (
-                    <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
-                      <span className="text-slate-400">{node.liveMetric.label}:</span>
-                      <span className={`font-black ${node.liveMetric.color}`}>{node.liveMetric.value}</span>
+                    <div>
+                      <h4 className="text-sm font-bold text-white">{stage.title}</h4>
+                      <p className="text-xs text-slate-400 mt-0.5">{stage.subtitle}</p>
                     </div>
-                  )}
-
-                  {/* Live Tool Direct Link / Video Button */}
-                  <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px]">
-                    {node.liveRoute ? (
-                      isToolInstalled(node.requiredAppSlug) ? (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleOpenLiveTool(node.liveRoute);
-                          }}
-                          className="flex items-center gap-1 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg transition font-semibold"
-                          title="الأداة مفعّلة في باقة شركتك"
-                        >
-                          <span>فتح الأداة</span>
-                          <ExternalLink className="w-3 h-3 text-emerald-400" />
-                        </button>
-                      ) : (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate("/marketplace");
-                            toast.info(`الأداة بحاجة لتفعيل من المتجر لشركة ${companyName || ""}`);
-                          }}
-                          className="flex items-center gap-1 text-amber-300 hover:text-amber-100 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 px-2 py-1 rounded-lg transition font-semibold"
-                          title="غير مفعّلة لشركتك — اضغط للانتقال للمتجر"
-                        >
-                          <Lock className="w-3 h-3 text-amber-400" />
-                          <span>تفعيل من المتجر</span>
-                        </button>
-                      )
-                    ) : (
-                      <span className="text-slate-500">مسار عمليات</span>
-                    )}
-
-                    {/* Status Badge */}
-                    {node.requiredAppSlug && (
-                      <span
-                        className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
-                          isToolInstalled(node.requiredAppSlug)
-                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
-                            : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
-                        }`}
-                      >
-                        {isToolInstalled(node.requiredAppSlug) ? "مفعّل ✅" : "غير مفعّل 🔒"}
-                      </span>
-                    )}
-
-                    {node.hasVideo && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toast.info("تشغيل مشغل الفيديو التعليمي للمتدرب");
-                        }}
-                        className="flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 px-2 py-1 rounded-lg font-bold"
-                      >
-                        <Video className="w-3 h-3" />
-                        <span>فيديو الشرح</span>
-                      </button>
-                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] text-slate-500 font-bold">{stageNodes.length} أدوات</span>
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {isExpanded && (
+                  <div className="p-3 sm:p-4 space-y-3">
+                    {stageNodes.map((node) => {
+                      const installed = isToolInstalled(node.requiredAppSlug);
+                      return (
+                        <div
+                          key={node.id}
+                          className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800 hover:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition"
+                        >
+                          <div className="flex items-start gap-3">
+                            <span className="w-6 h-6 rounded-full bg-slate-800 text-slate-300 font-black text-xs flex items-center justify-center shrink-0 mt-0.5">
+                              {node.stepOrder}
+                            </span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-bold text-white">{node.title}</span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${installed ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/15 text-amber-400 border border-amber-500/30"}`}>
+                                  {installed ? "مفعّل ✅" : "غير مفعّل 🔒"}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 mt-1">{node.subtitle}</p>
+                              {node.liveMetric && (
+                                <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                                  <span className="text-slate-400">{node.liveMetric.label}:</span>
+                                  <span className={`font-bold ${node.liveMetric.color}`}>{node.liveMetric.value}</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                            {node.liveRoute && (
+                              installed ? (
+                                <button
+                                  onClick={() => handleOpenLiveTool(node.liveRoute)}
+                                  className="flex items-center gap-1 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold px-3 py-1.5 rounded-lg border border-slate-700 transition"
+                                >
+                                  <span>فتح الأداة</span>
+                                  <ExternalLink className="w-3 h-3 text-emerald-400" />
+                                </button>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    navigate("/marketplace");
+                                    toast.info(`الأداة بحاجة لتفعيل من المتجر لشركة ${companyName || ""}`);
+                                  }}
+                                  className="flex items-center gap-1 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 text-xs font-bold px-3 py-1.5 rounded-lg transition"
+                                >
+                                  <Lock className="w-3 h-3 text-amber-400" />
+                                  <span>تفعيل</span>
+                                </button>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
+      ) : (
+        /* Main Canvas Area */
+        <div
+          ref={viewportRef}
+          dir="ltr"
+          className="relative flex-1 w-full h-full overflow-hidden bg-slate-950"
+          style={{
+            backgroundImage: "radial-gradient(circle at 50% 50%, rgba(30, 27, 75, 0.22) 0%, rgba(2, 6, 23, 1) 100%), radial-gradient(#334155 1.5px, transparent 1.5px)",
+            backgroundSize: "100% 100%, 32px 32px"
+          }}
+          onMouseDown={handleMouseDown}
+          onMouseMove={handleMouseMove}
+          onMouseUp={handleMouseUp}
+          onWheel={handleWheel}
+          onDragOver={handleCanvasDragOver}
+          onDragLeave={handleCanvasDragLeave}
+          onDrop={handleCanvasDrop}
+        >
+          {/* Drop Hint Overlay */}
+          {isDropHintVisible && (
+            <div className="pointer-events-none absolute inset-4 border-2 border-dashed border-violet-500/60 rounded-3xl bg-violet-950/20 z-30 flex items-center justify-center">
+              <div className="bg-slate-900/90 border border-violet-500 px-5 py-2.5 rounded-2xl text-xs font-bold text-violet-300 flex items-center gap-2 shadow-2xl">
+                <ArrowDownCircle className="w-5 h-5 text-violet-400 animate-bounce" />
+                <span>أفلت أداة السيناريو هنا لتثبيتها وربطها بالمسار فوراً!</span>
+              </div>
+            </div>
+          )}
 
-        {/* Selected Node Action Context Bar - floating directly above selected node */}
-        {(() => {
-          const selectedNode = nodes.find((n) => n.id === selectedNodeId);
-          if (!selectedNode) return null;
-          const nodeScreenX = selectedNode.x * zoom + pan.x + (140 * zoom);
-          const nodeScreenY = selectedNode.y * zoom + pan.y - 48;
-
-          return (
-            <div
-              style={{
-                position: "absolute",
-                left: `${nodeScreenX}px`,
-                top: `${Math.max(12, nodeScreenY)}px`,
-                transform: "translateX(-50%)"
-              }}
-              className="z-30 bg-slate-900/95 border border-violet-500/80 rounded-2xl shadow-2xl p-1.5 flex items-center gap-1.5 backdrop-blur animate-fade-in pointer-events-auto"
-            >
+          {/* Presentation Controller */}
+          {mode === "train" && (
+            <div className="absolute top-20 right-1/2 translate-x-1/2 z-30 bg-slate-900/95 border border-amber-500/50 p-2 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur animate-fade-in" dir="rtl">
+              <div className="flex items-center gap-2 px-3 text-amber-400 font-bold text-xs border-l border-slate-800">
+                <GraduationCap className="w-4 h-4" />
+                <span>
+                  خطوة الشرح: {trainStepIndex} من {Math.max(...nodes.map((n) => n.stepOrder || 1))}
+                </span>
+              </div>
               <button
-                onClick={aiExpandNode}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-violet-600/20 text-violet-300 hover:bg-violet-600 hover:text-white transition"
+                onClick={prevTrainStep}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 transition"
               >
-                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                <span>توسيع بالـ AI</span>
+                <ChevronRight className="w-4 h-4" />
               </button>
               <button
-                onClick={() => {
-                  if (selectedNode.liveRoute) handleOpenLiveTool(selectedNode.liveRoute);
-                  else toast.success("تم تشغيل الأداة واختبار تنفيذها على السيرفر بنجاح");
-                }}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-emerald-500/20 text-emerald-300 hover:bg-emerald-600 hover:text-white transition"
+                onClick={nextTrainStep}
+                className="flex items-center gap-1 px-3.5 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition"
               >
-                <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-                <span>تشغيل الأداة</span>
-              </button>
-              <div className="h-4 w-px bg-slate-800 mx-1"></div>
-              <button
-                onClick={deleteSelectedNode}
-                className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/20 transition"
-                title="حذف"
-              >
-                <Trash2 className="w-4 h-4" />
+                <span>الخطوة التالية</span>
+                <ChevronLeft className="w-4 h-4" />
               </button>
             </div>
-          );
-        })()}
-      </div>
+          )}
+
+          {/* Infinite Transform Container */}
+          <div
+            className="absolute top-0 left-0 w-[5000px] h-[5000px] origin-top-left transition-transform duration-75 ease-out"
+            style={{
+              transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`
+            }}
+          >
+            {/* 2026 Stage Swimlanes Background Containers */}
+            <div className="absolute top-0 left-0 w-[5000px] h-[5000px] pointer-events-none z-0">
+              {WORKFLOW_STAGES.map((st) => (
+                <div
+                  key={st.id}
+                  style={{
+                    position: "absolute",
+                    left: `${st.x}px`,
+                    top: `${st.y}px`,
+                    width: `${st.width}px`,
+                    height: `${st.height}px`
+                  }}
+                  className={`rounded-3xl border-2 border-dashed ${st.accentBorder} bg-gradient-to-b ${st.bgGradient} backdrop-blur-sm p-4 flex flex-col justify-between transition-all duration-300 select-none`}
+                  dir="rtl"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-black px-2.5 py-0.5 rounded-full bg-slate-950/90 border ${st.accentBorder} ${st.color}`}>
+                        {st.badge}
+                      </span>
+                      <h3 className="text-xs font-bold text-slate-200">{st.title}</h3>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium hidden sm:inline">{st.subtitle}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* SVG Edges with Animated Flow Particles */}
+            <svg className="absolute top-0 left-0 w-[5000px] h-[5000px] pointer-events-none z-10">
+              {nodes.map((node) => {
+                if (!node.parentId) return null;
+                const parent = nodes.find((n) => n.id === node.parentId);
+                if (!parent) return null;
+
+                const pWidth = 304;
+                const pHeight = 110;
+                const nWidth = 304;
+                const nHeight = 110;
+
+                const startX = parent.x + (node.x > parent.x ? pWidth : 0);
+                const startY = parent.y + pHeight / 2;
+                const endX = node.x + (node.x > parent.x ? 0 : nWidth);
+                const endY = node.y + nHeight / 2;
+
+                const deltaX = Math.abs(endX - startX) * 0.5;
+                const control1X = node.x > parent.x ? startX + deltaX : startX - deltaX;
+                const control2X = node.x > parent.x ? endX - deltaX : endX + deltaX;
+
+                const isEdgeActive = selectedNodeId === node.id || selectedNodeId === parent.id;
+                const edgePath = `M ${startX} ${startY} C ${control1X} ${startY}, ${control2X} ${endY}, ${endX} ${endY}`;
+
+                return (
+                  <g key={`edge-group-${parent.id}-${node.id}`}>
+                    <path
+                      d={edgePath}
+                      className={`fill-none transition-all duration-300 ${
+                        isExecuting
+                          ? "stroke-emerald-400 stroke-[3.5] [stroke-dasharray:8_4] animate-pulse"
+                          : isEdgeActive
+                          ? "stroke-violet-400 stroke-[3]"
+                          : "stroke-slate-700/80 stroke-[2]"
+                      }`}
+                    />
+                    {/* Live Flowing Particle */}
+                    {(isExecuting || mode === "exec") && (
+                      <circle r="4" fill="#34d399">
+                        <animateMotion path={edgePath} dur="2.5s" repeatCount="indefinite" />
+                      </circle>
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+
+            {/* Interactive HTML Nodes (2026 Sleek Redesign) */}
+            <div className="absolute top-0 left-0 w-[5000px] h-[5000px] z-20 pointer-events-auto">
+              {nodes.map((node) => {
+                const isSelected = selectedNodeId === node.id;
+                const isSpotlight = mode === "train" && trainStepIndex === node.stepOrder;
+                const isDimmed = mode === "train" && trainStepIndex !== node.stepOrder;
+
+                return (
+                  <div
+                    key={node.id}
+                    dir="rtl"
+                    className={`map-node absolute rounded-2xl border p-4 flex flex-col justify-between shadow-[0_12px_32px_rgba(0,0,0,0.5)] backdrop-blur-2xl w-[304px] bg-slate-900/90 cursor-grab active:cursor-grabbing transition-all duration-200 group ${
+                      node.color
+                    } ${
+                      isSelected
+                        ? "ring-2 ring-violet-500 ring-offset-2 ring-offset-slate-950 shadow-violet-500/25 scale-[1.03] z-30"
+                        : "hover:border-slate-600 hover:scale-[1.01]"
+                    } ${
+                      isSpotlight
+                        ? "ring-4 ring-amber-400 shadow-2xl scale-[1.06] z-50 animate-pulse"
+                        : ""
+                    } ${isDimmed ? "opacity-20 grayscale-[70%] blur-[0.5px]" : ""}`}
+                    style={{
+                      left: `${node.x}px`,
+                      top: `${node.y}px`
+                    }}
+                    onMouseDown={(e) => handleNodeMouseDown(e, node)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedNodeId(node.id);
+                    }}
+                  >
+                    {/* Left Connection Port (Output Handle) */}
+                    <div
+                      className="absolute -left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-slate-950 border-2 border-violet-400 shadow-[0_0_10px_rgba(139,92,246,0.8)] group-hover:scale-125 transition-transform"
+                      title="منفذ المخرجات (Output Port)"
+                    />
+
+                    {/* Right Connection Port (Input Handle) */}
+                    <div
+                      className="absolute -right-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 rounded-full bg-slate-950 border-2 border-cyan-400 shadow-[0_0_10px_rgba(6,182,212,0.8)] group-hover:scale-125 transition-transform"
+                      title="منفذ المدخلات (Input Port)"
+                    />
+
+                    {/* Top Row: Category badge & step order + App Status */}
+                    <div className="flex items-center justify-between gap-1 mb-2">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-5 h-5 rounded-lg bg-slate-800 text-slate-300 text-[11px] font-black flex items-center justify-center border border-slate-700/80">
+                          {node.stepOrder}
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-300 bg-slate-800/80 px-2 py-0.5 rounded-lg border border-slate-700/60">
+                          {node.badge}
+                        </span>
+                      </div>
+
+                      {node.requiredAppSlug && (
+                        <span
+                          className={`text-[9px] px-2 py-0.5 rounded-full font-bold transition ${
+                            isToolInstalled(node.requiredAppSlug)
+                              ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                              : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                          }`}
+                        >
+                          {isToolInstalled(node.requiredAppSlug) ? "مفعّل ✅" : "غير مفعّل 🔒"}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Title and Subtitle */}
+                    <div className="text-xs font-black text-white leading-snug tracking-tight group-hover:text-violet-200 transition">
+                      {node.title}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1 leading-relaxed line-clamp-2">
+                      {node.subtitle}
+                    </div>
+
+                    {/* Live Metric Badge */}
+                    {node.liveMetric && (
+                      <div className="mt-2.5 px-2.5 py-1 rounded-xl bg-slate-950/70 border border-slate-800/80 flex items-center justify-between text-[11px]">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+                          <span className="text-slate-400 text-[10px]">{node.liveMetric.label}:</span>
+                        </div>
+                        <span className={`font-black ${node.liveMetric.color}`}>{node.liveMetric.value}</span>
+                      </div>
+                    )}
+
+                    {/* Bottom Row: Actions */}
+                    <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[10px]">
+                      {node.liveRoute ? (
+                        isToolInstalled(node.requiredAppSlug) ? (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleOpenLiveTool(node.liveRoute);
+                            }}
+                            className="flex items-center gap-1 text-slate-200 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg transition font-bold border border-slate-700"
+                            title="فتح الأداة المفعّلة"
+                          >
+                            <span>فتح الأداة</span>
+                            <ExternalLink className="w-3 h-3 text-emerald-400" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate("/marketplace");
+                              toast.info(`الأداة بحاجة لتفعيل من المتجر لشركة ${companyName || ""}`);
+                            }}
+                            className="flex items-center gap-1 text-amber-300 hover:text-amber-100 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 px-2.5 py-1 rounded-lg transition font-bold"
+                            title="غير مفعّلة — اضغط للانتقال للمتجر"
+                          >
+                            <Lock className="w-3 h-3 text-amber-400" />
+                            <span>تفعيل من المتجر</span>
+                          </button>
+                        )
+                      ) : (
+                        <span className="text-slate-500 font-medium">مسار عمليات</span>
+                      )}
+
+                      {node.hasVideo && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toast.info("تشغيل مشغل الفيديو التعليمي للمتدرب");
+                          }}
+                          className="flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 px-2 py-1 rounded-lg font-bold transition"
+                        >
+                          <Video className="w-3 h-3" />
+                          <span>فيديو الشرح</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Selected Node Action Context Bar - floating directly above selected node */}
+          {(() => {
+            const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+            if (!selectedNode) return null;
+            const nodeScreenX = selectedNode.x * zoom + pan.x + (152 * zoom);
+            const nodeScreenY = selectedNode.y * zoom + pan.y - 52;
+
+            return (
+              <div
+                style={{
+                  position: "absolute",
+                  left: `${nodeScreenX}px`,
+                  top: `${Math.max(12, nodeScreenY)}px`,
+                  transform: "translateX(-50%)"
+                }}
+                className="z-30 bg-slate-900/95 border border-violet-500/80 rounded-2xl shadow-2xl p-1.5 flex items-center gap-1.5 backdrop-blur animate-fade-in pointer-events-auto"
+                dir="rtl"
+              >
+                <button
+                  onClick={aiExpandNode}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-violet-600/20 text-violet-300 hover:bg-violet-600 hover:text-white transition"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                  <span>توسيع بالـ AI</span>
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedNode.liveRoute) handleOpenLiveTool(selectedNode.liveRoute);
+                    else toast.success("تم تشغيل الأداة واختبار تنفيذها على السيرفر بنجاح");
+                  }}
+                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold bg-emerald-500/20 text-emerald-300 hover:bg-emerald-600 hover:text-white transition"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>تشغيل الأداة</span>
+                </button>
+                <div className="h-4 w-px bg-slate-800 mx-1"></div>
+                <button
+                  onClick={deleteSelectedNode}
+                  className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-500/20 transition"
+                  title="حذف"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* 2026 Floating Bottom Dock */}
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-40 backdrop-blur-2xl bg-slate-900/90 border border-slate-700/70 rounded-2xl shadow-[0_12px_40px_rgba(0,0,0,0.6)] px-3 py-1.5 flex items-center gap-2 pointer-events-auto" dir="rtl">
+            {/* Open Palette Button */}
+            <button
+              onClick={() => setIsSidePanelOpen(!isSidePanelOpen)}
+              className="flex items-center gap-1.5 bg-violet-600 hover:bg-violet-500 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition shadow-lg shadow-violet-600/30 active:scale-95"
+            >
+              <Boxes className="w-3.5 h-3.5" />
+              <span>أدوات السيناريو (17)</span>
+            </button>
+
+            <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block"></div>
+
+            {/* Quick Stage Zoom Filter */}
+            <div className="hidden lg:flex items-center gap-1 text-[11px]">
+              <button
+                onClick={() => {
+                  handleResetZoom();
+                  toast.info("عرض دورة التجارة الكاملة");
+                }}
+                className="px-2.5 py-1 rounded-lg text-slate-300 hover:bg-slate-800 transition font-bold"
+              >
+                الكل
+              </button>
+              {WORKFLOW_STAGES.map((st) => (
+                <button
+                  key={st.id}
+                  onClick={() => {
+                    setZoom(0.95);
+                    setPan({ x: 200 - st.x, y: 150 - st.y });
+                    toast.info(`التركيز على: ${st.title}`);
+                  }}
+                  className={`px-2 py-1 rounded-lg transition hover:bg-slate-800 font-bold ${st.color}`}
+                >
+                  {st.badge}
+                </button>
+              ))}
+            </div>
+
+            <div className="h-4 w-px bg-slate-800 mx-1"></div>
+
+            {/* Zoom Controls inside Dock */}
+            <div className="flex items-center gap-1">
+              <button
+                onClick={handleZoomIn}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:bg-slate-800 transition"
+                title="تكبير"
+              >
+                <ZoomIn className="w-3.5 h-3.5" />
+              </button>
+              <span className="text-[10px] font-bold text-slate-400 w-8 text-center">
+                {Math.round(zoom * 100)}%
+              </span>
+              <button
+                onClick={handleZoomOut}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:bg-slate-800 transition"
+                title="تصغير"
+              >
+                <ZoomOut className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={handleResetZoom}
+                className="w-7 h-7 rounded-lg flex items-center justify-center text-slate-300 hover:bg-slate-800 transition"
+                title="إعادة ضبط"
+              >
+                <Scan className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Minimap toggle */}
+            <button
+              onClick={() => setIsMinimapOpen(!isMinimapOpen)}
+              className={`w-7 h-7 rounded-lg flex items-center justify-center transition ${isMinimapOpen ? "bg-slate-800 text-violet-400" : "text-slate-500 hover:bg-slate-800"}`}
+              title="إظهار/إخفاء الخريطة المصغرة"
+            >
+              <MapIcon className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* 2026 Floating Minimap */}
+          {isMinimapOpen && (
+            <div className="hidden sm:flex flex-col absolute bottom-5 left-5 z-30 w-44 h-28 backdrop-blur-2xl bg-slate-900/90 border border-slate-700/70 rounded-2xl shadow-2xl p-2 select-none pointer-events-auto" dir="rtl">
+              <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold mb-1 border-b border-slate-800/80 pb-1">
+                <span className="flex items-center gap-1">
+                  <MapIcon className="w-3 h-3 text-violet-400" />
+                  <span>خريطة المسار</span>
+                </span>
+                <span className="text-[9px] text-slate-500 font-normal">{nodes.length} عقدة</span>
+              </div>
+              <div className="relative flex-1 w-full bg-slate-950/80 rounded-xl overflow-hidden border border-slate-800/60" dir="ltr">
+                {/* Mini Stage frames */}
+                {WORKFLOW_STAGES.map((st) => (
+                  <div
+                    key={`mini-${st.id}`}
+                    style={{
+                      position: "absolute",
+                      left: `${(st.x / 2000) * 100}%`,
+                      top: `${((st.y + 100) / 900) * 100}%`,
+                      width: `${(st.width / 2000) * 100}%`,
+                      height: `${(st.height / 900) * 100}%`
+                    }}
+                    className="border border-slate-700/40 bg-slate-800/20 rounded-[2px]"
+                  />
+                ))}
+                {/* Mini Node dots */}
+                {nodes.map((n) => (
+                  <div
+                    key={`mini-node-${n.id}`}
+                    style={{
+                      position: "absolute",
+                      left: `${(n.x / 2000) * 100}%`,
+                      top: `${((n.y + 100) / 900) * 100}%`
+                    }}
+                    className={`w-1.5 h-1.5 rounded-full transition-transform ${selectedNodeId === n.id ? "bg-violet-400 scale-150 ring-2 ring-violet-500" : "bg-slate-400"}`}
+                  />
+                ))}
+                {/* Viewport Camera Indicator */}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: `${Math.max(0, Math.min(80, ((-pan.x / zoom) / 2000) * 100))}%`,
+                    top: `${Math.max(0, Math.min(70, (((-pan.y / zoom) + 100) / 900) * 100))}%`,
+                    width: `${Math.min(100, (800 / zoom / 2000) * 100)}%`,
+                    height: `${Math.min(100, (500 / zoom / 900) * 100)}%`
+                  }}
+                  className="border-2 border-violet-400 bg-violet-500/15 rounded pointer-events-none"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Side Panel: All 17 Tools Palette */}
       {isSidePanelOpen && (

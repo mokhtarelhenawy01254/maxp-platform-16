@@ -501,6 +501,13 @@ const AdLibraryResearch = React.lazy(
   () => import("./pages/advertising/AdLibraryResearch"),
 );
 
+const AgencyDashboard = React.lazy(
+  () => import("./pages/agency/AgencyDashboard"),
+);
+const AgencyClientPortal = React.lazy(
+  () => import("./pages/agency/AgencyClientPortal"),
+);
+
 const ProductLandingPages = React.lazy(
   () => import("./pages/advertising/ProductLandingPages"),
 );
@@ -1909,6 +1916,14 @@ const AppContent = () => {
               path="/company-links/:token"
               element={<PublicCompanyLinks />}
             />
+            <Route
+              path="/agency/client-portal/:token"
+              element={
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                  <AgencyClientPortal />
+                </React.Suspense>
+              }
+            />
             {/* Public Registration Routes - No Company Required */}
             <Route
               path="/register/affiliate"
@@ -2884,6 +2899,17 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <PartnerDashboard />
+                    </Layout>
+                  }
+                />
+                {/* Agency OS Route */}
+                <Route
+                  path="/agency"
+                  element={
+                    <Layout>
+                      <React.Suspense fallback={<div className="flex items-center justify-center min-h-[400px]"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" /></div>}>
+                        <AgencyDashboard />
+                      </React.Suspense>
                     </Layout>
                   }
                 />

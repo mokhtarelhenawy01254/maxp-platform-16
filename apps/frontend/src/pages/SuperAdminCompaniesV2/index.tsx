@@ -16,6 +16,7 @@ import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../components/ui/select";
 import { tokenManager } from "../../utils/tokenManager";
 import { apiClient } from "../../services/apiClient";
+import { businessSpecialtyService, type BusinessSpecialty } from "../../services/businessSpecialtyService";
 
 import { useCompanies, useBulkMutations, useCompanyMutations, useFacebookLookup, useFollowUpOwners, useCompanyUsers } from "./hooks/useCompanies";
 import { AlertBanner } from "./components/AlertBanner";
@@ -366,9 +367,16 @@ export default function SuperAdminCompaniesV2() {
   }, []);
 
   // Modals
+  const [specialties, setSpecialties] = useState<BusinessSpecialty[]>([]);
+  useEffect(() => {
+    businessSpecialtyService.listSpecialties()
+      .then((list) => setSpecialties(list.filter((s) => s.isActive)))
+      .catch((err) => console.error("Failed to load specialties", err));
+  }, []);
+
   const [companyModal, setCompanyModal] = useState<{ open: boolean; mode: "create" | "edit"; company: Company | null }>({ open: false, mode: "create", company: null });
   const [companyForm, setCompanyForm] = useState<CompanyFormData>({
-    name: "", email: "", phone: "", website: "", currency: "EGP",
+    name: "", email: "", phone: "", website: "", currency: "EGP", businessSpecialtyId: "",
     adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "",
   });
   const [companyFormErrors, setCompanyFormErrors] = useState<Record<string, string>>({});
@@ -483,13 +491,13 @@ export default function SuperAdminCompaniesV2() {
   }, [enrichedCompanies]);
 
   const handleCreateCompany = useCallback(() => {
-    setCompanyForm({ name: "", email: "", phone: "", website: "", currency: "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
+    setCompanyForm({ name: "", email: "", phone: "", website: "", currency: "EGP", businessSpecialtyId: "", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
     setCompanyFormErrors({});
     setCompanyModal({ open: true, mode: "create", company: null });
   }, []);
 
   const handleEditCompany = useCallback((company: Company) => {
-    setCompanyForm({ name: company.name || "", email: company.email || "", phone: company.phone || "", website: company.website || "", currency: company.currency || "EGP", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
+    setCompanyForm({ name: company.name || "", email: company.email || "", phone: company.phone || "", website: company.website || "", currency: company.currency || "EGP", businessSpecialtyId: "", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
     setCompanyFormErrors({});
     setCompanyModal({ open: true, mode: "edit", company });
   }, []);
@@ -519,6 +527,7 @@ export default function SuperAdminCompaniesV2() {
           name: companyForm.name.trim(), email: companyForm.email.trim(),
           phone: companyForm.phone.trim() || undefined, website: companyForm.website.trim() || undefined,
           currency: companyForm.currency,
+          businessSpecialtyId: companyForm.businessSpecialtyId || undefined,
           adminFirstName: companyForm.adminFirstName.trim(), adminLastName: companyForm.adminLastName.trim(),
           adminEmail: companyForm.adminEmail.trim(), adminPassword: companyForm.adminPassword,
         });
@@ -970,6 +979,26 @@ export default function SuperAdminCompaniesV2() {
                 </SelectContent>
               </Select>
             </FormField>
+            {companyModal.mode === "create" ? (
+              <FormField label="تخصص الشركة (تثبيت التطبيقات تلقائياً)">
+                <Select
+                  value={companyForm.businessSpecialtyId || "none"}
+                  onValueChange={(v) => setCompanyForm((prev) => ({ ...prev, businessSpecialtyId: v === "none" ? "" : v }))}
+                >
+                  <SelectTrigger aria-label="تخصص الشركة" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-black shadow-sm">
+                    <SelectValue placeholder="اختر مجال الشركة..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-lg">
+                    <SelectItem value="none">بدون تخصص محدد (تثبيت الحزمة العامة)</SelectItem>
+                    {specialties.map((s) => (
+                      <SelectItem key={s.id} value={s.id}>
+                        {s.nameAr || s.nameEn} ({s.appSlugs.length} تطبيق)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </FormField>
+            ) : null}
           </div>
           {companyModal.mode === "create" ? (
             <div className="space-y-5 rounded-lg border border-border/60 bg-muted/20 p-6 shadow-inner">

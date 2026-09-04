@@ -359,8 +359,22 @@ export const DEFAULT_WHOLESALE_PRO_SETTINGS = {
   },
 } as const;
 
+export const DEFAULT_AGENCY_PRO_SETTINGS = {
+  general: {
+    enabled: true,
+    allowClientDirectApproval: true,
+    notifyOnNewApproval: true,
+  },
+  pacing: {
+    warningThresholdPercent: 85,
+    criticalThresholdPercent: 95,
+  },
+} as const;
+
 export const getDefaultMarketplaceAppSettings = (slug: string): JsonRecord => {
   switch (slug) {
+    case "marketing-agency-pro":
+      return deepMerge({}, DEFAULT_AGENCY_PRO_SETTINGS as unknown as JsonRecord);
     case "conversion-suite":
       return buildConversionSuiteSettings();
     case "ugc-reviews-pro":
@@ -383,6 +397,7 @@ export const normalizeMarketplaceAppSettings = (
   switch (slug) {
     case "conversion-suite":
       return buildConversionSuiteSettings(rawSettings);
+    case "marketing-agency-pro":
     case "ugc-reviews-pro":
     case "commerce-advanced":
     case "quantity-offers-pro":
