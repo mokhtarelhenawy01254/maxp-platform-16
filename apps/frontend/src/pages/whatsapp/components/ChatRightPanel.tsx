@@ -30,6 +30,7 @@ interface ChatRightPanelProps {
   onOpenLabels?: () => void;
   labels?: { id: string; name: string; color: string }[];
   refreshToken?: number;
+  onContactUpdated?: (updatedContact: Contact) => void;
 }
 
 const STATUS_MAP: Record<string, { label: string; color: string }> = {
@@ -39,7 +40,7 @@ const STATUS_MAP: Record<string, { label: string; color: string }> = {
   BLOCKED: { label: 'محظور', color: '#ef4444' },
 };
 
-const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenServiceOrder, onOpenTasks, onClose, onOpenLabels, labels = [], refreshToken = 0 }) => {
+const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, onOpenServiceOrder, onOpenTasks, onClose, onOpenLabels, labels = [], refreshToken = 0, onContactUpdated }) => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('info');
   const [avatarError, setAvatarError] = useState(false);
@@ -156,34 +157,44 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     }
     setSavingPhone(true);
     setPhoneUpdateMessage(null);
-    if (customer?.id) {
-      const result = await updateCustomerPhone(phone);
-      setSavingPhone(false);
-      if (result.success) {
-        setEditingPhone(false);
-        setPhoneUpdateMessage(`✅ ${result.message}`);
-        setTimeout(() => setPhoneUpdateMessage(null), 4000);
+
+    let contactUpdatedData: any = null;
+    let isMerged = false;
+
+    try {
+      if (contact?.id) {
+        const res: any = await apiClient.put(`/whatsapp/contacts/${contact.id}`, { phoneNumber: phone });
+        contactUpdatedData = res.data?.data;
+        if (res.data?.mergedPhoneJid) {
+          isMerged = true;
+        }
+      }
+
+      if (customer?.id) {
+        await updateCustomerPhone(phone);
         loadCustomerData(customer.id);
-      } else {
-        setPhoneUpdateMessage(`❌ ${result.message}`);
-        setTimeout(() => setPhoneUpdateMessage(null), 5000);
       }
-    } else if (contact?.id) {
-      try {
-        await apiClient.put(`/whatsapp/contacts/${contact.id}`, { phoneNumber: phone });
-        setSavingPhone(false);
-        setEditingPhone(false);
-        setPhoneUpdateMessage('✅ تم تحديث رقم الهاتف');
-        setTimeout(() => setPhoneUpdateMessage(null), 4000);
-        queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
-      } catch (err: any) {
-        setSavingPhone(false);
-        setPhoneUpdateMessage(`❌ ${err?.response?.data?.message || 'فشل تحديث رقم الهاتف'}`);
-        setTimeout(() => setPhoneUpdateMessage(null), 5000);
-      }
-    } else {
+
       setSavingPhone(false);
-      setPhoneUpdateMessage('❌ تعذر تحديد جهة الاتصال');
+      setEditingPhone(false);
+
+      if (isMerged) {
+        setPhoneUpdateMessage('✅ تم ربط رقم الهاتف ودمج المحادثة بنجاح');
+      } else {
+        setPhoneUpdateMessage('✅ تم حفظ رقم الهاتف');
+      }
+      setTimeout(() => setPhoneUpdateMessage(null), 4000);
+
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'messages'] });
+
+      if (contactUpdatedData && onContactUpdated) {
+        onContactUpdated(contactUpdatedData);
+      }
+    } catch (err: any) {
+      setSavingPhone(false);
+      setPhoneUpdateMessage(`❌ ${err?.response?.data?.message || err?.response?.data?.error || err?.message || 'فشل تحديث رقم الهاتف'}`);
       setTimeout(() => setPhoneUpdateMessage(null), 5000);
     }
   };

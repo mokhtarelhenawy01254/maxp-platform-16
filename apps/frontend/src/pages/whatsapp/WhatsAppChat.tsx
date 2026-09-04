@@ -2562,6 +2562,12 @@ const WhatsAppChatContent: React.FC = () => {
                   setSelectedContactForLabel(selectedContact);
                   setLabelDialogOpen(true);
                 }}
+                onContactUpdated={(updatedContact) => {
+                  setSelectedContact(updatedContact);
+                  queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
+                  queryClient.invalidateQueries({ queryKey: ['whatsapp', 'contacts'] });
+                  queryClient.invalidateQueries({ queryKey: ['whatsapp', 'messages'] });
+                }}
               />
             </div>
           </>
