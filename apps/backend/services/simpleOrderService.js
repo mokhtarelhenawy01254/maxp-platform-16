@@ -610,8 +610,8 @@ class SimpleOrderService {
 
       const prisma = this.getPrisma();
 
-      // ✅ بناء where clause مع فلترة التاريخ
-      const where = { companyId };
+      // ✅ بناء where clause مع فلترة التاريخ واستبعاد الطلبات المعلّقة (billing hold)
+      const where = { companyId, billingHoldAt: null };
 
       if (dateFrom || dateTo) {
         where.createdAt = {};

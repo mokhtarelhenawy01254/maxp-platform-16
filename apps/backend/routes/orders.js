@@ -3026,7 +3026,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           companyId,
           orderNumber: { in: guestTwinNumbers, mode: 'insensitive' },
         },
-        select: { orderNumber: true, status: true, customStatusCode: true, metadata: true },
+        select: { orderNumber: true, status: true, customStatusCode: true, metadata: true, billingHoldAt: true },
       });
       for (const t of twinRows) {
         regularTwinsByNumber.set(String(t.orderNumber).trim().toLowerCase(), t);
@@ -3130,7 +3130,9 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
         // نحتفظ بأرقام الضيف اللي ليها مقابل في جدول الطلبات العادية (normalized)
         shadowedGuestOrderNumberSet = new Set(
-          filteredGuestOrderNumbers.filter((n) => regularNormalizedKeys.has(normalizeOrderKey(n)))
+          filteredGuestOrderNumbers
+            .filter((n) => regularNormalizedKeys.has(normalizeOrderKey(n)))
+            .map((n) => normalizeOrderKey(n))
         );
 
         // Global reconciliation: compute how MANY matching guest numbers
@@ -3410,11 +3412,14 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
 
     const regularOrderNumberSet = new Set([
       ...formattedRegularOrders.map((order) => normalizeOrderKey(order.orderNumber)),
-      ...shadowedGuestOrderNumberSet
+      ...Array.from(shadowedGuestOrderNumberSet).map((n) => normalizeOrderKey(n))
     ]);
     const filteredGuestOrders = formattedGuestOrders.filter((order) => {
       const key = normalizeOrderKey(order.orderNumber);
       if (regularOrderNumberSet.has(key)) return false;
+      const twin = regularTwinsByNumber.get(key);
+      if (twin?.billingHoldAt && !includeHeldOrders) return false;
+      if (order.metadata?.billingHold && !includeHeldOrders) return false;
       // Unified reconciliation: with an active status filter, a guest row
       // survives only if its shared effective status (own prep → twin →
       // stale column) actually matches the requested statuses — otherwise
@@ -5224,6 +5229,39 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         orderNumber,
         companyId
       });
+    }
+
+    // 🚧 الطلبات المعلّقة بسبب الفوترة محجوبة حتى يُشحن الرصيد
+    const includeHeldOrders = req.query.includeHeld === 'true';
+    if (!includeHeldOrders) {
+      if (order && order.billingHoldAt) {
+        return res.status(402).json({
+          success: false,
+          code: 'BILLING_HOLD',
+          message: 'الطلب معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً لإظهار الطلب.'
+        });
+      }
+      if (isGuestOrder && guestOrder) {
+        const guestMeta = safeParseOrderMetadata(guestOrder.metadata);
+        if (guestMeta?.billingHold) {
+          return res.status(402).json({
+            success: false,
+            code: 'BILLING_HOLD',
+            message: 'الطلب معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً لإظهار الطلب.'
+          });
+        }
+        const twin = await getSharedPrismaClient().order.findFirst({
+          where: { companyId, orderNumber: guestOrder.orderNumber, billingHoldAt: { not: null } },
+          select: { id: true }
+        });
+        if (twin) {
+          return res.status(402).json({
+            success: false,
+            code: 'BILLING_HOLD',
+            message: 'الطلب معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً لإظهار الطلب.'
+          });
+        }
+      }
     }
 
     // Debug: Log items for regular order
