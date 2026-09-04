@@ -835,8 +835,44 @@ const resolveGuestOrderAmounts = (guestOrder, shippingZones = []) => {
   };
 };
 
+const maskCustomerName = (name) => {
+  const s = String(name || '').trim();
+  if (!s) return '';
+  return `${s.charAt(0)}***`;
+};
+
+const maskCustomerPhone = (phone) => {
+  const s = String(phone || '').trim();
+  if (s.length <= 5) return s ? '***' : '';
+  return `${s.slice(0, 3)}***${s.slice(-2)}`;
+};
+
+const maskCheckoutData = (checkoutData) => {
+  if (!checkoutData || typeof checkoutData !== 'object') return checkoutData;
+  const copy = { ...checkoutData };
+  const nameKeys = ['guestName', 'fullName', 'customerName', 'customerFullName', 'name', 'firstName', 'lastName'];
+  for (const k of nameKeys) {
+    if (copy[k]) copy[k] = maskCustomerName(copy[k]);
+  }
+  const phoneKeys = ['guestPhone', 'customerPhone', 'phoneNumber', 'mobileNumber', 'phone', 'mobile'];
+  for (const k of phoneKeys) {
+    if (copy[k]) copy[k] = maskCustomerPhone(copy[k]);
+  }
+  if (copy.address) copy.address = '***';
+  if (copy.street) copy.street = '***';
+  if (copy.addressLine1) copy.addressLine1 = '***';
+  if (copy.addressLine2) copy.addressLine2 = '***';
+  if (copy.email || copy.guestEmail || copy.customerEmail || copy.emailAddress) {
+    if (copy.email) copy.email = '***@***.***';
+    if (copy.guestEmail) copy.guestEmail = '***@***.***';
+    if (copy.customerEmail) copy.customerEmail = '***@***.***';
+    if (copy.emailAddress) copy.emailAddress = '***@***.***';
+  }
+  return copy;
+};
+
 // تنسيق سلة غير مكتملة (guestCart) لتناسب شكل صف الطلب في صفحة الطلبات
-const formatIncompleteCartRow = (cart, lostThreshold) => {
+const formatIncompleteCartRow = (cart, lostThreshold, isBillingHold = false) => {
   let items = [];
   try {
     items = typeof cart.items === 'string' ? JSON.parse(cart.items) : (Array.isArray(cart.items) ? cart.items : []);
@@ -860,26 +896,34 @@ const formatIncompleteCartRow = (cart, lostThreshold) => {
   const lastActivity = cart.checkoutUpdatedAt || cart.checkoutStartedAt || cart.updatedAt || cart.createdAt;
   const isLost = lastActivity ? new Date(lastActivity) < lostThreshold : false;
 
-  const customerName = checkoutData.guestName
+  let customerName = checkoutData.guestName
     || checkoutData.fullName
     || checkoutData.customerName
     || checkoutData.customerFullName
     || checkoutData.name
     || '';
-  const customerPhone = checkoutData.guestPhone
+  let customerPhone = checkoutData.guestPhone
     || checkoutData.customerPhone
     || checkoutData.phoneNumber
     || checkoutData.mobileNumber
     || checkoutData.phone
     || checkoutData.mobile
     || '';
-  const customerEmail = checkoutData.guestEmail
+  let customerEmail = checkoutData.guestEmail
     || checkoutData.customerEmail
     || checkoutData.emailAddress
     || checkoutData.email
     || '';
   const governorate = checkoutData.governorate || checkoutData.gov || '';
   const city = checkoutData.city || '';
+  let customerAddress = checkoutData.address || '';
+
+  if (isBillingHold) {
+    customerName = maskCustomerName(customerName);
+    customerPhone = maskCustomerPhone(customerPhone);
+    if (customerEmail) customerEmail = '***@***.***';
+    if (customerAddress) customerAddress = '***';
+  }
 
   return {
     id: cart.cartId,
@@ -887,7 +931,7 @@ const formatIncompleteCartRow = (cart, lostThreshold) => {
     customerName,
     customerPhone,
     customerEmail,
-    customerAddress: checkoutData.address || '',
+    customerAddress,
     city,
     governorate,
     total,
@@ -917,7 +961,7 @@ const formatIncompleteCartRow = (cart, lostThreshold) => {
       };
     }) : [],
     trackingNumber: null,
-    notes: checkoutData.notes || '',
+    notes: isBillingHold ? '***' : (checkoutData.notes || ''),
     createdAt: lastActivity,
     updatedAt: cart.updatedAt || cart.createdAt,
     isViewed: true,
@@ -931,7 +975,8 @@ const formatIncompleteCartRow = (cart, lostThreshold) => {
       source: 'storefront',
       isGuestOrder: true,
       isIncompleteCart: true,
-      cartId: cart.cartId
+      cartId: cart.cartId,
+      ...(isBillingHold ? { isBillingHold: true, billingHold: true } : {})
     }
   };
 };
@@ -1503,18 +1548,9 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
     const featureAccess = await getOrderDetailFeatureAccess(companyId);
     const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
 
-    // 🚧 الطلبات غير المكتملة محجوبة عند وجود تعليق فوترة (billing hold) حتى يُشحن الرصيد
+    // 🚧 الطلبات غير المكتملة تُقنّع بيانات العميل فيها عند وجود تعليق فوترة (billing hold) حتى يُشحن الرصيد
     const includeHeld = req.query.includeHeld === 'true';
-    if (!includeHeld && await companyHasActiveBillingHold(companyId)) {
-      return res.status(402).json({
-        success: false,
-        code: 'BILLING_HOLD',
-        message: 'الطلبات غير المكتملة معلّقة بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً لإظهار البيانات.',
-        data: [],
-        pagination: { total: 0, page: 1, limit: 20, pages: 0 },
-        stats: { total: 0, active: 0, lost: 0, totalValue: 0, activeValue: 0, lostValue: 0 }
-      });
-    }
+    const isBillingHold = !includeHeld && await companyHasActiveBillingHold(companyId);
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
@@ -1674,10 +1710,14 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         ? null
         : extractAttributionFromCheckoutData(checkoutData);
 
-      const safeCheckoutData =
+      const rawCheckoutData =
         hideCartAttribution && checkoutData && typeof checkoutData === 'object'
           ? stripAttributionFromCheckoutData(checkoutData)
           : checkoutData;
+
+      const safeCheckoutData = isBillingHold
+        ? maskCheckoutData(rawCheckoutData)
+        : rawCheckoutData;
 
       return {
         cartId: cart.cartId,
@@ -1691,6 +1731,7 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         updatedAt: cart.updatedAt,
         expiresAt: cart.expiresAt,
         status: isLost ? 'lost' : 'incomplete',
+        ...(isBillingHold ? { billingHold: true } : {}),
         abandonReason: detectAbandonReason(
           { ...cart, checkoutData: safeCheckoutData, status: isLost ? 'lost' : 'incomplete' },
           { lostAfterHours },
@@ -1714,7 +1755,8 @@ router.get('/incomplete', verifyToken.authenticateToken, async (req, res) => {
         totalValue: Number(totalAgg._sum.total || 0),
         activeValue: Number(activeAgg._sum.total || 0),
         lostValue: Number(lostAgg._sum.total || 0)
-      }
+      },
+      ...(isBillingHold ? { billingHold: true } : {})
     });
   } catch (error) {
     console.error('❌ Error fetching incomplete orders:', error);
@@ -2012,15 +2054,9 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
     const featureAccess = await getOrderDetailFeatureAccess(companyId);
     const hideCartAttribution = Boolean(merchant) || !featureAccess.campaignAttribution;
 
-    // 🚧 تفاصيل السلة غير المكتملة محجوبة عند وجود تعليق فوترة (billing hold)
+    // 🚧 تفاصيل السلة غير المكتملة تُقنّع بيانات العميل فيها عند وجود تعليق فوترة (billing hold)
     const includeHeld = req.query.includeHeld === 'true';
-    if (!includeHeld && await companyHasActiveBillingHold(companyId)) {
-      return res.status(402).json({
-        success: false,
-        code: 'BILLING_HOLD',
-        message: 'الطلب معلّق بسبب انخفاض رصيد المحفظة أو انتهاء الاشتراك. يرجى شحن الرصيد أولاً لإظهار البيانات.'
-      });
-    }
+    const isBillingHold = !includeHeld && await companyHasActiveBillingHold(companyId);
 
     const cartId = (req.params.cartId || '').toString().trim();
     if (!cartId) {
@@ -2087,10 +2123,14 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
       ? null
       : extractAttributionFromCheckoutData(checkoutData);
 
-    const safeCheckoutData =
+    const rawCheckoutData =
       hideCartAttribution && checkoutData && typeof checkoutData === 'object'
         ? stripAttributionFromCheckoutData(checkoutData)
         : checkoutData;
+
+    const safeCheckoutData = isBillingHold
+      ? maskCheckoutData(rawCheckoutData)
+      : rawCheckoutData;
 
     res.json({
       success: true,
@@ -2106,11 +2146,13 @@ router.get('/incomplete/:cartId', verifyToken.authenticateToken, async (req, res
         updatedAt: cart.updatedAt,
         expiresAt: cart.expiresAt,
         status: isLost ? 'lost' : 'incomplete',
+        ...(isBillingHold ? { billingHold: true } : {}),
         abandonReason: detectAbandonReason(
           { ...cart, checkoutData: safeCheckoutData, status: isLost ? 'lost' : 'incomplete' },
           { lostAfterHours },
         ),
-      }
+      },
+      ...(isBillingHold ? { billingHold: true } : {})
     });
   } catch (error) {
     console.error('❌ Error fetching incomplete order details:', error);
@@ -2648,21 +2690,13 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
       guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
     }
-    if (companyHasBillingHold && incompleteFilterStatus === 'incomplete') {
-      return res.json({
-        success: true,
-        data: [],
-        pagination: { total: 0, page, limit, pages: 0 },
-        meta: { showIncompleteCartsInOrders: false, billingHold: true }
-      });
-    }
-    const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts && !companyHasBillingHold;
+    const incompleteOnlyView = incompleteFilterStatus === 'incomplete' && showIncompleteCarts;
     if (incompleteOnlyView) {
       // عند الفلترة بـ "غير مكتمل" نعرض السلال النشطة فقط (بدون طلبات حقيقية)
       whereClause.id = '__incomplete_carts_only__';
       guestWhereClause.id = '__incomplete_carts_only__';
     }
-    if (incompleteFilterStatus === 'incomplete' && (!showIncompleteCarts || companyHasBillingHold)) {
+    if (incompleteFilterStatus === 'incomplete' && !showIncompleteCarts) {
       return res.json({
         success: true,
         data: [],
@@ -2840,9 +2874,8 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
-    // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد (وتُحجب عند وجود تعليق فوترة)
+    // بناء فلتر السلال غير المكتملة (guestCart) — تُدمج في القائمة عند تفعيل الإعداد (وتُشفر بيانات العميل عند وجود تعليق فوترة)
     const includeIncompleteCarts =
-      !companyHasBillingHold &&
       showIncompleteCarts &&
       !onlyUnseen &&
       (!status || String(status).toLowerCase() === 'all' || Boolean(incompleteFilterStatus));
@@ -3105,7 +3138,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         getSharedPrismaClient().guestCart.count({ where: cartQueryWhere })
       ]);
       totalIncomplete = cartCount || 0;
-      formattedIncompleteCarts = carts.map((cart) => formatIncompleteCartRow(cart, lostThreshold));
+      formattedIncompleteCarts = carts.map((cart) => formatIncompleteCartRow(cart, lostThreshold, companyHasBillingHold));
     }
 
     let shadowedGuestOrderNumberSet = new Set();
