@@ -822,13 +822,13 @@ export const getSidebarConfig = (
         // 4️⃣.9️⃣ وكالة التسويق (Agency OS)
         {
             id: 'marketing-agency',
-            title: t('sidebar.marketingAgencySection') || 'وكالة التسويق (Agency OS)',
+            title: t('sidebar.marketingAgencySection', { defaultValue: 'وكالة التسويق (Agency OS)' }),
             icon: Briefcase,
             items: [
-                { to: '/agency', icon: BarChart3, label: t('sidebar.agencyOverview') || 'لوحة تحكم الوكالة' },
-                { to: '/agency?tab=clients', icon: Users, label: t('sidebar.agencyClients') || 'العملاء وميزانيات الإعلانات' },
-                { to: '/agency?tab=approvals', icon: ClipboardCheck, label: t('sidebar.agencyApprovals') || 'موافقات التصاميم والمحتوى' },
-                { to: '/agency?tab=suite', icon: Briefcase, label: t('sidebar.agencySuite') || 'الأدوات المتكاملة' },
+                { to: '/agency', icon: BarChart3, label: t('sidebar.agencyOverview', { defaultValue: 'لوحة تحكم الوكالة' }) },
+                { to: '/agency?tab=clients', icon: Users, label: t('sidebar.agencyClients', { defaultValue: 'العملاء وميزانيات الإعلانات' }) },
+                { to: '/agency?tab=approvals', icon: ClipboardCheck, label: t('sidebar.agencyApprovals', { defaultValue: 'موافقات التصاميم والمحتوى' }) },
+                { to: '/agency?tab=suite', icon: Briefcase, label: t('sidebar.agencySuite', { defaultValue: 'المنظومة المترابطة' }) },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAppActive('marketing-agency-pro'),
         },

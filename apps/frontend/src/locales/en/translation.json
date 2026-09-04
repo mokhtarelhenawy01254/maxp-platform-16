@@ -16679,6 +16679,11 @@
     "loadingDescription": "Please wait while we load your settings."
   },
   "sidebar": {
+    "marketingAgencySection": "Marketing Agency (Agency OS)",
+    "agencyOverview": "Agency Dashboard",
+    "agencyClients": "Clients & Ad Spend",
+    "agencyApprovals": "Content & Creative Approvals",
+    "agencySuite": "Integrated Tool Suite",
     "abTests": "A/B Tests",
     "abandonedCart": "Abandoned Cart",
     "activatedApps": "Activated Apps",
