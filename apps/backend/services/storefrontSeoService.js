@@ -1,3 +1,5 @@
+"use strict";
+
 const path = require("path");
 
 const DEFAULT_THEME_ID = "modern-minimal";
@@ -17,6 +19,8 @@ const PAGE_NAME_MAP = {
   lookbook: "اللوك بوك",
   "size-guide": "دليل المقاسات",
   "thank-you": "تم الطلب بنجاح",
+  articles: "المقالات",
+  blog: "المدونة",
 };
 
 const RESERVED_PAGE_SEGMENTS = new Set([
@@ -24,11 +28,15 @@ const RESERVED_PAGE_SEGMENTS = new Set([
   "cart",
   "checkout",
   "product",
+  "products",
   "sale",
   "collections",
+  "category",
   "lookbook",
   "size-guide",
   "thank-you",
+  "articles",
+  "blog",
 ]);
 
 const isRecord = (value) =>
@@ -141,6 +149,38 @@ const resolveAbsoluteUrl = (value, currentUrl) => {
   }
 };
 
+const cleanCanonicalUrl = (rawUrl) => {
+  if (!rawUrl || typeof rawUrl !== "string") return rawUrl;
+  try {
+    const u = new URL(rawUrl);
+    const trackingParams = [
+      "utm_source",
+      "utm_medium",
+      "utm_campaign",
+      "utm_term",
+      "utm_content",
+      "fbclid",
+      "gclid",
+      "previewTheme",
+      "previewProductId",
+      "previewSource",
+      "previewAdminOrigin",
+      "session",
+      "_ga",
+      "_gl",
+      "ref",
+      "mc_cid",
+      "mc_eid",
+    ];
+    trackingParams.forEach((param) => u.searchParams.delete(param));
+    const clean = `${u.origin}${u.pathname}`;
+    const remaining = u.searchParams.toString();
+    return remaining ? `${clean}?${remaining}` : clean;
+  } catch {
+    return rawUrl.split("?")[0] || rawUrl;
+  }
+};
+
 const extractImageList = (value) => {
   if (Array.isArray(value)) {
     return value.filter((item) => typeof item === "string" && item.trim());
@@ -243,7 +283,15 @@ const resolveRouteContext = (pathname = "/") => {
   const routeSegments = rawSegments[0] === "store" ? rawSegments.slice(1) : rawSegments;
   const pageSegment = routeSegments[0] || "";
   const productKey =
-    pageSegment === "product" && routeSegments[1]
+    (pageSegment === "product" || pageSegment === "products") && routeSegments[1]
+      ? decodePathSegment(routeSegments[1])
+      : null;
+  const categorySlug =
+    (pageSegment === "collections" || pageSegment === "category") && routeSegments[1]
+      ? decodePathSegment(routeSegments[1])
+      : null;
+  const articleSlug =
+    (pageSegment === "articles" || pageSegment === "blog") && routeSegments[1]
       ? decodePathSegment(routeSegments[1])
       : null;
   const storePageSlug =
@@ -257,6 +305,8 @@ const resolveRouteContext = (pathname = "/") => {
     routeSegments,
     pageSegment,
     productKey,
+    categorySlug,
+    articleSlug,
     storePageSlug,
     isHomePage: routeSegments.length === 0,
   };
@@ -269,13 +319,19 @@ const buildStorefrontSeoMetadata = ({
   storefrontSettings,
   templateContent,
   product = null,
+  category = null,
+  article = null,
   storePage = null,
+  reviews = null,
+  noIndex = false,
 }) => {
   const routeContext = resolveRouteContext(pathname);
   const templateSettings = extractTemplateSettings(templateContent);
   const templateSeo = parseJsonObject(templateSettings.seo);
+  const designTokens = parseJsonObject(storefrontSettings?.designTokens);
+  const companySettings = parseJsonObject(company?.settings);
   const themeId = resolveThemeId({
-    designTokens: parseJsonObject(storefrontSettings?.designTokens),
+    designTokens,
     templateSettings,
     templateContent: isRecord(templateContent) ? templateContent : {},
   });
@@ -298,11 +354,32 @@ const buildStorefrontSeoMetadata = ({
     resolveAbsoluteUrl(company?.logo, currentUrl) ||
     null;
 
+  const urlObj = new URL(currentUrl);
+  const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+
+  // Clean canonical URL without tracking params
+  let canonicalUrl = cleanCanonicalUrl(currentUrl);
   let title = storeName;
   let description = fallbackDescription;
   let image = defaultImage;
   let type = "website";
   let jsonLd = null;
+  let price = null;
+  let currency = product?.currency || company?.currency || "EGP";
+  let availability = null;
+  let sku = null;
+
+  // Verification codes
+  const googleSiteVerification =
+    trimToNull(companySettings?.googleSiteVerification) ||
+    trimToNull(designTokens?.googleSiteVerification) ||
+    trimToNull(templateSeo?.googleSiteVerification) ||
+    null;
+  const facebookDomainVerification =
+    trimToNull(companySettings?.facebookDomainVerification) ||
+    trimToNull(designTokens?.facebookDomainVerification) ||
+    trimToNull(templateSeo?.facebookDomainVerification) ||
+    null;
 
   if (product) {
     const productWithSeoOverrides = resolveProductSeoOverrides(product);
@@ -319,21 +396,234 @@ const buildStorefrontSeoMetadata = ({
       fallbackDescription;
     image = resolveProductImage(productWithSeoOverrides, currentUrl) || defaultImage;
     type = "product";
+    sku = trimToNull(product.sku);
 
     const priceNumber = Number(product.price);
-    jsonLd = {
+    price = Number.isFinite(priceNumber) && priceNumber > 0 ? priceNumber : null;
+
+    const isOutOfStock =
+      product.trackInventory && Number(product.stock) <= 0;
+    availability = isOutOfStock
+      ? "https://schema.org/OutOfStock"
+      : "https://schema.org/InStock";
+
+    const prodSlug = product.slug || routeContext.productKey;
+    canonicalUrl = `${baseUrl}/product/${encodeURIComponent(prodSlug)}`;
+
+    const offers = {
+      "@type": "Offer",
+      price: price ?? undefined,
+      priceCurrency: currency,
+      availability,
+      itemCondition: "https://schema.org/NewCondition",
+      url: canonicalUrl,
+    };
+
+    if (product.saleEndDate) {
+      try {
+        offers.priceValidUntil = new Date(product.saleEndDate)
+          .toISOString()
+          .split("T")[0];
+      } catch {}
+    }
+
+    const productSchema = {
       "@context": "https://schema.org",
       "@type": "Product",
       name: productTitle,
-      description: description,
+      description,
       image: image ? [image] : [],
-      offers: {
-        "@type": "Offer",
-        price: Number.isFinite(priceNumber) && priceNumber > 0 ? priceNumber : undefined,
-        priceCurrency: product.currency || company?.currency || "EGP",
-        availability: "https://schema.org/InStock",
-        url: currentUrl,
+      brand: {
+        "@type": "Brand",
+        name: storeName,
       },
+      offers,
+    };
+
+    if (sku) productSchema.sku = sku;
+    if (product.barcode) productSchema.gtin = String(product.barcode).trim();
+
+    if (reviews && Number(reviews.count) > 0 && Number(reviews.avgRating) > 0) {
+      productSchema.aggregateRating = {
+        "@type": "AggregateRating",
+        ratingValue: Number(reviews.avgRating).toFixed(1),
+        reviewCount: Number(reviews.count),
+        bestRating: "5",
+        worstRating: "1",
+      };
+    }
+
+    const breadcrumbs = [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "الرئيسية",
+        item: `${baseUrl}/`,
+      },
+    ];
+
+    if (product.category?.name) {
+      const catSlug = product.category.slug || product.category.id;
+      breadcrumbs.push({
+        "@type": "ListItem",
+        position: 2,
+        name: product.category.name,
+        item: `${baseUrl}/collections/${encodeURIComponent(catSlug)}`,
+      });
+    }
+
+    breadcrumbs.push({
+      "@type": "ListItem",
+      position: breadcrumbs.length + 1,
+      name: productTitle,
+      item: canonicalUrl,
+    });
+
+    jsonLd = productSchema;
+    const breadcrumbsJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: breadcrumbs,
+    };
+
+    return {
+      title,
+      description,
+      image,
+      faviconUrl,
+      siteName: storeName,
+      url: canonicalUrl,
+      type,
+      themeId,
+      routeContext,
+      jsonLd,
+      breadcrumbsJsonLd,
+      price,
+      currency,
+      availability,
+      sku,
+      noIndex,
+      googleSiteVerification,
+      facebookDomainVerification,
+    };
+  } else if (category) {
+    const categoryTitle =
+      trimToNull(category.metaTitle) ||
+      trimToNull(category.name) ||
+      storeName;
+    title = trimToNull(category.metaTitle)
+      ? categoryTitle
+      : applyTitleTemplate(titleTemplate, categoryTitle, storeName);
+    description =
+      trimToNull(category.metaDescription) ||
+      trimToNull(category.description) ||
+      fallbackDescription;
+    image = resolveAbsoluteUrl(category.image, currentUrl) || defaultImage;
+    type = "website";
+
+    const catSlug = category.slug || routeContext.categorySlug;
+    canonicalUrl = `${baseUrl}/collections/${encodeURIComponent(catSlug)}`;
+
+    jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: categoryTitle,
+      description,
+      url: canonicalUrl,
+    };
+    const breadcrumbsJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "الرئيسية", item: `${baseUrl}/` },
+        { "@type": "ListItem", position: 2, name: categoryTitle, item: canonicalUrl },
+      ],
+    };
+
+    return {
+      title,
+      description,
+      image,
+      faviconUrl,
+      siteName: storeName,
+      url: canonicalUrl,
+      type,
+      themeId,
+      routeContext,
+      jsonLd,
+      breadcrumbsJsonLd,
+      noIndex,
+      googleSiteVerification,
+      facebookDomainVerification,
+    };
+  } else if (article) {
+    const articleTitle =
+      trimToNull(article.seoTitle) ||
+      trimToNull(article.title) ||
+      storeName;
+    title = trimToNull(article.seoTitle)
+      ? articleTitle
+      : applyTitleTemplate(titleTemplate, articleTitle, storeName);
+    description =
+      trimToNull(article.seoDescription) ||
+      trimToNull(article.excerpt) ||
+      fallbackDescription;
+    image = resolveAbsoluteUrl(article.heroImage, currentUrl) || defaultImage;
+    type = "article";
+
+    canonicalUrl = `${baseUrl}/articles/${encodeURIComponent(article.slug || routeContext.articleSlug)}`;
+
+    jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Article",
+      headline: articleTitle,
+      description,
+      image: image ? [image] : [],
+      datePublished: article.publishedAt
+        ? new Date(article.publishedAt).toISOString()
+        : undefined,
+      dateModified: article.updatedAt
+        ? new Date(article.updatedAt).toISOString()
+        : undefined,
+      author: {
+        "@type": "Person",
+        name: article.authorName || storeName,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: storeName,
+        logo: defaultImage ? { "@type": "ImageObject", url: defaultImage } : undefined,
+      },
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": canonicalUrl,
+      },
+    };
+    const breadcrumbsJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+      itemListElement: [
+        { "@type": "ListItem", position: 1, name: "الرئيسية", item: `${baseUrl}/` },
+        { "@type": "ListItem", position: 2, name: "المقالات", item: `${baseUrl}/articles` },
+        { "@type": "ListItem", position: 3, name: articleTitle, item: canonicalUrl },
+      ],
+    };
+
+    return {
+      title,
+      description,
+      image,
+      faviconUrl,
+      siteName: storeName,
+      url: canonicalUrl,
+      type,
+      themeId,
+      routeContext,
+      jsonLd,
+      breadcrumbsJsonLd,
+      noIndex,
+      googleSiteVerification,
+      facebookDomainVerification,
     };
   } else if (storePage) {
     const pageTitle =
@@ -345,7 +635,48 @@ const buildStorefrontSeoMetadata = ({
       ? pageTitle
       : applyTitleTemplate(titleTemplate, pageTitle, storeName);
     description = trimToNull(storePage.metaDescription) || fallbackDescription;
-  } else if (!routeContext.isHomePage) {
+    canonicalUrl = `${baseUrl}/${encodeURIComponent(storePage.slug || routeContext.storePageSlug)}`;
+  } else if (routeContext.isHomePage) {
+    title = storeName;
+    description = fallbackDescription;
+    canonicalUrl = `${baseUrl}/`;
+
+    jsonLd = {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      name: storeName,
+      url: `${baseUrl}/`,
+      potentialAction: {
+        "@type": "SearchAction",
+        target: `${baseUrl}/shop?search={search_term_string}`,
+        "query-input": "required name=search_term_string",
+      },
+    };
+    const secondaryJsonLd = {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: storeName,
+      url: `${baseUrl}/`,
+      logo: defaultImage || undefined,
+    };
+
+    return {
+      title,
+      description,
+      image,
+      faviconUrl,
+      siteName: storeName,
+      url: canonicalUrl,
+      type,
+      themeId,
+      routeContext,
+      jsonLd,
+      secondaryJsonLd,
+      noIndex,
+      googleSiteVerification,
+      facebookDomainVerification,
+    };
+  } else {
     const pageTitle =
       PAGE_NAME_MAP[routeContext.pageSegment] ||
       titleizeSegment(routeContext.pageSegment) ||
@@ -359,11 +690,18 @@ const buildStorefrontSeoMetadata = ({
     image,
     faviconUrl,
     siteName: storeName,
-    url: currentUrl,
+    url: canonicalUrl,
     type,
     themeId,
     routeContext,
     jsonLd,
+    price,
+    currency,
+    availability,
+    sku,
+    noIndex,
+    googleSiteVerification,
+    facebookDomainVerification,
   };
 };
 
@@ -391,10 +729,27 @@ const injectStorefrontSeoTags = (html, metadata) => {
   if (metadata.image) {
     nextHtml = setMetaTag(nextHtml, "property", "og:image", metadata.image);
     nextHtml = setMetaTag(nextHtml, "name", "twitter:image", metadata.image);
+    nextHtml = setMetaTag(nextHtml, "property", "og:image:width", "1200");
+    nextHtml = setMetaTag(nextHtml, "property", "og:image:height", "630");
   }
 
   nextHtml = setLinkTag(nextHtml, "canonical", metadata.url);
 
+  // OpenGraph commerce tags for products
+  if (metadata.type === "product") {
+    if (metadata.price !== undefined && metadata.price !== null) {
+      nextHtml = setMetaTag(nextHtml, "property", "product:price:amount", String(metadata.price));
+      nextHtml = setMetaTag(nextHtml, "property", "product:price:currency", metadata.currency || "EGP");
+    }
+    if (metadata.availability) {
+      nextHtml = setMetaTag(nextHtml, "property", "product:availability", metadata.availability);
+    }
+    if (metadata.sku) {
+      nextHtml = setMetaTag(nextHtml, "property", "product:retailer_item_id", metadata.sku);
+    }
+  }
+
+  // Preload primary image for PDP
   if (metadata.type === "product" && metadata.image) {
     nextHtml = upsertTag(
       nextHtml,
@@ -403,20 +758,53 @@ const injectStorefrontSeoTags = (html, metadata) => {
     );
   }
 
-  if (metadata.jsonLd) {
-    const jsonLdString = JSON.stringify(metadata.jsonLd).replace(/</g, "\\u003c");
+  // Preload critical storefront settings API so browser fetches it concurrently with script chunks
+  nextHtml = upsertTag(
+    nextHtml,
+    /<link[^>]+rel=["']preload["'][^>]+as=["']fetch["'][^>]*>/i,
+    `<link rel="preload" href="/api/v1/public/storefront/settings" as="fetch" crossorigin="anonymous" />`,
+  );
+
+  // Verification tags
+  if (metadata.googleSiteVerification) {
+    nextHtml = setMetaTag(nextHtml, "name", "google-site-verification", metadata.googleSiteVerification);
+  }
+  if (metadata.facebookDomainVerification) {
+    nextHtml = setMetaTag(nextHtml, "name", "facebook-domain-verification", metadata.facebookDomainVerification);
+  }
+
+  // Robots noindex if requested (e.g. 404s, sensitive pages)
+  if (metadata.noIndex) {
+    nextHtml = setMetaTag(nextHtml, "name", "robots", "noindex, follow");
+  }
+
+  const allJsonLd = [
+    metadata.jsonLd,
+    metadata.breadcrumbsJsonLd,
+    metadata.secondaryJsonLd,
+  ].filter(Boolean);
+
+  if (allJsonLd.length > 0) {
+    const scripts = allJsonLd
+      .map(
+        (item) =>
+          `<script type="application/ld+json">${JSON.stringify(item).replace(/</g, "\\u003c")}</script>`,
+      )
+      .join("\n  ");
+
     nextHtml = upsertTag(
       nextHtml,
       /<script[^>]+type=["']application\/ld\+json["'][^>]*>.*?<\/script>/is,
-      `<script type="application/ld+json">${jsonLdString}</script>`,
+      scripts,
     );
   }
 
+  // Replace both standard and SVG icons so store logo always represents the site
   if (metadata.faviconUrl) {
     nextHtml = upsertTag(
       nextHtml,
       /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]*>/i,
-      `<link rel="icon" href="${escapeHtml(metadata.faviconUrl)}" />`,
+      `<link rel="icon" href="${escapeHtml(metadata.faviconUrl)}" />\n  <link rel="apple-touch-icon" href="${escapeHtml(metadata.faviconUrl)}" />`,
     );
   }
 
@@ -448,6 +836,7 @@ module.exports = {
   PAGE_NAME_MAP,
   applyTitleTemplate,
   buildStorefrontSeoMetadata,
+  cleanCanonicalUrl,
   injectStorefrontSeoTags,
   isHtmlRouteRequest,
   parseJsonObject,

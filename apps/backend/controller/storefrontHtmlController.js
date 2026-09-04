@@ -118,11 +118,22 @@ exports.handleStorefrontShell = async (req, res, next) => {
       "images",
       "price",
       "currency",
+      "sku",
+      "barcode",
+      "stock",
+      "trackInventory",
+      "comparePrice",
+      "saleEndDate",
+      "updatedAt",
     ]);
 
-    const isHomepage = !routeContext.productKey && !routeContext.storePageSlug;
+    const isHomepage =
+      !routeContext.productKey &&
+      !routeContext.categorySlug &&
+      !routeContext.articleSlug &&
+      !routeContext.storePageSlug;
 
-    const [template, storefrontSettings, product, storePage, indexHtml] =
+    const [template, storefrontSettings, product, category, article, storePage, indexHtml] =
       await Promise.all([
         isHomepage
           ? safeQuery(() =>
@@ -154,9 +165,66 @@ exports.handleStorefrontShell = async (req, res, next) => {
                   companyId: req.companyId,
                   isActive: true,
                   deletedAt: null,
+                  isHidden: false,
                   OR: [{ id: routeContext.productKey }, { slug: routeContext.productKey }],
                 },
-                select: compatibleProductSelect,
+                select: {
+                  ...compatibleProductSelect,
+                  category: {
+                    select: {
+                      id: true,
+                      name: true,
+                      slug: true,
+                    },
+                  },
+                  productReviews: {
+                    where: { isApproved: true },
+                    select: { rating: true },
+                  },
+                },
+              }),
+            )
+          : Promise.resolve(null),
+        routeContext.categorySlug
+          ? safeQuery(() =>
+              prisma.category.findFirst({
+                where: {
+                  companyId: req.companyId,
+                  isActive: true,
+                  OR: [{ id: routeContext.categorySlug }, { slug: routeContext.categorySlug }],
+                },
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  description: true,
+                  image: true,
+                  metaTitle: true,
+                  metaDescription: true,
+                },
+              }),
+            )
+          : Promise.resolve(null),
+        routeContext.articleSlug
+          ? safeQuery(() =>
+              prisma.article.findFirst({
+                where: {
+                  companyId: req.companyId,
+                  isPublished: true,
+                  slug: routeContext.articleSlug,
+                },
+                select: {
+                  id: true,
+                  slug: true,
+                  title: true,
+                  excerpt: true,
+                  heroImage: true,
+                  authorName: true,
+                  publishedAt: true,
+                  updatedAt: true,
+                  seoTitle: true,
+                  seoDescription: true,
+                },
               }),
             )
           : Promise.resolve(null),
@@ -179,6 +247,25 @@ exports.handleStorefrontShell = async (req, res, next) => {
         loadIndexHtml(),
       ]);
 
+    const isNotFound =
+      (routeContext.productKey && !product) ||
+      (routeContext.categorySlug && !category) ||
+      (routeContext.articleSlug && !article) ||
+      (routeContext.storePageSlug && !storePage);
+
+    let reviews = null;
+    if (Array.isArray(product?.productReviews) && product.productReviews.length > 0) {
+      const count = product.productReviews.length;
+      const sum = product.productReviews.reduce(
+        (acc, r) => acc + (Number(r.rating) || 0),
+        0,
+      );
+      reviews = {
+        count,
+        avgRating: count > 0 ? sum / count : 0,
+      };
+    }
+
     const currentUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
     const metadata = buildStorefrontSeoMetadata({
       pathname: req.path,
@@ -187,9 +274,38 @@ exports.handleStorefrontShell = async (req, res, next) => {
       storefrontSettings,
       templateContent: template?.publishedContent || template?.content || {},
       product,
+      category,
+      article,
       storePage,
+      reviews,
+      noIndex: isNotFound,
     });
-    const html = injectStorefrontSeoTags(indexHtml, metadata);
+
+    let html = injectStorefrontSeoTags(indexHtml, metadata);
+
+    // Semantic body snippet for non-JS crawlers
+    let semanticSnippet = "";
+    if (product) {
+      const escape = (s) => (s ? String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "");
+      semanticSnippet = `<div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><h1>${escape(metadata.title)}</h1><p>${escape(metadata.description)}</p><span>${metadata.price ? `${metadata.price} ${metadata.currency || "EGP"}` : ""}</span></div>`;
+    } else if (category) {
+      const escape = (s) => (s ? String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "");
+      semanticSnippet = `<div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><h1>${escape(metadata.title)}</h1><p>${escape(metadata.description)}</p></div>`;
+    } else if (article) {
+      const escape = (s) => (s ? String(s).replace(/</g, "&lt;").replace(/>/g, "&gt;") : "");
+      semanticSnippet = `<div class="sr-only" style="position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0" aria-hidden="true"><h1>${escape(metadata.title)}</h1><p>${escape(metadata.description)}</p></div>`;
+    }
+
+    if (semanticSnippet && html.includes('<div id="root"></div>')) {
+      html = html.replace('<div id="root"></div>', `<div id="root">${semanticSnippet}</div>`);
+    }
+
+    res.set("Content-Type", "text/html; charset=utf-8");
+
+    if (isNotFound) {
+      res.set("Cache-Control", "no-cache, no-store, must-revalidate");
+      return res.status(404).send(html);
+    }
 
     // Evict oldest if cache exceeds 1000 items
     if (htmlPageCache.size >= 1000) {
@@ -201,7 +317,6 @@ exports.handleStorefrontShell = async (req, res, next) => {
       timestamp: Date.now(),
     });
 
-    res.set("Content-Type", "text/html; charset=utf-8");
     res.set("X-HTML-Cache", "MISS");
     res.set(
       "Cache-Control",

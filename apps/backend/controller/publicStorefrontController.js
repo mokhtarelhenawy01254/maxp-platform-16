@@ -562,12 +562,12 @@ exports.getStorefrontSettings = async (req, res) => {
     };
 
     try {
-      await redisCacheService.set(cacheKey, responseData, 60); // Cache for 60 seconds
+      await redisCacheService.set(cacheKey, responseData, 300); // Cache for 5 minutes
     } catch (err) {
       console.error('⚠️ [REDIS] error setting storefront settings cache:', err);
     }
 
-    res.set('Cache-Control', 'public, max-age=60, s-maxage=180, stale-while-revalidate=300');
+    res.set('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
     return res.json(responseData);
   } catch (error) {
     console.error('❌ [PUBLIC-STOREFRONT] Error fetching settings:', error);
