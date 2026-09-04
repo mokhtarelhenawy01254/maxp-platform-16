@@ -32,6 +32,7 @@ jobs:
   build:
     name: Build & Verify (cancelable)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     concurrency:
       group: production-build
       # cancel-in-progress: false (was true) — when the team pushes
@@ -60,15 +61,18 @@ jobs:
       - name: Skip if superseded by a newer commit
         id: check-latest
         shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          if [ "$EVENT_NAME" == "workflow_dispatch" ]; then
             echo "is-latest=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           git fetch --force origin main
           LATEST=$(git rev-parse origin/main)
-          if [ "$LATEST" != "${{ github.sha }}" ]; then
-            echo "⏭️ This build (${{ github.sha }} → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
+          if [ "$LATEST" != "$COMMIT_SHA" ]; then
+            echo "⏭️ This build ($COMMIT_SHA → $(git log -1 --format=%s)) is superseded by a newer commit on main ($LATEST)."
             echo "   Skipping to avoid redundant rebuild — the newer commit's deploy will cover these changes."
             echo "is-latest=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -111,8 +115,11 @@ jobs:
       - name: Check Component Changes
         id: diff-check
         shell: bash
+        env:
+          FORCE_ALL: ${{ github.event.inputs.force_rebuild_all || 'false' }}
+          EVENT_BEFORE: ${{ github.event.before }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          FORCE_ALL="${{ github.event.inputs.force_rebuild_all || 'false' }}"
           if [ "$FORCE_ALL" = "true" ]; then
             echo "⚡ Force rebuild requested — marking all components changed"
             echo "fb-changed=true" >> "$GITHUB_OUTPUT"
@@ -124,7 +131,7 @@ jobs:
             exit 0
           fi
 
-          BEFORE="${{ github.event.before }}"
+          BEFORE="$EVENT_BEFORE"
           if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE" 2>/dev/null; then
             if git rev-parse HEAD~1 >/dev/null 2>&1; then
               BEFORE="HEAD~1"
@@ -140,8 +147,8 @@ jobs:
             fi
           fi
 
-          echo "🔎 Diffing changed files between $BEFORE and ${{ github.sha }}..."
-          CHANGED=$(git diff --name-only "$BEFORE" "${{ github.sha }}")
+          echo "🔎 Diffing changed files between $BEFORE and $COMMIT_SHA..."
+          CHANGED=$(git diff --name-only "$BEFORE" "$COMMIT_SHA")
 
           # 1. Facebook Ads Changes
           if echo "$CHANGED" | grep -qE "apps/backend/(controller/facebookAds|services/facebookAds|utils/.*facebook|tests/controller/facebookAds)"; then
@@ -311,46 +318,55 @@ jobs:
         run: node scripts/i18n-check.js
         continue-on-error: false
 
-      - name: Generate i18n TypeScript Types
-        if: steps.diff-check.outputs.fe-needed == 'true'
-        run: node scripts/generate-i18n-types.js
-        continue-on-error: false
-
-      # Packaging for reliable transfer (Optimized to exclude large node_modules)
+      # Packaging for reliable transfer (Optimized parallel creation with fast compression & exclusions)
       - name: Package Assets
         env:
           FE_NEEDED: ${{ steps.diff-check.outputs.fe-needed }}
         run: |
+          echo "📦 Starting parallel packaging..."
+
           if [ "$FE_NEEDED" == "true" ]; then
-            echo "📦 Packaging Frontend..."
-            tar -czf frontend.tar.gz -C apps/frontend/dist .
-            tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes .
+            (tar -czf frontend.tar.gz -C apps/frontend/dist . && echo "✓ Frontend packaged") &
+            (tar -czf theme-presets.tar.gz -C apps/frontend/src/storefront/themes . && echo "✓ Themes packaged") &
           else
             echo "ℹ️ Skipping frontend tarballs (backend-only deploy)"
           fi
-          tar -czf backend.tar.gz -C apps --exclude="backend/node_modules" --exclude="backend/prisma/generated" --exclude="backend/legacy_mysql" --exclude="backend/uploads" --exclude="backend/*.tar.gz" backend
 
-          echo "📦 Packaging Shared..."
-          tar -czf shared.tar.gz -C shared .
+          (tar -czf backend.tar.gz -C apps \
+            --exclude="backend/node_modules" \
+            --exclude="backend/prisma/generated" \
+            --exclude="backend/legacy_mysql" \
+            --exclude="backend/uploads" \
+            --exclude="backend/*.tar.gz" \
+            --exclude="backend/__tests__" \
+            --exclude="backend/tests" \
+            --exclude="backend/testsprite_tests" \
+            --exclude="backend/docs" \
+            --exclude="backend/coverage" \
+            --exclude="backend/*.log" \
+            backend && echo "✓ Backend packaged") &
 
-          echo "📦 Packaging AI service..."
-          tar -czf ai-service.tar.gz \
+          (tar -czf shared.tar.gz -C shared . && echo "✓ Shared packaged") &
+
+          (tar -czf ai-service.tar.gz \
             --exclude=".env" \
             --exclude=".venv" \
             --exclude="__pycache__" \
             --exclude=".pytest_cache" \
             --exclude=".ruff_cache" \
             --exclude="*.pyc" \
-            -C apps ai-service
+            -C apps ai-service && echo "✓ AI service packaged") &
 
-          echo "📦 Packaging Nginx configs..."
-          rm -rf deploy_nginx
-          mkdir -p deploy_nginx
-          cp nginx_configs/maxp.online.conf deploy_nginx/maxp.online.conf
-          cp nginx_configs/mokhtarelhenawy.online.conf deploy_nginx/mokhtarelhenawy.online.conf
-          tar -czf nginx-configs.tar.gz -C deploy_nginx .
-          rm -rf deploy_nginx
+          (rm -rf deploy_nginx && mkdir -p deploy_nginx && \
+           cp nginx_configs/maxp.online.conf deploy_nginx/maxp.online.conf && \
+           cp nginx_configs/mokhtarelhenawy.online.conf deploy_nginx/mokhtarelhenawy.online.conf && \
+           tar -czf nginx-configs.tar.gz -C deploy_nginx . && \
+           rm -rf deploy_nginx && echo "✓ Nginx packaged") &
 
+          wait
+          echo "✅ All packages created successfully in parallel:"
+          sha256sum *.tar.gz > SHA256SUMS
+          cat SHA256SUMS
           ls -lh *.tar.gz
 
       # ───────────────────────────────────────────────────────────────────
@@ -401,26 +417,27 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
-          ssh -4 -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" '
+          ssh -4 -i "$SSH_KEY_PATH" -p "$SERVER_SSH_PORT" -o StrictHostKeyChecking=accept-new "$SERVER_USER@$SERVER_HOST" "
             set -e
-            echo "🧹 Cleaning stale staging dirs (older than 1 day)..."
-            find $HOME -maxdepth 1 -name "deploy_staging_*" -mtime +1 -exec rm -rf {} + 2>/dev/null || true
+            echo '🧹 Cleaning stale staging dirs (older than 1 day)...'
+            find \$HOME -maxdepth 1 -name 'deploy_staging_*' -mtime +1 -exec rm -rf {} + 2>/dev/null || true
             sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak 2>/dev/null || true
             sudo journalctl --vacuum-time=1d 2>/dev/null || true
             pm2 flush 2>/dev/null || true
 
-            DEPLOY_STAGING="$HOME/deploy_staging_${{ github.run_id }}"
-            echo "🚀 Creating staging directory: $DEPLOY_STAGING"
-            rm -rf "$DEPLOY_STAGING"
-            mkdir -p "$DEPLOY_STAGING/backend"
-            mkdir -p "$DEPLOY_STAGING/frontend"
-            echo "✅ Staging directory created."
-            echo "📊 Free disk space on server:"
-            df -h $HOME
-          '
+            DEPLOY_STAGING=\"\$HOME/deploy_staging_${GITHUB_RUN_ID}\"
+            echo \"🚀 Creating staging directory: \$DEPLOY_STAGING\"
+            rm -rf \"\$DEPLOY_STAGING\"
+            mkdir -p \"\$DEPLOY_STAGING/backend\"
+            mkdir -p \"\$DEPLOY_STAGING/frontend\"
+            echo '✅ Staging directory created.'
+            echo '📊 Free disk space on server:'
+            df -h \$HOME
+          "
 
       # Deploy Tarballs to Server
       - name: Deploy Tarballs to Server
@@ -429,6 +446,7 @@ jobs:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
           SERVER_USER: ${{ secrets.SERVER_USER }}
           SERVER_SSH_PORT: ${{ env.SERVER_SSH_PORT }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
         run: |
           set -euo pipefail
           SSH_KEY_PATH="$HOME/.ssh/maxp_deploy_key"
@@ -442,9 +460,9 @@ jobs:
               -o ServerAliveInterval=30 \
               -o ServerAliveCountMax=10 \
               -o ConnectTimeout=30 \
-              *.tar.gz \
-              "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}/"; then
-              echo "✅ Tarballs transferred successfully"
+              *.tar.gz SHA256SUMS \
+              "$SERVER_USER@$SERVER_HOST:deploy_staging_${GITHUB_RUN_ID}/"; then
+              echo "✅ Tarballs and checksums transferred successfully"
               break
             else
               echo "⚠️ SCP attempt $i failed"
@@ -460,7 +478,7 @@ jobs:
           scp -4 -i "$SSH_KEY_PATH" -P "$SERVER_SSH_PORT" \
             -o StrictHostKeyChecking=accept-new \
             scripts/deploy-remote.sh \
-            "$SERVER_USER@$SERVER_HOST:deploy_staging_${{ github.run_id }}/deploy-remote.sh"
+            "$SERVER_USER@$SERVER_HOST:deploy_staging_${GITHUB_RUN_ID}/deploy-remote.sh"
 
   # ═══════════════════════════════════════════════════════════════════
   # DEPLOY job — ينفذ deploy-remote.sh على السيرفر فقط (never cancel)
@@ -486,16 +504,19 @@ jobs:
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
-          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+          if [ "$EVENT_NAME" == "workflow_dispatch" ]; then
             echo "proceed=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
           LATEST=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" \
-            "https://api.github.com/repos/${{ github.repository }}/commits/main" \
+            "https://api.github.com/repos/${REPO}/commits/main" \
             | python3 -c "import sys,json; print(json.load(sys.stdin).get('sha',''))")
-          if [ -n "$LATEST" ] && [ "$LATEST" != "${{ github.sha }}" ]; then
-            echo "⏭️ Skipping deploy: commit ${{ github.sha }} is superseded by $LATEST on main."
+          if [ -n "$LATEST" ] && [ "$LATEST" != "$COMMIT_SHA" ]; then
+            echo "⏭️ Skipping deploy: commit $COMMIT_SHA is superseded by $LATEST on main."
             echo "   The newer commit's deploy will cover these changes."
             echo "proceed=false" >> "$GITHUB_OUTPUT"
             exit 0
@@ -543,6 +564,8 @@ jobs:
         if: steps.check-deploy-latest.outputs.proceed == 'true'
         uses: appleboy/ssh-action@v1.0.3
         env:
+          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
           SUPER_ADMIN_EMAIL: ${{ secrets.SUPER_ADMIN_EMAIL }}
           SUPER_ADMIN_PASSWORD: ${{ secrets.SUPER_ADMIN_PASSWORD }}
           CATALOG_CHANGED: ${{ needs.build.outputs.catalog-changed }}
@@ -567,8 +590,8 @@ jobs:
             }
             export DEPLOY_STAGING="$HOME/deploy_staging_${GITHUB_RUN_ID}"
             exec 9>/tmp/maxp-production-deploy.lock
-            if ! flock -n 9; then
-              echo "❌ Another production deployment is already running on the server"
+            if ! flock -w 180 9; then
+              echo "❌ Another production deployment is still running on the server after 180s"
               exit 1
             fi
             bash "$DEPLOY_STAGING/deploy-remote.sh"

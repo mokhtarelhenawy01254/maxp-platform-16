@@ -170,6 +170,16 @@ sync_frontend_dist() {
   fi
 }
 
+# 🔒 Cryptographic Integrity Check (verify tarballs against SHA256SUMS before extraction)
+if [ -f "$DEPLOY_STAGING/SHA256SUMS" ]; then
+  echo "🔒 Verifying tarball SHA256 checksums..."
+  (cd "$DEPLOY_STAGING" && sha256sum -c SHA256SUMS) || {
+    echo "❌ CRITICAL: Tarball checksum verification failed! Archive was corrupted during transfer."
+    exit 1
+  }
+  echo "✅ All tarball checksums verified successfully."
+fi
+
 # Move frontend files from staging
 if [ -f "$DEPLOY_STAGING/frontend.tar.gz" ]; then
   echo "📦 Extracting frontend files from staging..."

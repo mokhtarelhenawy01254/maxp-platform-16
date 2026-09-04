@@ -17,6 +17,10 @@ on:
       - "apps/ai-service/src/tools/definitions/**"
   workflow_dispatch:
 
+concurrency:
+  group: validate-agents-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   validate:
     name: Validate Agent-Skill Integrity

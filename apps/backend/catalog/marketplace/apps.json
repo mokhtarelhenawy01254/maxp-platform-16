@@ -3454,5 +3454,62 @@
         "access": "PAID"
       }
     }
+  },
+  {
+    "id": "cat-app-executable-mindmap",
+    "slug": "executable-mindmap",
+    "name": "الخرائط الذهنية ومسارات العمل",
+    "nameEn": "Executable Mindmaps & Workflows",
+    "description": "لوحة خرائط ذهنية ثلاثية الأغراض: تخطيط استراتيجي وعصف ذهني، وضع الشرح والتدريب التفاعلي، وأتمتة تنفيذية للمهام والرسائل مثل n8n — متصلة بكافة أدوات MaxP.",
+    "descriptionEn": "Triple-purpose canvas: visual mind mapping and brainstorming, interactive training and presentation mode, and n8n-style workflow execution for tasks and messaging.",
+    "category": "AUTOMATION",
+    "pricingModel": "FREE",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 0,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "أصحاب المتاجر، المدربين، وفرق العمل الذين يحتاجون لتخطيط وتنفيذ وشرح استراتيجياتهم في مكان واحد.",
+      "surface": "داخل قسم الخرائط الذهنية — لوحة التخطيط والأتمتة التفاعلية.",
+      "outcome": "تحويل الأفكار إلى مهام ومسارات عمل ومواد تدريبية مجهزة للتنفيذ الفوري."
+    },
+    "features": {
+      "mindmapping": {
+        "enabled": true,
+        "name": "التخطيط الذهني التفاعلي",
+        "description": "رسم شجري لا نهائي، سحب وإفلات، وتوليد أفكار بالذكاء الاصطناعي.",
+        "access": "FREE"
+      },
+      "trainingMode": {
+        "enabled": true,
+        "name": "وضع الشرح والتدريب (Presentation)",
+        "description": "عرض سينمائي للخطوات مع تضمين فيديوهات وقوائم مهام للمتدربين.",
+        "access": "FREE"
+      },
+      "executionEngine": {
+        "enabled": true,
+        "name": "محرك الأتمتة والتنفيذ (n8n Style)",
+        "description": "تشغيل المسار على السيرفر، إرسال واتساب، إنشاء مهام حية، وربط الكوبونات.",
+        "access": "FREE"
+      },
+      "dragAndDrop": {
+        "enabled": true,
+        "name": "سحب وإفلات الأدوات (Drag & Drop)",
+        "description": "7 فئات من الأدوات الحية الجاهزة للإفلات المباشر على اللوحة.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "git-branch",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-04T00:00:00Z",
+    "updatedAt": "2026-09-04T00:00:00Z"
   }
 ]

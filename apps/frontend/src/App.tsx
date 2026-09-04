@@ -1322,6 +1322,8 @@ const CompareApps = React.lazy(
   () => import("./pages/marketplace/CompareApps"),
 );
 
+const MindMapPage = React.lazy(() => import("./pages/mindmap/MindMapPage"));
+
 const AppPricingSheet = React.lazy(
   () => import("./pages/subscription/AppPricingSheet"),
 );
@@ -1643,6 +1645,7 @@ if (typeof window !== "undefined") {
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
   p["/my-apps"] = () => import("./pages/marketplace/MyApps");
+  p["/mindmap"] = () => import("./pages/mindmap/MindMapPage");
   p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
 }
 
@@ -2890,6 +2893,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <MarketplaceV2 />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/mindmap"
+                  element={
+                    <Layout>
+                      <MindMapPage />
                     </Layout>
                   }
                 />

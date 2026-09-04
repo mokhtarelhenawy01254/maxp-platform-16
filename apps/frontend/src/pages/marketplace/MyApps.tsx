@@ -92,6 +92,7 @@ export const APP_ROUTE_MAP: Record<string, string> = {
   "dental-lab-app": "/dental-lab",
   "booking-app": "/appointments",
   "notification-automation": "/notifications/settings",
+  "executable-mindmap": "/mindmap",
 };
 
 export function getAppDestination(app: { slug: string; mainRoute?: string | null }): string {

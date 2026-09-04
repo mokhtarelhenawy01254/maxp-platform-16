@@ -22,6 +22,10 @@ on:
       - 'apps/frontend/src/pages/dental-lab/**'
       - 'apps/frontend/src/pages/dental-doctor/**'
 
+concurrency:
+  group: dental-lab-ci-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   backend:
     name: Backend syntax + dental tests

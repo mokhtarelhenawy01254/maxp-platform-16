@@ -125,4 +125,5 @@ export const appIconsBySlug: Record<string, React.ElementType> = {
   "clv-calculator": Users,
   "upsell-planner": ShoppingCart,
   "refund-rate": RefreshCcw,
+  "executable-mindmap": GitBranch,
 };

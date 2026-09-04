@@ -101,6 +101,20 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     action: "تظل Core لأنها مطلوبة لتشغيل الحساب نفسه ولا ينفع تتعطل باشتراك App.",
   },
   {
+    id: "executable-mindmap",
+    area: "productivity",
+    label: "الخرائط الذهنية ومسارات العمل",
+    description: "تخطيط شجري لا نهائي، وضع الشرح والتدريب السينمائي، وأتمتة تنفيذية للمهام والرسائل.",
+    status: "covered",
+    appSlug: "executable-mindmap",
+    appLabel: "الخرائط الذهنية ومسارات العمل",
+    currentGate: "executable-mindmap",
+    routes: [
+      { path: "/mindmap", label: "الخرائط الذهنية ومسارات العمل" },
+    ],
+    action: "تطبيق في متجر التطبيقات يربط التخطيط بالتدريب والأتمتة التنفيذية.",
+  },
+  {
     id: "orders-core",
     area: "orders",
     label: "إدارة الطلبات الأساسية",
