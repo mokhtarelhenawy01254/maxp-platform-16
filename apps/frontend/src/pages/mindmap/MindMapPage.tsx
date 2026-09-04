@@ -37,6 +37,7 @@ import {
   Lock,
   CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   RefreshCw,
   HelpCircle
 } from "lucide-react";
@@ -377,11 +378,17 @@ export default function MindMapPage() {
   const runExecutionSimulation = () => {
     switchMode("exec");
     setIsExecuting(true);
-    toast.loading("جاري تشغيل مسار العمل التنفيذي ومزامنة البيانات مع أدوات MaxP...", { id: "exec-toast" });
+    const activeCount = nodes.filter(n => isToolInstalled(n.requiredAppSlug)).length;
+    const totalCount = nodes.length;
+    toast.loading(`جاري تشغيل مسار العمل التنفيذي ومزامنة ${activeCount}/${totalCount} مرحلة نشطة مع أدوات MaxP...`, { id: "exec-toast" });
 
     setTimeout(() => {
       setIsExecuting(false);
-      toast.success("اكتمل تشغيل المسار بنجاح! تم فحص المؤشرات، تحديث الحسابات، وإرسال الإشعارات.", { id: "exec-toast" });
+      if (activeCount < totalCount && !isSuperAdmin) {
+        toast.success(`اكتمل تشغيل المسار! تم تشغيل ${activeCount} أداة مفعّلة بنجاح. يرجى تفعيل باقي الأدوات (${totalCount - activeCount}) للاستفادة الكاملة من الأتمتة.`, { id: "exec-toast", duration: 5000 });
+      } else {
+        toast.success("اكتمل تشغيل المسار بنجاح! تم فحص المؤشرات، تحديث الحسابات، وإرسال الإشعارات لكافة المراحل.", { id: "exec-toast" });
+      }
     }, 3000);
   };
 
@@ -491,7 +498,7 @@ export default function MindMapPage() {
 
     let newNode: MapNode = {
       id: newId,
-      parentId: selected?.id,
+      parentId: customX !== undefined ? undefined : (selected ? selected.id : undefined),
       stepOrder: newOrder,
       x: customX !== undefined ? customX : (selected ? selected.x + 380 : 300),
       y: customY !== undefined ? customY : (selected ? selected.y + 40 : 300),
@@ -677,9 +684,9 @@ export default function MindMapPage() {
 
   // إعادة تحميل قالب دورة التجارة الإلكترونية الشاملة
   const handleReloadMasterBlueprint = () => {
-    setNodes(ECOMMERCE_MASTER_BLUEPRINT);
+    setNodes(createMasterBlueprint(companyName));
     handleResetZoom();
-    toast.success("تم تحميل قالب دورة التجارة الإلكترونية الشاملة بنجاح!");
+    toast.success("تم تحميل وتحديث قالب دورة التجارة الإلكترونية الشاملة بنجاح!");
   };
 
   return (
@@ -691,7 +698,20 @@ export default function MindMapPage() {
             <GitBranch className="w-4 h-4 text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-sm text-white">الخرائط الذهنية ومسارات العمل</h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-bold text-sm text-white">الخرائط الذهنية ومسارات العمل</h2>
+              {isMindmapInstalled ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-950/70 border border-emerald-500/40 text-emerald-400 px-2 py-0.5 rounded-full">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                  <span>مفعّل لـ {companyName || "الشركة"}</span>
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-[10px] font-semibold bg-amber-950/70 border border-amber-500/40 text-amber-300 px-2 py-0.5 rounded-full">
+                  <Lock className="w-3 h-3 text-amber-400" />
+                  <span>معاينة (غير مفعّل)</span>
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-slate-400 hidden sm:block">دورة التجارة الإلكترونية المتكاملة (17 أداة حية)</p>
           </div>
         </div>
@@ -757,6 +777,27 @@ export default function MindMapPage() {
           </button>
         </div>
       </div>
+
+      {/* Banner for Unactivated Company */}
+      {!isMindmapInstalled && (
+        <div className="bg-gradient-to-r from-amber-950/90 via-amber-900/70 to-slate-900 border-b border-amber-500/40 px-4 py-2.5 flex items-center justify-between gap-4 z-20 shrink-0 text-xs">
+          <div className="flex items-center gap-2.5 text-amber-200">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>
+              <strong>وضع المعاينة:</strong> تطبيق الخرائط الذهنية ومسارات العمل غير مفعّل حالياً لشركة{" "}
+              <strong>{companyName || "حسابك"}</strong>. يمكنك تصفح القالب، واضغط على الزر لتفعيله مجاناً لحفظ التعديلات والأتمتة.
+            </span>
+          </div>
+          <button
+            onClick={handleInstallMindmap}
+            disabled={isInstalling}
+            className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold px-3 py-1.5 rounded-lg text-xs transition shadow shrink-0"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>{isInstalling ? "جاري التفعيل..." : "تفعيل التطبيق مجاناً بنقرة واحدة"}</span>
+          </button>
+        </div>
+      )}
 
       {/* Main Canvas Area */}
       <div
@@ -937,18 +978,47 @@ export default function MindMapPage() {
                   {/* Live Tool Direct Link / Video Button */}
                   <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px]">
                     {node.liveRoute ? (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenLiveTool(node.liveRoute);
-                        }}
-                        className="flex items-center gap-1 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg transition font-semibold"
-                      >
-                        <span>فتح الأداة بالنظام</span>
-                        <ExternalLink className="w-3 h-3 text-slate-400" />
-                      </button>
+                      isToolInstalled(node.requiredAppSlug) ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenLiveTool(node.liveRoute);
+                          }}
+                          className="flex items-center gap-1 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-2 py-1 rounded-lg transition font-semibold"
+                          title="الأداة مفعّلة في باقة شركتك"
+                        >
+                          <span>فتح الأداة</span>
+                          <ExternalLink className="w-3 h-3 text-emerald-400" />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate("/marketplace");
+                            toast.info(`الأداة بحاجة لتفعيل من المتجر لشركة ${companyName || ""}`);
+                          }}
+                          className="flex items-center gap-1 text-amber-300 hover:text-amber-100 bg-amber-500/20 hover:bg-amber-500/30 border border-amber-500/40 px-2 py-1 rounded-lg transition font-semibold"
+                          title="غير مفعّلة لشركتك — اضغط للانتقال للمتجر"
+                        >
+                          <Lock className="w-3 h-3 text-amber-400" />
+                          <span>تفعيل من المتجر</span>
+                        </button>
+                      )
                     ) : (
                       <span className="text-slate-500">مسار عمليات</span>
+                    )}
+
+                    {/* Status Badge */}
+                    {node.requiredAppSlug && (
+                      <span
+                        className={`text-[9px] px-1.5 py-0.5 rounded font-bold ${
+                          isToolInstalled(node.requiredAppSlug)
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
+                            : "bg-amber-500/15 text-amber-400 border border-amber-500/30"
+                        }`}
+                      >
+                        {isToolInstalled(node.requiredAppSlug) ? "مفعّل ✅" : "غير مفعّل 🔒"}
+                      </span>
                     )}
 
                     {node.hasVideo && (
@@ -970,37 +1040,51 @@ export default function MindMapPage() {
           </div>
         </div>
 
-        {/* Selected Node Action Context Bar */}
-        {selectedNodeId && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 bg-slate-900/95 border border-violet-500/50 rounded-2xl shadow-2xl p-1.5 flex items-center gap-1.5 backdrop-blur animate-fade-in">
-            <button
-              onClick={aiExpandNode}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-violet-600/20 text-violet-300 hover:bg-violet-600 hover:text-white transition"
-            >
-              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-              <span>توسيع بالـ AI</span>
-            </button>
-            <button
-              onClick={() => {
-                const node = nodes.find((n) => n.id === selectedNodeId);
-                if (node?.liveRoute) handleOpenLiveTool(node.liveRoute);
-                else toast.success("تم تشغيل الأداة واختبار تنفيذها على السيرفر بنجاح");
+        {/* Selected Node Action Context Bar - floating directly above selected node */}
+        {(() => {
+          const selectedNode = nodes.find((n) => n.id === selectedNodeId);
+          if (!selectedNode) return null;
+          const nodeScreenX = selectedNode.x * zoom + pan.x + (140 * zoom);
+          const nodeScreenY = selectedNode.y * zoom + pan.y - 48;
+
+          return (
+            <div
+              style={{
+                position: "absolute",
+                left: `${nodeScreenX}px`,
+                top: `${Math.max(12, nodeScreenY)}px`,
+                transform: "translateX(-50%)"
               }}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-emerald-500/20 text-emerald-300 hover:bg-emerald-600 hover:text-white transition"
+              className="z-30 bg-slate-900/95 border border-violet-500/80 rounded-2xl shadow-2xl p-1.5 flex items-center gap-1.5 backdrop-blur animate-fade-in pointer-events-auto"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
-              <span>تشغيل الأداة</span>
-            </button>
-            <div className="h-4 w-px bg-slate-800 mx-1"></div>
-            <button
-              onClick={deleteSelectedNode}
-              className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/20 transition"
-              title="حذف"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+              <button
+                onClick={aiExpandNode}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-violet-600/20 text-violet-300 hover:bg-violet-600 hover:text-white transition"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
+                <span>توسيع بالـ AI</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (selectedNode.liveRoute) handleOpenLiveTool(selectedNode.liveRoute);
+                  else toast.success("تم تشغيل الأداة واختبار تنفيذها على السيرفر بنجاح");
+                }}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-emerald-500/20 text-emerald-300 hover:bg-emerald-600 hover:text-white transition"
+              >
+                <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+                <span>تشغيل الأداة</span>
+              </button>
+              <div className="h-4 w-px bg-slate-800 mx-1"></div>
+              <button
+                onClick={deleteSelectedNode}
+                className="p-1 rounded-lg text-rose-400 hover:bg-rose-500/20 transition"
+                title="حذف"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Side Panel: All 17 Tools Palette */}
