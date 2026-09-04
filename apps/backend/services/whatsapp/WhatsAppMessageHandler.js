@@ -129,21 +129,40 @@ function assertSessionReadyAfterPrep(sessionId, phase) {
 }
 
 // 🛡️ Per-session serial send queue to avoid concurrent Baileys WebSocket frame collisions
-// and enforce safe spacing between outgoing messages
+// and enforce safe spacing between outgoing messages without delaying the caller's HTTP response
 const sessionSendQueues = new Map();
 
 async function enqueueSessionSend(sessionId, sendFn, minDelayMs = 600) {
     const prev = sessionSendQueues.get(sessionId) || Promise.resolve();
+    let resolveResult, rejectResult;
+    const resultPromise = new Promise((resolve, reject) => {
+        resolveResult = resolve;
+        rejectResult = reject;
+    });
+
     const current = prev.catch(() => {}).then(async () => {
-        const res = await sendFn();
+        try {
+            const res = await sendFn();
+            resolveResult(res);
+        } catch (err) {
+            rejectResult(err);
+        }
+
+        // Pacing delay between this message and any subsequent message
         if (minDelayMs > 0) {
             const jitter = Math.floor(Math.random() * 300);
             await delay(minDelayMs + jitter);
         }
-        return res;
     });
+
     sessionSendQueues.set(sessionId, current);
-    return current;
+    current.finally(() => {
+        if (sessionSendQueues.get(sessionId) === current) {
+            sessionSendQueues.delete(sessionId);
+        }
+    });
+
+    return resultPromise;
 }
 
 function getBaileysSendReconnectWaitMs() {
