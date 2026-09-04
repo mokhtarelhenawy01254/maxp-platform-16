@@ -151,6 +151,8 @@ interface Session {
   metaMessagingLimit?: number | null;
   metaApiVersion?: string | null;
   metadata?: string | null;
+  callShieldEnabled?: boolean;
+  callShieldMessage?: string | null;
   _count: {
     messages: number;
     contacts: number;
@@ -1077,6 +1079,18 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
     }
   };
 
+  const handleStartEditSession = (session: Session) => {
+    let meta: any = {};
+    try {
+      meta = typeof session.metadata === "string" ? JSON.parse(session.metadata) : (session.metadata || {});
+    } catch {}
+    setEditingSession({
+      ...session,
+      callShieldEnabled: session.callShieldEnabled ?? meta?.callShieldEnabled ?? false,
+      callShieldMessage: session.callShieldMessage ?? meta?.callShieldMessage ?? "",
+    });
+  };
+
   const handleUpdateSession = async () => {
     if (!editingSession) {
       return;
@@ -1630,7 +1644,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       variant="outline"
                       size="sm"
                       className="hidden sm:inline-flex rounded-full border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] hover:bg-[color:var(--color-muted)] text-xs font-medium h-9 px-3"
-                      onClick={() => setEditingSession({ ...session })}
+                      onClick={() => handleStartEditSession(session)}
                     >
                       <Edit className="size-3.5 ms-1" />
                       {t("whatsappSettings.edit")}
@@ -1649,7 +1663,7 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-44 rounded-2xl p-1.5 shadow-lg border-[color:var(--shell-control-border)]">
                         <DropdownMenuItem
-                          onClick={() => setEditingSession({ ...session })}
+                          onClick={() => handleStartEditSession(session)}
                           className="flex items-center gap-2 cursor-pointer text-xs sm:text-sm py-2 rounded-xl"
                         >
                           <Edit className="size-4 text-[color:var(--color-primary)]" />
@@ -3420,6 +3434,43 @@ const WhatsAppSettings: React.FC<WhatsAppSettingsProps> = ({
                   )
                 }
               />
+
+              {editingSession.provider !== "META_CLOUD" && (
+                <div className="space-y-3 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+                  <SettingsToggle
+                    label="درع المكالمات (Call Shield) — رفض المكالمات الواردة تلقائياً"
+                    checked={editingSession.callShieldEnabled ?? false}
+                    onCheckedChange={(checked) =>
+                      setEditingSession((previous) =>
+                        previous
+                          ? { ...previous, callShieldEnabled: checked }
+                          : previous,
+                      )
+                    }
+                  />
+                  <p className="text-xs text-[color:var(--color-muted-foreground)]">
+                    عند التفعيل، سيتم رفض أي مكالمة صوتية أو فيديو واردة تلقائياً على رقم واتساب وإرسال رد نصي فوري للمتصل.
+                  </p>
+                  <div className="space-y-1.5 pt-1">
+                    <Label htmlFor="call-shield-message" className="text-xs font-medium">
+                      رسالة الرد التلقائي عند رفض المكالمة
+                    </Label>
+                    <Textarea
+                      id="call-shield-message"
+                      placeholder="عذراً، هذا الرقم مخصص للمراسلات النصية وخدمة العملاء فقط ولا يستقبل مكالمات صوتية. كيف يمكننا مساعدتك؟"
+                      value={editingSession.callShieldMessage || ""}
+                      onChange={(event) =>
+                        setEditingSession((previous) =>
+                          previous
+                            ? { ...previous, callShieldMessage: event.target.value }
+                            : previous,
+                        )
+                      }
+                      className="min-h-[5rem] text-xs bg-[color:var(--color-card)]"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2 rounded-3xl border border-[color:var(--shell-control-border)] bg-[color:var(--color-card)] px-4 py-4">
                 <div className="flex items-center justify-between gap-3">

@@ -45,6 +45,8 @@ export interface Session {
   metaQualityRating?: string | null;
   metaMessagingLimit?: number | null;
   metaApiVersion?: string | null;
+  callShieldEnabled?: boolean;
+  callShieldMessage?: string | null;
 }
 
 export interface Contact {
@@ -130,6 +132,7 @@ export interface Message {
   participantName?: string;
   metadata?: any;
   interactiveData?: string;
+  isPinned?: boolean;
 }
 
 export interface QuickReply {

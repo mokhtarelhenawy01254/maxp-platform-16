@@ -284,6 +284,10 @@ router.get('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whats
 // تحديث جلسة
 router.put('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.updateSession);
 
+// 🛡️ درع المكالمات (Call Shield)
+router.get('/sessions/:id/call-shield', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getCallShield);
+router.put('/sessions/:id/call-shield', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.updateCallShield);
+
 // حذف جلسة
 router.delete('/sessions/:id', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.sessions'), whatsappController.deleteSession);
 
@@ -317,6 +321,16 @@ router.post('/messages/:whatsappMessageId/correct', verifyToken.authenticateToke
 
 // إرسال وسائط
 router.post('/messages/send-media', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendMedia);
+
+// إرسال رسالة بأزرار تفاعلية حديثة (Native Flow Interactive Messages)
+router.post('/messages/send-interactive', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), messageSendLimiter, whatsappController.sendInteractive);
+
+// تثبيت وإلغاء تثبيت الرسائل (Pin / Unpin Message)
+router.post('/messages/:messageId/pin', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.pinMessage);
+router.delete('/messages/:messageId/pin', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), whatsappController.unpinMessage);
+
+// جلب الرسالة المثبتة الحالية لمحادثة
+router.get('/conversations/:jid/pinned', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('inbox.view'), whatsappController.getPinnedMessage);
 
 // رفع وإرسال ملف
 router.post('/messages/upload-send', verifyToken.authenticateToken, checkAppAccess('whatsapp-business'), requireDbPermission('whatsapp.reply'), upload.single('file'), messageSendLimiter, async (req, res) => {

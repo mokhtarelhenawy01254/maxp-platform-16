@@ -5580,3 +5580,185 @@ async function facebookEmbeddedConnect(req, res) {
         res.status(500).json({ error: errorMsg });
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 🛡️ Advanced Baileys Features: Call Shield, Polls, Pin, Interactive Flow
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * تحديث إعدادات درع المكالمات لجلسة
+ * PUT /api/whatsapp/sessions/:id/call-shield
+ */
+async function updateCallShield(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+        const { enabled, message } = req.body;
+
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id, companyId }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        const result = await WhatsAppManager.updateCallShieldSettings(id, { enabled, message });
+        res.json({ success: true, callShield: result });
+    } catch (error) {
+        console.error('❌ Error updating call shield:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء تحديث درع المكالمات' });
+    }
+}
+
+/**
+ * جلب إعدادات درع المكالمات لجلسة
+ * GET /api/whatsapp/sessions/:id/call-shield
+ */
+async function getCallShield(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { id } = req.params;
+
+        const session = await getSharedPrismaClient().whatsAppSession.findFirst({
+            where: { id, companyId },
+            select: { id: true, metadata: true }
+        });
+
+        if (!session) {
+            return res.status(404).json({ error: 'الجلسة غير موجودة' });
+        }
+
+        let meta = {};
+        try {
+            meta = session.metadata ? (typeof session.metadata === 'string' ? JSON.parse(session.metadata) : session.metadata) : {};
+        } catch {}
+
+        res.json({
+            success: true,
+            callShield: {
+                callShieldEnabled: !!meta.callShieldEnabled,
+                callShieldMessage: meta.callShieldMessage || 'عذراً، هذا الرقم مخصص للمراسلات النصية وخدمة العملاء عبر واتساب فقط ولا يستقبل مكالمات هاتفية. برجاء كتابة استفسارك وسيقوم فريق العمل بالرد عليك في أقرب وقت. 🌷'
+            }
+        });
+    } catch (error) {
+        console.error('❌ Error getting call shield:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب إعدادات درع المكالمات' });
+    }
+}
+
+/**
+ * تثبيت رسالة
+ * POST /api/whatsapp/messages/:messageId/pin
+ */
+async function pinMessage(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { messageId } = req.params;
+        const { sessionId, jid, duration = 86400 } = req.body;
+
+        if (!sessionId || !jid) {
+            return res.status(400).json({ error: 'sessionId و jid مطلوبين' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const result = await WhatsAppMessageHandler.pinMessage(targetSessionId, jid, messageId, Number(duration));
+
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('❌ Error pinning message:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء تثبيت الرسالة' });
+    }
+}
+
+/**
+ * إلغاء تثبيت رسالة
+ * DELETE /api/whatsapp/messages/:messageId/pin
+ */
+async function unpinMessage(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { messageId } = req.params;
+        const { sessionId, jid } = req.body.sessionId ? req.body : req.query;
+
+        if (!sessionId || !jid) {
+            return res.status(400).json({ error: 'sessionId و jid مطلوبين' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const result = await WhatsAppMessageHandler.unpinMessage(targetSessionId, jid, messageId);
+
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error('❌ Error unpinning message:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء إلغاء تثبيت الرسالة' });
+    }
+}
+
+/**
+ * جلب الرسالة المثبتة الحالية لمحادثة
+ * GET /api/whatsapp/conversations/:jid/pinned
+ */
+async function getPinnedMessage(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { jid } = req.params;
+        const { sessionId } = req.query;
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const formattedJid = WhatsAppMessageHandler.formatJid(jid);
+
+        const messages = await getSharedPrismaClient().whatsAppMessage.findMany({
+            where: {
+                sessionId: targetSessionId,
+                remoteJid: formattedJid,
+                metadata: { contains: '"isPinned":true' }
+            },
+            orderBy: { updatedAt: 'desc' },
+            take: 1
+        });
+
+        const pinned = messages.length > 0 ? messages[0] : null;
+        if (pinned && pinned.metadata) {
+            try {
+                const meta = JSON.parse(pinned.metadata);
+                if (meta.pinExpiresAt && new Date(meta.pinExpiresAt) < new Date()) {
+                    return res.json({ success: true, pinnedMessage: null });
+                }
+            } catch {}
+        }
+
+        res.json({ success: true, pinnedMessage: pinned });
+    } catch (error) {
+        console.error('❌ Error getting pinned message:', error);
+        res.status(500).json({ error: 'حدث خطأ أثناء جلب الرسالة المثبتة' });
+    }
+}
+
+/**
+ * إرسال رسالة بأزرار تفاعلية حديثة
+ * POST /api/whatsapp/messages/send-interactive
+ */
+async function sendInteractive(req, res) {
+    try {
+        const { companyId } = req.user;
+        const { sessionId, to, text, title, footer, buttons = [] } = req.body;
+
+        if (!sessionId || !to || !text) {
+            return res.status(400).json({ error: 'البيانات غير مكتملة' });
+        }
+
+        const targetSessionId = await resolveActiveSessionId(companyId, sessionId);
+        const message = await WhatsAppMessageHandler.sendInteractiveButtons(targetSessionId, to, {
+            text,
+            title,
+            footer,
+            buttons
+        });
+
+        res.json({ success: true, message });
+    } catch (error) {
+        console.error('❌ Error sending interactive message:', error);
+        res.status(500).json({ error: error.message || 'حدث خطأ أثناء إرسال الرسالة التفاعلية' });
+    }
+}

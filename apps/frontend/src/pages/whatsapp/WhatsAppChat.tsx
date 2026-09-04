@@ -16,6 +16,8 @@ import {
   MapPin,
   MousePointerSquare,
   Phone,
+  Pin,
+  PinOff,
   PlusCircle,
   Reply,
   ShieldAlert,
@@ -32,7 +34,7 @@ import { tToast } from '../../utils/i18n-toast';
 import { useTranslation } from 'react-i18next';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import { format } from 'date-fns';
-import { InfiniteData, useQueryClient } from '@tanstack/react-query';
+import { InfiniteData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiClient as api } from '../../services/apiClient';
 import { indexedDBStorage } from '../../services/indexedDBStorage';
 import useSocket from '../../hooks/useSocket';
@@ -59,6 +61,7 @@ import { useAuth } from '../../hooks/useAuthSimple';
 import ChatSidebar from './components/ChatSidebar';
 import ChatWindow from './components/ChatWindow';
 import ChatRightPanel from './components/ChatRightPanel';
+import InteractiveButtonsModal, { type InteractiveButtonInput } from './components/InteractiveButtonsModal';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
 
 import {
@@ -278,7 +281,8 @@ const WhatsAppChatContent: React.FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const [showReactionPicker, setShowReactionPicker] = useState<string | null>(null);
-  const [_highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null);
+  const [interactiveDialogOpen, setInteractiveDialogOpen] = useState(false);
   const pendingScrollMessageIdRef = useRef<string | null>(null);
   const isSearchingForMessageRef = useRef(false);
 
@@ -541,7 +545,36 @@ const WhatsAppChatContent: React.FC = () => {
     return messages.filter(m => m.messageType !== 'REACTION');
   }, [messages]);
 
+  // Query remote pinned message for active contact
+  const { data: remotePinnedMessage } = useQuery<Message | null>({
+    queryKey: ['whatsapp', 'pinned', selectedContact?.jid, targetSessionId],
+    queryFn: async () => {
+      if (!selectedContact?.jid) return null;
+      try {
+        const res = await api.get(`/whatsapp/conversations/${encodeURIComponent(selectedContact.jid)}/pinned`, {
+          params: targetSessionId ? { sessionId: targetSessionId } : undefined
+        });
+        return (res as any).data?.pinnedMessage || null;
+      } catch {
+        return null;
+      }
+    },
+    enabled: !!selectedContact?.jid,
+    staleTime: 30000,
+  });
 
+  // Current active pinned message in the conversation
+  const currentPinnedMessage = useMemo(() => {
+    const pinnedInVisible = [...visibleMessages].reverse().find(m => {
+      let meta: any = m.metadata;
+      if (typeof meta === 'string') {
+        try { meta = JSON.parse(meta); } catch { meta = {}; }
+      }
+      return m.isPinned === true || meta?.isPinned === true;
+    });
+    if (pinnedInVisible) return pinnedInVisible;
+    return remotePinnedMessage || null;
+  }, [visibleMessages, remotePinnedMessage]);
 
   // Helper to get a valid session ID for API calls (never 'all')
   const activeSessionId = useMemo(() => {
@@ -1243,10 +1276,85 @@ const WhatsAppChatContent: React.FC = () => {
       }
     };
 
+    const handlePollUpdated = (data: { sessionId: string; messageId: string; remoteJid: string; interactiveData: any }) => {
+      const currentContact = selectedContactRef.current;
+      if (!currentContact) return;
+      const targetSid = currentContact.sessionId || (selectedSessionRef.current === 'all' ? data.sessionId : selectedSessionRef.current);
+      queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', currentContact.jid, targetSid], old => {
+        if (!old) return old;
+        const newPages = old.pages.map(page => ({
+          ...page,
+          messages: page.messages.map(m => {
+            if (m.messageId === data.messageId) {
+              return {
+                ...m,
+                interactiveData: typeof data.interactiveData === 'string' ? data.interactiveData : JSON.stringify(data.interactiveData)
+              };
+            }
+            return m;
+          })
+        }));
+        return { ...old, pages: newPages };
+      });
+    };
+
+    const handleMessagePinned = (data: { sessionId: string; remoteJid: string; messageId: string; duration: number }) => {
+      const currentContact = selectedContactRef.current;
+      if (!currentContact) return;
+      const targetSid = currentContact.sessionId || (selectedSessionRef.current === 'all' ? data.sessionId : selectedSessionRef.current);
+      queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', currentContact.jid, targetSid], old => {
+        if (!old) return old;
+        const newPages = old.pages.map(page => ({
+          ...page,
+          messages: page.messages.map(m => {
+            if (m.messageId === data.messageId) {
+              let meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata || '{}') : (m.metadata || {});
+              return {
+                ...m,
+                isPinned: true,
+                metadata: { ...meta, isPinned: true, pinDuration: data.duration }
+              };
+            }
+            return m;
+          })
+        }));
+        return { ...old, pages: newPages };
+      });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'pinned', currentContact.jid] });
+    };
+
+    const handleMessageUnpinned = (data: { sessionId: string; remoteJid: string; messageId: string }) => {
+      const currentContact = selectedContactRef.current;
+      if (!currentContact) return;
+      const targetSid = currentContact.sessionId || (selectedSessionRef.current === 'all' ? data.sessionId : selectedSessionRef.current);
+      queryClient.setQueryData<MessagesCache>(['whatsapp', 'messages', currentContact.jid, targetSid], old => {
+        if (!old) return old;
+        const newPages = old.pages.map(page => ({
+          ...page,
+          messages: page.messages.map(m => {
+            if (m.messageId === data.messageId) {
+              let meta = typeof m.metadata === 'string' ? JSON.parse(m.metadata || '{}') : (m.metadata || {});
+              return {
+                ...m,
+                isPinned: false,
+                metadata: { ...meta, isPinned: false }
+              };
+            }
+            return m;
+          })
+        }));
+        return { ...old, pages: newPages };
+      });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'pinned', currentContact.jid] });
+    };
+
     socket.on('whatsapp:message:new', handleNewMessage);
     socket.on('whatsapp:message:status', handleMessageStatus);
     socket.on('whatsapp:message:sent', handleMessageSent);
     socket.on('whatsapp:notification:new', handleNotification);
+    socket.on('whatsapp:poll_updated', handlePollUpdated);
+    socket.on('whatsapp:message:pinned', handleMessagePinned);
+    socket.on('whatsapp:message:unpinned', handleMessageUnpinned);
     socket.on('user_typing', handleUserTyping);
     socket.on('user_stopped_typing', handleUserStoppedTyping);
 
@@ -1255,6 +1363,9 @@ const WhatsAppChatContent: React.FC = () => {
       socket.off('whatsapp:message:status', handleMessageStatus);
       socket.off('whatsapp:message:sent', handleMessageSent);
       socket.off('whatsapp:notification:new', handleNotification);
+      socket.off('whatsapp:poll_updated', handlePollUpdated);
+      socket.off('whatsapp:message:pinned', handleMessagePinned);
+      socket.off('whatsapp:message:unpinned', handleMessageUnpinned);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_stopped_typing', handleUserStoppedTyping);
       // Cleanup timeouts
@@ -1664,9 +1775,83 @@ const WhatsAppChatContent: React.FC = () => {
     }
   };
 
+  const handlePinMessage = async (message: Message, duration: number = 86400) => {
+    if (!selectedContact) return;
+    const sid = selectedContact.sessionId || activeSessionId;
+    if (!sid) {
+      tToast.error('لم يتم تحديد جلسة نشطة');
+      return;
+    }
 
+    try {
+      await api.post(`/whatsapp/messages/${message.messageId}/pin`, {
+        sessionId: sid,
+        jid: selectedContact.jid,
+        duration,
+      });
+      tToast.success('تم تثبيت الرسالة بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'messages', selectedContact.jid] });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'pinned', selectedContact.jid] });
+    } catch (error) {
+      tToast.error('فشل تثبيت الرسالة');
+    } finally {
+      setMessageContextMenu(null);
+      setSelectedMessageForMenu(null);
+    }
+  };
 
+  const handleUnpinMessage = async (messageId: string) => {
+    if (!selectedContact) return;
+    const sid = selectedContact.sessionId || activeSessionId;
+    if (!sid) {
+      tToast.error('لم يتم تحديد جلسة نشطة');
+      return;
+    }
 
+    try {
+      await api.delete(`/whatsapp/messages/${messageId}/pin`, {
+        data: {
+          sessionId: sid,
+          jid: selectedContact.jid,
+        }
+      });
+      tToast.success('تم إلغاء تثبيت الرسالة');
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'messages', selectedContact.jid] });
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'pinned', selectedContact.jid] });
+    } catch (error) {
+      tToast.error('فشل إلغاء تثبيت الرسالة');
+    } finally {
+      setMessageContextMenu(null);
+      setSelectedMessageForMenu(null);
+    }
+  };
+
+  const handleSendInteractive = async (data: {
+    title?: string;
+    text: string;
+    footer?: string;
+    buttons: InteractiveButtonInput[];
+  }) => {
+    if (!selectedContact) return;
+    const sid = selectedContact.sessionId || activeSessionId;
+    if (!sid) {
+      tToast.error('يرجى اختيار جلسة نشطة لإرسال الأزرار');
+      return;
+    }
+
+    try {
+      await api.post('/whatsapp/messages/send-interactive', {
+        sessionId: sid,
+        to: selectedContact.jid,
+        ...data,
+      });
+      tToast.success('تم إرسال الرسالة التفاعلية بنجاح');
+      queryClient.invalidateQueries({ queryKey: ['whatsapp', 'messages', selectedContact.jid] });
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || 'فشل إرسال الرسالة التفاعلية';
+      tToast.error(msg);
+    }
+  };
 
   const handleMessageContextMenu = (event: React.MouseEvent, message: Message) => {
     event.preventDefault();
@@ -2346,6 +2531,16 @@ const WhatsAppChatContent: React.FC = () => {
           isUploadingMedia={sendMediaMutation.isPending}
           messagesError={messagesError}
           onRetryMessages={() => refetchMessages()}
+          onOpenInteractive={() => setInteractiveDialogOpen(true)}
+          pinnedMessage={currentPinnedMessage}
+          onScrollToPinnedMessage={() => {
+            if (currentPinnedMessage) {
+              handleScrollToMessage(currentPinnedMessage.messageId);
+            }
+          }}
+          onUnpinMessage={(messageId) => handleUnpinMessage(messageId)}
+          highlightedMessageId={highlightedMessageId}
+          onQuotedMessageClick={handleScrollToMessage}
         />
         {selectedContact && showRightPanel && (
           <>
@@ -2469,6 +2664,66 @@ const WhatsAppChatContent: React.FC = () => {
               <Star className="size-4" />
               <span>تمييز بنجمة</span>
             </button>
+            {(() => {
+              if (!selectedMessageForMenu) return null;
+              let isMsgPinned = selectedMessageForMenu.isPinned === true;
+              if (!isMsgPinned && selectedMessageForMenu.metadata) {
+                try {
+                  const m = typeof selectedMessageForMenu.metadata === 'string'
+                    ? JSON.parse(selectedMessageForMenu.metadata)
+                    : selectedMessageForMenu.metadata;
+                  isMsgPinned = m?.isPinned === true;
+                } catch {}
+              }
+
+              if (isMsgPinned) {
+                return (
+                  <button
+                    type="button"
+                    onClick={() => handleUnpinMessage(selectedMessageForMenu.messageId)}
+                    className="flex w-full items-center gap-2 rounded-[18px] px-3 py-2 text-sm text-amber-600 dark:text-amber-400 transition-colors hover:bg-amber-500/10"
+                  >
+                    <PinOff className="size-4" />
+                    <span>إلغاء التثبيت</span>
+                  </button>
+                );
+              }
+
+              return (
+                <div className="border-t border-[color:var(--shell-control-border)] pt-1.5 mt-1">
+                  <div className="flex items-center gap-1.5 px-3 py-1 text-xs text-[color:var(--color-muted-foreground)]">
+                    <Pin className="size-3.5" />
+                    <span>تثبيت الرسالة لمدة:</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1 px-2 py-1">
+                    <button
+                      type="button"
+                      onClick={() => handlePinMessage(selectedMessageForMenu, 86400)}
+                      className="rounded-xl px-1.5 py-1 text-xs text-center font-medium bg-[color:var(--shell-control-hover)] hover:bg-primary/20 transition-colors"
+                      title="24 ساعة"
+                    >
+                      24 س
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePinMessage(selectedMessageForMenu, 604800)}
+                      className="rounded-xl px-1.5 py-1 text-xs text-center font-medium bg-[color:var(--shell-control-hover)] hover:bg-primary/20 transition-colors"
+                      title="7 أيام"
+                    >
+                      7 أيام
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handlePinMessage(selectedMessageForMenu, 2592000)}
+                      className="rounded-xl px-1.5 py-1 text-xs text-center font-medium bg-[color:var(--shell-control-hover)] hover:bg-primary/20 transition-colors"
+                      title="30 يوماً"
+                    >
+                      30 يوم
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
             {selectedMessageForMenu?.fromMe ? (
               <button
                 type="button"
@@ -3345,6 +3600,12 @@ const WhatsAppChatContent: React.FC = () => {
         isOpen={showProductPicker}
         onClose={() => setShowProductPicker(false)}
         onSendProduct={handleSendProductImages}
+      />
+
+      <InteractiveButtonsModal
+        open={interactiveDialogOpen}
+        onOpenChange={setInteractiveDialogOpen}
+        onSend={handleSendInteractive}
       />
 
       {/* Location Dialog */}

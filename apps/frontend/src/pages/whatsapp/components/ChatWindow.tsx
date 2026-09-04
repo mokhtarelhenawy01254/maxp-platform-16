@@ -24,6 +24,7 @@ import {
   ClipboardList,
   FileText,
   Link2,
+  Sparkles,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +41,7 @@ import {
 import { getInboxExternalImageUrl } from "@/utils/imageUrl";
 import MessageBubble from "./MessageBubble";
 import AudioRecorder from "./AudioRecorder";
+import PinnedMessageBanner from "./PinnedMessageBanner";
 
 interface ChatWindowProps {
   className?: string;
@@ -89,6 +91,10 @@ interface ChatWindowProps {
   onRetryMessages?: () => void;
   onToggleAi?: (contact: Contact, aiEnabled: boolean) => void;
   isUploadingMedia?: boolean;
+  onOpenInteractive?: () => void;
+  pinnedMessage?: Message | null;
+  onScrollToPinnedMessage?: (messageId: string) => void;
+  onUnpinMessage?: (messageId: string) => void;
 }
 
 const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -121,6 +127,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   getParticipantName,
   onOpenPoll,
   onOpenButtons,
+  onOpenInteractive,
+  pinnedMessage,
+  onScrollToPinnedMessage,
+  onUnpinMessage,
   onOpenList,
   onOpenCatalog,
   onOpenLocation,
@@ -305,6 +315,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           <span className="sr-only">نسخ رابط المحادثة</span>
         </Button>
       </div>
+
+      <PinnedMessageBanner
+        pinnedMessage={pinnedMessage || null}
+        onScrollToMessage={onScrollToPinnedMessage || (() => {})}
+        onUnpin={onUnpinMessage || (() => {})}
+      />
 
       <div
         ref={messagesContainerRef}
@@ -521,6 +537,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 >
                   <Menu className="size-4" />
                 </Button>
+                {onOpenInteractive && (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="rounded-full text-amber-600 hover:bg-amber-500/10 hover:text-amber-700 dark:text-amber-400"
+                    onClick={onOpenInteractive}
+                    title="أزرار تفاعلية (كوبون، رابط، اتصال)"
+                  >
+                    <Sparkles className="size-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon-sm"
