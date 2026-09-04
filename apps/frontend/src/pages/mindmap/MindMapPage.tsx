@@ -919,7 +919,7 @@ export default function MindMapPage() {
 
       {/* Main Mode Rendering: Timeline View vs Canvas View */}
       {viewMode === "timeline" ? (
-        <div className="flex-1 w-full overflow-y-auto p-4 pt-28 pb-20 max-w-4xl mx-auto space-y-4" dir="rtl">
+        <div className="flex-1 w-full overflow-y-auto pt-36 sm:pt-24 pb-20 px-3 sm:px-4 max-w-4xl mx-auto space-y-4" dir="rtl">
           <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 flex items-center justify-between backdrop-blur">
             <div>
               <h3 className="text-sm font-bold text-white">المسار الزمني التنفيذي لدورة التجارة</h3>
