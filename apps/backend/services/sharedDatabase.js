@@ -276,7 +276,13 @@ function createStablePrismaClient() {
           if (['findMany', 'findFirst', 'count', 'aggregate', 'groupBy'].includes(operation)) {
             args.where = { ...args.where, companyId };
           } else if (operation === 'create') {
-            args.data = { ...args.data, companyId };
+            if (args.data) {
+              if (args.data.company) {
+                delete args.data.companyId;
+              } else if (!args.data.companyId) {
+                args.data = { ...args.data, companyId };
+              }
+            }
           } else if (operation === 'createMany') {
             if (Array.isArray(args.data)) {
               args.data = args.data.map((item) => ({ ...item, companyId }));
@@ -286,7 +292,13 @@ function createStablePrismaClient() {
           } else if (['updateMany', 'deleteMany'].includes(operation)) {
             args.where = { ...args.where, companyId };
           } else if (operation === 'upsert' && args.create) {
-            args.create = { ...args.create, companyId };
+            if (args.create) {
+              if (args.create.company) {
+                delete args.create.companyId;
+              } else if (!args.create.companyId) {
+                args.create = { ...args.create, companyId };
+              }
+            }
           }
 
           // ⚡ Execute single native SQL query through connection pool (Zero Transaction Overhead)
