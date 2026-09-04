@@ -2355,6 +2355,7 @@ const WhatsAppChatContent: React.FC = () => {
             />
             <div className="chat-right-panel-container">
               <ChatRightPanel
+                key={selectedContact.id || selectedContact.jid}
                 contact={selectedContact}
                 labels={labels}
                 refreshToken={ordersRefreshToken}

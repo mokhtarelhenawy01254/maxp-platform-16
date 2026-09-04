@@ -12,7 +12,7 @@ import { format } from 'date-fns';
 import { arSA } from 'date-fns/locale';
 import { tToast } from "../../../utils/i18n-toast";
 import { useQueryClient } from '@tanstack/react-query';
-import { getBestContactDisplayName } from '../whatsappContactDisplay';
+import { getBestContactDisplayName, getContactPhoneNumber, formatContactPhoneNumber } from '../whatsappContactDisplay';
 import { getStatusDisplay } from "../../../utils/statusRegistry";
 import EnhancedOrderModal from "../../../components/orders/EnhancedOrderModal";
 import ReturnDetailsModal from "../../returns/ReturnDetailsModal";
@@ -133,12 +133,17 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
   const [journeyLoading, setJourneyLoading] = useState(false);
   const [reEnrolling, setReEnrolling] = useState(false);
 
-  const { customer, orders, activities, loading, loadCustomerData, updateCustomerPhone, updateCustomerPhone2, calculateLTV } = useCustomerProfile();
+  const { customer, orders, activities, loading, loadCustomerData, resetCustomer, updateCustomerPhone, updateCustomerPhone2, calculateLTV } = useCustomerProfile();
 
   const customerId = contact?.customer?.id;
+  const isLinkedCustomer = Boolean(customerId && customer?.id === customerId);
+  const isGroup = Boolean(contact?.isGroup || contact?.jid?.endsWith('@g.us'));
+  const cleanContactPhone = contact ? getContactPhoneNumber(contact) : '';
+  const rawDisplayPhone = (isLinkedCustomer ? customer?.phone : null) || cleanContactPhone || '';
+  const displayPhone = formatContactPhoneNumber(rawDisplayPhone);
 
   const handleStartEditPhone = () => {
-    setPhoneDraft(customer?.phone || '');
+    setPhoneDraft(rawDisplayPhone || '');
     setEditingPhone(true);
     setPhoneUpdateMessage(null);
   };
@@ -151,27 +156,45 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     }
     setSavingPhone(true);
     setPhoneUpdateMessage(null);
-    const result = await updateCustomerPhone(phone);
-    setSavingPhone(false);
-    if (result.success) {
-      setEditingPhone(false);
-      setPhoneUpdateMessage(`✅ ${result.message}`);
-      setTimeout(() => setPhoneUpdateMessage(null), 4000);
-      if (customer?.id) loadCustomerData(customer.id);
+    if (customer?.id) {
+      const result = await updateCustomerPhone(phone);
+      setSavingPhone(false);
+      if (result.success) {
+        setEditingPhone(false);
+        setPhoneUpdateMessage(`✅ ${result.message}`);
+        setTimeout(() => setPhoneUpdateMessage(null), 4000);
+        loadCustomerData(customer.id);
+      } else {
+        setPhoneUpdateMessage(`❌ ${result.message}`);
+        setTimeout(() => setPhoneUpdateMessage(null), 5000);
+      }
+    } else if (contact?.id) {
+      try {
+        await apiClient.put(`/whatsapp/contacts/${contact.id}`, { phoneNumber: phone });
+        setSavingPhone(false);
+        setEditingPhone(false);
+        setPhoneUpdateMessage('✅ تم تحديث رقم الهاتف');
+        setTimeout(() => setPhoneUpdateMessage(null), 4000);
+        queryClient.invalidateQueries({ queryKey: ['whatsapp', 'conversations'] });
+      } catch (err: any) {
+        setSavingPhone(false);
+        setPhoneUpdateMessage(`❌ ${err?.response?.data?.message || 'فشل تحديث رقم الهاتف'}`);
+        setTimeout(() => setPhoneUpdateMessage(null), 5000);
+      }
     } else {
-      setPhoneUpdateMessage(`❌ ${result.message}`);
+      setSavingPhone(false);
+      setPhoneUpdateMessage('❌ تعذر تحديد جهة الاتصال');
       setTimeout(() => setPhoneUpdateMessage(null), 5000);
     }
   };
 
-  const displayPhone = customer?.phone || contact?.phoneNumber || '';
-  const phone2FromMeta = (() => {
+  const phone2FromMeta = isLinkedCustomer ? (() => {
     try {
       const meta = typeof customer?.metadata === 'string' ? JSON.parse(customer.metadata) : (customer?.metadata || {});
       return meta?.phone2 || '';
     } catch { return ''; }
-  })();
-  const displayPhone2 = phone2FromMeta || customer?.phone2 || '';
+  })() : '';
+  const displayPhone2 = isLinkedCustomer ? (phone2FromMeta || customer?.phone2 || '') : '';
 
   const handleStartEditPhone2 = () => {
     setPhone2Draft(displayPhone2);
@@ -196,7 +219,11 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     }
   };
 
-  const phoneControl = (
+  const phoneControl = isGroup ? (
+    <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+      <span>مجموعة واتساب (لا يوجد رقم هاتف مباشر)</span>
+    </div>
+  ) : (
     <div className="space-y-2">
       <div className="flex items-center gap-2 text-sm">
         {displayPhone ? (
@@ -324,7 +351,7 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
 
   // Sync tags state when customer changes
   useEffect(() => {
-    if (customer?.tags) {
+    if (isLinkedCustomer && customer?.tags) {
       try {
         const parsed = typeof customer.tags === 'string' ? JSON.parse(customer.tags) : customer.tags;
         if (Array.isArray(parsed)) {
@@ -338,14 +365,16 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
     } else {
       setTags([]);
     }
-  }, [customer]);
+  }, [customer, isLinkedCustomer]);
 
   useEffect(() => {
     if (customerId) {
       loadCustomerData(customerId);
+    } else {
+      resetCustomer();
     }
     setAvatarError(false);
-  }, [customerId, loadCustomerData, refreshToken]);
+  }, [customerId, loadCustomerData, resetCustomer, refreshToken]);
 
   // Fetch active journey for this customer
   useEffect(() => {
@@ -522,7 +551,11 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
             </div>
             <div className="min-w-0">
               <div className="font-semibold text-foreground">{displayName}</div>
-              {statusInfo ? (
+              {isGroup ? (
+                <span className="mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium bg-blue-500/15 text-blue-600">
+                  مجموعة واتساب
+                </span>
+              ) : statusInfo && isLinkedCustomer ? (
                 <span
                   className="mt-1 inline-block rounded-full px-2.5 py-0.5 text-xs font-medium text-white"
                   style={{ background: statusInfo.color }}
@@ -533,16 +566,18 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
             </div>
           </div>
 
-          <div className="mb-4 grid grid-cols-2 gap-2">
-            <div className="rounded-lg border bg-[var(--business-surface-subtle)] px-3 py-2 text-center" style={{ borderColor: 'var(--business-card-border)' }}>
-              <p className="text-xs text-muted-foreground">الطلبات</p>
-              <p className="text-lg font-semibold text-foreground">{orders.length}</p>
+          {!isGroup && (
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              <div className="rounded-lg border bg-[var(--business-surface-subtle)] px-3 py-2 text-center" style={{ borderColor: 'var(--business-card-border)' }}>
+                <p className="text-xs text-muted-foreground">الطلبات</p>
+                <p className="text-lg font-semibold text-foreground">{isLinkedCustomer ? orders.length : 0}</p>
+              </div>
+              <div className="rounded-lg border bg-[var(--business-surface-subtle)] px-3 py-2 text-center" style={{ borderColor: 'var(--business-card-border)' }}>
+                <p className="text-xs text-muted-foreground">القيمة</p>
+                <p className="text-lg font-semibold text-primary">{isLinkedCustomer ? ltv.toLocaleString() : 0} ج.م</p>
+              </div>
             </div>
-            <div className="rounded-lg border bg-[var(--business-surface-subtle)] px-3 py-2 text-center" style={{ borderColor: 'var(--business-card-border)' }}>
-              <p className="text-xs text-muted-foreground">القيمة</p>
-              <p className="text-lg font-semibold text-primary">{ltv.toLocaleString()} ج.م</p>
-            </div>
-          </div>
+          )}
         </div>
 
         <div className="flex border-y border-border/50">
@@ -745,76 +780,78 @@ const ChatRightPanel: React.FC<ChatRightPanelProps> = ({ contact, onOpenOrder, o
                     <h4 className="mb-2 text-xs font-semibold uppercase text-muted-foreground">التواصل</h4>
                     <div className="space-y-2 text-sm">
                       {phoneControl}
-                      {/* رقم هاتف إضافي (ثاني) - يظهر تحت الرقم الأساسي */}
-                      <div className="flex items-center gap-2 text-sm">
-                        {editingPhone2 ? (
-                          <input
-                            autoFocus
-                            type="tel"
-                            dir="ltr"
-                            value={phone2Draft}
-                            onChange={(e) => setPhone2Draft(e.target.value)}
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") handleSavePhone2();
-                              if (e.key === "Escape") setEditingPhone2(false);
-                            }}
-                            className="business-chat-input flex-1 min-w-0 px-2 py-1 text-sm font-medium font-mono"
-                            placeholder="01xxxxxxxxx"
-                            disabled={savingPhone2}
-                          />
-                        ) : displayPhone2 ? (
-                          <span className="font-mono flex-1 min-w-0 truncate text-foreground" dir="ltr">
-                            {displayPhone2}
-                          </span>
-                        ) : (
-                          <button
-                            onClick={handleStartEditPhone2}
-                            className="flex-1 min-w-0 cursor-pointer text-start text-xs font-semibold text-primary hover:underline"
-                            title="إضافة رقم هاتف إضافي"
-                            aria-label="إضافة رقم هاتف إضافي"
-                          >
-                            إضافة رقم إضافي
-                          </button>
-                        )}
-                        {editingPhone2 ? (
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={handleSavePhone2}
+                      {/* رقم هاتف إضافي (ثاني) - يظهر تحت الرقم الأساسي فقط لغير المجموعات */}
+                      {!isGroup && (
+                        <div className="flex items-center gap-2 text-sm">
+                          {editingPhone2 ? (
+                            <input
+                              autoFocus
+                              type="tel"
+                              dir="ltr"
+                              value={phone2Draft}
+                              onChange={(e) => setPhone2Draft(e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") handleSavePhone2();
+                                if (e.key === "Escape") setEditingPhone2(false);
+                              }}
+                              className="business-chat-input flex-1 min-w-0 px-2 py-1 text-sm font-medium font-mono"
+                              placeholder="01xxxxxxxxx"
                               disabled={savingPhone2}
-                              className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50"
-                              style={{ color: "#ffffff", background: "var(--business-success)", borderColor: "transparent" }}
-                              title="حفظ"
-                              aria-label="حفظ"
-                            >
-                              {savingPhone2 ? (
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-b-transparent"></div>
-                              ) : (
-                                <Check className="size-5" strokeWidth={3} />
-                              )}
-                            </button>
+                            />
+                          ) : displayPhone2 ? (
+                            <span className="font-mono flex-1 min-w-0 truncate text-foreground" dir="ltr">
+                              {displayPhone2}
+                            </span>
+                          ) : (
                             <button
-                              onClick={() => setEditingPhone2(false)}
-                              disabled={savingPhone2}
-                              className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
-                              style={{ color: "var(--business-danger)", background: "color-mix(in srgb, var(--business-danger) 12%, white)" }}
-                              title="إلغاء"
-                              aria-label="إلغاء"
+                              onClick={handleStartEditPhone2}
+                              className="flex-1 min-w-0 cursor-pointer text-start text-xs font-semibold text-primary hover:underline"
+                              title="إضافة رقم هاتف إضافي"
+                              aria-label="إضافة رقم هاتف إضافي"
                             >
-                              <X className="size-[18px]" strokeWidth={3} />
+                              إضافة رقم إضافي
                             </button>
-                          </div>
-                        ) : displayPhone2 ? (
-                          <button
-                            onClick={handleStartEditPhone2}
-                            className="business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
-                            style={{ color: "var(--color-primary)", background: "color-mix(in srgb, var(--color-primary) 12%, white)" }}
-                            title="تعديل رقم الهاتف الإضافي"
-                            aria-label="تعديل رقم الهاتف الإضافي"
-                          >
-                            <SquarePen className="size-4" />
-                          </button>
-                        ) : null}
-                      </div>
+                          )}
+                          {editingPhone2 ? (
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                onClick={handleSavePhone2}
+                                disabled={savingPhone2}
+                                className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-all disabled:opacity-50"
+                                style={{ color: "#ffffff", background: "var(--business-success)", borderColor: "transparent" }}
+                                title="حفظ"
+                                aria-label="حفظ"
+                              >
+                                {savingPhone2 ? (
+                                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-b-transparent"></div>
+                                ) : (
+                                  <Check className="size-5" strokeWidth={3} />
+                                )}
+                              </button>
+                              <button
+                                onClick={() => setEditingPhone2(false)}
+                                disabled={savingPhone2}
+                                className="business-chip-button flex h-8 w-8 items-center justify-center rounded-lg transition-colors disabled:opacity-50"
+                                style={{ color: "var(--business-danger)", background: "color-mix(in srgb, var(--business-danger) 12%, white)" }}
+                                title="إلغاء"
+                                aria-label="إلغاء"
+                              >
+                                <X className="size-[18px]" strokeWidth={3} />
+                              </button>
+                            </div>
+                          ) : displayPhone2 ? (
+                            <button
+                              onClick={handleStartEditPhone2}
+                              className="business-chip-button flex h-8 w-8 shrink-0 items-center justify-center rounded-lg transition-colors"
+                              style={{ color: "var(--color-primary)", background: "color-mix(in srgb, var(--color-primary) 12%, white)" }}
+                              title="تعديل رقم الهاتف الإضافي"
+                              aria-label="تعديل رقم الهاتف الإضافي"
+                            >
+                              <SquarePen className="size-4" />
+                            </button>
+                          ) : null}
+                        </div>
+                      )}
                       {customer?.email ? (
                         <div className="flex items-center gap-2">
                           <Mail className="size-3.5 shrink-0 text-muted-foreground" />

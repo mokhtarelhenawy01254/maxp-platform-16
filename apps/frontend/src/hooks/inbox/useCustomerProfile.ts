@@ -195,6 +195,14 @@ export const useCustomerProfile = () => {
     return { stars: 5, label: "عميل VIP" };
   }, [orders]);
 
+  const resetCustomer = useCallback(() => {
+    setCustomer(null);
+    setOrders([]);
+    setActivities([]);
+    setError(null);
+    setLoading(false);
+  }, []);
+
   return {
     customer,
     orders,
@@ -202,6 +210,7 @@ export const useCustomerProfile = () => {
     loading,
     error,
     loadCustomerData,
+    resetCustomer,
     updateCustomerPhone,
     updateCustomerPhone2,
     calculateLTV,

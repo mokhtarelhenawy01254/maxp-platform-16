@@ -2367,11 +2367,38 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     }
     // ====== End Sprint 2 ======
 
-    // بناء mapping من LID → رقم تلفون (من protobuf الرسمي)
-    const lidToPhoneMap = await persistHistoryLidMappings(
-        sessionId,
-        history?.phoneNumberToLidMappings || []
-    );
+    // تجميع كل mappings المتاحة من جميع المصادر (protobuf + contacts + chats + messages):
+    const allLidMappings = [...(history?.phoneNumberToLidMappings || [])];
+
+    for (const c of contacts) {
+        if (!c) continue;
+        const phone = isPhoneJid(c.id) ? c.id : (isPhoneJid(c.jid) ? c.jid : (isPhoneJid(c.pn) ? c.pn : null));
+        const lid = isLinkedDeviceJid(c.lid) ? c.lid : (isLinkedDeviceJid(c.id) ? c.id : null);
+        if (phone && lid) {
+            allLidMappings.push({ pnJid: phone, lidJid: lid });
+        }
+    }
+
+    for (const chat of chats) {
+        if (!chat) continue;
+        const phone = isPhoneJid(chat.id) ? chat.id : (isPhoneJid(chat.pnJid) ? chat.pnJid : (isPhoneJid(chat.lidJid) ? chat.lidJid : null));
+        const lid = isLinkedDeviceJid(chat.lidJid) ? chat.lidJid : (isLinkedDeviceJid(chat.id) ? chat.id : null);
+        if (phone && lid) {
+            allLidMappings.push({ pnJid: phone, lidJid: lid });
+        }
+    }
+
+    for (const msg of messages) {
+        if (!msg) continue;
+        const remote = msg.key?.remoteJid;
+        const senderPn = msg.key?.senderPn || msg.participantPn;
+        if (remote && isLinkedDeviceJid(remote) && senderPn && isPhoneJid(senderPn)) {
+            allLidMappings.push({ pnJid: senderPn, lidJid: remote });
+        }
+    }
+
+    // بناء mapping من LID → رقم تلفون (من protobuf والمصادر المستخرجة)
+    const lidToPhoneMap = await persistHistoryLidMappings(sessionId, allLidMappings);
     if (Object.keys(lidToPhoneMap).length > 0) {
         console.log(`📜 [WHATSAPP-HISTORY] Found ${Object.keys(lidToPhoneMap).length} LID→Phone mappings`);
     }
@@ -2386,9 +2413,10 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
     for (const chat of chats) {
         const chatTimestamp = chat.conversationTimestamp || chat.lastMessageRecvTimestamp;
         if (!chatTimestamp) continue;
-        const contactMeta = contactsByJid[chat.id] || contactsByJid[chat.lidJid] || {};
+        const targetChatJid = lidToPhoneMap[chat.id] || chat.id;
+        const contactMeta = contactsByJid[chat.id] || contactsByJid[chat.lidJid] || contactsByJid[targetChatJid] || {};
         try {
-            await upsertHistoryContact(sessionId, chat.id, {
+            await upsertHistoryContact(sessionId, targetChatJid, {
                 name: contactMeta.name || chat.name || contactMeta.notify || contactMeta.verifiedName,
                 lastMessageAt: timestampToDate(chatTimestamp)
             });
@@ -2413,7 +2441,8 @@ async function handleMessagingHistorySet(sessionId, companyId, history, sock) {
         if (!contactJid || contactJid === 'status@broadcast' || isJidNewsletter?.(contactJid)) continue;
         if (!activeJids.has(contactJid) && !activeJids.has(c.id) && !activeJids.has(c.lid)) continue;
 
-        contactImportQueue.push(() => upsertHistoryContact(sessionId, contactJid, {
+        const targetContactJid = lidToPhoneMap[contactJid] || contactJid;
+        contactImportQueue.push(() => upsertHistoryContact(sessionId, targetContactJid, {
             name: c.name || c.notify || c.verifiedName
         }));
     }
