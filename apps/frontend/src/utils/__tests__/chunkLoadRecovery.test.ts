@@ -97,5 +97,27 @@ describe("chunkLoadRecovery", () => {
 
       expect(recoverFromChunkLoadError(chunkError, "vite-preload")).toBe(true);
     });
+
+    it("resets budget and purges caches during emergencyPurgeAndHardReload", async () => {
+      const reloadMock = jest.fn();
+      Object.defineProperty(window, "location", {
+        value: { ...originalLocation, reload: reloadMock },
+        writable: true,
+        configurable: true,
+      });
+
+      // Max out budget
+      expect(recoverFromChunkLoadError(chunkError, "bootstrap")).toBe(true);
+      window.sessionStorage.removeItem("maxp:chunk-load-recovery:last-attempt");
+      expect(recoverFromChunkLoadError(chunkError, "bootstrap")).toBe(false);
+
+      // Execute manual emergency recovery
+      const { emergencyPurgeAndHardReload } = await import("../chunkLoadRecovery");
+      await emergencyPurgeAndHardReload();
+
+      // Budget must be re-armed for the next episode
+      expect(recoverFromChunkLoadError(chunkError, "bootstrap")).toBe(true);
+      expect(clearAllSWCaches).toHaveBeenCalled();
+    });
   });
 });

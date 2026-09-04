@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { shouldBootstrapStorefront } from "./bootstrap/requestTarget";
 import {
+  emergencyPurgeAndHardReload,
   installChunkLoadRecovery,
   recoverFromChunkLoadError,
   resetChunkLoadRecovery,
@@ -166,8 +167,10 @@ const renderBootstrapError = (error: unknown): void => {
         </p>
         <button
           type="button"
-          onClick={() => window.location.reload()}
-          className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+          onClick={() => {
+            void emergencyPurgeAndHardReload();
+          }}
+          className="mt-4 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors cursor-pointer"
         >
           إعادة المحاولة
         </button>
@@ -217,6 +220,23 @@ void bootstrapApp()
   .then(() => {
     // Healthy boot: re-arm one-shot chunk recovery for future deploy cycles.
     resetChunkLoadRecovery();
+
+    // Clean up cache-busting timestamp parameter if present
+    if (typeof window !== "undefined" && window.location.search) {
+      try {
+        const cleanUrl = new URL(window.location.href);
+        if (cleanUrl.searchParams.has("_v") || cleanUrl.searchParams.has("__maxp_cache_recovery")) {
+          cleanUrl.searchParams.delete("_v");
+          cleanUrl.searchParams.delete("__maxp_cache_recovery");
+          window.history.replaceState(
+            {},
+            document.title,
+            cleanUrl.pathname + (cleanUrl.search ? cleanUrl.search : "") + cleanUrl.hash,
+          );
+        }
+      } catch {}
+    }
+
     if (isStorefrontRequest()) {
       removeLoadingScreen(true);
     } else {
@@ -231,39 +251,45 @@ void bootstrapApp()
     renderBootstrapError(error);
   });
 
-// Service Worker auto-update: notify user when a new version is ready (Production only)
+// Service Worker management (Production only)
 if ("serviceWorker" in navigator && (import.meta.env.PROD || import.meta.env.MODE === "production")) {
-  // Unregister any legacy service worker (e.g. "/sw.js", "/sw-v2.js", "/sw-v3.js",
-  // "/sw-v5.js") so the renamed worker doesn't keep controlling the page
-  // alongside the new "/sw-v4.js" worker. Only the current versioned worker is
-  // kept active.
-  navigator.serviceWorker.getRegistrations().then((regs) => {
-    regs.forEach((r) => {
-      if (r.active && r.active.scriptURL && !/\/sw-v4\.js(?:[?#].*)?$/.test(r.active.scriptURL)) {
-        r.unregister();
-      }
+  if (isStorefrontRequest()) {
+    // 🛡️ Storefront Isolation (2026 Gold Standard):
+    // E-commerce storefronts must NEVER run a Service Worker.
+    // Cleanly unregister any legacy workers in the background so shoppers never hit stale chunk errors.
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((r) => r.unregister().catch(() => false));
     });
-  });
-  navigator.serviceWorker.register("/sw-v4.js", { updateViaCache: "none" }).then((reg) => {
-    const notify = () => {
-      window.__SW_UPDATE_PENDING__ = true;
-      window.dispatchEvent(new CustomEvent("sw-update-ready"));
-    };
-
-    if (reg.waiting && navigator.serviceWorker.controller) {
-      notify();
-    }
-
-    reg.addEventListener("updatefound", () => {
-      const installing = reg.installing;
-      if (!installing) return;
-      installing.addEventListener("statechange", () => {
-        if (installing.state === "installed" && navigator.serviceWorker.controller) {
-          notify();
+  } else {
+    // Admin Shell Service Worker: for web push notifications only.
+    navigator.serviceWorker.getRegistrations().then((regs) => {
+      regs.forEach((r) => {
+        if (r.active && r.active.scriptURL && !/\/sw-v4\.js(?:[?#].*)?$/.test(r.active.scriptURL)) {
+          r.unregister().catch(() => false);
         }
       });
     });
-  });
+    navigator.serviceWorker.register("/sw-v4.js", { updateViaCache: "none" }).then((reg) => {
+      const notify = () => {
+        window.__SW_UPDATE_PENDING__ = true;
+        window.dispatchEvent(new CustomEvent("sw-update-ready"));
+      };
+
+      if (reg.waiting && navigator.serviceWorker.controller) {
+        notify();
+      }
+
+      reg.addEventListener("updatefound", () => {
+        const installing = reg.installing;
+        if (!installing) return;
+        installing.addEventListener("statechange", () => {
+          if (installing.state === "installed" && navigator.serviceWorker.controller) {
+            notify();
+          }
+        });
+      });
+    });
+  }
 }
 
 // Hot Module Replacement (HMR) for development

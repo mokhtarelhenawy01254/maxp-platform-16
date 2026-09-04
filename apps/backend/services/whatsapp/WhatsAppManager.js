@@ -31,7 +31,7 @@ const { buildConversationMetadata } = require('../whatsappInboxMetadata');
 const getIO = () => socketService.getIO();
 
 // Dynamic import for Baileys
-let makeWASocket, DisconnectReason, baileysDefaultVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET, MessageProtocolType;
+let makeWASocket, DisconnectReason, baileysDefaultVersion, downloadMediaMessage, Browsers, isJidNewsletter, S_WHATSAPP_NET, MessageProtocolType, getAggregateVotesInPollMessage, generateWAMessageFromContent, proto;
 const initBaileys = async () => {
     const baileys = await import('@whiskeysockets/baileys');
     makeWASocket = baileys.makeWASocket;
@@ -43,7 +43,10 @@ const initBaileys = async () => {
     Browsers = baileys.Browsers;
     isJidNewsletter = baileys.isJidNewsletter;
     S_WHATSAPP_NET = baileys.S_WHATSAPP_NET;
+    proto = baileys.proto;
     MessageProtocolType = baileys.proto?.Message?.ProtocolMessage?.Type || {};
+    getAggregateVotesInPollMessage = baileys.getAggregateVotesInPollMessage;
+    generateWAMessageFromContent = baileys.generateWAMessageFromContent;
 };
 const crypto = require('crypto');
 const { isPermissionError, getPermissionErrorMessage } = require('../../utils/dbPermissionHelper');
@@ -2767,6 +2770,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     fromMe,
                     messageType: messageContent.type,
                     content: messageContent.text,
+                    interactiveData: messageContent.interactiveData ? (typeof messageContent.interactiveData === 'string' ? messageContent.interactiveData : JSON.stringify(messageContent.interactiveData)) : undefined,
                     mediaUrl: messageContent.mediaUrl,
                     mediaType: messageContent.mediaType,
                     mediaMimeType: messageContent.mimetype,
@@ -2785,6 +2789,7 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                     participant: messageParticipant, // حفظ المشارك
                     messageType: messageContent.type,
                     content: messageContent.text,
+                    interactiveData: messageContent.interactiveData ? (typeof messageContent.interactiveData === 'string' ? messageContent.interactiveData : JSON.stringify(messageContent.interactiveData)) : null,
                     mediaUrl: messageContent.mediaUrl,
                     mediaType: messageContent.mediaType,
                     mediaMimeType: messageContent.mimetype,
@@ -3421,6 +3426,63 @@ async function extractMessageContent(msg, sock, sessionId, options = {}) {
         text = message.templateMessage.hydratedTemplate?.hydratedContentText ||
             message.templateMessage.hydratedTemplate?.templateId;
     }
+    // استطلاعات الرأي (Poll Creation Messages)
+    else if (message.pollCreationMessage || message.pollCreationMessageV2 || message.pollCreationMessageV3) {
+        const poll = message.pollCreationMessage || message.pollCreationMessageV2 || message.pollCreationMessageV3;
+        type = 'POLL';
+        text = poll.name || 'استطلاع رأي';
+        interactiveData = {
+            name: poll.name,
+            selectableCount: poll.selectableOptionsCount || 1,
+            values: (poll.options || []).map(opt => opt.optionName || ''),
+            votes: []
+        };
+    }
+    // رسائل تفاعلية حديثة (Interactive & Native Flow Messages)
+    else if (message.interactiveMessage || message.viewOnceMessage?.message?.interactiveMessage) {
+        const interactive = message.interactiveMessage || message.viewOnceMessage?.message?.interactiveMessage;
+        type = 'INTERACTIVE';
+        text = interactive.body?.text || interactive.header?.title || 'رسالة تفاعلية';
+        const buttons = (interactive.nativeFlowMessage?.buttons || []).map(btn => {
+            let params = {};
+            try { params = JSON.parse(btn.buttonParamsJson || '{}'); } catch {}
+            return {
+                name: btn.name,
+                params
+            };
+        });
+        interactiveData = {
+            title: interactive.header?.title,
+            body: interactive.body?.text,
+            footer: interactive.footer?.text,
+            buttons
+        };
+    }
+    // رد على رسائل تفاعلية حديثة (Interactive Response)
+    else if (message.interactiveResponseMessage) {
+        type = 'BUTTON_RESPONSE';
+        const paramsJson = message.interactiveResponseMessage.nativeFlowResponseMessage?.paramsJson;
+        let parsedParams = {};
+        try { parsedParams = paramsJson ? JSON.parse(paramsJson) : {}; } catch {}
+        text = message.interactiveResponseMessage.body?.text || parsedParams.id || parsedParams.display_text || 'رد على زر تفاعلي';
+        interactiveData = {
+            id: parsedParams.id,
+            text,
+            params: parsedParams
+        };
+    }
+    // حدث تثبيت رسالة (Pin In Chat)
+    else if (message.pinInChatMessage) {
+        type = 'PIN_EVENT';
+        const pin = message.pinInChatMessage;
+        const isPin = pin.type === 1;
+        text = isPin ? '📌 تم تثبيت رسالة في المحادثة' : 'تم إلغاء تثبيت الرسالة';
+        interactiveData = {
+            targetMessageId: pin.key?.id,
+            pinType: pin.type,
+            senderTimestampMs: pin.senderTimestampMs
+        };
+    }
     else {
         return null;
     }
@@ -3758,6 +3820,85 @@ async function handleEditedMessage(sessionId, companyId, messageId, remoteJid, e
     }
 }
 
+/**
+ * معالجة تحديثات تصويتات استطلاعات الرأي
+ */
+async function handlePollUpdate(sessionId, companyId, key, pollUpdates) {
+    const io = getIO();
+    try {
+        const messageId = key.id;
+        const prisma = getSharedPrismaClient();
+
+        const pollMsg = await prisma.whatsAppMessage.findFirst({
+            where: { messageId }
+        });
+
+        if (!pollMsg) {
+            return;
+        }
+
+        let interactive = {};
+        try {
+            interactive = pollMsg.interactiveData ? JSON.parse(pollMsg.interactiveData) : {};
+        } catch {}
+
+        const values = interactive.values || [];
+        const options = values.map(val => ({ optionName: typeof val === 'string' ? val : (val.name || String(val)) }));
+
+        const syntheticMessage = {
+            pollCreationMessageV3: {
+                name: interactive.name || pollMsg.content || '',
+                options
+            }
+        };
+
+        let aggregatedVotes = [];
+        if (typeof getAggregateVotesInPollMessage === 'function') {
+            try {
+                const meId = activeSessions.get(sessionId)?.creds?.me?.id;
+                aggregatedVotes = getAggregateVotesInPollMessage({
+                    message: syntheticMessage,
+                    pollUpdates
+                }, meId);
+            } catch (aggErr) {
+                console.warn('⚠️ [PollUpdate] Baileys getAggregateVotesInPollMessage error:', aggErr.message);
+            }
+        }
+
+        interactive.votes = aggregatedVotes;
+        interactive.lastVoteAt = new Date();
+
+        await prisma.whatsAppMessage.update({
+            where: { id: pollMsg.id },
+            data: {
+                interactiveData: JSON.stringify(interactive),
+                updatedAt: new Date()
+            }
+        });
+
+        const audience = await getConversationAudience({
+            companyId,
+            sessionId,
+            remoteJid: key.remoteJid
+        });
+
+        emitToAudience(io, {
+            companyId,
+            userIds: audience.userIds,
+            eventName: 'whatsapp:poll_updated',
+            payload: {
+                sessionId,
+                messageId,
+                remoteJid: key.remoteJid,
+                interactiveData: interactive
+            }
+        });
+        console.log(`📊 [WA-POLL:${sessionId}] Poll ${messageId} updated with ${aggregatedVotes.length} options`);
+    } catch (error) {
+        console.error('❌ Error handling poll update:', error.message);
+    }
+}
+
 async function handleMessageStatusUpdate(sessionId, companyId, updates) {
     const io = getIO();
 
@@ -3778,6 +3919,12 @@ async function handleMessageStatusUpdate(sessionId, companyId, updates) {
             if (isEdit) {
                 const editedContent = statusUpdate?.message?.protocolMessage?.message || statusUpdate?.message;
                 await handleEditedMessage(sessionId, companyId, key.id, key.remoteJid, editedContent);
+                continue;
+            }
+
+            // POLL UPDATES (تصويتات استطلاعات الرأي)
+            if (statusUpdate?.pollUpdates && Array.isArray(statusUpdate.pollUpdates)) {
+                await handlePollUpdate(sessionId, companyId, key, statusUpdate.pollUpdates);
                 continue;
             }
 
@@ -4013,6 +4160,94 @@ async function handleCallUpdate(sessionId, companyId, update) {
             timestamp: new Date()
         });
 
+        // 🛡️ درع المكالمات (Call Shield): رفض المكالمات الواردة تلقائياً والرد برسالة اعتذار
+        if (update.status === 'offer' && update.id && update.from) {
+            const sd = activeSessions.get(sessionId);
+            let metadata = sd?.metadata;
+            if (typeof metadata === 'string') {
+                try { metadata = JSON.parse(metadata); } catch {}
+            }
+            if (!metadata) {
+                const dbSession = await getSharedPrismaClient().whatsAppSession.findUnique({
+                    where: { id: sessionId },
+                    select: { metadata: true }
+                });
+                if (dbSession?.metadata) {
+                    try { metadata = typeof dbSession.metadata === 'string' ? JSON.parse(dbSession.metadata) : dbSession.metadata; } catch {}
+                }
+            }
+
+            if (metadata?.callShieldEnabled) {
+                WA_LOG.info(sessionId, `🛡️ [CallShield] Auto-rejecting incoming call ${update.id} from ${update.from}`);
+                if (sd?.sock?.rejectCall) {
+                    try {
+                        await sd.sock.rejectCall(update.id, update.from);
+                    } catch (rejectErr) {
+                        console.error('❌ Error rejecting call via Baileys:', rejectErr.message);
+                    }
+                }
+
+                const callerJid = update.from.includes('@') ? update.from : `${update.from}@s.whatsapp.net`;
+                const replyMessage = metadata.callShieldMessage || 'عذراً، هذا الرقم مخصص للمراسلات النصية وخدمة العملاء عبر واتساب فقط ولا يستقبل مكالمات هاتفية. برجاء كتابة استفسارك وسيقوم فريق العمل بالرد عليك في أقرب وقت. 🌷';
+
+                const WhatsAppMessageHandler = require('./WhatsAppMessageHandler');
+                let autoReplied = false;
+                try {
+                    await WhatsAppMessageHandler.sendText(sessionId, callerJid, replyMessage, {
+                        isAIResponse: false,
+                        metadata: { source: 'call_shield', callId: update.id }
+                    });
+                    autoReplied = true;
+                } catch (replyErr) {
+                    console.error('❌ Error sending Call Shield auto-reply:', replyErr.message);
+                }
+
+                try {
+                    const callLogMsg = await getSharedPrismaClient().whatsAppMessage.upsert({
+                        where: { messageId: `call_${update.id}` },
+                        update: {
+                            status: 'DELIVERED',
+                            updatedAt: new Date()
+                        },
+                        create: {
+                            sessionId,
+                            remoteJid: callerJid,
+                            messageId: `call_${update.id}`,
+                            fromMe: false,
+                            messageType: 'CALL_LOG',
+                            content: '📞 مكالمة واردة تم رفضها تلقائياً (درع المكالمات)',
+                            interactiveData: JSON.stringify({
+                                callId: update.id,
+                                isVideo: !!update.isVideo,
+                                isGroup: !!update.isGroup,
+                                autoReplied,
+                                autoReplyText: replyMessage,
+                                timestamp: new Date()
+                            }),
+                            status: 'DELIVERED',
+                            timestamp: new Date()
+                        }
+                    });
+
+                    io?.to(`company_${companyId}`).emit('whatsapp:message:new', {
+                        sessionId,
+                        message: callLogMsg,
+                        remoteJid: callerJid
+                    });
+                    io?.to(`company_${companyId}`).emit('whatsapp:call_rejected', {
+                        sessionId,
+                        callId: update.id,
+                        from: update.from,
+                        autoReplied
+                    });
+                } catch (logErr) {
+                    console.error('❌ Error creating call log message in DB:', logErr.message);
+                }
+
+                return;
+            }
+        }
+
         // معالجة حالات محددة
         if (update.status === 'reject') {
             await logEvent(sessionId, companyId, 'call_reject', {
@@ -4028,6 +4263,54 @@ async function handleCallUpdate(sessionId, companyId, update) {
     } catch (error) {
         console.error('❌ Error handling call update:', error);
     }
+}
+
+/**
+ * تحديث إعدادات درع المكالمات
+ */
+async function updateCallShieldSettings(sessionId, { enabled, message }) {
+    const prisma = getSharedPrismaClient();
+    const dbSession = await prisma.whatsAppSession.findUnique({
+        where: { id: sessionId },
+        select: { id: true, companyId: true, metadata: true }
+    });
+    if (!dbSession) throw new Error('الجلسة غير موجودة');
+
+    let meta = {};
+    try {
+        meta = dbSession.metadata ? (typeof dbSession.metadata === 'string' ? JSON.parse(dbSession.metadata) : dbSession.metadata) : {};
+    } catch {}
+
+    meta.callShieldEnabled = !!enabled;
+    if (message !== undefined) {
+        meta.callShieldMessage = message;
+    }
+
+    await prisma.whatsAppSession.update({
+        where: { id: sessionId },
+        data: {
+            metadata: JSON.stringify(meta),
+            updatedAt: new Date()
+        }
+    });
+
+    const active = activeSessions.get(sessionId);
+    if (active) {
+        active.metadata = meta;
+    }
+
+    return {
+        callShieldEnabled: meta.callShieldEnabled,
+        callShieldMessage: meta.callShieldMessage
+    };
+}
+
+function getBaileysProto() {
+    return proto;
+}
+
+function getGenerateWAMessageFromContent() {
+    return generateWAMessageFromContent;
 }
 
 /**
@@ -6460,6 +6743,11 @@ module.exports = {
 
     // URL Info
     getUrlInfo,
+
+    // Call Shield & Advanced Baileys
+    updateCallShieldSettings,
+    getBaileysProto,
+    getGenerateWAMessageFromContent,
 
     // System
     logEvent,

@@ -107,6 +107,25 @@
   };
 
   var reloadWithCacheBust = function () {
+    try {
+      if ("caches" in window && window.caches) {
+        window.caches.keys().then(function (keys) {
+          keys.forEach(function (k) { window.caches.delete(k); });
+        });
+      }
+      if ("serviceWorker" in navigator && navigator.serviceWorker) {
+        navigator.serviceWorker.getRegistrations().then(function (regs) {
+          regs.forEach(function (r) {
+            if (r.active && r.active.scriptURL && !/\/sw-v4\.js(?:[?#].*)?$/.test(r.active.scriptURL)) {
+              r.unregister();
+            }
+          });
+        });
+      }
+      try {
+        window.localStorage.removeItem("maxp:sw_migrated");
+      } catch (_s) {}
+    } catch (_e) {}
     var url = new URL(window.location.href);
     url.searchParams.set(RECOVERY_QUERY_KEY, String(Date.now()));
     window.location.replace(url.toString());

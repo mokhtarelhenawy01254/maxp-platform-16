@@ -122,9 +122,70 @@ export const resetChunkLoadRecovery = (): void => {
   inMemoryRecoveryCount = 0;
   try {
     window.sessionStorage.removeItem(RECOVERY_COUNT_KEY);
+    window.sessionStorage.removeItem(RECOVERY_ATTEMPT_KEY);
   } catch {
     // Ignore storage failures; the count simply stays stale.
   }
+};
+
+/**
+ * Shared purge and reload routine.
+ * Flushes CacheStorage and triggers reload.
+ */
+export const performPurgeAndReload = async (): Promise<void> => {
+  try {
+    if (typeof window !== "undefined") {
+      try {
+        window.localStorage.removeItem("maxp:sw_migrated");
+      } catch {}
+
+      if ("serviceWorker" in navigator && navigator.serviceWorker) {
+        try {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(
+            registrations.map((reg) => reg.unregister().catch(() => false)),
+          );
+        } catch {}
+      }
+
+      await clearAllSWCaches().catch(() => false);
+
+      const url = new URL(window.location.href);
+      url.searchParams.set("_v", String(Date.now()));
+
+      if (typeof window.location.replace === "function" && window.location.replace !== window.location.reload) {
+        try {
+          window.location.replace(url.toString());
+          return;
+        } catch {}
+      }
+
+      if (typeof window.location.reload === "function") {
+        window.location.reload();
+        return;
+      }
+    }
+  } catch {
+    // Fallback if URL parsing or window APIs throw
+  }
+
+  if (typeof window !== "undefined" && typeof window.location.reload === "function") {
+    window.location.reload();
+  }
+};
+
+/**
+ * Emergency purge routine for manual user-initiated retries:
+ * Resets the budget, clears session storage, and performs a full hard purge.
+ */
+export const emergencyPurgeAndHardReload = async (): Promise<void> => {
+  resetChunkLoadRecovery();
+  try {
+    if (typeof window !== "undefined") {
+      window.sessionStorage.clear();
+    }
+  } catch {}
+  await performPurgeAndReload();
 };
 
 export const recoverFromChunkLoadError = (
@@ -148,12 +209,8 @@ export const recoverFromChunkLoadError = (
   markRecoveryAttempt(source, now);
   incrementRecoveryCount();
 
-  // Purge SW caches to prevent reloading stale or corrupt SW entries
-  void clearAllSWCaches();
-
-  window.setTimeout(() => {
-    window.location.reload();
-  }, 0);
+  // Async flush and cache-bust redirect
+  void performPurgeAndReload();
 
   return true;
 };

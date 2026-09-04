@@ -797,6 +797,21 @@ async function updateSession(req, res) {
             });
         }
 
+        let updatedMetadata = undefined;
+        if (req.body.callShieldEnabled !== undefined || req.body.callShieldMessage !== undefined) {
+            let existingMeta = {};
+            try {
+                existingMeta = existingSession.metadata
+                    ? (typeof existingSession.metadata === 'string' ? JSON.parse(existingSession.metadata) : existingSession.metadata)
+                    : {};
+            } catch {}
+            if (req.body.callShieldEnabled !== undefined) existingMeta.callShieldEnabled = !!req.body.callShieldEnabled;
+            if (req.body.callShieldMessage !== undefined) existingMeta.callShieldMessage = req.body.callShieldMessage;
+            updatedMetadata = JSON.stringify(existingMeta);
+            const active = WhatsAppManager.getSession(id);
+            if (active) active.metadata = existingMeta;
+        }
+
         const session = await getSharedPrismaClient().whatsAppSession.update({
             where: { id },
             data: {
@@ -810,6 +825,7 @@ async function updateSession(req, res) {
                 workingHours: workingHours ? JSON.stringify(workingHours) : undefined,
                 isDefault,
                 loadBalanceWeight: loadBalanceWeight ? parseInt(loadBalanceWeight) : undefined,
+                metadata: updatedMetadata,
                 provider,
                 metaPhoneNumberId,
                 metaWabaId,
@@ -4916,7 +4932,15 @@ module.exports = {
     // Facebook Embedded Sign-Up
     getFacebookConfig,
     facebookConnect,
-    facebookEmbeddedConnect
+    facebookEmbeddedConnect,
+
+    // Advanced Baileys Features (Call Shield, Polls, Pin, Interactive)
+    updateCallShield,
+    getCallShield,
+    pinMessage,
+    unpinMessage,
+    getPinnedMessage,
+    sendInteractive
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════

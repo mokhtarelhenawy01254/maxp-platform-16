@@ -1864,6 +1864,239 @@ async function getMessageTemplate(sessionId) {
     }
 }
 
+// ==================== Pinned Messages ====================
+
+/**
+ * تثبيت رسالة في المحادثة
+ * @param {string} sessionId
+ * @param {string} jid
+ * @param {string} messageId
+ * @param {number} duration - مدة التثبيت بالثواني (86400 = 24h, 604800 = 7d, 2592000 = 30d)
+ */
+async function pinMessage(sessionId, jid, messageId, duration = 86400) {
+    try {
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
+        const targetJid = formatJid(jid);
+
+        const targetMsg = await getSharedPrismaClient().whatsAppMessage.findFirst({
+            where: { messageId }
+        });
+
+        const isFromMe = targetMsg ? targetMsg.fromMe : false;
+
+        session = assertSessionReadyAfterPrep(sessionId, 'pin prep');
+        await session.sock.sendMessage(targetJid, {
+            pin: {
+                remoteJid: targetJid,
+                fromMe: isFromMe,
+                id: messageId
+            },
+            type: 1, // 1 = PIN
+            time: duration
+        });
+
+        const expiresAt = new Date(Date.now() + duration * 1000);
+        if (targetMsg) {
+            let meta = {};
+            try { meta = targetMsg.metadata ? (typeof targetMsg.metadata === 'string' ? JSON.parse(targetMsg.metadata) : targetMsg.metadata) : {}; } catch {}
+            meta.isPinned = true;
+            meta.pinnedAt = new Date();
+            meta.pinDuration = duration;
+            meta.pinExpiresAt = expiresAt;
+
+            await getSharedPrismaClient().whatsAppMessage.update({
+                where: { id: targetMsg.id },
+                data: {
+                    metadata: JSON.stringify(meta),
+                    updatedAt: new Date()
+                }
+            });
+        }
+
+        const io = getIO();
+        io?.to(`company_${session.companyId}`).emit('whatsapp:message:pinned', {
+            sessionId,
+            remoteJid: targetJid,
+            messageId,
+            duration,
+            expiresAt,
+            message: targetMsg
+        });
+
+        return { success: true, messageId, duration, expiresAt };
+    } catch (error) {
+        console.error('❌ Error pinning message:', error);
+        throw error;
+    }
+}
+
+/**
+ * إلغاء تثبيت رسالة من المحادثة
+ */
+async function unpinMessage(sessionId, jid, messageId) {
+    try {
+        const { session: dbSession } = await getSessionProvider(sessionId);
+        let session = await getSendableBaileysSession(sessionId, dbSession);
+        const targetJid = formatJid(jid);
+
+        const targetMsg = await getSharedPrismaClient().whatsAppMessage.findFirst({
+            where: { messageId }
+        });
+
+        const isFromMe = targetMsg ? targetMsg.fromMe : false;
+
+        session = assertSessionReadyAfterPrep(sessionId, 'unpin prep');
+        await session.sock.sendMessage(targetJid, {
+            pin: {
+                remoteJid: targetJid,
+                fromMe: isFromMe,
+                id: messageId
+            },
+            type: 0, // 0 = UNPIN
+            time: 0
+        });
+
+        if (targetMsg) {
+            let meta = {};
+            try { meta = targetMsg.metadata ? (typeof targetMsg.metadata === 'string' ? JSON.parse(targetMsg.metadata) : targetMsg.metadata) : {}; } catch {}
+            meta.isPinned = false;
+            meta.unpinnedAt = new Date();
+
+            await getSharedPrismaClient().whatsAppMessage.update({
+                where: { id: targetMsg.id },
+                data: {
+                    metadata: JSON.stringify(meta),
+                    updatedAt: new Date()
+                }
+            });
+        }
+
+        const io = getIO();
+        io?.to(`company_${session.companyId}`).emit('whatsapp:message:unpinned', {
+            sessionId,
+            remoteJid: targetJid,
+            messageId
+        });
+
+        return { success: true, messageId };
+    } catch (error) {
+        console.error('❌ Error unpinning message:', error);
+        throw error;
+    }
+}
+
+// ==================== Native Flow Interactive Messages ====================
+
+/**
+ * إرسال رسالة بأزرار تفاعلية حديثة (Native Flow Interactive Messages)
+ * تدعم: نسخ كود/كوبون (cta_copy)، رابط (cta_url)، اتصال هاتفي (cta_call)، رد سريع (quick_reply)
+ */
+async function sendInteractiveButtons(sessionId, to, data, options = {}) {
+    try {
+        const { session: dbSession, provider } = await getSessionProvider(sessionId);
+        const jid = formatJid(to);
+        const { text, title, footer, buttons = [] } = data;
+
+        if (provider === 'META_CLOUD') {
+            return await sendButtons(sessionId, to, text, buttons, { ...options, footer, title });
+        }
+
+        let session = await getSendableBaileysSession(sessionId, dbSession);
+        session = assertSessionReadyAfterPrep(sessionId, 'interactive prep');
+
+        const nativeButtons = buttons.map((btn, index) => {
+            const btnType = btn.type || 'quick_reply';
+            if (btnType === 'copy' || btnType === 'cta_copy') {
+                return {
+                    name: 'cta_copy',
+                    buttonParamsJson: JSON.stringify({
+                        display_text: btn.displayText || btn.text || 'نسخ الكود',
+                        id: btn.id || `copy_${index}`,
+                        copy_code: btn.code || btn.copyCode || ''
+                    })
+                };
+            } else if (btnType === 'url' || btnType === 'cta_url') {
+                return {
+                    name: 'cta_url',
+                    buttonParamsJson: JSON.stringify({
+                        display_text: btn.displayText || btn.text || 'زيارة الرابط',
+                        url: btn.url || '',
+                        merchant_url: btn.url || ''
+                    })
+                };
+            } else if (btnType === 'call' || btnType === 'cta_call') {
+                return {
+                    name: 'cta_call',
+                    buttonParamsJson: JSON.stringify({
+                        display_text: btn.displayText || btn.text || 'اتصال',
+                        phone_number: btn.phoneNumber || btn.phone || ''
+                    })
+                };
+            } else {
+                return {
+                    name: 'quick_reply',
+                    buttonParamsJson: JSON.stringify({
+                        display_text: btn.displayText || btn.text || `خيار ${index + 1}`,
+                        id: btn.id || `reply_${index + 1}`
+                    })
+                };
+            }
+        });
+
+        const proto = WhatsAppManager.getBaileysProto();
+        const generateWAMsg = WhatsAppManager.getGenerateWAMessageFromContent();
+
+        let messageId;
+        if (generateWAMsg && proto) {
+            const interactiveMessage = proto.Message.InteractiveMessage.fromObject({
+                body: proto.Message.InteractiveMessage.Body.fromObject({ text: text || '' }),
+                footer: footer ? proto.Message.InteractiveMessage.Footer.fromObject({ text: footer }) : undefined,
+                header: title ? proto.Message.InteractiveMessage.Header.fromObject({ title: title, hasMediaAttachment: false }) : undefined,
+                nativeFlowMessage: proto.Message.InteractiveMessage.NativeFlowMessage.fromObject({
+                    buttons: nativeButtons
+                })
+            });
+
+            const waMsg = generateWAMsg(jid, {
+                viewOnceMessage: {
+                    message: {
+                        messageContextInfo: {
+                            deviceListMetadata: {},
+                            deviceListMetadataVersion: 2
+                        },
+                        interactiveMessage
+                    }
+                }
+            }, { userJid: session.sock.user?.id });
+
+            messageId = waMsg.key.id;
+            await session.sock.relayMessage(jid, waMsg.message, { messageId });
+        } else {
+            return await sendButtons(sessionId, to, text, buttons, { ...options, footer });
+        }
+
+        const savedMessage = await saveOutgoingMessage(sessionId, jid, {
+            messageId,
+            type: 'INTERACTIVE',
+            content: text,
+            interactiveData: JSON.stringify({
+                title,
+                text,
+                footer,
+                buttons
+            }),
+            isAIResponse: options.isAIResponse || false
+        }, { companyId: session.companyId });
+
+        await safeUpdateContact(sessionId, jid, { sock: session.sock });
+        return savedMessage;
+    } catch (error) {
+        console.error('❌ Error sending native interactive buttons:', error);
+        throw error;
+    }
+}
+
 module.exports = {
     sendText,
     sendImage,
@@ -1890,6 +2123,10 @@ module.exports = {
     getCart,
     // Template Messages
     sendTemplateMessage,
-    getMessageTemplate
+    getMessageTemplate,
+    // Advanced Baileys Features
+    pinMessage,
+    unpinMessage,
+    sendInteractiveButtons
 };
 
