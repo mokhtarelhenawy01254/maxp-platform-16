@@ -1539,7 +1539,11 @@ async function sendMedia(req, res) {
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending media:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء إرسال الوسائط' });
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({
+            error: error.message || 'حدث خطأ أثناء إرسال الوسائط',
+            code: error.code || 'WA_MEDIA_SEND_ERROR'
+        });
     }
 }
 
@@ -5852,6 +5856,10 @@ async function sendInteractive(req, res) {
         res.json({ success: true, message });
     } catch (error) {
         console.error('❌ Error sending interactive message:', error);
-        res.status(500).json({ error: error.message || 'حدث خطأ أثناء إرسال الرسالة التفاعلية' });
+        const statusCode = error.statusCode || 500;
+        res.status(statusCode).json({
+            error: error.message || 'حدث خطأ أثناء إرسال الرسالة التفاعلية',
+            code: error.code || 'WA_INTERACTIVE_SEND_ERROR'
+        });
     }
 }

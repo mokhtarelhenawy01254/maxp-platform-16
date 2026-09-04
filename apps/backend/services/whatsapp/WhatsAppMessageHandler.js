@@ -1881,8 +1881,6 @@ async function sendTemplateMessage(sessionId, to, templateId, parameters = {}, o
 
         let session = await getSendableBaileysSession(sessionId, dbSession);
 
-        const jid = formatJid(to);
-
         const messageOptions = {
             template: {
                 id: templateId,
@@ -2063,7 +2061,7 @@ async function unpinMessage(sessionId, jid, messageId) {
 async function sendInteractiveButtons(sessionId, to, data, options = {}) {
     try {
         const { session: dbSession, provider } = await getSessionProvider(sessionId);
-        const jid = formatJid(to);
+        const jid = await resolveAndValidateOutgoingJid(sessionId, to);
         const { text, title, footer, buttons = [] } = data;
 
         if (provider === 'META_CLOUD') {
@@ -2080,7 +2078,7 @@ async function sendInteractiveButtons(sessionId, to, data, options = {}) {
                     name: 'cta_copy',
                     buttonParamsJson: JSON.stringify({
                         display_text: btn.displayText || btn.text || 'نسخ الكود',
-                        id: btn.id || `copy_${index}`,
+                        id: btn.id || `copy_${index + 1}`,
                         copy_code: btn.code || btn.copyCode || ''
                     })
                 };
@@ -2182,6 +2180,7 @@ module.exports = {
     deleteMessage,
     markAsRead,
     formatJid,
+    resolveAndValidateOutgoingJid,
     // Poll & Order Features
     sendPoll,
     sendOrder,

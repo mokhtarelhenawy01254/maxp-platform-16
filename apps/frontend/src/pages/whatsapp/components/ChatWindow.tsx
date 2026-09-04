@@ -202,6 +202,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     onSendMessage();
   };
 
+  const handleAttemptAttachment = () => {
+    if (isUnresolvedLid) {
+      toast.error(
+        "لا يمكن إرسال وسائط إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى حفظ رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية."
+      );
+      if (onToggleRightPanel && !showRightPanel) {
+        onToggleRightPanel();
+      }
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const handleAttemptRecord = () => {
+    if (isUnresolvedLid) {
+      toast.error(
+        "لا يمكن إرسال تسجيل صوتي إلى جهة اتصال بدون رقم هاتف (معرّف LID غير محلول). يرجى حفظ رقم هاتف العميل أولاً من لوحة التفاصيل الجانبية."
+      );
+      if (onToggleRightPanel && !showRightPanel) {
+        onToggleRightPanel();
+      }
+      return;
+    }
+    setIsRecording(true);
+  };
+
   const handleCopyChatLink = () => {
     if (!selectedContact) return;
     const sessionId = selectedContact.sessionId || "";
@@ -536,7 +562,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 variant="ghost"
                 size="icon-sm"
                 className="rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)]"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={handleAttemptAttachment}
                 disabled={isUploadingMedia}
                 title={isUploadingMedia ? "جاري رفع الوسائط..." : (t("whatsapp.tooltips.attach") as string)}
               >
@@ -714,7 +740,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <Button
                 variant="ghost"
                 className="order-4 rounded-full border-0 text-[color:var(--color-muted-foreground)] hover:text-[color:var(--color-foreground)] hover:bg-[var(--whatsapp-surface-hover)] w-10 h-10 p-0 shrink-0 flex items-center justify-center"
-                onClick={() => setIsRecording(true)}
+                onClick={handleAttemptRecord}
               >
                 <Mic className="size-4" />
               </Button>

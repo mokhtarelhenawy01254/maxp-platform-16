@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useMemo, useEffect } from "react";
 import {
   GitBranch,
   Play,
@@ -33,10 +33,17 @@ import {
   BarChart3,
   Flame,
   Zap,
-  BookOpen
+  BookOpen,
+  Lock,
+  CheckCircle2,
+  AlertTriangle,
+  RefreshCw,
+  HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../hooks/useAuthSimple";
+import { apiClient } from "../../services/apiClient";
 
 export interface MapNode {
   id: string;
@@ -52,11 +59,12 @@ export interface MapNode {
   iconName: string;
   hasVideo?: boolean;
   liveRoute?: string;
+  requiredAppSlug?: string;
   liveMetric?: { label: string; value: string; color: string };
 }
 
-// القالب الشامل: دورة التجارة الإلكترونية الكاملة
-const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
+// القالب الشامل: دورة التجارة الإلكترونية الكاملة (ديناميكي لاسم الشركة وتوافق التطبيقات)
+export const createMasterBlueprint = (companyName?: string): MapNode[] => [
   {
     id: "m-step-1",
     stepOrder: 1,
@@ -69,6 +77,7 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     color: "border-blue-500/80 text-blue-300 bg-blue-950/40",
     iconName: "calculator",
     liveRoute: "/break-even",
+    requiredAppSlug: "break-even",
     liveMetric: { label: "CPA المستهدف", value: "85 ج", color: "text-blue-400" }
   },
   {
@@ -83,13 +92,14 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     y: 120,
     color: "border-violet-500/80 text-violet-300 bg-violet-950/40",
     iconName: "sparkles",
-    liveRoute: "/admin/ai-hub"
+    liveRoute: "/admin/ai-hub",
+    requiredAppSlug: "ai-hub"
   },
   {
     id: "m-step-3",
     parentId: "m-step-2",
     stepOrder: 3,
-    title: "3. صفحة هبوط المنتج ومتجر سوان",
+    title: `3. صفحة هبوط المنتج ${companyName ? `ومتجر ${companyName}` : "والمتجر الإلكتروني"}`,
     subtitle: "تصميم PDP سريع، باقات عروض الخصم (اشترِ 2 واحصل على شحن مجاني)",
     category: "store",
     badge: "المتجر والمنتجات 🛍️",
@@ -98,6 +108,7 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     color: "border-teal-500/80 text-teal-300 bg-teal-950/40",
     iconName: "shopping-bag",
     liveRoute: "/products",
+    requiredAppSlug: "store",
     liveMetric: { label: "معدل التحويل المتوقع", value: "3.8%", color: "text-teal-400" }
   },
   {
@@ -113,6 +124,7 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     color: "border-indigo-500/80 text-indigo-300 bg-indigo-950/40",
     iconName: "flame",
     liveRoute: "/advertising",
+    requiredAppSlug: "advertising",
     liveMetric: { label: "ROAS الحالي", value: "4.2x", color: "text-emerald-400" }
   },
   {
@@ -127,7 +139,8 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     y: 380,
     color: "border-emerald-500/80 text-emerald-300 bg-emerald-950/40",
     iconName: "message-square",
-    liveRoute: "/unified-inbox"
+    liveRoute: "/unified-inbox",
+    requiredAppSlug: "unified-inbox"
   },
   {
     id: "m-step-6",
@@ -142,6 +155,7 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     color: "border-amber-500/80 text-amber-300 bg-amber-950/40",
     iconName: "check-square",
     liveRoute: "/orders",
+    requiredAppSlug: "whatsapp-business",
     liveMetric: { label: "نسبة التأكيد", value: "86%", color: "text-emerald-400" }
   },
   {
@@ -156,7 +170,8 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     y: 380,
     color: "border-cyan-500/80 text-cyan-300 bg-cyan-950/40",
     iconName: "package-open",
-    liveRoute: "/inventory"
+    liveRoute: "/inventory",
+    requiredAppSlug: "inventory"
   },
   {
     id: "m-step-8",
@@ -171,6 +186,7 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     color: "border-rose-500/80 text-rose-300 bg-rose-950/40",
     iconName: "rotate-ccw",
     liveRoute: "/analytics/orders",
+    requiredAppSlug: "cancellation-analytics",
     liveMetric: { label: "نسبة المرتجع", value: "11%", color: "text-rose-400" }
   },
   {
@@ -185,7 +201,8 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     y: 620,
     color: "border-emerald-500/80 text-emerald-300 bg-emerald-950/40",
     iconName: "dollar-sign",
-    liveRoute: "/analytics/orders"
+    liveRoute: "/analytics/orders",
+    requiredAppSlug: "cod-management"
   },
   {
     id: "m-step-10",
@@ -200,6 +217,7 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     color: "border-emerald-500/80 text-emerald-300 bg-emerald-950/40",
     iconName: "bar-chart-3",
     liveRoute: "/marketing/monthly-pnl",
+    requiredAppSlug: "monthly-pnl",
     liveMetric: { label: "صافي الأرباح", value: "+54,200 ج", color: "text-emerald-400" }
   },
   {
@@ -214,7 +232,8 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     y: 620,
     color: "border-purple-500/80 text-purple-300 bg-purple-950/40",
     iconName: "trending-up",
-    liveRoute: "/marketing/clv-calculator"
+    liveRoute: "/marketing/clv-calculator",
+    requiredAppSlug: "clv-calculator"
   },
   {
     id: "m-step-12",
@@ -228,13 +247,72 @@ const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
     y: -40,
     color: "border-rose-500/80 text-rose-300 bg-rose-950/40",
     iconName: "video",
-    hasVideo: true
+    hasVideo: true,
+    requiredAppSlug: "executable-mindmap"
   }
 ];
 
 export default function MindMapPage() {
   const navigate = useNavigate();
-  const [nodes, setNodes] = useState<MapNode[]>(ECOMMERCE_MASTER_BLUEPRINT);
+  const { user } = useAuth();
+  const companyName = user?.company?.name || "";
+  const companyId = user?.company?.id || user?.companyId || "default";
+
+  // فحص قائمة التطبيقات المفعلة للشركة
+  const companyActiveApps = useMemo(() => {
+    const apps = Array.isArray(user?.company?.activeApps)
+      ? user.company.activeApps
+      : Array.isArray(user?.activeApps)
+        ? user.activeApps
+        : [];
+    return apps.map((a: any) => String(a?.slug || a).toLowerCase().trim());
+  }, [user]);
+
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const [installedLocally, setInstalledLocally] = useState<boolean>(false);
+  const [isInstalling, setIsInstalling] = useState<boolean>(false);
+
+  const isMindmapInstalled = useMemo(() => {
+    if (isSuperAdmin || installedLocally) return true;
+    return (
+      companyActiveApps.includes("executable-mindmap") ||
+      companyActiveApps.includes("cat-app-executable-mindmap")
+    );
+  }, [isSuperAdmin, installedLocally, companyActiveApps]);
+
+  // تفعيل التطبيق بنقرة واحدة
+  const handleInstallMindmap = async () => {
+    setIsInstalling(true);
+    try {
+      await apiClient.post("/marketplace/apps/executable-mindmap/install", {
+        pricingModel: "FREE"
+      });
+      setInstalledLocally(true);
+      toast.success(`🎉 تم تفعيل تطبيق الخرائط الذهنية بنجاح لشركة ${companyName || ""}`);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || "تعذر تفعيل التطبيق، يرجى تفعيله من متجر التطبيقات");
+    } finally {
+      setIsInstalling(false);
+    }
+  };
+
+  // فحص هل أداة معينة مفعلة في باقة الشركة
+  const isToolInstalled = (requiredAppSlug?: string) => {
+    if (!requiredAppSlug || isSuperAdmin) return true;
+    const slugLower = requiredAppSlug.toLowerCase();
+    return companyActiveApps.some(a => a === slugLower || a.includes(slugLower));
+  };
+
+  const [nodes, setNodes] = useState<MapNode[]>(() => {
+    try {
+      const saved = localStorage.getItem(`maxp_mindmap_${companyId}`);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return createMasterBlueprint(companyName);
+  });
   const [mode, setMode] = useState<"plan" | "train" | "exec">("plan");
   const [zoom, setZoom] = useState<number>(0.85);
   const [pan, setPan] = useState<{ x: number; y: number }>({ x: 80, y: 120 });
