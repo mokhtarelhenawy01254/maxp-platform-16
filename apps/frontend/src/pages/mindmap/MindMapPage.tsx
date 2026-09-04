@@ -1,9 +1,8 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import {
   GitBranch,
   Play,
   Sparkles,
-  Plus,
   ZoomIn,
   ZoomOut,
   Scan,
@@ -16,129 +15,229 @@ import {
   Bot,
   ShoppingCart,
   GripVertical,
-  CheckCheck,
   Boxes,
   ArrowDownCircle,
-  Info,
   Trash2,
   Video,
   MousePointerClick,
   PlayCircle,
-  Layers,
-  Clock,
   X,
   FileText,
-  UserCheck,
-  Package,
-  Wand2,
-  Zap
+  Calculator,
+  TrendingUp,
+  DollarSign,
+  PackageOpen,
+  RotateCcw,
+  ExternalLink,
+  Layers,
+  BarChart3,
+  Flame,
+  Zap,
+  BookOpen
 } from "lucide-react";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-interface MapNode {
+export interface MapNode {
   id: string;
   parentId?: string;
   stepOrder: number;
   title: string;
   subtitle: string;
-  category: "trigger" | "ai" | "commerce" | "crm" | "training" | "task" | "logic";
+  category: "calc" | "creative" | "store" | "ads" | "chat" | "ops" | "finance" | "growth" | "training";
   badge: string;
   x: number;
   y: number;
   color: string;
-  icon: string;
+  iconName: string;
   hasVideo?: boolean;
-  assignee?: string;
-  taskStatus?: string;
-  productName?: string;
+  liveRoute?: string;
+  liveMetric?: { label: string; value: string; color: string };
 }
 
-const INITIAL_NODES: MapNode[] = [
+// القالب الشامل: دورة التجارة الإلكترونية الكاملة
+const ECOMMERCE_MASTER_BLUEPRINT: MapNode[] = [
   {
-    id: "step-1",
+    id: "m-step-1",
     stepOrder: 1,
-    title: "مشغّل: سلة متروكة في المتجر",
-    subtitle: "مرور 30 دقيقة على ترك العميل للسلة",
-    category: "trigger",
-    badge: "مشغل المتجر ⚡",
-    x: 250,
-    y: 280,
-    color: "border-amber-500/80 text-amber-300 bg-amber-950/40",
-    icon: "shopping-cart"
-  },
-  {
-    id: "step-2",
-    parentId: "step-1",
-    stepOrder: 2,
-    title: "وكيل المبيعات الذكي (مروة)",
-    subtitle: "تحليل السلة وصياغة رسالة ودية بالعامية",
-    category: "ai",
-    badge: "وكيل مبيعات بشري 🤖",
-    x: 650,
-    y: 160,
-    color: "border-violet-500/80 text-violet-300 bg-violet-950/40",
-    icon: "sparkles"
-  },
-  {
-    id: "step-3",
-    parentId: "step-2",
-    stepOrder: 3,
-    title: "توليد كود خصم 15% مؤقت",
-    subtitle: "صلاحية الكوبون 24 ساعة فقط",
-    category: "commerce",
-    badge: "كوبون متجر سوان 🏷️",
-    x: 1050,
-    y: 100,
-    color: "border-teal-500/80 text-teal-300 bg-teal-950/40",
-    icon: "tag"
-  },
-  {
-    id: "step-4",
-    parentId: "step-3",
-    stepOrder: 4,
-    title: "إرسال رسالة واتساب تفاعلية",
-    subtitle: "تتضمن رابط استكمال الطلب مع الخصم",
-    category: "crm",
-    badge: "واتساب فوري 💬",
-    x: 1450,
-    y: 100,
-    color: "border-emerald-500/80 text-emerald-300 bg-emerald-950/40",
-    icon: "message-square"
-  },
-  {
-    id: "step-5",
-    parentId: "step-1",
-    stepOrder: 5,
-    title: "فيديو شرح وتطبيق للمتدرب",
-    subtitle: "شرح كيفية إعداد خطة الاسترجاع بالفيديو",
-    category: "training",
-    badge: "شرح تدريبي 🎓",
-    x: 650,
-    y: 440,
-    color: "border-rose-500/80 text-rose-300 bg-rose-950/40",
-    icon: "play-circle",
-    hasVideo: true
-  },
-  {
-    id: "step-6",
-    parentId: "step-5",
-    stepOrder: 6,
-    title: "إنشاء مهمة متابعة في مساحة العمل",
-    subtitle: "إسناد المتابعة لأحمد إذا لم يتم الشراء",
-    category: "task",
-    badge: "Tasks Workspace 📋",
-    x: 1050,
-    y: 440,
+    title: "1. حاسبة المشاريع وتحديد الميزانية",
+    subtitle: "حساب نقطة التعادل، الـ CPA الأقصى، وتوزيع ميزانية الإعلانات",
+    category: "calc",
+    badge: "تخطيط مالي 🧮",
+    x: 200,
+    y: 180,
     color: "border-blue-500/80 text-blue-300 bg-blue-950/40",
-    icon: "check-square"
+    iconName: "calculator",
+    liveRoute: "/break-even",
+    liveMetric: { label: "CPA المستهدف", value: "85 ج", color: "text-blue-400" }
+  },
+  {
+    id: "m-step-2",
+    parentId: "m-step-1",
+    stepOrder: 2,
+    title: "2. استوديو المحتوى والذكاء الاصطناعي",
+    subtitle: "تجهيز الصور، صياغة 3 نصوص إعلانية وزوايا بيع (Hooks)",
+    category: "creative",
+    badge: "صناعة محتوى 🎨",
+    x: 620,
+    y: 120,
+    color: "border-violet-500/80 text-violet-300 bg-violet-950/40",
+    iconName: "sparkles",
+    liveRoute: "/admin/ai-hub"
+  },
+  {
+    id: "m-step-3",
+    parentId: "m-step-2",
+    stepOrder: 3,
+    title: "3. صفحة هبوط المنتج ومتجر سوان",
+    subtitle: "تصميم PDP سريع، باقات عروض الخصم (اشترِ 2 واحصل على شحن مجاني)",
+    category: "store",
+    badge: "المتجر والمنتجات 🛍️",
+    x: 1040,
+    y: 120,
+    color: "border-teal-500/80 text-teal-300 bg-teal-950/40",
+    iconName: "shopping-bag",
+    liveRoute: "/products",
+    liveMetric: { label: "معدل التحويل المتوقع", value: "3.8%", color: "text-teal-400" }
+  },
+  {
+    id: "m-step-4",
+    parentId: "m-step-3",
+    stepOrder: 4,
+    title: "4. إطلاق إعلانات فيسبوك وتيك توك",
+    subtitle: "ربط Pixel و CAPI، إطلاق حملات التحويل وإعادة الاستهداف",
+    category: "ads",
+    badge: "حملات ممولة 📢",
+    x: 1460,
+    y: 120,
+    color: "border-indigo-500/80 text-indigo-300 bg-indigo-950/40",
+    iconName: "flame",
+    liveRoute: "/advertising",
+    liveMetric: { label: "ROAS الحالي", value: "4.2x", color: "text-emerald-400" }
+  },
+  {
+    id: "m-step-5",
+    parentId: "m-step-4",
+    stepOrder: 5,
+    title: "5. صندوق المحادثات الموحد (Unified Inbox)",
+    subtitle: "استقبال رسائل واتساب، ماسنجر، وإنستجرام في شاشة واحدة",
+    category: "chat",
+    badge: "تواصل موحد 💬",
+    x: 1460,
+    y: 380,
+    color: "border-emerald-500/80 text-emerald-300 bg-emerald-950/40",
+    iconName: "message-square",
+    liveRoute: "/unified-inbox"
+  },
+  {
+    id: "m-step-6",
+    parentId: "m-step-5",
+    stepOrder: 6,
+    title: "6. تأكيد الطلبات وتتبع الإلغاءات",
+    subtitle: "بوت تأكيد واتساب تلقائي + مراقبة نسبة التأكيد والإلغاء لحظياً",
+    category: "ops",
+    badge: "تأكيد الطلبات ⚡",
+    x: 1040,
+    y: 380,
+    color: "border-amber-500/80 text-amber-300 bg-amber-950/40",
+    iconName: "check-square",
+    liveRoute: "/orders",
+    liveMetric: { label: "نسبة التأكيد", value: "86%", color: "text-emerald-400" }
+  },
+  {
+    id: "m-step-7",
+    parentId: "m-step-6",
+    stepOrder: 7,
+    title: "7. تجهيز المستودع وتوزيع الشحنات",
+    subtitle: "طباعة البوالص، جرد المخزون، وتسليم شركات الشحن (Turbo)",
+    category: "ops",
+    badge: "المخزن والشحن 📦",
+    x: 620,
+    y: 380,
+    color: "border-cyan-500/80 text-cyan-300 bg-cyan-950/40",
+    iconName: "package-open",
+    liveRoute: "/inventory"
+  },
+  {
+    id: "m-step-8",
+    parentId: "m-step-7",
+    stepOrder: 8,
+    title: "8. تتبع المرتجعات وتحليل الأسباب",
+    subtitle: "معرفة أسباب رجوع الشحنات: تأخر المندوب، رفض الاستلام، أو تلف",
+    category: "ops",
+    badge: "تحليل المرتجعات 🔄",
+    x: 200,
+    y: 380,
+    color: "border-rose-500/80 text-rose-300 bg-rose-950/40",
+    iconName: "rotate-ccw",
+    liveRoute: "/analytics/orders",
+    liveMetric: { label: "نسبة المرتجع", value: "11%", color: "text-rose-400" }
+  },
+  {
+    id: "m-step-9",
+    parentId: "m-step-8",
+    stepOrder: 9,
+    title: "9. تحصيل أموال الشحن (COD Cash Flow)",
+    subtitle: "تسوية مبالغ الدفع عند الاستلام من شركات الشحن ومراقبة السيولة",
+    category: "finance",
+    badge: "التحصيل والكاش 💵",
+    x: 200,
+    y: 620,
+    color: "border-emerald-500/80 text-emerald-300 bg-emerald-950/40",
+    iconName: "dollar-sign",
+    liveRoute: "/analytics/orders"
+  },
+  {
+    id: "m-step-10",
+    parentId: "m-step-9",
+    stepOrder: 10,
+    title: "10. الأرباح والخسائر الشهرية (P&L)",
+    subtitle: "خصم تكلفة البضاعة، الإعلانات، الشحن، والمصاريف = صافي الربح",
+    category: "finance",
+    badge: "القوائم المالية 📊",
+    x: 620,
+    y: 620,
+    color: "border-emerald-500/80 text-emerald-300 bg-emerald-950/40",
+    iconName: "bar-chart-3",
+    liveRoute: "/marketing/monthly-pnl",
+    liveMetric: { label: "صافي الأرباح", value: "+54,200 ج", color: "text-emerald-400" }
+  },
+  {
+    id: "m-step-11",
+    parentId: "m-step-10",
+    stepOrder: 11,
+    title: "11. الجروث ماركتنج والسكيلينج (CLV)",
+    subtitle: "حاسبة القيمة الدائمة للعميل، إعادة البيع، وزيادة الميزانيات الرابحة",
+    category: "growth",
+    badge: "جروث وسكيلينج 📈",
+    x: 1040,
+    y: 620,
+    color: "border-purple-500/80 text-purple-300 bg-purple-950/40",
+    iconName: "trending-up",
+    liveRoute: "/marketing/clv-calculator"
+  },
+  {
+    id: "m-step-12",
+    parentId: "m-step-1",
+    stepOrder: 12,
+    title: "12. فيديو تدريب وتأهيل الفريق (SOP)",
+    subtitle: "دليل تدريبي مدمج بالفيديو لشرح خطوات الدورة للموظفين والشركاء",
+    category: "training",
+    badge: "شرح وتدريب 🎓",
+    x: 200,
+    y: -40,
+    color: "border-rose-500/80 text-rose-300 bg-rose-950/40",
+    iconName: "video",
+    hasVideo: true
   }
 ];
 
 export default function MindMapPage() {
-  const [nodes, setNodes] = useState<MapNode[]>(INITIAL_NODES);
+  const navigate = useNavigate();
+  const [nodes, setNodes] = useState<MapNode[]>(ECOMMERCE_MASTER_BLUEPRINT);
   const [mode, setMode] = useState<"plan" | "train" | "exec">("plan");
-  const [zoom, setZoom] = useState<number>(1);
-  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 150, y: 120 });
+  const [zoom, setZoom] = useState<number>(0.85);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 80, y: 120 });
   const [isPanning, setIsPanning] = useState<boolean>(false);
   const [startPan, setStartPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
@@ -160,7 +259,7 @@ export default function MindMapPage() {
       focusOnStep(1);
       toast.info("تم تفعيل وضع الشرح والتدريب (Presentation Mode)");
     } else if (newMode === "exec") {
-      toast.info("تم تفعيل وضع الأتمتة والتنفيذ (n8n Mode)");
+      toast.info("تم تفعيل وضع الأتمتة والتنفيذ (n8n Engine)");
     } else {
       toast.info("تم تفعيل وضع التخطيط والعصف الذهني");
     }
@@ -172,11 +271,11 @@ export default function MindMapPage() {
     const node = nodes.find((n) => n.stepOrder === stepNum);
     if (node && viewportRef.current) {
       const rect = viewportRef.current.getBoundingClientRect();
-      const targetZoom = 1.15;
+      const targetZoom = 1.05;
       setZoom(targetZoom);
       setPan({
-        x: rect.width / 2 - node.x * targetZoom - 130,
-        y: rect.height / 2 - node.y * targetZoom - 80
+        x: rect.width / 2 - node.x * targetZoom - 140,
+        y: rect.height / 2 - node.y * targetZoom - 90
       });
     }
   };
@@ -200,20 +299,20 @@ export default function MindMapPage() {
   const runExecutionSimulation = () => {
     switchMode("exec");
     setIsExecuting(true);
-    toast.loading("جاري تشغيل واختبار مسار العمل عبر خادم MaxP...", { id: "exec-toast" });
+    toast.loading("جاري تشغيل مسار العمل التنفيذي ومزامنة البيانات مع أدوات MaxP...", { id: "exec-toast" });
 
     setTimeout(() => {
       setIsExecuting(false);
-      toast.success("تم تنفيذ مسار العمل بنجاح! تم إنشاء المهمة وتجهيز كود الخصم.", { id: "exec-toast" });
+      toast.success("اكتمل تشغيل المسار بنجاح! تم فحص المؤشرات، تحديث الحسابات، وإرسال الإشعارات.", { id: "exec-toast" });
     }, 3000);
   };
 
   // Zoom controls
   const handleZoomIn = () => setZoom((prev) => Math.min(prev + 0.15, 2.2));
-  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.15, 0.4));
+  const handleZoomOut = () => setZoom((prev) => Math.max(prev - 0.15, 0.35));
   const handleResetZoom = () => {
-    setZoom(1);
-    setPan({ x: 150, y: 120 });
+    setZoom(0.85);
+    setPan({ x: 80, y: 120 });
   };
 
   // Canvas Panning
@@ -235,14 +334,12 @@ export default function MindMapPage() {
     }
   };
 
-  const handleMouseUp = () => {
-    setIsPanning(false);
-  };
+  const handleMouseUp = () => setIsPanning(false);
 
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
     const zoomFactor = e.deltaY < 0 ? 1.08 : 0.92;
-    setZoom((prev) => Math.min(Math.max(prev * zoomFactor, 0.4), 2.2));
+    setZoom((prev) => Math.min(Math.max(prev * zoomFactor, 0.35), 2.2));
   };
 
   // Node Dragging
@@ -304,7 +401,7 @@ export default function MindMapPage() {
     const dropX = (e.clientX - rect.left - pan.x) / zoom;
     const dropY = (e.clientY - rect.top - pan.y) / zoom;
 
-    addNodeFromPalette(toolType, dropX - 100, dropY - 40);
+    addNodeFromPalette(toolType, dropX - 130, dropY - 45);
     setDraggedToolType(null);
   };
 
@@ -318,82 +415,149 @@ export default function MindMapPage() {
       id: newId,
       parentId: selected?.id,
       stepOrder: newOrder,
-      x: customX !== undefined ? customX : (selected ? selected.x + 360 : 300),
+      x: customX !== undefined ? customX : (selected ? selected.x + 380 : 300),
       y: customY !== undefined ? customY : (selected ? selected.y + 40 : 300),
       title: "أداة جديدة",
       subtitle: "إعدادات الأداة في النظام",
       badge: "أداة مضافة",
       color: "border-slate-600 text-slate-300 bg-slate-900",
-      icon: "tool",
-      category: "task"
+      iconName: "tool",
+      category: "ops"
     };
 
-    if (type === "trigger_cart") {
-      newNode.title = "مشغل: سلة متروكة في المتجر";
-      newNode.subtitle = "مرور 30 دقيقة على ترك السلة";
-      newNode.badge = "سلة متروكة ⚡";
-      newNode.color = "border-amber-500 text-amber-300 bg-amber-950/40";
-      newNode.icon = "shopping-cart";
-      newNode.category = "trigger";
-    } else if (type === "trigger_whatsapp") {
-      newNode.title = "مشغل: رسالة واردة على واتساب";
-      newNode.subtitle = "استقبال كلمة مفتاحية معينة";
-      newNode.badge = "واتساب وارد 💬";
-      newNode.color = "border-emerald-500 text-emerald-300 bg-emerald-950/40";
-      newNode.icon = "message-circle";
-      newNode.category = "trigger";
-    } else if (type === "ai_sales_agent") {
-      newNode.title = "وكيل المبيعات البشري (مروة)";
-      newNode.subtitle = "صياغة رد مقنع بالعامية المصرية";
-      newNode.badge = "وكيل بشري 🤖";
-      newNode.color = "border-violet-500 text-violet-300 bg-violet-950/40";
-      newNode.icon = "sparkles";
-      newNode.category = "ai";
-    } else if (type === "ai_ocr") {
-      newNode.title = "وكيل قراءة الفواتير (OCR)";
-      newNode.subtitle = "استخراج المبلغ ورقم الحساب";
-      newNode.badge = "فحص إيصالات 🧾";
-      newNode.color = "border-violet-500 text-violet-300 bg-violet-950/40";
-      newNode.icon = "file-text";
-      newNode.category = "ai";
-    } else if (type === "action_whatsapp") {
-      newNode.title = "إرسال رسالة واتساب للعميل";
-      newNode.subtitle = "نص الرسالة وكود الخصم";
-      newNode.badge = "WhatsApp 💬";
-      newNode.color = "border-emerald-500 text-emerald-300 bg-emerald-950/40";
-      newNode.icon = "message-square";
-      newNode.category = "crm";
-    } else if (type === "action_task") {
-      newNode.title = "إنشاء مهمة للمبيعات";
-      newNode.subtitle = "إسناد للموظف مع تذكير بعد 3 ساعات";
-      newNode.badge = "Tasks 📋";
+    // تعيين خصائص كل أداة من الأدوات الـ 17 الحقيقية في MaxP
+    if (type === "calc_break_even") {
+      newNode.title = "حاسبة المشاريع — نقطة التعادل";
+      newNode.subtitle = "حساب التكاليف الثابتة، المتغيرة، وهامش الأمان";
+      newNode.badge = "نقطة التعادل 🧮";
       newNode.color = "border-blue-500 text-blue-300 bg-blue-950/40";
-      newNode.icon = "check-square";
-      newNode.category = "task";
-    } else if (type === "action_coupon") {
-      newNode.title = "توليد كود خصم مؤقت 15%";
-      newNode.subtitle = "صلاحية 24 ساعة لمتجر سوان";
-      newNode.badge = "كوبون متجر 🏷️";
+      newNode.iconName = "calculator";
+      newNode.liveRoute = "/break-even";
+      newNode.category = "calc";
+    } else if (type === "calc_budget") {
+      newNode.title = "مخطط الميزانية الإعلانية";
+      newNode.subtitle = "توزيع الميزانيات وتوقع المبيعات وتكلفة الاقتناء";
+      newNode.badge = "ميزانية إعلانات 💰";
+      newNode.color = "border-blue-500 text-blue-300 bg-blue-950/40";
+      newNode.iconName = "dollar-sign";
+      newNode.liveRoute = "/marketing/ad-budget-planner";
+      newNode.category = "calc";
+    } else if (type === "creative_ai") {
+      newNode.title = "استوديو الصور والمحتوى (AI Hub)";
+      newNode.subtitle = "توليد تصاميم المنتجات وصياغة نصوص إعلانية بالذكاء الاصطناعي";
+      newNode.badge = "صناعة محتوى 🎨";
+      newNode.color = "border-violet-500 text-violet-300 bg-violet-950/40";
+      newNode.iconName = "sparkles";
+      newNode.liveRoute = "/admin/ai-hub";
+      newNode.category = "creative";
+    } else if (type === "store_pdp") {
+      newNode.title = "صفحة المنتج (Storefront PDP)";
+      newNode.subtitle = "صفحة هبوط سريعة وباقات عروض الخصم التلقائي";
+      newNode.badge = "صفحة منتج 🛍️";
       newNode.color = "border-teal-500 text-teal-300 bg-teal-950/40";
-      newNode.icon = "tag";
-      newNode.category = "commerce";
-    } else if (type === "train_video") {
-      newNode.title = "شرح استراتيجية العروض بالفيديو";
-      newNode.subtitle = "فيديو تدريبي 4 دقائق";
-      newNode.badge = "فيديو تدريبي 🎓";
+      newNode.iconName = "shopping-bag";
+      newNode.liveRoute = "/products";
+      newNode.category = "store";
+    } else if (type === "ads_meta") {
+      newNode.title = "إعلانات فيسبوك وانستجرام";
+      newNode.subtitle = "إدارة الحملات والـ Pixel وتتبع الأحداث الرسمية";
+      newNode.badge = "إعلانات ميتا 📢";
+      newNode.color = "border-indigo-500 text-indigo-300 bg-indigo-950/40";
+      newNode.iconName = "flame";
+      newNode.liveRoute = "/advertising";
+      newNode.category = "ads";
+    } else if (type === "chat_unified") {
+      newNode.title = "صندوق المحادثات الموحد (Unified Inbox)";
+      newNode.subtitle = "إدارة واتساب وماسنجر وإنستجرام في شاشة واحدة";
+      newNode.badge = "صندوق موحد 💬";
+      newNode.color = "border-emerald-500 text-emerald-300 bg-emerald-950/40";
+      newNode.iconName = "message-square";
+      newNode.liveRoute = "/unified-inbox";
+      newNode.category = "chat";
+    } else if (type === "chat_whatsapp") {
+      newNode.title = "بوت واتساب الرسمي (WhatsApp Cloud API)";
+      newNode.subtitle = "رد آلي، إرسال فواتير، واسترجاع السلات المتروكة";
+      newNode.badge = "واتساب آلي 💬";
+      newNode.color = "border-emerald-500 text-emerald-300 bg-emerald-950/40";
+      newNode.iconName = "message-square";
+      newNode.liveRoute = "/whatsapp";
+      newNode.category = "chat";
+    } else if (type === "ops_confirmation") {
+      newNode.title = "تأكيد الطلبات وتتبع الإلغاءات";
+      newNode.subtitle = "متابعة نسبة تأكيد الطلبات وأسباب الإلغاء الشائعة";
+      newNode.badge = "تأكيد وإلغاء ⚡";
+      newNode.color = "border-amber-500 text-amber-300 bg-amber-950/40";
+      newNode.iconName = "check-square";
+      newNode.liveRoute = "/orders";
+      newNode.liveMetric = { label: "نسبة التأكيد", value: "85%", color: "text-emerald-400" };
+      newNode.category = "ops";
+    } else if (type === "ops_warehouse") {
+      newNode.title = "المستودع وتجهيز الشحنات";
+      newNode.subtitle = "تتبع المخزون اللحظي وتجهيز طلبات الشحن السريع";
+      newNode.badge = "المخزن والشحن 📦";
+      newNode.color = "border-cyan-500 text-cyan-300 bg-cyan-950/40";
+      newNode.iconName = "package-open";
+      newNode.liveRoute = "/inventory";
+      newNode.category = "ops";
+    } else if (type === "ops_returns") {
+      newNode.title = "تحليل المرتجعات وأسبابها";
+      newNode.subtitle = "تقارير تفصيلية عن المرتجعات: أسباب الرفض وسرعة المندوب";
+      newNode.badge = "تحليل المرتجعات 🔄";
       newNode.color = "border-rose-500 text-rose-300 bg-rose-950/40";
-      newNode.icon = "play-circle";
+      newNode.iconName = "rotate-ccw";
+      newNode.liveRoute = "/analytics/orders";
+      newNode.liveMetric = { label: "نسبة المرتجع", value: "12%", color: "text-rose-400" };
+      newNode.category = "ops";
+    } else if (type === "finance_cod") {
+      newNode.title = "أداء تحصيل الدفع عند الاستلام (COD)";
+      newNode.subtitle = "متابعة مستحقات شركات الشحن ودورة تدفق الكاش اليومي";
+      newNode.badge = "تحصيل COD 💵";
+      newNode.color = "border-emerald-500 text-emerald-300 bg-emerald-950/40";
+      newNode.iconName = "dollar-sign";
+      newNode.liveRoute = "/analytics/orders";
+      newNode.category = "finance";
+    } else if (type === "finance_pnl") {
+      newNode.title = "القوائم المالية والأرباح الشهرية (P&L)";
+      newNode.subtitle = "صافي الربح، الهامش الإجمالي، وتحليل كافة المصاريف التشغيلية";
+      newNode.badge = "الأرباح P&L 📊";
+      newNode.color = "border-emerald-500 text-emerald-300 bg-emerald-950/40";
+      newNode.iconName = "bar-chart-3";
+      newNode.liveRoute = "/marketing/monthly-pnl";
+      newNode.liveMetric = { label: "صافي الأرباح", value: "مباشر من المتجر", color: "text-emerald-400" };
+      newNode.category = "finance";
+    } else if (type === "growth_clv") {
+      newNode.title = "القيمة الدائمة للعميل (CLV / LTV)";
+      newNode.subtitle = "حساب معدل تكرار الشراء واستراتيجيات عروض الـ Upsell";
+      newNode.badge = "جروث وسكيلينج 📈";
+      newNode.color = "border-purple-500 text-purple-300 bg-purple-950/40";
+      newNode.iconName = "trending-up";
+      newNode.liveRoute = "/marketing/clv-calculator";
+      newNode.category = "growth";
+    } else if (type === "growth_conversion") {
+      newNode.title = "تحليلات مسار التحويل (Conversion Funnel)";
+      newNode.subtitle = "تتبع معدل التحويل في كل خطوة من الإعلان للسلة للشراء";
+      newNode.badge = "مسار التحويل 🎯";
+      newNode.color = "border-purple-500 text-purple-300 bg-purple-950/40";
+      newNode.iconName = "trending-up";
+      newNode.liveRoute = "/analytics/orders";
+      newNode.category = "growth";
+    } else if (type === "training_video") {
+      newNode.title = "فيديو شرح وإرشادات الفريق (SOP)";
+      newNode.subtitle = "تضمين دروس فيديو تدريبية للمتدربين مع خطوات التطبيق";
+      newNode.badge = "شرح وتدريب 🎓";
+      newNode.color = "border-rose-500 text-rose-300 bg-rose-950/40";
+      newNode.iconName = "video";
       newNode.hasVideo = true;
       newNode.category = "training";
     }
 
     setNodes((prev) => [...prev, newNode]);
     setSelectedNodeId(newId);
-    toast.success(`تمت إضافة: ${newNode.title}`);
+    toast.success(`تمت إضافة أداة: ${newNode.title}`);
   };
 
   const deleteSelectedNode = () => {
-    if (!selectedNodeId || selectedNodeId === "step-1") {
+    if (!selectedNodeId || selectedNodeId === "m-step-1") {
       toast.error("لا يمكن حذف العقدة الرئيسية");
       return;
     }
@@ -405,7 +569,7 @@ export default function MindMapPage() {
   const aiExpandNode = () => {
     const node = nodes.find((n) => n.id === selectedNodeId);
     if (!node) return;
-    toast.loading(`يقوم وكيل MaxP الذكي بتحليل: "${node.title}"...`, { id: "ai-expand" });
+    toast.loading(`يقوم وكيل MaxP الذكي بتحليل: "${node.title}" وتوليد فروع تشغيلية...`, { id: "ai-expand" });
 
     setTimeout(() => {
       const newId = "ai-" + Date.now();
@@ -413,19 +577,31 @@ export default function MindMapPage() {
         id: newId,
         parentId: node.id,
         stepOrder: nodes.length + 1,
-        title: "فرع مقترح ذكياً: تقديم شحن مجاني بدلاً من الخصم",
-        subtitle: "بناءً على تفضيل عملاء نفس المنطقة",
+        title: "فرع تشغيلي مقترح بالذكاء الاصطناعي",
+        subtitle: "تحسين تكلفة الشحن ومضاعفة باقات الـ Cross-sell",
         badge: "اقتراح ذكي ✨",
         color: "border-violet-500 text-violet-300 bg-violet-950/40",
-        icon: "sparkles",
-        category: "ai",
-        x: node.x + 360,
+        iconName: "sparkles",
+        category: "growth",
+        x: node.x + 380,
         y: node.y - 50
       };
       setNodes((prev) => [...prev, newNode]);
       setSelectedNodeId(newId);
       toast.success("تم توليد الفرع الذكي بنجاح!", { id: "ai-expand" });
     }, 1200);
+  };
+
+  const handleOpenLiveTool = (route?: string) => {
+    if (!route) return;
+    navigate(route);
+  };
+
+  // إعادة تحميل قالب دورة التجارة الإلكترونية الشاملة
+  const handleReloadMasterBlueprint = () => {
+    setNodes(ECOMMERCE_MASTER_BLUEPRINT);
+    handleResetZoom();
+    toast.success("تم تحميل قالب دورة التجارة الإلكترونية الشاملة بنجاح!");
   };
 
   return (
@@ -438,7 +614,7 @@ export default function MindMapPage() {
           </div>
           <div>
             <h2 className="font-bold text-sm text-white">الخرائط الذهنية ومسارات العمل</h2>
-            <p className="text-[11px] text-slate-400 hidden sm:block">تخطيط + تدريب + أتمتة تنفيذية متصلة بأدوات MaxP</p>
+            <p className="text-[11px] text-slate-400 hidden sm:block">دورة التجارة الإلكترونية المتكاملة (17 أداة حية)</p>
           </div>
         </div>
 
@@ -475,6 +651,16 @@ export default function MindMapPage() {
 
         {/* Action buttons */}
         <div className="flex items-center gap-2">
+          {/* Blueprint Template Button */}
+          <button
+            onClick={handleReloadMasterBlueprint}
+            title="تحميل دورة التجارة الكاملة"
+            className="hidden md:flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
+          >
+            <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+            <span>قالب دورة التجارة الشاملة</span>
+          </button>
+
           <button
             onClick={runExecutionSimulation}
             disabled={isExecuting}
@@ -489,7 +675,7 @@ export default function MindMapPage() {
             className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold transition"
           >
             <Boxes className="w-4 h-4 text-violet-400" />
-            <span className="hidden sm:inline">الأدوات (Drag & Drop)</span>
+            <span className="hidden sm:inline">أدوات السيناريو (17 أداة)</span>
           </button>
         </div>
       </div>
@@ -499,8 +685,8 @@ export default function MindMapPage() {
         ref={viewportRef}
         className="relative flex-1 w-full h-full overflow-hidden bg-slate-950"
         style={{
-          backgroundImage: "radial-gradient(#334155 1px, transparent 1px)",
-          backgroundSize: "26px 26px"
+          backgroundImage: "radial-gradient(#334155 1.5px, transparent 1.5px)",
+          backgroundSize: "28px 28px"
         }}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
@@ -515,7 +701,7 @@ export default function MindMapPage() {
           <div className="pointer-events-none absolute inset-4 border-2 border-dashed border-violet-500/60 rounded-3xl bg-violet-950/20 z-30 flex items-center justify-center">
             <div className="bg-slate-900/90 border border-violet-500 px-5 py-2.5 rounded-2xl text-xs font-bold text-violet-300 flex items-center gap-2 shadow-2xl">
               <ArrowDownCircle className="w-5 h-5 text-violet-400 animate-bounce" />
-              <span>أفلت الأداة هنا لإضافتها إلى المسار مباشرة!</span>
+              <span>أفلت أداة السيناريو هنا لتثبيتها وربطها بالمسار فوراً!</span>
             </div>
           </div>
         )}
@@ -563,7 +749,7 @@ export default function MindMapPage() {
           </button>
           <button
             onClick={handleResetZoom}
-            title="إعادة ضبط"
+            title="إعادة ضبط الرؤية"
             className="w-8 h-8 rounded-xl flex items-center justify-center text-slate-300 hover:bg-slate-800 transition"
           >
             <Scan className="w-4 h-4" />
@@ -584,10 +770,10 @@ export default function MindMapPage() {
               const parent = nodes.find((n) => n.id === node.parentId);
               if (!parent) return null;
 
-              const pWidth = 260;
-              const pHeight = 85;
-              const nWidth = 260;
-              const nHeight = 85;
+              const pWidth = 280;
+              const pHeight = 100;
+              const nWidth = 280;
+              const nHeight = 100;
 
               const startX = parent.x + (node.x > parent.x ? pWidth : 0);
               const startY = parent.y + pHeight / 2;
@@ -606,7 +792,7 @@ export default function MindMapPage() {
                   d={`M ${startX} ${startY} C ${control1X} ${startY}, ${control2X} ${endY}, ${endX} ${endY}`}
                   className={`fill-none transition-all duration-300 ${
                     isExecuting
-                      ? "stroke-emerald-400 stroke-[3.5] [stroke-dasharray:8_4] animate-pulse"
+                      ? "stroke-emerald-400 stroke-[4] [stroke-dasharray:8_4] animate-pulse"
                       : isEdgeActive
                       ? "stroke-violet-500 stroke-[3.5]"
                       : "stroke-slate-700 stroke-[2.5]"
@@ -626,7 +812,7 @@ export default function MindMapPage() {
               return (
                 <div
                   key={node.id}
-                  className={`map-node absolute rounded-2xl border p-3.5 flex flex-col justify-between shadow-2xl backdrop-blur w-64 bg-slate-900/95 cursor-grab active:cursor-grabbing transition-all duration-150 ${
+                  className={`map-node absolute rounded-2xl border p-3.5 flex flex-col justify-between shadow-2xl backdrop-blur w-72 bg-slate-900/95 cursor-grab active:cursor-grabbing transition-all duration-150 ${
                     node.color
                   } ${
                     isSelected
@@ -660,22 +846,44 @@ export default function MindMapPage() {
                   <div className="text-xs font-bold text-white leading-snug">{node.title}</div>
                   <div className="text-[11px] text-slate-400 mt-1 leading-normal">{node.subtitle}</div>
 
-                  {node.hasVideo && (
-                    <div className="mt-2 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px] text-rose-300">
-                      <span className="flex items-center gap-1">
-                        <Video className="w-3 h-3" /> فيديو: 3:45 د
-                      </span>
+                  {/* Live Metric Badge if present */}
+                  {node.liveMetric && (
+                    <div className="mt-2 pt-1.5 border-t border-slate-800/80 flex items-center justify-between text-[11px]">
+                      <span className="text-slate-400">{node.liveMetric.label}:</span>
+                      <span className={`font-black ${node.liveMetric.color}`}>{node.liveMetric.value}</span>
+                    </div>
+                  )}
+
+                  {/* Live Tool Direct Link / Video Button */}
+                  <div className="mt-2.5 pt-2 border-t border-slate-800 flex items-center justify-between text-[10px]">
+                    {node.liveRoute ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenLiveTool(node.liveRoute);
+                        }}
+                        className="flex items-center gap-1 text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg transition font-semibold"
+                      >
+                        <span>فتح الأداة بالنظام</span>
+                        <ExternalLink className="w-3 h-3 text-slate-400" />
+                      </button>
+                    ) : (
+                      <span className="text-slate-500">مسار عمليات</span>
+                    )}
+
+                    {node.hasVideo && (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toast.info("تشغيل مشغل الفيديو التعليمي للمتدرب");
                         }}
-                        className="bg-rose-500/20 hover:bg-rose-500/40 px-2 py-0.5 rounded font-bold"
+                        className="flex items-center gap-1 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 px-2 py-1 rounded-lg font-bold"
                       >
-                        مشاهدة
+                        <Video className="w-3 h-3" />
+                        <span>فيديو الشرح</span>
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -693,11 +901,15 @@ export default function MindMapPage() {
               <span>توسيع بالـ AI</span>
             </button>
             <button
-              onClick={() => toast.success("تم تشغيل الأداة واختبار تنفيذها على الخادم")}
+              onClick={() => {
+                const node = nodes.find((n) => n.id === selectedNodeId);
+                if (node?.liveRoute) handleOpenLiveTool(node.liveRoute);
+                else toast.success("تم تشغيل الأداة واختبار تنفيذها على السيرفر بنجاح");
+              }}
               className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-medium bg-emerald-500/20 text-emerald-300 hover:bg-emerald-600 hover:text-white transition"
             >
-              <Zap className="w-3.5 h-3.5 text-emerald-400" />
-              <span>اختبار</span>
+              <ExternalLink className="w-3.5 h-3.5 text-emerald-400" />
+              <span>تشغيل الأداة</span>
             </button>
             <div className="h-4 w-px bg-slate-800 mx-1"></div>
             <button
@@ -711,15 +923,15 @@ export default function MindMapPage() {
         )}
       </div>
 
-      {/* Side Panel: Drag and drop tools */}
+      {/* Side Panel: All 17 Tools Palette */}
       {isSidePanelOpen && (
-        <aside className="fixed top-14 left-0 bottom-0 w-80 sm:w-88 bg-slate-900 border-r border-slate-800 shadow-2xl z-40 flex flex-col animate-slide-in-left">
+        <aside className="fixed top-14 left-0 bottom-0 w-84 sm:w-96 bg-slate-900 border-r border-slate-800 shadow-2xl z-40 flex flex-col animate-slide-in-left">
           <div className="p-4 border-b border-slate-800 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Boxes className="w-5 h-5 text-violet-400" />
               <div>
-                <h3 className="font-bold text-sm text-white">لوحة الأدوات (7 فئات)</h3>
-                <p className="text-[11px] text-slate-400">اسحب الأداة وأفلتها في اللوحة</p>
+                <h3 className="font-bold text-sm text-white">أدوات السيناريو الكاملة (17 أداة)</h3>
+                <p className="text-[11px] text-slate-400">اسحب الأداة وأفلتها في مكانها بالخريطة</p>
               </div>
             </div>
             <button
@@ -735,158 +947,239 @@ export default function MindMapPage() {
               <MousePointerClick className="w-4 h-4 text-violet-400 shrink-0" />
               <span>
                 <strong>سحب وإفلات (Drag & Drop):</strong> اسحب أي أداة بالماوس وأفلتها في اللوحة لتستقر مكان
-                الإفلات فوراً!
+                الإفلات فوراً وتتصل بالمسار!
               </span>
             </div>
 
-            {/* Triggers */}
+            {/* 1. التخطيط والحاسبات */}
             <div>
-              <div className="flex items-center gap-1.5 text-amber-400 font-bold mb-2">
-                <PlayCircle className="w-4 h-4" />
-                <span>1. المشغلات (Triggers)</span>
+              <div className="flex items-center gap-1.5 text-blue-400 font-bold mb-2">
+                <Calculator className="w-4 h-4" />
+                <span>1. التخطيط والحاسبات المالية</span>
               </div>
               <div className="space-y-1.5">
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "trigger_cart")}
-                  onClick={() => addNodeFromPalette("trigger_cart")}
+                  onDragStart={(e) => handleToolDragStart(e, "calc_break_even")}
+                  onClick={() => addNodeFromPalette("calc_break_even")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> سلة متروكة في المتجر
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> حاسبة نقطة التعادل (Break-even)
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">متجر</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">حاسبة</span>
                 </div>
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "trigger_whatsapp")}
-                  onClick={() => addNodeFromPalette("trigger_whatsapp")}
+                  onDragStart={(e) => handleToolDragStart(e, "calc_budget")}
+                  onClick={() => addNodeFromPalette("calc_budget")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> رسالة واردة على واتساب
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> مخطط الميزانية الإعلانية
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                    محادثة
-                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">ميزانية</span>
                 </div>
               </div>
             </div>
 
-            {/* AI Agents */}
+            {/* 2. صناعة المحتوى والمتجر */}
             <div>
               <div className="flex items-center gap-1.5 text-violet-400 font-bold mb-2">
                 <Sparkles className="w-4 h-4" />
-                <span>2. وكلاء الذكاء الاصطناعي (MaxP Agents)</span>
+                <span>2. المحتوى وصفحات المنتجات</span>
               </div>
               <div className="space-y-1.5">
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "ai_sales_agent")}
-                  onClick={() => addNodeFromPalette("ai_sales_agent")}
+                  onDragStart={(e) => handleToolDragStart(e, "creative_ai")}
+                  onClick={() => addNodeFromPalette("creative_ai")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> وكيل المبيعات البشري
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> استوديو الصور والمحتوى (AI Hub)
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300">
-                    وكيل بشري
-                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300">AI</span>
                 </div>
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "ai_ocr")}
-                  onClick={() => addNodeFromPalette("ai_ocr")}
+                  onDragStart={(e) => handleToolDragStart(e, "store_pdp")}
+                  onClick={() => addNodeFromPalette("store_pdp")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> استخراج بيانات الفواتير
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> صفحة هبوط المنتج (PDP Storefront)
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-500/20 text-violet-300">OCR</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300">متجر</span>
                 </div>
               </div>
             </div>
 
-            {/* Communication & CRM */}
+            {/* 3. الإعلانات وقنوات التواصل */}
+            <div>
+              <div className="flex items-center gap-1.5 text-indigo-400 font-bold mb-2">
+                <Flame className="w-4 h-4" />
+                <span>3. الإعلانات وقنوات التواصل</span>
+              </div>
+              <div className="space-y-1.5">
+                <div
+                  draggable
+                  onDragStart={(e) => handleToolDragStart(e, "ads_meta")}
+                  onClick={() => addNodeFromPalette("ads_meta")}
+                  className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> إعلانات فيسبوك وانستجرام
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/20 text-indigo-300">إعلانات</span>
+                </div>
+                <div
+                  draggable
+                  onDragStart={(e) => handleToolDragStart(e, "chat_unified")}
+                  onClick={() => addNodeFromPalette("chat_unified")}
+                  className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> صندوق المحادثات الموحد (Inbox)
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">موحد</span>
+                </div>
+                <div
+                  draggable
+                  onDragStart={(e) => handleToolDragStart(e, "chat_whatsapp")}
+                  onClick={() => addNodeFromPalette("chat_whatsapp")}
+                  className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> بوت واتساب الرسمي السحابي
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">واتساب</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 4. العمليات، التأكيد، والمخزن */}
+            <div>
+              <div className="flex items-center gap-1.5 text-amber-400 font-bold mb-2">
+                <CheckSquare className="w-4 h-4" />
+                <span>4. العمليات والتأكيد والمخزن</span>
+              </div>
+              <div className="space-y-1.5">
+                <div
+                  draggable
+                  onDragStart={(e) => handleToolDragStart(e, "ops_confirmation")}
+                  onClick={() => addNodeFromPalette("ops_confirmation")}
+                  className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> تأكيد الطلبات ونسبة الإلغاء
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">تأكيد</span>
+                </div>
+                <div
+                  draggable
+                  onDragStart={(e) => handleToolDragStart(e, "ops_warehouse")}
+                  onClick={() => addNodeFromPalette("ops_warehouse")}
+                  className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> تجهيز المستودع والشحن
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300">مخزن</span>
+                </div>
+                <div
+                  draggable
+                  onDragStart={(e) => handleToolDragStart(e, "ops_returns")}
+                  onClick={() => addNodeFromPalette("ops_returns")}
+                  className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> تحليل المرتجعات وأسبابها
+                  </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">مرتجعات</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. المالية والأرباح P&L */}
             <div>
               <div className="flex items-center gap-1.5 text-emerald-400 font-bold mb-2">
-                <MessageSquare className="w-4 h-4" />
-                <span>3. التواصل والـ CRM</span>
+                <DollarSign className="w-4 h-4" />
+                <span>5. المالية وتحصيل الكاش P&L</span>
               </div>
               <div className="space-y-1.5">
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "action_whatsapp")}
-                  onClick={() => addNodeFromPalette("action_whatsapp")}
+                  onDragStart={(e) => handleToolDragStart(e, "finance_cod")}
+                  onClick={() => addNodeFromPalette("finance_cod")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> إرسال رسالة واتساب
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> أداء تحصيل الدفع عند الاستلام (COD)
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">
-                    WhatsApp
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">COD</span>
+                </div>
+                <div
+                  draggable
+                  onDragStart={(e) => handleToolDragStart(e, "finance_pnl")}
+                  onClick={() => addNodeFromPalette("finance_pnl")}
+                  className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
+                >
+                  <span className="flex items-center gap-1.5">
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> الأرباح والخسائر الشهرية (P&L)
                   </span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">P&L</span>
                 </div>
               </div>
             </div>
 
-            {/* Operations & Tasks */}
+            {/* 6. الجروث والسكيلينج */}
             <div>
-              <div className="flex items-center gap-1.5 text-blue-400 font-bold mb-2">
-                <CheckSquare className="w-4 h-4" />
-                <span>4. المهام والعمليات (Tasks)</span>
+              <div className="flex items-center gap-1.5 text-purple-400 font-bold mb-2">
+                <TrendingUp className="w-4 h-4" />
+                <span>6. الجروث ماركتنج والسكيلينج</span>
               </div>
               <div className="space-y-1.5">
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "action_task")}
-                  onClick={() => addNodeFromPalette("action_task")}
+                  onDragStart={(e) => handleToolDragStart(e, "growth_clv")}
+                  onClick={() => addNodeFromPalette("growth_clv")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> إنشاء مهمة في مساحة العمل
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> حاسبة القيمة الدائمة للعميل (CLV)
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">مهمة حية</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">CLV</span>
                 </div>
-              </div>
-            </div>
-
-            {/* Commerce */}
-            <div>
-              <div className="flex items-center gap-1.5 text-teal-400 font-bold mb-2">
-                <Tag className="w-4 h-4" />
-                <span>5. المتجر والخصومات</span>
-              </div>
-              <div className="space-y-1.5">
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "action_coupon")}
-                  onClick={() => addNodeFromPalette("action_coupon")}
+                  onDragStart={(e) => handleToolDragStart(e, "growth_conversion")}
+                  onClick={() => addNodeFromPalette("growth_conversion")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> توليد كود خصم مؤقت 15%
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> مسار التحويل ومؤشرات الأداء
                   </span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-teal-500/20 text-teal-300">كوبون</span>
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300">Funnel</span>
                 </div>
               </div>
             </div>
 
-            {/* Training */}
+            {/* 7. التدريب والشرح */}
             <div>
               <div className="flex items-center gap-1.5 text-rose-400 font-bold mb-2">
                 <GraduationCap className="w-4 h-4" />
-                <span>6. الشرح والتدريب</span>
+                <span>7. التدريب والشرح المدمج</span>
               </div>
               <div className="space-y-1.5">
                 <div
                   draggable
-                  onDragStart={(e) => handleToolDragStart(e, "train_video")}
-                  onClick={() => addNodeFromPalette("train_video")}
+                  onDragStart={(e) => handleToolDragStart(e, "training_video")}
+                  onClick={() => addNodeFromPalette("training_video")}
                   className="cursor-grab active:cursor-grabbing p-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 flex items-center justify-between text-slate-200 transition"
                 >
                   <span className="flex items-center gap-1.5">
-                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> عقدة فيديو شرح مدمج
+                    <GripVertical className="w-3.5 h-3.5 text-slate-500" /> عقدة فيديو شرح وتدريب (SOP)
                   </span>
                   <span className="text-[10px] px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-300">فيديو</span>
                 </div>
