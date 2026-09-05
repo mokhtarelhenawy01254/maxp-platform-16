@@ -144,6 +144,11 @@ router.get('/invoices/:id/pdf', verifyToken.authenticateToken, dentalRoleGuard([
 router.get('/invoices/:id/payment-link', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getInvoicePaymentLink);
 router.post('/notifications/scan-billing-cycle', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.scanBillingCycle);
 
+// Monthly settlements (تقفيل المستحقات الشهرية وتجميد الأرصدة)
+router.get('/monthly-settlements', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.listMonthlySettlements);
+router.post('/monthly-settlements/close', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.closeMonthlySettlement);
+router.post('/monthly-settlements/:id/reopen', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.reopenMonthlySettlement);
+
 // Doctor pricing (rate sheet)
 router.get('/doctors/:id/pricing', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.getDoctorPricing);
 router.put('/doctors/:id/pricing', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.setDoctorPricing);

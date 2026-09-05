@@ -13,8 +13,9 @@ model DentalLabDoctor {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  cases    DentalLabCase[]
-  invoices DentalInvoice[]
+  cases              DentalLabCase[]
+  invoices           DentalInvoice[]
+  monthlySettlements DentalMonthlySettlement[]
 
   @@index([companyId])
   @@index([phone])
@@ -377,4 +378,39 @@ model DentalTechnicianPayout {
   @@index([technicianId])
   @@index([companyId, paidAt])
   @@map("dental_technician_payouts")
+}
+
+model DentalMonthlySettlement {
+  id               String    @id @default(cuid())
+  companyId        String?
+  doctorId         String
+  doctorName       String?
+  year             Int
+  month            Int
+  periodKey        String    // e.g. "2026-08"
+  openingBalance   Float     @default(0) // الرصيد الافتتاحي المرحل من إغلاق الشهر السابق
+  totalBilled      Float     @default(0) // إجمالي فواتير الشهر
+  totalPaid        Float     @default(0) // إجمالي المسدد خلال الشهر
+  totalAdjustments Float     @default(0) // إجمالي الخصومات ومذكرات الائتمان
+  closingBalance   Float     @default(0) // الرصيد الختامي المرحل للشهر التالي
+  casesCount       Int       @default(0)
+  invoicesCount    Int       @default(0)
+  status           String    @default("CLOSED") // CLOSED | DRAFT | REOPENED
+  notes            String?
+  closedBy         String?
+  closedByName     String?
+  closedAt         DateTime  @default(now())
+  reopenedAt       DateTime?
+  reopenedBy       String?
+  reopenedReason   String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  doctor DentalLabDoctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, doctorId, periodKey])
+  @@index([companyId])
+  @@index([doctorId])
+  @@index([companyId, periodKey])
+  @@map("dental_monthly_settlements")
 }

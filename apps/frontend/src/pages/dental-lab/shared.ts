@@ -118,6 +118,48 @@ export interface TechnicianPayoutSummary {
   netDue: number;
 }
 
+export type MonthlySettlementStatus = "DRAFT" | "CLOSED" | "REOPENED";
+
+export interface DentalMonthlySettlement {
+  id: string;
+  companyId?: string;
+  doctorId: string;
+  doctorName?: string;
+  clinicName?: string;
+  phone?: string;
+  year: number;
+  month: number;
+  periodKey: string;
+  openingBalance: number;
+  totalBilled: number;
+  totalPaid: number;
+  totalAdjustments: number;
+  closingBalance: number;
+  casesCount: number;
+  invoicesCount: number;
+  status: MonthlySettlementStatus;
+  isClosed?: boolean;
+  notes?: string;
+  closedBy?: string;
+  closedByName?: string;
+  closedAt?: string;
+  reopenedAt?: string;
+  reopenedBy?: string;
+  reopenedReason?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  doctor?: DentalInvoiceDoctor;
+}
+
+export interface MonthlySettlementSummary {
+  totalBilled: number;
+  totalPaid: number;
+  totalAdjustments: number;
+  totalClosingBalance: number;
+  closedCount: number;
+  totalDoctors: number;
+}
+
 export interface DentalCaseStage {
   id: string;
   caseId?: string;
@@ -290,7 +332,7 @@ export interface DoctorStatement {
   doctor?: { id?: string; name?: string };
   cases?: DoctorStatementCase[];
   invoices?: DentalInvoice[];
-  totals?: { cases?: number; invoicesCount?: number; invoiced?: number; paid?: number; remaining?: number };
+  totals?: { cases?: number; invoicesCount?: number; invoiced?: number; paid?: number; remaining?: number; openingBalance?: number; closingBalance?: number };
 }
 
 export interface TechnicianProductivity {
@@ -672,6 +714,32 @@ export const fetchUninvoicedSummary = async (): Promise<UninvoicedSummaryResult>
 
 export const batchCreateMonthlyInvoices = async (body?: { doctorIds?: string[]; dueDate?: string; notes?: string; mode?: "PER_CASE" | "CONSOLIDATED" }): Promise<{ createdCount: number; invoicedCasesCount: number }> =>
   unwrapEnvelope<{ createdCount: number; invoicedCasesCount: number }>(await apiClient.post("/dental-lab/invoices/batch-create", body || {}));
+
+export const fetchMonthlySettlements = async (params?: { period?: string; doctorId?: string }): Promise<{
+  periodKey: string;
+  year: number;
+  month: number;
+  settlements: DentalMonthlySettlement[];
+  summary: MonthlySettlementSummary;
+}> => {
+  const res = await apiClient.get("/dental-lab/monthly-settlements", { params });
+  return unwrapEnvelope(res);
+};
+
+export const closeMonthlySettlement = async (body: {
+  period: string;
+  doctorId?: string;
+  doctorIds?: string[];
+  notes?: string;
+}): Promise<DentalMonthlySettlement[]> => {
+  const res = await apiClient.post("/dental-lab/monthly-settlements/close", body);
+  return unwrapEnvelope<DentalMonthlySettlement[]>(res);
+};
+
+export const reopenMonthlySettlement = async (id: string, body: { reason: string }): Promise<DentalMonthlySettlement> => {
+  const res = await apiClient.post(`/dental-lab/monthly-settlements/${id}/reopen`, body);
+  return unwrapEnvelope<DentalMonthlySettlement>(res);
+};
 
 export const triggerBillingCycleScan = async (force: boolean = true): Promise<unknown> =>
   unwrapEnvelope<unknown>(await apiClient.post("/dental-lab/notifications/scan-billing-cycle", { force }));

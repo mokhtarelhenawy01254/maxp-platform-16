@@ -106,6 +106,12 @@ dentalRefabrication: {
       create: jest.fn(),
       delete: jest.fn(),
     },
+    dentalMonthlySettlement: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn(),
+      upsert: jest.fn(),
+      update: jest.fn(),
+    },
     userCompany: {
       findMany: jest.fn(),
     },
@@ -535,7 +541,7 @@ describe('dentalLabController advanced features', () => {
       expect(res.payload.data.cases).toHaveLength(1);
       expect(res.payload.data.invoices).toHaveLength(1);
       expect(res.payload.data.invoices[0].payments).toHaveLength(1);
-      expect(res.payload.data.totals).toEqual({ cases: 1, invoicesCount: 1, invoiced: 200, paid: 50, remaining: 150, creditTotal: 0 });
+      expect(res.payload.data.totals).toEqual({ cases: 1, invoicesCount: 1, invoiced: 200, paid: 50, remaining: 150, creditTotal: 0, openingBalance: 0, closingBalance: 150 });
       const invoiceWhere = prisma.dentalInvoice.aggregate.mock.calls[0][0].where;
       expect(invoiceWhere).toMatchObject({ companyId: 'company-1', doctorId: 'doc-1', status: { not: 'VOID' } });
     });
@@ -903,4 +909,167 @@ test('allows READY when a passed quality check exists', async () => {
       expect(prisma.dentalTechnicianPayout.delete).toHaveBeenCalledWith({ where: { id: 'p1' } });
     });
   });
+
+  describe('monthlySettlements (تقفيل المستحقات الشهرية وترحيل الأرصدة)', () => {
+    test('listMonthlySettlements computes preview calculation with opening balance carry forward', async () => {
+      const prisma = createPrisma();
+      // Doctor list
+      prisma.dentalLabDoctor.findMany.mockResolvedValue([
+        { id: 'doc-1', name: 'د. كريم', clinicName: 'عيادة النور', phone: '01000000000', isActive: true },
+      ]);
+      // Existing settlement in period: none
+      prisma.dentalMonthlySettlement.findMany.mockResolvedValue([]);
+      // Previous month settlement: has closing balance 500
+      prisma.dentalMonthlySettlement.findFirst.mockResolvedValue({
+        id: 'prev-1',
+        doctorId: 'doc-1',
+        periodKey: '2026-08',
+        closingBalance: 500,
+      });
+      // Invoice aggregate for this period: 1000 billed, 2 invoices
+      prisma.dentalInvoice.aggregate.mockResolvedValue({
+        _sum: { total: 1000 },
+        _count: { _all: 2 },
+      });
+      // Cases count: 3
+      prisma.dentalLabCase.count.mockResolvedValue(3);
+      // Credit notes aggregate: 50
+      prisma.dentalCreditNote.aggregate.mockResolvedValue({
+        _sum: { amount: 50 },
+      });
+      // Payments aggregate: 400
+      prisma.dentalPayment = {
+        aggregate: jest.fn().mockResolvedValue({
+          _sum: { amount: 400 },
+        }),
+      };
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listMonthlySettlements(req({ query: { period: '2026-09' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.periodKey).toBe('2026-09');
+      expect(res.payload.data.settlements).toHaveLength(1);
+
+      const row = res.payload.data.settlements[0];
+      expect(row.doctorId).toBe('doc-1');
+      expect(row.openingBalance).toBe(500);
+      expect(row.totalBilled).toBe(1000);
+      expect(row.totalPaid).toBe(400);
+      expect(row.totalAdjustments).toBe(50);
+      // closingBalance = (500 + 1000) - (400 + 50) = 1050
+      expect(row.closingBalance).toBe(1050);
+      expect(row.status).toBe('DRAFT');
+      expect(row.isClosed).toBe(false);
+
+      expect(res.payload.data.summary.totalClosingBalance).toBe(1050);
+      expect(res.payload.data.summary.closedCount).toBe(0);
+    });
+
+    test('closeMonthlySettlement saves closed settlement with frozen balance and audit user', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findMany.mockResolvedValue([
+        { id: 'doc-1', name: 'د. كريم', isActive: true },
+      ]);
+      prisma.dentalMonthlySettlement.findFirst.mockResolvedValue(null);
+      prisma.dentalInvoice.aggregate.mockResolvedValue({
+        _sum: { total: 800 },
+        _count: { _all: 1 },
+      });
+      prisma.dentalLabCase.count.mockResolvedValue(1);
+      prisma.dentalCreditNote.aggregate.mockResolvedValue({ _sum: { amount: 0 } });
+      prisma.dentalPayment = {
+        aggregate: jest.fn().mockResolvedValue({ _sum: { amount: 300 } }),
+      };
+      prisma.dentalMonthlySettlement.upsert = jest.fn().mockImplementation(({ create }) =>
+        Promise.resolve({ id: 'settle-1', ...create })
+      );
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.closeMonthlySettlement(
+        req({
+          body: {
+            period: '2026-09',
+            doctorId: 'doc-1',
+            notes: 'تمت المراجعة مع الطبيب',
+          },
+          user: { companyId: 'company-1', id: 'user-admin', name: 'المحاسب المسؤول' },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(prisma.dentalMonthlySettlement.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            companyId_doctorId_periodKey: {
+              companyId: 'company-1',
+              doctorId: 'doc-1',
+              periodKey: '2026-09',
+            },
+          },
+          create: expect.objectContaining({
+            status: 'CLOSED',
+            openingBalance: 0,
+            totalBilled: 800,
+            totalPaid: 300,
+            closingBalance: 500,
+            closedBy: 'user-admin',
+            closedByName: 'المحاسب المسؤول',
+            notes: 'تمت المراجعة مع الطبيب',
+          }),
+        })
+      );
+    });
+
+    test('reopenMonthlySettlement requires valid reason and updates status to REOPENED', async () => {
+      const prisma = createPrisma();
+      prisma.dentalMonthlySettlement.findFirst.mockResolvedValue({
+        id: 'settle-1',
+        companyId: 'company-1',
+        status: 'CLOSED',
+      });
+      prisma.dentalMonthlySettlement.update.mockResolvedValue({
+        id: 'settle-1',
+        status: 'REOPENED',
+        reopenedReason: 'تصحيح دفعة نقدية سقطت سهواً',
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      // Attempt without reason -> 400
+      const resErr = createResponse();
+      await controller.reopenMonthlySettlement(
+        req({ params: { id: 'settle-1' }, body: { reason: '' } }),
+        resErr
+      );
+      expect(resErr.statusCode).toBe(400);
+
+      // With valid audit reason -> 200
+      const resOk = createResponse();
+      await controller.reopenMonthlySettlement(
+        req({
+          params: { id: 'settle-1' },
+          body: { reason: 'تصحيح دفعة نقدية سقطت سهواً' },
+          user: { companyId: 'company-1', id: 'user-mgr' },
+        }),
+        resOk
+      );
+      expect(resOk.statusCode).toBe(200);
+      expect(prisma.dentalMonthlySettlement.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'settle-1' },
+          data: expect.objectContaining({
+            status: 'REOPENED',
+            reopenedBy: 'user-mgr',
+            reopenedReason: 'تصحيح دفعة نقدية سقطت سهواً',
+          }),
+        })
+      );
+    });
+  });
 });
+

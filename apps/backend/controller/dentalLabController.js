@@ -2246,6 +2246,366 @@ const scanBillingCycle = async (req, res) => {
   }
 };
 
+// ==================== MONTHLY PERIOD CLOSE & SETTLEMENTS ====================
+
+const parsePeriodKey = (key) => {
+  if (!key || typeof key !== 'string') {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    return { year: y, month: now.getMonth() + 1, periodKey: `${y}-${m}` };
+  }
+  const parts = key.trim().split('-');
+  const y = parseInt(parts[0], 10);
+  const m = parseInt(parts[1], 10);
+  if (isNaN(y) || isNaN(m) || m < 1 || m > 12) {
+    const now = new Date();
+    const ny = now.getFullYear();
+    const nm = String(now.getMonth() + 1).padStart(2, '0');
+    return { year: ny, month: now.getMonth() + 1, periodKey: `${ny}-${nm}` };
+  }
+  return { year: y, month: m, periodKey: `${y}-${String(m).padStart(2, '0')}` };
+};
+
+const getPreviousPeriodKey = (year, month) => {
+  let prevMonth = month - 1;
+  let prevYear = year;
+  if (prevMonth < 1) {
+    prevMonth = 12;
+    prevYear -= 1;
+  }
+  return `${prevYear}-${String(prevMonth).padStart(2, '0')}`;
+};
+
+const getPeriodDateRange = (year, month) => {
+  const from = new Date(Date.UTC(year, month - 1, 1, 0, 0, 0, 0));
+  const to = new Date(Date.UTC(year, month, 0, 23, 59, 59, 999));
+  return { from, to };
+};
+
+const listMonthlySettlements = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { period, doctorId } = req.query || {};
+    const { year, month, periodKey } = parsePeriodKey(period);
+    const { from, to } = getPeriodDateRange(year, month);
+    const prevKey = getPreviousPeriodKey(year, month);
+
+    const prisma = getSharedPrismaClient();
+
+    const settlementWhere = { companyId, periodKey };
+    if (doctorId) settlementWhere.doctorId = doctorId;
+
+    let existingSettlements = [];
+    if (prisma.dentalMonthlySettlement && typeof prisma.dentalMonthlySettlement.findMany === 'function') {
+      existingSettlements = (await prisma.dentalMonthlySettlement.findMany({
+        where: settlementWhere,
+        orderBy: { doctorName: 'asc' },
+      })) || [];
+    }
+
+    const settledDocIds = new Set(existingSettlements.map((s) => s.doctorId));
+
+    const docWhere = { companyId, isActive: true };
+    if (doctorId) docWhere.id = doctorId;
+
+    const doctors = await prisma.dentalLabDoctor.findMany({
+      where: docWhere,
+      select: { id: true, name: true, phone: true, clinicName: true, creditLimit: true },
+      orderBy: { name: 'asc' },
+    });
+
+    const pendingSettlements = [];
+    for (const doc of doctors) {
+      if (settledDocIds.has(doc.id)) continue;
+
+      let openingBalance = 0;
+      if (prisma.dentalMonthlySettlement && typeof prisma.dentalMonthlySettlement.findFirst === 'function') {
+        const prevSettlement = await prisma.dentalMonthlySettlement.findFirst({
+          where: { companyId, doctorId: doc.id, periodKey: prevKey },
+        });
+        if (prevSettlement) {
+          openingBalance = round2(Number(prevSettlement.closingBalance) || 0);
+        }
+      }
+
+      const invWhere = {
+        companyId,
+        doctorId: doc.id,
+        status: { not: 'VOID' },
+        createdAt: { gte: from, lte: to },
+      };
+
+      const [invAgg, caseCount, creditAgg, paymentsAgg] = await Promise.all([
+        prisma.dentalInvoice?.aggregate ? prisma.dentalInvoice.aggregate({
+          where: invWhere,
+          _sum: { total: true },
+          _count: { _all: true },
+        }) : Promise.resolve(null),
+        prisma.dentalLabCase?.count ? prisma.dentalLabCase.count({
+          where: { companyId, doctorId: doc.id, receivedDate: { gte: from, lte: to } },
+        }) : Promise.resolve(0),
+        prisma.dentalCreditNote?.aggregate ? prisma.dentalCreditNote.aggregate({
+          where: { companyId, doctorId: doc.id, createdAt: { gte: from, lte: to } },
+          _sum: { amount: true },
+        }) : Promise.resolve(null),
+        prisma.dentalPayment?.aggregate ? prisma.dentalPayment.aggregate({
+          where: {
+            companyId,
+            createdAt: { gte: from, lte: to },
+            invoice: { doctorId: doc.id },
+          },
+          _sum: { amount: true },
+        }) : Promise.resolve(null),
+      ]);
+
+      const totalBilled = round2(invAgg?._sum?.total || 0);
+      const invoicesCount = invAgg?._count?._all || 0;
+      const totalPaid = round2(paymentsAgg?._sum?.amount || 0);
+      const totalAdjustments = round2(creditAgg?._sum?.amount || 0);
+      const closingBalance = round2((openingBalance + totalBilled) - (totalPaid + totalAdjustments));
+
+      pendingSettlements.push({
+        id: `preview-${doc.id}`,
+        companyId,
+        doctorId: doc.id,
+        doctorName: doc.name,
+        clinicName: doc.clinicName,
+        phone: doc.phone,
+        year,
+        month,
+        periodKey,
+        openingBalance,
+        totalBilled,
+        totalPaid,
+        totalAdjustments,
+        closingBalance,
+        casesCount: caseCount || 0,
+        invoicesCount,
+        status: 'DRAFT',
+        isClosed: false,
+        notes: null,
+      });
+    }
+
+    const allRows = [
+      ...existingSettlements.map((s) => ({ ...s, isClosed: s.status === 'CLOSED' })),
+      ...pendingSettlements,
+    ];
+
+    let summaryBilled = 0;
+    let summaryPaid = 0;
+    let summaryAdjustments = 0;
+    let summaryClosingBalance = 0;
+    let closedCount = 0;
+
+    for (const r of allRows) {
+      summaryBilled += r.totalBilled || 0;
+      summaryPaid += r.totalPaid || 0;
+      summaryAdjustments += r.totalAdjustments || 0;
+      summaryClosingBalance += r.closingBalance || 0;
+      if (r.isClosed) closedCount += 1;
+    }
+
+    res.json({
+      success: true,
+      data: {
+        periodKey,
+        year,
+        month,
+        settlements: allRows,
+        summary: {
+          totalBilled: round2(summaryBilled),
+          totalPaid: round2(summaryPaid),
+          totalAdjustments: round2(summaryAdjustments),
+          totalClosingBalance: round2(summaryClosingBalance),
+          closedCount,
+          totalDoctors: allRows.length,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error listing monthly settlements:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تسويات الشهر' });
+  }
+};
+
+const closeMonthlySettlement = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { period, doctorId, doctorIds, notes } = req.body || {};
+    const { year, month, periodKey } = parsePeriodKey(period);
+    const { from, to } = getPeriodDateRange(year, month);
+    const prevKey = getPreviousPeriodKey(year, month);
+
+    const prisma = getSharedPrismaClient();
+
+    let targetDocIds = [];
+    if (Array.isArray(doctorIds) && doctorIds.length > 0) {
+      targetDocIds = doctorIds;
+    } else if (doctorId) {
+      targetDocIds = [doctorId];
+    } else {
+      const allDocs = await prisma.dentalLabDoctor.findMany({
+        where: { companyId, isActive: true },
+        select: { id: true },
+      });
+      targetDocIds = allDocs.map((d) => d.id);
+    }
+
+    if (targetDocIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'لم يتم العثور على أطباء للإغلاق' });
+    }
+
+    const doctors = await prisma.dentalLabDoctor.findMany({
+      where: { companyId, id: { in: targetDocIds } },
+      select: { id: true, name: true },
+    });
+
+    const closedBy = req.user?.id || null;
+    const closedByName = req.user?.name || req.user?.email || null;
+    const results = [];
+
+    for (const doc of doctors) {
+      let openingBalance = 0;
+      if (prisma.dentalMonthlySettlement && typeof prisma.dentalMonthlySettlement.findFirst === 'function') {
+        const prevSettlement = await prisma.dentalMonthlySettlement.findFirst({
+          where: { companyId, doctorId: doc.id, periodKey: prevKey },
+        });
+        if (prevSettlement) {
+          openingBalance = round2(Number(prevSettlement.closingBalance) || 0);
+        }
+      }
+
+      const invWhere = {
+        companyId,
+        doctorId: doc.id,
+        status: { not: 'VOID' },
+        createdAt: { gte: from, lte: to },
+      };
+
+      const [invAgg, caseCount, creditAgg, paymentsAgg] = await Promise.all([
+        prisma.dentalInvoice?.aggregate ? prisma.dentalInvoice.aggregate({
+          where: invWhere,
+          _sum: { total: true },
+          _count: { _all: true },
+        }) : Promise.resolve(null),
+        prisma.dentalLabCase?.count ? prisma.dentalLabCase.count({
+          where: { companyId, doctorId: doc.id, receivedDate: { gte: from, lte: to } },
+        }) : Promise.resolve(0),
+        prisma.dentalCreditNote?.aggregate ? prisma.dentalCreditNote.aggregate({
+          where: { companyId, doctorId: doc.id, createdAt: { gte: from, lte: to } },
+          _sum: { amount: true },
+        }) : Promise.resolve(null),
+        prisma.dentalPayment?.aggregate ? prisma.dentalPayment.aggregate({
+          where: {
+            companyId,
+            createdAt: { gte: from, lte: to },
+            invoice: { doctorId: doc.id },
+          },
+          _sum: { amount: true },
+        }) : Promise.resolve(null),
+      ]);
+
+      const totalBilled = round2(invAgg?._sum?.total || 0);
+      const invoicesCount = invAgg?._count?._all || 0;
+      const totalPaid = round2(paymentsAgg?._sum?.amount || 0);
+      const totalAdjustments = round2(creditAgg?._sum?.amount || 0);
+      const closingBalance = round2((openingBalance + totalBilled) - (totalPaid + totalAdjustments));
+
+      const settlementData = {
+        companyId,
+        doctorId: doc.id,
+        doctorName: doc.name,
+        year,
+        month,
+        periodKey,
+        openingBalance,
+        totalBilled,
+        totalPaid,
+        totalAdjustments,
+        closingBalance,
+        casesCount: caseCount || 0,
+        invoicesCount,
+        status: 'CLOSED',
+        notes: notes ? String(notes).trim() : null,
+        closedBy,
+        closedByName,
+        closedAt: new Date(),
+        reopenedAt: null,
+        reopenedBy: null,
+        reopenedReason: null,
+      };
+
+      let settlement;
+      if (prisma.dentalMonthlySettlement?.upsert) {
+        settlement = await prisma.dentalMonthlySettlement.upsert({
+          where: {
+            companyId_doctorId_periodKey: {
+              companyId,
+              doctorId: doc.id,
+              periodKey,
+            },
+          },
+          create: settlementData,
+          update: settlementData,
+        });
+      } else {
+        settlement = settlementData;
+      }
+
+      results.push(settlement);
+    }
+
+    res.json({
+      success: true,
+      data: results,
+      message: `تم إغلاق واعتماد تسوية شهر ${periodKey} بنجاح لـ ${results.length} طبيب`,
+    });
+  } catch (error) {
+    console.error('Error closing monthly settlement:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إغلاق تسوية الشهر' });
+  }
+};
+
+const reopenMonthlySettlement = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const { reason } = req.body || {};
+
+    if (!reason || typeof reason !== 'string' || !reason.trim()) {
+      return res.status(400).json({ success: false, error: 'سبب إعادة فتح الشهر مطلوب للتدقيق المحاسبي' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalMonthlySettlement.findFirst({
+      where: { id, companyId },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'سجل التسوية غير موجود' });
+    }
+
+    const updated = await prisma.dentalMonthlySettlement.update({
+      where: { id },
+      data: {
+        status: 'REOPENED',
+        reopenedAt: new Date(),
+        reopenedBy: req.user?.id || null,
+        reopenedReason: reason.trim(),
+      },
+    });
+
+    res.json({ success: true, data: updated, message: 'تم إعادة فتح الشهر للتعديل بنجاح' });
+  } catch (error) {
+    console.error('Error reopening monthly settlement:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إعادة فتح الشهر' });
+  }
+};
+
 // ==================== DASHBOARD ====================
 
 const getDeliveryEstimate = async (req, res) => {
@@ -3044,7 +3404,28 @@ const getDoctorStatement = async (req, res) => {
       doctor = { id: null, name: invoices[0].doctorName || null };
     }
 
+    let openingBalance = 0;
+    if (doctorId && fromDate && prisma.dentalMonthlySettlement && typeof prisma.dentalMonthlySettlement.findFirst === 'function') {
+      try {
+        const parts = fromDate.toISOString().split('T')[0].split('-');
+        const y = parseInt(parts[0], 10);
+        const m = parseInt(parts[1], 10);
+        const prevKey = getPreviousPeriodKey(y, m);
+        const prevSettlement = await prisma.dentalMonthlySettlement.findFirst({
+          where: { companyId, doctorId, periodKey: prevKey },
+        });
+        if (prevSettlement) {
+          openingBalance = round2(Number(prevSettlement.closingBalance) || 0);
+        }
+      } catch (err) {
+        console.warn('Could not read opening balance in statement:', err.message);
+      }
+    }
+
     const creditTotal = round2((creditAgg && creditAgg._sum && creditAgg._sum.amount) || 0);
+    const netRemaining = round2(Math.max(0, ((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.remaining) || 0) - creditTotal));
+    const closingBalance = round2(openingBalance + netRemaining);
+
     res.json({
       success: true,
       data: {
@@ -3054,9 +3435,11 @@ const getDoctorStatement = async (req, res) => {
         totals: {
           cases: cases.length,
           invoicesCount: (invoiceAgg && invoiceAgg._count && invoiceAgg._count._all) || 0,
+          openingBalance,
           invoiced: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.total) || 0),
           paid: round2((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.paid) || 0),
-          remaining: round2(Math.max(0, ((invoiceAgg && invoiceAgg._sum && invoiceAgg._sum.remaining) || 0) - creditTotal)),
+          remaining: netRemaining,
+          closingBalance,
           creditTotal,
         },
       },
@@ -4099,6 +4482,9 @@ module.exports = {
   recordInvoicePayment,
   getUninvoicedSummary,
   batchCreateMonthlyInvoices,
+  listMonthlySettlements,
+  closeMonthlySettlement,
+  reopenMonthlySettlement,
   scanBillingCycle,
   getDashboard,
   getSettings,
