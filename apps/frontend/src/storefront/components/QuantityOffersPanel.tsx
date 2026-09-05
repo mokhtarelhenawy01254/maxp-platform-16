@@ -675,28 +675,35 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
           return (
             <div
               key={offer.id}
-              className={`overflow-hidden rounded-[1.25rem] border transition-all duration-200 ${
+              className={`rounded-[1.35rem] p-1 transition-all duration-200 ${
                 isSelected
-                  ? variant === "single-offer-focus"
-                    ? "border-primary/75 bg-background shadow-[0_28px_80px_-52px_hsl(var(--primary)/0.55)] ring-2 ring-primary/20"
-                    : isSelectionRail
-                    ? "border-[#8f5c44] bg-[linear-gradient(180deg,#fffdfb_0%,#fff9f6_100%)] shadow-sm ring-1 ring-[#8f5c44]/25"
-                    : "border-primary bg-background shadow-[0_24px_60px_-45px_hsl(var(--primary)/0.55)] ring-2 ring-primary/20"
-                  : isMostPopular
-                  ? "border-amber-400/80 bg-gradient-to-b from-amber-500/[0.04] to-background shadow-xs hover:border-amber-500 hover:shadow-sm"
-                  : isSelectionRail
-                  ? "border-[#e6ded9] bg-white/95 hover:border-[#c59a7a]/60 hover:bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
-                  : isLookBuilder
-                  ? "border-[#ead9d8] bg-white/92 hover:border-[#d7b9bf]"
-                  : variant === "compact-buybox"
-                  ? "border-border bg-background/90 hover:border-primary/30"
-                  : "border-border bg-background/70 hover:border-primary/30"
+                  ? isSelectionRail
+                    ? "border-2 border-[#8f5c44]/35 bg-gradient-to-b from-[#8f5c44]/[0.08] to-[#8f5c44]/[0.02] shadow-md ring-1 ring-[#8f5c44]/20"
+                    : "border-2 border-primary/35 bg-gradient-to-b from-primary/[0.07] via-primary/[0.02] to-primary/[0.05] shadow-[0_16px_36px_-14px_hsl(var(--primary)/0.28)] ring-1 ring-primary/20"
+                  : "border-2 border-transparent"
               }`}
             >
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedOfferId(offer.id);
+              <div
+                className={`overflow-hidden transition-all duration-200 ${
+                  isSelected
+                    ? isSelectionRail
+                      ? "rounded-xl border-2 border-[#8f5c44] bg-[linear-gradient(180deg,#fffdfb_0%,#fff9f6_100%)] shadow-xs"
+                      : "rounded-xl border-2 border-primary bg-background shadow-xs"
+                    : isMostPopular
+                    ? "rounded-2xl border-2 border-amber-300/85 bg-gradient-to-b from-amber-50/40 to-white dark:from-stone-900/60 dark:to-background shadow-2xs hover:border-amber-400 hover:shadow-xs"
+                    : isSelectionRail
+                    ? "rounded-2xl border-2 border-[#e6ded9] bg-white hover:border-[#c59a7a]/60 shadow-2xs"
+                    : isLookBuilder
+                    ? "rounded-2xl border-2 border-[#ead9d8] bg-white/95 hover:border-[#d7b9bf] shadow-2xs"
+                    : variant === "compact-buybox"
+                    ? "rounded-2xl border-2 border-stone-200/90 dark:border-stone-800 bg-white dark:bg-card hover:border-stone-300 shadow-2xs"
+                    : "rounded-2xl border-2 border-stone-200/90 dark:border-stone-800 bg-white dark:bg-card hover:border-stone-300 shadow-2xs"
+                }`}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedOfferId(offer.id);
                   void trackStorefrontAppUsage({
                     slug: "quantity-offers-pro",
                     feature: "quantity_offer_select",
@@ -820,12 +827,12 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
 
               {isSelected ? (
                 <div
-                  className={`border-t border-[#f0e6e2] ${
+                  className={`border-t ${
                     isSelectionRail
-                      ? "px-3.5 pb-3.5 pt-3"
+                      ? "border-[#f0e6e2] px-3.5 pb-3.5 pt-3"
                       : isCompactLike
-                      ? "px-3 pb-3 pt-2.5"
-                      : "px-4 pb-4 pt-4"
+                      ? "border-primary/15 dark:border-stone-800 px-3 pb-3 pt-2.5"
+                      : "border-primary/15 dark:border-stone-800 px-4 pb-4 pt-4"
                   }`}
                 >
                   {offer.helperDescription ? (
@@ -1011,8 +1018,9 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
                 </div>
               ) : null}
             </div>
-          );
-        })}
+          </div>
+        );
+      })}
       </div>
     </section>
   );
