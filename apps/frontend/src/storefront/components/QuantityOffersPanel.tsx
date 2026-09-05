@@ -12,6 +12,7 @@ import { getVariantAttributes } from "../utils/variants";
 import { getProductVolumeDiscounts } from "../utils/volumeDiscounts";
 import VariantSelector from "./VariantSelector";
 import { useCartStore } from "../store/useCartStore";
+import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
 import { useQuantityOfferSelectionStore } from "../store/useQuantityOfferSelectionStore";
 import { getPrimaryProductImage } from "../utils/productImages";
 import { trackStorefrontAppUsage } from "../utils/appUsageTracking";
@@ -396,13 +397,38 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
       selections: activeSelections,
       isReady: selectionsReady,
     });
+
+    const primarySlotSelection = activeSelections[0] || {};
+    const primarySlotVariant = resolveVariantFromAttributes(
+      variants,
+      primarySlotSelection,
+    );
+    const primaryImage =
+      primarySlotVariant?.image ||
+      primarySlotVariant?.imageUrl ||
+      getPrimaryProductImage(primarySlotVariant as any) ||
+      getPrimaryProductImage(product);
+
+    usePdpSelectionStore.getState().syncSelection({
+      productId: String(product.id),
+      productSlug: product.slug,
+      productName: product.name,
+      variantId: primarySlotVariant?.id || null,
+      imageUrl: primaryImage || undefined,
+      unitPrice: Number(activeTotals.offerTotal || product.price || 0),
+      basePrice: Number(product.comparePrice || product.price || 0),
+      attributes: primarySlotSelection,
+      volumeDiscounts: [],
+      requiresVariantSelection: hasVariants,
+      isSelectionReady: selectionsReady,
+    });
   }, [
     activeOffer,
     activeSelections,
     currency,
     getOfferTotals,
     hasVariants,
-    product?.id,
+    product,
     resetQuantityOfferSelection,
     syncQuantityOfferSelection,
     variants,

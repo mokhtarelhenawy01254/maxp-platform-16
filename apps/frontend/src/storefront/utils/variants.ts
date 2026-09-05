@@ -39,13 +39,33 @@ const ARABIC_ATTRIBUTE_LABELS: Record<string, string> = {
   Option: 'الخيار',
 };
 
-function canonicalizeAttributeKey(key: string): string {
-  const trimmedKey = key.trim();
-  if (!trimmedKey) {
+export function canonicalizeAttributeKey(key: string): string {
+  const rawKey = String(key || '').trim();
+  if (!rawKey) {
     return '';
   }
 
-  return CANONICAL_ATTRIBUTE_LABELS[trimmedKey.toLowerCase()] || trimmedKey;
+  if (CANONICAL_ATTRIBUTE_LABELS[rawKey]) {
+    return CANONICAL_ATTRIBUTE_LABELS[rawKey];
+  }
+
+  const directLower = rawKey.toLowerCase();
+  if (CANONICAL_ATTRIBUTE_LABELS[directLower]) {
+    return CANONICAL_ATTRIBUTE_LABELS[directLower];
+  }
+
+  // Strip trailing/leading colons, underscores, dashes, tatweel, and normalize internal spaces
+  // Handles keys like "اللون_:", "اللون :", "مقاس_الحذاء:" etc.
+  const cleaned = directLower
+    .replace(/[:_ـ\-]/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+
+  if (CANONICAL_ATTRIBUTE_LABELS[cleaned]) {
+    return CANONICAL_ATTRIBUTE_LABELS[cleaned];
+  }
+
+  return rawKey.replace(/[:_ـ\-]+$/g, '').trim();
 }
 
 export function getVariantAttributeLabel(
@@ -54,7 +74,7 @@ export function getVariantAttributeLabel(
 ): string {
   const canonicalKey = canonicalizeAttributeKey(key);
   if (!prefersArabicCopy) {
-    return canonicalKey;
+    return canonicalKey.replace(/[:_ـ\-]+$/g, '').trim();
   }
 
   if (ARABIC_ATTRIBUTE_LABELS[canonicalKey]) {
@@ -66,7 +86,7 @@ export function getVariantAttributeLabel(
     return `الخيار ${optionMatch[1]}`;
   }
 
-  return canonicalKey;
+  return canonicalKey.replace(/[:_ـ\-]+$/g, '').trim();
 }
 
 function normalizeVariantAttributes(

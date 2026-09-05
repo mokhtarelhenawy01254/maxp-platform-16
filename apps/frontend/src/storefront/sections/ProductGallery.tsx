@@ -2427,7 +2427,7 @@ const ProductGallery: React.FC<ProductGalleryProps> = ({ section }) => {
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [images]);
+  }, [selectedVariant?.id, selectedVariant?.image, images]);
 
   useEffect(() => {
     if (typeof window === "undefined") {

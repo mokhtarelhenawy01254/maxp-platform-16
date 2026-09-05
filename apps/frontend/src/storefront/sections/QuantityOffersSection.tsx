@@ -173,9 +173,7 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
         : "supporting",
   };
   const seedAttributes = selectedAttributes ?? EMPTY_ATTRIBUTES;
-  const panelKey = `quantity-offers:${product.id}:${variant}:${JSON.stringify(
-    seedAttributes,
-  )}`;
+  const panelKey = `quantity-offers:${product.id}:${variant}`;
 
   return (
     <QuantityOffersPanel

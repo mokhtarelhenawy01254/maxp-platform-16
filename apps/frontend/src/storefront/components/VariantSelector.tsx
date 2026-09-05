@@ -1,6 +1,6 @@
 import React from 'react';
 import type { ProductVariant } from '../hooks/useProducts';
-import { getVariantAttributeLabel, getVariantAttributes } from '../utils/variants';
+import { canonicalizeAttributeKey, getVariantAttributeLabel, getVariantAttributes } from '../utils/variants';
 import {
   buildStorefrontImageCandidates,
   normalizeStorefrontImageValue,
@@ -165,14 +165,6 @@ const toRgbString = ({ r, g, b }: RgbColor) => `rgb(${r}, ${g}, ${b})`;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value) && typeof value === 'object' && !Array.isArray(value);
 
-const canonicalizeAttributeKey = (key: string): string => {
-  const trimmedKey = String(key || '').trim();
-  if (!trimmedKey) {
-    return '';
-  }
-
-  return CANONICAL_ATTRIBUTE_LABELS[trimmedKey.toLowerCase()] || trimmedKey;
-};
 
 const parseHslToken = (rawValue: string): RgbColor | null => {
   const normalized = String(rawValue || '')
