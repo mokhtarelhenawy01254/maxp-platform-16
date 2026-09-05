@@ -934,21 +934,15 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         onClick={() => handleSelect(key, option)}
                         className={
                           isKhemetLuxeElessi && !isInlineCompact
-                            ? `group relative flex w-full flex-col overflow-hidden rounded-[1.2rem] border transition-all duration-200 ${
+                            ? `group relative flex w-full flex-col overflow-hidden rounded-xl border-2 transition-all duration-200 p-0 cursor-pointer ${
                                 isSelected
-                                  ? 'border-[#1f4737] bg-[#fffdfb] shadow-[0_8px_20px_-10px_rgba(31,71,55,0.25)] ring-2 ring-[#1f4737]/20'
-                                  : 'border-[#e0d2c5] bg-white hover:border-[#b79d8e] hover:bg-[#fffaf6]'
-                              } p-1.5 pb-2`
-                            : `group relative flex w-full flex-col items-center rounded-xl border transition-all duration-200 ${
+                                  ? 'border-[#1f4737] shadow-md ring-2 ring-[#1f4737]/25 scale-[1.02]'
+                                  : 'border-[#e0d2c5] hover:border-[#b79d8e] hover:shadow-xs'
+                              }`
+                            : `group relative flex w-full flex-col overflow-hidden rounded-xl border-2 transition-all duration-200 p-0 cursor-pointer ${
                                 isSelected
-                                  ? 'border-2 border-primary bg-primary/[0.04] shadow-sm ring-2 ring-primary/20'
-                                  : 'border-border/80 bg-background hover:border-primary/50 hover:bg-muted/30 hover:shadow-2xs'
-                              } ${
-                                isInlineCompact
-                                  ? 'p-1 gap-1'
-                                  : isCompact
-                                    ? 'p-1.5 gap-1'
-                                    : 'p-2 gap-1.5'
+                                  ? 'border-primary ring-2 ring-primary/30 shadow-md scale-[1.02]'
+                                  : 'border-border/80 hover:border-primary/60 hover:shadow-xs'
                               }`
                         }
                         aria-label={
@@ -957,63 +951,60 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                             : `Select ${displayKey} ${option}`
                         }
                       >
-                        {isSelected ? (
-                          <span
-                            className={`absolute -top-1 -end-1 z-10 flex items-center justify-center rounded-full text-white shadow-xs animate-in zoom-in-75 duration-150 ${
-                              isKhemetLuxeElessi
-                                ? 'bg-[#1f4737]'
-                                : 'bg-primary'
-                            } ${
-                              isInlineCompact
-                                ? 'h-3.5 w-3.5 text-[8px]'
-                                : 'h-4 w-4 sm:h-4.5 sm:w-4.5 text-[9px] sm:text-[10px]'
-                            }`}
-                          >
-                            ✓
-                          </span>
-                        ) : null}
-
-                        <div
-                          className={`relative w-full overflow-hidden rounded-lg transition-transform duration-200 group-hover:scale-[1.02] ${
-                            isKhemetLuxeElessi && !isInlineCompact
-                              ? 'aspect-[4/3] bg-[#f4eee7]'
-                              : 'aspect-[4/3] bg-neutral-50 dark:bg-neutral-900/60'
-                          } flex items-center justify-center`}
-                        >
+                        <div className="relative w-full aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                           {thumbnailImage ? (
                             <img
                               src={thumbnailImage}
                               alt={`${displayKey} ${option}`}
                               loading="lazy"
-                              className="h-full w-full object-contain p-0.5"
+                              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center px-1 text-center text-[11px] font-bold text-muted-foreground">
+                            <div className="flex h-full w-full items-center justify-center p-1 text-center text-xs font-bold text-muted-foreground">
                               {option}
                             </div>
                           )}
-                        </div>
 
-                        <span
-                          className={`w-full text-center leading-tight transition-colors ${
-                            isKhemetLuxeElessi && !isInlineCompact
-                              ? 'text-[0.78rem] sm:text-[0.82rem] line-clamp-2 px-1 text-[#2d211e]'
-                              : isInlineCompact
-                                ? 'text-[10px] line-clamp-1'
-                                : isCompact
-                                  ? 'text-[11px] line-clamp-2 px-0.5'
-                                  : 'text-xs line-clamp-2 px-1'
-                          } ${
-                            isSelected
-                              ? isKhemetLuxeElessi
-                                ? 'font-black text-[#1f4737]'
-                                : 'font-black text-primary'
-                              : 'font-semibold text-foreground/90 group-hover:text-foreground'
-                          }`}
-                          title={option}
-                        >
-                          {option}
-                        </span>
+                          {isSelected ? (
+                            <span
+                              className={`absolute top-1 end-1 z-20 flex items-center justify-center rounded-full text-white shadow-md animate-in zoom-in-75 duration-150 ${
+                                isKhemetLuxeElessi
+                                  ? 'bg-[#1f4737]'
+                                  : 'bg-primary'
+                              } ${
+                                isInlineCompact
+                                  ? 'h-3.5 w-3.5 text-[8px]'
+                                  : 'h-4 w-4 sm:h-5 sm:w-5 text-[9px] sm:text-[10px]'
+                              }`}
+                              aria-hidden="true"
+                            >
+                              ✓
+                            </span>
+                          ) : null}
+
+                          <div
+                            className={`absolute inset-x-0 bottom-0 z-10 pt-4 pb-1 px-1 text-center transition-colors ${
+                              isSelected
+                                ? isKhemetLuxeElessi
+                                  ? 'bg-gradient-to-t from-[#1f4737]/95 via-[#1f4737]/75 to-transparent'
+                                  : 'bg-gradient-to-t from-primary/95 via-primary/75 to-transparent'
+                                : 'bg-gradient-to-t from-black/85 via-black/45 to-transparent'
+                            }`}
+                          >
+                            <span
+                              className={`block w-full text-center leading-tight truncate text-white ${
+                                isInlineCompact
+                                  ? 'text-[9.5px]'
+                                  : isCompact
+                                    ? 'text-[10.5px]'
+                                    : 'text-[11px] sm:text-xs'
+                              } font-bold drop-shadow-xs`}
+                              title={option}
+                            >
+                              {option}
+                            </span>
+                          </div>
+                        </div>
                       </button>
                     );
                   }
