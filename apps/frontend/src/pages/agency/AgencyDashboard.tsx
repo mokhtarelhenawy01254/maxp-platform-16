@@ -336,9 +336,9 @@ export default function AgencyDashboard() {
     try {
       setLoading(true);
       const [ovRes, clRes, apRes] = await Promise.all([
-        apiClient.get("/agency/overview"),
-        apiClient.get("/agency/clients"),
-        apiClient.get("/agency/approvals")
+        apiClient.get("/agency/overview", { _skipErrorToast: true } as any),
+        apiClient.get("/agency/clients", { _skipErrorToast: true } as any),
+        apiClient.get("/agency/approvals", { _skipErrorToast: true } as any)
       ]);
 
       if (ovRes.data?.success) {
@@ -391,11 +391,12 @@ export default function AgencyDashboard() {
   const fetchInvoices = async (monthToFetch = selectedMonth) => {
     try {
       setInvoicesLoading(true);
-      const res = await apiClient.get(`/agency/invoices?month=${monthToFetch}`);
+      const res = await apiClient.get(`/agency/invoices?month=${monthToFetch}`, { _skipErrorToast: true } as any);
       if (res.data?.success) {
         setInvoicesData(res.data.data);
       }
     } catch (err: any) {
+      if (err.response?.status === 403) return;
       toast.error(err.response?.data?.message || "فشل جلب فواتير الوكالة");
     } finally {
       setInvoicesLoading(false);

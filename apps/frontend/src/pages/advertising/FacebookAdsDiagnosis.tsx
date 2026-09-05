@@ -443,32 +443,32 @@ const FacebookAdsDiagnosis: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
+    <div className="min-h-screen bg-slate-50/70 text-slate-950 dark:bg-slate-950 dark:text-white font-sans">
       <main className="mx-auto flex max-w-[1680px] flex-col gap-3 p-3 sm:p-4">
-        <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="grid gap-3 xl:grid-cols-[minmax(230px,0.65fr)_minmax(680px,1.8fr)] xl:items-end">
+        <section className="rounded-2xl border border-slate-200/80 bg-white/95 p-4 sm:p-5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
+          <div className="grid gap-3.5 xl:grid-cols-[minmax(230px,0.65fr)_minmax(680px,1.8fr)] xl:items-end">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-black text-blue-700 dark:text-blue-300">
-                <Gauge className="h-4 w-4" />
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                <Gauge className="h-3.5 w-3.5" />
                 تشخيص الأداء
               </div>
-              <h1 className="mt-1 text-xl font-black leading-tight">
-                تشخيص الحملات
+              <h1 className="mt-1.5 text-xl font-black leading-tight sm:text-2xl tracking-tight">
+                تشخيص الحملات الإعلانية
               </h1>
               <p className="mt-1 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
                 {selectedDateLabel}: {dateRange.startDate} - {dateRange.endDate}
               </p>
             </div>
 
-            <div className="grid gap-2 md:grid-cols-[minmax(190px,1.3fr)_minmax(135px,0.75fr)_auto_auto]">
+            <div className="grid gap-2.5 md:grid-cols-[minmax(190px,1.3fr)_minmax(135px,0.75fr)_auto_auto]">
               <label className="block">
-                <span className="mb-1 block text-[11px] font-black text-slate-500">
-                  الحساب
+                <span className="mb-1 block text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                  الحساب الإعلاني
                 </span>
                 <select
                   value={selectedAdAccountId}
                   onChange={(event) => setSelectedAdAccountId(event.target.value)}
-                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="">اختار حساب إعلاني</option>
                   {businessGroups.map(([key, group]) => (
@@ -485,7 +485,7 @@ const FacebookAdsDiagnosis: React.FC = () => {
 
               <SelectFilter
                 icon={CalendarDays}
-                label="الفترة"
+                label="الفترة الزمنية"
                 value={filters.datePreset}
                 onChange={(value) =>
                   updateFilters({ datePreset: value as FacebookAdsDatePreset })
@@ -496,7 +496,7 @@ const FacebookAdsDiagnosis: React.FC = () => {
               <button
                 type="button"
                 onClick={handleRefresh}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 تحديث
@@ -505,18 +505,18 @@ const FacebookAdsDiagnosis: React.FC = () => {
           </div>
 
           {filters.datePreset === "custom" && (
-            <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:max-w-sm">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:max-w-sm">
               <input
                 type="date"
                 value={filters.startDate || dateRange.startDate}
                 onChange={(event) => updateFilters({ startDate: event.target.value })}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="h-9 rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               />
               <input
                 type="date"
                 value={filters.endDate || dateRange.endDate}
                 onChange={(event) => updateFilters({ endDate: event.target.value })}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="h-9 rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               />
             </div>
           )}
@@ -524,7 +524,7 @@ const FacebookAdsDiagnosis: React.FC = () => {
 
         <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
 
-        <section className="grid gap-2 md:grid-cols-4">
+        <section className="grid gap-2.5 md:grid-cols-4">
           <MetricCard
             label="إجمالي الحملات"
             value={formatNumber(stats.total)}
@@ -534,20 +534,23 @@ const FacebookAdsDiagnosis: React.FC = () => {
             label="إجمالي الإنفاق"
             value={formatCurrency(stats.spend, selectedCurrency)}
             icon={Wallet}
+            variant="spend"
           />
           <MetricCard
             label="المشتريات"
             value={formatNumber(stats.purchases)}
             icon={Target}
+            variant="purchases"
           />
           <MetricCard
-            label="ROAS"
+            label="العائد الإعلاني ROAS"
             value={`${formatNumber(stats.roas, 2)}x`}
             icon={BarChart3}
+            variant="roas"
           />
         </section>
 
-        <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <section className="rounded-2xl border border-slate-200/80 bg-white/95 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
           <div className="border-b border-slate-200 p-3 dark:border-slate-800">
             <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-[1.2fr_0.8fr_0.8fr_0.8fr_0.8fr]">
               <label className="relative block">

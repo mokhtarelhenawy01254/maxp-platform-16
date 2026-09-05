@@ -71,16 +71,16 @@ const MetricTile = ({
   label: string;
   value: string | number;
 }) => (
-  <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-950">
-    <div className="flex items-center gap-2">
-      <span className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+  <div className="rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 shadow-xs transition-all hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900/95">
+    <div className="flex items-center gap-3">
+      <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 dark:bg-blue-400/20 dark:text-blue-300">
         <Icon className="h-4 w-4" />
       </span>
       <div className="min-w-0">
         <p className="truncate text-[11px] font-bold text-slate-500 dark:text-slate-400">
           {label}
         </p>
-        <p className="truncate text-sm font-black text-slate-950 dark:text-white">
+        <p className="truncate text-base font-black text-slate-950 dark:text-white">
           {value}
         </p>
       </div>
@@ -231,17 +231,18 @@ const FacebookAdsConnection: React.FC = () => {
   }, [status]);
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 text-slate-950 dark:bg-slate-950 dark:text-white">
+    <div className="min-h-screen bg-slate-50/70 p-4 text-slate-950 dark:bg-slate-950 dark:text-white font-sans sm:p-6">
       <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-4">
-        <header className="flex flex-col gap-3">
+        <header className="flex flex-col gap-3.5 rounded-2xl border border-slate-200/80 bg-white/95 p-4 sm:p-5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
           <div className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-normal text-blue-600 dark:text-blue-300">
-                Meta Ads
-              </p>
-              <h1 className="text-2xl font-black">ربط إعلانات Meta</h1>
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                <PlugZap className="h-3.5 w-3.5" />
+                Meta Ads Connection
+              </div>
+              <h1 className="mt-1 text-2xl font-black tracking-tight sm:text-3xl">ربط إعلانات Meta</h1>
               <p className="mt-1 text-sm font-semibold text-slate-600 dark:text-slate-300">
-                اربط أكتر من حساب فيس بوك للإعلانات بدون التأثير على توكنات الصفحات والرسائل.
+                اربط أكثر من حساب فيسبوك للإعلانات بدون التأثير على توكنات الصفحات والرسائل.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -253,9 +254,9 @@ const FacebookAdsConnection: React.FC = () => {
                 type="button"
                 onClick={loadStatus}
                 disabled={loading}
-                className="inline-flex h-9 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-black text-slate-700 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/30 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex h-9 items-center gap-2 rounded-xl border border-slate-200/90 bg-white px-3.5 text-xs font-bold text-slate-700 shadow-xs transition-all hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                <RefreshCw className={["h-4 w-4", loading ? "animate-spin" : ""].join(" ")} />
+                <RefreshCw className={["h-3.5 w-3.5", loading ? "animate-spin" : ""].join(" ")} />
                 تحديث
               </button>
             </div>
