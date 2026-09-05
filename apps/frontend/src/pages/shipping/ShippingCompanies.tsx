@@ -65,6 +65,8 @@ const ShippingCompanies: React.FC = () => {
   // Modal & Drawer State
   const [showModal, setShowModal] = useState(false);
   const [editingCompany, setEditingCompany] = useState<ShippingCompany | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [testedProfile, setTestedProfile] = useState<{ customerId?: number; customerName?: string; address?: string } | null>(null);
 
   // Search & Filters
   const [search, setSearch] = useState("");
@@ -100,13 +102,13 @@ const ShippingCompanies: React.FC = () => {
       if (statusFilter !== "all") params.status = statusFilter;
       if (modeFilter !== "ALL") params.integrationMode = modeFilter;
 
-      const res: any = await apiClient.get("/shipping-companies", { params });
+      const res = await apiClient.get("/shipping-companies", { params });
       if (res.data?.success) {
         setCompanies(res.data.data || []);
       }
-    } catch (error) {
-      console.error("Error fetching shipping companies:", error);
-      toast.error("تعذر جلب شركات الشحن");
+    } catch (err: any) {
+      console.error("Failed to load shipping companies:", err);
+      toast.error("تعذر تحميل قائمة شركات الشحن");
     } finally {
       setLoading(false);
     }
@@ -116,26 +118,19 @@ const ShippingCompanies: React.FC = () => {
     fetchCompanies();
   }, [fetchCompanies]);
 
-  // Toggle company active status with single click
+
   const handleToggleActive = async (company: ShippingCompany, e: React.MouseEvent) => {
     e.stopPropagation();
     setTogglingId(company.id);
-    const newStatus = !company.isActive;
     try {
       const res: any = await apiClient.patch(`/shipping-companies/${company.id}/toggle`, {
-        isActive: newStatus,
+        isActive: !company.isActive,
       });
       if (res.data?.success) {
         toast.success(
-          newStatus
-            ? `تم تفعيل العمل مع ${company.name}`
-            : `تم إيقاف العمل مع ${company.name}`
+          company.isActive ? `تم إيقاف ${company.name}` : `تم تفعيل ${company.name} للعمل`
         );
-        setCompanies((prev) =>
-          prev.map((c) => (c.id === company.id ? { ...c, isActive: newStatus } : c))
-        );
-      } else {
-        toast.error(res.data?.error || "تعذر تغيير حالة الشركة");
+        fetchCompanies();
       }
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "حدث خطأ أثناء تغيير الحالة");
@@ -145,12 +140,32 @@ const ShippingCompanies: React.FC = () => {
   };
 
   // Test API Connection
-  const handleTestConnection = async (companyId: string) => {
+  const handleTestConnection = async (companyId?: string) => {
+    const targetId = companyId || editingCompany?.id;
+    if (!targetId) return;
+
     setTestingConnection(true);
     try {
-      const res: any = await apiClient.post(`/shipping-companies/${companyId}/test-connection`);
+      const payload = {
+        username: formData.username,
+        password: formData.password,
+        apiKey: formData.apiKey,
+        apiUrl: formData.apiUrl,
+      };
+      const res: any = await apiClient.post(`/shipping-companies/${targetId}/test-connection`, payload);
       if (res.data?.success) {
         toast.success(res.data.message || "الاتصال ناجح ومكتمل");
+        if (res.data.data) {
+          setTestedProfile(res.data.data);
+          if (res.data.data.customerId) {
+            setFormData((prev) => ({
+              ...prev,
+              customerId: String(res.data.data.customerId),
+              pickupAddress: prev.pickupAddress || res.data.data.address || "",
+            }));
+          }
+        }
+        fetchCompanies();
       } else {
         toast.error(res.data?.error || "فشل الاتصال بشركة الشحن");
       }
@@ -164,6 +179,8 @@ const ShippingCompanies: React.FC = () => {
   const handleOpenSettings = (company: ShippingCompany, autoActivate = false) => {
     const settings = parseSettings(company.settings) as any;
     setEditingCompany(company);
+    setShowAdvanced(false);
+    setTestedProfile(null);
     setFormData({
       name: company.name,
       slug: company.slug || "",
@@ -171,7 +188,7 @@ const ShippingCompanies: React.FC = () => {
       email: company.email || "",
       website: company.website || "",
       apiKey: company.apiKey || settings.apiKey || "",
-      apiUrl: company.apiUrl || "",
+      apiUrl: company.apiUrl || (company.providerKey === "QP_EXPRESS" ? "https://qpxpress.com:8001" : company.providerKey === "BOSTA" ? "https://app.bosta.co" : ""),
       providerKey: company.providerKey || "MANUAL",
       integrationMode: company.integrationMode || "MANUAL",
       autoCreateShipments: Boolean(settings.autoCreateShipments),
@@ -189,6 +206,8 @@ const ShippingCompanies: React.FC = () => {
 
   const handleOpenNewModal = () => {
     setEditingCompany(null);
+    setShowAdvanced(false);
+    setTestedProfile(null);
     setFormData({
       name: "",
       slug: "",
@@ -860,170 +879,75 @@ const ShippingCompanies: React.FC = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4 text-right">
-              {/* Company Name */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  اسم شركة الشحن *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="مثال: بوستا، أرامكس، مندوب القاهرة..."
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-
-              {/* Provider Driver */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    محول الربط البرمجي (Provider Driver)
-                  </label>
-                  <select
-                    value={formData.providerKey}
-                    onChange={(e) => {
-                      const providerKey = e.target.value;
-                      let defaultName = formData.name;
-                      let defaultApiUrl = formData.apiUrl;
-                      let defaultMode = formData.integrationMode;
-
-                      if (providerKey === "QP_EXPRESS") {
-                        if (!formData.name || formData.name.includes("تربو") || formData.name.includes("بوستا")) {
-                          defaultName = "كيو بي إكسبريس (QP Express)";
-                        }
-                        defaultApiUrl = defaultApiUrl || "https://qpxpress.com:8001";
-                        defaultMode = "LIVE";
-                      } else if (providerKey === "BOSTA") {
-                        if (!formData.name || formData.name.includes("تربو") || formData.name.includes("كيو بي")) {
-                          defaultName = "بوستا (Bosta)";
-                        }
-                        defaultApiUrl = defaultApiUrl || "https://app.bosta.co";
-                        defaultMode = "LIVE";
-                      } else if (providerKey === "TURBO") {
-                        if (!formData.name || formData.name.includes("بوستا") || formData.name.includes("كيو بي")) {
-                          defaultName = "تربو (Turbo)";
-                        }
-                        defaultMode = "LIVE";
-                      }
-
-                      setFormData({
-                        ...formData,
-                        providerKey,
-                        name: defaultName,
-                        apiUrl: defaultApiUrl,
-                        integrationMode: providerKey.endsWith("_DEMO")
-                          ? "DEMO"
-                          : providerKey === "MANUAL"
-                          ? "MANUAL"
-                          : defaultMode,
-                      });
-                    }}
-                    className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  >
-                    <option value="MANUAL">أسطول يدوي / مندوب خاص (Manual)</option>
-                    <option value="QP_EXPRESS">كيو بي إكسبريس (QP Express)</option>
-                    <option value="BOSTA">بوستا (Bosta Courier)</option>
-                    <option value="TURBO">تربو (Turbo Courier)</option>
-                    <option value="ARAMEX_DEMO">أرامكس (Aramex Demo)</option>
-                    <option value="MYLERZ_DEMO">مايلرز (Mylerz Demo)</option>
-                    <option value="BOSTA_DEMO">بوستا ديمو (Bosta Demo)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                    وضع التكامل (Integration Mode)
-                  </label>
-                  <select
-                    value={formData.integrationMode}
-                    onChange={(e) => setFormData({ ...formData, integrationMode: e.target.value })}
-                    className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                  >
-                    <option value="LIVE">مباشر حقيقي (LIVE API)</option>
-                    <option value="DEMO">بيئة تجريبية (Demo Sandbox)</option>
-                    <option value="MANUAL">يدوي بدون API (Manual)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* DYNAMIC CARRIER CREDENTIALS SECTION */}
-
-              {/* 1. QP Express Credentials */}
+              {/* 1. QP Express Dedicated Wizard */}
               {formData.providerKey === "QP_EXPRESS" && (
-                <div className="p-3.5 bg-indigo-50/40 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-900/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300">
-                      بيانات حساب شركتك لدى كيو بي إكسبريس (QP Express)
-                    </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 font-semibold">
-                      JWT Auth
-                    </span>
+                <div className="space-y-3.5">
+                  <div className="p-3.5 bg-gradient-to-r from-indigo-50/90 to-blue-50/60 dark:from-indigo-950/40 dark:to-blue-950/20 rounded-xl border border-indigo-200 dark:border-indigo-800/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-sm text-indigo-950 dark:text-indigo-200">
+                          كيو بي إكسبريس (QP Express)
+                        </span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-bold">
+                          ربط مباشر حقيقي (LIVE)
+                        </span>
+                      </div>
+                      {(testedProfile?.customerId || formData.customerId) && (
+                        <span className="text-xs font-mono font-bold text-indigo-700 dark:text-indigo-300 bg-indigo-100 dark:bg-indigo-900/60 px-2.5 py-0.5 rounded-md">
+                          كود العميل: #{testedProfile?.customerId || formData.customerId}
+                        </span>
+                      )}
+                    </div>
+
+                    <p className="text-xs text-indigo-950 dark:text-indigo-300/90 leading-relaxed">
+                      💡 <strong>كل ما تحتاجه للربط:</strong> أدخل فقط <strong>اسم المستخدم وكلمة المرور</strong> لحسابك في كيو بي إكسبريس. سيقوم النظام تلقائياً بالتحقق واستخراج كود العميل وبيانات متجرك وربطها بدون أي خطوات يدوية معقدة.
+                    </p>
+
+                    {(testedProfile?.customerName || (formData.customerId && editingCompany)) && (
+                      <div className="flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-lg border border-emerald-200 dark:border-emerald-800/50">
+                        <CheckCircleIcon className="h-4 w-4 shrink-0 text-emerald-600" />
+                        <span>
+                          تم التعرف على الحساب بنجاح: <strong>{testedProfile?.customerName || "حساب معتمد"}</strong> (كود العميل #{testedProfile?.customerId || formData.customerId})
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        اسم المستخدم / البريد الإلكتروني *
+                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1">
+                        اسم المستخدم أو البريد الإلكتروني *
                       </label>
                       <input
                         type="text"
                         required
                         value={formData.username}
                         onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                        placeholder="مثال: company@qpxpress.com"
-                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                        placeholder="مثال: your-account@qpxpress.com"
+                        className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-indigo-500"
                       />
+                      <p className="text-[11px] text-gray-400 mt-0.5">اسم الدخول لحسابك في موقع QP Express</p>
                     </div>
 
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      <label className="block text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1">
                         كلمة المرور *
                       </label>
                       <input
                         type="password"
-                        required={!editingCompany}
+                        required={!editingCompany || !formData.username}
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        placeholder={editingCompany ? "اتركها فارغة للإبقاء على الحالية" : "كلمة مرور حسابك في كيو بي"}
-                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                        placeholder={editingCompany ? "•••••••• (اتركها للإبقاء على الحالية)" : "كلمة مرور حسابك في كيو بي"}
+                        className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                       />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        كود العميل لدى كيو بي (Customer ID) *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        value={formData.customerId}
-                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                        placeholder="مثال: 8002"
-                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        رابط الـ API الخارجي
-                      </label>
-                      <input
-                        type="text"
-                        value={formData.apiUrl}
-                        onChange={(e) => setFormData({ ...formData, apiUrl: e.target.value })}
-                        placeholder="https://qpxpress.com:8001"
-                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-xs"
-                      />
+                      <p className="text-[11px] text-gray-400 mt-0.5">كلمة مرور حسابك في موقع QP Express</p>
                     </div>
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      ملاحظات التسليم والمعاينة الافتراضية للبوليصة
+                      ملاحظات المعاينة والتسليم الافتراضية للبوليصة (اختياري)
                     </label>
                     <input
                       type="text"
@@ -1032,24 +956,31 @@ const ShippingCompanies: React.FC = () => {
                       placeholder="مثال: المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة"
                       className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                     />
+                    <p className="text-[11px] text-gray-400 mt-0.5">تطبع هذه الملاحظات تلقائياً على كل بوليصة شحن تصدرها لعملائك</p>
                   </div>
                 </div>
               )}
 
-              {/* 2. Bosta Credentials */}
+              {/* 2. Bosta Dedicated Wizard */}
               {formData.providerKey === "BOSTA" && (
-                <div className="p-3.5 bg-blue-50/40 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-blue-900 dark:text-blue-300">
-                      إعدادات ربط حساب بوستا (Bosta Integration)
-                    </span>
-                    <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 font-semibold">
-                      API Key
-                    </span>
+                <div className="space-y-3.5">
+                  <div className="p-3.5 bg-gradient-to-r from-orange-50/90 to-amber-50/60 dark:from-orange-950/40 dark:to-amber-950/20 rounded-xl border border-orange-200 dark:border-orange-800/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-orange-950 dark:text-orange-200">
+                        بوستا (Bosta Courier)
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-bold">
+                        ربط مباشر حقيقي (LIVE)
+                      </span>
+                    </div>
+
+                    <p className="text-xs text-orange-950 dark:text-orange-300/90 leading-relaxed">
+                      💡 <strong>كل ما تحتاجه للربط:</strong> مفتاح الـ API الخاص بحسابك في بوستا. يمكنك نسخه من لوحة تحكم بوستا (من القائمة: الإعدادات ⇦ مفاتيح الـ API ⇦ API Keys).
+                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1">
                       مفتاح الـ API (Bosta API Key) *
                     </label>
                     <input
@@ -1058,36 +989,45 @@ const ShippingCompanies: React.FC = () => {
                       value={formData.apiKey}
                       onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
                       placeholder="ألصق الـ API Key من لوحة تحكم حسابك في بوستا..."
-                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-orange-500"
                     />
+                    <p className="text-[11px] text-gray-400 mt-0.5">يمكنك نسخه من حسابك في بوستا: الإعدادات ⇦ مفاتيح API</p>
                   </div>
 
                   <div>
                     <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      معرف أو عنوان نقطة الاستلام (Pickup Hub / Location ID)
+                      عنوان أو كود نقطة الاستلام (Pickup Hub) - اختياري
                     </label>
                     <input
                       type="text"
                       value={formData.pickupAddress}
                       onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
-                      placeholder="اختياري - يحدد نقطة استلام الشحنات من مخزنك"
+                      placeholder="اتركه فارغاً ليتم الاستلام من العنوان الافتراضي لحسابك"
                       className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                     />
                   </div>
                 </div>
               )}
 
-              {/* 3. Turbo Credentials */}
+              {/* 3. Turbo Dedicated Wizard */}
               {formData.providerKey === "TURBO" && (
-                <div className="p-3.5 bg-orange-50/40 dark:bg-orange-950/30 rounded-xl border border-orange-200 dark:border-orange-900/50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-orange-900 dark:text-orange-300">
-                      إعدادات ربط شركة تربو (Turbo Courier)
-                    </span>
+                <div className="space-y-3.5">
+                  <div className="p-3.5 bg-gradient-to-r from-blue-50/90 to-indigo-50/60 dark:from-blue-950/40 dark:to-indigo-950/20 rounded-xl border border-blue-200 dark:border-blue-800/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-blue-950 dark:text-blue-200">
+                        تربو (Turbo Courier)
+                      </span>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300 font-bold">
+                        ربط مباشر حقيقي (LIVE)
+                      </span>
+                    </div>
+                    <p className="text-xs text-blue-950 dark:text-blue-300/90 leading-relaxed">
+                      💡 أدخل مفتاح الـ API الخاص بحسابك لدى شركة تربو.
+                    </p>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    <label className="block text-xs font-semibold text-gray-800 dark:text-gray-200 mb-1">
                       مفتاح الـ API (Turbo API Key) *
                     </label>
                     <input
@@ -1096,32 +1036,32 @@ const ShippingCompanies: React.FC = () => {
                       value={formData.apiKey}
                       onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
                       placeholder="مفتاح الـ API الخاص بحساب تربو..."
-                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        كود العميل الرئيسي (Main Client Code)
+                        كود العميل الرئيسي (اختياري)
                       </label>
                       <input
                         type="text"
                         value={formData.mainClientCode}
                         onChange={(e) => setFormData({ ...formData, mainClientCode: e.target.value })}
-                        placeholder="كود العميل..."
+                        placeholder="كود العميل في تربو..."
                         className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
                       />
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                        رقم هاتف الراسل (Sender Phone)
+                        هاتف الراسل (اختياري)
                       </label>
                       <input
                         type="text"
                         value={formData.senderNumber}
                         onChange={(e) => setFormData({ ...formData, senderNumber: e.target.value })}
-                        placeholder="رقم الهاتف..."
+                        placeholder="رقم الهاتف المسجل..."
                         className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                       />
                     </div>
@@ -1129,66 +1069,163 @@ const ShippingCompanies: React.FC = () => {
                 </div>
               )}
 
-              {/* 4. Manual Fleet or Demo info */}
+              {/* 4. Custom Manual / Fleet */}
               {formData.providerKey === "MANUAL" && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      رقم هاتف المندوب أو مسؤول الشحن
+                    <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                      اسم شركة الشحن أو المندوب *
                     </label>
                     <input
                       type="text"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="01xxxxxxxxx"
-                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      placeholder="مثال: أسطول التوصيل الداخلي، مندوب الجيزة..."
+                      className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      البريد الإلكتروني (اختياري)
-                    </label>
-                    <input
-                      type="email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      placeholder="driver@company.com"
-                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                    />
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        رقم هاتف المندوب
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        placeholder="01xxxxxxxxx"
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        البريد الإلكتروني (اختياري)
+                      </label>
+                      <input
+                        type="email"
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="driver@company.com"
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
-              {formData.providerKey.endsWith("_DEMO") && (
-                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
-                  شركة تجريبية تحاكي إنشاء الشحنات وتوليد أرقام التتبع تلقائياً للاختبار دون الحاجة لـ API Key حقيقي.
-                </div>
-              )}
+              {/* Collapsible Advanced Settings (For Developers/Integrators) */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden mt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvanced(!showAdvanced)}
+                  className="w-full px-3.5 py-2 bg-gray-50 dark:bg-gray-900/40 text-[11px] font-semibold text-gray-600 dark:text-gray-400 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                >
+                  <span>⚙️ خيارات متقدمة وروابط الاتصال (للمطورين)</span>
+                  <span className="text-[11px] text-gray-400 font-mono">{showAdvanced ? "▲ إخفاء" : "▼ إظهار"}</span>
+                </button>
 
-              {/* Webhook URL for Receiving Carrier Status Updates */}
-              <div className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-xl border border-gray-200 dark:border-gray-700/80 space-y-1.5">
-                <p className="text-xs font-semibold text-gray-800 dark:text-gray-200">
-                  رابط الـ Webhook الخاص بالنظام
-                </p>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400">
-                  انسخ هذا الرابط وضعه في إعدادات حسابك في شركة الشحن لاستقبال تحديثات التوصيل آلياً:
-                </p>
-                <div className="flex items-center gap-2 mt-1">
-                  <input
-                    type="text"
-                    readOnly
-                    value={`${envConfig.backendUrl}/api/v1/shipments/webhook`}
-                    className="flex-1 px-2.5 py-1.5 text-xs bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-gray-600 dark:text-gray-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={copyWebhookUrl}
-                    className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded text-gray-700 dark:text-gray-200"
-                    title="نسخ الرابط"
-                  >
-                    <ClipboardDocumentIcon className="h-4 w-4" />
-                  </button>
-                </div>
+                {showAdvanced && (
+                  <div className="p-3.5 space-y-3 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 text-xs">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                        اسم العرض المسجل
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          نوع الناقل البرمجي (Provider)
+                        </label>
+                        <select
+                          value={formData.providerKey}
+                          onChange={(e) => setFormData({ ...formData, providerKey: e.target.value })}
+                          className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                        >
+                          <option value="QP_EXPRESS">كيو بي إكسبريس (QP Express)</option>
+                          <option value="BOSTA">بوستا (Bosta Courier)</option>
+                          <option value="TURBO">تربو (Turbo Courier)</option>
+                          <option value="MANUAL">أسطول يدوي / مناديب (Manual)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                          وضع التكامل
+                        </label>
+                        <select
+                          value={formData.integrationMode}
+                          onChange={(e) => setFormData({ ...formData, integrationMode: e.target.value })}
+                          className="w-full px-3 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                        >
+                          <option value="LIVE">مباشر حقيقي (LIVE API)</option>
+                          <option value="DEMO">بيئة تجريبية (Demo Sandbox)</option>
+                          <option value="MANUAL">يدوي بدون API (Manual)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {formData.providerKey === "QP_EXPRESS" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                            رابط السيرفر الخارجي (API Base URL)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.apiUrl}
+                            onChange={(e) => setFormData({ ...formData, apiUrl: e.target.value })}
+                            placeholder="https://qpxpress.com:8001"
+                            className="w-full px-3 py-1.5 text-xs font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-1">
+                            كود العميل اليدوي (يتم استخراجه آلياً)
+                          </label>
+                          <input
+                            type="text"
+                            value={formData.customerId}
+                            onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                            placeholder="يكتشفه النظام تلقائياً"
+                            className="w-full px-3 py-1.5 text-xs font-mono border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Webhook URL */}
+                    <div className="p-2.5 bg-gray-50 dark:bg-gray-900/60 rounded-lg border border-gray-200 dark:border-gray-700/80 space-y-1">
+                      <p className="text-[11px] font-semibold text-gray-700 dark:text-gray-300">
+                        رابط الـ Webhook الخاص بنظامك لاستقبال التحديثات:
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          readOnly
+                          value={`${envConfig.backendUrl}/api/v1/shipments/webhook`}
+                          className="flex-1 px-2 py-1 text-[11px] bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded font-mono text-gray-600 dark:text-gray-300"
+                        />
+                        <button
+                          type="button"
+                          onClick={copyWebhookUrl}
+                          className="p-1.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 rounded text-gray-700 dark:text-gray-200"
+                          title="نسخ"
+                        >
+                          <ClipboardDocumentIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Active Status Checkbox */}

@@ -130,6 +130,24 @@ class QpExpressApiClient {
   async delete(endpoint, options = {}) {
     return this.request(endpoint, { method: 'DELETE', ...options });
   }
+
+  /**
+   * جلب الملف التعريفي للعميل واستخراج كود العميل واسم الشركة والعنوان آلياً
+   */
+  async fetchCustomerProfile() {
+    try {
+      const response = await this.get('/customers/shipment-info/');
+      if (response && response.customer) {
+        if (response.customer.id) {
+          this.customerId = Number(response.customer.id);
+        }
+        return response.customer;
+      }
+    } catch (err) {
+      console.warn('⚠️ [QP_EXPRESS] Failed to auto-fetch customer profile:', err.message);
+    }
+    return null;
+  }
 }
 
 module.exports = QpExpressApiClient;

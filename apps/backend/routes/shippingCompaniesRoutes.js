@@ -285,6 +285,39 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
     const companySlug = slug || buildSlug(name);
     const providerFields = buildProviderFields({ ...req.body, slug: companySlug });
 
+    let finalApiUrl = apiUrl;
+    if (providerFields.providerKey === 'QP_EXPRESS' && !finalApiUrl) {
+      finalApiUrl = 'https://qpxpress.com:8001';
+    }
+
+    if (providerFields.providerKey === 'QP_EXPRESS') {
+      const parsedSettings = shippingProviderService.safeJsonParse(providerFields.settings, {});
+      const username = parsedSettings.username || req.body.username;
+      const password = parsedSettings.password || req.body.password;
+      if (username && password && !parsedSettings.customerId) {
+        try {
+          const QpExpressApiClient = require('../services/qpExpress/qpExpressApiClient');
+          const client = new QpExpressApiClient({
+            username,
+            password,
+            baseUrl: finalApiUrl || 'https://qpxpress.com:8001',
+          });
+          await client.getAccessToken();
+          const profile = await client.fetchCustomerProfile();
+          if (profile && profile.id) {
+            parsedSettings.customerId = Number(profile.id);
+            if (!parsedSettings.pickupAddress && profile.address) {
+              parsedSettings.pickupAddress = profile.address;
+            }
+            parsedSettings.customerName = profile.company_name || profile.full_name;
+            providerFields.settings = shippingProviderService.safeJsonStringify(parsedSettings);
+          }
+        } catch (e) {
+          console.warn('⚠️ [QP_EXPRESS] Non-blocking auto-detect profile error on create:', e.message);
+        }
+      }
+    }
+
     const company = await prisma.shippingCompany.create({
       data: {
         name,
@@ -293,7 +326,7 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
         email,
         website,
         apiKey,
-        apiUrl,
+        apiUrl: finalApiUrl,
         ...providerFields,
         isActive: isActive !== undefined ? isActive : true,
         companyId
@@ -341,6 +374,39 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
       existing,
     );
 
+    let finalApiUrl = apiUrl !== undefined ? apiUrl : existing.apiUrl;
+    if (providerFields.providerKey === 'QP_EXPRESS' && !finalApiUrl) {
+      finalApiUrl = 'https://qpxpress.com:8001';
+    }
+
+    if (providerFields.providerKey === 'QP_EXPRESS') {
+      const parsedSettings = shippingProviderService.safeJsonParse(providerFields.settings, {});
+      const username = parsedSettings.username || req.body.username;
+      const password = parsedSettings.password || req.body.password;
+      if (username && password && !parsedSettings.customerId) {
+        try {
+          const QpExpressApiClient = require('../services/qpExpress/qpExpressApiClient');
+          const client = new QpExpressApiClient({
+            username,
+            password,
+            baseUrl: finalApiUrl || 'https://qpxpress.com:8001',
+          });
+          await client.getAccessToken();
+          const profile = await client.fetchCustomerProfile();
+          if (profile && profile.id) {
+            parsedSettings.customerId = Number(profile.id);
+            if (!parsedSettings.pickupAddress && profile.address) {
+              parsedSettings.pickupAddress = profile.address;
+            }
+            parsedSettings.customerName = profile.company_name || profile.full_name;
+            providerFields.settings = shippingProviderService.safeJsonStringify(parsedSettings);
+          }
+        } catch (e) {
+          console.warn('⚠️ [QP_EXPRESS] Non-blocking auto-detect profile error on update:', e.message);
+        }
+      }
+    }
+
     const updated = await prisma.shippingCompany.update({
       where: { id },
       data: {
@@ -350,7 +416,7 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
         email: email !== undefined ? email : existing.email,
         website: website !== undefined ? website : existing.website,
         apiKey: apiKey !== undefined ? apiKey : existing.apiKey,
-        apiUrl: apiUrl !== undefined ? apiUrl : existing.apiUrl,
+        apiUrl: finalApiUrl,
         ...providerFields,
         isActive: isActive !== undefined ? isActive : existing.isActive,
       },
@@ -443,15 +509,11 @@ router.post('/:id/test-connection', verifyToken.authenticateToken, async (req, r
 
     if (providerKey === 'QP_EXPRESS') {
       const settings = shippingProviderService.safeJsonParse(company.settings, {});
-      const username = settings.username || company.apiKey;
-      const password = settings.password;
-      const customerId = settings.customerId;
+      const username = req.body?.username || settings.username || company.apiKey;
+      const password = req.body?.password || settings.password;
 
       if (!username || !password) {
         return res.status(400).json({ success: false, error: 'يرجى إدخال اسم المستخدم وكلمة المرور الخاصة بحساب كيو بي إكسبريس' });
-      }
-      if (!customerId) {
-        return res.status(400).json({ success: false, error: 'يرجى إدخال كود العميل (Customer ID) الخاص بـ QP Express' });
       }
 
       try {
@@ -459,14 +521,49 @@ router.post('/:id/test-connection', verifyToken.authenticateToken, async (req, r
         const client = new QpExpressApiClient({
           username,
           password,
-          customerId,
-          baseUrl: company.apiUrl,
+          baseUrl: req.body?.apiUrl || company.apiUrl || 'https://qpxpress.com:8001',
         });
         await client.getAccessToken();
+        const profile = await client.fetchCustomerProfile();
+
+        let customerId = settings.customerId;
+        let customerName = settings.customerName || '';
+        let address = settings.pickupAddress || '';
+
+        if (profile && profile.id) {
+          customerId = Number(profile.id);
+          customerName = profile.company_name || profile.full_name || '';
+          address = profile.address || address;
+
+          const updatedSettings = {
+            ...settings,
+            username,
+            password,
+            customerId,
+            customerName,
+            pickupAddress: address,
+          };
+
+          await prisma.shippingCompany.update({
+            where: { id: company.id },
+            data: {
+              settings: shippingProviderService.safeJsonStringify(updatedSettings),
+              isActive: true,
+            },
+          }).catch((err) => console.warn('Non-blocking settings update error:', err.message));
+        }
+
         return res.json({
           success: true,
           status: 'CONNECTED',
-          message: `تم التحقق والاتصال بنجاح بـ QP Express (كود العميل: ${customerId})`,
+          message: customerName
+            ? `تم التحقق والاتصال بنجاح! حساب (${customerName}) - كود عميل #${customerId || 'تلقائي'}`
+            : `تم التحقق والاتصال بنجاح بـ QP Express`,
+          data: {
+            customerId,
+            customerName,
+            address,
+          },
         });
       } catch (err) {
         return res.status(400).json({

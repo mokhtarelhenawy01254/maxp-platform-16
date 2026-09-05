@@ -94,7 +94,15 @@ class QpExpressShipmentService {
     const codAmount = Number(totalAmount !== undefined ? totalAmount : (price || 0));
 
     if (!this._client.customerId) {
-      throw new Error('كود العميل (Customer ID) الخاص بحساب كيو بي إكسبريس مطلوب لإنشاء الشحنة. يرجى ضبطه في إعدادات شركة الشحن.');
+      try {
+        await this._client.fetchCustomerProfile();
+      } catch (e) {
+        console.warn('⚠️ [QP_EXPRESS] Could not auto-fetch customer profile:', e.message);
+      }
+    }
+
+    if (!this._client.customerId) {
+      throw new Error('تعذر تحديد كود العميل الخاص بحساب كيو بي إكسبريس. يرجى التأكد من صحة اسم المستخدم وكلمة المرور في إعدادات الربط.');
     }
 
     // Contract payload based on /addorders/order/ schema
