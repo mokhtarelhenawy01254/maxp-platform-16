@@ -375,4 +375,76 @@ describe('VariantSelector', () => {
     expect(screen.queryByRole('radio')).not.toBeInTheDocument();
     expect(firstSizeButton.parentElement).toHaveAttribute('dir', 'rtl');
   });
+
+  it('renders a balanced 3-column grid for 6 thumbnail options with a checkmark badge on the selected item', () => {
+    const sixVariants = [
+      'الأبيض عالي',
+      'الأسود عالي',
+      'البيج عالي',
+      'الأبيض واطي',
+      'البيج واطي',
+      'الأسود واطي',
+    ].map((colorName, idx) => ({
+      id: `variant-${idx}`,
+      name: `${colorName} / 38`,
+      attributeValues: { Color: colorName },
+    }));
+
+    const attributeImages = sixVariants.reduce<Record<string, string>>((acc, v) => {
+      acc[v.attributeValues.Color] = `/uploads/${v.id}.jpg`;
+      return acc;
+    }, {});
+
+    render(
+      <StorefrontThemeProvider initialTheme={{ direction: 'rtl' }}>
+        <VariantSelector
+          variants={sixVariants as any}
+          selectedAttributes={{ Color: 'الأبيض عالي' }}
+          onChange={vi.fn()}
+          variantSettings={{
+            styles: { Color: 'thumbnails' },
+            attributeImages: { Color: attributeImages },
+          }}
+        />
+      </StorefrontThemeProvider>,
+    );
+
+    const selectedThumbButton = screen.getByRole('button', { name: 'اختر اللون الأبيض عالي' });
+    expect(selectedThumbButton).toBeInTheDocument();
+    expect(selectedThumbButton).toHaveTextContent('✓');
+
+    const unselectedThumbButton = screen.getByRole('button', { name: 'اختر اللون الأسود عالي' });
+    expect(unselectedThumbButton).not.toHaveTextContent('✓');
+
+    const container = selectedThumbButton.parentElement;
+    expect(container).toHaveClass('grid');
+    expect(container).toHaveClass('grid-cols-3');
+    expect(container).toHaveClass('sm:grid-cols-6');
+  });
+
+  it('renders numeric size options in an equal 5-column grid without orphaned buttons', () => {
+    const sizeVariants = ['37', '38', '39', '40', '41'].map((sz, idx) => ({
+      id: `v-${idx}`,
+      name: `Shoe / ${sz}`,
+      attributeValues: { المقاس: sz },
+    }));
+
+    render(
+      <StorefrontThemeProvider initialTheme={{ direction: 'rtl' }}>
+        <VariantSelector
+          variants={sizeVariants as any}
+          selectedAttributes={{ المقاس: '37' }}
+          onChange={vi.fn()}
+        />
+      </StorefrontThemeProvider>,
+    );
+
+    const button37 = screen.getByRole('button', { name: 'اختر المقاس 37' });
+    expect(button37).toBeInTheDocument();
+
+    const container = button37.parentElement;
+    expect(container).toHaveClass('grid');
+    expect(container).toHaveClass('grid-cols-5');
+  });
 });
+

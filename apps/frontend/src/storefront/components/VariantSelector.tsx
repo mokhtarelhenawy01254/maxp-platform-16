@@ -719,6 +719,37 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
               ? 'grid-cols-3'
               : 'grid-cols-4';
 
+        const isNumericOrShortButtonOption = options.every((opt) => opt.trim().length <= 4);
+
+        const getThumbnailContainerClass = () => {
+          if (isInlineCompact) {
+            return options.length <= 3
+              ? 'grid grid-cols-3 gap-1.5'
+              : 'flex gap-1.5 overflow-x-auto pb-1 scrollbar-none';
+          }
+          if (options.length === 1) return 'flex max-w-[140px]';
+          if (options.length === 2) return 'grid grid-cols-2 max-w-xs gap-2 sm:gap-2.5';
+          if (options.length === 3) return 'grid grid-cols-3 max-w-md gap-2 sm:gap-2.5';
+          if (options.length === 4) return 'grid grid-cols-2 min-[380px]:grid-cols-4 gap-2 sm:gap-2.5';
+          if (options.length === 6) return 'grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5';
+          return 'grid grid-cols-3 min-[440px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-2.5';
+        };
+
+        const getButtonContainerClass = () => {
+          if (isInlineCompact) {
+            return `grid w-full ${inlineCompactOptionGridClass} gap-2`;
+          }
+          if (isNumericOrShortButtonOption) {
+            if (options.length <= 2) return 'grid grid-cols-2 max-w-xs gap-2';
+            if (options.length === 3) return 'grid grid-cols-3 max-w-sm gap-2';
+            if (options.length === 4) return 'grid grid-cols-4 max-w-md gap-2';
+            if (options.length === 5) return 'grid grid-cols-5 gap-2';
+            if (options.length === 6) return 'grid grid-cols-3 min-[380px]:grid-cols-6 gap-2';
+            return 'grid grid-cols-4 min-[380px]:grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2';
+          }
+          return isCompact ? 'flex flex-wrap gap-1.5' : 'flex flex-wrap gap-2';
+        };
+
         return (
           <div
             key={key}
@@ -747,8 +778,10 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
               <span
                 className={`${
                   isZenOrganic
-                    ? 'text-[#1a3328]/40 ml-1'
-                    : 'text-muted-foreground ml-1'
+                    ? 'text-[#1a3328]/80 font-bold ms-1'
+                    : selectedAttributes[key]
+                      ? 'text-primary font-bold ms-1'
+                      : 'text-muted-foreground ms-1'
                 } ${selectedValueClassName}`}
               >
                 {selectedAttributes[key] || (prefersArabicCopy ? 'اختر' : 'Select')}
@@ -868,18 +901,20 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
             ) : (
               <div
                 className={
-                  isInlineCompact && displayStyle === 'buttons'
-                    ? `grid w-full ${inlineCompactOptionGridClass} gap-2`
-                    : `flex flex-wrap ${
-                        isInlineCompact
-                          ? 'w-full justify-end gap-1.5'
-                          : isCompact
-                            ? 'gap-1.5'
-                            : 'gap-2'
-                      }`
+                  displayStyle === 'thumbnails'
+                    ? getThumbnailContainerClass()
+                    : displayStyle === 'buttons'
+                      ? getButtonContainerClass()
+                      : `flex flex-wrap ${
+                          isInlineCompact
+                            ? 'w-full justify-end gap-1.5'
+                            : isCompact
+                              ? 'gap-1.5'
+                              : 'gap-2'
+                        }`
                 }
                 style={
-                  isInlineCompact && displayStyle !== 'buttons'
+                  isInlineCompact && displayStyle !== 'buttons' && displayStyle !== 'thumbnails'
                     ? { direction: 'ltr' }
                     : undefined
                 }
@@ -899,21 +934,21 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                         onClick={() => handleSelect(key, option)}
                         className={
                           isKhemetLuxeElessi && !isInlineCompact
-                            ? `flex w-[6.4rem] min-w-[6.4rem] flex-col overflow-hidden rounded-[1.35rem] border pb-2.5 transition-all duration-200 ${
+                            ? `group relative flex w-full flex-col overflow-hidden rounded-[1.2rem] border transition-all duration-200 ${
                                 isSelected
-                                  ? 'border-[#1f4737] bg-[#fffdfb] shadow-[0_18px_36px_-28px_rgba(31,71,55,0.28)]'
+                                  ? 'border-[#1f4737] bg-[#fffdfb] shadow-[0_8px_20px_-10px_rgba(31,71,55,0.25)] ring-2 ring-[#1f4737]/20'
                                   : 'border-[#e0d2c5] bg-white hover:border-[#b79d8e] hover:bg-[#fffaf6]'
-                              }`
-                            : `flex flex-col items-center rounded-2xl border transition-all duration-200 ${
+                              } p-1.5 pb-2`
+                            : `group relative flex w-full flex-col items-center rounded-xl border transition-all duration-200 ${
                                 isSelected
-                                  ? 'border-primary bg-primary/5 ring-2 ring-primary/20'
-                                  : 'border-border bg-background hover:border-primary/40'
+                                  ? 'border-2 border-primary bg-primary/[0.04] shadow-sm ring-2 ring-primary/20'
+                                  : 'border-border/80 bg-background hover:border-primary/50 hover:bg-muted/30 hover:shadow-2xs'
                               } ${
                                 isInlineCompact
-                                  ? 'min-w-[4rem] gap-1 p-1.5'
+                                  ? 'p-1 gap-1'
                                   : isCompact
-                                    ? 'min-w-[4.5rem] gap-1.5 p-1.5'
-                                    : 'min-w-[5.5rem] gap-2 p-2'
+                                    ? 'p-1.5 gap-1'
+                                    : 'p-2 gap-1.5'
                               }`
                         }
                         aria-label={
@@ -922,43 +957,60 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                             : `Select ${displayKey} ${option}`
                         }
                       >
+                        {isSelected ? (
+                          <span
+                            className={`absolute -top-1 -end-1 z-10 flex items-center justify-center rounded-full text-white shadow-xs animate-in zoom-in-75 duration-150 ${
+                              isKhemetLuxeElessi
+                                ? 'bg-[#1f4737]'
+                                : 'bg-primary'
+                            } ${
+                              isInlineCompact
+                                ? 'h-3.5 w-3.5 text-[8px]'
+                                : 'h-4 w-4 sm:h-4.5 sm:w-4.5 text-[9px] sm:text-[10px]'
+                            }`}
+                          >
+                            ✓
+                          </span>
+                        ) : null}
+
                         <div
-                          className={
+                          className={`relative w-full overflow-hidden rounded-lg transition-transform duration-200 group-hover:scale-[1.02] ${
                             isKhemetLuxeElessi && !isInlineCompact
-                              ? 'h-[5.2rem] w-full overflow-hidden bg-[#f4eee7]'
-                              : `${
-                                  isInlineCompact
-                                    ? 'h-10 w-10 rounded-lg'
-                                    : isCompact
-                                      ? 'h-12 w-12 rounded-lg'
-                                      : 'h-16 w-16 rounded-xl'
-                                } overflow-hidden bg-muted`
-                          }
+                              ? 'aspect-[4/3] bg-[#f4eee7]'
+                              : 'aspect-[4/3] bg-neutral-50 dark:bg-neutral-900/60'
+                          } flex items-center justify-center`}
                         >
                           {thumbnailImage ? (
                             <img
                               src={thumbnailImage}
                               alt={`${displayKey} ${option}`}
-                              className="h-full w-full object-cover"
+                              loading="lazy"
+                              className="h-full w-full object-contain p-0.5"
                             />
                           ) : (
-                            <div className="flex h-full w-full items-center justify-center px-2 text-center text-[11px] font-bold text-muted-foreground">
+                            <div className="flex h-full w-full items-center justify-center px-1 text-center text-[11px] font-bold text-muted-foreground">
                               {option}
                             </div>
                           )}
                         </div>
+
                         <span
-                          className={
+                          className={`w-full text-center leading-tight transition-colors ${
                             isKhemetLuxeElessi && !isInlineCompact
-                              ? 'min-h-[2.2rem] w-full px-2 whitespace-normal text-center text-[0.83rem] font-medium leading-[1.1rem] text-[#2d211e]'
-                              : `${
-                                  isInlineCompact
-                                    ? 'max-w-[3.5rem] text-[10px]'
-                                    : isCompact
-                                      ? 'max-w-[4rem] text-[11px]'
-                                      : 'max-w-[5rem] text-xs'
-                                } truncate font-semibold text-foreground`
-                          }
+                              ? 'text-[0.78rem] sm:text-[0.82rem] line-clamp-2 px-1 text-[#2d211e]'
+                              : isInlineCompact
+                                ? 'text-[10px] line-clamp-1'
+                                : isCompact
+                                  ? 'text-[11px] line-clamp-2 px-0.5'
+                                  : 'text-xs line-clamp-2 px-1'
+                          } ${
+                            isSelected
+                              ? isKhemetLuxeElessi
+                                ? 'font-black text-[#1f4737]'
+                                : 'font-black text-primary'
+                              : 'font-semibold text-foreground/90 group-hover:text-foreground'
+                          }`}
+                          title={option}
                         >
                           {option}
                         </span>
@@ -1033,16 +1085,16 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                                   ? 'bg-[#1a3328] border-[#1a3328] text-white'
                                   : 'bg-transparent border-[#e9ebe5] text-[#1a3328]/40 hover:border-[#1a3328]/30'
                               }`
-                          : `rounded-[var(--radius)] border transition-all duration-200 ${
+                          : `rounded-xl border transition-all duration-200 flex items-center justify-center ${
                               isInlineCompact
-                                ? 'min-h-[2.65rem] w-full px-0 py-2 text-[12px] font-black'
+                                ? 'min-h-[2.4rem] w-full px-1 py-1.5 text-[11px] font-black'
                                 : isCompact
-                                  ? 'min-w-[2.6rem] px-3 py-1.5 text-xs font-semibold'
-                                : 'min-w-[3rem] px-4 py-2 text-sm font-medium'
+                                  ? 'min-h-[2.5rem] px-2.5 py-1.5 text-xs font-bold'
+                                  : 'min-h-[2.75rem] px-3.5 py-2 text-sm font-bold'
                             } ${
                               isSelected
-                                ? 'bg-primary border-primary shadow-sm'
-                                : 'bg-background text-foreground border-border hover:border-muted-foreground'
+                                ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+                                : 'bg-background text-foreground border-border/80 hover:border-primary/50 hover:bg-muted/30'
                             }`
                       }
                       style={
