@@ -1,0 +1,94 @@
+# توثيق الربط البرمجي الكامل مع شركة الشحن كيو بي إكسبريس (QP Express)
+**تاريخ التوثيق:** 2026-09-05  
+**النطاق:** إدارة الطلبات والشحن (Orders & Shipping Infrastructure)
+
+---
+
+## 1. نظرة عامة (Overview)
+تم إضافة مزود شحن مباشر جديد إلى منصة MaxP وهو **كيو بي إكسبريس (QP Express)**، ليعمل جنباً إلى جنب مع مزودي الشحن الحاليين (Turbo, Bosta, Mylerz).
+
+حساب التعاقد المعتمد:
+* **اسم الحساب:** أميرال
+* **كود العميل (Customer ID):** `8002`
+* **المستخدم (Username):** `ArJk@Qpx`
+* **الرابط البرمجي الأساسي (Base API URL):** `https://qpxpress.com:8001`
+* **بوابة التتبع والعملاء (Web Portal):** `https://qpxpress.com`
+
+---
+
+## 2. المكونات والخدمات المضافة في الباك إند (Backend Services)
+
+### 2.1 عميل الاتصال بالمصادقة التلقائية (`services/qpExpress/qpExpressApiClient.js`)
+* اتصال آمن ببروتوكول HTTPS مع التعامل المرن مع شهادات الأمان (TLS Agent).
+* توليد واستخراج رمز `JWT Bearer Token` تلقائياً عبر نقطة النهاية `/api/token/`.
+* نظام كاش محلي للتوكن مع آلية التجديد التلقائي وإعادة المحاولة التلقائية عند انتهاء الجلسة (`401 Unauthorized Retry`).
+
+### 2.2 محرك مطابقة المدن والمحافظات (`services/qpExpress/qpExpressCityMapper.js`)
+* تغطية كاملة لـ 29 محافظة ومدينة مصرية رئيسية.
+* دعم المطابقة الذكية للأسماء باللغتين العربية والإنجليزية، والأسماء الدارجة (مثل سموحة، المنصورة، طنطا، الغردقة، المعادي، الدقي، الهرم، إلخ) وربطها بأكواد كيو بي إكسبريس الرقمية.
+
+### 2.3 خدمة إعداد وإنشاء الشحنات (`services/qpExpress/qpExpressShipmentService.js`)
+* تنسيق بضائع ومحتويات الطلب وتلخيصها للبوليصة.
+* تنقية وتنسيق أرقام الهواتف المحمولة المصرية (`01XXXXXXXXX`).
+* إرسال الطلبات إلى نقطة النهاية `/addorders/order/` بالصيغة الزمنية المتوافقة مع سيرفر جانجو (`ISO 8601`).
+
+### 2.4 خدمة التتبع المباشر وتفكيك البيانات (`services/qpExpress/qpExpressTrackingService.js`)
+* استعلام لحظي عن بوالص الشحن عبر `/addorders/fastorderlist`.
+* استخراج بيانات كابتن التوصيل (`shipper` + `shipper_phone`).
+* استخراج ملاحظة حالة الشحنة الميدانية المكتوبة من الكابتن (`StatusNote`).
+* توحيد حالات الشحن لتتوافق مع معايير MaxP (`CREATED`, `IN_TRANSIT`, `DELIVERED`, `RETURNED`, `CANCELLED`).
+
+### 2.5 واجهة الخدمات الموحدة (`services/qpExpressService.js`)
+* توفير دوال موحدة:
+  - `createShipment(orderData)`
+  - `bulkCreateShipments(ordersList)`
+  - `trackShipment(serial)`
+  - `cancelShipment(serialOrArray)` عبر `/addorders/order_bulk_delete`
+  - `getPricingList()` و `calculateShippingFee(cityName)`
+  - `getCustomerInfo()` و `getRecentOrders()`
+
+### 2.6 وحدة التحكم والمسارات (`controller/qpExpressController.js` & `routes/qpExpressRoutes.js`)
+* المسارات المتاحة تحت البادئة `/api/v1/qp-express`:
+  - `POST /orders/:orderId/shipment`
+  - `POST /bulk/create-shipments`
+  - `GET /track/:trackingNumber`
+  - `POST /cancel`
+  - `GET /cities`
+  - `GET /pricing`
+  - `GET /account`
+  - `GET /recent-orders`
+  - `GET /waybill/:trackingNumber` (طباعة بوليصة ستيكر حراري 80×50 مم)
+  - `GET & POST /bulk/print-waybills` (طباعة مجمعة لبوالص الشحن الحرارية)
+
+### 2.7 المزامنة التلقائية بالخلفية (`cron/qpExpressSyncCron.js`)
+* مهمة مجدولة تعمل كل 30 دقيقة.
+* مسح الشحنات النشطة التي تحمل ناقل `QP_EXPRESS`.
+* تحديث حالات الشحنات والطلبات تلقائياً إلى `DELIVERED` أو `RETURNED` فور حدوثها في السيرفر دون أي تدخل يدوي.
+
+### 2.8 التكامل مع المزود العام (`services/shippingProviderService.js`)
+* إضافة المفتاح البرمجي `QP_EXPRESS` ضمن المزودين الرسميين.
+* توجيه عمليات الإنشاء والتتبع والإلغاء تلقائياً بناءً على إعدادات شركة الشحن.
+
+---
+
+## 3. تعديلات الواجهة الأمامية (Frontend Components)
+
+### 3.1 بطاقة الشحن الموحدة (`UnifiedShippingCard.tsx`)
+* إضافة تبويب كيو بي إكسبريس المباشر مع حقل مخصص لملاحظات المعاينة والتسليم.
+* إظهار تفاصيل الناقل والمندوب (الاسم، الهاتف مع زر الاتصال السريع `tel:`).
+* إظهار بنر تنبيه بلون مميز يعرض الملاحظات الميدانية للكابتن (`StatusNote`).
+* زر مخصص لطباعة ستيكر البوليصة الحراري بمقاس 80×50 مم مع الباركود الرسمي.
+* زر المزامنة اللحظية مع السيرفر وزر فتح البوابة الرسمية لكيو بي إكسبريس.
+
+### 3.2 شريط العمليات المجمعة (`BulkActionBar.tsx` & `Orders.tsx`)
+* إضافة زر **"شحن QP Express"** لإسناد الشحنات المحددة دفعة واحدة إلى كيو بي إكسبريس.
+* ربط الإجراء مع لوحة الأوامر السريعة (Command Palette `bulk-qpexpress`).
+
+### 3.3 صفحة شركات الشحن (`ShippingCompanies.tsx`)
+* إتاحة اختيار مزود `QP_EXPRESS` وتفعيل النمط الحي `LIVE` مباشرة.
+
+---
+
+## 4. الفحص والاعتماد (Verification & Tests)
+* اجتياز اختبارات Jest بالكامل بنسبة 100% في `tests/services/qpExpressService.test.js`.
+* تنفيذ اختبار التدفق الشامل الحقيقي بنجاح وإصدار بوالص مسجلة فعلياً على السيرفر الحي لشركة كيو بي إكسبريس.

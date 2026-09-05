@@ -5,6 +5,7 @@ const verifyToken = require('../utils/verifyToken');
 const shippingProviderService = require('../services/shippingProviderService');
 const TurboService = require('../services/turboService');
 const BostaService = require('../services/bostaService');
+const QpExpressService = require('../services/qpExpressService');
 
 // GET /api/v1/shipments - List all shipments with multi-carrier filters & pagination
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
@@ -323,6 +324,27 @@ router.post('/:id/sync', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
+    // QP Express Live Sync
+    if ((providerKey === 'QP_EXPRESS' || providerKey === 'QPEXPRESS') && shipment.trackingNumber) {
+      const qpService = new QpExpressService({}, companyId);
+      const tracking = await qpService.trackShipment(shipment.trackingNumber);
+
+      if (tracking?.found) {
+        await prisma.shipment.update({
+          where: { id: shipment.id },
+          data: {
+            status: tracking.status,
+            metadata: JSON.stringify({
+              ...shippingProviderService.safeJsonParse(shipment.metadata, {}),
+              lastLiveSync: new Date().toISOString(),
+              liveStatus: tracking,
+            }),
+          },
+        });
+        return res.json({ success: true, tracking, message: 'تمت المزامنة مع QP Express بنجاح' });
+      }
+    }
+
     res.json({
       success: true,
       message: 'تم فحص الشحنة (لا يدعم هذا المزود المزامنة الحية المباشرة)',
@@ -357,6 +379,9 @@ router.post('/:id/cancel', verifyToken.authenticateToken, async (req, res) => {
       const turboApiKey = shipment.shippingCompany?.apiKey || company?.turboApiKey;
       const turboService = new TurboService(turboApiKey, companyId);
       await turboService.cancelShipment(shipment.trackingNumber, reason || 'Cancelled by admin');
+    } else if ((providerKey === 'QP_EXPRESS' || shipment.carrierType === 'QP_EXPRESS') && shipment.trackingNumber) {
+      const qpService = new QpExpressService({}, companyId);
+      await qpService.cancelShipment(shipment.trackingNumber);
     }
 
     const updated = await prisma.shipment.update({

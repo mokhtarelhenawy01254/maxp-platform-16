@@ -2342,6 +2342,39 @@ const Orders: React.FC = () => {
     }
   };
 
+  const handleBulkCreateQpExpressShipments = async () => {
+    if (
+      !window.confirm(
+        `هل تريد تأكيد إرسال ${selectedOrders.length} طلب إلى شركة كيو بي إكسبريس (QP Express) وتوليد البوالص آلياً؟`
+      )
+    )
+      return;
+
+    try {
+      setBulkProcessing(true);
+      const response: any = await apiClient.post("/qp-express/bulk/create-shipments", {
+        orderIds: selectedOrders,
+      });
+
+      if (response.data?.success) {
+        const { success, failed, skipped } = response.data.data;
+        let message = `تم إنشاء ${success} بوليصة شحن لدى QP Express بنجاح`;
+        if (failed > 0) message += `\nفشل: ${failed}`;
+        if (skipped > 0) message += `\nتم تخطيها (مشحونة مسبقاً): ${skipped}`;
+        alert(message);
+        setSelectedOrders([]);
+        await fetchOrders();
+      } else {
+        alert(response.data?.error || "تعذر الشحن الجماعي لدى QP Express");
+      }
+    } catch (error: unknown) {
+      console.error("Error bulk creating QP Express shipments:", error);
+      alert(getApiErrorMessage(error, "فشل إنشاء شحنات QP Express المجمعة"));
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
   const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
     const display = getOrderStatusDisplay(order);
     const customStyle = getStatusBadgeStyle(order.status || "");
@@ -2790,6 +2823,7 @@ const Orders: React.FC = () => {
           onStatusChange={handleBulkStatusUpdate}
           onPrintInvoices={handleBulkPrintInvoices}
           onCreateTurboShipments={handleBulkCreateTurboShipments}
+          onCreateQpExpressShipments={handleBulkCreateQpExpressShipments}
           onDelete={handleBulkDelete}
         />
       )}
@@ -2812,6 +2846,12 @@ const Orders: React.FC = () => {
             group: "bulk",
             label: t("orders.palette.bulkCreateTurboAll"),
             onSelect: () => handleBulkCreateTurboShipments(),
+          },
+          {
+            id: "bulk-qpexpress",
+            group: "bulk",
+            label: "شحن الطلبات المحددة عبر كيو بي إكسبريس (QP Express)",
+            onSelect: () => handleBulkCreateQpExpressShipments(),
           },
           {
             id: "bulk-delete",

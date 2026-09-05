@@ -11,6 +11,10 @@ import {
   ArrowTopRightOnSquareIcon,
   ExclamationCircleIcon,
   PaperAirplaneIcon,
+  PhoneIcon,
+  UserIcon,
+  ChatBubbleBottomCenterTextIcon,
+  BoltIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../../services/apiClient";
 import { useCurrency } from "../../../hooks/useCurrency";
@@ -39,9 +43,11 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
 
   const [companies, setCompanies] = useState<ShippingCompany[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+  const [courierMode, setCourierMode] = useState<"qp" | "api" | "manual">("qp");
   const [isManualCourier, setIsManualCourier] = useState(false);
   const [manualTracking, setManualTracking] = useState("");
   const [manualNotes, setManualNotes] = useState("");
+  const [qpNotes, setQpNotes] = useState("المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة");
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -57,14 +63,36 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     order?.metadata?.trackingNumber ||
     null;
 
+  const shipmentMeta = React.useMemo(() => {
+    const meta = shipment?.metadata || order?.metadata;
+    if (!meta) return {};
+    if (typeof meta === "object") return meta;
+    try {
+      return JSON.parse(meta);
+    } catch {
+      return {};
+    }
+  }, [shipment?.metadata, order?.metadata]);
+
+  const liveStatus = shipmentMeta?.liveStatus || shipmentMeta?.qpExpress || null;
+
   const existingCarrierName =
     shipment?.shippingCompany?.name ||
     order?.shippingCompany?.name ||
     order?.carrierType ||
+    (order?.shippingCarrier === "QP_EXPRESS" ? "QP Express" : null) ||
     (order?.turboTrackingNumber ? "Turbo" : null) ||
     "شركة الشحن";
 
+  const isQpExpress =
+    existingCarrierName?.toLowerCase().includes("qp") ||
+    existingCarrierName?.includes("كيو بي") ||
+    shipment?.carrierType === "QP_EXPRESS" ||
+    order?.shippingCarrier === "QP_EXPRESS" ||
+    Boolean(shipmentMeta?.orderSerial);
+
   const shipmentStatus =
+    liveStatus?.statusLabel ||
     shipment?.status ||
     order?.shipmentStatus ||
     order?.turboShipmentStatus ||
@@ -73,7 +101,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
   useEffect(() => {
     const fetchCompanies = async () => {
       try {
-        const res = await apiClient.get("/shipping-companies?all=true");
+        const res: any = await apiClient.get("/shipping-companies?all=true");
         if (res.data?.success && Array.isArray(res.data.data)) {
           const activeOnes = res.data.data.filter((c: ShippingCompany) => c.isActive);
           setCompanies(activeOnes);
@@ -95,7 +123,33 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     }
   };
 
-  // Dispatch / Create Shipment
+  // Dispatch via QP Express directly
+  const handleQpExpressDirectShipment = async () => {
+    if (!canManageShipments) {
+      toast.error("ليس لديك صلاحية إدارة الشحن");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res: any = await apiClient.post(`/qp-express/orders/${order.id}/shipment`, {
+        notes: qpNotes || "المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة",
+      });
+
+      if (res.data?.success) {
+        toast.success(res.data.message || "تم إنشاء بوليصة الشحن بنجاح لدى QP Express");
+        if (onOrderUpdated) onOrderUpdated();
+      } else {
+        toast.error(res.data?.error || "تعذر إنشاء الشحنة مع QP Express");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "حدث خطأ أثناء الشحن عبر QP Express");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Dispatch / Create Shipment via Registered Carrier
   const handleCreateShipment = async () => {
     if (!canManageShipments) {
       toast.error("ليس لديك صلاحية إدارة الشحن");
@@ -104,7 +158,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
 
     setLoading(true);
     try {
-      const res = await apiClient.post("/shipments/create", {
+      const res: any = await apiClient.post("/shipments/create", {
         orderId: order.id,
         shippingCompanyId: isManualCourier ? null : selectedCompanyId || null,
         trackingNumber: isManualCourier ? manualTracking : undefined,
@@ -126,36 +180,35 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
 
   // Sync Live Status
   const handleSyncStatus = async () => {
-    if (!shipment?.id) {
-      // Fallback for Turbo legacy if no shipment entity exists
-      if (order?.turboTrackingNumber) {
-        try {
-          setSyncing(true);
-          const res = await apiClient.post(`/turbo/sync-status/${order.id}`);
-          if (res.data?.success) {
-            toast.success("تمت مزامنة حالة شحنة تربو");
-            if (onOrderUpdated) onOrderUpdated();
-          }
-        } catch {
-          toast.error("فشلت المزامنة مع شركة الشحن");
-        } finally {
-          setSyncing(false);
-        }
-        return;
-      }
-      toast.error("لا توجد شحنة مسجلة للمزامنة");
-      return;
-    }
-
     setSyncing(true);
     try {
-      const res = await apiClient.post(`/shipments/${shipment.id}/sync`);
-      if (res.data?.success) {
-        toast.success(res.data.message || "تمت مزامنة حالة الشحنة بنجاح");
-        if (onOrderUpdated) onOrderUpdated();
-      } else {
-        toast.error(res.data?.error || "فشلت المزامنة");
+      if (shipment?.id) {
+        const res: any = await apiClient.post(`/shipments/${shipment.id}/sync`);
+        if (res.data?.success) {
+          toast.success(res.data.message || "تمت مزامنة حالة الشحنة بنجاح");
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        } else {
+          toast.error(res.data?.error || "فشلت المزامنة");
+        }
+      } else if (isQpExpress && existingTracking) {
+        const res: any = await apiClient.get(`/qp-express/track/${existingTracking}`);
+        if (res.data?.success) {
+          toast.success("تمت مزامنة حالة شحنة QP Express بنجاح");
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        } else {
+          toast.error(res.data?.error || "تعذر مزامنة الشحنة");
+        }
+      } else if (order?.turboTrackingNumber) {
+        const res: any = await apiClient.post(`/turbo/sync-status/${order.id}`);
+        if (res.data?.success) {
+          toast.success("تمت مزامنة حالة شحنة تربو");
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        }
       }
+      toast.error("لا توجد شحنة مسجلة للمزامنة");
     } catch (err: any) {
       toast.error(err?.response?.data?.error || "تعذر مزامنة الشحنة");
     } finally {
@@ -168,7 +221,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     setCancelling(true);
     try {
       if (shipment?.id) {
-        const res = await apiClient.post(`/shipments/${shipment.id}/cancel`, {
+        const res: any = await apiClient.post(`/shipments/${shipment.id}/cancel`, {
           reason: cancelReason,
         });
         if (res.data?.success) {
@@ -178,7 +231,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
           return;
         }
       } else if (order?.turboTrackingNumber) {
-        const res = await apiClient.post(`/turbo/cancel-shipment/${order.id}`, {
+        const res: any = await apiClient.post(`/turbo/cancel-shipment/${order.id}`, {
           reason: cancelReason,
         });
         if (res.data?.success) {
@@ -217,14 +270,14 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
 
         // First attempt: Update existing shipment in Turbo (PUT /api/turbo/orders/:orderId/shipment)
         try {
-          const updateRes = await apiClient.put(`/turbo/orders/${orderIdentifier}/shipment`);
+          const updateRes: any = await apiClient.put(`/turbo/orders/${orderIdentifier}/shipment`);
           if (updateRes.data?.success) {
             success = true;
             successMessage = updateRes.data.message || "تم تحديث وإعادة إرسال بيانات الشحنة لتربو بنجاح";
           }
         } catch (updateErr: any) {
           // If update fails (e.g. shipment was cancelled or needs recreation), try recreate (POST with replaceExisting: true)
-          const createRes = await apiClient.post(`/turbo/orders/${orderIdentifier}/shipment`, {
+          const createRes: any = await apiClient.post(`/turbo/orders/${orderIdentifier}/shipment`, {
             replaceExisting: true,
           });
           if (createRes.data?.success) {
@@ -241,7 +294,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
           return;
         }
       } else if (shipment?.id) {
-        const res = await apiClient.post(`/shipments/${shipment.id}/sync`);
+        const res: any = await apiClient.post(`/shipments/${shipment.id}/sync`);
         if (res.data?.success) {
           toast.success(res.data.message || "تم تحديث ومزامنة بيانات الشحنة بنجاح");
           if (onOrderUpdated) onOrderUpdated();
@@ -293,9 +346,16 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-gray-50 dark:bg-gray-900/60 rounded-lg border border-gray-100 dark:border-gray-700/60">
             <div>
               <p className="text-xs text-gray-500 dark:text-gray-400">شركة الشحن</p>
-              <p className="text-sm font-semibold text-gray-900 dark:text-white mt-0.5">
-                {existingCarrierName}
-              </p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {existingCarrierName}
+                </p>
+                {isQpExpress && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300">
+                    QP API
+                  </span>
+                )}
+              </div>
             </div>
 
             <div>
@@ -323,6 +383,52 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
             </div>
           </div>
 
+          {/* Driver & Delivery Field Details (QP Express / Integrated Couriers) */}
+          {(liveStatus?.driverName || liveStatus?.driverPhone || liveStatus?.statusNote) && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900/40">
+              {liveStatus.driverName && (
+                <div className="flex items-center gap-2">
+                  <UserIcon className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                  <div className="text-xs truncate">
+                    <span className="text-gray-500 dark:text-gray-400">المندوب: </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      {liveStatus.driverName}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {liveStatus.driverPhone && (
+                <div className="flex items-center gap-2">
+                  <PhoneIcon className="h-4 w-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <div className="text-xs">
+                    <span className="text-gray-500 dark:text-gray-400">هاتف المندوب: </span>
+                    <a
+                      href={`tel:${liveStatus.driverPhone}`}
+                      className="font-mono font-bold text-emerald-700 dark:text-emerald-400 hover:underline"
+                    >
+                      {liveStatus.driverPhone}
+                    </a>
+                  </div>
+                </div>
+              )}
+
+              {liveStatus.statusNote && (
+                <div className="sm:col-span-2 flex items-start gap-2 pt-1 border-t border-blue-100/60 dark:border-blue-900/30">
+                  <ChatBubbleBottomCenterTextIcon className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <div className="text-xs">
+                    <span className="font-semibold text-amber-800 dark:text-amber-300">
+                      ملاحظة المندوب الميدانية:{" "}
+                    </span>
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {liveStatus.statusNote}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Action Buttons for active shipment */}
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <button
@@ -343,8 +449,20 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
             >
               <ArrowPathIcon className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-              <span>مزامنة الحالة</span>
+              <span>مزامنة الحالة اللحظية</span>
             </button>
+
+            {isQpExpress && (
+              <a
+                href="https://qpxpress.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 text-indigo-500" />
+                <span>بوابة QP Express</span>
+              </a>
+            )}
 
             {shipment?.labelUrl && (
               <a
@@ -356,6 +474,22 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
                 <PrinterIcon className="h-3.5 w-3.5" />
                 <span>طباعة البوليصة AWB</span>
               </a>
+            )}
+
+            {isQpExpress && existingTracking && (
+              <button
+                type="button"
+                onClick={() => {
+                  const printUrl = `/api/v1/qp-express/waybill/${existingTracking}`;
+                  const w = window.open(printUrl, "_blank", "width=450,height=400");
+                  if (w) w.focus();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:bg-amber-100 transition shadow-sm"
+                title="طباعة ستيكر حراري (80×50 مم) مع الباركود"
+              >
+                <PrinterIcon className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                <span>طباعة ستيكر QP (80×50 مم)</span>
+              </button>
             )}
 
             <button
@@ -371,88 +505,171 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
       ) : (
         /* Case 2: Order NOT shipped yet - Select courier and dispatch */
         <div className="space-y-4">
-          <div className="flex items-center gap-4 text-xs font-medium text-gray-700 dark:text-gray-300">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="courierMode"
-                checked={!isManualCourier}
-                onChange={() => setIsManualCourier(false)}
-                className="text-indigo-600 focus:ring-indigo-500"
-              />
-              <span>شحن آلي عبر الربط (API Courier)</span>
-            </label>
+          <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs font-medium">
+            <button
+              type="button"
+              onClick={() => {
+                setCourierMode("qp");
+                setIsManualCourier(false);
+              }}
+              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
+                courierMode === "qp"
+                  ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+              }`}
+            >
+              <BoltIcon className="h-3.5 w-3.5 text-amber-500" />
+              <span>كيو بي إكسبريس (QP Express)</span>
+            </button>
 
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="courierMode"
-                checked={isManualCourier}
-                onChange={() => setIsManualCourier(true)}
-                className="text-indigo-600 focus:ring-indigo-500"
-              />
-              <span>شحن يدوي / مندوب خاص</span>
-            </label>
+            <button
+              type="button"
+              onClick={() => {
+                setCourierMode("api");
+                setIsManualCourier(false);
+              }}
+              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
+                courierMode === "api"
+                  ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+              }`}
+            >
+              <TruckIcon className="h-3.5 w-3.5" />
+              <span>الشركات المسجلة (API)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCourierMode("manual");
+                setIsManualCourier(true);
+              }}
+              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
+                courierMode === "manual"
+                  ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+              }`}
+            >
+              <UserIcon className="h-3.5 w-3.5" />
+              <span>شحن يدوي / خاص</span>
+            </button>
           </div>
 
-          {!isManualCourier ? (
-            <div>
-              <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                اختر شركة الشحن
-              </label>
-              <select
-                value={selectedCompanyId}
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
-              >
-                {companies.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} {c.integrationMode ? `(${c.integrationMode})` : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  رقم البوليصة أو التتبع (اختياري)
-                </label>
-                <input
-                  type="text"
-                  placeholder="مثال: EXP-982341"
-                  value={manualTracking}
-                  onChange={(e) => setManualTracking(e.target.value)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
-                />
+          {/* 1. QP Express Direct Mode */}
+          {courierMode === "qp" && (
+            <div className="p-3.5 rounded-lg border border-indigo-100 dark:border-indigo-950/60 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-indigo-900 dark:text-indigo-300">
+                  إرسال فوري إلى شركة كيو بي إكسبريس (حساب أميرال)
+                </span>
+                <span className="text-[11px] text-gray-500 font-mono">Customer ID: 8002</span>
               </div>
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  اسم المندوب أو ملاحظات التسليم
+                  ملاحظات المعاينة والتسليم للمندوب:
                 </label>
                 <input
                   type="text"
-                  placeholder="اسم المندوب ورقم هاتفه"
-                  value={manualNotes}
-                  onChange={(e) => setManualNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                  value={qpNotes}
+                  onChange={(e) => setQpNotes(e.target.value)}
+                  placeholder="مثال: المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة"
+                  className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                 />
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleQpExpressDirectShipment}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center gap-2"
+                >
+                  <PaperAirplaneIcon className="h-4 w-4 rotate-180" />
+                  <span>{loading ? "جاري الإرسال وتوليد البوليصة..." : "إرسال إلى كيو بي إكسبريس وتوليد البوليصة"}</span>
+                </button>
               </div>
             </div>
           )}
 
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={handleCreateShipment}
-              disabled={loading || (!isManualCourier && !selectedCompanyId)}
-              className="w-full sm:w-auto px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center gap-2"
-            >
-              <TruckIcon className="h-4 w-4" />
-              <span>{loading ? "جاري إنشاء الشحنة..." : "إنشاء الشحنة وتسليم للشركة"}</span>
-            </button>
-          </div>
+          {/* 2. Registered API Companies */}
+          {courierMode === "api" && (
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  اختر شركة الشحن
+                </label>
+                <select
+                  value={selectedCompanyId}
+                  onChange={(e) => setSelectedCompanyId(e.target.value)}
+                  className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                >
+                  {companies.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.integrationMode ? `(${c.integrationMode})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleCreateShipment}
+                  disabled={loading || !selectedCompanyId}
+                  className="w-full sm:w-auto px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center gap-2"
+                >
+                  <TruckIcon className="h-4 w-4" />
+                  <span>{loading ? "جاري إنشاء الشحنة..." : "إنشاء الشحنة وتسليم للشركة"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Manual Courier */}
+          {courierMode === "manual" && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    رقم البوليصة أو التتبع (اختياري)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: EXP-982341"
+                    value={manualTracking}
+                    onChange={(e) => setManualTracking(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    اسم المندوب أو ملاحظات التسليم
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="اسم المندوب ورقم هاتفه"
+                    value={manualNotes}
+                    onChange={(e) => setManualNotes(e.target.value)}
+                    className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleCreateShipment}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center gap-2"
+                >
+                  <TruckIcon className="h-4 w-4" />
+                  <span>{loading ? "جاري حفظ الشحنة..." : "حفظ بيانات الشحن اليدوي"}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

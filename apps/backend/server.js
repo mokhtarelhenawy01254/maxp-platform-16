@@ -379,6 +379,7 @@ const userbotRoutes = require("./routes/userbotRoutes");
 const textGalleryRoutes = require("./routes/textGalleryRoutes");
 const turboRoutes = require("./routes/turboRoutes");
 const bostaRoutes = require("./routes/bostaRoutes");
+const qpExpressRoutes = require("./routes/qpExpressRoutes");
 const shippingCompaniesRoutes = require("./routes/shippingCompaniesRoutes");
 const shipmentsRoutes = require("./routes/shipmentsRoutes");
 const shippingSettlementRoutes = require("./routes/shippingSettlementRoutes");
@@ -905,6 +906,7 @@ app.use("/api/v1/import-jobs", importJobRoutes);
 app.use("/api/v1/woocommerce", wooCommerceRoutes);
 app.use("/api/v1/turbo", turboRoutes);
 app.use("/api/v1/bosta", bostaRoutes);
+app.use("/api/v1/qp-express", qpExpressRoutes);
 
 // Professional Tools
 app.use("/api/v1/appointments", appointmentsRoutes);
@@ -1337,6 +1339,15 @@ try {
   console.log("✅ [TRIAL-EXPIRY-CRON] Trial expiry cron started (runs every 30 min)");
 } catch (error) {
   console.error("❌ [TRIAL-EXPIRY-CRON] Failed to start trial expiry cron:", error);
+}
+
+// Start QP Express automated background status sync cron
+try {
+  const { startQpExpressSyncCron } = require("./cron/qpExpressSyncCron");
+  startQpExpressSyncCron();
+  console.log("✅ [QP-EXPRESS-CRON] QP Express background sync cron started (runs every 30 min)");
+} catch (error) {
+  console.error("❌ [QP-EXPRESS-CRON] Failed to start QP Express sync cron:", error);
 }
 
 // Start Auto-Discount voucher expiry conversion cron

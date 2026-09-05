@@ -1,11 +1,13 @@
 const crypto = require('crypto');
 const TurboService = require('./turboService');
 const BostaService = require('./bostaService');
+const QpExpressService = require('./qpExpressService');
 
 const PROVIDER_KEYS = Object.freeze({
   MANUAL: 'MANUAL',
   TURBO: 'TURBO',
   BOSTA: 'BOSTA',
+  QP_EXPRESS: 'QP_EXPRESS',
   BOSTA_DEMO: 'BOSTA_DEMO',
   MYLERZ_DEMO: 'MYLERZ_DEMO',
   ARAMEX_DEMO: 'ARAMEX_DEMO',
@@ -75,6 +77,9 @@ const normalizeProviderKey = (value, carrier = {}) => {
   if (text.includes('bosta') || text.includes('بوستا')) {
     const mode = String(carrier.integrationMode || '').toUpperCase();
     return mode === 'LIVE' ? PROVIDER_KEYS.BOSTA : PROVIDER_KEYS.BOSTA_DEMO;
+  }
+  if (text.includes('qp') || text.includes('كيو بي') || text.includes('qpxpress') || text.includes('كيو_بي')) {
+    return PROVIDER_KEYS.QP_EXPRESS;
   }
   if (text.includes('mylerz') || text.includes('مايلرز')) return PROVIDER_KEYS.MYLERZ_DEMO;
   if (text.includes('aramex') || text.includes('ارامكس') || text.includes('أرامكس')) {
@@ -342,6 +347,56 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
         success: false,
         skipped: true,
         reason: `BOSTA_API_ERROR: ${error.message}`,
+        serviceLevel: provider.serviceLevel,
+      });
+    }
+  }
+
+  if (providerKey === PROVIDER_KEYS.QP_EXPRESS && integrationMode === 'LIVE') {
+    if (!options.allowLiveCreate) {
+      return updateShipmentFromProviderResult(prisma, shipment, provider, {
+        success: false,
+        skipped: true,
+        reason: 'LIVE_CREATE_REQUIRES_EXPLICIT_CONFIRMATION',
+        serviceLevel: provider.serviceLevel,
+      });
+    }
+
+    const qpService = new QpExpressService({
+      username: settings.username || shipment.shippingCompany?.apiKey,
+      password: settings.password,
+      customerId: settings.customerId || 8002,
+    }, shipment.companyId);
+
+    const orderData = {
+      orderId: shipment.order?.id,
+      orderNumber: shipment.order?.orderNumber || String(shipment.order?.id),
+      customerName: shipment.order?.customerName || shipment.order?.customer?.name || 'عميل',
+      customerPhone: shipment.order?.customerPhone || shipment.order?.customer?.phone,
+      shippingAddress: shipment.destinationAddress || shipment.order?.address,
+      city: shipment.destinationGovernorate || shipment.destinationCity || shipment.order?.city,
+      items: shipment.order?.orderItems || [],
+      totalAmount: shipment.order?.totalAmount || 0,
+      notes: shipment.order?.notes || '',
+    };
+
+    try {
+      const result = await qpService.createShipment(orderData);
+      return updateShipmentFromProviderResult(prisma, shipment, provider, {
+        success: true,
+        status: 'CREATED',
+        externalShipmentId: String(result.serial),
+        trackingNumber: result.trackingNumber,
+        labelUrl: null,
+        serviceLevel: provider.serviceLevel,
+        cost: Number(result.totalFees || 0),
+        data: result,
+      });
+    } catch (error) {
+      return updateShipmentFromProviderResult(prisma, shipment, provider, {
+        success: false,
+        skipped: true,
+        reason: `QP_EXPRESS_API_ERROR: ${error.message}`,
         serviceLevel: provider.serviceLevel,
       });
     }

@@ -92,7 +92,7 @@ const ShippingCompanies: React.FC = () => {
       if (statusFilter !== "all") params.status = statusFilter;
       if (modeFilter !== "ALL") params.integrationMode = modeFilter;
 
-      const res = await apiClient.get("/shipping-companies", { params });
+      const res: any = await apiClient.get("/shipping-companies", { params });
       if (res.data?.success) {
         setCompanies(res.data.data || []);
       }
@@ -114,7 +114,7 @@ const ShippingCompanies: React.FC = () => {
     setTogglingId(company.id);
     const newStatus = !company.isActive;
     try {
-      const res = await apiClient.patch(`/shipping-companies/${company.id}/toggle`, {
+      const res: any = await apiClient.patch(`/shipping-companies/${company.id}/toggle`, {
         isActive: newStatus,
       });
       if (res.data?.success) {
@@ -140,7 +140,7 @@ const ShippingCompanies: React.FC = () => {
   const handleTestConnection = async (companyId: string) => {
     setTestingConnection(true);
     try {
-      const res = await apiClient.post(`/shipping-companies/${companyId}/test-connection`);
+      const res: any = await apiClient.post(`/shipping-companies/${companyId}/test-connection`);
       if (res.data?.success) {
         toast.success(res.data.message || "الاتصال ناجح ومكتمل");
       } else {
@@ -217,7 +217,7 @@ const ShippingCompanies: React.FC = () => {
     e.stopPropagation();
     if (confirm(`هل أنت متأكد من حذف شركة الشحن "${company.name}"؟`)) {
       try {
-        const res = await apiClient.delete(`/shipping-companies/${company.id}`);
+        const res: any = await apiClient.delete(`/shipping-companies/${company.id}`);
         if (res.data?.success) {
           toast.success("تم حذف شركة الشحن بنجاح");
           fetchCompanies();
@@ -233,7 +233,7 @@ const ShippingCompanies: React.FC = () => {
   const handleEnsureDemoCarriers = async () => {
     setCreatingDemo(true);
     try {
-      const res = await apiClient.post("/shipping-companies/demo-carriers");
+      const res: any = await apiClient.post("/shipping-companies/demo-carriers");
       if (res.data?.success) {
         toast.success("تم تجهيز شركات الشحن التجريبية بنجاح");
         fetchCompanies();
@@ -627,12 +627,15 @@ const ShippingCompanies: React.FC = () => {
                           ? "DEMO"
                           : providerKey === "MANUAL"
                           ? "MANUAL"
+                          : providerKey === "QP_EXPRESS"
+                          ? "LIVE"
                           : formData.integrationMode,
                       });
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                   >
                     <option value="MANUAL">أسطول يدوي / مندوب خاص (Manual)</option>
+                    <option value="QP_EXPRESS">كيو بي إكسبريس (QP Express)</option>
                     <option value="TURBO">تربو (Turbo Courier)</option>
                     <option value="BOSTA">بوستا (Bosta Courier)</option>
                     <option value="ARAMEX_DEMO">أرامكس (Aramex Demo)</option>

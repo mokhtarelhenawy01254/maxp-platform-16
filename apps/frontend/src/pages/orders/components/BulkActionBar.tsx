@@ -7,6 +7,7 @@ import {
   RocketLaunchIcon,
   TrashIcon,
   ArrowPathIcon,
+  TruckIcon,
 } from "@heroicons/react/24/outline";
 import { Button } from "@/components/ui/button";
 
@@ -34,6 +35,8 @@ export interface BulkActionBarProps {
   onPrintInvoices: () => void;
   /** Create Turbo shipments for the whole selection. */
   onCreateTurboShipments: () => void;
+  /** Create QP Express shipments for the whole selection. */
+  onCreateQpExpressShipments?: () => void;
   /** Soft-delete the selection (or hard-delete when in trash view). */
   onDelete: () => void;
 }
@@ -48,6 +51,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
   onStatusChange,
   onPrintInvoices,
   onCreateTurboShipments,
+  onCreateQpExpressShipments,
   onDelete,
 }) => {
   const { t } = useTranslation();
@@ -136,6 +140,20 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           >
             <RocketLaunchIcon className="h-4 w-4" />
             {busy ? t("orders.creating") : t("orders.createTurboShipments")}
+          </Button>
+        )}
+
+        {!isTrashView && onCreateQpExpressShipments && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onCreateQpExpressShipments}
+            disabled={busy}
+            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold border-indigo-200 text-indigo-700 hover:bg-indigo-50 dark:border-indigo-800 dark:text-indigo-300 dark:hover:bg-indigo-950/40"
+          >
+            <TruckIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            {busy ? "جاري الشحن..." : "شحن QP Express"}
           </Button>
         )}
 
