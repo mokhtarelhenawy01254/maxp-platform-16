@@ -60,7 +60,8 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
           order: {
             OR: [
               { orderNumber: { contains: q, mode: 'insensitive' } },
-              { customer: { name: { contains: q, mode: 'insensitive' } } },
+              { customer: { firstName: { contains: q, mode: 'insensitive' } } },
+              { customer: { lastName: { contains: q, mode: 'insensitive' } } },
               { customer: { phone: { contains: q, mode: 'insensitive' } } },
             ],
           },
@@ -96,7 +97,8 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
               customer: {
                 select: {
                   id: true,
-                  name: true,
+                  firstName: true,
+                  lastName: true,
                   phone: true,
                 },
               },
@@ -156,9 +158,25 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       statusCounts,
     };
 
+    const formattedShipments = shipments.map((s) => {
+      const cust = s.order?.customer;
+      const customerName = cust
+        ? [cust.firstName, cust.lastName].filter(Boolean).join(' ') || 'عميل'
+        : 'عميل';
+      return {
+        ...s,
+        order: s.order
+          ? {
+              ...s.order,
+              customer: cust ? { ...cust, name: customerName } : null,
+            }
+          : null,
+      };
+    });
+
     res.json({
       success: true,
-      data: shipments,
+      data: formattedShipments,
       pagination: {
         total,
         page: pageNum,

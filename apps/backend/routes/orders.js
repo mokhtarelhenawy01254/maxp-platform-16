@@ -5227,6 +5227,14 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             createdAt: 'desc'
           }
         },
+        shipments: {
+          include: {
+            shippingCompany: true
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        },
         ...buildScopedMerchantOrderInclude(merchant)
       }
     });

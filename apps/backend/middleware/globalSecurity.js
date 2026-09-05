@@ -817,9 +817,11 @@ const globalAuthentication = async (req, res, next) => {
     const token = (authHeader && authHeader.startsWith('Bearer '))
       ? authHeader.substring(7)
       : req.cookies?.token ||
-        // model-viewer fetches /dental-lab/files/<name> without an Authorization
-        // header, so allow the access token via query param — ONLY for this route.
-        (path.startsWith('/api/v1/dental-lab/files/') ? (req.query.token || null) : null);
+        // model-viewer fetches /dental-lab/files/<name> and thermal waybills open in new tabs without an Authorization
+        // header, so allow the access token via query param for these specific routes.
+        (path.startsWith('/api/v1/dental-lab/files/') || path.includes('/waybill') || path.includes('/qp-express/waybill') || path.includes('/bosta/waybill')
+          ? (req.query?.token || null)
+          : null);
 
     // 2. Storefront Guest Access
     const isIsolated = COMPANY_ISOLATED_ROUTES.some(ir => path.includes(ir.replace('*', '')));

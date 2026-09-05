@@ -247,8 +247,18 @@ const ShippingCompanies: React.FC = () => {
         apiKey: formData.apiKey || undefined,
       };
 
+      const resolvedIntegrationMode =
+        (formData.providerKey === "QP_EXPRESS" && (formData.username || formData.password))
+          ? "LIVE"
+          : (formData.providerKey === "BOSTA" && formData.apiKey)
+          ? "LIVE"
+          : (formData.providerKey === "TURBO" && formData.apiKey)
+          ? "LIVE"
+          : formData.integrationMode;
+
       const payload = {
         ...formData,
+        integrationMode: resolvedIntegrationMode,
         settings: JSON.stringify(settingsPayload),
       };
 

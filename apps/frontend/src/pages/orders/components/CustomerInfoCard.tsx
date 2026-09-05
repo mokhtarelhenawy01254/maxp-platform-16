@@ -450,7 +450,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
         </div>
         <div>
           <label className="text-sm font-medium text-gray-500 dark:text-gray-400 block mb-1">
-            {t("orderDetails.detailedAddress")}
+            {t("orderDetails.detailedAddress", "العنوان التفصيلي")}
           </label>
           {isEditing ? (
             <div className="space-y-2">
@@ -461,7 +461,7 @@ const CustomerInfoCard: React.FC<CustomerInfoCardProps> = ({
                 }
                 className="w-full border-gray-300 dark:border-gray-600 rounded-md text-sm dark:bg-gray-700 dark:text-gray-100 dark:placeholder-gray-400"
                 rows={3}
-                placeholder={t("orderDetails.addressPlaceholder").toString()}
+                placeholder={t("orderDetails.addressPlaceholder", "أدخل العنوان التفصيلي...").toString()}
               />
             </div>
           ) : (

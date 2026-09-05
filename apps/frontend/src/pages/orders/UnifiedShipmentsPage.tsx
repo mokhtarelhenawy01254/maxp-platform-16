@@ -18,6 +18,7 @@ import {
   BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
+import tokenManager from "../../utils/tokenManager";
 import { useCurrency } from "../../hooks/useCurrency";
 import { useDateFormat } from "../../hooks/useDateFormat";
 
@@ -547,7 +548,7 @@ const UnifiedShipmentsPage: React.FC = () => {
                           </button>
 
                           {/* Print Waybill */}
-                          {s.labelUrl && (
+                          {s.labelUrl ? (
                             <a
                               href={s.labelUrl}
                               target="_blank"
@@ -557,7 +558,21 @@ const UnifiedShipmentsPage: React.FC = () => {
                             >
                               <PrinterIcon className="h-4 w-4" />
                             </a>
-                          )}
+                          ) : (s.carrierType === "QP_EXPRESS" && s.trackingNumber) ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const token = tokenManager.getAccessToken();
+                                const url = `/api/v1/qp-express/waybill/${s.trackingNumber}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
+                                const w = window.open(url, "_blank", "width=450,height=400");
+                                if (w) w.focus();
+                              }}
+                              className="p-1.5 text-amber-600 hover:text-amber-700 dark:text-amber-400 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/30 transition"
+                              title="طباعة ستيكر QP (80×50 مم)"
+                            >
+                              <PrinterIcon className="h-4 w-4" />
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>

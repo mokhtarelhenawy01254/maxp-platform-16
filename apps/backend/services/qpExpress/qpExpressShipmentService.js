@@ -127,6 +127,7 @@ class QpExpressShipmentService {
     return {
       success: true,
       serial: result.serial,
+      orderSerial: result.serial,
       trackingNumber: String(result.serial),
       orderDeliveryStatus: result.Order_Delivery_Status,
       totalAmount: result.total_amount,

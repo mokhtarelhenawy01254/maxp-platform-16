@@ -17,6 +17,7 @@ import {
   BoltIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../../services/apiClient";
+import tokenManager from "../../../utils/tokenManager";
 import { useCurrency } from "../../../hooks/useCurrency";
 
 interface ShippingCompany {
@@ -77,32 +78,48 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
 
   const liveStatus = shipmentMeta?.liveStatus || shipmentMeta?.qpExpress || null;
 
+  const isQpExpress =
+    shipment?.carrierType === "QP_EXPRESS" ||
+    order?.shippingCarrier === "QP_EXPRESS" ||
+    order?.carrierType === "QP_EXPRESS" ||
+    shipmentMeta?.shippingCarrier === "QP_EXPRESS" ||
+    shipmentMeta?.carrier === "QP_EXPRESS" ||
+    Boolean(shipmentMeta?.qpExpress) ||
+    Boolean(shipmentMeta?.orderSerial) ||
+    Boolean(shipment?.shippingCompany?.providerKey === "QP_EXPRESS") ||
+    shipment?.shippingCompany?.name?.toLowerCase().includes("qp") ||
+    shipment?.shippingCompany?.name?.includes("كيو بي") ||
+    order?.shippingCompany?.name?.toLowerCase().includes("qp") ||
+    order?.shippingCompany?.name?.includes("كيو بي");
+
+  const isBosta =
+    shipment?.carrierType === "BOSTA" ||
+    order?.shippingCarrier === "BOSTA" ||
+    order?.carrierType === "BOSTA" ||
+    shipmentMeta?.shippingCarrier === "BOSTA" ||
+    shipmentMeta?.carrier === "BOSTA" ||
+    Boolean(shipmentMeta?.bostaDeliveryId || (shipment?.carrierType === "BOSTA" && shipment?.externalShipmentId)) ||
+    Boolean(shipment?.shippingCompany?.providerKey === "BOSTA") ||
+    shipment?.shippingCompany?.name?.toLowerCase().includes("bosta") ||
+    shipment?.shippingCompany?.name?.includes("بوستا") ||
+    order?.shippingCompany?.name?.toLowerCase().includes("bosta") ||
+    order?.shippingCompany?.name?.includes("بوستا");
+
+  const isTurbo =
+    order?.carrierType === "TURBO" ||
+    shipment?.carrierType === "TURBO" ||
+    shipmentMeta?.carrier === "TURBO" ||
+    Boolean(order?.turboTrackingNumber || order?.turboShipmentId);
+
   const existingCarrierName =
     shipment?.shippingCompany?.name ||
     order?.shippingCompany?.name ||
-    order?.carrierType ||
-    (order?.shippingCarrier === "QP_EXPRESS" ? "QP Express" : null) ||
-    (order?.shippingCarrier === "BOSTA" ? "Bosta" : null) ||
-    (order?.turboTrackingNumber ? "Turbo" : null) ||
+    (isQpExpress ? "كيو بي إكسبريس (QP Express)" : null) ||
+    (isBosta ? "بوسطة (Bosta)" : null) ||
+    (isTurbo ? "تربو (Turbo)" : null) ||
+    (order?.carrierType && order.carrierType !== "MANUAL" ? order.carrierType : null) ||
+    (shipment?.carrierType && shipment.carrierType !== "MANUAL" ? shipment.carrierType : null) ||
     "شركة الشحن";
-
-  const isQpExpress =
-    existingCarrierName?.toLowerCase().includes("qp") ||
-    existingCarrierName?.includes("كيو بي") ||
-    shipment?.carrierType === "QP_EXPRESS" ||
-    order?.shippingCarrier === "QP_EXPRESS" ||
-    Boolean(shipmentMeta?.orderSerial);
-
-  const isBosta =
-    existingCarrierName?.toLowerCase().includes("bosta") ||
-    existingCarrierName?.includes("بوستا") ||
-    shipment?.carrierType === "BOSTA" ||
-    order?.shippingCarrier === "BOSTA" ||
-    Boolean(shipmentMeta?.bostaDeliveryId || (shipment?.carrierType === "BOSTA" && shipment?.externalShipmentId));
-
-  const isTurbo =
-    existingCarrierName?.toLowerCase().includes("turbo") ||
-    Boolean(order?.turboTrackingNumber || order?.turboShipmentId);
 
   const qpCompany = companies.find(
     (c) => c.providerKey === "QP_EXPRESS" || c.name?.toLowerCase().includes("qp") || c.name?.includes("كيو بي")
@@ -625,7 +642,8 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
               <button
                 type="button"
                 onClick={() => {
-                  const printUrl = `/api/v1/qp-express/waybill/${existingTracking}`;
+                  const token = tokenManager.getAccessToken();
+                  const printUrl = `/api/v1/qp-express/waybill/${existingTracking}${token ? `?token=${encodeURIComponent(token)}` : ""}`;
                   const w = window.open(printUrl, "_blank", "width=450,height=400");
                   if (w) w.focus();
                 }}

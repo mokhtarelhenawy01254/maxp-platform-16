@@ -145,7 +145,7 @@ const authenticateToken = async (req, res, next) => {
   console.log('🔐 [VERIFY-TOKEN] Headers:', req.headers.authorization ? 'Token present' : 'No token');
 
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(' ')[1];
+  const token = (authHeader && authHeader.split(' ')[1]) || req.query?.token;
 
   if (!token) {
     console.log('❌ [VERIFY-TOKEN] No token found in request');

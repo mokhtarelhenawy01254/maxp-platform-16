@@ -107,7 +107,7 @@ exports.createShipment = async (req, res) => {
                   cost: result.totalFees ? Number(result.totalFees) : undefined,
                   metadata: JSON.stringify({
                     carrier: 'QP_EXPRESS',
-                    orderSerial: result.orderSerial,
+                    orderSerial: result.orderSerial || result.serial || result.trackingNumber,
                     lastLiveSync: new Date().toISOString(),
                     liveStatus: result,
                   }),
@@ -129,7 +129,7 @@ exports.createShipment = async (req, res) => {
                   destinationAddress: order.address || null,
                   metadata: JSON.stringify({
                     carrier: 'QP_EXPRESS',
-                    orderSerial: result.orderSerial,
+                    orderSerial: result.orderSerial || result.serial || result.trackingNumber,
                     lastLiveSync: new Date().toISOString(),
                     liveStatus: result,
                   }),
@@ -310,7 +310,7 @@ exports.bulkCreateShipments = async (req, res) => {
           continue;
         }
 
-        const customerName = order.customerName || order.customer?.name || order.customer?.fullName || 'عميل';
+        const customerName = order.customerName || (order.customer ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() : null) || 'عميل';
         const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';
         const shippingAddress = order.shippingAddress || order.address || order.customer?.address || '';
         const city = order.city || order.governorate || order.shippingCity || '';
@@ -354,7 +354,7 @@ exports.bulkCreateShipments = async (req, res) => {
                   cost: result.totalFees ? Number(result.totalFees) : undefined,
                   metadata: JSON.stringify({
                     carrier: 'QP_EXPRESS',
-                    orderSerial: result.orderSerial,
+                    orderSerial: result.orderSerial || result.serial || result.trackingNumber,
                     lastLiveSync: new Date().toISOString(),
                     liveStatus: result,
                   }),
@@ -376,7 +376,7 @@ exports.bulkCreateShipments = async (req, res) => {
                   destinationAddress: order.address || null,
                   metadata: JSON.stringify({
                     carrier: 'QP_EXPRESS',
-                    orderSerial: result.orderSerial,
+                    orderSerial: result.orderSerial || result.serial || result.trackingNumber,
                     lastLiveSync: new Date().toISOString(),
                     liveStatus: result,
                   }),

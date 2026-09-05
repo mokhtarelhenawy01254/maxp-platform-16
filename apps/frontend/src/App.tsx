@@ -6213,7 +6213,7 @@ const AppContent = () => {
                   path="/shipping-companies"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <ShippingCompanies />
                       </AppAccessRoute>
                     </Layout>
@@ -6223,7 +6223,7 @@ const AppContent = () => {
                   path="/shipping-companies/:id"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <ShippingCompanyDetail />
                       </AppAccessRoute>
                     </Layout>
@@ -6233,7 +6233,7 @@ const AppContent = () => {
                   path="/shipping-settlement"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <ShippingSettlement />
                       </AppAccessRoute>
                     </Layout>

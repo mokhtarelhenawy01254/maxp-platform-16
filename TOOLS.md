@@ -23,8 +23,8 @@ Things like:
 
 ### SSH
 
-- maxp-server → Host: `srv974554.hstgr.cloud` (or `153.92.223.119`), User: `root`, IdentityFile: `~/.ssh/maxp_server_key`
-  Command: `ssh -i ~/.ssh/maxp_server_key -o StrictHostKeyChecking=no root@srv974554.hstgr.cloud`
+- maxp-server → Host: `srv974554.hstgr.cloud` (or `153.92.223.119`), User: `root`, IdentityFile: `~/.ssh/id_ed25519`
+  Command: `ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no root@srv974554.hstgr.cloud`
 
 ### TTS
 
