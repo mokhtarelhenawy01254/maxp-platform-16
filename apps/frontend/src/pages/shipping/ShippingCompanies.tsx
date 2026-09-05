@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { toast } from "sonner";
@@ -57,8 +57,6 @@ const ShippingCompanies: React.FC = () => {
   const [companies, setCompanies] = useState<ShippingCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
-  const [creatingDemo, setCreatingDemo] = useState(false);
-  const [ensuringDefaults, setEnsuringDefaults] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
 
@@ -288,39 +286,36 @@ const ShippingCompanies: React.FC = () => {
     }
   };
 
-  const handleEnsureDemoCarriers = async () => {
-    setCreatingDemo(true);
-    try {
-      const res: any = await apiClient.post("/shipping-companies/demo-carriers");
-      if (res.data?.success) {
-        toast.success("تم تجهيز شركات الشحن التجريبية بنجاح");
-        fetchCompanies();
-      } else {
-        toast.error(res.data?.error || "فشل تجهيز الشركات التجريبية");
-      }
-    } catch {
-      toast.error("تعذر إنشاء الشركات التجريبية");
-    } finally {
-      setCreatingDemo(false);
-    }
-  };
+  // Deduplicate and prioritize standard carriers at the top
+  const displayedCompanies = useMemo(() => {
+    const seenStandardKeys = new Set<string>();
+    const result: ShippingCompany[] = [];
 
-  const handleEnsureDefaultCarriers = async () => {
-    setEnsuringDefaults(true);
-    try {
-      const res: any = await apiClient.post("/shipping-companies/ensure-defaults");
-      if (res.data?.success) {
-        toast.success(res.data.message || "تم تجهيز شركات الشحن المعتمدة (Bosta, QP Express, Turbo) بنجاح");
-        fetchCompanies();
-      } else {
-        toast.error(res.data?.error || "فشل تجهيز الشركات المعتمدة");
+    // Priority ordering: QP Express first, Bosta second, Turbo third, then custom/manual
+    const priorityWeight = (item: ShippingCompany) => {
+      if (item.providerKey === "QP_EXPRESS") return 1;
+      if (item.providerKey === "BOSTA") return 2;
+      if (item.providerKey === "TURBO") return 3;
+      return 10;
+    };
+
+    const sorted = [...companies].sort((a, b) => {
+      const diff = priorityWeight(a) - priorityWeight(b);
+      if (diff !== 0) return diff;
+      if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+      return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    });
+
+    for (const c of sorted) {
+      if (c.providerKey && ["QP_EXPRESS", "BOSTA", "TURBO"].includes(c.providerKey)) {
+        if (seenStandardKeys.has(c.providerKey)) continue;
+        seenStandardKeys.add(c.providerKey);
       }
-    } catch {
-      toast.error("تعذر تجهيز شركات الشحن المعتمدة");
-    } finally {
-      setEnsuringDefaults(false);
+      result.push(c);
     }
-  };
+
+    return result;
+  }, [companies]);
 
   const copyWebhookUrl = () => {
     const webhookUrl = `${envConfig.backendUrl}/api/v1/shipments/webhook`;
@@ -350,178 +345,12 @@ const ShippingCompanies: React.FC = () => {
             سجلات الشحنات
           </Link>
           <button
-            onClick={handleEnsureDefaultCarriers}
-            disabled={ensuringDefaults}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition shadow-sm"
-            title="تجهيز شركات الشحن المعتمدة (بوستا، كيو بي إكسبريس، وتربو) بضغطة واحدة"
-          >
-            <CheckCircleIcon className="h-4 w-4" />
-            <span>{ensuringDefaults ? "جاري التجهيز..." : "تجهيز شركات الشحن المعتمدة"}</span>
-          </button>
-          <button
-            onClick={handleEnsureDemoCarriers}
-            disabled={creatingDemo}
-            className="px-3.5 py-2 text-xs sm:text-sm font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-60 transition shadow-sm"
-          >
-            {creatingDemo ? "جاري التجهيز..." : "تفعيل شركات تجريبية (Demo)"}
-          </button>
-          <button
             onClick={handleOpenNewModal}
             className="flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm"
           >
             <PlusIcon className="h-4 w-4" />
-            <span>إضافة شركة شحن</span>
+            <span>إضافة شركة شحن خاصة / مندوب</span>
           </button>
-        </div>
-      </div>
-
-      {/* Quick Integration Hub / Standard Supported Couriers */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        {/* QP Express Quick Tile */}
-        <div className="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 shadow-sm flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-xs shrink-0">
-              QP
-            </div>
-            <div className="truncate">
-              <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
-                كيو بي إكسبريس (QP Express)
-              </h4>
-              <p className="text-[11px] text-gray-500 truncate">ربط JWT وبوالص حرارية 80×50</p>
-            </div>
-          </div>
-          {companies.some((c) => c.providerKey === "QP_EXPRESS" && c.isActive) ? (
-            <button
-              type="button"
-              onClick={() => {
-                const qp = companies.find((c) => c.providerKey === "QP_EXPRESS");
-                if (qp) handleOpenSettings(qp);
-              }}
-              className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 shrink-0"
-            >
-              مفعلة (تعديل)
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                const qp = companies.find((c) => c.providerKey === "QP_EXPRESS");
-                if (qp) handleOpenSettings(qp, true);
-                else {
-                  handleOpenNewModal();
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: "كيو بي إكسبريس (QP Express)",
-                    providerKey: "QP_EXPRESS",
-                    integrationMode: "LIVE",
-                    website: "https://qpxpress.com",
-                    isActive: true,
-                  }));
-                }
-              }}
-              className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm shrink-0"
-            >
-              تفعيل الربط
-            </button>
-          )}
-        </div>
-
-        {/* Bosta Quick Tile */}
-        <div className="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-orange-100 dark:border-orange-900/40 shadow-sm flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 font-bold text-xs shrink-0">
-              Bosta
-            </div>
-            <div className="truncate">
-              <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
-                بوستا (Bosta Courier)
-              </h4>
-              <p className="text-[11px] text-gray-500 truncate">ربط API Key وبوالص AWB رسمية</p>
-            </div>
-          </div>
-          {companies.some((c) => c.providerKey === "BOSTA" && c.isActive) ? (
-            <button
-              type="button"
-              onClick={() => {
-                const bosta = companies.find((c) => c.providerKey === "BOSTA");
-                if (bosta) handleOpenSettings(bosta);
-              }}
-              className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 shrink-0"
-            >
-              مفعلة (تعديل)
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                const bosta = companies.find((c) => c.providerKey === "BOSTA");
-                if (bosta) handleOpenSettings(bosta, true);
-                else {
-                  handleOpenNewModal();
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: "بوستا (Bosta)",
-                    providerKey: "BOSTA",
-                    integrationMode: "LIVE",
-                    website: "https://bosta.co",
-                    isActive: true,
-                  }));
-                }
-              }}
-              className="px-3 py-1.5 text-xs font-bold bg-orange-600 text-white rounded-lg hover:bg-orange-700 shadow-sm shrink-0"
-            >
-              تفعيل الربط
-            </button>
-          )}
-        </div>
-
-        {/* Turbo Quick Tile */}
-        <div className="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-blue-100 dark:border-blue-900/40 shadow-sm flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold text-xs shrink-0">
-              Turbo
-            </div>
-            <div className="truncate">
-              <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
-                تربو (Turbo Courier)
-              </h4>
-              <p className="text-[11px] text-gray-500 truncate">شحن سريع ومزامنة بوالص</p>
-            </div>
-          </div>
-          {companies.some((c) => c.providerKey === "TURBO" && c.isActive) ? (
-            <button
-              type="button"
-              onClick={() => {
-                const turbo = companies.find((c) => c.providerKey === "TURBO");
-                if (turbo) handleOpenSettings(turbo);
-              }}
-              className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 shrink-0"
-            >
-              مفعلة (تعديل)
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => {
-                const turbo = companies.find((c) => c.providerKey === "TURBO");
-                if (turbo) handleOpenSettings(turbo, true);
-                else {
-                  handleOpenNewModal();
-                  setFormData((prev) => ({
-                    ...prev,
-                    name: "تربو (Turbo)",
-                    providerKey: "TURBO",
-                    integrationMode: "LIVE",
-                    website: "https://turbo-eg.com",
-                    isActive: true,
-                  }));
-                }
-              }}
-              className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm shrink-0"
-            >
-              تفعيل الربط
-            </button>
-          )}
         </div>
       </div>
 
@@ -603,14 +432,14 @@ const ShippingCompanies: React.FC = () => {
             جاري جلب شركات الشحن وإعدادات الربط...
           </p>
         </div>
-      ) : companies.length === 0 ? (
+      ) : displayedCompanies.length === 0 ? (
         <div className="p-12 text-center bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
           <TruckIcon className="h-14 w-14 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
           <h3 className="text-base font-semibold text-gray-900 dark:text-white">
             لا توجد شركات شحن مسجلة
           </h3>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1 mb-4">
-            ابدأ بإضافة أول شركة شحن أو تفعيل الشركات التجريبية بنقرة واحدة
+            ابدأ بإضافة أول شركة شحن أو تفعيل شركات الشحن المعتمدة
           </p>
           <button
             onClick={handleOpenNewModal}
@@ -622,7 +451,7 @@ const ShippingCompanies: React.FC = () => {
       ) : viewMode === "cards" ? (
         /* 1. CARDS / GRID VIEW (Modern Hub) */
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {companies.map((company) => {
+          {displayedCompanies.map((company) => {
             const hasApiKey = Boolean(company.apiKey);
             const isLive = company.integrationMode === "LIVE";
             const isDemo = company.integrationMode === "DEMO";
@@ -793,7 +622,7 @@ const ShippingCompanies: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700 text-xs sm:text-sm">
-              {companies.map((company) => (
+              {displayedCompanies.map((company) => (
                 <tr key={company.id} className="hover:bg-gray-50/80 dark:hover:bg-gray-750">
                   <td className="px-5 py-4 whitespace-nowrap font-bold text-gray-900 dark:text-white">
                     {company.name}

@@ -118,6 +118,24 @@ const ensureDefaultShippingCompanies = async (prisma, companyId) => {
   }
 };
 
+const deduplicateShippingCompanies = (list) => {
+  if (!Array.isArray(list) || list.length === 0) return [];
+  const seenStandardKeys = new Set();
+  const deduped = [];
+  const sorted = [...list].sort((a, b) => {
+    if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+    return new Date(b.updatedAt || b.createdAt || 0) - new Date(a.updatedAt || a.createdAt || 0);
+  });
+  for (const item of sorted) {
+    if (item.providerKey && ['QP_EXPRESS', 'BOSTA', 'TURBO'].includes(item.providerKey)) {
+      if (seenStandardKeys.has(item.providerKey)) continue;
+      seenStandardKeys.add(item.providerKey);
+    }
+    deduped.push(item);
+  }
+  return deduped;
+};
+
 // Get all shipping companies for the current company with pagination and filters
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
@@ -155,7 +173,7 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
         where,
         orderBy: { createdAt: 'desc' },
       });
-      return res.json({ success: true, data: companies });
+      return res.json({ success: true, data: deduplicateShippingCompanies(companies) });
     }
 
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
@@ -172,11 +190,12 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       }),
     ]);
 
+    const dedupedCompanies = deduplicateShippingCompanies(companies);
     const totalPages = Math.ceil(total / take) || 1;
 
     res.json({
       success: true,
-      data: companies,
+      data: dedupedCompanies,
       pagination: {
         total,
         page: pageNum,
