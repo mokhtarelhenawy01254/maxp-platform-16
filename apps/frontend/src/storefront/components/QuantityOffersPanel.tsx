@@ -666,6 +666,11 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
             ? (offer.buyText || getSelectionRailOfferTitle(offer))
             : defaultBuyText;
           const isBestValue = totals.savings > 0 && totals.savings === bestSavings;
+          const isMostPopular =
+            offer.quantity === 2 || Boolean(offer.helperText?.includes("الأكثر طلباً"));
+          const isBiggestSavings =
+            (offer.quantity >= 3 && totals.savings > 0) ||
+            Boolean(offer.helperText?.includes("التوفير الأكبر"));
 
           return (
             <div
@@ -673,10 +678,12 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
               className={`overflow-hidden rounded-[1.25rem] border transition-all duration-200 ${
                 isSelected
                   ? variant === "single-offer-focus"
-                    ? "border-primary/65 bg-background shadow-[0_28px_80px_-52px_hsl(var(--primary)/0.55)]"
+                    ? "border-primary/75 bg-background shadow-[0_28px_80px_-52px_hsl(var(--primary)/0.55)] ring-2 ring-primary/20"
                     : isSelectionRail
                     ? "border-[#8f5c44] bg-[linear-gradient(180deg,#fffdfb_0%,#fff9f6_100%)] shadow-sm ring-1 ring-[#8f5c44]/25"
-                    : "border-primary/60 bg-background shadow-[0_24px_60px_-45px_hsl(var(--primary)/0.55)]"
+                    : "border-primary bg-background shadow-[0_24px_60px_-45px_hsl(var(--primary)/0.55)] ring-2 ring-primary/20"
+                  : isMostPopular
+                  ? "border-amber-400/80 bg-gradient-to-b from-amber-500/[0.04] to-background shadow-xs hover:border-amber-500 hover:shadow-sm"
                   : isSelectionRail
                   ? "border-[#e6ded9] bg-white/95 hover:border-[#c59a7a]/60 hover:bg-white shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
                   : isLookBuilder
@@ -728,33 +735,37 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-1.5">
                       {offer.helperText ? (
-                        <span className="inline-flex items-center rounded-md bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-black text-amber-800 border border-amber-500/20">
+                        <span className="inline-flex items-center rounded-md bg-amber-500 text-white px-2.5 py-0.5 text-[10.5px] font-black shadow-xs">
                           {offer.helperText}
                         </span>
-                      ) : offer.quantity === 2 ? (
-                        <span className="inline-flex items-center rounded-md bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-black text-amber-800 border border-amber-500/20">
+                      ) : isMostPopular ? (
+                        <span className="inline-flex items-center rounded-md bg-gradient-to-r from-amber-500 to-amber-600 text-white px-2.5 py-0.5 text-[10.5px] font-black shadow-xs">
                           ⭐ الأكثر طلباً
                         </span>
-                      ) : offer.quantity >= 3 && totals.savings > 0 ? (
-                        <span className="inline-flex items-center rounded-md bg-rose-500/15 px-2 py-0.5 text-[10.5px] font-black text-rose-700 border border-rose-500/20">
+                      ) : isBiggestSavings ? (
+                        <span className="inline-flex items-center rounded-md bg-gradient-to-r from-rose-500 to-rose-600 text-white px-2.5 py-0.5 text-[10.5px] font-black shadow-xs">
                           🔥 التوفير الأكبر
                         </span>
                       ) : null}
 
-                      {totals.savings > 0 ? (
-                        <span className="inline-flex items-center rounded-md bg-emerald-500/15 px-2 py-0.5 text-[10.5px] font-black text-emerald-700 border border-emerald-500/25">
+                      {totals.savings > 0 && offer.quantity > 1 ? (
+                        <span className="inline-flex items-center rounded-md bg-emerald-600 text-white px-2.5 py-0.5 text-[10.5px] font-black shadow-xs">
+                          وفّر {formatStorefrontCurrency(totals.savings, currency)}
+                        </span>
+                      ) : totals.savings > 0 && offer.quantity === 1 ? (
+                        <span className="inline-flex items-center rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300 px-2 py-0.5 text-[10px] font-bold border border-stone-200 dark:border-stone-700">
                           وفّر {formatStorefrontCurrency(totals.savings, currency)}
                         </span>
                       ) : null}
 
                       {offer.enableFreeShipping ? (
-                        <span className="inline-flex items-center rounded-md bg-blue-500/15 px-2 py-0.5 text-[10.5px] font-black text-blue-700 border border-blue-500/20">
+                        <span className="inline-flex items-center rounded-md bg-blue-600 text-white px-2.5 py-0.5 text-[10.5px] font-black shadow-xs">
                           🚚 {freeShippingLabel}
                         </span>
                       ) : null}
 
-                      {isBestValue && !offer.helperText && offer.quantity !== 2 && !(offer.quantity >= 3 && totals.savings > 0) ? (
-                        <span className="inline-flex items-center rounded-md bg-amber-500/15 px-2 py-0.5 text-[10.5px] font-black text-amber-700 border border-amber-500/20">
+                      {isBestValue && !offer.helperText && !isMostPopular && !isBiggestSavings ? (
+                        <span className="inline-flex items-center rounded-md bg-amber-500 text-white px-2.5 py-0.5 text-[10.5px] font-black shadow-xs">
                           {bestValueLabel}
                         </span>
                       ) : null}
@@ -944,34 +955,36 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
                     </div>
                   ) : null}
 
-                  <div
-                    className={`mt-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 ${
-                      isSelectionRail
-                        ? "bg-[#8f5c44]/5 border border-[#8f5c44]/15"
-                        : isCompactLike
-                        ? "bg-muted/40"
-                        : "border border-border bg-muted/30 p-3"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs font-bold text-foreground">
-                        إجمالي الباقة:
-                      </span>
-                      <span className="text-[14px] font-black text-foreground">
-                        {formatStorefrontCurrency(totals.offerTotal, currency)}
-                      </span>
+                  {offer.quantity > 1 ? (
+                    <div
+                      className={`mt-3 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5 ${
+                        isSelectionRail
+                          ? "bg-[#8f5c44]/5 border border-[#8f5c44]/15"
+                          : isCompactLike
+                          ? "bg-muted/40"
+                          : "border border-border bg-muted/30 p-3"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-foreground">
+                          إجمالي الباقة:
+                        </span>
+                        <span className="text-[14px] font-black text-foreground">
+                          {formatStorefrontCurrency(totals.offerTotal, currency)}
+                        </span>
+                        {totals.savings > 0 ? (
+                          <span className="text-xs text-muted-foreground line-through">
+                            {formatStorefrontCurrency(totals.originalTotal, currency)}
+                          </span>
+                        ) : null}
+                      </div>
                       {totals.savings > 0 ? (
-                        <span className="text-xs text-muted-foreground line-through">
-                          {formatStorefrontCurrency(totals.originalTotal, currency)}
+                        <span className="inline-flex items-center rounded-full bg-emerald-600 text-white px-2.5 py-0.5 text-[11px] font-black shadow-xs">
+                          وفرت {formatStorefrontCurrency(totals.savings, currency)}
                         </span>
                       ) : null}
                     </div>
-                    {totals.savings > 0 ? (
-                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800">
-                        وفرت {formatStorefrontCurrency(totals.savings, currency)}
-                      </span>
-                    ) : null}
-                  </div>
+                  ) : null}
 
                   {!shouldHidePrimaryContinueButton ? (
                     <button

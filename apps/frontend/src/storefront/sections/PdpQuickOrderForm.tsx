@@ -388,15 +388,17 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         : alternatePhoneField.required,
   };
   const showQuantityBlock =
-    typeof sectionSettings?.showQuantity === "boolean"
-      ? sectionSettings.showQuantity
-      : isVelaFashionQuickOrder
-          ? false
-        : isKhemetLuxeQuickOrder
-          ? false
-        : isMenShoesQuickOrder
-          ? false
-        : pdpQuickOrderSettings.showQuantity;
+    Boolean(activeQuantityOffer)
+      ? false
+      : typeof sectionSettings?.showQuantity === "boolean"
+        ? sectionSettings.showQuantity
+        : isVelaFashionQuickOrder
+            ? false
+          : isKhemetLuxeQuickOrder
+            ? false
+          : isMenShoesQuickOrder
+            ? false
+          : pdpQuickOrderSettings.showQuantity;
   const showOrderSummaryBlock =
     typeof sectionSettings?.showOrderSummary === "boolean"
       ? sectionSettings.showOrderSummary
