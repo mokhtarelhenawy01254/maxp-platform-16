@@ -59,6 +59,18 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - `trash` > `rm` (recoverable beats gone forever)
 - When in doubt, ask.
 
+## 🚀 Post-Task Automatic Git Push Rule
+
+- **Mandatory Action:** After completing **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar267/maxp-platform-6` (`mokhtar267` remote).
+- **Descriptive Commit Message:** Always write a clear, descriptive commit message explaining the exact task changes so the user can easily trace and identify what was updated.
+- **Workflow:**
+  1. `git status`
+  2. `git add <files>`
+  3. `git commit -m "<descriptive message of what was done>"`
+  4. `git push mokhtar267 main` (or active branch)
+  5. Report commit details & hash to the user upon completion.
+
+
 ## External vs Internal
 
 **Safe to do freely:**
