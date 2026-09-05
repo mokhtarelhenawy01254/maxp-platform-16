@@ -717,34 +717,40 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
             ? 'grid-cols-2'
             : options.length === 3
               ? 'grid-cols-3'
-              : 'grid-cols-4';
+              : options.length === 4
+                ? 'grid-cols-4'
+                : options.length === 5
+                  ? 'grid-cols-5'
+                  : options.length === 6
+                    ? 'grid-cols-3 sm:grid-cols-6'
+                    : 'grid-cols-4 sm:grid-cols-6';
 
         const isNumericOrShortButtonOption = options.every((opt) => opt.trim().length <= 4);
 
         const getThumbnailContainerClass = () => {
           if (isInlineCompact) {
             return options.length <= 3
-              ? 'grid grid-cols-3 gap-1.5'
-              : 'flex gap-1.5 overflow-x-auto pb-1 scrollbar-none';
+              ? 'grid grid-cols-3 max-w-[340px] gap-2'
+              : 'flex gap-2 overflow-x-auto pb-1 scrollbar-none';
           }
-          if (options.length === 1) return 'flex max-w-[140px]';
-          if (options.length === 2) return 'grid grid-cols-2 max-w-xs gap-2 sm:gap-2.5';
-          if (options.length === 3) return 'grid grid-cols-3 max-w-md gap-2 sm:gap-2.5';
-          if (options.length === 4) return 'grid grid-cols-2 min-[380px]:grid-cols-4 gap-2 sm:gap-2.5';
-          if (options.length === 6) return 'grid grid-cols-3 sm:grid-cols-6 gap-2 sm:gap-2.5';
-          return 'grid grid-cols-3 min-[440px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2 sm:gap-2.5';
+          if (options.length === 1) return 'flex max-w-[120px]';
+          if (options.length === 2) return 'grid grid-cols-2 max-w-[220px] gap-2';
+          if (options.length === 3) return 'grid grid-cols-3 max-w-[340px] gap-2';
+          if (options.length === 4) return 'grid grid-cols-2 min-[380px]:grid-cols-4 max-w-sm gap-2';
+          if (options.length === 6) return 'grid grid-cols-3 sm:grid-cols-6 max-w-md gap-2';
+          return 'grid grid-cols-3 min-[440px]:grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2';
         };
 
         const getButtonContainerClass = () => {
           if (isInlineCompact) {
-            return `grid w-full ${inlineCompactOptionGridClass} gap-2`;
+            return `grid w-full ${inlineCompactOptionGridClass} max-w-[360px] gap-1.5 sm:gap-2`;
           }
           if (isNumericOrShortButtonOption) {
             if (options.length <= 2) return 'grid grid-cols-2 max-w-xs gap-2';
             if (options.length === 3) return 'grid grid-cols-3 max-w-sm gap-2';
             if (options.length === 4) return 'grid grid-cols-4 max-w-md gap-2';
-            if (options.length === 5) return 'grid grid-cols-5 gap-2';
-            if (options.length === 6) return 'grid grid-cols-3 min-[380px]:grid-cols-6 gap-2';
+            if (options.length === 5) return 'grid grid-cols-5 max-w-[360px] gap-2';
+            if (options.length === 6) return 'grid grid-cols-3 min-[380px]:grid-cols-6 max-w-md gap-2';
             return 'grid grid-cols-4 min-[380px]:grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2';
           }
           return isCompact ? 'flex flex-wrap gap-1.5' : 'flex flex-wrap gap-2';
@@ -951,7 +957,7 @@ const VariantSelector: React.FC<VariantSelectorProps> = ({
                             : `Select ${displayKey} ${option}`
                         }
                       >
-                        <div className="relative w-full aspect-square overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+                        <div className="relative w-full aspect-square sm:aspect-[4/3] overflow-hidden bg-neutral-100 dark:bg-neutral-800">
                           {thumbnailImage ? (
                             <img
                               src={thumbnailImage}
