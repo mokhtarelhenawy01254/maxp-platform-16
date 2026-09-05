@@ -2918,21 +2918,37 @@ const getTechnicianProductivity = async (req, res) => {
           },
         },
       }),
-      prisma.dentalSetting.findFirst({
-        where: { companyId, key: 'wageDefaults' },
-      }).catch(() => null),
-      prisma.dentalRefabrication.findMany({
-        where: { companyId },
-        select: {
-          id: true,
-          caseId: true,
-          case: {
-            select: {
-              stages: { select: { assigneeId: true } },
-            },
-          },
-        },
-      }).catch(() => []),
+      Promise.resolve().then(async () => {
+        try {
+          if (typeof prisma.dentalSetting?.findFirst === 'function') {
+            const res = await prisma.dentalSetting.findFirst({ where: { companyId, key: 'wageDefaults' } });
+            if (res) return res;
+          }
+          if (typeof prisma.dentalSetting?.findMany === 'function') {
+            const list = await prisma.dentalSetting.findMany({ where: { companyId, key: 'wageDefaults' }, take: 1 });
+            return Array.isArray(list) ? list[0] : null;
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      }),
+      Promise.resolve(
+        typeof prisma.dentalRefabrication?.findMany === 'function'
+          ? prisma.dentalRefabrication.findMany({
+              where: { companyId },
+              select: {
+                id: true,
+                caseId: true,
+                case: {
+                  select: {
+                    stages: { select: { assigneeId: true } },
+                  },
+                },
+              },
+            })
+          : []
+      ).then((r) => (Array.isArray(r) ? r : [])).catch(() => []),
     ]);
 
     const defaultWagePerStage = (wageSetting && wageSetting.value && Number(wageSetting.value.defaultPerStage)) || 0;

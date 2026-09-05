@@ -779,6 +779,37 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
     });
   });
 
+  describe('listInvoices', () => {
+    test('filters invoices by doctorId, status, and search', async () => {
+      const prisma = createPrisma();
+      prisma.dentalInvoice.findMany.mockResolvedValue([
+        { id: 'inv-1', invoiceNumber: 'INV-101', total: 500, doctorName: 'د. سارة' },
+      ]);
+      prisma.dentalInvoice.count.mockResolvedValue(1);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listInvoices(
+        req({ query: { doctorId: 'doc-1', status: 'OPEN', search: 'سارة' } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.items).toHaveLength(1);
+      expect(prisma.dentalInvoice.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: expect.objectContaining({
+            companyId: 'company-1',
+            doctorId: 'doc-1',
+            status: 'OPEN',
+            OR: expect.any(Array),
+          }),
+        })
+      );
+    });
+  });
+
   describe('getDashboard', () => {
     test('aggregates status counts, revenue, outstanding and top doctors', async () => {
       const prisma = createPrisma();

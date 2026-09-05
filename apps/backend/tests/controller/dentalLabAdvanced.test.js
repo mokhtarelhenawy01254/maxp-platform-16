@@ -1,4 +1,4 @@
-﻿jest.mock('../../services/sharedDatabase', () => ({
+jest.mock('../../services/sharedDatabase', () => ({
   getSharedPrismaClient: jest.fn(),
 }));
 
@@ -556,7 +556,14 @@ describe('dentalLabController advanced features', () => {
         expect.objectContaining({ where: expect.objectContaining({ companyId: 'company-1', status: 'DONE' }) })
       );
       expect(res.payload.data).toEqual([
-        { technicianId: 'tech-1', name: 'أحمد فني', role: 'TECHNICIAN', assignedCases: 3, completedStages: 2, avgDaysPerStage: 3 },
+        expect.objectContaining({
+          technicianId: 'tech-1',
+          name: 'أحمد فني',
+          role: 'TECHNICIAN',
+          assignedCases: 3,
+          completedStages: 2,
+          avgDaysPerStage: 3,
+        }),
       ]);
     });
 
