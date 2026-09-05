@@ -131,6 +131,30 @@ export interface DentalPayment {
   createdAt?: string;
 }
 
+export interface DentalInvoiceCase {
+  id: string;
+  caseNumber?: string;
+  patientName?: string;
+  patientPhone?: string;
+  workTypeName?: string;
+  unitsCount?: number;
+  unitPrice?: number;
+  teeth?: string;
+  shade?: string;
+  material?: string;
+  status?: string;
+  dueDate?: string;
+  total?: number;
+}
+
+export interface DentalInvoiceDoctor {
+  id: string;
+  name: string;
+  phone?: string;
+  clinicName?: string;
+  creditLimit?: number;
+}
+
 export interface DentalInvoice {
   id: string;
   invoiceNumber?: string;
@@ -140,11 +164,16 @@ export interface DentalInvoice {
   doctorName?: string;
   patientName?: string;
   total: number;
+  discount?: number;
   paid: number;
   remaining: number;
-  paymentStatus: DentalPaymentStatus;
+  paymentStatus?: DentalPaymentStatus;
   status?: string;
+  dueDate?: string;
+  notes?: string;
   createdAt?: string;
+  case?: DentalInvoiceCase;
+  doctor?: DentalInvoiceDoctor;
   payments?: DentalPayment[];
 }
 
@@ -607,7 +636,7 @@ export interface UninvoicedSummaryResult {
 export const fetchUninvoicedSummary = async (): Promise<UninvoicedSummaryResult> =>
   unwrapEnvelope<UninvoicedSummaryResult>(await apiClient.get("/dental-lab/invoices/uninvoiced-summary"));
 
-export const batchCreateMonthlyInvoices = async (body?: { doctorIds?: string[]; dueDate?: string; notes?: string }): Promise<{ createdCount: number; invoicedCasesCount: number }> =>
+export const batchCreateMonthlyInvoices = async (body?: { doctorIds?: string[]; dueDate?: string; notes?: string; mode?: "PER_CASE" | "CONSOLIDATED" }): Promise<{ createdCount: number; invoicedCasesCount: number }> =>
   unwrapEnvelope<{ createdCount: number; invoicedCasesCount: number }>(await apiClient.post("/dental-lab/invoices/batch-create", body || {}));
 
 export const triggerBillingCycleScan = async (force: boolean = true): Promise<unknown> =>
@@ -785,7 +814,15 @@ export const parseScan = async (file: File): Promise<ScanParseResult> => {
   return (body["data"] ?? {}) as ScanParseResult;
 };
 
-export const fetchInvoices = async (): Promise<DentalInvoice[]> => unwrapListEnvelope<DentalInvoice>(await apiClient.get("/dental-lab/invoices"));
+export const fetchInvoices = async (params?: {
+  doctorId?: string;
+  status?: string;
+  search?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  limit?: number;
+}): Promise<DentalInvoice[]> => unwrapListEnvelope<DentalInvoice>(await apiClient.get("/dental-lab/invoices", { params }));
 export const createInvoice = async (body: Partial<DentalInvoice>): Promise<DentalInvoice> => unwrapEnvelope<DentalInvoice>(await apiClient.post("/dental-lab/invoices", body));
 export const addInvoicePayment = async (invoiceId: string, body: { amount: number; method?: string; note?: string }): Promise<DentalPayment> =>
   unwrapEnvelope<DentalPayment>(await apiClient.post(`/dental-lab/invoices/${invoiceId}/payments`, body));
