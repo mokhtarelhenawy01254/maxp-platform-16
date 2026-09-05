@@ -3338,13 +3338,13 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     !inlinePdpQuickOrderAfterDescription
       ? inlinePdpQuickOrder
       : null;
-  const inlineQuantityOffers = (
+  const inlineQuantityOffers = shouldRenderInlineQuantityOffers ? (
     <QuantityOffersSection
       section={embeddedQuantityOffersSectionConfig}
       settings={embeddedQuantityOffersSettings}
       isOpen={shouldRenderInlineQuantityOffers}
     />
-  );
+  ) : null;
   const externalPurchaseLabel =
     externalProductConfig.label ||
     String(
@@ -7094,10 +7094,20 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
             </div>
 
             <div className="space-y-4 border-b border-[#ead8ca] pb-5">
-              <div>{elessiVariantSelector}</div>
+              {!isPrimaryQuantityOffersDecision ? (
+                <div>{elessiVariantSelector}</div>
+              ) : null}
               {elessiPersonalizationPanel ? (
                 <div className='border-t border-[#efe0d4] pt-3 sm:pt-4'>
                   {elessiPersonalizationPanel}
+                </div>
+              ) : null}
+              {inlineQuantityOffers ? (
+                <div
+                  id={hasEmbeddedPdpCheckout && isPrimaryQuantityOffersDecision ? STOREFRONT_BUYBOX_ID : undefined}
+                  className={!isPrimaryQuantityOffersDecision && product.productVariants?.length ? 'border-t border-[#efe0d4] pt-3 sm:pt-4' : ''}
+                >
+                  {inlineQuantityOffers}
                 </div>
               ) : null}
               <div className='border-t border-[#efe0d4] pt-3 sm:pt-4'>

@@ -26,6 +26,10 @@ vi.mock("../components/VariantSelector", () => ({
 }));
 
 vi.mock("sonner", () => ({
+  toast: {
+    success: vi.fn(),
+    error: vi.fn(),
+  },
   default: {
     success: vi.fn(),
     error: vi.fn(),

@@ -39,6 +39,22 @@ vi.mock('../hooks/useStorefrontFacebookTracking', () => ({
   }),
 }));
 
+vi.mock('../hooks/useProductReviews', () => ({
+  useProductReviews: () => ({
+    reviews: [],
+    totalReviews: 0,
+    averageRating: 0,
+    isLoading: false,
+    refetch: vi.fn(),
+  }),
+}));
+
+vi.mock('../sections/QuantityOffersSection', () => ({
+  __esModule: true,
+  default: ({ isOpen }: { isOpen?: boolean }) =>
+    isOpen ? <div data-testid="inline-quantity-offers">Quantity Offers Section</div> : null,
+}));
+
 vi.mock('../sections/PdpQuickOrderPanel', () => ({
   __esModule: true,
   default: () => <div data-testid="pdp-quick-order-panel">Quick order panel</div>,
@@ -131,6 +147,14 @@ const khemetTheme = {
       sections: [
         { type: 'product-info', variant: 'elessi-care-buybox' },
         {
+          type: 'quantity-offers',
+          variant: 'selection-rail',
+          settings: {
+            placement: 'inline-buybox',
+            decisionMode: 'supporting',
+          },
+        },
+        {
           type: 'pdp-checkout',
           settings: {
             placement: 'before-description',
@@ -199,5 +223,20 @@ describe('KHEMET inline quick-order buybox', () => {
 
     expect(await screen.findByTestId('pdp-quick-order-panel')).toBeInTheDocument();
     expect(screen.queryByTestId('khemet-purchase-decision-suite')).not.toBeInTheDocument();
+  });
+
+  it('renders inline quantity-offers inside elessi-care-buybox when configured with inline-buybox placement', async () => {
+    render(
+      <MemoryRouter initialEntries={['/store/products/khemet-cloud-sneaker?companyId=company123']}>
+        <Routes>
+          <Route
+            path="/store/products/:id"
+            element={<ProductInfo section={{ variant: 'elessi-care-buybox' }} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByTestId('inline-quantity-offers')).toBeInTheDocument();
   });
 });
