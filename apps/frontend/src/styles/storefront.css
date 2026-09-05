@@ -221,6 +221,41 @@ select {
   line-height: 1.75;
 }
 
+/* Table styles inside rich descriptions and size guides */
+.product-rich-description table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+  margin: 1rem 0 !important;
+  border: 1px solid #d1d5db !important;
+  font-size: 0.875rem !important;
+}
+
+.product-rich-description th,
+.product-rich-description td {
+  border: 1px solid #d1d5db !important;
+  padding: 0.625rem 0.75rem !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.product-rich-description th {
+  background-color: #f3f4f6 !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+}
+
+.dark .product-rich-description table,
+.dark .product-rich-description th,
+.dark .product-rich-description td {
+  border-color: #4b5563 !important;
+}
+
+.dark .product-rich-description th {
+  background-color: #374151 !important;
+  color: #f9fafb !important;
+}
+
+
 /* Quill Alignment Styles - ensure priority over Tailwind prose and theme defaults */
 .ql-align-center,
 .prose .ql-align-center,

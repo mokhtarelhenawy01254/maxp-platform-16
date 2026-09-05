@@ -2,7 +2,7 @@ import React from "react";
 import { ProductFormData } from "../../types";
 import { ProductSelect } from "../shared/ProductSelect";
 import { ShippingClassOption } from "../../../../constants/shippingClasses";
-import RichTextEditor from "../../../../components/RichTextEditor";
+import RichTextEditor, { DEFAULT_TABLE_TEMPLATE } from "../../../../components/RichTextEditor";
 
 
 interface AdvancedTabProps {
@@ -352,42 +352,103 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
 
       {/* Size Guide */}
       <div className="space-y-4 border-b border-gray-200 dark:border-gray-700 pb-6">
-        <h4 className="text-md font-medium text-gray-900 dark:text-gray-200">
-          📏 دليل المقاسات
-        </h4>
-        <div>
-          <label
-            htmlFor="sizeGuide"
-            className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
-          >
-            دليل المقاسات
-          </label>
-          {setFormData ? (
-            <RichTextEditor
-              value={formData.sizeGuide}
-              onChange={(value) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  sizeGuide: value,
-                }))
-              }
-              placeholder="أدخل دليل المقاسات هنا... يمكنك تنسيق النصوص واستخدام القوائم والجداول"
-              minHeight="160px"
-            />
+        <div className="rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40 p-4 transition-all">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📏</span>
+              <div>
+                <label
+                  htmlFor="advancedSizeGuideToggle"
+                  className="block text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer"
+                >
+                  دليل المقاسات
+                </label>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  (يظهر في صفحة المنتج ونافذة المقاسات عند التفعيل)
+                </span>
+              </div>
+            </div>
+
+            {/* Toggle Switch */}
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs font-bold ${
+                  Boolean(formData.sizeGuide && formData.sizeGuide.trim())
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-gray-400"
+                }`}
+              >
+                {Boolean(formData.sizeGuide && formData.sizeGuide.trim()) ? "مفعل" : "غير مفعل"}
+              </span>
+              <button
+                id="advancedSizeGuideToggle"
+                type="button"
+                role="switch"
+                aria-checked={Boolean(formData.sizeGuide && formData.sizeGuide.trim())}
+                onClick={() => {
+                  const isEnabled = Boolean(formData.sizeGuide && formData.sizeGuide.trim());
+                  if (setFormData) {
+                    if (isEnabled) {
+                      setFormData((prev) => ({ ...prev, sizeGuide: "" }));
+                    } else {
+                      setFormData((prev) => ({ ...prev, sizeGuide: DEFAULT_TABLE_TEMPLATE }));
+                    }
+                  }
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  Boolean(formData.sizeGuide && formData.sizeGuide.trim())
+                    ? "bg-indigo-600"
+                    : "bg-gray-300 dark:bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    Boolean(formData.sizeGuide && formData.sizeGuide.trim())
+                      ? "translate-x-0"
+                      : "-translate-x-5"
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
+          {Boolean(formData.sizeGuide && formData.sizeGuide.trim()) ? (
+            <div className="mt-3">
+              {setFormData ? (
+                <RichTextEditor
+                  value={formData.sizeGuide}
+                  onChange={(value) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      sizeGuide: value,
+                    }))
+                  }
+                  placeholder="أدخل دليل المقاسات هنا... يمكنك تنسيق النصوص واستخدام القوائم والجداول"
+                  minHeight="160px"
+                />
+              ) : (
+                <textarea
+                  id="sizeGuide"
+                  name="sizeGuide"
+                  value={formData.sizeGuide}
+                  onChange={handleInputChange}
+                  rows={6}
+                  className="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
+                  placeholder="أدخل دليل المقاسات هنا... يمكنك استخدام Markdown أو HTML"
+                />
+              )}
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                يمكنك إضافة تفاصيل وجدول مقاسات للمنتج. سيظهر للعملاء في صفحة المنتج ونافذة المقاسات.
+              </p>
+            </div>
           ) : (
-            <textarea
-              id="sizeGuide"
-              name="sizeGuide"
-              value={formData.sizeGuide}
-              onChange={handleInputChange}
-              rows={6}
-              className="block w-full border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm"
-              placeholder="أدخل دليل المقاسات هنا... يمكنك استخدام Markdown أو HTML"
-            />
+            <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-lg text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>دليل المقاسات غير مفعل لهذا المنتج. لن يظهر زر &quot;دليل المقاسات&quot; في صفحة المنتج بالمتجر.</span>
+            </div>
           )}
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            يمكنك إضافة تفاصيل وجدول مقاسات للمنتج. سيظهر للعملاء في صفحة المنتج ونافذة المقاسات.
-          </p>
         </div>
       </div>
 

@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { ProductFormData, Category, FieldErrors } from "../../types";
 import { TagsInput } from "../shared/TagsInput";
 import { InfoTooltip } from "../shared/InfoTooltip";
-import RichTextEditor from "../../../../components/RichTextEditor";
+import RichTextEditor, { DEFAULT_TABLE_TEMPLATE } from "../../../../components/RichTextEditor";
 
 interface BasicTabProps {
   formData: ProductFormData;
@@ -89,35 +89,90 @@ export const BasicTab: React.FC<BasicTabProps> = ({
           </div>
         </div>
 
-        {/* Size Guide - دليل المقاسات */}
-        <div className="col-span-1 sm:col-span-2">
-          <div className="flex items-center justify-between mb-1">
-            <label
-              htmlFor="sizeGuide"
-              className="block text-sm font-semibold text-gray-700 dark:text-gray-300"
-            >
-              📏 دليل المقاسات
-            </label>
-            <span className="text-xs text-muted-foreground">
-              (يظهر في صفحة المنتج ونافذة المقاسات)
-            </span>
+        {/* Size Guide - دليل المقاسات مع زر التفعيل/الإيقاف */}
+        <div className="col-span-1 sm:col-span-2 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50/70 dark:bg-gray-800/40 p-4 transition-all">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">📏</span>
+              <div>
+                <label
+                  htmlFor="sizeGuideToggle"
+                  className="block text-sm font-bold text-gray-900 dark:text-gray-100 cursor-pointer"
+                >
+                  دليل المقاسات
+                </label>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  (يظهر في صفحة المنتج ونافذة المقاسات عند التفعيل)
+                </span>
+              </div>
+            </div>
+
+            {/* Toggle Switch */}
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-xs font-bold ${
+                  Boolean(formData.sizeGuide && formData.sizeGuide.trim())
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-gray-400"
+                }`}
+              >
+                {Boolean(formData.sizeGuide && formData.sizeGuide.trim()) ? "مفعل" : "غير مفعل"}
+              </span>
+              <button
+                id="sizeGuideToggle"
+                type="button"
+                role="switch"
+                aria-checked={Boolean(formData.sizeGuide && formData.sizeGuide.trim())}
+                onClick={() => {
+                  const isEnabled = Boolean(formData.sizeGuide && formData.sizeGuide.trim());
+                  if (isEnabled) {
+                    setFormData((prev) => ({ ...prev, sizeGuide: "" }));
+                  } else {
+                    setFormData((prev) => ({ ...prev, sizeGuide: DEFAULT_TABLE_TEMPLATE }));
+                  }
+                }}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 ${
+                  Boolean(formData.sizeGuide && formData.sizeGuide.trim())
+                    ? "bg-indigo-600"
+                    : "bg-gray-300 dark:bg-gray-600"
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    Boolean(formData.sizeGuide && formData.sizeGuide.trim())
+                      ? "translate-x-0"
+                      : "-translate-x-5"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
-          <div className="mt-1">
-            <RichTextEditor
-              value={formData.sizeGuide}
-              onChange={(value) =>
-                setFormData((prev) => ({
-                  ...prev,
-                  sizeGuide: value,
-                }))
-              }
-              placeholder="اكتب دليل المقاسات هنا... يمكنك تنسيق النصوص وتوسيطها وكتابة جداول أو نقاط للمقاسات والأوزان والأطوال"
-              minHeight="140px"
-            />
-          </div>
-          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            أدخل مقاسات المنتج وطريقة القياس. سيظهر هذا المحتوى لعملائك عند الضغط على زر &quot;دليل المقاسات&quot;.
-          </p>
+
+          {Boolean(formData.sizeGuide && formData.sizeGuide.trim()) ? (
+            <div className="mt-3">
+              <RichTextEditor
+                value={formData.sizeGuide}
+                onChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    sizeGuide: value,
+                  }))
+                }
+                placeholder="اكتب دليل المقاسات هنا... يمكنك تنسيق النصوص واستخدام زر الجدول كجدول منظم"
+                minHeight="160px"
+              />
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                أدخل مقاسات المنتج وطريقة القياس. سيظهر هذا المحتوى لعملائك عند الضغط على زر &quot;دليل المقاسات&quot;.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-lg text-xs text-amber-800 dark:text-amber-300 flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>دليل المقاسات غير مفعل لهذا المنتج. لن يظهر زر &quot;دليل المقاسات&quot; في صفحة المنتج بالمتجر.</span>
+            </div>
+          )}
         </div>
 
         {/* Category */}
