@@ -160,6 +160,18 @@ export interface MonthlySettlementSummary {
   totalDoctors: number;
 }
 
+export interface DentalStageAssignee {
+  id: string;
+  stageId: string;
+  technicianId: string;
+  technicianName?: string;
+  role: string;
+  sharePercent: number;
+  notes?: string;
+  assignedAt?: string;
+  technician?: { id: string; name: string; role?: string };
+}
+
 export interface DentalCaseStage {
   id: string;
   caseId?: string;
@@ -171,6 +183,7 @@ export interface DentalCaseStage {
   completedAt?: string;
   sortOrder?: number;
   notes?: string;
+  assignees?: DentalStageAssignee[];
 }
 
 export interface DentalCaseAssignment {
