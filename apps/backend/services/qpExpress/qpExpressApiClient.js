@@ -9,9 +9,9 @@ const https = require('https');
 class QpExpressApiClient {
   constructor(options = {}) {
     this.baseUrl = (options.baseUrl || process.env.QP_EXPRESS_API_URL || 'https://qpxpress.com:8001').replace(/\/+$/, '');
-    this.username = options.username || process.env.QP_EXPRESS_USERNAME || 'ArJk@Qpx';
-    this.password = options.password || process.env.QP_EXPRESS_PASSWORD || '192521995';
-    this.customerId = options.customerId || process.env.QP_EXPRESS_CUSTOMER_ID || 8002;
+    this.username = options.username || process.env.QP_EXPRESS_USERNAME || '';
+    this.password = options.password || process.env.QP_EXPRESS_PASSWORD || '';
+    this.customerId = options.customerId ? Number(options.customerId) : (process.env.QP_EXPRESS_CUSTOMER_ID ? Number(process.env.QP_EXPRESS_CUSTOMER_ID) : null);
     this.timeout = options.timeout || 25000;
     this.httpsAgent = new https.Agent({ rejectUnauthorized: false });
 

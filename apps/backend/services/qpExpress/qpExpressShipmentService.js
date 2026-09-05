@@ -93,6 +93,10 @@ class QpExpressShipmentService {
     const phone = this.cleanPhoneNumber(customerPhone);
     const codAmount = Number(totalAmount !== undefined ? totalAmount : (price || 0));
 
+    if (!this._client.customerId) {
+      throw new Error('كود العميل (Customer ID) الخاص بحساب كيو بي إكسبريس مطلوب لإنشاء الشحنة. يرجى ضبطه في إعدادات شركة الشحن.');
+    }
+
     // Contract payload based on /addorders/order/ schema
     const payload = {
       customer: this._client.customerId,

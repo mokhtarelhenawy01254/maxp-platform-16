@@ -37,6 +37,8 @@ export interface BulkActionBarProps {
   onCreateTurboShipments: () => void;
   /** Create QP Express shipments for the whole selection. */
   onCreateQpExpressShipments?: () => void;
+  /** Create Bosta shipments for the whole selection. */
+  onCreateBostaShipments?: () => void;
   /** Soft-delete the selection (or hard-delete when in trash view). */
   onDelete: () => void;
 }
@@ -52,6 +54,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
   onPrintInvoices,
   onCreateTurboShipments,
   onCreateQpExpressShipments,
+  onCreateBostaShipments,
   onDelete,
 }) => {
   const { t } = useTranslation();
@@ -154,6 +157,20 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           >
             <TruckIcon className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
             {busy ? "جاري الشحن..." : "شحن QP Express"}
+          </Button>
+        )}
+
+        {!isTrashView && onCreateBostaShipments && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={onCreateBostaShipments}
+            disabled={busy}
+            className="min-h-[36px] justify-center gap-1.5 text-xs font-semibold border-orange-200 text-orange-700 hover:bg-orange-50 dark:border-orange-800 dark:text-orange-300 dark:hover:bg-orange-950/40"
+          >
+            <TruckIcon className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+            {busy ? "جاري الشحن..." : "شحن بوستا (Bosta)"}
           </Button>
         )}
 

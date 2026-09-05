@@ -26,6 +26,7 @@ interface ShippingCompany {
   providerKey?: string;
   integrationMode?: string;
   isActive: boolean;
+  settings?: any;
 }
 
 interface UnifiedShippingCardProps {
@@ -43,7 +44,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
 
   const [companies, setCompanies] = useState<ShippingCompany[]>([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
-  const [courierMode, setCourierMode] = useState<"qp" | "api" | "manual">("qp");
+  const [courierMode, setCourierMode] = useState<"qp" | "bosta" | "api" | "manual">("qp");
   const [isManualCourier, setIsManualCourier] = useState(false);
   const [manualTracking, setManualTracking] = useState("");
   const [manualNotes, setManualNotes] = useState("");
@@ -81,6 +82,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     order?.shippingCompany?.name ||
     order?.carrierType ||
     (order?.shippingCarrier === "QP_EXPRESS" ? "QP Express" : null) ||
+    (order?.shippingCarrier === "BOSTA" ? "Bosta" : null) ||
     (order?.turboTrackingNumber ? "Turbo" : null) ||
     "شركة الشحن";
 
@@ -90,6 +92,34 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     shipment?.carrierType === "QP_EXPRESS" ||
     order?.shippingCarrier === "QP_EXPRESS" ||
     Boolean(shipmentMeta?.orderSerial);
+
+  const isBosta =
+    existingCarrierName?.toLowerCase().includes("bosta") ||
+    existingCarrierName?.includes("بوستا") ||
+    shipment?.carrierType === "BOSTA" ||
+    order?.shippingCarrier === "BOSTA" ||
+    Boolean(shipmentMeta?.bostaDeliveryId || (shipment?.carrierType === "BOSTA" && shipment?.externalShipmentId));
+
+  const isTurbo =
+    existingCarrierName?.toLowerCase().includes("turbo") ||
+    Boolean(order?.turboTrackingNumber || order?.turboShipmentId);
+
+  const qpCompany = companies.find(
+    (c) => c.providerKey === "QP_EXPRESS" || c.name?.toLowerCase().includes("qp") || c.name?.includes("كيو بي")
+  );
+  const bostaCompany = companies.find(
+    (c) => c.providerKey === "BOSTA" || c.name?.toLowerCase().includes("bosta") || c.name?.includes("بوستا")
+  );
+
+  const qpSettings = React.useMemo(() => {
+    if (!qpCompany?.settings) return {};
+    if (typeof qpCompany.settings === "object") return qpCompany.settings;
+    try {
+      return JSON.parse(qpCompany.settings);
+    } catch {
+      return {};
+    }
+  }, [qpCompany?.settings]);
 
   const shipmentStatus =
     liveStatus?.statusLabel ||
@@ -149,6 +179,64 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     }
   };
 
+  // Dispatch via Bosta directly
+  const handleBostaDirectShipment = async () => {
+    if (!canManageShipments) {
+      toast.error("ليس لديك صلاحية إدارة الشحن");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res: any = await apiClient.post(`/bosta/orders/${order.id}/shipment`);
+
+      if (res.data?.success) {
+        toast.success(res.data.message || "تم إنشاء بوليصة الشحن بنجاح لدى Bosta");
+        if (onOrderUpdated) onOrderUpdated();
+      } else {
+        toast.error(res.data?.error || "تعذر إنشاء الشحنة مع Bosta");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "حدث خطأ أثناء الشحن عبر Bosta");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Print Bosta AWB
+  const handlePrintBostaAWB = async () => {
+    const deliveryId =
+      shipmentMeta?.bostaDeliveryId ||
+      shipment?.externalShipmentId ||
+      existingTracking;
+    if (!deliveryId) {
+      toast.error("لا يوجد رقم تسليم لطباعة بوليصة بوستا");
+      return;
+    }
+
+    try {
+      const res: any = await apiClient.get(`/bosta/awb/${deliveryId}`);
+      const awbData = res.data?.data?.data || res.data?.data;
+      if (typeof awbData === "string" && awbData.length > 50) {
+        const byteCharacters = atob(awbData);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+        const blobUrl = URL.createObjectURL(blob);
+        window.open(blobUrl, "_blank");
+      } else if (res.data?.data?.url) {
+        window.open(res.data.data.url, "_blank");
+      } else {
+        toast.error("تعذر جلب ملف بوليصة بوستا");
+      }
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "تعذر طباعة بوليصة بوستا");
+    }
+  };
+
   // Dispatch / Create Shipment via Registered Carrier
   const handleCreateShipment = async () => {
     if (!canManageShipments) {
@@ -182,6 +270,14 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
   const handleSyncStatus = async () => {
     setSyncing(true);
     try {
+      if (isBosta && existingTracking) {
+        const res: any = await apiClient.get(`/bosta/track/${existingTracking}`);
+        if (res.data?.success) {
+          toast.success("تمت مزامنة حالة شحنة بوستا بنجاح");
+          if (onOrderUpdated) onOrderUpdated();
+          return;
+        }
+      }
       if (shipment?.id) {
         const res: any = await apiClient.post(`/shipments/${shipment.id}/sync`);
         if (res.data?.success) {
@@ -220,6 +316,21 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
   const handleCancelShipment = async () => {
     setCancelling(true);
     try {
+      if (isBosta) {
+        const deliveryId =
+          shipmentMeta?.bostaDeliveryId ||
+          shipment?.externalShipmentId ||
+          existingTracking;
+        if (deliveryId) {
+          const res: any = await apiClient.post(`/bosta/cancel/${deliveryId}`);
+          if (res.data?.success) {
+            toast.success("تم إلغاء شحنة بوستا بنجاح");
+            setShowCancelModal(false);
+            if (onOrderUpdated) onOrderUpdated();
+            return;
+          }
+        }
+      }
       if (shipment?.id) {
         const res: any = await apiClient.post(`/shipments/${shipment.id}/cancel`, {
           reason: cancelReason,
@@ -355,6 +466,16 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
                     QP API
                   </span>
                 )}
+                {isBosta && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-orange-100 text-orange-700 dark:bg-orange-900/50 dark:text-orange-300">
+                    Bosta API
+                  </span>
+                )}
+                {isTurbo && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
+                    Turbo API
+                  </span>
+                )}
               </div>
             </div>
 
@@ -464,6 +585,18 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
               </a>
             )}
 
+            {isBosta && (
+              <a
+                href="https://business.bosta.co"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-200 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700 transition"
+              >
+                <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5 text-orange-500" />
+                <span>بوابة بوستا Bosta</span>
+              </a>
+            )}
+
             {shipment?.labelUrl && (
               <a
                 href={shipment.labelUrl}
@@ -474,6 +607,18 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
                 <PrinterIcon className="h-3.5 w-3.5" />
                 <span>طباعة البوليصة AWB</span>
               </a>
+            )}
+
+            {isBosta && (
+              <button
+                type="button"
+                onClick={handlePrintBostaAWB}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-orange-50 dark:bg-orange-950/50 text-orange-800 dark:text-orange-300 border border-orange-300 dark:border-orange-800 hover:bg-orange-100 transition shadow-sm"
+                title="طباعة بوليصة شحن بوستا AWB"
+              >
+                <PrinterIcon className="h-3.5 w-3.5 text-orange-600 dark:text-orange-400" />
+                <span>طباعة بوليصة بوستا AWB</span>
+              </button>
             )}
 
             {isQpExpress && existingTracking && (
@@ -505,7 +650,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
       ) : (
         /* Case 2: Order NOT shipped yet - Select courier and dispatch */
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs font-medium">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs font-medium">
             <button
               type="button"
               onClick={() => {
@@ -519,7 +664,23 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
               }`}
             >
               <BoltIcon className="h-3.5 w-3.5 text-amber-500" />
-              <span>كيو بي إكسبريس (QP Express)</span>
+              <span>كيو بي (QP Express)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setCourierMode("bosta");
+                setIsManualCourier(false);
+              }}
+              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
+                courierMode === "bosta"
+                  ? "bg-white dark:bg-gray-800 text-orange-600 dark:text-orange-400 font-bold shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+              }`}
+            >
+              <TruckIcon className="h-3.5 w-3.5 text-orange-500" />
+              <span>بوستا (Bosta)</span>
             </button>
 
             <button
@@ -535,7 +696,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
               }`}
             >
               <TruckIcon className="h-3.5 w-3.5" />
-              <span>الشركات المسجلة (API)</span>
+              <span>الشركات المسجلة</span>
             </button>
 
             <button
@@ -560,10 +721,28 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
             <div className="p-3.5 rounded-lg border border-indigo-100 dark:border-indigo-950/60 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-indigo-900 dark:text-indigo-300">
-                  إرسال فوري إلى شركة كيو بي إكسبريس (حساب أميرال)
+                  إرسال فوري إلى شركة كيو بي إكسبريس (QP Express)
                 </span>
-                <span className="text-[11px] text-gray-500 font-mono">Customer ID: 8002</span>
+                {qpSettings?.customerId ? (
+                  <span className="text-[11px] text-gray-500 font-mono">
+                    عميل رقم: #{qpSettings.customerId}
+                  </span>
+                ) : qpCompany ? (
+                  <span className="text-[11px] text-emerald-600 font-mono">
+                    ● متصل
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-amber-600">
+                    ⚠️ غير مهيأ بالكامل
+                  </span>
+                )}
               </div>
+
+              {!qpCompany && (
+                <div className="p-2 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs">
+                  تنبيه: لم يتم حفظ بيانات الربط لشركة QP Express في إعدادات الشركة بعد. يرجى إضافتها من صفحة شركات الشحن.
+                </div>
+              )}
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -587,6 +766,48 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
                 >
                   <PaperAirplaneIcon className="h-4 w-4 rotate-180" />
                   <span>{loading ? "جاري الإرسال وتوليد البوليصة..." : "إرسال إلى كيو بي إكسبريس وتوليد البوليصة"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 2. Bosta Direct Mode */}
+          {courierMode === "bosta" && (
+            <div className="p-3.5 rounded-lg border border-orange-100 dark:border-orange-950/60 bg-orange-50/30 dark:bg-orange-950/20 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-orange-900 dark:text-orange-300">
+                  إرسال فوري إلى شركة بوستا (Bosta)
+                </span>
+                {bostaCompany ? (
+                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                    ● مفتاح الـ API مسجل
+                  </span>
+                ) : (
+                  <span className="text-[11px] text-amber-600">
+                    ⚠️ غير مهيأ بعد
+                  </span>
+                )}
+              </div>
+
+              {!bostaCompany && (
+                <div className="p-2 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs">
+                  تنبيه: لم يتم حفظ مفتاح API لشركة بوستا في إعدادات الشركة بعد. يرجى إضافته من صفحة شركات الشحن.
+                </div>
+              )}
+
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                سيتم إرسال عنوان العميل، المحافظة، والمنتجات، ومبلغ التحصيل فوراً لتوليد بوليصة بوستا الرسمية (AWB).
+              </p>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleBostaDirectShipment}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center gap-2"
+                >
+                  <PaperAirplaneIcon className="h-4 w-4 rotate-180" />
+                  <span>{loading ? "جاري الإرسال وتوليد البوليصة..." : "إرسال إلى بوستا وتوليد البوليصة"}</span>
                 </button>
               </div>
             </div>

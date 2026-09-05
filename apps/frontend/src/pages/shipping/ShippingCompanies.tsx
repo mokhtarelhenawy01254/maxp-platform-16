@@ -82,6 +82,13 @@ const ShippingCompanies: React.FC = () => {
     integrationMode: "MANUAL",
     autoCreateShipments: false,
     isActive: true,
+    username: "",
+    password: "",
+    customerId: "",
+    defaultNotes: "",
+    pickupAddress: "",
+    mainClientCode: "",
+    senderNumber: "",
   });
 
   const fetchCompanies = useCallback(async () => {
@@ -154,7 +161,7 @@ const ShippingCompanies: React.FC = () => {
   };
 
   const handleOpenSettings = (company: ShippingCompany) => {
-    const settings = parseSettings(company.settings);
+    const settings = parseSettings(company.settings) as any;
     setEditingCompany(company);
     setFormData({
       name: company.name,
@@ -162,12 +169,19 @@ const ShippingCompanies: React.FC = () => {
       phone: company.phone || "",
       email: company.email || "",
       website: company.website || "",
-      apiKey: company.apiKey || "",
+      apiKey: company.apiKey || settings.apiKey || "",
       apiUrl: company.apiUrl || "",
       providerKey: company.providerKey || "MANUAL",
       integrationMode: company.integrationMode || "MANUAL",
-      autoCreateShipments: Boolean((settings as any).autoCreateShipments),
+      autoCreateShipments: Boolean(settings.autoCreateShipments),
       isActive: company.isActive,
+      username: settings.username || "",
+      password: settings.password || "",
+      customerId: settings.customerId ? String(settings.customerId) : "",
+      defaultNotes: settings.defaultNotes || "",
+      pickupAddress: settings.pickupAddress || "",
+      mainClientCode: settings.mainClientCode ? String(settings.mainClientCode) : "",
+      senderNumber: settings.senderNumber || "",
     });
     setShowModal(true);
   };
@@ -186,6 +200,13 @@ const ShippingCompanies: React.FC = () => {
       integrationMode: "MANUAL",
       autoCreateShipments: false,
       isActive: true,
+      username: "",
+      password: "",
+      customerId: "",
+      defaultNotes: "",
+      pickupAddress: "",
+      mainClientCode: "",
+      senderNumber: "",
     });
     setShowModal(true);
   };
@@ -196,7 +217,24 @@ const ShippingCompanies: React.FC = () => {
       const url = `/shipping-companies${editingCompany ? `/${editingCompany.id}` : ""}`;
       const method = editingCompany ? "put" : "post";
 
-      const res = await (apiClient as any)[method](url, formData);
+      const settingsPayload = {
+        autoCreateShipments: formData.autoCreateShipments,
+        username: formData.username || undefined,
+        password: formData.password || undefined,
+        customerId: formData.customerId ? Number(formData.customerId) : undefined,
+        defaultNotes: formData.defaultNotes || undefined,
+        pickupAddress: formData.pickupAddress || undefined,
+        mainClientCode: formData.mainClientCode || undefined,
+        senderNumber: formData.senderNumber || undefined,
+        apiKey: formData.apiKey || undefined,
+      };
+
+      const payload = {
+        ...formData,
+        settings: JSON.stringify(settingsPayload),
+      };
+
+      const res = await (apiClient as any)[method](url, payload);
       if (res.data?.success) {
         toast.success(
           editingCompany
@@ -467,11 +505,21 @@ const ShippingCompanies: React.FC = () => {
                     {/* Connection Indicator */}
                     {isLive && (
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${
-                        hasApiKey
+                        company.providerKey === "QP_EXPRESS"
+                          ? (company.apiKey || (parseSettings(company.settings) as any).username) && (parseSettings(company.settings) as any).customerId
+                            ? "text-indigo-700 bg-indigo-50 dark:bg-indigo-950/40 dark:text-indigo-300"
+                            : "text-amber-600 dark:text-amber-400"
+                          : hasApiKey
                           ? "text-emerald-600 dark:text-emerald-400"
                           : "text-amber-600 dark:text-amber-400"
                       }`}>
-                        {hasApiKey ? "● الـ API مربوط" : "▲ ينقص الـ API Key"}
+                        {company.providerKey === "QP_EXPRESS"
+                          ? (parseSettings(company.settings) as any).customerId
+                            ? `● عميل كيو بي #${(parseSettings(company.settings) as any).customerId}`
+                            : "▲ ينقص كود العميل"
+                          : hasApiKey
+                          ? "● مفتاح الـ API مسجل"
+                          : "▲ ينقص الـ API Key"}
                       </span>
                     )}
                   </div>
@@ -487,6 +535,19 @@ const ShippingCompanies: React.FC = () => {
                     <PencilIcon className="h-3.5 w-3.5" />
                     <span>إعدادات الربط والـ API</span>
                   </button>
+
+                  {isLive && (
+                    <button
+                      type="button"
+                      onClick={() => handleTestConnection(company.id)}
+                      disabled={testingConnection}
+                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+                      title="فحص واختبار الاتصال بالسيرفر"
+                    >
+                      <ArrowPathIcon className={`h-3 w-3 ${testingConnection ? "animate-spin" : ""}`} />
+                      <span>فحص</span>
+                    </button>
+                  )}
 
                   <button
                     type="button"
@@ -620,24 +681,47 @@ const ShippingCompanies: React.FC = () => {
                     value={formData.providerKey}
                     onChange={(e) => {
                       const providerKey = e.target.value;
+                      let defaultName = formData.name;
+                      let defaultApiUrl = formData.apiUrl;
+                      let defaultMode = formData.integrationMode;
+
+                      if (providerKey === "QP_EXPRESS") {
+                        if (!formData.name || formData.name.includes("تربو") || formData.name.includes("بوستا")) {
+                          defaultName = "كيو بي إكسبريس (QP Express)";
+                        }
+                        defaultApiUrl = defaultApiUrl || "https://qpxpress.com:8001";
+                        defaultMode = "LIVE";
+                      } else if (providerKey === "BOSTA") {
+                        if (!formData.name || formData.name.includes("تربو") || formData.name.includes("كيو بي")) {
+                          defaultName = "بوستا (Bosta)";
+                        }
+                        defaultApiUrl = defaultApiUrl || "https://app.bosta.co";
+                        defaultMode = "LIVE";
+                      } else if (providerKey === "TURBO") {
+                        if (!formData.name || formData.name.includes("بوستا") || formData.name.includes("كيو بي")) {
+                          defaultName = "تربو (Turbo)";
+                        }
+                        defaultMode = "LIVE";
+                      }
+
                       setFormData({
                         ...formData,
                         providerKey,
+                        name: defaultName,
+                        apiUrl: defaultApiUrl,
                         integrationMode: providerKey.endsWith("_DEMO")
                           ? "DEMO"
                           : providerKey === "MANUAL"
                           ? "MANUAL"
-                          : providerKey === "QP_EXPRESS"
-                          ? "LIVE"
-                          : formData.integrationMode,
+                          : defaultMode,
                       });
                     }}
                     className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
                   >
                     <option value="MANUAL">أسطول يدوي / مندوب خاص (Manual)</option>
                     <option value="QP_EXPRESS">كيو بي إكسبريس (QP Express)</option>
-                    <option value="TURBO">تربو (Turbo Courier)</option>
                     <option value="BOSTA">بوستا (Bosta Courier)</option>
+                    <option value="TURBO">تربو (Turbo Courier)</option>
                     <option value="ARAMEX_DEMO">أرامكس (Aramex Demo)</option>
                     <option value="MYLERZ_DEMO">مايلرز (Mylerz Demo)</option>
                     <option value="BOSTA_DEMO">بوستا ديمو (Bosta Demo)</option>
@@ -660,19 +744,222 @@ const ShippingCompanies: React.FC = () => {
                 </div>
               </div>
 
-              {/* API Key */}
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  مفتاح الـ API (API Key)
-                </label>
-                <input
-                  type="text"
-                  value={formData.apiKey}
-                  onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
-                  placeholder="ألصق الـ API Key الخاص بحسابك لدى الشركة..."
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
-                />
-              </div>
+              {/* DYNAMIC CARRIER CREDENTIALS SECTION */}
+
+              {/* 1. QP Express Credentials */}
+              {formData.providerKey === "QP_EXPRESS" && (
+                <div className="p-3.5 bg-indigo-50/40 dark:bg-indigo-950/30 rounded-xl border border-indigo-200 dark:border-indigo-900/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-indigo-900 dark:text-indigo-300">
+                      بيانات حساب شركتك لدى كيو بي إكسبريس (QP Express)
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 font-semibold">
+                      JWT Auth
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        اسم المستخدم / البريد الإلكتروني *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.username}
+                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                        placeholder="مثال: company@qpxpress.com"
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        كلمة المرور *
+                      </label>
+                      <input
+                        type="password"
+                        required={!editingCompany}
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        placeholder={editingCompany ? "اتركها فارغة للإبقاء على الحالية" : "كلمة مرور حسابك في كيو بي"}
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        كود العميل لدى كيو بي (Customer ID) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.customerId}
+                        onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
+                        placeholder="مثال: 8002"
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        رابط الـ API الخارجي
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.apiUrl}
+                        onChange={(e) => setFormData({ ...formData, apiUrl: e.target.value })}
+                        placeholder="https://qpxpress.com:8001"
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      ملاحظات التسليم والمعاينة الافتراضية للبوليصة
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.defaultNotes}
+                      onChange={(e) => setFormData({ ...formData, defaultNotes: e.target.value })}
+                      placeholder="مثال: المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة"
+                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 2. Bosta Credentials */}
+              {formData.providerKey === "BOSTA" && (
+                <div className="p-3.5 bg-blue-50/40 dark:bg-blue-950/30 rounded-xl border border-blue-200 dark:border-blue-900/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-blue-900 dark:text-blue-300">
+                      إعدادات ربط حساب بوستا (Bosta Integration)
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 font-semibold">
+                      API Key
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      مفتاح الـ API (Bosta API Key) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.apiKey}
+                      onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                      placeholder="ألصق الـ API Key من لوحة تحكم حسابك في بوستا..."
+                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      معرف أو عنوان نقطة الاستلام (Pickup Hub / Location ID)
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.pickupAddress}
+                      onChange={(e) => setFormData({ ...formData, pickupAddress: e.target.value })}
+                      placeholder="اختياري - يحدد نقطة استلام الشحنات من مخزنك"
+                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* 3. Turbo Credentials */}
+              {formData.providerKey === "TURBO" && (
+                <div className="p-3.5 bg-orange-50/40 dark:bg-orange-950/30 rounded-xl border border-orange-200 dark:border-orange-900/50 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-orange-900 dark:text-orange-300">
+                      إعدادات ربط شركة تربو (Turbo Courier)
+                    </span>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      مفتاح الـ API (Turbo API Key) *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.apiKey}
+                      onChange={(e) => setFormData({ ...formData, apiKey: e.target.value })}
+                      placeholder="مفتاح الـ API الخاص بحساب تربو..."
+                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        كود العميل الرئيسي (Main Client Code)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.mainClientCode}
+                        onChange={(e) => setFormData({ ...formData, mainClientCode: e.target.value })}
+                        placeholder="كود العميل..."
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white font-mono"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        رقم هاتف الراسل (Sender Phone)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.senderNumber}
+                        onChange={(e) => setFormData({ ...formData, senderNumber: e.target.value })}
+                        placeholder="رقم الهاتف..."
+                        className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 4. Manual Fleet or Demo info */}
+              {formData.providerKey === "MANUAL" && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      رقم هاتف المندوب أو مسؤول الشحن
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="01xxxxxxxxx"
+                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
+                      البريد الإلكتروني (اختياري)
+                    </label>
+                    <input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                      placeholder="driver@company.com"
+                      className="w-full px-3 py-2 text-xs border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formData.providerKey.endsWith("_DEMO") && (
+                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs text-amber-800 dark:text-amber-300">
+                  شركة تجريبية تحاكي إنشاء الشحنات وتوليد أرقام التتبع تلقائياً للاختبار دون الحاجة لـ API Key حقيقي.
+                </div>
+              )}
 
               {/* Webhook URL for Receiving Carrier Status Updates */}
               <div className="p-3 bg-gray-50 dark:bg-gray-900/60 rounded-xl border border-gray-200 dark:border-gray-700/80 space-y-1.5">

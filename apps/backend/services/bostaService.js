@@ -44,17 +44,45 @@ class BostaService {
 
     try {
       const prisma = getSharedPrismaClient();
+
+      // 1. Check ShippingCompany model first (SaaS per-carrier integration)
+      const carrier = await safeQuery(() =>
+        prisma.shippingCompany.findFirst({
+          where: {
+            companyId: this.companyId,
+            providerKey: 'BOSTA',
+            isActive: true,
+          },
+        })
+      , 2);
+
+      if (carrier) {
+        let settings = {};
+        try {
+          settings = carrier.settings ? (typeof carrier.settings === 'string' ? JSON.parse(carrier.settings) : carrier.settings) : {};
+        } catch {
+          settings = {};
+        }
+        const key = carrier.apiKey || settings.apiKey;
+        if (key) {
+          this.apiKey = key;
+          return this.apiKey;
+        }
+      }
+
+      // 2. Fallback to Company model (legacy settings)
       const company = await safeQuery(() =>
         prisma.company.findUnique({ where: { id: this.companyId }, select: { bostaApiKey: true, bostaEnabled: true } })
       , 2);
 
-      if (!company || !company.bostaEnabled) throw new Error('Bosta is not enabled for this company');
-      if (!company.bostaApiKey) throw new Error('Bosta API key is not configured');
+      if (company && company.bostaApiKey) {
+        this.apiKey = company.bostaApiKey;
+        return this.apiKey;
+      }
 
-      this.apiKey = company.bostaApiKey;
-      return this.apiKey;
+      throw new Error('لم يتم تهيئة أو تفعيل مفتاح الـ API لشركة بوستا (Bosta) لهذه الشركة. يرجى إدخال الـ API Key وتفعيل الشركة من صفحة شركات الشحن.');
     } catch (error) {
-      if (error.message.includes('Bosta')) throw error;
+      if (error.message.includes('بوستا') || error.message.includes('Bosta')) throw error;
       console.error('[BOSTA] Error fetching API key:', error);
       throw error;
     }

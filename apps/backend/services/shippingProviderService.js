@@ -365,7 +365,7 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
     const qpService = new QpExpressService({
       username: settings.username || shipment.shippingCompany?.apiKey,
       password: settings.password,
-      customerId: settings.customerId || 8002,
+      customerId: settings.customerId ? Number(settings.customerId) : null,
     }, shipment.companyId);
 
     const orderData = {

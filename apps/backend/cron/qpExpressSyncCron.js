@@ -1,4 +1,4 @@
-﻿/**
+/**
  * QP Express Automated Background Status Sync Cron
  * مهمة مجدولة في الخلفية لمزامنة وتحديث حالات شحنات كيو بي إكسبريس تلقائياً
  */
@@ -48,9 +48,13 @@ async function runQpExpressStatusSync() {
     console.log(`📦 [QP-EXPRESS-CRON] Found ${activeShipments.length} active shipment(s) to sync.`);
     let updatedCount = 0;
 
+    const servicesByCompany = new Map();
     for (const shipment of activeShipments) {
       try {
-        const qpService = new QpExpressService({}, shipment.companyId);
+        if (!servicesByCompany.has(shipment.companyId)) {
+          servicesByCompany.set(shipment.companyId, new QpExpressService({}, shipment.companyId));
+        }
+        const qpService = servicesByCompany.get(shipment.companyId);
         const tracking = await qpService.trackShipment(shipment.trackingNumber);
 
         if (tracking && tracking.found) {

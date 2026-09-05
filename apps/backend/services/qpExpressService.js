@@ -23,8 +23,64 @@ class QpExpressService {
     return this._client;
   }
 
+  /**
+   * استرجاع إعدادات وبيانات الاعتماد الخاصة بشركة التاجر من قاعدة البيانات
+   */
+  async ensureCredentials() {
+    if (this._client.username && this._client.password && this._client.customerId) {
+      return;
+    }
+
+    if (!this.companyId) {
+      // If environment variables exist (e.g. dev/staging fallback), use them
+      if (this._client.username && this._client.password && this._client.customerId) {
+        return;
+      }
+      throw new Error('لم يتم تحديد معرّف الشركة (Company ID) لاسترجاع بيانات اعتماد كيو بي إكسبريس.');
+    }
+
+    const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
+    const prisma = getSharedPrismaClient();
+
+    const carrier = await safeQuery(() =>
+      prisma.shippingCompany.findFirst({
+        where: {
+          companyId: this.companyId,
+          providerKey: 'QP_EXPRESS',
+          isActive: true,
+        },
+      })
+    , 2);
+
+    if (!carrier) {
+      throw new Error('لم يتم تهيئة أو تفعيل شركة كيو بي إكسبريس (QP Express) لهذه الشركة بعد. يرجى إعداد بيانات الربط أولاً من صفحة شركات الشحن.');
+    }
+
+    let settings = {};
+    try {
+      settings = carrier.settings ? (typeof carrier.settings === 'string' ? JSON.parse(carrier.settings) : carrier.settings) : {};
+    } catch {
+      settings = {};
+    }
+
+    this._client.username = this._client.username || settings.username || carrier.apiKey || '';
+    this._client.password = this._client.password || settings.password || '';
+    this._client.customerId = this._client.customerId || (settings.customerId ? Number(settings.customerId) : null);
+    if (carrier.apiUrl) {
+      this._client.baseUrl = carrier.apiUrl.replace(/\/+$/, '');
+    }
+
+    if (!this._client.username || !this._client.password) {
+      throw new Error('بيانات الدخول (اسم المستخدم أو كلمة المرور) الخاصة بـ QP Express غير مكتملة في إعدادات الشركة.');
+    }
+    if (!this._client.customerId) {
+      throw new Error('كود العميل (Customer ID) الخاص بـ QP Express غير محدد في إعدادات الشركة.');
+    }
+  }
+
   // ── Shipment Operations ─────────────────────────────
   async createShipment(orderData) {
+    await this.ensureCredentials();
     return this._shipment.createShipment(orderData);
   }
 
@@ -32,6 +88,7 @@ class QpExpressService {
    * إلغاء وحذف شحنة أو مجموعة شحنات من كيو بي إكسبريس
    */
   async cancelShipment(serialOrArray) {
+    await this.ensureCredentials();
     const list = Array.isArray(serialOrArray)
       ? serialOrArray.map(Number).filter(n => !isNaN(n))
       : [Number(serialOrArray)].filter(n => !isNaN(n));
@@ -44,6 +101,7 @@ class QpExpressService {
   }
 
   async bulkCreateShipments(ordersList = []) {
+    await this.ensureCredentials();
     const results = [];
     let successfulCount = 0;
     let failedCount = 0;
@@ -85,10 +143,12 @@ class QpExpressService {
 
   // ── Tracking ────────────────────────────────────────
   async trackShipment(serialOrOrderNumber) {
+    await this.ensureCredentials();
     return this._tracking.trackShipment(serialOrOrderNumber);
   }
 
   async getRecentOrders(limit = 50) {
+    await this.ensureCredentials();
     return this._tracking.getRecentOrders(limit);
   }
 
@@ -107,6 +167,7 @@ class QpExpressService {
 
   // ── Account & Pricing ───────────────────────────────
   async getCustomerInfo() {
+    await this.ensureCredentials();
     const data = await this._client.get('/customers/shipment-info/');
     return data.customer || null;
   }
@@ -115,6 +176,7 @@ class QpExpressService {
    * جلب قائمة الأسعار المتفق عليها للشركة لجميع المحافظات
    */
   async getPricingList() {
+    await this.ensureCredentials();
     const now = Date.now();
     if (this._cachedPricing && this._pricingExpiresAt > now) {
       return this._cachedPricing;

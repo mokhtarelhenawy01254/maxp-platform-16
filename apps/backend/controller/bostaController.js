@@ -4,10 +4,7 @@ const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase
 const getService = async (req) => {
   const { companyId } = req.user;
   const prisma = getSharedPrismaClient();
-  const company = await safeQuery(() =>
-    prisma.company.findUnique({ where: { id: companyId }, select: { bostaApiKey: true, bostaEnabled: true } })
-  , 2);
-  return { service: new BostaService(company?.bostaApiKey || null, companyId), company, prisma };
+  return { service: new BostaService(null, companyId), prisma };
 };
 
 exports.createShipment = async (req, res) => {
@@ -16,8 +13,8 @@ exports.createShipment = async (req, res) => {
     const { orderId } = req.params;
 
     const order = await safeQuery(() =>
-      prisma.order.findUnique({
-        where: { id: orderId },
+      prisma.order.findFirst({
+        where: { id: orderId, companyId: req.user.companyId },
         include: { customer: true, orderItems: { include: { product: true } } },
       })
     , 2);
@@ -27,21 +24,155 @@ exports.createShipment = async (req, res) => {
     const payload = service.formatOrderForBosta(order, order.customer);
     const result = await service.createDelivery(payload);
 
-    await safeQuery(() =>
-      prisma.shipment.updateMany({
+    // Upsert or update shipment in DB
+    const existingShipment = await safeQuery(() =>
+      prisma.shipment.findFirst({
         where: { orderId, companyId: req.user.companyId },
-        data: {
-          externalShipmentId: result._id,
-          trackingNumber: result.trackingNumber,
-          status: 'CREATED',
-          carrierType: 'BOSTA',
+      })
+    , 2);
+
+    if (existingShipment) {
+      await safeQuery(() =>
+        prisma.shipment.update({
+          where: { id: existingShipment.id },
+          data: {
+            externalShipmentId: result._id,
+            trackingNumber: result.trackingNumber,
+            status: 'CREATED',
+            carrierType: 'BOSTA',
+            metadata: JSON.stringify({
+              bostaDeliveryId: result._id,
+              bostaTrackingNumber: result.trackingNumber,
+            }),
+          },
+        })
+      , 2);
+    } else {
+      await safeQuery(() =>
+        prisma.shipment.create({
+          data: {
+            companyId: req.user.companyId,
+            orderId,
+            externalShipmentId: result._id,
+            trackingNumber: result.trackingNumber,
+            status: 'CREATED',
+            carrierType: 'BOSTA',
+            metadata: JSON.stringify({
+              bostaDeliveryId: result._id,
+              bostaTrackingNumber: result.trackingNumber,
+            }),
+          },
+        })
+      , 2);
+    }
+
+    res.json({ success: true, data: result, message: `تم إنشاء الشحنة بنجاح برقم تتبع ${result.trackingNumber}` });
+  } catch (error) {
+    console.error('[BOSTA] createShipment error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+};
+
+exports.bulkCreateShipments = async (req, res) => {
+  try {
+    const { service, prisma } = await getService(req);
+    const { orderIds } = req.body || {};
+
+    if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'يرجى تحديد الطلبات المراد شحنها' });
+    }
+
+    const orders = await safeQuery(() =>
+      prisma.order.findMany({
+        where: {
+          id: { in: orderIds },
+          companyId: req.user.companyId,
+        },
+        include: {
+          customer: true,
+          orderItems: { include: { product: true } },
+          shipment: true,
         },
       })
     , 2);
 
-    res.json({ success: true, data: result });
+    let successCount = 0;
+    let failedCount = 0;
+    let skippedCount = 0;
+    const results = [];
+
+    for (const order of orders) {
+      if (order.shipment?.trackingNumber && order.shipment.carrierType === 'BOSTA') {
+        skippedCount++;
+        results.push({ orderId: order.id, orderNumber: order.orderNumber, success: true, skipped: true, trackingNumber: order.shipment.trackingNumber });
+        continue;
+      }
+
+      try {
+        const payload = service.formatOrderForBosta(order, order.customer);
+        const result = await service.createDelivery(payload);
+
+        const existingShipment = await safeQuery(() =>
+          prisma.shipment.findFirst({
+            where: { orderId: order.id, companyId: req.user.companyId },
+          })
+        , 2);
+
+        if (existingShipment) {
+          await safeQuery(() =>
+            prisma.shipment.update({
+              where: { id: existingShipment.id },
+              data: {
+                externalShipmentId: result._id,
+                trackingNumber: result.trackingNumber,
+                status: 'CREATED',
+                carrierType: 'BOSTA',
+                metadata: JSON.stringify({
+                  bostaDeliveryId: result._id,
+                  bostaTrackingNumber: result.trackingNumber,
+                }),
+              },
+            })
+          , 2);
+        } else {
+          await safeQuery(() =>
+            prisma.shipment.create({
+              data: {
+                companyId: req.user.companyId,
+                orderId: order.id,
+                externalShipmentId: result._id,
+                trackingNumber: result.trackingNumber,
+                status: 'CREATED',
+                carrierType: 'BOSTA',
+                metadata: JSON.stringify({
+                  bostaDeliveryId: result._id,
+                  bostaTrackingNumber: result.trackingNumber,
+                }),
+              },
+            })
+          , 2);
+        }
+
+        successCount++;
+        results.push({ orderId: order.id, orderNumber: order.orderNumber, success: true, trackingNumber: result.trackingNumber });
+      } catch (err) {
+        failedCount++;
+        results.push({ orderId: order.id, orderNumber: order.orderNumber, success: false, error: err.message });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        total: orderIds.length,
+        success: successCount,
+        failed: failedCount,
+        skipped: skippedCount,
+        results,
+      },
+    });
   } catch (error) {
-    console.error('[BOSTA] createShipment error:', error);
+    console.error('[BOSTA] bulkCreateShipments error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -465,7 +465,7 @@ function renderThermalStickerHtml(order) {
   const address = order.address || order.shippingAddress || '';
   const contents = order.shipment_contents || order.items || 'بضائع متنوعة';
   const totalAmount = order.total_amount !== undefined ? order.total_amount : (order.amount || 0);
-  const companyName = order.company_name || order.customer || 'أميرال';
+  const companyName = order.company_name || order.companyName || order.customer || 'متجر معتمد';
   const notes = order.notes || 'معاينة مسموحة';
   const orderDate = order.order_date ? String(order.order_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${serial}&scale=2&width=40&height=10&includetext&alttext=QP${serial}`;

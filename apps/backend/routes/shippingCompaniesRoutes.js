@@ -31,6 +31,16 @@ const buildProviderFields = (body, carrier = {}) => {
     settings.autoCreateShipments = Boolean(body.autoCreateShipments);
   }
 
+  // Merge carrier-specific parameters
+  if (body.username !== undefined) settings.username = String(body.username).trim();
+  if (body.password !== undefined && String(body.password).trim()) settings.password = String(body.password).trim();
+  if (body.customerId !== undefined && body.customerId !== '') settings.customerId = Number(body.customerId) || body.customerId;
+  if (body.defaultNotes !== undefined) settings.defaultNotes = String(body.defaultNotes).trim();
+  if (body.pickupAddress !== undefined) settings.pickupAddress = String(body.pickupAddress).trim();
+  if (body.mainClientCode !== undefined) settings.mainClientCode = body.mainClientCode;
+  if (body.senderNumber !== undefined) settings.senderNumber = body.senderNumber;
+  if (body.apiKey !== undefined && body.apiKey) settings.apiKey = String(body.apiKey).trim();
+
   return {
     providerKey,
     integrationMode,
@@ -198,6 +208,13 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
       }
     });
 
+    if (providerFields.providerKey === 'BOSTA' && apiKey) {
+      await prisma.company.update({
+        where: { id: companyId },
+        data: { bostaApiKey: apiKey, bostaEnabled: isActive !== undefined ? isActive : true },
+      }).catch(err => console.warn('Non-blocking bosta sync error:', err.message));
+    }
+
     res.json({ success: true, data: company });
   } catch (error) {
     console.error('Error creating shipping company:', error);
@@ -246,6 +263,16 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
         isActive: isActive !== undefined ? isActive : existing.isActive,
       },
     });
+
+    if (providerFields.providerKey === 'BOSTA') {
+      const activeKey = apiKey || existing.apiKey;
+      if (activeKey) {
+        await prisma.company.update({
+          where: { id: companyId },
+          data: { bostaApiKey: activeKey, bostaEnabled: isActive !== undefined ? isActive : existing.isActive },
+        }).catch(err => console.warn('Non-blocking bosta sync error:', err.message));
+      }
+    }
 
     res.json({ success: true, data: updated, message: 'تم تحديث إعدادات الشركة بنجاح' });
   } catch (error) {
@@ -322,6 +349,65 @@ router.post('/:id/test-connection', verifyToken.authenticateToken, async (req, r
       });
     }
 
+    if (providerKey === 'QP_EXPRESS') {
+      const settings = shippingProviderService.safeJsonParse(company.settings, {});
+      const username = settings.username || company.apiKey;
+      const password = settings.password;
+      const customerId = settings.customerId;
+
+      if (!username || !password) {
+        return res.status(400).json({ success: false, error: 'يرجى إدخال اسم المستخدم وكلمة المرور الخاصة بحساب كيو بي إكسبريس' });
+      }
+      if (!customerId) {
+        return res.status(400).json({ success: false, error: 'يرجى إدخال كود العميل (Customer ID) الخاص بـ QP Express' });
+      }
+
+      try {
+        const QpExpressApiClient = require('../services/qpExpress/qpExpressApiClient');
+        const client = new QpExpressApiClient({
+          username,
+          password,
+          customerId,
+          baseUrl: company.apiUrl,
+        });
+        await client.getAccessToken();
+        return res.json({
+          success: true,
+          status: 'CONNECTED',
+          message: `تم التحقق والاتصال بنجاح بـ QP Express (كود العميل: ${customerId})`,
+        });
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: `فشل الاتصال بـ QP Express: ${err.message}`,
+        });
+      }
+    }
+
+    if (providerKey === 'BOSTA') {
+      const settings = shippingProviderService.safeJsonParse(company.settings, {});
+      const apiKey = company.apiKey || settings.apiKey;
+      if (!apiKey) {
+        return res.status(400).json({ success: false, error: 'يرجى إدخال مفتاح الـ API Key الخاص ببوستا أولاً' });
+      }
+
+      try {
+        const BostaService = require('../services/bostaService');
+        const bosta = new BostaService(apiKey, companyId);
+        await bosta.getAllCities();
+        return res.json({
+          success: true,
+          status: 'CONNECTED',
+          message: 'تم التحقق من صلاحية مفتاح الـ API والاتصال بشركة بوستا (Bosta) بنجاح',
+        });
+      } catch (err) {
+        return res.status(400).json({
+          success: false,
+          error: `فشل الاتصال ببوستا: ${err.message}`,
+        });
+      }
+    }
+
     if (providerKey === 'TURBO') {
       if (!company.apiKey) {
         return res.status(400).json({ success: false, error: 'يرجى إدخال مفتاح الـ API Key أولاً' });
@@ -330,17 +416,6 @@ router.post('/:id/test-connection', verifyToken.authenticateToken, async (req, r
         success: true,
         status: 'CONNECTED',
         message: 'تم التحقق من إعدادات الاتصال بشركة تربو بنجاح',
-      });
-    }
-
-    if (providerKey === 'BOSTA') {
-      if (!company.apiKey) {
-        return res.status(400).json({ success: false, error: 'يرجى إدخال مفتاح الـ API Key أولاً' });
-      }
-      return res.json({
-        success: true,
-        status: 'CONNECTED',
-        message: 'تم التحقق من إعدادات الاتصال ببوستا بنجاح',
       });
     }
 

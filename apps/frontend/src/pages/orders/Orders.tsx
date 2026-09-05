@@ -2375,6 +2375,39 @@ const Orders: React.FC = () => {
     }
   };
 
+  const handleBulkCreateBostaShipments = async () => {
+    if (
+      !window.confirm(
+        `هل تريد تأكيد إرسال ${selectedOrders.length} طلب إلى شركة بوستا (Bosta) وتوليد البوالص آلياً؟`
+      )
+    )
+      return;
+
+    try {
+      setBulkProcessing(true);
+      const response: any = await apiClient.post("/bosta/bulk/create-shipments", {
+        orderIds: selectedOrders,
+      });
+
+      if (response.data?.success) {
+        const { success, failed, skipped } = response.data.data;
+        let message = `تم إنشاء ${success} بوليصة شحن لدى بوستا بنجاح`;
+        if (failed > 0) message += `\nفشل: ${failed}`;
+        if (skipped > 0) message += `\nتم تخطيها (مشحونة مسبقاً): ${skipped}`;
+        alert(message);
+        setSelectedOrders([]);
+        await fetchOrders();
+      } else {
+        alert(response.data?.error || "تعذر الشحن الجماعي لدى بوستا");
+      }
+    } catch (error: unknown) {
+      console.error("Error bulk creating Bosta shipments:", error);
+      alert(getApiErrorMessage(error, "فشل إنشاء شحنات بوستا المجمعة"));
+    } finally {
+      setBulkProcessing(false);
+    }
+  };
+
   const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
     const display = getOrderStatusDisplay(order);
     const customStyle = getStatusBadgeStyle(order.status || "");
@@ -2824,6 +2857,7 @@ const Orders: React.FC = () => {
           onPrintInvoices={handleBulkPrintInvoices}
           onCreateTurboShipments={handleBulkCreateTurboShipments}
           onCreateQpExpressShipments={handleBulkCreateQpExpressShipments}
+          onCreateBostaShipments={handleBulkCreateBostaShipments}
           onDelete={handleBulkDelete}
         />
       )}
@@ -2852,6 +2886,12 @@ const Orders: React.FC = () => {
             group: "bulk",
             label: "شحن الطلبات المحددة عبر كيو بي إكسبريس (QP Express)",
             onSelect: () => handleBulkCreateQpExpressShipments(),
+          },
+          {
+            id: "bulk-bosta",
+            group: "bulk",
+            label: "شحن الطلبات المحددة عبر بوستا (Bosta)",
+            onSelect: () => handleBulkCreateBostaShipments(),
           },
           {
             id: "bulk-delete",
