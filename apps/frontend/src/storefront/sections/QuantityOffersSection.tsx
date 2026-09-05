@@ -172,7 +172,12 @@ const QuantityOffersSection: React.FC<QuantityOffersSectionProps> = ({
         ? settings.decisionMode.trim()
         : "supporting",
   };
-  const seedAttributes = selectedAttributes ?? EMPTY_ATTRIBUTES;
+  const seedAttributesKey = JSON.stringify(selectedAttributes || {});
+  const seedAttributes = React.useMemo(
+    () => selectedAttributes ?? EMPTY_ATTRIBUTES,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [seedAttributesKey],
+  );
   const panelKey = `quantity-offers:${product.id}:${variant}`;
 
   return (

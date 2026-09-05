@@ -53,6 +53,10 @@ export type QuantityOffersVariant =
   | "look-builder"
   | "selection-rail";
 
+const EMPTY_RECORD: Record<string, string> = {};
+const EMPTY_SELECTIONS: Record<string, string>[] = [];
+const EMPTY_VOLUME_DISCOUNTS: any[] = [];
+
 const buildDefaultSelection = (
   variants: ProductVariant[],
   seedAttributes?: Record<string, string>,
@@ -235,6 +239,16 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
     }
   }, [defaultOffer?.id, selectedOfferId]);
 
+  const seedAttributesKey = React.useMemo(
+    () => JSON.stringify(seedAttributes || {}),
+    [seedAttributes],
+  );
+  const stableSeedAttributes = React.useMemo(
+    () => seedAttributes || EMPTY_RECORD,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [seedAttributesKey],
+  );
+
   React.useEffect(() => {
     if (!activeOffer) {
       return;
@@ -251,11 +265,11 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
         [activeOffer.id]: buildOfferSelections(
           activeOffer.quantity,
           variants,
-          seedAttributes,
+          stableSeedAttributes,
         ),
       };
     });
-  }, [activeOffer, seedAttributes, variants]);
+  }, [activeOffer, stableSeedAttributes, variants]);
 
   const title = settings?.title || "عروض الكميات";
   const subtitle =
@@ -309,7 +323,8 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
       : "text-sm leading-6 text-muted-foreground";
   const offersWrapperClassName =
     isSelectionRail ? "space-y-2" : isCompactLike ? "space-y-2.5" : "space-y-3";
-  const activeSelections = activeOffer ? offerSelections[activeOffer.id] || [] : [];
+  const activeSelections =
+    (activeOffer && offerSelections[activeOffer.id]) || EMPTY_SELECTIONS;
   const isActiveOfferSelectionReady = activeOffer
     ? !hasVariants ||
       (activeSelections.length === activeOffer.quantity &&
@@ -327,9 +342,9 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
         return existingSelections;
       }
 
-      return buildOfferSelections(offer.quantity, variants, seedAttributes);
+      return buildOfferSelections(offer.quantity, variants, stableSeedAttributes);
     },
-    [offerSelections, seedAttributes, variants],
+    [offerSelections, stableSeedAttributes, variants],
   );
 
   const getReferenceUnitPricesForOffer = React.useCallback(
@@ -398,7 +413,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
       isReady: selectionsReady,
     });
 
-    const primarySlotSelection = activeSelections[0] || {};
+    const primarySlotSelection = activeSelections[0] || EMPTY_RECORD;
     const primarySlotVariant = resolveVariantFromAttributes(
       variants,
       primarySlotSelection,
@@ -418,7 +433,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
       unitPrice: Number(activeTotals.offerTotal || product.price || 0),
       basePrice: Number(product.comparePrice || product.price || 0),
       attributes: primarySlotSelection,
-      volumeDiscounts: [],
+      volumeDiscounts: EMPTY_VOLUME_DISCOUNTS,
       requiresVariantSelection: hasVariants,
       isSelectionReady: selectionsReady,
     });
@@ -428,7 +443,11 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
     currency,
     getOfferTotals,
     hasVariants,
-    product,
+    product?.comparePrice,
+    product?.id,
+    product?.name,
+    product?.price,
+    product?.slug,
     resetQuantityOfferSelection,
     syncQuantityOfferSelection,
     variants,

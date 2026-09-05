@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import QuantityOffersPanel from "../components/QuantityOffersPanel";
+import { usePdpSelectionStore } from "../store/usePdpSelectionStore";
 
 const mockAddItem = vi.fn();
 const mockTrackStorefrontAppUsage = vi.fn();
@@ -276,5 +277,105 @@ describe("QuantityOffersPanel", () => {
         }),
       }),
     );
+  });
+
+  it("syncs primary slot selection to usePdpSelectionStore and avoids infinite loops when parent reads selection", () => {
+    usePdpSelectionStore.getState().resetSelection();
+
+    let renderCount = 0;
+    const ParentComponent = () => {
+      renderCount++;
+      const selectedAttributes = usePdpSelectionStore(
+        (state: { selection: { attributes?: Record<string, string> } | null }) =>
+          state.selection?.attributes,
+      );
+
+      return (
+        <QuantityOffersPanel
+          currency="EGP"
+          seedAttributes={selectedAttributes || {}}
+          product={{
+            id: "product-loop-test",
+            name: "Loop Guard Shoe",
+            description: "",
+            price: 550,
+            comparePrice: 700,
+            images: ["/shoe.jpg"],
+            slug: "loop-guard-shoe",
+            metadata: {
+              quantityOffers: [
+                {
+                  id: "offer-loop-1",
+                  quantity: 1,
+                  unitPrice: 550,
+                  buyText: "اشتري قطعة",
+                  isDefault: true,
+                  isActive: true,
+                },
+              ],
+            },
+            productVariants: [
+              {
+                id: "var-loop-1",
+                name: "Black / 42",
+                price: 550,
+                comparePrice: 700,
+                image: "/shoe-black.jpg",
+                attributes: {
+                  Color: "Black",
+                  Size: "42",
+                },
+              },
+            ],
+          }}
+        />
+      );
+    };
+
+    // If there is an infinite loop (React Error #185), this render will throw "Maximum update depth exceeded"
+    expect(() => render(<ParentComponent />)).not.toThrow();
+
+    // The store should have the synced variant
+    const syncedSelection = usePdpSelectionStore.getState().selection;
+    expect(syncedSelection).toBeDefined();
+    expect(syncedSelection?.productId).toBe("product-loop-test");
+    expect(syncedSelection?.variantId).toBe("var-loop-1");
+    expect(syncedSelection?.imageUrl).toBe("/shoe-black.jpg");
+    expect(syncedSelection?.attributes).toEqual({
+      Color: "Black",
+      Size: "42",
+    });
+
+    // Renders should be low and finite (not runaway)
+    expect(renderCount).toBeLessThan(10);
+  });
+
+  it("usePdpSelectionStore.syncSelection is idempotent when given identical payloads", () => {
+    usePdpSelectionStore.getState().resetSelection();
+
+    const listener = vi.fn();
+    const unsubscribe = usePdpSelectionStore.subscribe(listener);
+
+    const selectionPayload = {
+      productId: "prod-1",
+      productName: "Test",
+      variantId: "v-1",
+      imageUrl: "/img.jpg",
+      unitPrice: 100,
+      attributes: { Color: "Red" },
+      volumeDiscounts: [],
+      requiresVariantSelection: true,
+      isSelectionReady: true,
+    };
+
+    usePdpSelectionStore.getState().syncSelection(selectionPayload);
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    // Call syncSelection again with identical payload
+    usePdpSelectionStore.getState().syncSelection({ ...selectionPayload, attributes: { Color: "Red" } });
+    // Listener should NOT be called again because the state was identical
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    unsubscribe();
   });
 });
