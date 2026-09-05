@@ -264,7 +264,7 @@ const FunnelCodSalesPage: React.FC = () => {
   const { slug = "" } = useParams<{ slug: string }>();
   const [funnel, setFunnel] = useState<PublicFunnel | null>(null);
   const [product, setProduct] = useState<Product>(FALLBACK_PRODUCT);
-  const [company] = useState(FALLBACK_COMPANY);
+  const [company, setCompany] = useState(FALLBACK_COMPANY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -304,6 +304,14 @@ const FunnelCodSalesPage: React.FC = () => {
         if (res) {
           setFunnel(res.funnel);
           setProduct(res.product ?? FALLBACK_PRODUCT);
+          if (res.company) {
+            setCompany({
+              id: res.company.id,
+              name: res.company.name || FALLBACK_COMPANY.name,
+              slug: res.company.slug || FALLBACK_COMPANY.slug,
+              currency: res.company.currency || FALLBACK_COMPANY.currency,
+            });
+          }
         }
       } catch (err) {
         // Graceful fallback to demo data — funnel is publicly viewable
@@ -329,6 +337,29 @@ const FunnelCodSalesPage: React.FC = () => {
   }, [slug]);
 
   const config = funnel?.config ?? FALLBACK_CONFIG;
+
+  // Sync document.title and meta tags for dynamic COD Funnel landing page
+  useEffect(() => {
+    const pageTitle = funnel?.title || product?.name || config.heroTitle;
+    const storeName = company?.name || "MaxP";
+    const fullTitle = pageTitle ? `${pageTitle} | ${storeName}` : `عرض خاص | ${storeName}`;
+    const previousTitle = document.title;
+    document.title = fullTitle;
+
+    const metaDesc = document.querySelector('meta[name="description"]');
+    const previousDesc = metaDesc?.getAttribute("content");
+    const newDesc = config.heroSubtitle || product?.description || "اطلب الآن بأفضل سعر مع شحن سريع ودفع عند الاستلام";
+    if (metaDesc) {
+      metaDesc.setAttribute("content", newDesc);
+    }
+
+    return () => {
+      document.title = previousTitle;
+      if (metaDesc && previousDesc) {
+        metaDesc.setAttribute("content", previousDesc);
+      }
+    };
+  }, [funnel?.title, product?.name, product?.description, config.heroTitle, config.heroSubtitle, company?.name]);
 
   // Countdown timer
   useEffect(() => {

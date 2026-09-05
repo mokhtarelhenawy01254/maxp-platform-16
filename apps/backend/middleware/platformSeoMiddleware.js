@@ -37,57 +37,238 @@ const PLATFORM_DEFAULT_DESCRIPTION =
 // ---------------------------------------------------------------------------
 
 const ROUTE_SEO_MAP = [
-  // ── Landing Pages ──────────────────────────────────────────────────────────
+  // ── Platform Homepage ───────────────────────────────────────────────────────
+  {
+    match: "/",
+    title: "MaxP — منصة إدارة التواصل والتجارة الإلكترونية والذكاء الاصطناعي",
+    description:
+      "المنصة المتكاملة للشركات والتجار: إدارة المحادثات، أعوان الذكاء الاصطناعي، المتاجر الرقمية السريعة، وتأكيد طلبات الدفع عند الاستلام.",
+    image: PLATFORM_OG_COVER,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: "MaxP",
+      operatingSystem: "Cloud, Web, Mobile",
+      applicationCategory: "BusinessApplication, eCommerceApplication",
+      description: PLATFORM_DEFAULT_DESCRIPTION,
+      offers: {
+        "@type": "Offer",
+        price: "999",
+        priceCurrency: "EGP",
+      },
+    },
+  },
+
+  // ── Landing Pages (Both /lp/* and /landing/* aliases) ───────────────────────
+  {
+    match: "/lp/ai-inbox",
+    title: "Max P AI + Inbox — أعوان الذكاء الاصطناعي وصندوق الوارد الموحد",
+    description:
+      "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات (واتساب، انستجرام، فيسبوك، تلجرام). AI Agent يرد فوراً وينشئ الطلبات تلقائياً.",
+    image: `${PLATFORM_BASE_URL}/og-messaging.svg`,
+  },
   {
     match: "/landing/ai-inbox",
-    title: "Max P AI + Inbox — AI Agent + Unified Inbox في باقة واحدة",
+    title: "Max P AI + Inbox — أعوان الذكاء الاصطناعي وصندوق الوارد الموحد",
     description:
-      "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات. AI Agent يرد وينشئ الطلبات تلقائياً. ٩٩٩ ج.م/شهر.",
+      "الذكاء الاصطناعي للمحادثات + صندوق وارد موحد لكل المنصات (واتساب، انستجرام، فيسبوك، تلجرام). AI Agent يرد فوراً وينشئ الطلبات تلقائياً.",
+    image: `${PLATFORM_BASE_URL}/og-messaging.svg`,
+  },
+  {
+    match: "/lp/messaging",
+    title: "Max P Inbox — كل رسائل واتساب وتلجرام وانستجرام وماسنجر في مكان واحد",
+    description:
+      "صندوق وارد موحّد للرد على كل المنصات · توزيع المحادثات على الفريق · ردود سريعة وحجوزات تلقائية من ٩٩٩ ج.م/شهر.",
     image: `${PLATFORM_BASE_URL}/og-messaging.svg`,
   },
   {
     match: "/landing/messaging",
-    title: "Max P Inbox — كل رسايل واتساب وتلجرام وانستجرام وماسنجر في مكان واحد",
+    title: "Max P Inbox — كل رسائل واتساب وتلجرام وانستجرام وماسنجر في مكان واحد",
     description:
-      "صندوق وارد موحّد للرد على كل المنصات · AI Agent يعمل حجوزات وطلبات. من ٩٩٩ ج.م/شهر.",
+      "صندوق وارد موحّد للرد على كل المنصات · توزيع المحادثات على الفريق · ردود سريعة وحجوزات تلقائية من ٩٩٩ ج.م/شهر.",
     image: `${PLATFORM_BASE_URL}/og-messaging.svg`,
   },
   {
-    match: "/landing/medical",
-    title: "Max P الباقة الطبية — النظام الطبي المتكامل + واتساب + AI Agents",
+    match: "/lp/medical",
+    title: "Max P الباقة الطبية — النظام الطبي المتكامل للعيادات والمراكز + واتساب",
     description:
-      "نظام طبي متكامل يضم إدارة المواعيد، سجلات المرضى، واتساب، وأعوان الذكاء الاصطناعي للعيادات والمستشفيات.",
+      "نظام طبي متكامل يضم إدارة المواعيد، سجلات المرضى الإلكترونية، تأكيد الحجوزات عبر واتساب، وأعوان الذكاء الاصطناعي للعيادات.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/landing/medical",
+    title: "Max P الباقة الطبية — النظام الطبي المتكامل للعيادات والمراكز + واتساب",
+    description:
+      "نظام طبي متكامل يضم إدارة المواعيد، سجلات المرضى الإلكترونية، تأكيد الحجوزات عبر واتساب، وأعوان الذكاء الاصطناعي للعيادات.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/lp/mg-agency",
+    title: "Max P للوكالات الإعلانية — إدارة المحادثات والحملات لعملاء الميديا باينج",
+    description:
+      "النظام المخصص لوكالات التسويق والميديا بايرز: بوابات مخصصة لكل عميل، تتبع دقيق للمبيعات، وتأكيد فوري للطلبات المحققة من الإعلانات.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/lp/mg",
+    title: "Max P للوكالات الإعلانية — إدارة المحادثات والحملات لعملاء الميديا باينج",
+    description:
+      "النظام المخصص لوكالات التسويق والميديا بايرز: بوابات مخصصة لكل عميل، تتبع دقيق للمبيعات، وتأكيد فوري للطلبات المحققة من الإعلانات.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/lp/employees",
+    title: "Max P — إدارة الموظفين والحضور والإجازات بالذكاء الاصطناعي",
+    description:
+      "نظام إدارة الموظفين من MaxP — الحضور والانصراف، الإجازات، الرواتب، وتقييم أداء فريق العمل في لوحة واحدة.",
+    image: PLATFORM_OG_COVER,
   },
   {
     match: "/landing/employees",
     title: "Max P — إدارة الموظفين والحضور والإجازات بالذكاء الاصطناعي",
     description:
-      "نظام إدارة الموظفين من MaxP — الحضور والانصراف، الإجازات، الرواتب، وكل ما يحتاجه فريق العمل.",
+      "نظام إدارة الموظفين من MaxP — الحضور والانصراف، الإجازات، الرواتب، وتقييم أداء فريق العمل في لوحة واحدة.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/lp/marketing",
+    title: "Max P Marketing — أتمتة التسويق وإدارة الحملات الإعلانية",
+    description:
+      "إدارة حملاتك التسويقية، إعلانات فيسبوك وانستجرام وتيك توك، وتحليل العائد الإعلاني ROAS من مكان واحد مع AI Agent.",
+    image: PLATFORM_OG_COVER,
   },
   {
     match: "/landing/marketing",
-    title: "Max P — منصة التسويق الرقمي وإدارة الإعلانات",
+    title: "Max P Marketing — أتمتة التسويق وإدارة الحملات الإعلانية",
     description:
-      "إدارة حملاتك التسويقية، إعلانات فيسبوك وانستجرام وجوجل، وتحليل الأداء من مكان واحد مع AI Agent.",
+      "إدارة حملاتك التسويقية، إعلانات فيسبوك وانستجرام وتيك توك، وتحليل العائد الإعلاني ROAS من مكان واحد مع AI Agent.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/for-merchants",
+    title: "Max P للتجارة الإلكترونية — حوّل زوارك ومحادثاتك إلى مبيعات مؤكدة",
+    description:
+      "حلول متطورة للتجار وأصحاب المتاجر: تأكيد أوردرات الدفع عند الاستلام عبر واتساب، شحن أسرع، وتقليل المرتجعات.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/pricing",
+    title: "باقات وأسعار Max P — اختر الخطة المناسبة لنمو أعمالك",
+    description:
+      "خطط اشتراك مرنة تناسب الشركات والمتاجر والعيادات. ابدأ الآن واكتشف القوة الكاملة لمنصة MaxP.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/features",
+    title: "مميزات Max P — أدوات ذكية متكاملة لإدارة البيع والتواصل",
+    description:
+      "المتاجر الإلكترونية السريعة، الذكاء الاصطناعي، الربط مع شركات الشحن، الفواتير الإلكترونية، وإعلانات فيسبوك CAPI.",
+    image: PLATFORM_OG_COVER,
+  },
+  {
+    match: "/affiliates",
+    title: "برنامج التسويق بالعمولة — Max P Affiliate Program",
+    description:
+      "شارك في نجاح MaxP واحصل على عمولات شهرية متكررة من خلال دعوة التجار والشركات للانضمام للمنصة.",
+    image: PLATFORM_OG_COVER,
   },
   {
     match: "/landing",
     title: "MaxP — باقات ومنتجات المنصة",
     description: PLATFORM_DEFAULT_DESCRIPTION,
+    image: PLATFORM_OG_COVER,
   },
 
-  // ── Super Admin ─────────────────────────────────────────────────────────────
+  // ── Public Auth ─────────────────────────────────────────────────────────────
   {
-    match: "/super-admin",
-    title: "MaxP Super Admin",
-    description: "لوحة تحكم المنصة — إدارة الشركات، الباقات، والإعدادات.",
+    match: "/login",
+    title: "تسجيل الدخول | MaxP",
+    description: "سجّل دخولك إلى لوحة تحكم MaxP لمتابعة رسائلك ومبيعاتك ومتجرك.",
+    noIndex: true,
+  },
+  {
+    match: "/register",
+    title: "إنشاء حساب جديد | MaxP",
+    description: "ابدأ رحلتك مع MaxP — أنشئ حسابك الآن وابدأ في أتمتة مبيعاتك وتواصلك.",
     noIndex: true,
   },
 
-  // ── Regular Admin ───────────────────────────────────────────────────────────
+  // ── Merchant Dashboard & Admin Routes (noIndex) ─────────────────────────────
+  {
+    match: "/orders",
+    title: "الطلبات والمبيعات | MaxP Dashboard",
+    description: "إدارة ومتابعة طلبات المتجر، حالات الشحن، وتأكيد أوردرات الدفع عند الاستلام.",
+    noIndex: true,
+  },
+  {
+    match: "/products",
+    title: "إدارة المنتجات والكتالوج | MaxP Dashboard",
+    description: "إضافة وتعديل المنتجات، الأسعار، المخزون، وسيو المنتجات في متجرك.",
+    noIndex: true,
+  },
+  {
+    match: "/customers",
+    title: "سجلات وقاعدة بيانات العملاء | MaxP Dashboard",
+    description: "بيانات العملاء، سجل الطلبات، وتقسيم الشرائح التسويقية.",
+    noIndex: true,
+  },
+  {
+    match: "/conversations",
+    title: "صندوق المحادثات والرسائل | MaxP Dashboard",
+    description: "متابعة والرد على رسائل واتساب، فيسبوك، انستجرام، وتلجرام الموحدة.",
+    noIndex: true,
+  },
+  {
+    match: "/inbox",
+    title: "صندوق المحادثات والرسائل | MaxP Dashboard",
+    description: "متابعة والرد على رسائل واتساب، فيسبوك، انستجرام، وتلجرام الموحدة.",
+    noIndex: true,
+  },
+  {
+    match: "/analytics",
+    title: "التقارير وتحليلات الأداء | MaxP Dashboard",
+    description: "تقارير المبيعات، معدل التحويل، أداء الحملات، وتحليلات الموظفين.",
+    noIndex: true,
+  },
+  {
+    match: "/advertising",
+    title: "إعلانات فيسبوك والبكسل CAPI | MaxP Dashboard",
+    description: "إدارة بكسل فيسبوك، واجهة التحويلات CAPI، وحملات الكتالوج الإعلاني.",
+    noIndex: true,
+  },
+  {
+    match: "/inventory",
+    title: "المخزون والمستودعات | MaxP Dashboard",
+    description: "تتبع جرد المنتجات، تنبيهات نفاد المخزون، وإدارة المستودعات.",
+    noIndex: true,
+  },
+  {
+    match: "/settings",
+    title: "إعدادات المتجر والمنصة | MaxP Dashboard",
+    description: "تخصيص الثيم، طرق الدفع، الشحن، والنطاقات المخصصة.",
+    noIndex: true,
+  },
+  {
+    match: "/agency",
+    title: "لوحة تحكم الوكالات وإدارة العملاء | MaxP Dashboard",
+    description: "إدارة حسابات عملاء الوكالة وتتبع أدائهم وحملاتهم الإعلانية.",
+    noIndex: true,
+  },
+  {
+    match: "/dashboard",
+    title: "لوحة التحكم الرئيسية | MaxP Dashboard",
+    description: "نظرة عامة على مبيعات اليوم، الطلبات الجديدة، وأداء المتجر.",
+    noIndex: true,
+  },
+  {
+    match: "/super-admin",
+    title: "لوحة تحكم النظام الفائقة | MaxP Super Admin",
+    description: "لوحة تحكم المنصة — إدارة الشركات، الباقات، والإعدادات العامة.",
+    noIndex: true,
+  },
   {
     match: "/admin",
-    title: "MaxP — لوحة التحكم",
+    title: "لوحة الإدارة | MaxP Admin",
     description: "إدارة محادثاتك وطلباتك ومتجرك الإلكتروني من مكان واحد.",
     noIndex: true,
   },
@@ -106,6 +287,7 @@ const escapeHtml = (value) =>
     .replace(/'/g, "&#39;");
 
 const upsertMeta = (html, attribute, key, value) => {
+  if (!value) return html;
   const escaped = escapeHtml(value);
   const pattern = new RegExp(
     `<meta[^>]+${attribute}=["']${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}["'][^>]*>`,
@@ -118,7 +300,7 @@ const upsertMeta = (html, attribute, key, value) => {
 const upsertTitle = (html, title) =>
   html.replace(/<title>[^<]*<\/title>/i, `<title>${escapeHtml(title)}</title>`);
 
-const injectSeoTags = (html, { title, description, image, url, noIndex }) => {
+const injectSeoTags = (html, { title, description, image, url, noIndex, price, currency, type, jsonLd }) => {
   let h = upsertTitle(html, title);
   h = upsertMeta(h, "name", "description", description);
   h = upsertMeta(h, "property", "og:title", title);
@@ -127,10 +309,16 @@ const injectSeoTags = (html, { title, description, image, url, noIndex }) => {
   h = upsertMeta(h, "property", "og:image", image);
   h = upsertMeta(h, "property", "og:image:width", "1200");
   h = upsertMeta(h, "property", "og:image:height", "630");
+  h = upsertMeta(h, "property", "og:type", type || "website");
   h = upsertMeta(h, "name", "twitter:title", title);
   h = upsertMeta(h, "name", "twitter:description", description);
   h = upsertMeta(h, "name", "twitter:image", image);
   h = upsertMeta(h, "name", "twitter:card", "summary_large_image");
+
+  if (price !== undefined && price !== null) {
+    h = upsertMeta(h, "property", "product:price:amount", String(price));
+    h = upsertMeta(h, "property", "product:price:currency", currency || "EGP");
+  }
 
   if (noIndex) {
     const robotsPattern = /<meta[^>]+name=["']robots["'][^>]*>/i;
@@ -140,18 +328,23 @@ const injectSeoTags = (html, { title, description, image, url, noIndex }) => {
       : h.replace("</head>", `  ${robotsTag}\n</head>`);
   }
 
+  if (jsonLd) {
+    const scriptTag = `<script type="application/ld+json">${JSON.stringify(jsonLd).replace(/</g, "\\u003c")}</script>`;
+    h = h.replace("</head>", `  ${scriptTag}\n</head>`);
+  }
+
   return h;
 };
 
 const resolveRouteSeo = (pathname) => {
-  const normalized = (pathname || "/").split("?")[0];
+  const normalized = (pathname || "/").split("?")[0].replace(/\/+$/, "") || "/";
 
   // Exact match first, then longest prefix match.
   let best = null;
   let bestLen = -1;
 
   for (const entry of ROUTE_SEO_MAP) {
-    if (normalized === entry.match || normalized.startsWith(entry.match + "/")) {
+    if (normalized === entry.match || (entry.match !== "/" && normalized.startsWith(entry.match + "/"))) {
       if (entry.match.length > bestLen) {
         best = entry;
         bestLen = entry.match.length;
@@ -208,23 +401,98 @@ const loadIndexHtml = async () => {
 // Middleware
 // ---------------------------------------------------------------------------
 
-/**
- * Express middleware.
- *
- * Only intercepts GET / HEAD requests that look like HTML navigation requests
- * (i.e. Accept: text/html) AND that match a known platform route.
- * All other requests are passed through unchanged.
- */
-exports.clearPlatformSeoHtmlCache = clearPlatformSeoHtmlCache;
-
-exports.handlePlatformSeo = async (req, res, next) => {
+const handlePlatformSeo = async (req, res, next) => {
   // Only handle HTML-looking GET/HEAD requests.
   if (req.method !== "GET" && req.method !== "HEAD") return next();
   if (req.path.startsWith("/api") || req.path.startsWith("/socket.io")) return next();
   if (path.posix.extname(req.path)) return next();
 
+  // If request belongs to a tenant company (subdomain or custom domain) and is NOT a funnel,
+  // let storefrontHtmlController handle it.
+  const isFunnelRoute = req.path.startsWith("/funnel/") || req.path.startsWith("/funnels/");
+  if (req.companyId && req.company && req.company.slug !== "main" && req.company.slug !== "platform" && !isFunnelRoute) {
+    return next();
+  }
+
   const accept = String(req.headers.accept || "").toLowerCase();
   if (accept && !accept.includes("text/html") && !accept.includes("*/*")) return next();
+
+  // Handle dynamic Funnel COD sales pages (/funnel/:slug)
+  if (isFunnelRoute) {
+    const slug = req.path.replace(/^\/funnels?\//, "").split("/")[0].trim();
+    if (slug) {
+      try {
+        const { getSharedPrismaClientAsync } = require("../services/sharedDatabase");
+        const prisma = await getSharedPrismaClientAsync();
+        const funnel = await prisma.productLandingPage?.findFirst({
+          where: { slug, status: { in: ["PUBLISHED", "DRAFT"] } },
+        });
+
+        let product = null;
+        let company = null;
+
+        if (funnel?.productId) {
+          product = await prisma.product?.findUnique({
+            where: { id: funnel.productId },
+            select: { name: true, description: true, price: true, currency: true, mainImage: true, images: true },
+          });
+        }
+        if (funnel?.companyId) {
+          company = await prisma.company?.findUnique({
+            where: { id: funnel.companyId },
+            select: { name: true, currency: true, logo: true },
+          });
+        }
+
+        if (funnel || product) {
+          const funnelConfig = typeof funnel?.config === "object" && funnel?.config !== null ? funnel.config : {};
+          let productImages = [];
+          if (product?.images) {
+            try {
+              const parsed = JSON.parse(product.images);
+              if (Array.isArray(parsed)) productImages = parsed;
+            } catch {}
+          }
+
+          const heroTitle = funnelConfig?.heroTitle || funnel?.title || product?.name || "عرض خاص";
+          const storeName = company?.name || "طلب سريع";
+          const title = `${heroTitle} | ${storeName}`;
+          const description =
+            funnelConfig?.heroSubtitle ||
+            product?.description?.replace(/<[^>]*>/g, "").slice(0, 160) ||
+            "اطلب الآن والدفع كاش عند الاستلام مع شحن سريع وضمان المعاينة قبل الاستلام.";
+          const image =
+            funnelConfig?.heroImage ||
+            product?.mainImage ||
+            productImages[0] ||
+            PLATFORM_OG_COVER;
+
+          const price = product?.price ? Number(product.price) : null;
+          const currency = product?.currency || company?.currency || "EGP";
+
+          const currentUrl = `${req.protocol}://${req.get("host")}${req.originalUrl}`;
+          const indexHtml = await loadIndexHtml();
+          if (indexHtml) {
+            const html = injectSeoTags(indexHtml, {
+              title,
+              description,
+              image,
+              url: currentUrl,
+              noIndex: false,
+              price,
+              currency,
+              type: "product",
+            });
+            res.set("Content-Type", "text/html; charset=utf-8");
+            res.set("Cache-Control", "public, max-age=60, s-maxage=300");
+            return res.status(200).send(html);
+          }
+        }
+      } catch (err) {
+        console.error("❌ [PLATFORM-SEO] Error querying dynamic funnel:", err?.message);
+      }
+    }
+  }
 
   const routeSeo = resolveRouteSeo(req.path);
   if (!routeSeo) return next();
@@ -242,6 +510,7 @@ exports.handlePlatformSeo = async (req, res, next) => {
       image: finalImage,
       url: currentUrl,
       noIndex: routeSeo.noIndex || false,
+      jsonLd: routeSeo.jsonLd,
     });
 
     res.set("Content-Type", "text/html; charset=utf-8");
@@ -252,3 +521,14 @@ exports.handlePlatformSeo = async (req, res, next) => {
     return next();
   }
 };
+
+module.exports = {
+  handlePlatformSeo,
+  loadIndexHtml,
+  resolveRouteSeo,
+  ROUTE_SEO_MAP,
+  injectSeoTags,
+  clearPlatformSeoHtmlCache,
+};
+
+

@@ -378,9 +378,25 @@ function formatProductResponse(product) {
 
   const finalMainImage = normalizedMainImage || normalizedImages[0] || null;
 
+  const parsedMetadata = parseProductMetadata(product.metadata);
+  const metaTitle =
+    product.metaTitle ||
+    parsedMetadata?.metaTitle ||
+    parsedMetadata?.seo?.metaTitle ||
+    parsedMetadata?.seo?.title ||
+    null;
+  const metaDescription =
+    product.metaDescription ||
+    parsedMetadata?.metaDescription ||
+    parsedMetadata?.seo?.metaDescription ||
+    parsedMetadata?.seo?.description ||
+    null;
+
   return {
     ...product,
-    metadata: parseProductMetadata(product.metadata),
+    metadata: parsedMetadata,
+    metaTitle,
+    metaDescription,
     price: parseFloat(product.price) || 0,
     comparePrice: product.comparePrice ? parseFloat(product.comparePrice) : null,
     cost: product.cost ? parseFloat(product.cost) : null,

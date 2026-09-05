@@ -197,9 +197,9 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
   return (
     <nav
       aria-label="Meta Ads module navigation"
-      className="relative rounded-xl border border-slate-200 bg-slate-950 p-1.5 shadow-sm dark:border-slate-800"
+      className="relative rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-1.5 shadow-xs dark:border-slate-800/90 dark:bg-slate-900/95"
     >
-      <div className="flex gap-1.5 overflow-x-auto">
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
         {navItems.map((item) => {
           const Icon = item.icon;
 
@@ -210,18 +210,18 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
               end={item.to === "/advertising/facebook-ads"}
               className={({ isActive }) =>
                 [
-                  "group flex min-w-[118px] items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors",
+                  "group flex min-w-[110px] items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition-all duration-150",
                   isActive
-                    ? "active bg-white text-slate-950 shadow-sm"
-                    : "text-slate-300 hover:bg-white/10 hover:text-white",
+                    ? "active bg-blue-600 text-white shadow-sm shadow-blue-500/25"
+                    : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white",
                 ].join(" ")
               }
             >
-              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-white/10 text-current group-[.active]:bg-slate-100">
+              <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-slate-100 text-slate-700 group-[.active]:bg-white/20 group-[.active]:text-white dark:bg-slate-800 dark:text-slate-200">
                 <Icon className="h-4 w-4" />
               </span>
               <span className="min-w-0 text-start">
-                <span className="block truncate font-black">{item.label}</span>
+                <span className="block truncate">{item.label}</span>
               </span>
             </NavLink>
           );
@@ -234,21 +234,21 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
             aria-controls="facebook-ads-tools-launcher"
             onClick={() => setIsToolsOpen((current) => !current)}
             className={[
-              "group flex min-w-[118px] items-center gap-2 rounded-lg px-3 py-2 text-xs transition-colors",
+              "group flex min-w-[110px] items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition-all duration-150",
               isToolsOpen || isToolActive
-                ? "bg-white text-slate-950 shadow-sm"
-                : "text-slate-300 hover:bg-white/10 hover:text-white",
+                ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
+                : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white",
             ].join(" ")}
           >
-            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-white/10 text-current group-[.active]:bg-slate-100">
+            <span className="flex h-7 w-7 flex-none items-center justify-center rounded-lg bg-slate-100 text-slate-700 group-[.active]:bg-white/20 group-[.active]:text-white dark:bg-slate-800 dark:text-slate-200">
               <LineChart className="h-4 w-4" />
             </span>
             <span className="min-w-0 text-start">
-              <span className="block truncate font-black">الأدوات</span>
+              <span className="block truncate">الأدوات</span>
             </span>
             <ChevronDown
               className={[
-                "ms-auto h-3.5 w-3.5 flex-none transition-transform",
+                "ms-auto h-3.5 w-3.5 flex-none transition-transform duration-200",
                 isToolsOpen ? "rotate-180" : "",
               ].join(" ")}
             />
@@ -259,9 +259,9 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
       {isToolsOpen ? (
         <div
           id="facebook-ads-tools-launcher"
-          className="absolute end-1.5 top-[calc(100%+0.5rem)] z-30 w-[min(760px,calc(100vw-2rem))] rounded-xl border border-slate-200 bg-white p-3 text-slate-950 shadow-2xl dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+          className="absolute end-1.5 top-[calc(100%+0.5rem)] z-30 w-[min(780px,calc(100vw-2rem))] rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-xl p-4 text-slate-950 shadow-2xl dark:border-slate-800/90 dark:bg-slate-900/95 dark:text-white animate-in fade-in-50 zoom-in-95 duration-150"
         >
-          <div className="grid gap-3 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-3">
             {toolGroups.map((group) => (
               <section key={group.title} aria-label={group.title}>
                 <h3 className="mb-2 px-1 text-xs font-black text-slate-500 dark:text-slate-400">
@@ -278,31 +278,31 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
                         to={buildTo(item.to)}
                         onClick={() => setIsToolsOpen(false)}
                         className={[
-                          "group flex min-w-0 items-start gap-2 rounded-lg px-2 py-2 text-start transition-colors",
+                          "group flex min-w-0 items-start gap-2.5 rounded-xl p-2 text-start transition-all",
                           active
-                            ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
-                            : "hover:bg-slate-100 dark:hover:bg-white/10",
+                            ? "bg-blue-50/80 text-blue-900 border border-blue-200/80 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-900/60"
+                            : "hover:bg-slate-100/80 dark:hover:bg-slate-800/60",
                         ].join(" ")}
                       >
                         <span
                           className={[
-                            "mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg",
+                            "mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg transition-colors",
                             active
-                              ? "bg-white/15"
-                              : "bg-slate-100 text-slate-700 dark:bg-white/10 dark:text-slate-200",
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 group-hover:bg-blue-100 group-hover:text-blue-700 dark:group-hover:bg-blue-950/60 dark:group-hover:text-blue-300",
                           ].join(" ")}
                         >
                           <Icon className="h-4 w-4" />
                         </span>
                         <span className="min-w-0">
-                          <span className="block truncate text-sm font-black">
+                          <span className="block truncate text-xs font-black">
                             {item.label}
                           </span>
                           <span
                             className={[
-                              "block text-xs leading-5",
+                              "block text-[11px] leading-4 line-clamp-1",
                               active
-                                ? "text-white/75 dark:text-slate-700"
+                                ? "text-blue-700 dark:text-blue-300"
                                 : "text-slate-500 dark:text-slate-400",
                             ].join(" ")}
                           >

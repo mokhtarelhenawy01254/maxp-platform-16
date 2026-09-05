@@ -1,6 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url("https://fonts.googleapis.com/css2?family=Cairo:wght@200..1000&family=Manrope:wght@200..800&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Outfit:wght@100..900&display=swap");
+/* Google Fonts loaded asynchronously in index.html and dynamically in ThemeProvider */
 @import "./sidebar-elite.css";
 @import "./whatsapp-dark.css";
 @import "./whatsapp-responsive.css";
@@ -148,7 +148,7 @@ html *::after {
 
   /* Theme Fonts */
   --theme-font-heading: "Cairo", "Geist Variable", sans-serif;
-  --theme-font-body: "Manrope", "Geist Variable", sans-serif;
+  --theme-font-body: "Cairo", "Manrope", "Geist Variable", sans-serif;
   --theme-radius: 14px;
 
   /* Spacing Scale (4px base — matches Tailwind defaults) */
@@ -413,8 +413,8 @@ html *::after {
   --color-indigo-700: oklch(0.457 0.215 277.0);
   --color-indigo-800: oklch(0.398 0.177 277.4);
   --color-indigo-900: oklch(0.359 0.135 278.7);
-  --font-sans: "Geist Variable", "Cairo", sans-serif;
-  --font-heading: var(--font-heading);
+  --font-sans: "Cairo", "Geist Variable", "Manrope", sans-serif;
+  --font-heading: "Cairo", "Geist Variable", sans-serif;
   --radius-lg: var(--theme-radius);
   --radius-md: calc(var(--theme-radius) - 2px);
   --radius-sm: calc(var(--theme-radius) - 4px);
@@ -933,6 +933,7 @@ html.dark {
 
 body {
   font-family:
+    "Cairo",
     var(--theme-font-body),
     ui-sans-serif,
     system-ui,
@@ -954,6 +955,29 @@ body {
   overflow-y: auto;
   margin: 0;
   padding: 0;
+}
+
+[dir="rtl"],
+html[lang="ar"],
+html[dir="rtl"] body {
+  font-family:
+    "Cairo",
+    var(--theme-font-body),
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font-family: inherit;
 }
 
 .theme-native-control {

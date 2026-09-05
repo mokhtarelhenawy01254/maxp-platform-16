@@ -141,7 +141,13 @@ const ClassicSidebar: React.FC<ClassicSidebarProps> = ({
     const set = new Set<string>();
     for (const section of sections) {
       if (
-        section.items.some((item) => isSidebarPathActive(currentPath, item.to))
+        section.items.some(
+          (item) =>
+            isSidebarPathActive(currentPath, item.to) ||
+            item.children?.some((child) =>
+              isSidebarPathActive(currentPath, child.to),
+            ),
+        )
       ) {
         set.add(section.id);
       }

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   AlertTriangle,
   ArrowUpRight,
@@ -8,9 +8,12 @@ import {
   CalendarDays,
   CheckCircle2,
   Gauge,
+  Globe2,
+  Layers,
   Megaphone,
   Plus,
   RefreshCw,
+  Sparkles,
   Target,
   TrendingUp,
   Wallet,
@@ -20,16 +23,22 @@ import { tToast } from "../../utils/i18n-toast";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
+import CampaignsListSection from "../../components/advertising/dashboard/CampaignsListSection";
+import DecisionSummarySection from "../../components/advertising/dashboard/DecisionSummarySection";
+import BudgetAlertsPanel from "../../components/advertising/dashboard/BudgetAlertsPanel";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
   type FacebookAdsDecisionSummary,
   type FacebookAdsPerformanceSummary,
   type FacebookCampaign,
+  type FacebookGeoPerformanceBreakdown,
+  type FacebookGeoPerformanceReport,
   facebookAdsService,
 } from "../../services/facebookAdsService";
 import {
   formatCurrency,
   formatNumber,
+  formatPercentage,
   getApiErrorMessage,
   getCampaignEffectiveStatus,
   isCampaignDelivering,
@@ -41,31 +50,45 @@ import {
   resolveFacebookAdsDateRange,
   writeStoredFacebookAdsFilters,
 } from "../../utils/facebookAdsReportFilters";
+import type {
+  CampaignSortKey,
+  DashboardFilters,
+} from "../../utils/facebookAdsDashboardTypes";
 
 const FILTER_STORAGE_KEY = "facebookAds.dashboard.filters.v2";
 
-interface DashboardDateFilters {
-  datePreset: FacebookAdsDatePreset;
-  startDate?: string;
-  endDate?: string;
-}
+type CockpitTab = "campaigns" | "decisions" | "budget-alerts" | "geo";
 
-const defaultFilters: DashboardDateFilters = {
+const defaultFilters: DashboardFilters = {
+  searchTerm: "",
+  statusFilter: "ALL",
+  objectiveFilter: "ALL",
+  sourceFilter: "ALL",
+  sortBy: "delivery",
   datePreset: "last_30d",
 };
 
 const FacebookAdsDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const accountContext = useFacebookAdsAccountContext();
   const [campaigns, setCampaigns] = useState<FacebookCampaign[]>([]);
   const [performanceSummary, setPerformanceSummary] =
     useState<FacebookAdsPerformanceSummary | null>(null);
   const [decisionSummary, setDecisionSummary] =
     useState<FacebookAdsDecisionSummary | null>(null);
+
+  const [geoBreakdown, setGeoBreakdown] =
+    useState<FacebookGeoPerformanceBreakdown>("region");
+  const [geoPerformance, setGeoPerformance] =
+    useState<FacebookGeoPerformanceReport | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
-  const [filters, setFilters] = useState<DashboardDateFilters>(() =>
+  const [filters, setFilters] = useState<DashboardFilters>(() =>
     readStoredFacebookAdsFilters(FILTER_STORAGE_KEY, defaultFilters),
   );
 
@@ -78,19 +101,50 @@ const FacebookAdsDashboard: React.FC = () => {
     setSelectedAdAccountId,
   } = accountContext;
 
+  const currentTab = useMemo<CockpitTab>(() => {
+    const queryTab = searchParams.get("tab");
+    if (
+      queryTab === "decisions" ||
+      queryTab === "budget-alerts" ||
+      queryTab === "geo"
+    ) {
+      return queryTab;
+    }
+    return "campaigns";
+  }, [searchParams]);
+
+  const setTab = (tab: CockpitTab) => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === "campaigns") {
+      next.delete("tab");
+    } else {
+      next.set("tab", tab);
+    }
+    setSearchParams(next, { replace: true });
+  };
+
   const selectedCurrency =
     selectedAdAccount?.currency ||
     selectedAdAccount?.billingHealth?.currency ||
     "EGP";
   const selectedReportingTimezone = selectedAdAccount?.timezone_name;
 
+  const selectedAccountBalance =
+    (selectedAdAccount?.billingHealth?.balance as number | undefined) ?? null;
+  const selectedSpendCapRemaining =
+    (selectedAdAccount?.billingHealth?.spendCapRemaining as number | undefined) ??
+    null;
+
   const dateRange = useMemo(
     () =>
-      resolveFacebookAdsDateRange({
-        preset: filters.datePreset,
-        startDate: filters.startDate,
-        endDate: filters.endDate,
-      }, selectedReportingTimezone),
+      resolveFacebookAdsDateRange(
+        {
+          preset: filters.datePreset,
+          startDate: filters.startDate,
+          endDate: filters.endDate,
+        },
+        selectedReportingTimezone,
+      ),
     [
       filters.datePreset,
       filters.endDate,
@@ -103,7 +157,7 @@ const FacebookAdsDashboard: React.FC = () => {
     writeStoredFacebookAdsFilters(FILTER_STORAGE_KEY, filters);
   }, [filters]);
 
-  const updateFilters = (patch: Partial<DashboardDateFilters>) => {
+  const updateFilters = (patch: Partial<DashboardFilters>) => {
     setFilters((current) => ({ ...current, ...patch }));
   };
 
@@ -149,12 +203,42 @@ const FacebookAdsDashboard: React.FC = () => {
     [dateRange.endDate, dateRange.startDate, selectedAdAccountId],
   );
 
+  const loadGeoPerformance = useCallback(
+    async (adAccountId = selectedAdAccountId) => {
+      if (!adAccountId) {
+        setGeoPerformance(null);
+        setGeoError(null);
+        return;
+      }
+
+      try {
+        setGeoLoading(true);
+        setGeoError(null);
+        const report = await facebookAdsService.getGeoPerformanceReport({
+          adAccountId,
+          breakdown: geoBreakdown,
+          startDate: dateRange.startDate,
+          endDate: dateRange.endDate,
+        });
+        setGeoPerformance(report);
+      } catch (error: unknown) {
+        setGeoError(
+          getApiErrorMessage(error, "تعذر تحميل تقرير الأداء الجغرافي"),
+        );
+      } finally {
+        setGeoLoading(false);
+      }
+    },
+    [dateRange.endDate, dateRange.startDate, geoBreakdown, selectedAdAccountId],
+  );
+
   useEffect(() => {
     if (contextLoading) return;
 
     if (accountContext.requiresAdAccountSelection) {
       setCampaigns([]);
       setPerformanceSummary(null);
+      setDecisionSummary(null);
       setLoading(false);
       return;
     }
@@ -166,6 +250,12 @@ const FacebookAdsDashboard: React.FC = () => {
     loadCampaigns,
     selectedAdAccountId,
   ]);
+
+  useEffect(() => {
+    if (currentTab === "geo" && selectedAdAccountId) {
+      loadGeoPerformance(selectedAdAccountId);
+    }
+  }, [currentTab, loadGeoPerformance, selectedAdAccountId]);
 
   const businessGroups = useMemo(() => {
     const groups = new Map<string, { label: string; accounts: typeof adAccounts }>();
@@ -220,6 +310,9 @@ const FacebookAdsDashboard: React.FC = () => {
       await Promise.all([
         refreshAdAccounts(),
         loadCampaigns(selectedAdAccountId),
+        currentTab === "geo" && selectedAdAccountId
+          ? loadGeoPerformance(selectedAdAccountId)
+          : Promise.resolve(),
       ]);
       tToast.success("FacebookAdsDashboard.success_update_4f77");
     } finally {
@@ -270,33 +363,33 @@ const FacebookAdsDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
-      <main className="mx-auto flex max-w-[1400px] flex-col gap-2.5 p-2.5 sm:p-3">
+    <div className="min-h-screen bg-slate-50/70 text-slate-950 dark:bg-slate-950 dark:text-white font-sans">
+      <main className="mx-auto flex max-w-[1400px] flex-col gap-3 p-3 sm:p-4">
         {/* Header Section */}
-        <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="grid gap-3 xl:grid-cols-[minmax(230px,0.65fr)_minmax(680px,1.8fr)] xl:items-end">
+        <section className="rounded-2xl border border-slate-200/80 bg-white/95 p-4 sm:p-5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
+          <div className="grid gap-3.5 xl:grid-cols-[minmax(230px,0.65fr)_minmax(680px,1.8fr)] xl:items-end">
             <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-black text-blue-700 dark:text-blue-300">
-                <Megaphone className="h-4 w-4" />
-                Meta Ads
+              <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                <Megaphone className="h-3.5 w-3.5" />
+                Meta Ads Cockpit
               </div>
-              <h1 className="mt-1 truncate text-xl font-black leading-tight">
-                مركز الحملات
+              <h1 className="mt-1.5 truncate text-xl font-black leading-tight sm:text-2xl tracking-tight">
+                مركز الحملات الإعلانية
               </h1>
               <p className="mt-1 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
                 {selectedDateLabel}: {dateRange.startDate} - {dateRange.endDate}
               </p>
             </div>
 
-            <div className="grid gap-2 md:grid-cols-[minmax(190px,1.3fr)_minmax(135px,0.75fr)_auto_auto_auto]">
+            <div className="grid gap-2.5 md:grid-cols-[minmax(190px,1.3fr)_minmax(135px,0.75fr)_auto_auto_auto]">
               <label className="block">
-                <span className="mb-1 block text-[11px] font-black text-slate-500">
-                  الحساب
+                <span className="mb-1 block text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                  الحساب الإعلاني
                 </span>
                 <select
                   value={selectedAdAccountId}
                   onChange={(event) => setSelectedAdAccountId(event.target.value)}
-                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="">اختار حساب إعلاني</option>
                   {businessGroups.map(([key, group]) => (
@@ -313,7 +406,7 @@ const FacebookAdsDashboard: React.FC = () => {
 
               <SelectFilter
                 icon={CalendarDays}
-                label="الفترة"
+                label="الفترة الزمنية"
                 value={filters.datePreset}
                 onChange={(value) =>
                   updateFilters({ datePreset: value as FacebookAdsDatePreset })
@@ -325,7 +418,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 type="button"
                 onClick={handleRefresh}
                 disabled={refreshing}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-3 text-xs font-black text-slate-700 hover:bg-slate-50 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
                 تحديث
@@ -334,7 +427,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 type="button"
                 onClick={handleSyncFromFacebook}
                 disabled={syncing || !selectedAdAccountId}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-xs font-black text-blue-700 hover:bg-blue-100 disabled:opacity-60 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-blue-200/70 bg-blue-50/70 px-3 text-xs font-bold text-blue-700 hover:bg-blue-100/70 disabled:opacity-60 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300 transition-all"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                 مزامنة
@@ -343,7 +436,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 type="button"
                 onClick={handleCreateCampaign}
                 disabled={!selectedAdAccountId}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-3 text-xs font-black text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 text-xs font-black text-white shadow-sm shadow-blue-500/25 hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
               >
                 <Plus className="h-4 w-4" />
                 إنشاء حملة
@@ -352,18 +445,18 @@ const FacebookAdsDashboard: React.FC = () => {
           </div>
 
           {filters.datePreset === "custom" && (
-            <div className="mt-2 grid gap-2 sm:grid-cols-2 xl:max-w-sm">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:max-w-sm">
               <input
                 type="date"
                 value={filters.startDate || dateRange.startDate}
                 onChange={(event) => updateFilters({ startDate: event.target.value })}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="h-9 rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               />
               <input
                 type="date"
                 value={filters.endDate || dateRange.endDate}
                 onChange={(event) => updateFilters({ endDate: event.target.value })}
-                className="h-9 rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                className="h-9 rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
               />
             </div>
           )}
@@ -398,14 +491,16 @@ const FacebookAdsDashboard: React.FC = () => {
             icon={Target}
             variant="cpa"
           />
-          <div className="rounded-xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-black text-slate-500 dark:text-slate-400">
                 تسليم فعلي
               </span>
-              <BarChart3 className="h-3.5 w-3.5 text-blue-600 dark:text-blue-300" />
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:bg-blue-400/20 dark:text-blue-300">
+                <BarChart3 className="h-4 w-4" />
+              </span>
             </div>
-            <div className="mt-1.5 flex items-center gap-3">
+            <div className="mt-2 flex items-center gap-3">
               <svg className="h-10 w-10 -rotate-90 shrink-0" viewBox="0 0 36 36">
                 <circle cx="18" cy="18" r="15.5" fill="none" stroke="currentColor" strokeWidth="3"
                   className="text-slate-100 dark:text-slate-800" />
@@ -415,7 +510,7 @@ const FacebookAdsDashboard: React.FC = () => {
                   className={stats.activeButBlocked > 0 ? "text-amber-500" : "text-emerald-500"} />
               </svg>
               <div>
-                <p className="text-lg font-black tracking-tight">
+                <p className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
                   {formatNumber(stats.delivering)} / {formatNumber(stats.total)}
                 </p>
                 {stats.activeButBlocked > 0 && (
@@ -428,158 +523,319 @@ const FacebookAdsDashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Quick Access Cards */}
-        <section className="grid gap-2.5 lg:grid-cols-3">
-          {/* Campaigns Card */}
-          <Link
-            to={buildLink("/advertising/facebook-ads/campaigns")}
-            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-blue-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-700"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
-                  <Megaphone className="h-5 w-5" />
-                </span>
-                <div>
-                  <h2 className="text-sm font-black">الحملات</h2>
-                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    إدارة وتصفية ومراقبة
-                  </p>
-                </div>
-              </div>
-              <ArrowUpRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-blue-500" />
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-lg bg-slate-50 px-2.5 py-2 text-center dark:bg-slate-800">
-                <p className="text-lg font-black text-blue-600 dark:text-blue-300">
-                  {formatNumber(stats.total)}
-                </p>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">إجمالي</p>
-              </div>
-              <div className="rounded-lg bg-emerald-50 px-2.5 py-2 text-center dark:bg-emerald-950/30">
-                <p className="text-lg font-black text-emerald-600 dark:text-emerald-300">
-                  {formatNumber(stats.delivering)}
-                </p>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">يسلم</p>
-              </div>
-              <div className="rounded-lg bg-amber-50 px-2.5 py-2 text-center dark:bg-amber-950/30">
-                <p className="text-lg font-black text-amber-600 dark:text-amber-300">
-                  {formatNumber(stats.activeButBlocked)}
-                </p>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">محظور</p>
-              </div>
-            </div>
-            {stats.activeDailyBudget > 0 && (
-              <p className="mt-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                ميزانية يومية نشطة: {formatCurrency(stats.activeDailyBudget, selectedCurrency)}
-              </p>
-            )}
-          </Link>
+        {/* Cockpit Navigation Tabs */}
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
+          <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setTab("campaigns")}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black transition-all ${
+                currentTab === "campaigns"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
+                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
+              }`}
+            >
+              <Layers className="h-4 w-4" />
+              الحملات الإعلانية
+              <span
+                className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                  currentTab === "campaigns"
+                    ? "bg-white/20 text-white"
+                    : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200"
+                }`}
+              >
+                {stats.total}
+              </span>
+            </button>
 
-          {/* Decisions & Recommendations Card */}
-          <Link
-            to={buildLink("/advertising/facebook-ads/decision-reports")}
-            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-amber-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-amber-700"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
-                  <Gauge className="h-5 w-5" />
-                </span>
-                <div>
-                  <h2 className="text-sm font-black">القرارات والتوصيات</h2>
-                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    تحليل أداء وقرارات ذكية
-                  </p>
-                </div>
-              </div>
-              <ArrowUpRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-amber-500" />
-            </div>
-            <div className="mt-4 grid grid-cols-3 gap-2">
-              <div className="rounded-lg bg-slate-50 px-2.5 py-2 text-center dark:bg-slate-800">
-                <p className="text-lg font-black text-slate-700 dark:text-slate-200">
-                  {formatNumber(decisionCounts.total)}
-                </p>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">قرار</p>
-              </div>
-              <div className="rounded-lg bg-red-50 px-2.5 py-2 text-center dark:bg-red-950/30">
-                <p className="text-lg font-black text-red-600 dark:text-red-300">
-                  {formatNumber(decisionCounts.warnings)}
-                </p>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">تحذير</p>
-              </div>
-              <div className="rounded-lg bg-emerald-50 px-2.5 py-2 text-center dark:bg-emerald-950/30">
-                <p className="text-lg font-black text-emerald-600 dark:text-emerald-300">
-                  {formatNumber(decisionCounts.opportunities)}
-                </p>
-                <p className="text-[10px] font-bold text-slate-500 dark:text-slate-400">فرصة</p>
-              </div>
-            </div>
-            {recommendationCount > 0 && (
-              <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-amber-700 dark:text-amber-300">
-                <AlertTriangle className="h-3 w-3" />
-                {formatNumber(recommendationCount)} توصية تحتاج مراجعة
-              </div>
-            )}
-          </Link>
-
-          {/* Budget Alerts Card */}
-          <Link
-            to={buildLink("/advertising/facebook-ads/budget-alerts")}
-            className="group rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-emerald-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-900 dark:hover:border-emerald-700"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
-                  <BellRing className="h-5 w-5" />
-                </span>
-                <div>
-                  <h2 className="text-sm font-black">تنبيهات الرصيد</h2>
-                  <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                    WhatsApp Budget Alerts
-                  </p>
-                </div>
-              </div>
-              <ArrowUpRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5 group-hover:text-emerald-500" />
-            </div>
-            <div className="mt-4 rounded-lg bg-slate-50 p-3 dark:bg-slate-800">
-              <p className="text-xs font-bold leading-5 text-slate-600 dark:text-slate-300">
-                راقب رصيد حسابك الإعلاني وميزانيات الحملات، واستلم تنبيه WhatsApp عند الوصول للحد المختار.
-              </p>
-            </div>
-            <div className="mt-2 flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300">
-              <BellRing className="h-3 w-3" />
-              إدارة القواعد والتنبيهات
-            </div>
-          </Link>
-        </section>
-
-        {/* Diagnosis Quick Link */}
-        <section className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300">
+            <button
+              type="button"
+              onClick={() => setTab("decisions")}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black transition-all ${
+                currentTab === "decisions"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
+                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
+              }`}
+            >
               <Gauge className="h-4 w-4" />
-            </span>
-            <div>
-              <h2 className="text-sm font-black">تشخيص الحساب</h2>
-              <p className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                تحليل شامل لأداء الحملات والمشاكل المحتملة
-              </p>
-            </div>
+              القرارات والتوصيات
+              {decisionCounts.warnings > 0 && (
+                <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                  {decisionCounts.warnings} تحذير
+                </span>
+              )}
+              {decisionCounts.opportunities > 0 && (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  {decisionCounts.opportunities} فرصة
+                </span>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab("budget-alerts")}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black transition-all ${
+                currentTab === "budget-alerts"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
+                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
+              }`}
+            >
+              <BellRing className="h-4 w-4" />
+              تنبيهات الرصيد WhatsApp
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setTab("geo")}
+              className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-black transition-all ${
+                currentTab === "geo"
+                  ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
+                  : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white"
+              }`}
+            >
+              <Globe2 className="h-4 w-4" />
+              الأداء الجغرافي
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() =>
-              navigate(
-                `/advertising/facebook-ads/diagnosis${selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""}`,
-              )
-            }
-            className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 text-[11px] font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
-          >
-            تشخيص
-            <ArrowUpRight className="h-3.5 w-3.5" />
-          </button>
-        </section>
+
+          <div className="ms-auto flex items-center gap-2">
+            <Link
+              to={`/advertising/facebook-ads/diagnosis${
+                selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
+              }`}
+              className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-[11px] font-black text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+            >
+              تشخيص الحساب
+              <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Tab 1: Campaigns View */}
+        {currentTab === "campaigns" && (
+          <div className="space-y-3">
+            {/* Actionable Decisions Quick Strip */}
+            <DecisionSummarySection
+              decisionSummary={decisionSummary}
+              performanceSummary={performanceSummary}
+              selectedCurrency={selectedCurrency}
+            />
+
+            {/* Live Interactive Campaigns List */}
+            <CampaignsListSection
+              campaigns={campaigns}
+              performanceSummary={performanceSummary}
+              selectedCurrency={selectedCurrency}
+              selectedAdAccountId={selectedAdAccountId}
+              selectedDateLabel={selectedDateLabel}
+              filters={filters}
+              updateFilters={updateFilters}
+              defaultFilters={defaultFilters}
+            />
+          </div>
+        )}
+
+        {/* Tab 2: Decisions & Smart Recommendations */}
+        {currentTab === "decisions" && (
+          <div className="space-y-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-base font-black">
+                    مركز قرارات وتوصيات Media Buying
+                  </h2>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    تحليل آلي للنتائج الحية لتحديد الإعلانات الرابحة للتوسيع
+                    والإعلانات الخاسرة للإيقاف مع درجات الثقة.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    navigate(
+                      `/advertising/facebook-ads/decision-reports${
+                        selectedAdAccountId
+                          ? `?adAccountId=${selectedAdAccountId}`
+                          : ""
+                      }`,
+                    )
+                  }
+                  className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
+                >
+                  فتح تقرير القرارات الموسع
+                  <ArrowUpRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <DecisionSummarySection
+              decisionSummary={decisionSummary}
+              performanceSummary={performanceSummary}
+              selectedCurrency={selectedCurrency}
+            />
+
+            {recommendationCount > 0 && (
+              <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
+                <div className="flex items-center gap-2 text-xs font-black text-amber-900 dark:text-amber-200">
+                  <Sparkles className="h-4 w-4" />
+                  توصيات التحسين المباشرة ({recommendationCount})
+                </div>
+                <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                  {performanceSummary?.recommendations?.map((rec, idx) => (
+                    <div
+                      key={idx}
+                      className="rounded-lg border border-amber-200/80 bg-white p-3 shadow-xs dark:border-amber-900/40 dark:bg-slate-900"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-[11px] font-black text-slate-900 dark:text-white">
+                          {rec.title}
+                        </span>
+                        <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-black text-amber-800 dark:bg-amber-950 dark:text-amber-300">
+                          {rec.priority}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs leading-5 text-slate-600 dark:text-slate-300">
+                        {rec.message}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* Tab 3: Budget Alerts Panel */}
+        {currentTab === "budget-alerts" && (
+          <div className="space-y-3">
+            <BudgetAlertsPanel
+              selectedAdAccountId={selectedAdAccountId}
+              campaigns={campaigns}
+              selectedCurrency={selectedCurrency}
+              selectedAccountBalance={selectedAccountBalance}
+              selectedSpendCapRemaining={selectedSpendCapRemaining}
+            />
+          </div>
+        )}
+
+        {/* Tab 4: Geo Performance */}
+        {currentTab === "geo" && (
+          <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-base font-black">
+                  الأداء الجغرافي (أين نصرف وأين نوسع؟)
+                </h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  توزيع الإنفاق والمبيعات وتكلفة الاكتساب CPA حسب المحافظات
+                  والدول لحسابك الإعلاني.
+                </p>
+              </div>
+
+              <div className="flex rounded-lg bg-slate-100 p-1 text-xs font-bold dark:bg-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setGeoBreakdown("region")}
+                  className={`rounded-md px-3 py-1.5 transition ${
+                    geoBreakdown === "region"
+                      ? "bg-white text-slate-950 shadow-xs dark:bg-slate-950 dark:text-white"
+                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                  }`}
+                >
+                  المحافظات / المناطق
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGeoBreakdown("country")}
+                  className={`rounded-md px-3 py-1.5 transition ${
+                    geoBreakdown === "country"
+                      ? "bg-white text-slate-950 shadow-xs dark:bg-slate-950 dark:text-white"
+                      : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
+                  }`}
+                >
+                  الدول
+                </button>
+              </div>
+            </div>
+
+            {geoLoading ? (
+              <div className="mt-6 flex h-40 items-center justify-center">
+                <div className="h-7 w-7 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+              </div>
+            ) : geoError ? (
+              <div className="mt-4 rounded-lg bg-red-50 p-3 text-xs font-bold text-red-700 dark:bg-red-950/30 dark:text-red-300">
+                {geoError}
+              </div>
+            ) : topGeoRows.length === 0 ? (
+              <div className="mt-6 rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
+                لا توجد بيانات جغرافية كافية بعد لهذه الفترة للحساب المختار.
+              </div>
+            ) : (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {topGeoRows.map((row) => (
+                  <div
+                    key={row.key}
+                    className="rounded-xl border border-slate-200 bg-slate-50/60 p-3.5 dark:border-slate-800 dark:bg-slate-950/60"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h3 className="text-sm font-black text-slate-950 dark:text-white">
+                          {row.label}
+                        </h3>
+                        <p className="text-[11px] font-bold text-slate-500">
+                          {row.campaignsCount || row.campaigns.length} حملة
+                        </p>
+                      </div>
+                      <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-200">
+                        {formatCurrency(row.metrics.spend, selectedCurrency)}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          المشتريات:
+                        </span>
+                        <p className="font-black text-slate-950 dark:text-white">
+                          {formatNumber(row.metrics.purchases)}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          CPA:
+                        </span>
+                        <p className="font-black text-slate-950 dark:text-white">
+                          {row.metrics.purchases > 0
+                            ? formatCurrency(
+                                row.metrics.cpa,
+                                selectedCurrency,
+                              )
+                            : "—"}
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          ROAS:
+                        </span>
+                        <p className="font-black text-slate-950 dark:text-white">
+                          {formatNumber(row.metrics.roas, 2)}x
+                        </p>
+                      </div>
+                      <div>
+                        <span className="text-[11px] font-bold text-slate-500">
+                          CTR:
+                        </span>
+                        <p className="font-black text-slate-950 dark:text-white">
+                          {formatPercentage(row.metrics.ctr)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );

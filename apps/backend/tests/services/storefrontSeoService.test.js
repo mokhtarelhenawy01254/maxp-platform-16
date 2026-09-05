@@ -172,4 +172,196 @@ describe("storefrontSeoService", () => {
       }),
     ).toBe(true);
   });
+
+  test("cleans tracking parameters from canonical URL", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/shop",
+      currentUrl: "https://swan.maxp.online/shop?utm_source=facebook&fbclid=123456&gclid=789",
+      company: { name: "Swan" },
+    });
+
+    expect(metadata.url).toBe("https://swan.maxp.online/shop");
+    const html = `<!DOCTYPE html><html><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+    expect(updated).toContain('<link rel="canonical" href="https://swan.maxp.online/shop" />');
+    expect(updated).not.toContain("fbclid");
+    expect(updated).not.toContain("utm_source");
+  });
+
+  test("builds category SEO metadata and CollectionPage schema", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/collections/summer-shoes",
+      currentUrl: "https://swan.maxp.online/collections/summer-shoes",
+      company: { name: "Swan" },
+      category: {
+        name: "Summer Shoes",
+        slug: "summer-shoes",
+        metaTitle: "أحذية صيفية مريحة | Swan",
+        metaDescription: "تسوق أفضل الأحذية الصيفية المريحة بأفضل الأسعار.",
+        image: "/uploads/categories/shoes.jpg",
+      },
+    });
+
+    expect(metadata.title).toBe("أحذية صيفية مريحة | Swan");
+    expect(metadata.description).toBe("تسوق أفضل الأحذية الصيفية المريحة بأفضل الأسعار.");
+    expect(metadata.jsonLd).toMatchObject({
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: "أحذية صيفية مريحة | Swan",
+    });
+    expect(metadata.breadcrumbsJsonLd).toMatchObject({
+      "@context": "https://schema.org",
+      "@type": "BreadcrumbList",
+    });
+  });
+
+  test("includes reviews aggregate rating in product schema and commerce meta tags", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/product/swan-pro",
+      currentUrl: "https://swan.maxp.online/product/swan-pro",
+      company: { name: "Swan", currency: "EGP" },
+      product: {
+        name: "Swan Pro",
+        price: 750,
+        currency: "EGP",
+        sku: "SWAN-PRO-01",
+        trackInventory: true,
+        stock: 15,
+      },
+      reviews: {
+        avgRating: 4.8,
+        count: 24,
+      },
+    });
+
+    expect(metadata.jsonLd.aggregateRating).toEqual({
+      "@type": "AggregateRating",
+      ratingValue: "4.8",
+      reviewCount: 24,
+      bestRating: "5",
+      worstRating: "1",
+    });
+    expect(metadata.jsonLd.offers.availability).toBe("https://schema.org/InStock");
+    expect(metadata.jsonLd.sku).toBe("SWAN-PRO-01");
+
+    const html = `<!DOCTYPE html><html><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+    expect(updated).toContain('<meta property="product:price:amount" content="750" />');
+    expect(updated).toContain('<meta property="product:price:currency" content="EGP" />');
+    expect(updated).toContain('<meta property="product:availability" content="https://schema.org/InStock" />');
+    expect(updated).toContain('<meta property="product:retailer_item_id" content="SWAN-PRO-01" />');
+  });
+
+  test("detects out-of-stock product and reflects OutOfStock in schema and meta", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/product/swan-zero",
+      currentUrl: "https://swan.maxp.online/product/swan-zero",
+      company: { name: "Swan", currency: "EGP" },
+      product: {
+        name: "Swan Zero",
+        price: 300,
+        trackInventory: true,
+        stock: 0,
+      },
+    });
+
+    expect(metadata.jsonLd.offers.availability).toBe("https://schema.org/OutOfStock");
+    expect(metadata.availability).toBe("https://schema.org/OutOfStock");
+  });
+
+  test("injects Google and Facebook site verification meta tags", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/",
+      currentUrl: "https://swan.maxp.online/",
+      company: {
+        name: "Swan",
+        settings: JSON.stringify({
+          googleSiteVerification: "google-xyz-12345",
+          facebookDomainVerification: "fb-domain-67890",
+        }),
+      },
+    });
+
+    expect(metadata.googleSiteVerification).toBe("google-xyz-12345");
+    expect(metadata.facebookDomainVerification).toBe("fb-domain-67890");
+
+    const html = `<!DOCTYPE html><html><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+    expect(updated).toContain('<meta name="google-site-verification" content="google-xyz-12345" />');
+    expect(updated).toContain('<meta name="facebook-domain-verification" content="fb-domain-67890" />');
+  });
+
+  test("builds OnlineStore JSON-LD schema with social links and contact info for homepage", () => {
+    const metadata = buildStorefrontSeoMetadata({
+      pathname: "/",
+      currentUrl: "https://swan.maxp.online/",
+      company: {
+        name: "Swan",
+        phone: "+201000000000",
+        email: "support@swan.com",
+        settings: JSON.stringify({
+          facebook: "https://facebook.com/swanstore",
+          instagram: "https://instagram.com/swanstore",
+          tiktok: "https://tiktok.com/@swanstore",
+        }),
+      },
+    });
+
+    expect(metadata.secondaryJsonLd).toMatchObject({
+      "@context": "https://schema.org",
+      "@type": "OnlineStore",
+      name: "Swan",
+      url: "https://swan.maxp.online/",
+      telephone: "+201000000000",
+      email: "support@swan.com",
+      priceRange: "$$",
+      sameAs: [
+        "https://facebook.com/swanstore",
+        "https://instagram.com/swanstore",
+        "https://tiktok.com/@swanstore",
+      ],
+    });
+  });
+
+  test("injects preconnect and dns-prefetch resource hints for external CDN image origins", () => {
+    const metadata = {
+      title: "Test Store",
+      description: "Test description",
+      url: "https://mystore.com/",
+      image: "https://cdn.images.net/products/item1.jpg",
+      siteName: "Test Store",
+      direction: "rtl",
+    };
+
+    const html = `<!DOCTYPE html><html lang="ar"><head><title>Old</title></head><body></body></html>`;
+    const updated = injectStorefrontSeoTags(html, metadata);
+
+    expect(updated).toContain('<link rel="preconnect" href="https://cdn.images.net" crossorigin />');
+    expect(updated).toContain('<link rel="dns-prefetch" href="https://cdn.images.net" />');
+  });
+
+  test("injects dynamic html lang and dir matching theme direction (LTR/RTL)", () => {
+    const metadataLtr = {
+      title: "English Store",
+      description: "English desc",
+      url: "https://en.mystore.com/",
+      siteName: "English Store",
+      direction: "ltr",
+    };
+
+    const html = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><title>Old</title></head><body></body></html>`;
+    const updatedLtr = injectStorefrontSeoTags(html, metadataLtr);
+    expect(updatedLtr).toContain('<html lang="en" dir="ltr">');
+
+    const metadataRtl = {
+      title: "Arabic Store",
+      description: "Arabic desc",
+      url: "https://ar.mystore.com/",
+      siteName: "Arabic Store",
+      direction: "rtl",
+    };
+    const updatedRtl = injectStorefrontSeoTags(html, metadataRtl);
+    expect(updatedRtl).toContain('<html lang="ar" dir="rtl">');
+  });
 });
+

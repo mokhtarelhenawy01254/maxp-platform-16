@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React, { useEffect, useMemo } from "react";
 import { useParams, useLocation, Link } from "react-router-dom";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import type { StorefrontPageConfig } from "../types/theme.types";
@@ -6,6 +6,7 @@ import { PageComposer, type RenderSectionFrameArgs } from "../engine/PageCompose
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { useStorePage } from "../../hooks/useStorePage";
 import StorefrontSkeleton from "../components/StorefrontSkeleton";
+import StorefrontNotFound from "../components/StorefrontNotFound";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
 import { resolveStorefrontPageLayout, StorefrontSectionFrame } from "../layout/StorefrontSectionFrame";
 import { buildStorefrontPath } from "../utils/paths";
@@ -38,6 +39,34 @@ const DynamicStorefrontPage: React.FC = () => {
     shouldFetchDbPage ? pageSlug : undefined,
     shouldFetchDbPage ? settings?.company?.id : undefined,
   );
+
+  // Sync dynamic page metadata with browser head
+  useEffect(() => {
+    if (!dbPage) return;
+    const storeName =
+      settings?.storefront?.settings?.storeName ||
+      settings?.storefront?.name ||
+      theme.header?.brandName ||
+      theme.name ||
+      '';
+    const pageTitle =
+      dbPage.metaTitle?.trim() ||
+      (dbPage.title ? `${dbPage.title} | ${storeName}` : storeName);
+    document.title = pageTitle;
+
+    const metaDesc =
+      dbPage.metaDescription?.trim() ||
+      dbPage.content?.replace(/<[^>]*>/g, '').slice(0, 160).trim();
+    if (metaDesc) {
+      let descEl = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+      if (!descEl) {
+        descEl = document.createElement('meta');
+        descEl.setAttribute('name', 'description');
+        document.head.appendChild(descEl);
+      }
+      descEl.setAttribute('content', metaDesc);
+    }
+  }, [dbPage, settings, theme]);
 
   if (shouldFetchDbPage && (settingsLoading || dbLoading)) {
     return (
@@ -72,20 +101,7 @@ const DynamicStorefrontPage: React.FC = () => {
   }
 
   if (!resolvedPageKey || (!pageConfig && !dbPage)) {
-    return (
-      <div className="container py-20 text-center space-y-4">
-        <h1 className="text-4xl font-bold font-heading text-foreground">404</h1>
-        <p className="text-muted-foreground">
-          {theme.direction === "rtl" ? "الصفحة غير موجودة" : "Page not found"}
-        </p>
-        <Link
-          to={buildStorefrontPath(location.pathname, "/", location.search)}
-          className="inline-block px-6 py-2 bg-primary text-primary-foreground rounded-[var(--radius)] text-sm font-medium hover:opacity-90 transition-opacity"
-        >
-          {theme.direction === "rtl" ? "العودة للرئيسية" : "Back to Home"}
-        </Link>
-      </div>
-    );
+    return <StorefrontNotFound />;
   }
 
   return (

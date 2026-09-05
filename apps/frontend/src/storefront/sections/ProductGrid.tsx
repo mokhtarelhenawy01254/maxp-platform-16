@@ -615,6 +615,31 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
           : {}),
       } as React.CSSProperties
     : undefined;
+
+  const buildPageUrl = (pageNumber: number) => {
+    const nextParams = new URLSearchParams(location.search);
+    if (pageNumber <= 1) {
+      nextParams.delete('page');
+    } else {
+      nextParams.set('page', String(pageNumber));
+    }
+    const query = nextParams.toString();
+    return `${location.pathname}${query ? `?${query}` : ''}`;
+  };
+
+  const getVisiblePageNumbers = (current: number, total: number) => {
+    if (total <= 7) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+    if (current <= 4) {
+      return [1, 2, 3, 4, 5, '...', total];
+    }
+    if (current >= total - 3) {
+      return [1, '...', total - 4, total - 3, total - 2, total - 1, total];
+    }
+    return [1, '...', current - 1, current, current + 1, '...', total];
+  };
+
   const gridClass =
     hasCustomShopStudio && !isHorizontalRail
       ? resolveShopGridClassName(shopStudioConfig)
@@ -1750,7 +1775,8 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
         )}
 
         {filteredProducts.length > 0 ? (
-          isHorizontalRail ? (
+          <>
+            {isHorizontalRail ? (
             <div className={`flex snap-x snap-mandatory overflow-x-auto pb-4 [scrollbar-width:thin] ${variant === 'boutique-rail' ? 'gap-5 md:gap-6' : 'gap-4'}`}>
               {filteredProducts.map((product, index) => (
                 <div
@@ -1902,7 +1928,85 @@ const ProductGrid: React.FC<ProductGridProps> = ({ section, settings }) => {
                 ))}
               </div>
             </div>
-          )
+          )}
+
+          {pagination.pages > 1 ? (
+            <nav
+              aria-label={theme.direction === 'rtl' ? 'صفحات المنتجات' : 'Products Pagination'}
+              className="mt-10 border-t border-border/60 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4"
+            >
+              <p className="text-xs text-muted-foreground order-2 sm:order-1">
+                {theme.direction === 'rtl'
+                  ? `عرض ${(pagination.page - 1) * pagination.limit + 1} - ${Math.min(pagination.page * pagination.limit, pagination.total)} من أصل ${pagination.total} منتج`
+                  : `Showing ${(pagination.page - 1) * pagination.limit + 1} - ${Math.min(pagination.page * pagination.limit, pagination.total)} of ${pagination.total} products`}
+              </p>
+              <div className="flex items-center gap-1.5 order-1 sm:order-2">
+                {pagination.page > 1 ? (
+                  <Link
+                    to={buildPageUrl(pagination.page - 1)}
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                    aria-label={theme.direction === 'rtl' ? 'الصفحة السابقة' : 'Previous page'}
+                  >
+                    {theme.direction === 'rtl' ? 'السابق' : 'Prev'}
+                  </Link>
+                ) : (
+                  <span
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground/50 cursor-not-allowed"
+                    aria-hidden="true"
+                  >
+                    {theme.direction === 'rtl' ? 'السابق' : 'Prev'}
+                  </span>
+                )}
+
+                {getVisiblePageNumbers(pagination.page, pagination.pages).map((p, idx) => {
+                  if (p === '...') {
+                    return (
+                      <span
+                        key={`ellipsis-${idx}`}
+                        className="inline-flex min-h-[44px] min-w-[32px] items-center justify-center text-xs text-muted-foreground"
+                      >
+                        …
+                      </span>
+                    );
+                  }
+                  const pageNum = p as number;
+                  const isCurrent = pageNum === pagination.page;
+                  return (
+                    <Link
+                      key={pageNum}
+                      to={buildPageUrl(pageNum)}
+                      aria-current={isCurrent ? 'page' : undefined}
+                      className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border px-3 py-2 text-xs font-bold transition-colors ${
+                        isCurrent
+                          ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                          : 'border-border bg-background text-foreground hover:bg-muted'
+                      }`}
+                    >
+                      {pageNum}
+                    </Link>
+                  );
+                })}
+
+                {pagination.page < pagination.pages ? (
+                  <Link
+                    to={buildPageUrl(pagination.page + 1)}
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground transition-colors hover:bg-muted"
+                    aria-label={theme.direction === 'rtl' ? 'الصفحة التالية' : 'Next page'}
+                  >
+                    {theme.direction === 'rtl' ? 'التالي' : 'Next'}
+                  </Link>
+                ) : (
+                  <span
+                    className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-border/40 bg-muted/30 px-3 py-2 text-xs font-semibold text-muted-foreground/50 cursor-not-allowed"
+                    aria-hidden="true"
+                  >
+                    {theme.direction === 'rtl' ? 'التالي' : 'Next'}
+                  </span>
+                )}
+              </div>
+            </nav>
+          ) : null}
+          </>
         ) : (
           <div className={emptyStateClassName}>
             <div className="mb-6 text-5xl opacity-30">{emptyStateIcon}</div>

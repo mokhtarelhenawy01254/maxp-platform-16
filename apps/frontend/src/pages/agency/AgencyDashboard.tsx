@@ -29,7 +29,9 @@ import {
   ChevronRight,
   Package,
   ShoppingCart,
-  Printer
+  Printer,
+  Upload,
+  ChevronLeft
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -294,6 +296,41 @@ export default function AgencyDashboard() {
 
   // Search filter
   const [searchTerm, setSearchTerm] = useState("");
+  const [appInactiveNotice, setAppInactiveNotice] = useState<string | null>(null);
+
+  // Pagination for clients
+  const [clientPage, setClientPage] = useState(1);
+  const CLIENTS_PER_PAGE = 6;
+
+  // Media upload for approvals
+  const [isUploadingMedia, setIsUploadingMedia] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const getArabicMonthName = (monthStr: string) => {
+    try {
+      const [y, m] = monthStr.split("-").map(Number);
+      if (!y || !m) return monthStr;
+      const d = new Date(y, m - 1, 1);
+      return d.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
+    } catch {
+      return monthStr;
+    }
+  };
+
+  const getClientStatusBadge = (status: string) => {
+    switch ((status || "").toLowerCase()) {
+      case "active":
+        return { label: "نشط", className: "bg-emerald-500/10 text-emerald-600 border-emerald-300 text-[10px] font-bold" };
+      case "lead":
+        return { label: "عميل محتمل (Lead)", className: "bg-blue-500/10 text-blue-600 border-blue-300 text-[10px] font-bold" };
+      case "paused":
+        return { label: "متوقف مؤقتاً", className: "bg-amber-500/10 text-amber-600 border-amber-300 text-[10px] font-bold" };
+      case "completed":
+        return { label: "مكتمل", className: "bg-zinc-500/10 text-zinc-600 border-zinc-300 text-[10px] font-bold" };
+      default:
+        return { label: status, className: "bg-muted text-muted-foreground text-[10px] font-bold" };
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -305,6 +342,7 @@ export default function AgencyDashboard() {
       ]);
 
       if (ovRes.data?.success) {
+        setAppInactiveNotice(null);
         const m = ovRes.data.data?.metrics || {};
         setOverview({
           totalClients: Number(m.totalClients) || 0,
@@ -339,7 +377,12 @@ export default function AgencyDashboard() {
         setApprovals(apRes.data.data);
       }
     } catch (err: any) {
-      toast.error(err.response?.data?.message || "تعذر تحميل بيانات الوكالة");
+      const msg = err.response?.data?.message || "";
+      if (err.response?.status === 403 || msg.includes("هذه الميزة تتطلب تفعيل")) {
+        setAppInactiveNotice(msg || "هذه الميزة تتطلب تفعيل تطبيق: إدارة وكالات التسويق");
+      } else {
+        toast.error(msg || "تعذر تحميل بيانات الوكالة");
+      }
     } finally {
       setLoading(false);
     }
@@ -779,10 +822,41 @@ export default function AgencyDashboard() {
     }
   };
 
+  const handleUploadMediaFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      setIsUploadingMedia(true);
+      const formData = new FormData();
+      formData.append("files", file);
+      formData.append("image", file);
+      const res = await apiClient.post("/upload/media", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 60000,
+      });
+      if (res.data?.success && (res.data.data?.url || res.data.data?.fullUrl)) {
+        const url = res.data.data.fullUrl || res.data.data.url;
+        setApprovalForm(prev => ({ ...prev, mediaUrl: url }));
+        toast.success("تم رفع ملف التصميم / الفيديو بنجاح!");
+      } else {
+        const fallbackUrl = URL.createObjectURL(file);
+        setApprovalForm(prev => ({ ...prev, mediaUrl: fallbackUrl }));
+        toast.info("تم اعتماد الملف للمعاينة المباشرة");
+      }
+    } catch {
+      const fallbackUrl = URL.createObjectURL(file);
+      setApprovalForm(prev => ({ ...prev, mediaUrl: fallbackUrl }));
+      toast.info("تم اعتماد الملف للمعاينة المباشرة");
+    } finally {
+      setIsUploadingMedia(false);
+    }
+  };
+
   // Approvals Handlers
   const handleOpenNewApproval = () => {
     if (clients.length === 0) {
-      toast.error("يرجى إضافة عميل أولاً قبل إنشاء طلب موافقة");
+      toast.info("يرجى إضافة عميل أولاً قبل إنشاء طلب موافقة له");
+      handleOpenNewClient();
       return;
     }
     setApprovalForm({
@@ -794,6 +868,22 @@ export default function AgencyDashboard() {
       campaignName: ""
     });
     setApprovalModalOpen(true);
+  };
+
+  const shareApprovalWhatsApp = (item: AgencyApproval) => {
+    const client = clients.find((c) => c.id === item.clientId);
+    const token = item.shareToken || item.publicToken;
+    const fullUrl = `${window.location.origin}/agency/client-portal/${token}`;
+    const text = encodeURIComponent(
+      `مرحباً ${client?.name || ""}\nفريق وكالة التسويق يشارك معكم مسودة: "${item.title}" للمراجعة والاعتماد.\n\nرابط المعاينة والموافقة بضغطة زر:\n${fullUrl}`
+    );
+    const phone = client?.phone ? client.phone.replace(/[^0-9]/g, "") : "";
+    const formatted = phone.startsWith("0") ? `2${phone}` : phone;
+    if (formatted) {
+      window.open(`https://wa.me/${formatted}?text=${text}`, "_blank");
+    } else {
+      window.open(`https://wa.me/?text=${text}`, "_blank");
+    }
   };
 
   const handleSaveApproval = async () => {
@@ -835,6 +925,7 @@ export default function AgencyDashboard() {
 
   // Filtered clients
   const filteredClients = useMemo(() => {
+    setClientPage(1);
     if (!searchTerm.trim()) return clients;
     const q = searchTerm.toLowerCase();
     return clients.filter(
@@ -845,158 +936,204 @@ export default function AgencyDashboard() {
     );
   }, [clients, searchTerm]);
 
+  const totalClientPages = Math.ceil(filteredClients.length / CLIENTS_PER_PAGE) || 1;
+  const paginatedClients = useMemo(() => {
+    const start = (clientPage - 1) * CLIENTS_PER_PAGE;
+    return filteredClients.slice(start, start + CLIENTS_PER_PAGE);
+  }, [filteredClients, clientPage]);
+
   return (
-    <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-6" dir="rtl">
+    <div className="container mx-auto p-3 sm:p-6 max-w-7xl space-y-5 sm:space-y-6" dir="rtl">
+      {/* App Inactive Alert Banner (Graceful feedback without toast floods) */}
+      {appInactiveNotice && (
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-950 dark:text-amber-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="p-2 bg-amber-500/20 text-amber-700 dark:text-amber-300 rounded-xl shrink-0 mt-0.5 sm:mt-0">
+              <AlertCircle className="size-5" />
+            </div>
+            <div>
+              <h3 className="font-black text-sm">{appInactiveNotice}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                يمكنك تفعيل تطبيق "وكالة التسويق (Agency OS)" من متجر التطبيقات للبدء في استخدام كافة الميزات.
+              </p>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="font-bold bg-amber-600 hover:bg-amber-700 text-white shrink-0 h-9 text-xs w-full sm:w-auto"
+            onClick={() => navigate("/marketplace?search=marketing-agency-pro")}
+          >
+            تفعيل التطبيق من المتجر
+          </Button>
+        </div>
+      )}
+
       {/* 2026 Sleek Integrated Header & Sub-Navigation */}
-      <div className="border-b border-border/60 pb-4 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="border-b border-border/60 pb-3 space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-primary/10 text-primary rounded-xl border border-primary/20 shadow-sm">
+            <div className="p-2.5 bg-primary/10 text-primary rounded-xl border border-primary/20 shadow-sm shrink-0">
               <Briefcase className="size-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl md:text-2xl font-black tracking-tight">إدارة الوكالة</h1>
-                <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5">
-                  Pro Engine 2026
+                <h1 className="text-lg sm:text-2xl font-black tracking-tight">إدارة الوكالة</h1>
+                <Badge variant="secondary" className="text-[10px] font-bold px-2 py-0.5 bg-primary/10 text-primary border border-primary/20">
+                  محرك الوكالات الاحترافي 2026
                 </Badge>
               </div>
               <p className="text-xs text-muted-foreground font-medium mt-0.5">
-                متابعة العملاء، احتساب الأرباح ونماذج التسعير، وإدارة الموافقات
+                متابعة العملاء، احتساب الأرباح ونماذج التسعير، وإدارة اعتمادات المحتوى
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={fetchData} disabled={loading} className="h-9 font-bold">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchData}
+              disabled={loading}
+              className="h-10 sm:h-9 font-bold px-3 shrink-0"
+              title="تحديث البيانات"
+            >
               <RefreshCw className={`size-3.5 ml-1.5 ${loading ? "animate-spin" : ""}`} />
-              تحديث
+              <span className="inline">تحديث</span>
             </Button>
-            <Button onClick={handleOpenNewClient} className="h-9 font-bold shadow-md shadow-primary/20">
+            <Button
+              onClick={handleOpenNewClient}
+              className="h-10 sm:h-9 font-bold shadow-md shadow-primary/20 flex-1 sm:flex-initial px-4 text-xs sm:text-sm"
+            >
               <Plus className="size-4 ml-1.5" />
-              إضافة عميل
+              إضافة عميل جديد
             </Button>
           </div>
         </div>
 
-        {/* Minimal 2026 Integrated Tabs (No floating bar) */}
-        <div className="flex items-center gap-1 border-t border-border/40 pt-3 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => handleTabChange("overview")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === "overview"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-            }`}
-          >
-            نظرة عامة
-          </button>
-          <button
-            onClick={() => handleTabChange("clients")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === "clients"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-            }`}
-          >
-            <span>العملاء والأسعار</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                activeTab === "clients" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+        {/* Minimal 2026 Integrated Tabs (Pill Bar with Horizontal Scroll & HIG >= 44px) */}
+        <div className="relative -mx-3 sm:mx-0 px-3 sm:px-0">
+          <div className="flex items-center gap-1.5 pt-2 pb-1 overflow-x-auto no-scrollbar scroll-smooth">
+            <button
+              onClick={() => handleTabChange("overview")}
+              className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === "overview"
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-muted/20"
               }`}
             >
-              {clients.length}
-            </span>
-          </button>
-          <button
-            onClick={() => handleTabChange("invoices")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === "invoices"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-            }`}
-          >
-            <Receipt className="size-3.5" />
-            <span>الفواتير والأرباح</span>
-            {overview.unpaidInvoicesCount > 0 && (
-              <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
-            )}
-          </button>
-          <button
-            onClick={() => handleTabChange("approvals")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === "approvals"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-            }`}
-          >
-            <span>الموافقات</span>
-            <span
-              className={`text-[11px] px-1.5 py-0.2 rounded-full font-mono font-bold ${
-                activeTab === "approvals" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+              <BarChart3 className="size-4" />
+              <span>نظرة عامة</span>
+            </button>
+            <button
+              onClick={() => handleTabChange("clients")}
+              className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === "clients"
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-muted/20"
               }`}
             >
-              {approvals.length}
-            </span>
-          </button>
-          <button
-            onClick={() => handleTabChange("suite")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs md:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
-              activeTab === "suite"
-                ? "bg-primary text-primary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted/40"
-            }`}
-          >
-            <span>الأدوات المتكاملة</span>
-          </button>
+              <Users className="size-4" />
+              <span>العملاء والأسعار</span>
+              <span
+                className={`text-[11px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                  activeTab === "clients" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {clients.length}
+              </span>
+            </button>
+            <button
+              onClick={() => handleTabChange("invoices")}
+              className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === "invoices"
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-muted/20"
+              }`}
+            >
+              <Receipt className="size-4" />
+              <span>الفواتير والأرباح</span>
+              {overview.unpaidInvoicesCount > 0 && (
+                <span className="size-2 rounded-full bg-amber-500 animate-pulse" />
+              )}
+            </button>
+            <button
+              onClick={() => handleTabChange("approvals")}
+              className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === "approvals"
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-muted/20"
+              }`}
+            >
+              <CheckCircle2 className="size-4" />
+              <span>الموافقات</span>
+              <span
+                className={`text-[11px] px-1.5 py-0.5 rounded-full font-mono font-bold ${
+                  activeTab === "approvals" ? "bg-white/20 text-white" : "bg-muted text-muted-foreground"
+                }`}
+              >
+                {approvals.length}
+              </span>
+            </button>
+            <button
+              onClick={() => handleTabChange("suite")}
+              className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-black transition-all flex items-center gap-2 shrink-0 ${
+                activeTab === "suite"
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50 bg-muted/20"
+              }`}
+            >
+              <Briefcase className="size-4" />
+              <span>الأدوات المتكاملة</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* TAB 1: OVERVIEW */}
       {activeTab === "overview" && (
-        <div className="space-y-6">
-          {/* KPI Stats Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-border/60 bg-card/50 backdrop-blur-sm shadow-sm">
-              <CardContent className="p-4 flex items-center justify-between">
+        <div className="space-y-5 sm:space-y-6">
+          {/* KPI Stats Grid: Compact 2x2 on mobile, 4 columns on desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4">
+            <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-sm">
+              <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-bold text-muted-foreground">عملاء الوكالة</p>
-                  <p className="text-2xl font-black mt-1 text-foreground">{overview.totalClients}</p>
-                  <p className="text-[11px] text-emerald-600 font-bold mt-0.5">{overview.activeClients} عميل نشط</p>
+                  <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">عملاء الوكالة</p>
+                  <p className="text-xl sm:text-2xl font-black mt-0.5 text-foreground">{overview.totalClients}</p>
+                  <p className="text-[10px] sm:text-[11px] text-emerald-600 font-bold mt-0.5">{overview.activeClients} عميل نشط</p>
                 </div>
-                <div className="p-3 bg-blue-500/10 text-blue-600 rounded-xl">
-                  <Users className="size-5" />
+                <div className="p-2 sm:p-2.5 bg-blue-500/10 text-blue-600 rounded-xl w-fit">
+                  <Users className="size-4 sm:size-5" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-border/60 bg-card/50 backdrop-blur-sm shadow-sm">
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-sm">
+              <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-bold text-muted-foreground">أرباح الوكالة المقدرة (الشهر)</p>
-                  <p className="text-2xl font-black mt-1 text-emerald-600">
+                  <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">أرباح الوكالة (الشهر)</p>
+                  <p className="text-xl sm:text-2xl font-black mt-0.5 text-emerald-600">
                     {overview.totalAgencyRevenue.toLocaleString()} {currency}
                   </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">من كافة نماذج التسعير والخدمات</p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">من كافة نماذج التسعير</p>
                 </div>
-                <div className="p-3 bg-emerald-500/10 text-emerald-600 rounded-xl">
-                  <DollarSign className="size-5" />
+                <div className="p-2 sm:p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl w-fit">
+                  <DollarSign className="size-4 sm:size-5" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-border/60 bg-card/50 backdrop-blur-sm shadow-sm">
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-sm">
+              <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-bold text-muted-foreground">استهلاك ميزانيات الإعلانات</p>
-                  <p className="text-xl font-black mt-1 text-primary">
+                  <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">استهلاك الميزانيات</p>
+                  <p className="text-sm sm:text-xl font-black mt-0.5 text-primary break-words">
                     {overview.totalSpend.toLocaleString()} / {overview.totalBudget.toLocaleString()} {currency}
                   </p>
-                  <div className="flex items-center gap-1 mt-1">
-                    <span className="text-[11px] text-muted-foreground font-bold">الإنفاق:</span>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-[10px] sm:text-[11px] font-bold text-muted-foreground">الإنفاق:</span>
                     <Badge
                       variant="outline"
-                      className={`text-[10px] font-bold ${
+                      className={`text-[10px] font-black px-1.5 py-0 ${
                         overview.totalBudget > 0 && (overview.totalSpend / overview.totalBudget) > 1
                           ? "bg-rose-500/10 text-rose-600 border-rose-300"
                           : "bg-blue-500/10 text-blue-600 border-blue-300"
@@ -1006,23 +1143,23 @@ export default function AgencyDashboard() {
                     </Badge>
                   </div>
                 </div>
-                <div className="p-3 bg-purple-500/10 text-purple-600 rounded-xl">
-                  <TrendingUp className="size-5" />
+                <div className="p-2 sm:p-2.5 bg-purple-500/10 text-purple-600 rounded-xl w-fit">
+                  <TrendingUp className="size-4 sm:size-5" />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-border/60 bg-card/50 backdrop-blur-sm shadow-sm">
-              <CardContent className="p-4 flex items-center justify-between">
+            <Card className="border-border/60 bg-card/60 backdrop-blur-sm shadow-sm">
+              <CardContent className="p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                  <p className="text-xs font-bold text-muted-foreground">فواتير معلقة للتحصيل</p>
-                  <p className="text-2xl font-black mt-1 text-amber-600">
+                  <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">فواتير بانتظار التحصيل</p>
+                  <p className="text-xl sm:text-2xl font-black mt-0.5 text-amber-600">
                     {overview.totalUncollected.toLocaleString()} {currency}
                   </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{overview.unpaidInvoicesCount} فواتير غير مسددة</p>
+                  <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">{overview.unpaidInvoicesCount} غير مسددة</p>
                 </div>
-                <div className="p-3 bg-amber-500/10 text-amber-600 rounded-xl">
-                  <Receipt className="size-5" />
+                <div className="p-2 sm:p-2.5 bg-amber-500/10 text-amber-600 rounded-xl w-fit">
+                  <Receipt className="size-4 sm:size-5" />
                 </div>
               </CardContent>
             </Card>
@@ -1030,30 +1167,31 @@ export default function AgencyDashboard() {
 
           {/* Ad Spend Tracker */}
           <Card className="border-border/60 shadow-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+            <CardHeader className="p-4 sm:p-6 pb-3">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <CardTitle className="text-base font-black flex items-center gap-2">
                     <Sliders className="size-4 text-primary" />
-                    معدل استهلاك الميزانيات
+                    معدل استهلاك الميزانيات الإعلانية (Pacing)
                   </CardTitle>
-                  <CardDescription className="text-xs">
+                  <CardDescription className="text-xs mt-0.5">
                     متابعة الإنفاق الإعلاني الفعلي مقارنة بالميزانية المرصودة لتفادي تجاوز السقف الشهري
                   </CardDescription>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => handleTabChange("clients")} className="text-xs font-bold">
+                <Button variant="ghost" size="sm" onClick={() => handleTabChange("clients")} className="text-xs font-bold w-fit">
                   إدارة العملاء
                   <ExternalLink className="size-3.5 mr-1" />
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-4 sm:p-6 pt-0">
               {clients.length === 0 ? (
-                <div className="text-center py-6 border border-dashed rounded-xl bg-muted/10">
-                  <Users className="size-8 mx-auto text-muted-foreground/40 mb-2" />
-                  <p className="text-xs font-bold text-muted-foreground">لا يوجد عملاء مضافون بعد</p>
-                  <Button size="sm" onClick={handleOpenNewClient} className="mt-2 text-xs font-bold">
-                    إضافة عميل
+                <div className="text-center py-8 border border-dashed rounded-xl bg-muted/10 space-y-2">
+                  <Users className="size-8 mx-auto text-muted-foreground/40" />
+                  <p className="text-xs font-bold text-muted-foreground">لا يوجد عملاء مضافون حتى الآن</p>
+                  <Button size="sm" onClick={handleOpenNewClient} className="mt-2 text-xs font-bold h-9">
+                    <Plus className="size-3.5 ml-1" />
+                    إضافة أول عميل للوكالة
                   </Button>
                 </div>
               ) : (
@@ -1065,24 +1203,25 @@ export default function AgencyDashboard() {
                     const isOver = pct > 100;
 
                     return (
-                      <div key={c.id} className="p-3 rounded-xl border border-border/50 bg-background/50 space-y-2">
-                        <div className="flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <span className="font-black text-sm">{c.name}</span>
-                            <Badge variant="outline" className={`text-[10px] ${PRICING_MODEL_LABELS[c.pricingModel]?.badgeColor}`}>
+                      <div key={c.id} className="p-3 sm:p-3.5 rounded-xl border border-border/50 bg-background/50 space-y-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 text-xs">
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="font-black text-sm text-foreground">{c.name}</span>
+                            <Badge variant="outline" className={`text-[10px] font-bold ${PRICING_MODEL_LABELS[c.pricingModel]?.badgeColor}`}>
                               {PRICING_MODEL_LABELS[c.pricingModel]?.label || c.pricingModel}
                             </Badge>
                             {c.isOffPlatform && (
-                              <Badge variant="secondary" className="text-[10px]">
+                              <Badge variant="secondary" className="text-[10px] font-medium">
                                 خارج المنصة
                               </Badge>
                             )}
                           </div>
-                          <div className="font-bold">
-                            <span className="text-foreground">{spend.toLocaleString()}</span> /{" "}
-                            <span className="text-muted-foreground">{budget.toLocaleString()} {currency}</span>
+                          <div className="flex items-center justify-between sm:justify-end gap-2 font-bold">
+                            <span className="text-muted-foreground">
+                              <strong className="text-foreground">{spend.toLocaleString()}</strong> / {budget.toLocaleString()} {currency}
+                            </span>
                             <Badge
-                              className={`mr-2 text-[10px] font-black ${
+                              className={`text-[10px] font-black ${
                                 isOver ? "bg-rose-500 text-white" : "bg-emerald-600 text-white"
                               }`}
                             >
@@ -1090,7 +1229,7 @@ export default function AgencyDashboard() {
                             </Badge>
                           </div>
                         </div>
-                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full transition-all ${
                               isOver ? "bg-rose-500" : pct > 85 ? "bg-amber-500" : "bg-emerald-500"
@@ -1113,311 +1252,368 @@ export default function AgencyDashboard() {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="relative w-full sm:w-80">
-              <Search className="absolute right-3 top-2.5 size-4 text-muted-foreground" />
+              <Search className="absolute right-3 top-3 sm:top-2.5 size-4 text-muted-foreground" />
               <Input
                 placeholder="البحث بالاسم أو الحساب الإعلاني..."
-                className="pr-9 h-9 text-xs rounded-xl"
+                className="pr-9 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button onClick={handleOpenNewClient} className="h-9 text-xs font-bold">
-              <Plus className="size-3.5 ml-1.5" />
+            <Button onClick={handleOpenNewClient} className="h-10 sm:h-9 text-xs font-bold w-full sm:w-auto">
+              <Plus className="size-4 ml-1.5" />
               إضافة عميل جديد
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredClients.map((client) => {
-              const budget = Number(client.monthlyBudget) || 0;
-              const spend = Number(client.currentSpend) || 0;
-              const sales = Number(client.monthlySales) || 0;
-              const orders = Number(client.monthlyOrders) || 0;
-              const roas = spend > 0 ? (sales / spend).toFixed(2) : null;
-              const cpa = orders > 0 ? Math.round(spend / orders) : null;
-              const aov = orders > 0 ? Math.round(sales / orders) : null;
-              const pacingPct = budget > 0 ? Math.round((spend / budget) * 100) : 0;
-              const modelMeta = PRICING_MODEL_LABELS[client.pricingModel] || PRICING_MODEL_LABELS.RETAINER;
+          {filteredClients.length === 0 ? (
+            <div className="text-center py-12 px-4 border border-dashed rounded-2xl bg-muted/10 space-y-3">
+              <Users className="size-10 mx-auto text-muted-foreground/40" />
+              <h3 className="text-sm font-black text-foreground">
+                {searchTerm ? "لا توجد نتائج مطابقة لبحثك" : "لا يوجد عملاء مضافون حتى الآن"}
+              </h3>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                {searchTerm
+                  ? "جرب البحث باسم مختلف أو بحساب إعلاني آخر."
+                  : "ابدأ بإضافة أول عميل للوكالة وحدد نموذج التسعير المعتمد (اشتراك، نسبة، أو عمولة)."}
+              </p>
+              {!searchTerm && (
+                <Button onClick={handleOpenNewClient} className="h-10 text-xs font-bold mt-1">
+                  <Plus className="size-4 ml-1.5" />
+                  إضافة أول عميل للوكالة
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                {paginatedClients.map((client) => {
+                  const budget = Number(client.monthlyBudget) || 0;
+                  const spend = Number(client.currentSpend) || 0;
+                  const sales = Number(client.monthlySales) || 0;
+                  const orders = Number(client.monthlyOrders) || 0;
+                  const roas = spend > 0 ? (sales / spend).toFixed(2) : null;
+                  const cpa = orders > 0 ? Math.round(spend / orders) : null;
+                  const aov = orders > 0 ? Math.round(sales / orders) : null;
+                  const pacingPct = budget > 0 ? Math.round((spend / budget) * 100) : 0;
+                  const modelMeta = PRICING_MODEL_LABELS[client.pricingModel] || PRICING_MODEL_LABELS.RETAINER;
 
-              return (
-                <Card key={client.id} className="border-border/60 hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between">
-                  <CardHeader className="pb-2.5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-base font-black">{client.name}</CardTitle>
-                        {client.contactPerson && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{client.contactPerson}</p>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        {client.isOffPlatform && (
-                          <Badge variant="outline" className="text-[10px] bg-muted/40 font-bold">
-                            تتبع يدوي
-                          </Badge>
-                        )}
-                        <Badge
-                          variant="outline"
-                          className={
-                            client.status === "active"
-                              ? "bg-emerald-500/10 text-emerald-600 border-emerald-300 text-[10px] font-bold"
-                              : "bg-zinc-500/10 text-zinc-600 text-[10px] font-bold"
-                          }
-                        >
-                          {client.status === "active" ? "نشط" : client.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="space-y-3 text-xs flex-1">
-                    {/* Model Details Box */}
-                    <div className="p-3 bg-muted/20 rounded-xl space-y-2 border border-border/40">
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground font-bold">نموذج الربح:</span>
-                        <Badge variant="outline" className={`text-[10px] font-bold ${modelMeta.badgeColor}`}>
-                          {modelMeta.label}
-                        </Badge>
-                      </div>
-
-                      {/* Model Specific Rates */}
-                      {client.pricingModel === "RETAINER" && (
-                        <div className="flex justify-between font-bold">
-                          <span className="text-muted-foreground">الاشتراك الشهري:</span>
-                          <span className="text-emerald-600 font-black">{client.baseRetainer?.toLocaleString()} {currency}</span>
-                        </div>
-                      )}
-                      {client.pricingModel === "PERCENT_SPEND" && (
-                        <div className="flex justify-between font-bold">
-                          <span className="text-muted-foreground">النسبة من الإنفاق:</span>
-                          <span className="text-blue-600 font-black">{client.pricingRate}% من المصروف</span>
-                        </div>
-                      )}
-                      {client.pricingModel === "PERCENT_SALES" && (
-                        <div className="flex justify-between font-bold">
-                          <span className="text-muted-foreground">النسبة من المبيعات:</span>
-                          <span className="text-purple-600 font-black">{client.pricingRate}% من الإيراد</span>
-                        </div>
-                      )}
-                      {client.pricingModel === "FIXED_ORDER" && (
-                        <div className="flex justify-between font-bold">
-                          <span className="text-muted-foreground">عمولة الأوردر:</span>
-                          <span className="text-amber-600 font-black">{client.feePerOrder} {currency} / طلب</span>
-                        </div>
-                      )}
-                      {client.pricingModel === "FIXED_ITEM" && (
-                        <div className="flex justify-between font-bold">
-                          <span className="text-muted-foreground">عمولة القطعة:</span>
-                          <span className="text-cyan-600 font-black">{client.feePerItem} {currency} / قطعة</span>
-                        </div>
-                      )}
-                      {client.pricingModel === "HYBRID" && (
-                        <div className="space-y-1 font-bold">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">الاشتراك الثابت:</span>
-                            <span className="text-emerald-600 font-black">{client.baseRetainer?.toLocaleString()} {currency}</span>
+                  return (
+                    <Card key={client.id} className="border-border/60 hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between">
+                      <CardHeader className="p-3.5 sm:p-5 pb-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <CardTitle className="text-base font-black text-foreground">{client.name}</CardTitle>
+                            {client.contactPerson && (
+                              <p className="text-xs text-muted-foreground mt-0.5">{client.contactPerson}</p>
+                            )}
                           </div>
-                          <div className="flex justify-between text-[11px] text-indigo-600">
-                            <span>عمولة الأداء:</span>
-                            <span>
-                              {client.hybridType === "PERCENT_SPEND"
-                                ? `${client.pricingRate}% من الإنفاق`
-                                : client.hybridType === "PERCENT_SALES"
-                                ? `${client.pricingRate}% من المبيعات`
-                                : `${client.feePerOrder} ${currency} / أوردر`}
-                            </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {client.isOffPlatform && (
+                              <Badge variant="outline" className="text-[10px] bg-muted/40 font-bold">
+                                تتبع يدوي
+                              </Badge>
+                            )}
+                            {getClientStatusBadge(client.status)}
                           </div>
                         </div>
-                      )}
+                      </CardHeader>
 
-                      {/* Budget & Spend */}
-                      <div className="pt-1.5 border-t border-border/40 space-y-1">
-                        <div className="flex justify-between font-bold text-[11px]">
-                          <span className="text-muted-foreground">الإنفاق الإعلاني:</span>
-                          <span>
-                            <strong className="text-primary">{spend.toLocaleString()}</strong> / {budget.toLocaleString()} {currency}
-                          </span>
-                        </div>
-                        <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full ${
-                              pacingPct > 100 ? "bg-rose-500" : "bg-emerald-500"
-                            }`}
-                            style={{ width: `${Math.min(pacingPct, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                      <CardContent className="p-3.5 sm:p-5 pt-0 space-y-3 text-xs flex-1">
+                        {/* Model Details Box */}
+                        <div className="p-3 bg-muted/20 rounded-xl space-y-2 border border-border/40">
+                          <div className="flex items-center justify-between">
+                            <span className="text-muted-foreground font-bold">نموذج الربح:</span>
+                            <Badge variant="outline" className={`text-[10px] font-bold ${modelMeta.badgeColor}`}>
+                              {modelMeta.label}
+                            </Badge>
+                          </div>
 
-                    {/* Marketing Performance KPIs (ROAS, CPA, AOV) */}
-                    {(sales > 0 || orders > 0 || spend > 0) && (
-                      <div className="grid grid-cols-3 gap-1.5 p-2 bg-background/80 rounded-xl border border-border/50 text-[10px] text-center font-bold">
-                        <div className="flex flex-col items-center">
-                          <span className="text-muted-foreground text-[9px]">عائد ROAS</span>
-                          <span className={`font-black ${Number(roas) >= 3 ? "text-emerald-600" : Number(roas) >= 2 ? "text-blue-600" : "text-amber-600"}`}>
-                            {roas ? `${roas}x` : "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-center border-x border-border/40">
-                          <span className="text-muted-foreground text-[9px]">تكلفة CPA</span>
-                          <span className="font-black text-foreground">
-                            {cpa ? `${cpa} ${currency}` : "—"}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-center">
-                          <span className="text-muted-foreground text-[9px]">متوسط AOV</span>
-                          <span className="font-black text-foreground">
-                            {aov ? `${aov} ${currency}` : "—"}
-                          </span>
-                        </div>
-                      </div>
-                    )}
+                          {/* Model Specific Rates */}
+                          {client.pricingModel === "RETAINER" && (
+                            <div className="flex justify-between font-bold">
+                              <span className="text-muted-foreground">الاشتراك الشهري:</span>
+                              <span className="text-emerald-600 font-black">{client.baseRetainer?.toLocaleString()} {currency}</span>
+                            </div>
+                          )}
+                          {client.pricingModel === "PERCENT_SPEND" && (
+                            <div className="flex justify-between font-bold">
+                              <span className="text-muted-foreground">النسبة من الإنفاق:</span>
+                              <span className="text-blue-600 font-black">{client.pricingRate}% من المصروف</span>
+                            </div>
+                          )}
+                          {client.pricingModel === "PERCENT_SALES" && (
+                            <div className="flex justify-between font-bold">
+                              <span className="text-muted-foreground">النسبة من المبيعات:</span>
+                              <span className="text-purple-600 font-black">{client.pricingRate}% من الإيراد</span>
+                            </div>
+                          )}
+                          {client.pricingModel === "FIXED_ORDER" && (
+                            <div className="flex justify-between font-bold">
+                              <span className="text-muted-foreground">عمولة الأوردر:</span>
+                              <span className="text-amber-600 font-black">{client.feePerOrder} {currency} / طلب</span>
+                            </div>
+                          )}
+                          {client.pricingModel === "FIXED_ITEM" && (
+                            <div className="flex justify-between font-bold">
+                              <span className="text-muted-foreground">عمولة القطعة:</span>
+                              <span className="text-cyan-600 font-black">{client.feePerItem} {currency} / قطعة</span>
+                            </div>
+                          )}
+                          {client.pricingModel === "HYBRID" && (
+                            <div className="space-y-1 font-bold">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">الاشتراك الثابت:</span>
+                                <span className="text-emerald-600 font-black">{client.baseRetainer?.toLocaleString()} {currency}</span>
+                              </div>
+                              <div className="flex justify-between text-[11px] text-indigo-600">
+                                <span>عمولة الأداء:</span>
+                                <span>
+                                  {client.hybridType === "PERCENT_SPEND"
+                                    ? `${client.pricingRate}% من الإنفاق`
+                                    : client.hybridType === "PERCENT_SALES"
+                                    ? `${client.pricingRate}% من المبيعات`
+                                    : `${client.feePerOrder} ${currency} / أوردر`}
+                                </span>
+                              </div>
+                            </div>
+                          )}
 
-                    {/* Action buttons on client card */}
-                    <div className="grid grid-cols-2 gap-2 pt-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-[11px] font-bold bg-background hover:bg-muted/50"
-                        onClick={() => handleOpenPerfModal(client)}
-                      >
-                        <FileSpreadsheet className="size-3.5 ml-1 text-primary" />
-                        تسجيل أداء الشهر
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-[11px] font-bold bg-background hover:bg-muted/50"
-                        onClick={() => handleOpenExtraModal(client)}
-                      >
-                        <Plus className="size-3.5 ml-1 text-emerald-600" />
-                        بند إضافي / نفقة
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="h-8 text-[11px] font-bold bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary col-span-2"
-                        onClick={() => handleOpenFormalInvoiceFromClient(client)}
-                      >
-                        <Printer className="size-3.5 ml-1" />
-                        معاينة الفاتورة الرسمية والطباعة
-                      </Button>
-                    </div>
+                          {/* Spend Progress */}
+                          <div className="pt-1.5 border-t border-border/40 space-y-1">
+                            <div className="flex justify-between font-bold text-[11px]">
+                              <span className="text-muted-foreground">الإنفاق الإعلاني:</span>
+                              <span>
+                                <strong className="text-primary">{spend.toLocaleString()}</strong> / {budget.toLocaleString()} {currency}
+                              </span>
+                            </div>
+                            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${pacingPct > 100 ? "bg-rose-500" : "bg-emerald-500"}`}
+                                style={{ width: `${Math.min(pacingPct, 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
 
-                    <div className="flex items-center justify-between pt-2 border-t border-border/40">
-                      <div className="flex items-center gap-1.5">
-                        {client.phone && (
+                        {/* ROAS & CPA Performance badges */}
+                        {(sales > 0 || orders > 0 || spend > 0) && (
+                          <div className="grid grid-cols-3 gap-1.5 p-2 bg-background/80 rounded-xl border border-border/50 text-[10px] text-center font-bold">
+                            <div className="flex flex-col items-center">
+                              <span className="text-muted-foreground text-[9px]">عائد ROAS</span>
+                              <span className={`font-black ${Number(roas) >= 3 ? "text-emerald-600" : Number(roas) >= 2 ? "text-blue-600" : "text-amber-600"}`}>
+                                {roas ? `${roas}x` : "—"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center border-x border-border/40">
+                              <span className="text-muted-foreground text-[9px]">تكلفة CPA</span>
+                              <span className="font-black text-foreground">
+                                {cpa ? `${cpa} ${currency}` : "—"}
+                              </span>
+                            </div>
+                            <div className="flex flex-col items-center">
+                              <span className="text-muted-foreground text-[9px]">متوسط AOV</span>
+                              <span className="font-black text-foreground">
+                                {aov ? `${aov} ${currency}` : "—"}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Action buttons on client card */}
+                        <div className="grid grid-cols-2 gap-2 pt-1">
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="h-7 px-2 text-emerald-600 hover:bg-emerald-50 text-xs font-bold"
-                            onClick={() => window.open(`https://wa.me/${client.phone?.replace(/[^0-9]/g, "")}`, "_blank")}
+                            variant="outline"
+                            className="min-h-[38px] sm:h-8 text-xs sm:text-[11px] font-bold bg-background hover:bg-muted/50"
+                            onClick={() => handleOpenPerfModal(client)}
                           >
-                            <MessageCircle className="size-3.5 ml-1" />
-                            واتساب
+                            <FileSpreadsheet className="size-3.5 ml-1 text-primary" />
+                            تسجيل أداء الشهر
                           </Button>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7"
-                          onClick={() => handleOpenEditClient(client)}
-                        >
-                          <Edit2 className="size-3.5" />
-                        </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="size-7 text-rose-500 hover:text-rose-600"
-                          onClick={() => handleDeleteClient(client.id, client.name)}
-                        >
-                          <Trash2 className="size-3.5" />
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="min-h-[38px] sm:h-8 text-xs sm:text-[11px] font-bold bg-background hover:bg-muted/50"
+                            onClick={() => handleOpenExtraModal(client)}
+                          >
+                            <Plus className="size-3.5 ml-1 text-emerald-600" />
+                            بند إضافي / نفقة
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="min-h-[38px] sm:h-8 text-xs sm:text-[11px] font-bold bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary col-span-2"
+                            onClick={() => handleOpenFormalInvoiceFromClient(client)}
+                          >
+                            <Printer className="size-3.5 ml-1" />
+                            معاينة الفاتورة الرسمية والطباعة
+                          </Button>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                          <div className="flex items-center gap-1.5">
+                            {client.phone && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2.5 text-emerald-600 hover:bg-emerald-500/10 text-xs font-bold rounded-lg"
+                                onClick={() => window.open(`https://wa.me/${client.phone?.replace(/[^0-9]/g, "")}`, "_blank")}
+                              >
+                                <MessageCircle className="size-3.5 ml-1" />
+                                واتساب
+                              </Button>
+                            )}
+                            {client.adAccountId && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-8 px-2 text-blue-600 hover:bg-blue-500/10 text-xs font-bold rounded-lg"
+                                onClick={() => navigate(`/advertising/facebook-ads?adAccountId=${encodeURIComponent(client.adAccountId!)}`)}
+                                title="فتح حساب إعلانات ميتا للعميل"
+                              >
+                                <Megaphone className="size-3.5 ml-1" />
+                                ميتا ادز
+                              </Button>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-8 sm:size-7 rounded-lg"
+                              onClick={() => handleOpenEditClient(client)}
+                              title="تعديل العميل"
+                            >
+                              <Edit2 className="size-3.5" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="size-8 sm:size-7 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
+                              onClick={() => handleDeleteClient(client.id, client.name)}
+                              title="حذف العميل"
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+
+              {/* Pagination Controls */}
+              {totalClientPages > 1 && (
+                <div className="flex items-center justify-between gap-2 pt-3 border-t border-border/40">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={clientPage <= 1}
+                    onClick={() => setClientPage((p) => Math.max(1, p - 1))}
+                    className="h-9 text-xs font-bold px-3"
+                  >
+                    <ChevronRight className="size-4 ml-1" />
+                    السابق
+                  </Button>
+                  <span className="text-xs font-bold text-muted-foreground">
+                    صفحة {clientPage} من {totalClientPages} ({filteredClients.length} عميل)
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={clientPage >= totalClientPages}
+                    onClick={() => setClientPage((p) => Math.min(totalClientPages, p + 1))}
+                    className="h-9 text-xs font-bold px-3"
+                  >
+                    التالي
+                    <ChevronLeft className="size-4 mr-1" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
       {/* TAB 3: INVOICES & PROFIT ENGINE */}
       {activeTab === "invoices" && (
-        <div className="space-y-5">
+        <div className="space-y-4 sm:space-y-5">
           {/* Header Bar with Month Picker */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20 p-3.5 rounded-2xl border border-border/60">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-muted/20 p-3.5 sm:p-4 rounded-2xl border border-border/60">
             <div>
-              <h2 className="text-base font-black flex items-center gap-2">
+              <div className="flex items-center gap-2">
                 <Receipt className="size-5 text-primary" />
-                كشوف حساب وفواتير الوكالة
-              </h2>
-              <p className="text-xs text-muted-foreground">
+                <h2 className="text-base font-black text-foreground">كشوف حساب وفواتير الوكالة</h2>
+                <Badge variant="secondary" className="text-[11px] font-bold bg-primary/10 text-primary border-primary/20">
+                  {getArabicMonthName(selectedMonth)}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
                 حساب أتعاب الوكالة آلياً بناءً على نموذج التسعير المعتمد، وإضافة النفقات الإضافية، والمشاركة عبر الواتساب
               </p>
             </div>
 
-            <div className="flex items-center gap-2.5">
-              <Label className="text-xs font-bold text-muted-foreground shrink-0">شهر الفاتورة:</Label>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <Label className="text-xs font-bold text-muted-foreground shrink-0 hidden sm:inline">شهر الفاتورة:</Label>
               <Input
                 type="month"
-                className="h-9 w-40 text-xs font-bold bg-background"
+                className="h-10 sm:h-9 flex-1 sm:w-44 text-base sm:text-xs font-bold bg-background rounded-xl"
                 value={selectedMonth}
                 onChange={(e) => setSelectedMonth(e.target.value)}
               />
-              <Button size="sm" variant="outline" onClick={() => fetchInvoices(selectedMonth)} className="h-9">
-                <RefreshCw className={`size-3.5 ${invoicesLoading ? "animate-spin" : ""}`} />
+              <Button size="sm" variant="outline" onClick={() => fetchInvoices(selectedMonth)} className="h-10 sm:h-9 px-3 shrink-0 rounded-xl" title="تحديث الفواتير">
+                <RefreshCw className={`size-4 sm:size-3.5 ${invoicesLoading ? "animate-spin" : ""}`} />
               </Button>
             </div>
           </div>
 
           {/* Invoice Summary Cards */}
           {invoicesData?.summary && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              <div className="p-3.5 rounded-xl border border-border/60 bg-card/60">
-                <p className="text-xs font-bold text-muted-foreground">إجمالي مستحقات الوكالة</p>
-                <p className="text-xl font-black mt-1 text-foreground">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3">
+              <div className="p-3 sm:p-3.5 rounded-xl border border-border/60 bg-card/60">
+                <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">إجمالي المستحقات</p>
+                <p className="text-lg sm:text-xl font-black mt-0.5 text-foreground">
                   {invoicesData.summary.totalInvoiced.toLocaleString()} {currency}
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">شامل الأتعاب والبنود الإضافية</p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">شامل الأتعاب والبنود الإضافية</p>
               </div>
-              <div className="p-3.5 rounded-xl border border-border/60 bg-card/60">
-                <p className="text-xs font-bold text-muted-foreground">تم تحصيله</p>
-                <p className="text-xl font-black mt-1 text-emerald-600">
+              <div className="p-3 sm:p-3.5 rounded-xl border border-border/60 bg-card/60">
+                <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">تم تحصيله</p>
+                <p className="text-lg sm:text-xl font-black mt-0.5 text-emerald-600">
                   {invoicesData.summary.totalPaid.toLocaleString()} {currency}
                 </p>
-                <p className="text-[11px] text-emerald-600 font-bold mt-0.5">فواتير مسددة بالكامل</p>
+                <p className="text-[10px] sm:text-[11px] text-emerald-600 font-bold mt-0.5">فواتير مسددة بالكامل</p>
               </div>
-              <div className="p-3.5 rounded-xl border border-border/60 bg-card/60">
-                <p className="text-xs font-bold text-muted-foreground">بانتظار التحصيل</p>
-                <p className="text-xl font-black mt-1 text-amber-600">
+              <div className="p-3 sm:p-3.5 rounded-xl border border-border/60 bg-card/60">
+                <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">بانتظار التحصيل</p>
+                <p className="text-lg sm:text-xl font-black mt-0.5 text-amber-600">
                   {invoicesData.summary.totalUnpaid.toLocaleString()} {currency}
                 </p>
-                <p className="text-[11px] text-amber-600 font-bold mt-0.5">مبالغ مستحقة لم تسدد بعد</p>
+                <p className="text-[10px] sm:text-[11px] text-amber-600 font-bold mt-0.5">مبالغ مستحقة لم تسدد</p>
               </div>
-              <div className="p-3.5 rounded-xl border border-border/60 bg-card/60">
-                <p className="text-xs font-bold text-muted-foreground">عدد العملاء المفوترين</p>
-                <p className="text-xl font-black mt-1 text-primary">
+              <div className="p-3 sm:p-3.5 rounded-xl border border-border/60 bg-card/60">
+                <p className="text-[11px] sm:text-xs font-bold text-muted-foreground">العملاء المفوترين</p>
+                <p className="text-lg sm:text-xl font-black mt-0.5 text-primary">
                   {invoicesData.summary.totalClientsCount} عميل
                 </p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">لشهر {selectedMonth}</p>
+                <p className="text-[10px] sm:text-[11px] text-muted-foreground mt-0.5">لـ {getArabicMonthName(selectedMonth)}</p>
               </div>
             </div>
           )}
 
           {/* Detailed Client Invoice Cards / Table */}
           {invoicesData?.statements && invoicesData.statements.length > 0 ? (
-            <div className="space-y-3">
+            <div className="space-y-3 sm:space-y-4">
               {invoicesData.statements.map((stmt) => {
                 const clientObj = clients.find((c) => c.id === stmt.clientId);
                 return (
-                  <Card key={stmt.clientId} className="border-border/60 hover:border-primary/40 transition-all">
-                    <CardContent className="p-4 space-y-3 text-xs">
+                  <Card key={stmt.clientId} className="border-border/60 hover:border-primary/40 transition-all shadow-sm">
+                    <CardContent className="p-3.5 sm:p-5 space-y-3.5 text-xs">
                       {/* Top row */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/40 pb-2.5">
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3">
+                        <div className="flex flex-wrap items-center gap-2">
                           <span className="font-black text-base text-foreground">{stmt.clientName}</span>
                           <Badge variant="outline" className={`text-[10px] font-bold ${PRICING_MODEL_LABELS[stmt.pricingModel]?.badgeColor}`}>
                             {PRICING_MODEL_LABELS[stmt.pricingModel]?.label || stmt.pricingModel}
@@ -1429,11 +1625,11 @@ export default function AgencyDashboard() {
                           )}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           {/* Paid Status Toggle */}
                           <button
                             onClick={() => handleToggleInvoicePaid(stmt.clientId, stmt.isPaid)}
-                            className={`px-3 py-1 rounded-full text-xs font-black transition-all flex items-center gap-1.5 ${
+                            className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
                               stmt.isPaid
                                 ? "bg-emerald-500/15 text-emerald-600 border border-emerald-300 hover:bg-emerald-500/25"
                                 : "bg-amber-500/15 text-amber-600 border border-amber-300 hover:bg-amber-500/25"
@@ -1456,21 +1652,21 @@ export default function AgencyDashboard() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 px-2.5 text-xs font-bold gap-1 border-border/80 hover:bg-muted"
+                            className="min-h-[36px] px-2.5 text-xs font-bold gap-1 border-border/80 hover:bg-muted"
                             onClick={() => handleOpenFormalInvoice(stmt)}
                           >
                             <Printer className="size-3.5 ml-1 text-primary" />
-                            معاينة وطباعة الفاتورة
+                            معاينة الفاتورة
                           </Button>
 
                           {/* WhatsApp Share Button */}
                           <Button
                             size="sm"
-                            className="h-7 px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                            className="min-h-[36px] px-2.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
                             onClick={() => handleShareInvoiceWhatsApp(stmt)}
                           >
                             <MessageCircle className="size-3.5 ml-1" />
-                            مشاركة الفاتورة عبر واتساب
+                            مشاركة واتساب
                           </Button>
                         </div>
                       </div>
@@ -1480,11 +1676,11 @@ export default function AgencyDashboard() {
                         {/* Box 1: Actual Performance */}
                         <div className="p-3 bg-muted/20 rounded-xl space-y-1.5 border border-border/30">
                           <p className="font-bold text-[11px] text-muted-foreground uppercase flex items-center justify-between">
-                            <span>أرقام الأداء لشهر {selectedMonth}</span>
+                            <span>أرقام الأداء ({getArabicMonthName(selectedMonth)})</span>
                             {clientObj && (
                               <button
                                 onClick={() => handleOpenPerfModal(clientObj)}
-                                className="text-primary hover:underline text-[10px]"
+                                className="text-primary hover:underline text-[10px] font-bold"
                               >
                                 تعديل الأرقام
                               </button>
@@ -1500,7 +1696,7 @@ export default function AgencyDashboard() {
                               <span>{stmt.performance.sales.toLocaleString()} {currency}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-muted-foreground">عدد الطلبات / القطع:</span>
+                              <span className="text-muted-foreground">الطلبات / القطع:</span>
                               <span>{stmt.performance.orders} طلب / {stmt.performance.units} قطعة</span>
                             </div>
                           </div>
@@ -1572,7 +1768,7 @@ export default function AgencyDashboard() {
                                     <span>{extra.amount.toLocaleString()} {currency}</span>
                                     <button
                                       onClick={() => handleDeleteExtraService(stmt.clientId, extra.id)}
-                                      className="text-rose-500 hover:text-rose-600 ml-1"
+                                      className="size-6 rounded flex items-center justify-center text-rose-500 hover:text-rose-600 hover:bg-rose-500/10 ml-1"
                                       title="حذف البند"
                                     >
                                       <Trash2 className="size-3" />
@@ -1597,10 +1793,13 @@ export default function AgencyDashboard() {
               })}
             </div>
           ) : (
-            <div className="text-center py-10 border border-dashed rounded-2xl bg-muted/10">
-              <Receipt className="size-10 mx-auto text-muted-foreground/40 mb-2" />
-              <p className="text-sm font-bold text-foreground">لا توجد فواتير مسجلة لشهر {selectedMonth}</p>
-              <p className="text-xs text-muted-foreground mt-1">أضف عملاءك لتوليد كشوف الحساب تلقائياً</p>
+            <div className="text-center py-12 px-4 border border-dashed rounded-2xl bg-muted/10 space-y-3">
+              <Receipt className="size-10 mx-auto text-muted-foreground/40" />
+              <p className="text-sm font-bold text-foreground">لا توجد فواتير مسجلة لشهر {getArabicMonthName(selectedMonth)}</p>
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">أضف عملاءك أو سجل أداء الشهر لتوليد كشوف الحساب تلقائياً.</p>
+              <Button size="sm" onClick={() => handleTabChange("clients")} className="mt-1 h-9 text-xs font-bold">
+                الانتقال لإدارة العملاء
+              </Button>
             </div>
           )}
         </div>
@@ -1611,30 +1810,31 @@ export default function AgencyDashboard() {
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
-              <h2 className="text-base font-black">موافقات المحتوى والتصاميم</h2>
-              <p className="text-xs text-muted-foreground">
-                شارك رابطاً عاماً مع العميل لمراجعة بوستات وتصاميم الحملة قبل إطلاقها
+              <h2 className="text-base font-black text-foreground">موافقات المحتوى والتصاميم</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                شارك رابطاً عاماً مع العميل لمراجعة بوستات وتصاميم الحملة واعتمادها بنقرة واحدة
               </p>
             </div>
-            <Button onClick={handleOpenNewApproval} className="h-9 text-xs font-bold">
-              <Plus className="size-3.5 ml-1.5" />
+            <Button onClick={handleOpenNewApproval} className="h-10 sm:h-9 text-xs font-bold w-full sm:w-auto">
+              <Plus className="size-4 ml-1.5" />
               إنشاء طلب موافقة
             </Button>
           </div>
 
           {approvals.length === 0 ? (
-            <div className="text-center py-10 border border-dashed rounded-2xl bg-muted/10">
-              <CheckCircle2 className="size-10 mx-auto text-muted-foreground/40 mb-2" />
+            <div className="text-center py-12 px-4 border border-dashed rounded-2xl bg-muted/10 space-y-3">
+              <CheckCircle2 className="size-10 mx-auto text-muted-foreground/40" />
               <p className="text-sm font-bold text-foreground">لا توجد طلبات موافقة حالياً</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                أنشئ مسودة تصميم أو إعلان وشارك رابطه مع العميل للاعتماد
+              <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                أنشئ مسودة تصميم أو إعلان وشارك رابطه مع العميل للاعتماد بنقرة واحدة عبر واتساب.
               </p>
-              <Button size="sm" onClick={handleOpenNewApproval} className="mt-3 text-xs font-bold">
-                إنشاء طلب موافقة
+              <Button size="sm" onClick={handleOpenNewApproval} className="mt-1 h-10 text-xs font-bold">
+                <Plus className="size-4 ml-1.5" />
+                إنشاء أول طلب موافقة
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
               {approvals.map((item) => {
                 const client = clients.find((c) => c.id === item.clientId);
                 const isApproved = item.status === "APPROVED" || item.status === "approved";
@@ -1642,17 +1842,17 @@ export default function AgencyDashboard() {
                 const token = item.shareToken || item.publicToken;
 
                 return (
-                  <Card key={item.id} className="border-border/60 hover:border-primary/40 transition-all flex flex-col justify-between">
-                    <CardHeader className="pb-2.5">
-                      <div className="flex items-start justify-between">
+                  <Card key={item.id} className="border-border/60 hover:border-primary/40 transition-all shadow-sm flex flex-col justify-between">
+                    <CardHeader className="p-3.5 sm:p-5 pb-2.5">
+                      <div className="flex items-start justify-between gap-2">
                         <div>
                           <Badge variant="secondary" className="text-[10px] font-bold mb-1">
                             {client?.name || item.clientName || "عميل"}
                           </Badge>
-                          <CardTitle className="text-sm font-black">{item.title}</CardTitle>
+                          <CardTitle className="text-sm font-black text-foreground">{item.title}</CardTitle>
                         </div>
                         <Badge
-                          className={`text-[10px] font-bold ${
+                          className={`text-[10px] font-bold shrink-0 ${
                             isApproved
                               ? "bg-emerald-500 text-white"
                               : isChanges
@@ -1664,46 +1864,63 @@ export default function AgencyDashboard() {
                         </Badge>
                       </div>
                     </CardHeader>
-                    <CardContent className="space-y-2.5 text-xs flex-1">
+                    <CardContent className="p-3.5 sm:p-5 pt-0 space-y-2.5 text-xs flex-1">
                       {item.mediaUrl && (
-                        <div className="rounded-lg overflow-hidden border border-border/40 max-h-36 bg-muted/20">
-                          <img
-                            src={item.mediaUrl}
-                            alt={item.title}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLElement).style.display = "none";
-                            }}
-                          />
+                        <div className="rounded-xl overflow-hidden border border-border/40 max-h-48 bg-muted/20">
+                          {item.mediaUrl.match(/\.(mp4|webm|mov|ogg)($|\?)/i) ? (
+                            <video
+                              src={item.mediaUrl}
+                              controls
+                              className="w-full h-full max-h-48 object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={item.mediaUrl}
+                              alt={item.title}
+                              className="w-full h-full max-h-48 object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLElement).style.display = "none";
+                              }}
+                            />
+                          )}
                         </div>
                       )}
                       {item.copyText && (
-                        <div className="p-2 bg-muted/20 rounded-lg text-xs leading-relaxed font-medium">
+                        <div className="p-2.5 bg-muted/20 rounded-xl text-xs leading-relaxed font-medium">
                           <p className="font-bold text-[10px] text-muted-foreground mb-0.5 uppercase">نص الإعلان (Copy):</p>
                           <p className="line-clamp-3 whitespace-pre-line">{item.copyText}</p>
                         </div>
                       )}
                       {item.clientFeedback && (
-                        <div className="p-2 bg-rose-500/10 border border-rose-200 text-rose-700 rounded-lg text-xs">
+                        <div className="p-2.5 bg-rose-500/10 border border-rose-200 text-rose-700 rounded-xl text-xs">
                           <p className="font-bold text-[10px] mb-0.5">ملاحظات العميل:</p>
                           <p>{item.clientFeedback}</p>
                         </div>
                       )}
                     </CardContent>
-                    <div className="p-3 pt-2 border-t border-border/40 flex items-center justify-between gap-1.5">
+                    <div className="p-3 sm:p-4 pt-2 border-t border-border/40 flex flex-wrap items-center justify-between gap-1.5">
                       <Button
                         size="sm"
                         variant="outline"
-                        className="h-8 text-xs font-bold flex-1"
+                        className="h-9 text-xs font-bold flex-1 min-w-[95px]"
                         onClick={() => copyApprovalLink(token)}
                       >
-                        <Copy className="size-3 ml-1" />
+                        <Copy className="size-3.5 ml-1" />
                         نسخ الرابط
+                      </Button>
+                      <Button
+                        size="sm"
+                        className="h-9 px-3 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white gap-1"
+                        onClick={() => shareApprovalWhatsApp(item)}
+                        title="مشاركة عبر واتساب"
+                      >
+                        <MessageCircle className="size-3.5 ml-1" />
+                        واتساب
                       </Button>
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="size-8 text-primary"
+                        className="size-9 rounded-lg text-primary hover:bg-primary/10"
                         onClick={() => window.open(`/agency/client-portal/${token}`, "_blank")}
                         title="معاينة البوابة"
                       >
@@ -1712,9 +1929,9 @@ export default function AgencyDashboard() {
                       <Button
                         size="icon"
                         variant="ghost"
-                        className="size-8 text-rose-500 hover:text-rose-600"
+                        className="size-9 rounded-lg text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
                         onClick={() => handleDeleteApproval(item.id)}
-                        title="حذف"
+                        title="حذف طلب الموافقة"
                       >
                         <Trash2 className="size-3.5" />
                       </Button>
@@ -1730,7 +1947,7 @@ export default function AgencyDashboard() {
       {/* TAB 5: INTEGRATED TOOLS */}
       {activeTab === "suite" && (
         <div className="space-y-4">
-          <div className="p-3.5 bg-primary/5 rounded-2xl border border-primary/20 space-y-0.5">
+          <div className="p-3.5 sm:p-4 bg-primary/5 rounded-2xl border border-primary/20 space-y-1">
             <h3 className="font-black text-sm text-primary">الأدوات المتكاملة لوكالة التسويق</h3>
             <p className="text-xs text-muted-foreground">
               تكامل سلس ومباشر بين إدارة العملاء وباقي منظومة MaxP للإعلانات، المحادثات، والمهام.
@@ -1738,9 +1955,9 @@ export default function AgencyDashboard() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Card className="hover:border-primary/50 transition-all cursor-pointer" onClick={() => navigate("/advertising/facebook-ads")}>
+            <Card className="hover:border-primary/50 transition-all cursor-pointer active:scale-[0.99] touch-manipulation shadow-sm" onClick={() => navigate("/advertising/facebook-ads")}>
               <CardContent className="p-4 flex items-start gap-3">
-                <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl">
+                <div className="p-2.5 bg-blue-500/10 text-blue-600 rounded-xl shrink-0">
                   <Megaphone className="size-5" />
                 </div>
                 <div className="space-y-0.5">
@@ -1748,16 +1965,16 @@ export default function AgencyDashboard() {
                     إعلانات ميتا (Facebook Ads Pro)
                     <ExternalLink className="size-3 text-muted-foreground" />
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     إطلاق الحملات وتتبع النتائج والـ ROAS لحسابات عملائك.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:border-primary/50 transition-all cursor-pointer" onClick={() => navigate("/unified-inbox")}>
+            <Card className="hover:border-primary/50 transition-all cursor-pointer active:scale-[0.99] touch-manipulation shadow-sm" onClick={() => navigate("/unified-inbox")}>
               <CardContent className="p-4 flex items-start gap-3">
-                <div className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl">
+                <div className="p-2.5 bg-emerald-500/10 text-emerald-600 rounded-xl shrink-0">
                   <MessageCircle className="size-5" />
                 </div>
                 <div className="space-y-0.5">
@@ -1765,16 +1982,16 @@ export default function AgencyDashboard() {
                     الإنبوكس الموحد (Unified Inbox)
                     <ExternalLink className="size-3 text-muted-foreground" />
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     إدارة محادثات واتساب وفيسبوك وإنستجرام وتليجرام في شاشة واحدة.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:border-primary/50 transition-all cursor-pointer" onClick={() => navigate("/tasks/kanban")}>
+            <Card className="hover:border-primary/50 transition-all cursor-pointer active:scale-[0.99] touch-manipulation shadow-sm" onClick={() => navigate("/tasks/kanban")}>
               <CardContent className="p-4 flex items-start gap-3">
-                <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl">
+                <div className="p-2.5 bg-amber-500/10 text-amber-600 rounded-xl shrink-0">
                   <Kanban className="size-5" />
                 </div>
                 <div className="space-y-0.5">
@@ -1782,16 +1999,16 @@ export default function AgencyDashboard() {
                     لوحة مهام الفريق (Kanban OS)
                     <ExternalLink className="size-3 text-muted-foreground" />
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     توزيع مهام الميديا بايينج والتصميم على أعضاء الفريق ومتابعة التنفيذ.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:border-primary/50 transition-all cursor-pointer" onClick={() => navigate("/tools/monthly-pnl")}>
+            <Card className="hover:border-primary/50 transition-all cursor-pointer active:scale-[0.99] touch-manipulation shadow-sm" onClick={() => navigate("/tools/monthly-pnl")}>
               <CardContent className="p-4 flex items-start gap-3">
-                <div className="p-2.5 bg-indigo-500/10 text-indigo-600 rounded-xl">
+                <div className="p-2.5 bg-indigo-500/10 text-indigo-600 rounded-xl shrink-0">
                   <Calculator className="size-5" />
                 </div>
                 <div className="space-y-0.5">
@@ -1799,16 +2016,16 @@ export default function AgencyDashboard() {
                     الأرباح والخسائر (P&L Engine)
                     <ExternalLink className="size-3 text-muted-foreground" />
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     حساب صافي ربح الوكالة ومصاريف التشغيل والرواتب.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:border-primary/50 transition-all cursor-pointer" onClick={() => navigate("/tools/ad-budget-planner")}>
+            <Card className="hover:border-primary/50 transition-all cursor-pointer active:scale-[0.99] touch-manipulation shadow-sm" onClick={() => navigate("/tools/ad-budget-planner")}>
               <CardContent className="p-4 flex items-start gap-3">
-                <div className="p-2.5 bg-purple-500/10 text-purple-600 rounded-xl">
+                <div className="p-2.5 bg-purple-500/10 text-purple-600 rounded-xl shrink-0">
                   <BarChart3 className="size-5" />
                 </div>
                 <div className="space-y-0.5">
@@ -1816,16 +2033,16 @@ export default function AgencyDashboard() {
                     مخطط ميزانيات الإعلانات
                     <ExternalLink className="size-3 text-muted-foreground" />
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     تقدير تكاليف الحملات وتوزيع الميزانية على القنوات المختلفة.
                   </p>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="hover:border-primary/50 transition-all cursor-pointer" onClick={() => navigate("/competitors")}>
+            <Card className="hover:border-primary/50 transition-all cursor-pointer active:scale-[0.99] touch-manipulation shadow-sm" onClick={() => navigate("/competitors")}>
               <CardContent className="p-4 flex items-start gap-3">
-                <div className="p-2.5 bg-teal-500/10 text-teal-600 rounded-xl">
+                <div className="p-2.5 bg-teal-500/10 text-teal-600 rounded-xl shrink-0">
                   <Search className="size-5" />
                 </div>
                 <div className="space-y-0.5">
@@ -1833,7 +2050,7 @@ export default function AgencyDashboard() {
                     تحليل المنافسين
                     <ExternalLink className="size-3 text-muted-foreground" />
                   </h4>
-                  <p className="text-[11px] text-muted-foreground">
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">
                     مراقبة إعلانات المنافسين ومكتبة الإعلانات لاقتناص الأفكار.
                   </p>
                 </div>
@@ -1845,19 +2062,19 @@ export default function AgencyDashboard() {
 
       {/* MODAL 1: ADD / EDIT CLIENT */}
       <Dialog open={clientModalOpen} onOpenChange={setClientModalOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[90vh] overflow-y-auto" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="font-black text-lg">
+        <DialogContent className="sm:max-w-xl max-h-[90dvh] flex flex-col p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 shrink-0">
+            <DialogTitle className="font-black text-base sm:text-lg text-foreground">
               {editingClient ? "تعديل بيانات العميل ونموذج التسعير" : "إضافة عميل وكالة جديد"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 py-2 text-xs">
+          <div className="overflow-y-auto p-4 sm:p-5 flex-1 space-y-4 text-xs">
             {/* Basic Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
               <div className="sm:col-span-2">
                 <Label className="text-xs font-bold">اسم العميل أو العلامة التجارية *</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   placeholder="مثال: براند قمة الأناقة"
                   value={clientForm.name}
                   onChange={(e) => setClientForm({ ...clientForm, name: e.target.value })}
@@ -1866,7 +2083,7 @@ export default function AgencyDashboard() {
               <div>
                 <Label className="text-xs font-bold">الشخص المسؤول (Contact Person)</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   placeholder="أحمد ممدوح"
                   value={clientForm.contactPerson}
                   onChange={(e) => setClientForm({ ...clientForm, contactPerson: e.target.value })}
@@ -1875,7 +2092,7 @@ export default function AgencyDashboard() {
               <div>
                 <Label className="text-xs font-bold">رقم الهاتف / الواتساب</Label>
                 <Input
-                  className="mt-1 h-9 font-mono"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs font-mono rounded-xl"
                   dir="ltr"
                   placeholder="010xxxxxxxx"
                   value={clientForm.phone}
@@ -1885,18 +2102,18 @@ export default function AgencyDashboard() {
             </div>
 
             {/* Pricing Model Selector */}
-            <div className="p-3 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
+            <div className="p-3.5 bg-primary/5 rounded-xl border border-primary/20 space-y-3">
               <div>
                 <Label className="text-xs font-black text-primary">طريقة احتساب أرباح الوكالة (Pricing Model) *</Label>
                 <select
-                  className="w-full mt-1.5 h-10 px-3 rounded-lg border border-border bg-background text-xs font-bold text-foreground"
+                  className="w-full mt-1.5 h-11 sm:h-10 px-3 rounded-xl border border-border bg-background text-base sm:text-xs font-bold text-foreground"
                   value={clientForm.pricingModel}
                   onChange={(e) => setClientForm({ ...clientForm, pricingModel: e.target.value as PricingModel })}
                 >
                   <option value="RETAINER">1. اشتراك شهري ثابت (Flat Retainer)</option>
-                  <option value="PERCENT_SPEND">2. نسبة مئوية من ميزانية الإعلانات المصروفة (% of Ad Spend)</option>
-                  <option value="PERCENT_SALES">3. نسبة مئوية من المبيعات المحققة (% of Revenue)</option>
-                  <option value="FIXED_ORDER">4. عمولة ثابتة لكل طلب / أوردر (Fixed per Order)</option>
+                  <option value="PERCENT_SPEND">2. نسبة من ميزانية الإعلانات (% of Ad Spend)</option>
+                  <option value="PERCENT_SALES">3. نسبة من المبيعات المحققة (% of Revenue)</option>
+                  <option value="FIXED_ORDER">4. عمولة ثابتة لكل أوردر / طلب (Fixed per Order)</option>
                   <option value="FIXED_ITEM">5. عمولة ثابتة لكل قطعة مباعة (Fixed per Item)</option>
                   <option value="HYBRID">6. نموذج هجين: اشتراك ثابت + عمولة أداء (Hybrid)</option>
                 </select>
@@ -1910,7 +2127,7 @@ export default function AgencyDashboard() {
                 <div>
                   <Label className="text-xs font-bold">الاشتراك الشهري الثابت للوكالة ({currency})</Label>
                   <Input
-                    className="mt-1 h-9"
+                    className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                     type="number"
                     placeholder="10000"
                     value={clientForm.baseRetainer || ""}
@@ -1923,7 +2140,7 @@ export default function AgencyDashboard() {
                 <div>
                   <Label className="text-xs font-bold">النسبة المئوية من ميزانية الإعلانات المصروفة (%)</Label>
                   <Input
-                    className="mt-1 h-9"
+                    className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                     type="number"
                     placeholder="10"
                     value={clientForm.pricingRate || ""}
@@ -1936,7 +2153,7 @@ export default function AgencyDashboard() {
                 <div>
                   <Label className="text-xs font-bold">النسبة المئوية من إجمالي المبيعات (%)</Label>
                   <Input
-                    className="mt-1 h-9"
+                    className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                     type="number"
                     placeholder="5"
                     value={clientForm.pricingRate || ""}
@@ -1949,7 +2166,7 @@ export default function AgencyDashboard() {
                 <div>
                   <Label className="text-xs font-bold">القيمة الثابتة لكل أوردر / طلب ({currency})</Label>
                   <Input
-                    className="mt-1 h-9"
+                    className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                     type="number"
                     placeholder="25"
                     value={clientForm.feePerOrder || ""}
@@ -1962,7 +2179,7 @@ export default function AgencyDashboard() {
                 <div>
                   <Label className="text-xs font-bold">القيمة الثابتة لكل قطعة مباعة ({currency})</Label>
                   <Input
-                    className="mt-1 h-9"
+                    className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                     type="number"
                     placeholder="15"
                     value={clientForm.feePerItem || ""}
@@ -1973,11 +2190,11 @@ export default function AgencyDashboard() {
 
               {clientForm.pricingModel === "HYBRID" && (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <Label className="text-xs font-bold">الاشتراك الأساسي الثابت ({currency})</Label>
                       <Input
-                        className="mt-1 h-9"
+                        className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                         type="number"
                         placeholder="5000"
                         value={clientForm.baseRetainer || ""}
@@ -1987,7 +2204,7 @@ export default function AgencyDashboard() {
                     <div>
                       <Label className="text-xs font-bold">نوع عمولة الأداء الإضافية</Label>
                       <select
-                        className="w-full mt-1 h-9 px-2 rounded-lg border border-border bg-background text-xs font-bold"
+                        className="w-full mt-1 h-10 sm:h-9 px-2 rounded-xl border border-border bg-background text-base sm:text-xs font-bold"
                         value={clientForm.hybridType}
                         onChange={(e) => setClientForm({ ...clientForm, hybridType: e.target.value as HybridType })}
                       >
@@ -2003,7 +2220,7 @@ export default function AgencyDashboard() {
                       <div>
                         <Label className="text-xs font-bold">قيمة العمولة لكل أوردر ({currency})</Label>
                         <Input
-                          className="mt-1 h-9"
+                          className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                           type="number"
                           placeholder="20"
                           value={clientForm.feePerOrder || ""}
@@ -2016,7 +2233,7 @@ export default function AgencyDashboard() {
                           نسبة العمولة ({clientForm.hybridType === "PERCENT_SPEND" ? "من الإنفاق" : "من المبيعات"}) (%)
                         </Label>
                         <Input
-                          className="mt-1 h-9"
+                          className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                           type="number"
                           placeholder="5"
                           value={clientForm.pricingRate || ""}
@@ -2030,11 +2247,11 @@ export default function AgencyDashboard() {
             </div>
 
             {/* Ad Budget & Off-Platform Toggle */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-3.5">
               <div>
                 <Label className="text-xs font-bold">ميزانية الإعلانات الشهرية ({currency})</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   type="number"
                   placeholder="50000"
                   value={clientForm.monthlyBudget || ""}
@@ -2044,7 +2261,7 @@ export default function AgencyDashboard() {
               <div>
                 <Label className="text-xs font-bold">معرف الحساب الإعلاني (اختياري)</Label>
                 <Input
-                  className="mt-1 h-9 font-mono"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs font-mono rounded-xl"
                   dir="ltr"
                   placeholder="act_123456789"
                   value={clientForm.adAccountId}
@@ -2054,7 +2271,7 @@ export default function AgencyDashboard() {
             </div>
 
             {/* Off-Platform Checkbox */}
-            <div className="flex items-center gap-2.5 p-2.5 bg-muted/20 rounded-xl border border-border/40">
+            <div className="flex items-center gap-2.5 p-3 bg-muted/20 rounded-xl border border-border/40">
               <input
                 type="checkbox"
                 id="isOffPlatformCheck"
@@ -2070,7 +2287,7 @@ export default function AgencyDashboard() {
             <div>
               <Label className="text-xs font-bold">ملاحظات العقد</Label>
               <Textarea
-                className="mt-1 text-xs"
+                className="mt-1 text-base sm:text-xs rounded-xl"
                 placeholder="تفاصيل الاتفاق، بنود استثنائية، أو شروط دفع..."
                 rows={2}
                 value={clientForm.notes}
@@ -2078,11 +2295,11 @@ export default function AgencyDashboard() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:justify-start">
-            <Button onClick={handleSaveClient} className="font-bold h-9 text-xs">
+          <DialogFooter className="p-3.5 sm:p-4 border-t border-border/60 bg-background/95 backdrop-blur-sm shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:justify-start">
+            <Button onClick={handleSaveClient} className="font-bold h-11 sm:h-9 text-xs w-full sm:w-auto">
               حفظ العميل
             </Button>
-            <Button variant="outline" onClick={() => setClientModalOpen(false)} className="h-9 text-xs">
+            <Button variant="outline" onClick={() => setClientModalOpen(false)} className="h-11 sm:h-9 text-xs w-full sm:w-auto">
               إلغاء
             </Button>
           </DialogFooter>
@@ -2091,29 +2308,48 @@ export default function AgencyDashboard() {
 
       {/* MODAL 2: LOG MONTHLY PERFORMANCE */}
       <Dialog open={perfModalOpen} onOpenChange={setPerfModalOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="font-black text-lg flex items-center gap-2">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 shrink-0">
+            <DialogTitle className="font-black text-base sm:text-lg flex items-center gap-2 text-foreground">
               <FileSpreadsheet className="size-5 text-primary" />
               تسجيل أداء الشهر - {selectedClientForPerf?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3.5 py-2 text-xs">
+          <div className="overflow-y-auto p-4 sm:p-5 flex-1 space-y-3.5 text-xs">
             <div>
               <Label className="text-xs font-bold">الشهر المستهدف</Label>
               <Input
                 type="month"
-                className="mt-1 h-9 text-xs font-bold"
+                className="mt-1 h-10 sm:h-9 text-base sm:text-xs font-bold rounded-xl"
                 value={perfForm.month}
                 onChange={(e) => setPerfForm({ ...perfForm, month: e.target.value })}
               />
             </div>
+            {selectedClientForPerf?.adAccountId && (
+              <div className="p-2.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-blue-700 dark:text-blue-300">
+                  <Megaphone className="size-4 shrink-0" />
+                  <span className="font-bold">حساب إعلانات ميتا:</span>
+                  <span className="font-mono text-[11px]">{selectedClientForPerf.adAccountId}</span>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs font-bold bg-background text-blue-600 hover:bg-blue-500/10 border-blue-200 px-2 w-fit"
+                  onClick={() => window.open(`/advertising/facebook-ads?adAccountId=${encodeURIComponent(selectedClientForPerf.adAccountId!)}`, "_blank")}
+                >
+                  <ExternalLink className="size-3 ml-1" />
+                  عرض تقرير الحملات والإنفاق
+                </Button>
+              </div>
+            )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs font-bold">الإنفاق الإعلاني الفعلي ({currency})</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   type="number"
                   value={perfForm.adSpend || ""}
                   onChange={(e) => setPerfForm({ ...perfForm, adSpend: Number(e.target.value) })}
@@ -2122,7 +2358,7 @@ export default function AgencyDashboard() {
               <div>
                 <Label className="text-xs font-bold">إجمالي المبيعات المحققة ({currency})</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   type="number"
                   value={perfForm.salesRevenue || ""}
                   onChange={(e) => setPerfForm({ ...perfForm, salesRevenue: Number(e.target.value) })}
@@ -2130,11 +2366,11 @@ export default function AgencyDashboard() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs font-bold">عدد الأوردرات / الطلبات</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   type="number"
                   value={perfForm.ordersCount || ""}
                   onChange={(e) => setPerfForm({ ...perfForm, ordersCount: Number(e.target.value) })}
@@ -2143,7 +2379,7 @@ export default function AgencyDashboard() {
               <div>
                 <Label className="text-xs font-bold">عدد القطع المباعة (Units)</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   type="number"
                   value={perfForm.unitsSold || ""}
                   onChange={(e) => setPerfForm({ ...perfForm, unitsSold: Number(e.target.value) })}
@@ -2152,19 +2388,19 @@ export default function AgencyDashboard() {
             </div>
 
             {/* Instant Calculated Fee Preview */}
-            <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-300 space-y-1">
+            <div className="p-3.5 bg-emerald-500/10 rounded-xl border border-emerald-300 space-y-1">
               <div className="flex items-center justify-between">
-                <span className="font-bold text-emerald-800">أتعاب الوكالة المحتسبة آلياً:</span>
-                <span className="font-black text-base text-emerald-700">
+                <span className="font-bold text-emerald-800 dark:text-emerald-300">أتعاب الوكالة المحتسبة آلياً:</span>
+                <span className="font-black text-base text-emerald-700 dark:text-emerald-400">
                   {previewCalculatedFee.toLocaleString()} {currency}
                 </span>
               </div>
-              <p className="text-[11px] text-emerald-700">
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
                 بناءً على نموذج ({PRICING_MODEL_LABELS[selectedClientForPerf?.pricingModel || "RETAINER"]?.label})
               </p>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2.5 pt-1">
               <input
                 type="checkbox"
                 id="isPaidCheck"
@@ -2177,11 +2413,11 @@ export default function AgencyDashboard() {
               </label>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:justify-start">
-            <Button onClick={handleSavePerformance} className="font-bold h-9 text-xs">
+          <DialogFooter className="p-3.5 sm:p-4 border-t border-border/60 bg-background/95 backdrop-blur-sm shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:justify-start">
+            <Button onClick={handleSavePerformance} className="font-bold h-11 sm:h-9 text-xs w-full sm:w-auto">
               حفظ الأداء وحساب الفاتورة
             </Button>
-            <Button variant="outline" onClick={() => setPerfModalOpen(false)} className="h-9 text-xs">
+            <Button variant="outline" onClick={() => setPerfModalOpen(false)} className="h-11 sm:h-9 text-xs w-full sm:w-auto">
               إلغاء
             </Button>
           </DialogFooter>
@@ -2190,18 +2426,18 @@ export default function AgencyDashboard() {
 
       {/* MODAL 3: ADD EXTRA SERVICE / EXPENSE */}
       <Dialog open={extraModalOpen} onOpenChange={setExtraModalOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="font-black text-lg flex items-center gap-2">
+        <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 shrink-0">
+            <DialogTitle className="font-black text-base sm:text-lg flex items-center gap-2 text-foreground">
               <Plus className="size-5 text-emerald-600" />
               إضافة بند إضافي / نفقة - {selectedClientForExtra?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3.5 py-2 text-xs">
+          <div className="overflow-y-auto p-4 sm:p-5 flex-1 space-y-3.5 text-xs">
             <div>
               <Label className="text-xs font-bold">نوع الخدمة الإضافية (نموذج مسبق)</Label>
               <select
-                className="w-full mt-1 h-9 px-3 rounded-lg border border-border bg-background text-xs font-bold"
+                className="w-full mt-1 h-10 sm:h-9 px-3 rounded-xl border border-border bg-background text-base sm:text-xs font-bold"
                 value={extraForm.category}
                 onChange={(e) => handleSelectPresetCategory(e.target.value)}
               >
@@ -2216,17 +2452,17 @@ export default function AgencyDashboard() {
             <div>
               <Label className="text-xs font-bold">وصف أو عنوان البند في الفاتورة *</Label>
               <Input
-                className="mt-1 h-9"
+                className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                 value={extraForm.title}
                 onChange={(e) => setExtraForm({ ...extraForm, title: e.target.value })}
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
                 <Label className="text-xs font-bold">المبلغ المستحق ({currency}) *</Label>
                 <Input
-                  className="mt-1 h-9"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                   type="number"
                   value={extraForm.amount || ""}
                   onChange={(e) => setExtraForm({ ...extraForm, amount: Number(e.target.value) })}
@@ -2236,7 +2472,7 @@ export default function AgencyDashboard() {
                 <Label className="text-xs font-bold">الشهر المرتبط به</Label>
                 <Input
                   type="month"
-                  className="mt-1 h-9 text-xs font-bold"
+                  className="mt-1 h-10 sm:h-9 text-base sm:text-xs font-bold rounded-xl"
                   value={extraForm.month}
                   onChange={(e) => setExtraForm({ ...extraForm, month: e.target.value })}
                 />
@@ -2246,18 +2482,18 @@ export default function AgencyDashboard() {
             <div>
               <Label className="text-xs font-bold">ملاحظات داخلية (اختياري)</Label>
               <Input
-                className="mt-1 h-9"
+                className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                 placeholder="تفاصيل التكلفة، اسم المصمم أو جهة التنفيذ..."
                 value={extraForm.notes}
                 onChange={(e) => setExtraForm({ ...extraForm, notes: e.target.value })}
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:justify-start">
-            <Button onClick={handleSaveExtraService} className="font-bold h-9 text-xs">
+          <DialogFooter className="p-3.5 sm:p-4 border-t border-border/60 bg-background/95 backdrop-blur-sm shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:justify-start">
+            <Button onClick={handleSaveExtraService} className="font-bold h-11 sm:h-9 text-xs w-full sm:w-auto">
               إضافة البند للفاتورة
             </Button>
-            <Button variant="outline" onClick={() => setExtraModalOpen(false)} className="h-9 text-xs">
+            <Button variant="outline" onClick={() => setExtraModalOpen(false)} className="h-11 sm:h-9 text-xs w-full sm:w-auto">
               إلغاء
             </Button>
           </DialogFooter>
@@ -2266,15 +2502,15 @@ export default function AgencyDashboard() {
 
       {/* MODAL 4: ADD APPROVAL ITEM */}
       <Dialog open={approvalModalOpen} onOpenChange={setApprovalModalOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle className="font-black text-lg">إنشاء طلب موافقة على محتوى أو تصميم</DialogTitle>
+        <DialogContent className="sm:max-w-md max-h-[90dvh] flex flex-col p-0 overflow-hidden" dir="rtl">
+          <DialogHeader className="p-4 sm:p-5 border-b border-border/60 bg-muted/20 shrink-0">
+            <DialogTitle className="font-black text-base sm:text-lg text-foreground">إنشاء طلب موافقة على محتوى أو تصميم</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-2 text-xs">
+          <div className="overflow-y-auto p-4 sm:p-5 flex-1 space-y-3 text-xs">
             <div>
               <Label className="text-xs font-bold">العميل المستهدف *</Label>
               <select
-                className="w-full mt-1 h-9 px-3 rounded-lg border border-border bg-background text-xs font-bold"
+                className="w-full mt-1 h-10 sm:h-9 px-3 rounded-xl border border-border bg-background text-base sm:text-xs font-bold"
                 value={approvalForm.clientId}
                 onChange={(e) => setApprovalForm({ ...approvalForm, clientId: e.target.value })}
               >
@@ -2288,26 +2524,71 @@ export default function AgencyDashboard() {
             <div>
               <Label className="text-xs font-bold">عنوان المحتوى أو البوست *</Label>
               <Input
-                className="mt-1 h-9"
+                className="mt-1 h-10 sm:h-9 text-base sm:text-xs rounded-xl"
                 placeholder="مثال: ريلز الجمعة البيضاء - إنستجرام"
                 value={approvalForm.title}
                 onChange={(e) => setApprovalForm({ ...approvalForm, title: e.target.value })}
               />
             </div>
             <div>
-              <Label className="text-xs font-bold">رابط صورة أو فيديو المعاينة (Media URL)</Label>
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold">صورة أو فيديو التصميم (Media)</Label>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  accept="image/*,video/*"
+                  onChange={handleUploadMediaFile}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isUploadingMedia}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="h-8 text-xs font-bold bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary gap-1"
+                >
+                  <Upload className={`size-3.5 ${isUploadingMedia ? "animate-spin" : ""}`} />
+                  {isUploadingMedia ? "جاري الرفع..." : "رفع من الجهاز"}
+                </Button>
+              </div>
               <Input
-                className="mt-1 h-9"
+                className="mt-1.5 h-10 sm:h-9 text-base sm:text-xs font-mono rounded-xl"
                 dir="ltr"
-                placeholder="https://images.unsplash.com/photo-..."
+                placeholder="https://... أو اضغط رفع من الجهاز"
                 value={approvalForm.mediaUrl}
                 onChange={(e) => setApprovalForm({ ...approvalForm, mediaUrl: e.target.value })}
               />
+              {approvalForm.mediaUrl && (
+                <div className="mt-2 p-2 rounded-xl border border-border/60 bg-muted/20 relative group">
+                  {approvalForm.mediaUrl.match(/\.(mp4|webm|mov|ogg)($|\?)/i) ? (
+                    <video src={approvalForm.mediaUrl} controls className="max-h-36 rounded-lg w-full object-cover" />
+                  ) : (
+                    <img
+                      src={approvalForm.mediaUrl}
+                      alt="معاينة التصميم"
+                      className="max-h-36 rounded-lg mx-auto object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                    />
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    className="text-[10px] text-rose-500 hover:text-rose-600 mt-1 h-6 px-2 w-full"
+                    onClick={() => setApprovalForm({ ...approvalForm, mediaUrl: "" })}
+                  >
+                    إزالة الوسائط
+                  </Button>
+                </div>
+              )}
             </div>
             <div>
               <Label className="text-xs font-bold">نص الإعلان أو الكابشن (Ad Copy)</Label>
               <Textarea
-                className="mt-1 text-xs"
+                className="mt-1 text-base sm:text-xs rounded-xl"
                 placeholder="اكتب النص الإعلاني أو الكابشن المقترح ليراجعه العميل..."
                 rows={3}
                 value={approvalForm.copyText}
@@ -2315,11 +2596,11 @@ export default function AgencyDashboard() {
               />
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:justify-start">
-            <Button onClick={handleSaveApproval} className="font-bold h-9 text-xs">
+          <DialogFooter className="p-3.5 sm:p-4 border-t border-border/60 bg-background/95 backdrop-blur-sm shrink-0 flex flex-col-reverse sm:flex-row gap-2 sm:justify-start">
+            <Button onClick={handleSaveApproval} className="font-bold h-11 sm:h-9 text-xs w-full sm:w-auto">
               توليد رابط الموافقة وحفظ
             </Button>
-            <Button variant="outline" onClick={() => setApprovalModalOpen(false)} className="h-9 text-xs">
+            <Button variant="outline" onClick={() => setApprovalModalOpen(false)} className="h-11 sm:h-9 text-xs w-full sm:w-auto">
               إلغاء
             </Button>
           </DialogFooter>
@@ -2328,9 +2609,9 @@ export default function AgencyDashboard() {
 
       {/* MODAL 5: FORMAL PRINTABLE INVOICE MODAL */}
       <Dialog open={invoiceModalOpen} onOpenChange={setInvoiceModalOpen}>
-        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0" dir="rtl">
+        <DialogContent className="sm:max-w-3xl max-h-[90dvh] flex flex-col p-0 overflow-hidden" dir="rtl">
           {selectedInvoice && (
-            <div className="bg-background">
+            <div className="bg-background flex flex-col h-full overflow-hidden">
               <style>{`
                 @media print {
                   body * {
@@ -2357,22 +2638,22 @@ export default function AgencyDashboard() {
               `}</style>
 
               {/* Header / Actions Bar (Hidden in Print) */}
-              <div className="p-4 bg-muted/40 border-b border-border flex items-center justify-between no-print">
+              <div className="p-3.5 sm:p-4 bg-muted/40 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shrink-0 no-print">
                 <div className="flex items-center gap-2">
-                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                  <div className="p-2 bg-primary/10 text-primary rounded-lg shrink-0">
                     <Receipt className="size-4" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-black">معاينة الفاتورة وكشف الحساب الرسمي</h3>
+                    <h3 className="text-sm font-black text-foreground">معاينة الفاتورة وكشف الحساب الرسمي</h3>
                     <p className="text-[11px] text-muted-foreground">جاهزة للطباعة، الحفظ كـ PDF، أو الإرسال للعميل</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 w-full sm:w-auto">
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 font-bold text-xs gap-1.5"
+                    className="h-9 font-bold text-xs gap-1.5 flex-1 sm:flex-initial"
                     onClick={() => window.print()}
                   >
                     <Printer className="size-3.5 text-primary" />
@@ -2380,7 +2661,7 @@ export default function AgencyDashboard() {
                   </Button>
                   <Button
                     size="sm"
-                    className="h-8 font-bold text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="h-9 font-bold text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white flex-1 sm:flex-initial"
                     onClick={() => handleShareInvoiceWhatsApp(selectedInvoice)}
                   >
                     <MessageCircle className="size-3.5" />
@@ -2390,7 +2671,7 @@ export default function AgencyDashboard() {
               </div>
 
               {/* PRINTABLE INVOICE SHEET */}
-              <div id="agency-formal-invoice-print-area" className="p-6 md:p-8 bg-card text-card-foreground space-y-6">
+              <div id="agency-formal-invoice-print-area" className="p-4 sm:p-8 bg-card text-card-foreground space-y-5 sm:space-y-6 overflow-y-auto flex-1">
                 {/* Agency Letterhead */}
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b-2 border-primary/20 pb-5">
                   <div className="space-y-1">
@@ -2398,7 +2679,7 @@ export default function AgencyDashboard() {
                       <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-base shadow-sm">
                         M
                       </div>
-                      <h2 className="text-xl font-black tracking-tight text-foreground">
+                      <h2 className="text-lg sm:text-xl font-black tracking-tight text-foreground">
                         {invoicesData?.agencyName || "وكالة التسويق الرقمي وإدارة الحملات"}
                       </h2>
                     </div>
@@ -2430,7 +2711,7 @@ export default function AgencyDashboard() {
                 </div>
 
                 {/* Bill To & Details Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-muted/20 border border-border/60 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 p-3.5 sm:p-4 rounded-xl bg-muted/20 border border-border/60 text-xs">
                   <div className="space-y-1.5">
                     <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">مفوتر إلى (العميل):</span>
                     <h4 className="text-sm font-black text-foreground">{selectedInvoice.clientName}</h4>
@@ -2475,26 +2756,26 @@ export default function AgencyDashboard() {
                     </h4>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-2.5">
+                    <div className="p-2.5 sm:p-3 rounded-lg border border-border/60 bg-muted/10">
                       <span className="text-[10px] font-bold text-muted-foreground block">الإنفاق الإعلاني الفعلي</span>
                       <span className="text-sm font-black text-primary mt-0.5 block">
                         {selectedInvoice.performance.spend.toLocaleString()} {currency}
                       </span>
                     </div>
-                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                    <div className="p-2.5 sm:p-3 rounded-lg border border-border/60 bg-muted/10">
                       <span className="text-[10px] font-bold text-muted-foreground block">إجمالي المبيعات المحققة</span>
                       <span className="text-sm font-black text-foreground mt-0.5 block">
                         {selectedInvoice.performance.sales.toLocaleString()} {currency}
                       </span>
                     </div>
-                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                    <div className="p-2.5 sm:p-3 rounded-lg border border-border/60 bg-muted/10">
                       <span className="text-[10px] font-bold text-muted-foreground block">عائد الإنفاق (ROAS)</span>
                       <span className="text-sm font-black text-emerald-600 mt-0.5 block">
                         {selectedInvoice.performance.roas || (selectedInvoice.performance.spend > 0 ? (selectedInvoice.performance.sales / selectedInvoice.performance.spend).toFixed(2) : 0)}x
                       </span>
                     </div>
-                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                    <div className="p-2.5 sm:p-3 rounded-lg border border-border/60 bg-muted/10">
                       <span className="text-[10px] font-bold text-muted-foreground block">تكلفة الطلب (CPA)</span>
                       <span className="text-sm font-black text-foreground mt-0.5 block">
                         {selectedInvoice.performance.cpa || (selectedInvoice.performance.orders > 0 ? Math.round(selectedInvoice.performance.spend / selectedInvoice.performance.orders) : 0)} {currency}
@@ -2510,48 +2791,50 @@ export default function AgencyDashboard() {
                     بيان الأتعاب والخدمات المفوترة
                   </h4>
 
-                  <div className="border border-border/60 rounded-xl overflow-hidden text-xs">
-                    <div className="grid grid-cols-12 bg-muted/40 p-2.5 font-black border-b border-border/60 text-[11px] text-muted-foreground">
-                      <div className="col-span-6">البند / الخدمة</div>
-                      <div className="col-span-3">النوع والتفاصيل</div>
-                      <div className="col-span-3 text-left">المبلغ المستحق</div>
-                    </div>
+                  <div className="border border-border/60 rounded-xl overflow-x-auto text-xs">
+                    <div className="min-w-[460px]">
+                      <div className="grid grid-cols-12 bg-muted/40 p-2.5 font-black border-b border-border/60 text-[11px] text-muted-foreground">
+                        <div className="col-span-6">البند / الخدمة</div>
+                        <div className="col-span-3">النوع والتفاصيل</div>
+                        <div className="col-span-3 text-left">المبلغ المستحق</div>
+                      </div>
 
-                    {/* Core Agency Fee Row */}
-                    <div className="grid grid-cols-12 p-3 border-b border-border/40 items-center font-medium bg-background/50">
-                      <div className="col-span-6">
-                        <p className="font-black text-foreground">أتعاب إدارة الحملات والتسويق الرقمي</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
-                          {selectedInvoice.calculationExplanation}
-                        </p>
-                      </div>
-                      <div className="col-span-3">
-                        <Badge variant="outline" className="text-[10px] font-bold">
-                          أتعاب أساسية
-                        </Badge>
-                      </div>
-                      <div className="col-span-3 text-left font-black text-sm text-foreground">
-                        {selectedInvoice.baseAgencyFee.toLocaleString()} {currency}
-                      </div>
-                    </div>
-
-                    {/* Extra Services Rows */}
-                    {selectedInvoice.extraServices.map((srv) => (
-                      <div key={srv.id} className="grid grid-cols-12 p-3 border-b border-border/40 items-center font-medium">
+                      {/* Core Agency Fee Row */}
+                      <div className="grid grid-cols-12 p-3 border-b border-border/40 items-center font-medium bg-background/50">
                         <div className="col-span-6">
-                          <p className="font-bold text-foreground">{srv.title}</p>
-                          {srv.notes && <p className="text-[10px] text-muted-foreground mt-0.5">{srv.notes}</p>}
+                          <p className="font-black text-foreground">أتعاب إدارة الحملات والتسويق الرقمي</p>
+                          <p className="text-[11px] text-muted-foreground mt-0.5">
+                            {selectedInvoice.calculationExplanation}
+                          </p>
                         </div>
                         <div className="col-span-3">
-                          <Badge variant="secondary" className="text-[10px] font-bold">
-                            {srv.category}
+                          <Badge variant="outline" className="text-[10px] font-bold">
+                            أتعاب أساسية
                           </Badge>
                         </div>
                         <div className="col-span-3 text-left font-black text-sm text-foreground">
-                          {srv.amount.toLocaleString()} {currency}
+                          {selectedInvoice.baseAgencyFee.toLocaleString()} {currency}
                         </div>
                       </div>
-                    ))}
+
+                      {/* Extra Services Rows */}
+                      {selectedInvoice.extraServices.map((srv) => (
+                        <div key={srv.id} className="grid grid-cols-12 p-3 border-b border-border/40 items-center font-medium">
+                          <div className="col-span-6">
+                            <p className="font-bold text-foreground">{srv.title}</p>
+                            {srv.notes && <p className="text-[10px] text-muted-foreground mt-0.5">{srv.notes}</p>}
+                          </div>
+                          <div className="col-span-3">
+                            <Badge variant="secondary" className="text-[10px] font-bold">
+                              {srv.category}
+                            </Badge>
+                          </div>
+                          <div className="col-span-3 text-left font-black text-sm text-foreground">
+                            {srv.amount.toLocaleString()} {currency}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
 

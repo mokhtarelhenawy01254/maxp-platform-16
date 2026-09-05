@@ -15,14 +15,14 @@ export default function SelectFilter({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 flex items-center gap-1.5 text-[11px] font-black text-slate-500">
-        <Icon className="h-3 w-3" />
+      <span className="mb-1 flex items-center gap-1.5 text-[11px] font-bold text-slate-600 dark:text-slate-400">
+        <Icon className="h-3 w-3 text-slate-400" />
         {label}
       </span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+        className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>

@@ -51,6 +51,35 @@ const StorefrontArticlePage: React.FC<StorefrontArticlePageProps> = ({
       .finally(()=>setLoading(false));
   }, [slug, location.search]);
 
+  useEffect(() => {
+    if (!article) return;
+    const prevTitle = document.title;
+    document.title = article.title;
+
+    const setMeta = (selector: string, attr: string, val: string, content: string) => {
+      let el = document.querySelector(selector);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, val);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+
+    const desc = article.excerpt || article.title;
+    setMeta('meta[name="description"]', 'name', 'description', desc);
+    setMeta('meta[property="og:title"]', 'property', 'og:title', article.title);
+    setMeta('meta[property="og:description"]', 'property', 'og:description', desc);
+    setMeta('meta[property="og:type"]', 'property', 'og:type', 'article');
+    if (article.heroImage) {
+      setMeta('meta[property="og:image"]', 'property', 'og:image', article.heroImage);
+    }
+
+    return () => {
+      document.title = prevTitle;
+    };
+  }, [article]);
+
   if (loading) return <div className="container py-20 text-center">جاري التحميل...</div>;
   if (error || !article) return <div className="container py-20 text-center">المقال غير موجود: {error} <Link to={`/store?companyId=${new URLSearchParams(location.search).get('companyId')||''}`} className="underline">العودة</Link></div>;
 

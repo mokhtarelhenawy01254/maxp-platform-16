@@ -448,6 +448,8 @@ const {
   extractSubdomainMiddleware,
 } = require("./middleware/subdomainMiddleware");
 const storefrontHtmlController = require("./controller/storefrontHtmlController");
+const storefrontSitemapController = require("./controller/storefrontSitemapController");
+const storefrontRobotsController = require("./controller/storefrontRobotsController");
 const { handlePlatformSeo } = require("./middleware/platformSeoMiddleware");
 const {
   securityHeaders,
@@ -1396,6 +1398,18 @@ try {
     error,
   );
 }
+
+app.get(
+  "/sitemap.xml",
+  extractSubdomainMiddleware,
+  storefrontSitemapController.handleStorefrontSitemap,
+);
+
+app.get(
+  "/robots.txt",
+  extractSubdomainMiddleware,
+  storefrontRobotsController.handleStorefrontRobots,
+);
 
 app.get(
   "*",

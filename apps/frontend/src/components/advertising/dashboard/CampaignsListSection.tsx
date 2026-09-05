@@ -184,11 +184,11 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
   const currentFilteredCampaignCount = filteredCampaigns.length;
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-      <div className="border-b border-slate-200 p-3 dark:border-slate-800">
-        <div className="grid gap-2 md:grid-cols-[2fr_1.2fr_1fr] xl:grid-cols-[1.2fr_0.8fr_0.5fr_0.8fr_0.8fr_0.8fr]">
+    <section className="rounded-2xl border border-slate-200/80 bg-white/95 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
+      <div className="border-b border-slate-200/80 p-3 sm:p-4 dark:border-slate-800/80">
+        <div className="grid gap-2.5 md:grid-cols-[2fr_1.2fr_1fr] xl:grid-cols-[1.2fr_0.8fr_0.5fr_0.8fr_0.8fr_0.8fr]">
           <label className="relative block">
-            <span className="mb-1 block text-[11px] font-black text-slate-500">
+            <span className="mb-1 block text-[11px] font-bold text-slate-600 dark:text-slate-400">
               بحث
             </span>
             <Search className="pointer-events-none absolute bottom-2.5 right-3 h-3.5 w-3.5 text-slate-400" />
@@ -197,7 +197,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
               value={filters.searchTerm}
               onChange={(event) => updateFilters({ searchTerm: event.target.value })}
               placeholder="اسم الحملة أو Meta ID"
-              className="h-9 w-full rounded-lg border border-slate-300 bg-white py-2 pl-3 pr-9 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              className="h-9 w-full rounded-xl border border-slate-200/90 bg-white py-2 pl-3 pr-9 text-xs font-bold text-slate-800 shadow-xs outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
             />
           </label>
 
@@ -215,7 +215,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
             <button
               type="button"
               onClick={() => setShowExtraFilters((prev) => !prev)}
-              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-lg border border-dashed border-slate-300 bg-transparent text-xs font-black text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
+              className="flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
               {showExtraFilters ? "فلاتر أقل" : "المزيد"}
@@ -295,12 +295,18 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
             return (
               <article
                 key={campaign.id}
-                className="px-3 py-2.5 transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-800/45"
+                className="px-3.5 py-3 transition-colors hover:bg-blue-50/20 dark:hover:bg-slate-800/40"
               >
                 <div className="grid gap-3 xl:grid-cols-[1.5fr_0.9fr_1.1fr_auto] xl:items-center">
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="max-w-3xl truncate text-sm font-black">
+                      {isCampaignDelivering(campaign) && (
+                        <span className="relative flex h-2 w-2">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                          <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                        </span>
+                      )}
+                      <h2 className="max-w-3xl truncate text-sm font-black text-slate-950 dark:text-white">
                         {campaign.name}
                       </h2>
                       <span
@@ -351,10 +357,10 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           }`,
                         )
                       }
-                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-300 px-3 text-xs font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      className="inline-flex h-8 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-blue-400 dark:hover:text-blue-400 transition-all"
                     >
                       تفاصيل
-                      <ArrowUpRight className="h-3.5 w-3.5" />
+                      <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
                     </button>
                   </div>
                 </div>

@@ -168,6 +168,12 @@ export const StorefrontThemeProvider: React.FC<{
     
     if (!targetElement) return;
 
+    if (!scoped) {
+      const resolvedDirection = theme.direction || theme.tokens?.typography?.direction || 'rtl';
+      document.documentElement.dir = resolvedDirection;
+      document.documentElement.lang = resolvedDirection === 'ltr' ? 'en' : 'ar';
+    }
+
     const setVar = (key: string, value: string) => {
       targetElement.style.setProperty(key, value);
     };

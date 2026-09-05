@@ -133,10 +133,11 @@ export default function AgencyClientPortal() {
   if (error || !data) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 dark:bg-slate-950 p-4" dir="rtl">
-        <div className="max-w-md w-full bg-card p-8 rounded-2xl border border-border shadow-md text-center space-y-4">
+        <div className="max-w-md w-full bg-card p-6 sm:p-8 rounded-2xl border border-border shadow-md text-center space-y-4">
           <AlertCircle className="size-12 text-rose-500 mx-auto" />
-          <h2 className="text-xl font-black">عفواً، تعذر الوصول لطلب الموافقة</h2>
-          <p className="text-sm text-muted-foreground">{error || "الرابط غير صحيح أو تم حذفه."}</p>
+          <h2 className="text-lg sm:text-xl font-black text-foreground">عفواً، تعذر الوصول لطلب الموافقة</h2>
+          <p className="text-xs sm:text-sm text-muted-foreground">{error || "الرابط غير صحيح أو تم حذفه أو انتهت صلاحيته."}</p>
+          <p className="text-xs text-muted-foreground">يرجى التواصل مع مسؤول الوكالة لإعادة إرسال رابط الموافقة.</p>
         </div>
       </div>
     );
@@ -150,51 +151,53 @@ export default function AgencyClientPortal() {
     google: "إعلانات جوجل"
   };
 
+  const isVideo = data.mediaUrl ? Boolean(data.mediaUrl.match(/\.(mp4|webm|mov|ogg)($|\?)/i)) : false;
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 py-8 px-4" dir="rtl">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 py-4 sm:py-8 px-3 sm:px-4" dir="rtl">
+      <div className="max-w-3xl mx-auto space-y-4 sm:space-y-6">
         {/* Brand Header */}
-        <div className="bg-card rounded-2xl p-6 border border-border/60 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="bg-card rounded-2xl p-4 sm:p-6 border border-border/60 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-primary/10 text-primary rounded-2xl">
-              <Briefcase className="size-6" />
+            <div className="p-2.5 sm:p-3 bg-primary/10 text-primary rounded-2xl shrink-0">
+              <Briefcase className="size-5 sm:size-6" />
             </div>
             <div>
-              <p className="text-xs font-black uppercase text-primary tracking-wider">بوابة موافقات عملاء الوكالة</p>
-              <h1 className="text-xl font-black text-foreground">{data.agencyName || "وكالة التسويق"}</h1>
+              <p className="text-[11px] font-black uppercase text-primary tracking-wider">بوابة موافقات عملاء الوكالة</p>
+              <h1 className="text-lg sm:text-xl font-black text-foreground">{data.agencyName || "وكالة التسويق"}</h1>
             </div>
           </div>
-          <div className="text-left sm:text-right">
-            <p className="text-xs text-muted-foreground font-bold">العميل المعتمد</p>
+          <div className="text-right sm:text-left pt-2 sm:pt-0 border-t sm:border-t-0 border-border/40">
+            <p className="text-[11px] text-muted-foreground font-bold">العميل المعتمد</p>
             <p className="text-sm font-black text-foreground">{data.clientName}</p>
           </div>
         </div>
 
         {/* Status Notification Banner */}
         {submittedAction === "approved" ? (
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-700 dark:text-emerald-400 flex items-center gap-3">
-            <CheckCircle2 className="size-6 shrink-0" />
+          <div className="p-3.5 sm:p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-emerald-700 dark:text-emerald-400 flex items-center gap-3">
+            <CheckCircle2 className="size-5 sm:size-6 shrink-0" />
             <div>
               <p className="font-black text-sm">تم اعتماد هذا المحتوى بنجاح!</p>
-              <p className="text-xs">سيبدأ فريق الوكالة في جدولة ونشر هذا الإعلان/التصميم طبقاً للموعد المحدد.</p>
+              <p className="text-xs mt-0.5">سيبدأ فريق الوكالة في جدولة ونشر هذا الإعلان/التصميم طبقاً للموعد المحدد.</p>
             </div>
           </div>
         ) : submittedAction === "changes_requested" ? (
-          <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-700 dark:text-amber-400 flex items-center gap-3">
-            <Clock className="size-6 shrink-0" />
+          <div className="p-3.5 sm:p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl text-amber-700 dark:text-amber-400 flex items-center gap-3">
+            <Clock className="size-5 sm:size-6 shrink-0" />
             <div>
               <p className="font-black text-sm">تم إرسال طلب التعديل إلى فريق الوكالة</p>
-              <p className="text-xs">فريق التصميم وصناعة المحتوى يقوم بمراجعة ملاحظاتك الآن لتحديث المسودة.</p>
+              <p className="text-xs mt-0.5">فريق التصميم وصناعة المحتوى يقوم بمراجعة ملاحظاتك الآن لتحديث المسودة.</p>
             </div>
           </div>
         ) : null}
 
         {/* Main Creative Card */}
         <Card className="border-border/60 shadow-md overflow-hidden">
-          <CardHeader className="border-b border-border/40 pb-4 bg-muted/10">
+          <CardHeader className="border-b border-border/40 p-4 sm:p-6 pb-3 sm:pb-4 bg-muted/10">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="outline" className="bg-primary/5 text-primary border-primary/30 font-black text-xs">
                     {channelLabels[data.channel] || data.channel}
                   </Badge>
@@ -205,7 +208,7 @@ export default function AgencyClientPortal() {
                     </span>
                   )}
                 </div>
-                <CardTitle className="text-xl font-black text-foreground">{data.title}</CardTitle>
+                <CardTitle className="text-lg sm:text-xl font-black text-foreground">{data.title}</CardTitle>
               </div>
 
               <Badge
@@ -231,20 +234,28 @@ export default function AgencyClientPortal() {
             )}
           </CardHeader>
 
-          <CardContent className="p-6 space-y-6">
+          <CardContent className="p-3.5 sm:p-6 space-y-4 sm:space-y-6">
             {/* Visual Media Preview */}
             {data.mediaUrl ? (
               <div className="space-y-2">
                 <p className="text-xs font-black uppercase text-muted-foreground">معاينة التصميم / الفيديو:</p>
                 <div className="rounded-2xl overflow-hidden border border-border/50 bg-black/5 max-h-[480px] flex items-center justify-center">
-                  <img
-                    src={data.mediaUrl}
-                    alt={data.title}
-                    className="w-full h-auto max-h-[480px] object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLElement).style.display = "none";
-                    }}
-                  />
+                  {isVideo ? (
+                    <video
+                      src={data.mediaUrl}
+                      controls
+                      className="w-full h-auto max-h-[480px] object-contain rounded-xl"
+                    />
+                  ) : (
+                    <img
+                      src={data.mediaUrl}
+                      alt={data.title}
+                      className="w-full h-auto max-h-[480px] object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                    />
+                  )}
                 </div>
               </div>
             ) : null}
@@ -253,7 +264,7 @@ export default function AgencyClientPortal() {
             {data.copyText && (
               <div className="space-y-2">
                 <p className="text-xs font-black uppercase text-muted-foreground">نص الإعلان / الكابشن (Ad Copy):</p>
-                <div className="p-4 bg-muted/20 border border-border/50 rounded-2xl text-sm leading-relaxed whitespace-pre-line font-medium text-foreground">
+                <div className="p-3.5 sm:p-4 bg-muted/20 border border-border/50 rounded-2xl text-xs sm:text-sm leading-relaxed whitespace-pre-line font-medium text-foreground">
                   {data.copyText}
                 </div>
               </div>
@@ -261,7 +272,7 @@ export default function AgencyClientPortal() {
 
             {/* Feedback History if any */}
             {data.feedback && (
-              <div className="p-4 bg-rose-500/10 border border-rose-200 text-rose-800 rounded-2xl text-xs space-y-1">
+              <div className="p-3.5 sm:p-4 bg-rose-500/10 border border-rose-200 text-rose-800 dark:text-rose-300 rounded-2xl text-xs space-y-1">
                 <p className="font-black text-[11px]">ملاحظات التعديل المسجلة سابقاً:</p>
                 <p>{data.feedback}</p>
               </div>
@@ -269,12 +280,12 @@ export default function AgencyClientPortal() {
 
             {/* Action Buttons */}
             {data.status === "pending" && (
-              <div className="pt-4 border-t border-border/40 space-y-4">
+              <div className="pt-3 sm:pt-4 border-t border-border/40 space-y-4">
                 {!showFeedbackBox ? (
-                  <div className="flex flex-col sm:flex-row items-center gap-3">
+                  <div className="flex flex-col sm:flex-row items-center gap-2.5 sm:gap-3">
                     <Button
                       size="lg"
-                      className="w-full sm:w-auto flex-1 font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg shadow-emerald-600/20 h-12 rounded-xl"
+                      className="w-full sm:w-auto flex-1 font-black bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20 h-12 rounded-xl text-xs sm:text-sm"
                       onClick={() => handleAction("approve")}
                       disabled={actionLoading}
                     >
@@ -284,7 +295,7 @@ export default function AgencyClientPortal() {
                     <Button
                       size="lg"
                       variant="outline"
-                      className="w-full sm:w-auto font-black text-rose-600 border-rose-200 hover:bg-rose-50 h-12 rounded-xl"
+                      className="w-full sm:w-auto font-black text-rose-600 border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/20 h-12 rounded-xl text-xs sm:text-sm"
                       onClick={() => setShowFeedbackBox(true)}
                       disabled={actionLoading}
                     >
@@ -293,14 +304,14 @@ export default function AgencyClientPortal() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="space-y-3 bg-muted/20 p-4 rounded-2xl border border-border/60">
+                  <div className="space-y-3 bg-muted/20 p-3.5 sm:p-4 rounded-2xl border border-border/60">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-black text-foreground">اكتب ملاحظاتك وتعديلاتك لفريق الوكالة:</p>
+                      <p className="text-xs sm:text-sm font-black text-foreground">اكتب ملاحظاتك وتعديلاتك لفريق الوكالة:</p>
                       <Button
                         size="sm"
                         variant="ghost"
                         onClick={() => setShowFeedbackBox(false)}
-                        className="text-xs"
+                        className="text-xs h-8"
                       >
                         إلغاء
                       </Button>
@@ -310,10 +321,10 @@ export default function AgencyClientPortal() {
                       rows={3}
                       value={feedbackText}
                       onChange={(e) => setFeedbackText(e.target.value)}
-                      className="rounded-xl"
+                      className="rounded-xl text-base sm:text-sm"
                     />
                     <Button
-                      className="w-full font-black bg-rose-600 hover:bg-rose-700 text-white h-11 rounded-xl"
+                      className="w-full font-black bg-rose-600 hover:bg-rose-700 text-white h-12 rounded-xl text-xs sm:text-sm"
                       onClick={() => handleAction("request_changes")}
                       disabled={actionLoading}
                     >
@@ -332,7 +343,7 @@ export default function AgencyClientPortal() {
         </Card>
 
         {/* Footer */}
-        <div className="text-center text-xs text-muted-foreground space-y-1">
+        <div className="text-center text-xs text-muted-foreground space-y-1 pb-4">
           <p>تم إرسال هذا الرابط الآمن عبر نظام إدارة وكالات التسويق MaxP Platform</p>
         </div>
       </div>

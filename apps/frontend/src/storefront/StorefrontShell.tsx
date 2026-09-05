@@ -78,6 +78,7 @@ import {
 } from "./utils/marketplaceApps";
 import ProductImageLandingPage from "./pages/ProductImageLandingPage";
 import ReturnsPage from "./pages/ReturnsPage";
+import StorefrontNotFound from "./components/StorefrontNotFound";
 import { useStorePage } from "../hooks/useStorePage";
 import { footerSettingsService, type FooterSettings } from "../services/footerSettingsService";
 
@@ -395,23 +396,89 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
     !isKhemetMinimalCommerce &&
     !isKhemetLuxeInnerRoute;
   const showFooter = !isKhemetMinimalCommerce && !isProductImageLandingPage;
+  const renderBreadcrumbTrail = (
+    trail: string[],
+    options: {
+      crumbColor?: string;
+      activeColor?: string;
+      slashColor?: string;
+      justify?: "center" | "start";
+      textSize?: string;
+    } = {},
+  ) => {
+    const {
+      crumbColor = "",
+      activeColor = "font-medium text-foreground",
+      slashColor = "opacity-45",
+      justify = "center",
+      textSize = "text-sm md:text-[0.95rem]",
+    } = options;
+
+    return (
+      <nav aria-label="Breadcrumb" className="w-full">
+        <ol
+          itemScope
+          itemType="https://schema.org/BreadcrumbList"
+          className={`flex flex-wrap items-center ${justify === "start" ? "justify-start" : "justify-center"} gap-2 ${textSize}`}
+        >
+          {trail.map((crumb, index) => {
+            const isLast = index === trail.length - 1;
+            let href: string | undefined;
+            if (index === 0) {
+              href = buildStorefrontPath(location.pathname, "/", location.search);
+            } else if (!isLast && trail.length > 2) {
+              href = buildStorefrontPath(location.pathname, "/shop", location.search);
+            }
+
+            return (
+              <li
+                key={`${crumb}-${index}`}
+                itemProp="itemListElement"
+                itemScope
+                itemType="https://schema.org/ListItem"
+                className="inline-flex items-center gap-2"
+              >
+                {index > 0 ? (
+                  <span className={slashColor} aria-hidden="true">
+                    /
+                  </span>
+                ) : null}
+                {href ? (
+                  <Link
+                    to={href}
+                    itemProp="item"
+                    className={`hover:underline ${crumbColor}`}
+                  >
+                    <span itemProp="name">{crumb}</span>
+                  </Link>
+                ) : (
+                  <span
+                    itemProp="name"
+                    aria-current={isLast ? "page" : undefined}
+                    className={isLast ? activeColor : crumbColor}
+                  >
+                    {crumb}
+                  </span>
+                )}
+                <meta itemProp="position" content={String(index + 1)} />
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
+    );
+  };
+
   const elessiCompactProductCrumbs = (trail: string[]) => (
     <div className="w-full border-b border-border/70 bg-background/96">
       <div className="container px-4 py-3 md:px-6 md:py-4">
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold text-muted-foreground md:text-xs">
-          {trail.map((crumb, index) => (
-            <React.Fragment key={`${crumb}-${index}`}>
-              {index > 0 ? <span className="opacity-35">/</span> : null}
-              <span
-                className={
-                  index === trail.length - 1 ? "text-foreground" : undefined
-                }
-              >
-                {crumb}
-              </span>
-            </React.Fragment>
-          ))}
-        </div>
+        {renderBreadcrumbTrail(trail, {
+          crumbColor: "text-muted-foreground",
+          activeColor: "font-medium text-foreground",
+          slashColor: "opacity-35",
+          justify: "start",
+          textSize: "text-[11px] font-bold md:text-xs",
+        })}
       </div>
     </div>
   );
@@ -439,22 +506,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#231915] md:text-[2.75rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#7d6a60] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#34231d]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#7d6a60]",
+            activeColor: "font-medium text-[#34231d]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -483,22 +539,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#1f261f] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#6c7568] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#2b362a]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#6c7568]",
+            activeColor: "font-medium text-[#2b362a]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -527,22 +572,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#2d3b27] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#6c5b49] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#2d3b27]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#6c5b49]",
+            activeColor: "font-medium text-[#2d3b27]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -571,22 +605,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#161c26] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#607184] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#161c26]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#607184]",
+            activeColor: "font-medium text-[#161c26]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -615,22 +638,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#1d2a33] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#677684] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#1d2a33]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#677684]",
+            activeColor: "font-medium text-[#1d2a33]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -659,22 +671,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#382426] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#87686b] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#382426]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#87686b]",
+            activeColor: "font-medium text-[#382426]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -703,22 +704,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#352427] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#856a6d] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#352427]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#856a6d]",
+            activeColor: "font-medium text-[#352427]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -747,22 +737,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#254235] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#5f7a67] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#254235]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#5f7a67]",
+            activeColor: "font-medium text-[#254235]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -791,22 +770,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#1f2731] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#6a727b] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#1f2731]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#6a727b]",
+            activeColor: "font-medium text-[#1f2731]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -840,22 +808,11 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
           <h1 className="font-heading text-3xl font-semibold tracking-tight text-[#fff6ea] md:text-[2.7rem]">
             {title}
           </h1>
-          <div className="flex flex-wrap items-center justify-center gap-2 text-sm text-[#dcc4ad] md:text-[0.95rem]">
-            {trail.map((crumb, index) => (
-              <React.Fragment key={`${crumb}-${index}`}>
-                {index > 0 ? <span className="opacity-45">/</span> : null}
-                <span
-                  className={
-                    index === trail.length - 1
-                      ? "font-medium text-[#fff6ea]"
-                      : undefined
-                  }
-                >
-                  {crumb}
-                </span>
-              </React.Fragment>
-            ))}
-          </div>
+          {renderBreadcrumbTrail(trail, {
+            crumbColor: "text-[#dcc4ad]",
+            activeColor: "font-medium text-[#fff6ea]",
+            slashColor: "opacity-45",
+          })}
         </div>
       </div>
     </div>
@@ -1311,20 +1268,7 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
       renderSectionFrame={StorefrontSectionFrame}
     />
   );
-  const notFoundElement = (
-    <div className="container py-20 text-center space-y-4">
-      <h1 className="text-4xl font-bold font-heading text-foreground">404</h1>
-      <p className="text-muted-foreground">
-        {theme.direction === "rtl" ? "الصفحة غير موجودة" : "Page not found"}
-      </p>
-      <Link
-        to={buildStorefrontPath(location.pathname, "/", location.search)}
-        className="inline-block px-6 py-2 bg-primary text-primary-foreground rounded-[var(--radius)] text-sm font-medium hover:opacity-90 transition-opacity"
-      >
-        {theme.direction === "rtl" ? "العودة للرئيسية" : "Back to Home"}
-      </Link>
-    </div>
-  );
+  const notFoundElement = <StorefrontNotFound />;
   const renderScopedRoutes = (scopePrefix?: string) => {
     const scopedPath = (route?: string): string => {
       if (!scopePrefix) {

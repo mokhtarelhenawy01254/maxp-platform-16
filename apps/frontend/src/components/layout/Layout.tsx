@@ -74,6 +74,48 @@ const ContentSkeleton: React.FC = () => (
   </div>
 );
 
+const ADMIN_ROUTE_TITLES: Array<{ prefix: string; title: string }> = [
+  { prefix: "/dashboard", title: "لوحة التحكم" },
+  { prefix: "/orders", title: "إدارة الطلبات والمبيعات" },
+  { prefix: "/products", title: "إدارة المنتجات والمخزون" },
+  { prefix: "/customers", title: "إدارة العملاء" },
+  { prefix: "/leads", title: "العملاء المحتملين (Leads)" },
+  { prefix: "/conversations", title: "صندوق الوارد والمحادثات" },
+  { prefix: "/whatsapp-chat", title: "محادثات واتساب" },
+  { prefix: "/whatsapp", title: "واتساب للأعمال" },
+  { prefix: "/comments", title: "الردود التلقائية والتعليقات" },
+  { prefix: "/posts", title: "إدارة المنشورات" },
+  { prefix: "/marketing", title: "التسويق والحملات" },
+  { prefix: "/inventory", title: "المخزون والمستودعات" },
+  { prefix: "/analytics", title: "التحليلات والتقارير" },
+  { prefix: "/reports", title: "التقارير المالية والتشغيلية" },
+  { prefix: "/finance", title: "الحسابات والمالية" },
+  { prefix: "/accounting", title: "النظام المحاسبي" },
+  { prefix: "/hr", title: "الموارد البشرية والموظفين" },
+  { prefix: "/settings", title: "إعدادات المتجر" },
+  { prefix: "/profile", title: "الملف الشخصي" },
+  { prefix: "/affiliates", title: "نظام التسويق بالعمولة" },
+  { prefix: "/team", title: "فريق العمل والصلاحيات" },
+  { prefix: "/integrations", title: "الربط والخدمات السحابية" },
+  { prefix: "/landing-pages", title: "صفحات الهبوط" },
+  { prefix: "/funnels", title: "مسارات البيع (Funnels)" },
+  { prefix: "/shipping", title: "شركات الشحن والتوصيل" },
+  { prefix: "/discounts", title: "كوبونات الخصم والعروض" },
+  { prefix: "/categories", title: "أقسام وتصنيفات المتجر" },
+  { prefix: "/reviews", title: "آراء وتقييمات العملاء" },
+  { prefix: "/super-admin", title: "إدارة المنصة المتقدمة" },
+  { prefix: "/app", title: "لوحة تحكم التطبيقات" },
+];
+
+const resolveDashboardTitle = (pathname: string): string => {
+  for (const item of ADMIN_ROUTE_TITLES) {
+    if (pathname === item.prefix || pathname.startsWith(`${item.prefix}/`)) {
+      return item.title;
+    }
+  }
+  return "لوحة التحكم";
+};
+
 const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
@@ -251,6 +293,36 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isMobile, isMobileMenuOpen]);
+
+  // Synchronize browser tab title and enforce noindex for dashboard routes
+  useEffect(() => {
+    const sectionTitle = resolveDashboardTitle(location.pathname);
+    const companyName = user?.company?.name;
+    const previousTitle = document.title;
+    document.title = companyName
+      ? `${sectionTitle} | ${companyName} | MaxP`
+      : `${sectionTitle} | MaxP`;
+
+    let metaRobots = document.querySelector('meta[name="robots"]') as HTMLMetaElement | null;
+    let createdRobotsTag = false;
+    if (!metaRobots) {
+      metaRobots = document.createElement("meta");
+      metaRobots.setAttribute("name", "robots");
+      document.head.appendChild(metaRobots);
+      createdRobotsTag = true;
+    }
+    const previousContent = metaRobots.getAttribute("content");
+    metaRobots.setAttribute("content", "noindex, nofollow");
+
+    return () => {
+      document.title = previousTitle;
+      if (createdRobotsTag && metaRobots?.parentNode) {
+        metaRobots.parentNode.removeChild(metaRobots);
+      } else if (metaRobots && previousContent !== null) {
+        metaRobots.setAttribute("content", previousContent);
+      }
+    };
+  }, [location.pathname, user?.company?.name]);
 
   const handleLogout = async () => {
     await logout();

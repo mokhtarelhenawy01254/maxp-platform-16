@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useLocation, useSearchParams, Link } from "react-router-dom";
 import { useStorefrontTheme } from "../engine/ThemeProvider";
 import type { StorefrontPageConfig, StorefrontSectionConfig } from "../types/theme.types";
@@ -6,6 +6,7 @@ import { PageComposer } from "../engine/PageComposer";
 import { useStorefrontSettings } from "../hooks/useStorefrontSettings";
 import { useCategories } from "../hooks/useCategories";
 import StorefrontSkeleton from "../components/StorefrontSkeleton";
+import StorefrontNotFound from "../components/StorefrontNotFound";
 import { resolveCatalogCategoryBySlug } from "../utils/catalogCategories";
 import { createStorefrontThemeTextReplacer } from "../utils/runtimeBrandText";
 import { extractShopStudioConfig, hasShopStudioConfig, resolveShopPageLayoutHint } from "../../utils/shopPageStudioConfig";
@@ -64,6 +65,46 @@ const CollectionCategoryPage: React.FC = () => {
     : theme.direction === "rtl"
       ? "التصنيف"
       : "Collection";
+
+  // Dynamic Category SEO sync for client-side transitions
+  useEffect(() => {
+    const storeName =
+      settings?.storefront?.settings?.storeName ||
+      settings?.storefront?.name ||
+      theme.header?.brandName ||
+      theme.name ||
+      '';
+
+    const rawMetaTitle = (matchedCategory as Record<string, unknown> | undefined)?.metaTitle;
+    const pageTitle =
+      (typeof rawMetaTitle === 'string' && rawMetaTitle.trim()) ||
+      (categoryTitle ? `${categoryTitle} | ${storeName}` : storeName);
+
+    document.title = pageTitle;
+
+    const rawMetaDesc = (matchedCategory as Record<string, unknown> | undefined)?.metaDescription;
+    const metaDesc =
+      (typeof rawMetaDesc === 'string' && rawMetaDesc.trim()) ||
+      matchedCategory?.description?.trim() ||
+      `${categoryTitle} — تسوق أحدث المنتجات والعروض من ${storeName}`;
+
+    let descEl = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!descEl) {
+      descEl = document.createElement('meta');
+      descEl.setAttribute('name', 'description');
+      document.head.appendChild(descEl);
+    }
+    descEl.setAttribute('content', metaDesc);
+
+    let ogTitleEl = document.querySelector<HTMLMetaElement>('meta[property="og:title"]');
+    if (!ogTitleEl) {
+      ogTitleEl = document.createElement('meta');
+      ogTitleEl.setAttribute('property', 'og:title');
+      document.head.appendChild(ogTitleEl);
+    }
+    ogTitleEl.setAttribute('content', pageTitle);
+  }, [categoryTitle, matchedCategory, settings, theme]);
+
   const legacySortLabel =
     collectionsPage?.settings &&
     typeof collectionsPage.settings["sortLabel"] === "string"
@@ -283,20 +324,7 @@ const CollectionCategoryPage: React.FC = () => {
   }, [categorySlug, categoryTitle, collectionsPage, theme.direction]);
 
   if (!categorySlug || !pageConfig) {
-    return (
-      <div className="container py-20 text-center space-y-4">
-        <h1 className="text-4xl font-bold font-heading text-foreground">404</h1>
-        <p className="text-muted-foreground">
-          {theme.direction === "rtl" ? "الصفحة غير موجودة" : "Page not found"}
-        </p>
-        <Link
-          to={buildStorefrontPath(location.pathname, "/", location.search)}
-          className="inline-block rounded-[var(--radius)] bg-primary px-6 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
-        >
-          {theme.direction === "rtl" ? "العودة للرئيسية" : "Back to Home"}
-        </Link>
-      </div>
-    );
+    return <StorefrontNotFound />;
   }
 
   if (

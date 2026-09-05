@@ -899,6 +899,59 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     }
   }, [product, trackViewContentEvent]);
 
+  // Dynamic Product SEO sync for client-side SPA transitions
+  useEffect(() => {
+    if (!product) return;
+
+    const storeName =
+      (storefrontSettings as Record<string, unknown> | undefined)?.settings &&
+      typeof (storefrontSettings as any).settings?.storeName === 'string'
+        ? (storefrontSettings as any).settings.storeName
+        : theme.header?.brandName || theme.name || '';
+
+    const rawMetaTitle = (product as Record<string, unknown>).metaTitle;
+    const pageTitle =
+      (typeof rawMetaTitle === 'string' && rawMetaTitle.trim()) ||
+      (product.name ? `${product.name} | ${storeName}` : storeName);
+
+    document.title = pageTitle;
+
+    const setMeta = (selector: string, attr: string, val: string, content: string) => {
+      let el = document.querySelector<HTMLMetaElement>(selector);
+      if (!el) {
+        el = document.createElement('meta');
+        el.setAttribute(attr, val);
+        document.head.appendChild(el);
+      }
+      el.setAttribute('content', content);
+    };
+
+    const rawMetaDesc = (product as Record<string, unknown>).metaDescription;
+    const cleanDesc =
+      (typeof rawMetaDesc === 'string' && rawMetaDesc.trim()) ||
+      (typeof product.description === 'string'
+        ? product.description.replace(/<[^>]*>/g, '').trim()
+        : '') ||
+      '';
+
+    if (cleanDesc) {
+      setMeta('meta[name="description"]', 'name', 'description', cleanDesc.slice(0, 160));
+      setMeta('meta[property="og:description"]', 'property', 'og:description', cleanDesc.slice(0, 200));
+    }
+
+    if (product.name) {
+      setMeta('meta[property="og:title"]', 'property', 'og:title', product.name);
+    }
+
+    const primaryImg =
+      (Array.isArray(product.images) && product.images[0]) ||
+      (product as any).mainImage ||
+      (product as any).image;
+    if (typeof primaryImg === 'string' && primaryImg) {
+      setMeta('meta[property="og:image"]', 'property', 'og:image', primaryImg);
+    }
+  }, [product, storefrontSettings, theme]);
+
   const dispatchEmbeddedCheckoutOpen = () => {
     if (!product || !hasEmbeddedPdpCheckout) {
       return;

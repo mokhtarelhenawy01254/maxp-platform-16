@@ -205,6 +205,7 @@ export const resolvePriceRangeValue = (
 export const getCatalogProductQuery = (
   searchParams: URLSearchParams,
 ): ProductsParams => ({
+  page: parseNumberParam(searchParams.get('page')),
   category: searchParams.get('category') || undefined,
   search: searchParams.get('search') || undefined,
   sortBy: searchParams.get('sortBy') || undefined,

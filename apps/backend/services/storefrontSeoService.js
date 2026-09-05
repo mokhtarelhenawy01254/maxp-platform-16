@@ -345,6 +345,11 @@ const buildStorefrontSeoMetadata = ({
     resolveCompanyDescription({ company, storefrontSettings, templateSettings }) ||
     `${storeName} — تسوق أونلاين واكتشف أحدث المنتجات والعروض المتاحة الآن.`;
   const titleTemplate = trimToNull(templateSeo.titleTemplate) || "%s | {{store}}";
+  const direction =
+    trimToNull(designTokens?.direction) ||
+    trimToNull(templateSettings?.direction) ||
+    trimToNull(templateContent?.direction) ||
+    "rtl";
   const defaultImage =
     resolveAbsoluteUrl(templateSeo.defaultOgImage, currentUrl) ||
     resolveAbsoluteUrl(company?.logo, currentUrl) ||
@@ -495,6 +500,7 @@ const buildStorefrontSeoMetadata = ({
       url: canonicalUrl,
       type,
       themeId,
+      direction,
       routeContext,
       jsonLd,
       breadcrumbsJsonLd,
@@ -549,6 +555,7 @@ const buildStorefrontSeoMetadata = ({
       url: canonicalUrl,
       type,
       themeId,
+      direction,
       routeContext,
       jsonLd,
       breadcrumbsJsonLd,
@@ -618,6 +625,7 @@ const buildStorefrontSeoMetadata = ({
       url: canonicalUrl,
       type,
       themeId,
+      direction,
       routeContext,
       jsonLd,
       breadcrumbsJsonLd,
@@ -652,12 +660,57 @@ const buildStorefrontSeoMetadata = ({
         "query-input": "required name=search_term_string",
       },
     };
+
+    const footerSocial = isRecord(templateContent?.footer?.socialLinks)
+      ? templateContent.footer.socialLinks
+      : isRecord(templateSettings?.footer?.socialLinks)
+      ? templateSettings.footer.socialLinks
+      : {};
+    const socialCandidates = [
+      companySettings?.facebook,
+      companySettings?.instagram,
+      companySettings?.tiktok,
+      companySettings?.twitter,
+      companySettings?.youtube,
+      companySettings?.snapchat,
+      footerSocial?.facebook,
+      footerSocial?.instagram,
+      footerSocial?.tiktok,
+      footerSocial?.twitter,
+      footerSocial?.youtube,
+      footerSocial?.snapchat,
+    ];
+    const sameAs = Array.from(
+      new Set(
+        socialCandidates
+          .filter((url) => typeof url === "string" && url.trim().startsWith("http"))
+          .map((url) => url.trim()),
+      ),
+    );
+
+    const contactPhone = trimToNull(
+      company?.phone ||
+      companySettings?.phone ||
+      companySettings?.whatsapp ||
+      templateContent?.footer?.phoneText,
+    );
+    const contactEmail = trimToNull(
+      company?.email ||
+      companySettings?.email ||
+      templateContent?.footer?.emailText,
+    );
+
     const secondaryJsonLd = {
       "@context": "https://schema.org",
-      "@type": "Organization",
+      "@type": "OnlineStore",
       name: storeName,
       url: `${baseUrl}/`,
       logo: defaultImage || undefined,
+      description: fallbackDescription || undefined,
+      telephone: contactPhone || undefined,
+      email: contactEmail || undefined,
+      priceRange: "$$",
+      sameAs: sameAs.length > 0 ? sameAs : undefined,
     };
 
     return {
@@ -669,6 +722,7 @@ const buildStorefrontSeoMetadata = ({
       url: canonicalUrl,
       type,
       themeId,
+      direction,
       routeContext,
       jsonLd,
       secondaryJsonLd,
@@ -693,6 +747,7 @@ const buildStorefrontSeoMetadata = ({
     url: canonicalUrl,
     type,
     themeId,
+    direction,
     routeContext,
     jsonLd,
     price,
@@ -806,6 +861,56 @@ const injectStorefrontSeoTags = (html, metadata) => {
       /<link[^>]+rel=["'][^"']*icon[^"']*["'][^>]*>/i,
       `<link rel="icon" href="${escapeHtml(metadata.faviconUrl)}" />\n  <link rel="apple-touch-icon" href="${escapeHtml(metadata.faviconUrl)}" />`,
     );
+  }
+
+  // Dynamic html lang and dir matching theme
+  const htmlLang = metadata.direction === "ltr" ? "en" : "ar";
+  const htmlDir = metadata.direction === "ltr" ? "ltr" : "rtl";
+  nextHtml = nextHtml.replace(/<html([^>]*)>/i, (_match, attrs) => {
+    let newAttrs = attrs;
+    if (/lang=["'][^"']*["']/i.test(newAttrs)) {
+      newAttrs = newAttrs.replace(/lang=["'][^"']*["']/i, `lang="${htmlLang}"`);
+    } else {
+      newAttrs = ` lang="${htmlLang}"` + newAttrs;
+    }
+    if (/dir=["'][^"']*["']/i.test(newAttrs)) {
+      newAttrs = newAttrs.replace(/dir=["'][^"']*["']/i, `dir="${htmlDir}"`);
+    } else {
+      newAttrs = ` dir="${htmlDir}"` + newAttrs;
+    }
+    return `<html${newAttrs}>`;
+  });
+
+  // Resource hints (preconnect & dns-prefetch) for external CDN image origins
+  const resourceHints = [];
+  const knownOrigins = new Set();
+
+  if (metadata.image && typeof metadata.image === "string" && metadata.image.startsWith("http")) {
+    try {
+      const imgOrigin = new URL(metadata.image).origin;
+      const pageOrigin =
+        metadata.url && typeof metadata.url === "string" && metadata.url.startsWith("http")
+          ? new URL(metadata.url).origin
+          : null;
+      if (imgOrigin && imgOrigin !== pageOrigin && !knownOrigins.has(imgOrigin)) {
+        knownOrigins.add(imgOrigin);
+        resourceHints.push(`<link rel="preconnect" href="${escapeHtml(imgOrigin)}" crossorigin />`);
+        resourceHints.push(`<link rel="dns-prefetch" href="${escapeHtml(imgOrigin)}" />`);
+      }
+    } catch {}
+  }
+
+  if (nextHtml.includes("unsplash.com") && !knownOrigins.has("https://images.unsplash.com")) {
+    knownOrigins.add("https://images.unsplash.com");
+    resourceHints.push(`<link rel="preconnect" href="https://images.unsplash.com" crossorigin />`);
+    resourceHints.push(`<link rel="dns-prefetch" href="https://images.unsplash.com" />`);
+  }
+
+  if (resourceHints.length > 0) {
+    const hintTags = resourceHints.join("\n  ");
+    if (nextHtml.includes("</head>")) {
+      nextHtml = nextHtml.replace("</head>", `  ${hintTags}\n</head>`);
+    }
   }
 
   return nextHtml;

@@ -10,8 +10,12 @@ const PAGE_NAME_MAP: Record<string, string> = {
   cart: 'السلة',
   checkout: 'الدفع',
   product: 'المنتج',
-  sale: 'التخفيضات',
+  category: 'التصنيف',
   collections: 'التصنيفات',
+  articles: 'المدونة',
+  article: 'المقال',
+  blog: 'المدونة',
+  sale: 'التخفيضات',
   lookbook: 'اللوك بوك',
   'size-guide': 'دليل المقاسات',
   'thank-you': 'تم الطلب بنجاح',
@@ -174,15 +178,50 @@ export const StorefrontHead: React.FC = () => {
       ? applyTitleTemplate(titleTemplate, pageTitle, storeName)
       : storeName;
     const originalTitle = document.title;
-    const isProductRoute = pageSegment === 'product';
-    const isGenericProductTitle =
-      originalTitle.trim() === 'المنتج' ||
-      originalTitle.trim() === `المنتج | ${storeName}`;
+    const isDynamicDetailRoute =
+      pageSegment === 'product' ||
+      pageSegment === 'article' ||
+      pageSegment === 'articles' ||
+      (pageSegment === 'category' && routeSegments.length > 1);
+
+    const genericTitles = new Set([
+      'المنتج',
+      `المنتج | ${storeName}`,
+      'المقال',
+      `المقال | ${storeName}`,
+      'التصنيف',
+      `التصنيف | ${storeName}`,
+    ]);
+
     const shouldPreserveExistingTitle =
-      isProductRoute && Boolean(originalTitle.trim()) && !isGenericProductTitle;
+      isDynamicDetailRoute &&
+      Boolean(originalTitle.trim()) &&
+      !genericTitles.has(originalTitle.trim());
 
     if (!shouldPreserveExistingTitle) {
       document.title = finalTitle;
+    }
+
+    // Robots Tag: set noindex, follow on search or faceted filter query params
+    const searchParams = new URLSearchParams(location.search);
+    const hasSearchFilterParams =
+      searchParams.has('search') ||
+      searchParams.has('q') ||
+      searchParams.has('minPrice') ||
+      searchParams.has('maxPrice') ||
+      searchParams.has('sortBy') ||
+      searchParams.has('sort') ||
+      searchParams.has('previewTheme');
+
+    if (hasSearchFilterParams) {
+      setMetaTag('meta[name="robots"]', 'name', 'robots', 'noindex, follow');
+    } else {
+      setMetaTag(
+        'meta[name="robots"]',
+        'name',
+        'robots',
+        'index, follow, max-image-preview:large',
+      );
     }
 
     // Meta Description
@@ -235,12 +274,28 @@ export const StorefrontHead: React.FC = () => {
     setMetaTag('meta[name="twitter:title"]', 'name', 'twitter:title', finalTitle);
     setMetaTag('meta[name="twitter:description"]', 'name', 'twitter:description', defaultDescription);
 
-    // Canonical URL — strip presentation slug if present
-    const PRESENTATION_PATH_PATTERN = /^\/(?:store\/)?(?:product|products|shop\/products)\/([^/?#]+)\/([^/?#]+)/;
-    const presMatch = window.location.pathname.match(PRESENTATION_PATH_PATTERN);
-    const canonicalUrl = presMatch
-      ? `${window.location.origin}${presMatch[0].replace(/\/[^/?#]+$/, '')}${window.location.search}`
-      : currentUrl;
+    // Canonical URL — strip tracking and preview parameters cleanly
+    let canonicalUrl = currentUrl;
+    try {
+      const parsedUrl = new URL(window.location.href);
+      const trackingParams = [
+        'utm_source',
+        'utm_medium',
+        'utm_campaign',
+        'utm_term',
+        'utm_content',
+        'fbclid',
+        'gclid',
+        'msclkid',
+        'previewTheme',
+        '_ga',
+        '_gl',
+      ];
+      trackingParams.forEach((param) => parsedUrl.searchParams.delete(param));
+      canonicalUrl = parsedUrl.toString();
+    } catch {
+      canonicalUrl = `${window.location.origin}${window.location.pathname}`;
+    }
     setLinkTag('canonical', canonicalUrl);
 
     // Cleanup on unmount: restore original title

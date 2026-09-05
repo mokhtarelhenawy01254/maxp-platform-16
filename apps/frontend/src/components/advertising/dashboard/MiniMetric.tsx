@@ -6,9 +6,9 @@ export default function MiniMetric({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-slate-800 dark:bg-slate-950">
-      <span className="block text-[10px] font-black text-slate-400">{label}</span>
-      <span className="mt-0.5 block truncate text-xs font-black text-slate-900 dark:text-white">
+    <div className="rounded-xl border border-slate-200/80 bg-slate-50/70 px-2.5 py-1.5 transition-colors dark:border-slate-800/80 dark:bg-slate-900/60">
+      <span className="block text-[10px] font-bold text-slate-500 dark:text-slate-400">{label}</span>
+      <span className="mt-0.5 block truncate text-xs font-black text-slate-950 dark:text-white">
         {value}
       </span>
     </div>

@@ -152,12 +152,12 @@ const findConflictingProductSku = async ({
 const buildCategorySlug = async ({ name, slug, companyId, excludeCategoryId = null }) => {
   const rawSlug = typeof slug === 'string' ? slug.trim() : '';
   const rawName = typeof name === 'string' ? name.trim() : '';
-  const baseSource = rawSlug || transliterateArabicToFranco(rawName);
+  const baseSource = rawSlug || rawName;
 
   let normalizedSlug = baseSource
     .toLowerCase()
-    .replace(/[^\w\s-]/g, '')
-    .replace(/\s+/g, '-')
+    .replace(/[^\p{L}\p{N}\s\-_]/gu, '')
+    .replace(/[\s_]+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-+|-+$/g, '');
 
@@ -1487,6 +1487,36 @@ const updateSingleProduct = async (req, res) => {
       metadataChanged = true;
     }
 
+    const incomingMetaTitle =
+      req.body.metaTitle !== undefined
+        ? req.body.metaTitle
+          ? String(req.body.metaTitle).trim()
+          : null
+        : undefined;
+    const incomingMetaDescription =
+      req.body.metaDescription !== undefined
+        ? req.body.metaDescription
+          ? String(req.body.metaDescription).trim()
+          : null
+        : undefined;
+
+    if (incomingMetaTitle !== undefined || incomingMetaDescription !== undefined) {
+      mergedMetadata = { ...(mergedMetadata || {}) };
+      if (incomingMetaTitle !== undefined) {
+        mergedMetadata.metaTitle = incomingMetaTitle;
+        if (!mergedMetadata.seo) mergedMetadata.seo = {};
+        mergedMetadata.seo.metaTitle = incomingMetaTitle;
+        mergedMetadata.seo.title = incomingMetaTitle;
+      }
+      if (incomingMetaDescription !== undefined) {
+        mergedMetadata.metaDescription = incomingMetaDescription;
+        if (!mergedMetadata.seo) mergedMetadata.seo = {};
+        mergedMetadata.seo.metaDescription = incomingMetaDescription;
+        mergedMetadata.seo.description = incomingMetaDescription;
+      }
+      metadataChanged = true;
+    }
+
     if (metadataChanged) {
       const sanitized = sanitizeMetadataMedia(mergedMetadata || {});
       const shouldPublishOnUpdate =
@@ -2084,15 +2114,14 @@ const createProduct = async (req, res) => {
 
     // Generate or validate slug
     let productSlug = req.body.slug ? req.body.slug.trim() : null;
-    if (!productSlug && name) {
-      // 1. Transliterate first
-      const transliterated = transliterateArabicToFranco(name);
-
-      // 2. Generate slug
-      productSlug = transliterated.trim().toLowerCase()
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-');
+    if (!productSlug && normalizedName) {
+      productSlug = normalizedName
+        .trim()
+        .toLowerCase()
+        .replace(/[^\p{L}\p{N}\s\-_]/gu, '')
+        .replace(/[\s_]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-+|-+$/g, '');
 
       if (!productSlug) {
         productSlug = `product-${Date.now()}`;
@@ -2152,6 +2181,35 @@ const createProduct = async (req, res) => {
     let sanitizedMetadata = sanitizeMetadataMedia(metadata || {});
     if (variantSettings !== undefined) {
       sanitizedMetadata = { ...(sanitizedMetadata || {}), variantSettings };
+    }
+
+    const incomingCreateMetaTitle =
+      req.body.metaTitle !== undefined
+        ? req.body.metaTitle
+          ? String(req.body.metaTitle).trim()
+          : null
+        : undefined;
+    const incomingCreateMetaDescription =
+      req.body.metaDescription !== undefined
+        ? req.body.metaDescription
+          ? String(req.body.metaDescription).trim()
+          : null
+        : undefined;
+
+    if (incomingCreateMetaTitle !== undefined || incomingCreateMetaDescription !== undefined) {
+      sanitizedMetadata = { ...(sanitizedMetadata || {}) };
+      if (incomingCreateMetaTitle !== undefined) {
+        sanitizedMetadata.metaTitle = incomingCreateMetaTitle;
+        if (!sanitizedMetadata.seo) sanitizedMetadata.seo = {};
+        sanitizedMetadata.seo.metaTitle = incomingCreateMetaTitle;
+        sanitizedMetadata.seo.title = incomingCreateMetaTitle;
+      }
+      if (incomingCreateMetaDescription !== undefined) {
+        sanitizedMetadata.metaDescription = incomingCreateMetaDescription;
+        if (!sanitizedMetadata.seo) sanitizedMetadata.seo = {};
+        sanitizedMetadata.seo.metaDescription = incomingCreateMetaDescription;
+        sanitizedMetadata.seo.description = incomingCreateMetaDescription;
+      }
     }
     const shouldPublishOnCreate =
       !currentMerchant && req.body.isActive !== undefined && Boolean(req.body.isActive);

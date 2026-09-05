@@ -1,3 +1,11 @@
+jest.mock("../../../i18n", () => ({
+  __esModule: true,
+  default: {
+    t: (k: string) => k,
+    changeLanguage: jest.fn(),
+  },
+}));
+
 jest.mock("../../../services/facebookAdsService", () => ({
   facebookAdsService: {
     sendConversionEvent: jest.fn(),
