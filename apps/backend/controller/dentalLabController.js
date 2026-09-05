@@ -893,7 +893,15 @@ const CASE_LIST_INCLUDE = {
 
 const CASE_DETAIL_INCLUDE = {
   ...CASE_LIST_INCLUDE,
-  stages: { orderBy: { sortOrder: 'asc' } },
+  stages: {
+    orderBy: { sortOrder: 'asc' },
+    include: {
+      assignees: {
+        include: { technician: { select: { id: true, name: true, role: true } } },
+        orderBy: { assignedAt: 'asc' },
+      },
+    },
+  },
   assignments: {
     include: { technician: { select: { id: true, name: true, role: true } } },
     orderBy: { assignedAt: 'desc' },
@@ -1142,8 +1150,10 @@ const getCaseDetail = async (req, res) => {
     const role = resolveDentalRole(req.user, teamRoles);
     if (role === 'TECHNICIAN') {
       const technician = await prisma.dentalTechnician.findFirst({ where: { companyId, userId: req.user?.id, isActive: true } });
+      const techId = technician ? technician.id : null;
       const hasMyStage = (dentalCase.stages || []).some(
-        (s) => s.assigneeId === (technician ? technician.id : null) && ['IN_PROGRESS', 'PENDING'].includes(s.status)
+        (s) => (s.assigneeId === techId || (Array.isArray(s.assignees) && s.assignees.some((a) => a.technicianId === techId))) &&
+          ['IN_PROGRESS', 'PENDING'].includes(s.status)
       );
       if (!technician || !hasMyStage) {
         return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
@@ -1565,11 +1575,35 @@ const assignTechnician = async (req, res) => {
       await tx.dentalCaseAssignment.create({
         data: { companyId, caseId: id, technicianId, role },
       });
-      if (activeStage && !activeStage.assigneeId) {
-        await tx.dentalCaseStage.update({
-          where: { id: activeStage.id },
-          data: { assigneeId: technicianId, assigneeName: technician.name, startedAt: new Date() },
-        });
+      if (activeStage) {
+        if (tx.dentalStageAssignee && typeof tx.dentalStageAssignee.upsert === 'function') {
+          await tx.dentalStageAssignee.upsert({
+            where: {
+              stageId_technicianId: {
+                stageId: activeStage.id,
+                technicianId,
+              },
+            },
+            create: {
+              companyId,
+              caseId: id,
+              stageId: activeStage.id,
+              technicianId,
+              technicianName: technician.name,
+              role,
+              sharePercent: 100,
+            },
+            update: {
+              role,
+            },
+          });
+        }
+        if (!activeStage.assigneeId) {
+          await tx.dentalCaseStage.update({
+            where: { id: activeStage.id },
+            data: { assigneeId: technicianId, assigneeName: technician.name, startedAt: new Date() },
+          });
+        }
       }
     });
 
@@ -1585,10 +1619,180 @@ const assignTechnician = async (req, res) => {
     });
 
     const dentalCase = await prisma.dentalLabCase.findFirst({ where: { id, companyId }, include: CASE_DETAIL_INCLUDE });
-    res.json({ success: true, data: dentalCase });
+    res.json({ success: true, data: serializeDentalCaseDetail(dentalCase) });
   } catch (error) {
     console.error('Error assigning dental technician:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في إسناد الفني' });
+  }
+};
+
+const addStageAssignee = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id, stageId } = req.params;
+    const body = req.body || {};
+    const technicianId = body.technicianId || null;
+    if (!technicianId) return res.status(400).json({ success: false, error: 'معرف الفني مطلوب' });
+
+    const role = typeof body.role === 'string' && body.role.trim() ? body.role.trim().toUpperCase() : 'PRIMARY';
+    const sharePercent = Math.min(100, Math.max(0, Number(body.sharePercent) || 100));
+    const notes = body.notes ? String(body.notes).trim() : null;
+
+    const prisma = getSharedPrismaClient();
+    const dentalCase = await prisma.dentalLabCase.findFirst({
+      where: { id, companyId },
+      include: { stages: { orderBy: { sortOrder: 'asc' } } },
+    });
+    if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+
+    const stage = (dentalCase.stages || []).find((s) => s.id === stageId);
+    if (!stage) return res.status(404).json({ success: false, error: 'المرحلة غير موجودة في هذه الحالة' });
+
+    const technician = await prisma.dentalTechnician.findFirst({ where: { id: technicianId, companyId } });
+    if (!technician) return res.status(400).json({ success: false, error: 'الفني لا ينتمي لهذه الشركة' });
+
+    let stageAssignee;
+    await prisma.$transaction(async (tx) => {
+      if (tx.dentalStageAssignee && typeof tx.dentalStageAssignee.upsert === 'function') {
+        stageAssignee = await tx.dentalStageAssignee.upsert({
+          where: {
+            stageId_technicianId: {
+              stageId,
+              technicianId,
+            },
+          },
+          create: {
+            companyId,
+            caseId: id,
+            stageId,
+            technicianId,
+            technicianName: technician.name,
+            role,
+            sharePercent,
+            notes,
+          },
+          update: {
+            role,
+            sharePercent,
+            notes,
+          },
+        });
+      }
+
+      // إذا لم يكن هناك فني رئيسي بالمرحلة، أو كان الدور PRIMARY، يتم تعيينه كـ assigneeId
+      const stageUpdates = {};
+      if (!stage.assigneeId || role === 'PRIMARY') {
+        stageUpdates.assigneeId = technicianId;
+        stageUpdates.assigneeName = technician.name;
+        if (!stage.startedAt && stage.status !== 'DONE') {
+          stageUpdates.startedAt = new Date();
+        }
+      }
+      if (Object.keys(stageUpdates).length > 0) {
+        await tx.dentalCaseStage.update({
+          where: { id: stageId },
+          data: stageUpdates,
+        });
+      }
+
+      // توفير التعيين في جدول الحركات العام dentalCaseAssignment أيضاً
+      if (tx.dentalCaseAssignment && typeof tx.dentalCaseAssignment.findFirst === 'function') {
+        const existingCaseAssignment = await tx.dentalCaseAssignment.findFirst({
+          where: { caseId: id, technicianId },
+        });
+        if (!existingCaseAssignment) {
+          await tx.dentalCaseAssignment.create({
+            data: { companyId, caseId: id, technicianId, role },
+          });
+        }
+      }
+    });
+
+    await recordDentalLabStatusHistory(prisma, {
+      companyId,
+      caseId: id,
+      dimension: 'STAGE',
+      status: 'ASSIGNED',
+      oldStatus: stage.status,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: adminDisplayName(req),
+      reason: `تم إسناد الفني ${technician.name} للمرحلة "${stage.name}" (الدور: ${role} - النسبة: ${sharePercent}%)`,
+    });
+
+    const updated = await prisma.dentalLabCase.findFirst({ where: { id, companyId }, include: CASE_DETAIL_INCLUDE });
+    res.json({
+      success: true,
+      data: serializeDentalCaseDetail(updated),
+      message: `تم إسناد الفني ${technician.name} للمرحلة بنجاح`,
+    });
+  } catch (error) {
+    console.error('Error adding stage assignee:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إضافة الفني للمرحلة' });
+  }
+};
+
+const removeStageAssignee = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id, stageId, technicianId } = req.params;
+
+    const prisma = getSharedPrismaClient();
+    const dentalCase = await prisma.dentalLabCase.findFirst({
+      where: { id, companyId },
+      include: {
+        stages: {
+          include: { assignees: true },
+        },
+      },
+    });
+    if (!dentalCase) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
+
+    const stage = (dentalCase.stages || []).find((s) => s.id === stageId);
+    if (!stage) return res.status(404).json({ success: false, error: 'المرحلة غير موجودة' });
+
+    await prisma.$transaction(async (tx) => {
+      if (tx.dentalStageAssignee && typeof tx.dentalStageAssignee.deleteMany === 'function') {
+        await tx.dentalStageAssignee.deleteMany({
+          where: { stageId, technicianId },
+        });
+      }
+
+      // إذا كان الفني هو المسجل كـ assigneeId رئيسي، ننقل التعيين للفني التالي أو نلغيه
+      if (stage.assigneeId === technicianId) {
+        const remaining = (stage.assignees || []).filter((a) => a.technicianId !== technicianId);
+        const next = remaining[0] || null;
+        await tx.dentalCaseStage.update({
+          where: { id: stageId },
+          data: {
+            assigneeId: next ? next.technicianId : null,
+            assigneeName: next ? next.technicianName : null,
+          },
+        });
+      }
+    });
+
+    await recordDentalLabStatusHistory(prisma, {
+      companyId,
+      caseId: id,
+      dimension: 'STAGE',
+      status: 'UNASSIGNED',
+      oldStatus: stage.status,
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: adminDisplayName(req),
+      reason: `تم إلغاء إسناد الفني من المرحلة "${stage.name}"`,
+    });
+
+    const updated = await prisma.dentalLabCase.findFirst({ where: { id, companyId }, include: CASE_DETAIL_INCLUDE });
+    res.json({
+      success: true,
+      data: serializeDentalCaseDetail(updated),
+      message: 'تم إلغاء إسناد الفني من المرحلة بنجاح',
+    });
+  } catch (error) {
+    console.error('Error removing stage assignee:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إلغاء إسناد الفني' });
   }
 };
 
@@ -3699,9 +3903,22 @@ const getMyInfo = async (req, res) => {
   }
 };
 
-const serializeTechCase = (c) => {
+const serializeTechCase = (c, technicianId = null) => {
   if (!c) return c;
-  const activeStage = (c.stages || []).find((s) => s.status === 'IN_PROGRESS') || (c.stages || []).find((s) => s.status === 'PENDING');
+  const stages = c.stages || [];
+  const isAssignedToMe = (s) => {
+    if (!technicianId) return true;
+    if (s.assigneeId === technicianId) return true;
+    if (Array.isArray(s.assignees) && s.assignees.some((a) => a.technicianId === technicianId)) return true;
+    return false;
+  };
+
+  const activeStage =
+    stages.find((s) => s.status === 'IN_PROGRESS' && isAssignedToMe(s)) ||
+    stages.find((s) => s.status === 'PENDING' && isAssignedToMe(s)) ||
+    stages.find((s) => s.status === 'IN_PROGRESS') ||
+    stages.find((s) => s.status === 'PENDING');
+
   return {
     id: c.id,
     caseNumber: c.caseNumber,
@@ -3717,7 +3934,14 @@ const serializeTechCase = (c) => {
     notes: c.notes,
     createdAt: c.createdAt,
     myStage: activeStage
-      ? { id: activeStage.id, name: activeStage.name, status: activeStage.status, assigneeName: activeStage.assigneeName, startedAt: activeStage.startedAt }
+      ? {
+          id: activeStage.id,
+          name: activeStage.name,
+          status: activeStage.status,
+          assigneeName: activeStage.assigneeName,
+          startedAt: activeStage.startedAt,
+          assignees: activeStage.assignees || [],
+        }
       : null,
   };
 };
@@ -3730,19 +3954,52 @@ const getMyCases = async (req, res) => {
     const technician = await prisma.dentalTechnician.findFirst({ where: { companyId, userId: req.user?.id, isActive: true } });
     if (!technician) return res.json({ success: true, data: { items: [], total: 0, technician: null } });
 
-    const cases = await prisma.dentalLabCase.findMany({
-      where: {
-        companyId,
-        status: { notIn: ['DELIVERED', 'CLOSED'] },
-        stages: { some: { assigneeId: technician.id, status: { in: ['IN_PROGRESS', 'PENDING'] } } },
-      },
-      include: { stages: { orderBy: { sortOrder: 'asc' } } },
-      orderBy: { updatedAt: 'desc' },
-      take: 200,
-    });
+    let cases = [];
+    try {
+      cases = await prisma.dentalLabCase.findMany({
+        where: {
+          companyId,
+          status: { notIn: ['DELIVERED', 'CLOSED'] },
+          stages: {
+            some: {
+              status: { in: ['IN_PROGRESS', 'PENDING'] },
+              OR: [
+                { assigneeId: technician.id },
+                { assignees: { some: { technicianId: technician.id } } },
+              ],
+            },
+          },
+        },
+        include: {
+          stages: {
+            orderBy: { sortOrder: 'asc' },
+            include: { assignees: true },
+          },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: 200,
+      });
+    } catch {
+      // Fallback if assignees relation or table is not present in mock/db
+      cases = await prisma.dentalLabCase.findMany({
+        where: {
+          companyId,
+          status: { notIn: ['DELIVERED', 'CLOSED'] },
+          stages: { some: { assigneeId: technician.id, status: { in: ['IN_PROGRESS', 'PENDING'] } } },
+        },
+        include: { stages: { orderBy: { sortOrder: 'asc' } } },
+        orderBy: { updatedAt: 'desc' },
+        take: 200,
+      });
+    }
+
     res.json({
       success: true,
-      data: { items: cases.map(serializeTechCase), total: cases.length, technician: { id: technician.id, name: technician.name } },
+      data: {
+        items: cases.map((c) => serializeTechCase(c, technician.id)),
+        total: cases.length,
+        technician: { id: technician.id, name: technician.name },
+      },
     });
   } catch (error) {
     console.error('Error fetching my dental cases:', error);
@@ -4475,6 +4732,8 @@ module.exports = {
   permanentDeleteCase,
   advanceCaseStatus,
   assignTechnician,
+  addStageAssignee,
+  removeStageAssignee,
   uploadCaseAttachment,
   deleteCaseAttachment,
   listInvoices,

@@ -59,8 +59,9 @@ model DentalTechnician {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  assignments DentalCaseAssignment[]
-  payouts     DentalTechnicianPayout[]
+  assignments      DentalCaseAssignment[]
+  payouts          DentalTechnicianPayout[]
+  stageAssignments DentalStageAssignee[]
 
   @@index([companyId])
   @@index([userId])
@@ -110,9 +111,10 @@ model DentalLabCase {
 
   doctor      DentalLabDoctor?   @relation(fields: [doctorId], references: [id], onDelete: SetNull)
   workType    DentalWorkType?    @relation(fields: [workTypeId], references: [id], onDelete: SetNull)
-  stages      DentalCaseStage[]
-  assignments DentalCaseAssignment[]
-  attachments DentalCaseAttachment[]
+  stages         DentalCaseStage[]
+  assignments    DentalCaseAssignment[]
+  stageAssignees DentalStageAssignee[]
+  attachments    DentalCaseAttachment[]
   invoices    DentalInvoice[]
   customValues DentalCaseCustomValue[]
   history     DentalCaseStatusHistory[]
@@ -146,7 +148,8 @@ model DentalCaseStage {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 
-  case DentalLabCase @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  case      DentalLabCase         @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  assignees DentalStageAssignee[]
 
   @@index([companyId])
   @@index([caseId])
@@ -169,6 +172,30 @@ model DentalCaseAssignment {
   @@index([caseId])
   @@index([technicianId])
   @@map("dental_case_assignments")
+}
+
+model DentalStageAssignee {
+  id             String    @id @default(cuid())
+  companyId      String?
+  caseId         String
+  stageId        String
+  technicianId   String
+  technicianName String?
+  role           String    @default("PRIMARY") // PRIMARY | ASSISTANT | QC | FINISHER | CAD | OTHER
+  sharePercent   Float     @default(100)       // نسبة مساهمة/أجر الفني في المرحلة (100%, 50%, ...)
+  notes          String?
+  assignedAt     DateTime  @default(now())
+
+  case       DentalLabCase    @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  stage      DentalCaseStage  @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  technician DentalTechnician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, technicianId])
+  @@index([companyId])
+  @@index([caseId])
+  @@index([technicianId])
+  @@index([stageId])
+  @@map("dental_stage_assignees")
 }
 
 model DentalCaseAttachment {

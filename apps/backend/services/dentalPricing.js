@@ -29,12 +29,13 @@ const parseUnitCount = (teethStr) => {
 
 /**
  * أجور الفنيين عن المراحل المكتملة (status=DONE) المسندة إليهم.
- * المعدل: wagePerStage للفني، أو المعدل الافتراضي من الإعدادات، مضروباً بعدد وحدات الشغل.
+ * يدعم تعيين أكثر من فني في نفس المرحلة (assignees) مع توزيع نسب الأجر (sharePercent)،
+ * والتوافق التام مع التعيين الفردي التقليدي (assigneeId).
+ * المعدل: wagePerStage للفني، أو المعدل الافتراضي من الإعدادات، مضروباً بعدد وحدات الشغل ونسبة المساهمة.
  */
 const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from, to } = {}) => {
   const db = prisma || getSharedPrismaClient();
-  const where = { companyId, status: 'DONE', assigneeId: { not: null } };
-  if (technicianId) where.assigneeId = technicianId;
+  const where = { companyId, status: 'DONE' };
   const fromDate = parseDate(from);
   const toDate = parseDate(to);
   if (fromDate || toDate) {
@@ -45,15 +46,70 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
       where.completedAt.lte = getEndOfDayInTimezone(toDate);
     }
   }
-  const stages = await db.dentalCaseStage.findMany({
-    where,
-    select: {
-      assigneeId: true,
-      case: { select: { teeth: true } },
-    },
-  });
+
+  if (technicianId) {
+    where.OR = [
+      { assigneeId: technicianId },
+      { assignees: { some: { technicianId } } },
+    ];
+  } else {
+    where.OR = [
+      { assigneeId: { not: null } },
+      { assignees: { some: {} } },
+    ];
+  }
+
+  const selectStageFields = {
+    id: true,
+    assigneeId: true,
+    case: { select: { teeth: true } },
+  };
+  // فقط إذا كان النموذج أو الموك يدعم assignees نختاره لتفادي الأخطاء في البيئات التجريبية القديمة
+  if (db.dentalStageAssignee || db.dentalCaseStage?.findMany) {
+    selectStageFields.assignees = {
+      select: {
+        technicianId: true,
+        role: true,
+        sharePercent: true,
+      },
+    };
+  }
+
+  let stages = [];
+  try {
+    stages = (await db.dentalCaseStage.findMany({
+      where,
+      select: selectStageFields,
+    })) || [];
+  } catch (err) {
+    // في حال عدم وجود جدول dental_stage_assignees بعد أو خطأ في الموك، تراجع للاستعلام القديم
+    stages = (await db.dentalCaseStage.findMany({
+      where: {
+        companyId,
+        status: 'DONE',
+        ...(technicianId ? { assigneeId: technicianId } : { assigneeId: { not: null } }),
+        ...(where.completedAt ? { completedAt: where.completedAt } : {}),
+      },
+      select: {
+        assigneeId: true,
+        case: { select: { teeth: true } },
+      },
+    })) || [];
+  }
+
   const defaults = await getTechnicianWageDefaults(db, companyId);
-  const techIds = [...new Set(stages.map((s) => s.assigneeId).filter(Boolean))];
+  const techIdSet = new Set();
+  for (const s of stages) {
+    if (Array.isArray(s.assignees) && s.assignees.length > 0) {
+      for (const a of s.assignees) {
+        if (a.technicianId) techIdSet.add(a.technicianId);
+      }
+    } else if (s.assigneeId) {
+      techIdSet.add(s.assigneeId);
+    }
+  }
+  const techIds = [...techIdSet];
+
   const techs = techIds.length
     ? await db.dentalTechnician.findMany({
         where: { companyId, id: { in: techIds } },
@@ -63,17 +119,41 @@ const computeTechnicianEarnings = async (prisma, companyId, { technicianId, from
   const rateById = new Map(techs.map((t) => [t.id, t.wagePerStage != null ? Number(t.wagePerStage) : defaults.defaultPerStage]));
   const nameById = new Map(techs.map((t) => [t.id, t.name]));
   const agg = {};
+
   for (const s of stages) {
-    const id = s.assigneeId;
     const units = s.case && s.case.teeth ? parseUnitCount(s.case.teeth) : 1;
-    const rate = rateById.get(id) || 0;
-    if (!agg[id]) agg[id] = { technicianId: id, name: nameById.get(id) || 'غير محدد', completedStages: 0, completedUnits: 0, wage: 0 };
-    agg[id].completedStages += 1;
-    agg[id].completedUnits += units;
-    agg[id].wage += rate * units;
+
+    if (Array.isArray(s.assignees) && s.assignees.length > 0) {
+      for (const a of s.assignees) {
+        const id = a.technicianId;
+        if (!id) continue;
+        if (technicianId && id !== technicianId) continue;
+        const rate = rateById.get(id) || 0;
+        const shareFactor = Math.max(0, Number(a.sharePercent) || 100) / 100;
+        const earned = rate * units * shareFactor;
+        const proRatedUnits = units * shareFactor;
+
+        if (!agg[id]) agg[id] = { technicianId: id, name: nameById.get(id) || 'غير محدد', completedStages: 0, completedUnits: 0, wage: 0 };
+        agg[id].completedStages += 1;
+        agg[id].completedUnits += proRatedUnits;
+        agg[id].wage += earned;
+      }
+    } else if (s.assigneeId) {
+      const id = s.assigneeId;
+      if (technicianId && id !== technicianId) continue;
+      const rate = rateById.get(id) || 0;
+      if (!agg[id]) agg[id] = { technicianId: id, name: nameById.get(id) || 'غير محدد', completedStages: 0, completedUnits: 0, wage: 0 };
+      agg[id].completedStages += 1;
+      agg[id].completedUnits += units;
+      agg[id].wage += rate * units;
+    }
   }
+
   const result = Object.values(agg);
-  for (const r of result) r.wage = round2(r.wage);
+  for (const r of result) {
+    r.wage = round2(r.wage);
+    r.completedUnits = round2(r.completedUnits);
+  }
   return result;
 };
 
