@@ -4924,6 +4924,12 @@ select {
   border-inline-start: 1px solid var(--business-muted-line);
 }
 
+@media (max-width: 767px) {
+  .quick-order-modal .business-side-panel {
+    display: none !important;
+  }
+}
+
 [data-theme="business-os-enterprise"] .business-side-panel-header,
 [data-theme="business-os-enterprise"] .business-gallery-toolbar,
 [data-theme="business-os-enterprise"] .business-footer-bar {

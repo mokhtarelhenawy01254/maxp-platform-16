@@ -953,21 +953,127 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     }
   };
 
+  // Render a cart item (reused in desktop sidebar and mobile drawer)
+  const renderCartItem = (item: CartItem) => (
+    <div
+      key={`${item.productId}-${item.variantId || ""}`}
+      className="business-cart-card p-2 sm:p-2.5 rounded-xl border"
+      style={{
+        background: "var(--business-surface-panel)",
+        borderColor: "var(--business-card-border)",
+      }}
+    >
+      <div className="flex gap-2.5">
+        <div className="business-product-card-media h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl">
+          {item.image ? (
+            <img
+              src={item.image}
+              alt={item.name}
+              className="h-full w-full object-cover"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center"
+              style={mutedStyle}
+            >
+              <ArchiveBoxIcon className="h-6 w-6" />
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h4
+            className="line-clamp-1 text-xs font-medium"
+            style={headingStyle}
+            title={item.name}
+          >
+            {item.name}
+          </h4>
+          {item.variantName && (
+            <p className="text-[10px]" style={mutedStyle}>
+              {item.variantName}
+            </p>
+          )}
+          <p
+            className="mt-0.5 text-xs font-bold"
+            style={primaryStyle}
+          >
+            {item.price} ج.م
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() =>
+            removeFromCart(item.productId, item.variantId)
+          }
+          className="business-icon-button business-icon-button--sm flex-shrink-0"
+          style={dangerStyle}
+          aria-label="حذف المنتج من السلة"
+        >
+          <TrashIcon className="h-4 w-4" />
+        </button>
+      </div>
+      <div className="mt-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() =>
+              updateQuantity(
+                item.productId,
+                item.variantId,
+                -1,
+              )
+            }
+            className="business-qty-button"
+            aria-label="تقليل الكمية"
+          >
+            <MinusIcon className="h-3 w-3" />
+          </button>
+          <span
+            className="w-8 text-center text-xs sm:text-sm font-semibold"
+            style={headingStyle}
+          >
+            {item.quantity}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              updateQuantity(
+                item.productId,
+                item.variantId,
+                1,
+              )
+            }
+            className="business-qty-button"
+            aria-label="زيادة الكمية"
+          >
+            <PlusIcon className="h-3 w-3" />
+          </button>
+        </div>
+        <span
+          className="text-xs sm:text-sm font-bold"
+          style={headingStyle}
+        >
+          {(item.price * item.quantity).toLocaleString()} ج.م
+        </span>
+      </div>
+    </div>
+  );
+
   if (!isOpen) return null;
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 quick-order-modal"
+      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 quick-order-modal"
       style={overlayStyle}
     >
-      <div className="business-modal-surface flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden">
+      <div className="business-modal-surface flex h-[95vh] sm:h-auto sm:max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-xl sm:rounded-2xl">
         {/* Header */}
-        <div className="business-workflow-header">
+        <div className="business-workflow-header flex items-center justify-between p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
-            <ShoppingCartIcon className="w-6 h-6" />
-            <div>
-              <h2 className="business-workflow-title">طلب سريع</h2>
-              <p className="business-workflow-subtitle">
+            <ShoppingCartIcon className="w-6 h-6 flex-shrink-0" />
+            <div className="min-w-0">
+              <h2 className="business-workflow-title truncate">طلب سريع</h2>
+              <p className="business-workflow-subtitle truncate">
                 {initialCustomerName || convCustomerName} -{" "}
                 {convPageName}
               </p>
@@ -976,7 +1082,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="business-icon-button"
+            className="business-icon-button flex-shrink-0"
             style={{
               background: "rgba(255, 255, 255, 0.14)",
               borderColor: "rgba(255, 255, 255, 0.18)",
@@ -991,9 +1097,12 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         <div className="business-workflow-tabs">
           <button
             type="button"
-            onClick={() => setStep("products")}
-            className="business-workflow-tab"
-            data-active={step === "products"}
+            onClick={() => {
+              setStep("products");
+              setShowMobileCart(false);
+            }}
+            className="business-workflow-tab flex-1 sm:flex-initial"
+            data-active={step === "products" && !showMobileCart}
           >
             <span className="flex items-center justify-center gap-2">
               <span className="business-workflow-badge">1</span>
@@ -1007,9 +1116,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           </button>
           <button
             type="button"
-            onClick={() => cartItems.length > 0 && setStep("checkout")}
+            onClick={() => {
+              if (cartItems.length > 0) {
+                setStep("checkout");
+                setShowMobileCart(false);
+              }
+            }}
             disabled={cartItems.length === 0}
-            className="business-workflow-tab"
+            className="business-workflow-tab flex-1 sm:flex-initial"
             data-active={step === "checkout"}
             data-disabled={cartItems.length === 0}
           >
@@ -1021,14 +1135,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         </div>
 
         {/* Content */}
-        <div className="flex flex-1 overflow-hidden">
+        <div className="relative flex flex-1 overflow-hidden">
           {step === "products" ? (
             <>
               {/* Products Grid */}
-              <div className="flex flex-1 flex-col overflow-hidden">
+              <div className="flex flex-1 flex-col overflow-hidden min-w-0">
                 {/* Search */}
                 <div
-                  className="p-4"
+                  className="p-3 sm:p-4"
                   style={{
                     borderBottom: "1px solid var(--business-muted-line)",
                   }}
@@ -1039,7 +1153,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                       placeholder="بحث عن منتج..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="business-chat-input w-full pl-4 pr-10 py-2"
+                      className="business-chat-input w-full pl-4 pr-10 py-2 text-sm"
                     />
                     <MagnifyingGlassIcon
                       className="absolute right-3 top-2.5 h-5 w-5"
@@ -1052,79 +1166,86 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                 <div
                   ref={productListRef}
                   onScroll={handleProductListScroll}
-                  className="flex-1 overflow-y-auto p-4"
+                  className="flex-1 overflow-y-auto p-2.5 sm:p-4"
                 >
                   {loadingProducts ? (
-                    <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                    <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-2 lg:grid-cols-3">
                       {[...Array(6)].map((_, i) => (
-                          <div
-                            key={i}
-                            className="h-40 animate-pulse rounded-2xl"
-                            style={{
-                              background:
-                                "color-mix(in srgb, var(--color-border) 18%, var(--color-background))",
-                            }}
-                          />
+                        <div
+                          key={i}
+                          className="h-44 sm:h-48 animate-pulse rounded-2xl"
+                          style={{
+                            background:
+                              "color-mix(in srgb, var(--color-border) 18%, var(--color-background))",
+                          }}
+                        />
                       ))}
                     </div>
                   ) : products.length === 0 ? (
-                    <div className="business-inbox-empty py-10">
+                    <div className="business-inbox-empty py-12 text-center">
                       <ArchiveBoxIcon
-                        className="h-12 w-12 opacity-50"
+                        className="mx-auto h-12 w-12 opacity-50"
                         style={mutedStyle}
                       />
-                      <p>لا توجد منتجات</p>
+                      <p className="mt-2 text-sm" style={mutedStyle}>لا توجد منتجات</p>
                     </div>
                   ) : (
                     <>
-                      <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                      <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-2 lg:grid-cols-3">
                         {products.map((product) => (
                           <div
                             key={product.id}
                             onClick={() => handleProductClick(product)}
-                            className="business-product-card group cursor-pointer"
+                            className="business-product-card group cursor-pointer flex flex-col justify-between overflow-hidden rounded-xl border border-transparent transition-all duration-150 active:scale-[0.98]"
                           >
-                            <div className="business-product-card-media relative aspect-square">
+                            <div className="business-product-card-media relative aspect-square w-full overflow-hidden">
                               {product.image ? (
                                 <img
                                   src={product.image}
                                   alt={product.name}
-                                  className="h-full w-full object-cover"
+                                  className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                                  loading="lazy"
                                 />
                               ) : (
                                 <div
                                   className="flex h-full w-full items-center justify-center"
                                   style={mutedStyle}
                                 >
-                                  <ArchiveBoxIcon className="h-10 w-10" />
+                                  <ArchiveBoxIcon className="h-10 w-10 opacity-40" />
                                 </div>
                               )}
                               {product.variants.length > 0 && (
-                                <div className="business-product-card-pill absolute bottom-2 right-2">
+                                <div className="business-product-card-pill absolute bottom-2 right-2 text-[10px] px-2 py-0.5 rounded-md font-medium shadow-sm">
                                   خيارات
                                 </div>
                               )}
                             </div>
-                            <div className="p-2.5">
+                            <div className="p-2 sm:p-2.5 flex flex-col justify-between flex-1">
                               <h3
-                                className="line-clamp-1 text-sm font-medium"
+                                className="line-clamp-2 text-xs sm:text-sm font-medium leading-snug"
                                 style={headingStyle}
+                                title={product.name}
                               >
                                 {product.name}
                               </h3>
-                              <div className="mt-1 flex items-center justify-between">
+                              <div className="mt-2 flex items-center justify-between gap-1">
                                 <span
-                                  className="text-sm font-bold"
+                                  className="text-xs sm:text-sm font-bold truncate"
                                   style={primaryStyle}
                                 >
                                   {product.price} ج.م
                                 </span>
                                 <button
                                   type="button"
-                                  className="business-icon-button business-icon-button--sm"
+                                  className="business-icon-button business-icon-button--sm h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0"
                                   data-tone="primary"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleProductClick(product);
+                                  }}
+                                  aria-label="إضافة للطلب"
                                 >
-                                  <PlusIcon className="h-4 w-4" />
+                                  <PlusIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </button>
                               </div>
                             </div>
@@ -1149,10 +1270,129 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                     </>
                   )}
                 </div>
+
+                {/* Mobile Bottom Cart Bar (visible only on mobile < md when cart has items) */}
+                {cartItems.length > 0 && (
+                  <div
+                    className="md:hidden flex items-center justify-between gap-2 p-2.5 sm:p-3 border-t bg-[var(--business-surface-strong)] flex-shrink-0 shadow-lg"
+                    style={{ borderColor: "var(--business-muted-line)" }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileCart(true)}
+                      className="flex items-center gap-2 text-right min-w-0 flex-1 hover:opacity-85 transition-opacity"
+                    >
+                      <div className="relative flex-shrink-0">
+                        <div className="p-2 rounded-xl bg-blue-500/15 text-blue-500 dark:bg-blue-500/25">
+                          <ShoppingCartIcon className="h-5 w-5" />
+                        </div>
+                        <span className="absolute -top-1 -right-1 bg-blue-600 text-white text-[10px] font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                          {cartItems.reduce((acc, item) => acc + item.quantity, 0)}
+                        </span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-xs sm:text-sm font-bold truncate" style={headingStyle}>
+                          {subtotal.toLocaleString()} ج.م
+                        </div>
+                        <div className="text-[10px] sm:text-xs text-blue-500 font-medium flex items-center gap-0.5">
+                          <span>عرض وتعديل السلة</span>
+                          <ChevronUpIcon className="h-3 w-3" />
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileCart(true)}
+                      className="business-chip-button px-4 py-2 text-xs sm:text-sm font-bold flex-shrink-0 shadow-sm"
+                      data-active="true"
+                    >
+                      متابعة الطلب
+                    </button>
+                  </div>
+                )}
               </div>
 
-              {/* Cart Sidebar */}
-              <div className="business-side-panel w-72">
+              {/* Mobile Cart Overlay/Drawer */}
+              {showMobileCart && (
+                <div
+                  className="md:hidden absolute inset-0 z-30 flex flex-col bg-[var(--business-surface-panel)] animate-in fade-in slide-in-from-bottom-5 duration-200"
+                  style={{
+                    background: "var(--business-surface-panel)",
+                  }}
+                >
+                  <div
+                    className="business-side-panel-header flex items-center justify-between p-3.5"
+                    style={{ borderBottom: "1px solid var(--business-muted-line)" }}
+                  >
+                    <h3
+                      className="flex items-center gap-2 font-bold text-sm"
+                      style={headingStyle}
+                    >
+                      <ShoppingCartIcon className="h-5 w-5 text-primary" />
+                      السلة ({cartItems.reduce((acc, item) => acc + item.quantity, 0)} قطعة)
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => setShowMobileCart(false)}
+                      className="business-icon-button business-icon-button--sm"
+                      aria-label="إغلاق السلة"
+                    >
+                      <XMarkIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 space-y-2 overflow-y-auto p-3">
+                    {cartItems.length === 0 ? (
+                      <div className="business-inbox-empty py-12 text-center">
+                        <ShoppingCartIcon
+                          className="mx-auto h-12 w-12 opacity-30"
+                          style={mutedStyle}
+                        />
+                        <p className="mt-2 text-sm" style={mutedStyle}>
+                          السلة فارغة
+                        </p>
+                      </div>
+                    ) : (
+                      cartItems.map((item) => renderCartItem(item))
+                    )}
+                  </div>
+
+                  {cartItems.length > 0 && (
+                    <div className="business-footer-bar p-3.5 flex flex-col gap-2.5">
+                      <div className="flex justify-between items-center text-sm">
+                        <span style={mutedStyle}>المجموع</span>
+                        <span className="font-bold text-base" style={headingStyle}>
+                          {subtotal.toLocaleString()} ج.م
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setShowMobileCart(false)}
+                          className="business-chip-button flex-1 py-2 text-xs font-medium"
+                        >
+                          إضافة المزيد
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setShowMobileCart(false);
+                            setStep("checkout");
+                          }}
+                          className="business-chip-button flex-1 py-2 text-xs font-bold"
+                          data-active="true"
+                        >
+                          متابعة الطلب
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Desktop Cart Sidebar (hidden on mobile, visible on md+) */}
+              <div className="hidden md:flex md:w-72 md:flex-col business-side-panel flex-shrink-0">
                 <div className="business-side-panel-header">
                   <h3
                     className="flex items-center gap-2 font-semibold"
@@ -1173,102 +1413,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                       <p className="text-sm">السلة فارغة</p>
                     </div>
                   ) : (
-                    cartItems.map((item) => (
-                      <div
-                        key={`${item.productId}-${item.variantId || ""}`}
-                        className="business-cart-card p-2"
-                      >
-                        <div className="flex gap-2">
-                          <div className="business-product-card-media h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl">
-                            {item.image ? (
-                              <img
-                                src={item.image}
-                                alt={item.name}
-                                className="h-full w-full object-cover"
-                              />
-                            ) : (
-                              <div
-                                className="flex h-full w-full items-center justify-center"
-                                style={mutedStyle}
-                              >
-                                <ArchiveBoxIcon className="h-6 w-6" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <h4
-                              className="line-clamp-1 text-xs font-medium"
-                              style={headingStyle}
-                            >
-                              {item.name}
-                            </h4>
-                            {item.variantName && (
-                              <p className="text-[10px]" style={mutedStyle}>
-                                {item.variantName}
-                              </p>
-                            )}
-                            <p
-                              className="mt-0.5 text-xs font-bold"
-                              style={primaryStyle}
-                            >
-                              {item.price} ج.م
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeFromCart(item.productId, item.variantId)
-                            }
-                            className="business-icon-button business-icon-button--sm"
-                            style={dangerStyle}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        </div>
-                        <div className="mt-2 flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.productId,
-                                  item.variantId,
-                                  -1,
-                                )
-                              }
-                              className="business-qty-button"
-                            >
-                              <MinusIcon className="h-3 w-3" />
-                            </button>
-                            <span
-                              className="w-8 text-center text-sm font-medium"
-                              style={headingStyle}
-                            >
-                              {item.quantity}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.productId,
-                                  item.variantId,
-                                  1,
-                                )
-                              }
-                              className="business-qty-button"
-                            >
-                              <PlusIcon className="h-3 w-3" />
-                            </button>
-                          </div>
-                          <span
-                            className="text-xs font-bold"
-                            style={headingStyle}
-                          >
-                            {(item.price * item.quantity).toLocaleString()} ج.م
-                          </span>
-                        </div>
-                      </div>
-                    ))
+                    cartItems.map((item) => renderCartItem(item))
                   )}
                 </div>
 
@@ -1295,19 +1440,19 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
             </>
           ) : (
             /* Checkout Step */
-            <div className="flex-1 overflow-y-auto p-6">
-              <div className="max-w-2xl mx-auto space-y-6">
+            <div className="flex-1 overflow-y-auto p-3 sm:p-6">
+              <div className="max-w-2xl mx-auto space-y-4 sm:space-y-6">
                 {/* Customer Info */}
-                <div className="business-page-panel p-4">
+                <div className="business-page-panel p-3.5 sm:p-4">
                   <h3
-                    className="mb-4 flex items-center gap-2 font-semibold"
+                    className="mb-3 sm:mb-4 flex items-center gap-2 font-semibold text-sm sm:text-base"
                     style={headingStyle}
                   >
                     <UserIcon className="h-5 w-5" style={mutedStyle} />
                     بيانات العميل
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                     <div>
                       <label className="mb-1 block text-xs" style={mutedStyle}>
                         اسم العميل <span style={dangerStyle}>*</span>
@@ -1316,7 +1461,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                         type="text"
                         value={customerName}
                         onChange={(e) => setCustomerName(e.target.value)}
-                        className="business-control-input w-full"
+                        className="business-control-input w-full text-sm"
                         placeholder="اسم العميل"
                       />
                     </div>
@@ -1328,13 +1473,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                         type="text"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="business-control-input w-full"
+                        className="business-control-input w-full text-sm"
                         placeholder="01xxxxxxxxx"
                         dir="ltr"
                       />
                     </div>
                   </div>
                 </div>
+
 
                 {/* Shipping Info */}
                 <div className="business-page-panel p-4">
@@ -1486,14 +1632,29 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="business-footer-bar flex items-center justify-between">
+        <div className="business-footer-bar flex items-center justify-between p-3 sm:p-4">
           <button
             type="button"
             onClick={step === "checkout" ? () => setStep("products") : onClose}
-            className="business-chip-button px-4 py-2"
+            className="business-chip-button px-4 py-2 text-xs sm:text-sm"
           >
             {step === "checkout" ? "رجوع" : "إلغاء"}
           </button>
+
+          {step === "products" && cartItems.length > 0 && (
+            <button
+              type="button"
+              onClick={() => {
+                setShowMobileCart(false);
+                setStep("checkout");
+              }}
+              className="business-chip-button md:hidden flex items-center gap-1.5 px-4 py-2 text-xs font-bold"
+              data-active="true"
+            >
+              <span>متابعة الطلب</span>
+              <span className="opacity-90">({grandTotal.toLocaleString()} ج.م)</span>
+            </button>
+          )}
 
           {step === "checkout" && (
             <button
@@ -1502,7 +1663,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
               disabled={
                 loading || cartItems.length === 0 || !phone || !customerName
               }
-              className={`business-chip-button flex items-center gap-2 px-6 py-2 font-medium ${
+              className={`business-chip-button flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm font-medium ${
                 loading || cartItems.length === 0 || !phone || !customerName
                   ? "cursor-not-allowed opacity-60"
                   : ""
@@ -1520,14 +1681,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
             >
               {loading ? (
                 <div
-                  className="h-5 w-5 animate-spin rounded-full border-2 border-t-transparent"
+                  className="h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-t-transparent"
                   style={{
                     borderColor: "currentColor",
                     borderTopColor: "transparent",
                   }}
                 />
               ) : (
-                <CheckCircleIcon className="w-5 h-5" />
+                <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
               )}
               إنشاء الطلب ({grandTotal.toLocaleString()} ج.م)
             </button>
