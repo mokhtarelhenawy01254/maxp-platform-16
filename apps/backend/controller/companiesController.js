@@ -1472,7 +1472,7 @@ const createnewUserForCompany = async (req, res) => {
     const VALID_ROLE_ENUMS = ["OWNER", "SUPER_ADMIN", "COMPANY_ADMIN", "MANAGER", "AGENT", "AFFILIATE"];
 
     if (!roleId && role) {
-      const roleRecord = await getSharedPrismaClient().role.findFirst({
+      let roleRecord = await getSharedPrismaClient().role.findFirst({
         where: {
           key: role,
           OR: [
@@ -1482,6 +1482,17 @@ const createnewUserForCompany = async (req, res) => {
           ],
         },
       });
+      if (!roleRecord && VALID_ROLE_ENUMS.includes(role)) {
+        roleRecord = await getSharedPrismaClient().role.findUnique({
+          where: {
+            key_companyId: {
+              key: role,
+              companyId: '__system__',
+            },
+          },
+          select: { id: true },
+        });
+      }
       if (roleRecord) {
         roleId = roleRecord.id;
       }
@@ -1848,6 +1859,7 @@ const updateUser = async (req, res) => {
         ...(email && { email: email.toLowerCase() }),
         ...(phone !== undefined && { phone }),
         ...(hashedPassword && { password: hashedPassword }), // ✅ Update password if provided
+        ...(isActive !== undefined && { isActive }), // ✅ Keep User.isActive in sync with UserCompany.isActive
         // ✅ Update employee fields
         ...(departmentId !== undefined && {
           departmentId: departmentId || null,
@@ -1859,7 +1871,6 @@ const updateUser = async (req, res) => {
           baseSalary: baseSalary ? parseFloat(baseSalary) : null,
         }),
         ...(mergedSettings !== undefined && { settings: JSON.stringify(mergedSettings) }),
-        // Note: role and isActive are in UserCompany table, not User table
       },
       select: {
         id: true,
@@ -1914,7 +1925,7 @@ const updateUser = async (req, res) => {
             ucData.role = role;
           }
 
-          const roleRecord = await getSharedPrismaClient().role.findFirst({
+          let roleRecord = await getSharedPrismaClient().role.findFirst({
             where: {
               key: role,
               OR: [
@@ -1926,11 +1937,37 @@ const updateUser = async (req, res) => {
             select: { id: true },
           });
 
+          if (!roleRecord && VALID_ROLE_ENUMS.includes(role)) {
+            roleRecord = await getSharedPrismaClient().role.findUnique({
+              where: {
+                key_companyId: {
+                  key: role,
+                  companyId: '__system__',
+                },
+              },
+              select: { id: true },
+            });
+          }
+
           if (roleRecord) {
             ucData.roleId = roleRecord.id;
           } else if (VALID_ROLE_ENUMS.includes(role)) {
-            const newRole = await getSharedPrismaClient().role.create({
-              data: { key: role, name: getRoleDisplayName(role), companyId: '__system__', isBuiltIn: true, isActive: true, priority: 0 },
+            const newRole = await getSharedPrismaClient().role.upsert({
+              where: {
+                key_companyId: {
+                  key: role,
+                  companyId: '__system__',
+                },
+              },
+              update: {},
+              create: {
+                key: role,
+                name: getRoleDisplayName(role),
+                companyId: '__system__',
+                isBuiltIn: true,
+                isActive: true,
+                priority: 0,
+              },
             });
             // Sync all active permissions so the role isn't empty (edge case: missing seed)
             const allPerms = await getSharedPrismaClient().permission.findMany({
@@ -1940,10 +1977,11 @@ const updateUser = async (req, res) => {
             if (allPerms.length > 0) {
               await getSharedPrismaClient().rolePermission.createMany({
                 data: allPerms.map(p => ({ roleId: newRole.id, permissionId: p.id })),
+                skipDuplicates: true,
               });
             }
             ucData.roleId = newRole.id;
-            console.log(`✅ [UPDATE-USER] Auto-created built-in Role record for "${role}" → ${newRole.id} with ${allPerms.length} permissions`);
+            console.log(`✅ [UPDATE-USER] Auto-resolved built-in Role record for "${role}" → ${newRole.id}`);
           } else {
             const newRole = await getSharedPrismaClient().role.create({
               data: { key: role, name: role, companyId, isBuiltIn: false, isActive: true, priority: 0 },

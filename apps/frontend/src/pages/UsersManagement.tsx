@@ -1843,32 +1843,54 @@ const UsersManagement: React.FC = () => {
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <FormField label="القسم">
-                      <Select value={userForm.departmentId || null} onValueChange={(value) => updateUserForm("departmentId", value || "")}>
+                      <Select
+                        value={userForm.departmentId || "NONE"}
+                        onValueChange={(value) =>
+                          updateUserForm("departmentId", value === "NONE" ? "" : (value || ""))
+                        }
+                      >
                         <SelectTrigger className="h-11 rounded-2xl">
                           <SelectValue placeholder="اختر القسم" />
                         </SelectTrigger>
                         <SelectContent align="end">
-                          <SelectItem value={null}> بدون قسم </SelectItem>
+                          <SelectItem value="NONE"> بدون قسم </SelectItem>
                           {departments.map((department) => (
                             <SelectItem key={department.id} value={department.id}>
                               {department.name}
                             </SelectItem>
                           ))}
+                          {userForm.departmentId &&
+                            !departments.some((d) => d.id === userForm.departmentId) && (
+                              <SelectItem value={userForm.departmentId}>
+                                {editingUser?.employee?.department?.name || userForm.departmentId}
+                              </SelectItem>
+                            )}
                         </SelectContent>
                       </Select>
                     </FormField>
                     <FormField label="المنصب">
-                      <Select value={userForm.positionId || null} onValueChange={(value) => updateUserForm("positionId", value || "")}>
+                      <Select
+                        value={userForm.positionId || "NONE"}
+                        onValueChange={(value) =>
+                          updateUserForm("positionId", value === "NONE" ? "" : (value || ""))
+                        }
+                      >
                         <SelectTrigger className="h-11 rounded-2xl">
                           <SelectValue placeholder="اختر المنصب" />
                         </SelectTrigger>
                         <SelectContent align="end">
-                          <SelectItem value={null}> بدون منصب </SelectItem>
+                          <SelectItem value="NONE"> بدون منصب </SelectItem>
                           {positions.map((position) => (
                             <SelectItem key={position.id} value={position.id}>
                               {position.title}
                             </SelectItem>
                           ))}
+                          {userForm.positionId &&
+                            !positions.some((p) => p.id === userForm.positionId) && (
+                              <SelectItem value={userForm.positionId}>
+                                {editingUser?.employee?.position?.title || userForm.positionId}
+                              </SelectItem>
+                            )}
                         </SelectContent>
                       </Select>
                     </FormField>
