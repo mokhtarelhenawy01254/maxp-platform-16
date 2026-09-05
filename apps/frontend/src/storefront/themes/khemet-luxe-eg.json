@@ -195,6 +195,42 @@
           }
         },
         {
+          "type": "featured-collections",
+          "variant": "legacy-circle-categories",
+          "settings": {
+            "title": "تسوقي حسب الستايل",
+            "subtitle": "اختاري الستايل المناسب ليومك وخطوتك من بين تشكيلاتنا المتنوعة.",
+            "limit": 4,
+            "preferRuntimeCategories": false,
+            "hideCardDescriptions": true,
+            "hideCardCtas": true,
+            "ctaText": "عرض كل الموديلات",
+            "ctaLink": "/shop",
+            "collections": [
+              {
+                "title": "سنيكرز وكوتشيات",
+                "image": "https://images.unsplash.com/photo-1595950653106-6c9ebd614d3a?auto=format&fit=crop&q=80&w=400",
+                "link": "/shop?category=sneakers"
+              },
+              {
+                "title": "فلات وسكوتش",
+                "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=400",
+                "link": "/shop?category=flats"
+              },
+              {
+                "title": "أحذية كعب وسهرة",
+                "image": "https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=400",
+                "link": "/shop?category=heels"
+              },
+              {
+                "title": "عروض التوفير",
+                "image": "https://images.unsplash.com/photo-1549298916-b41d501d3772?auto=format&fit=crop&q=80&w=400",
+                "link": "/sale"
+              }
+            ]
+          }
+        },
+        {
           "type": "featured-products",
           "variant": "boutique-rail",
           "settings": {
@@ -240,38 +276,6 @@
                 "link": "/size-guide",
                 "tone": "slate",
                 "stat": "14 Days"
-              }
-            ]
-          }
-        },
-        {
-          "type": "featured-collections",
-          "variant": "gallery-columns",
-          "settings": {
-            "title": "تسوقي حسب الستايل",
-            "subtitle": "اختاري الستايل المناسب ليومك وخطوتك من بين تشكيلاتنا المتنوعة.",
-            "limit": 3,
-            "preferRuntimeCategories": false,
-            "ctaText": "عرض كل التشكيلات",
-            "ctaLink": "/collections",
-            "collections": [
-              {
-                "title": "سنيكرز وكوتشيات",
-                "subtitle": "كوتشيات بلاتفورم وسنيكرز خفيفة ومريحة للمشاوير واليوم الطويل.",
-                "image": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=1200",
-                "link": "/shop?category=sneakers"
-              },
-              {
-                "title": "فلات وأحذية عملية",
-                "subtitle": "موديلات فلات وسكوتش أنيقة تناسب الشغل والجامعة والخروجات اليومية.",
-                "image": "https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=1200",
-                "link": "/shop?category=flats"
-              },
-              {
-                "title": "أحذية كعب وسهرة",
-                "subtitle": "شياكة وأناقة مريحة ترفع إطلالتك في المناسبات والخروجات الخاصة.",
-                "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1200",
-                "link": "/shop?category=heels"
               }
             ]
           }
