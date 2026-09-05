@@ -320,15 +320,35 @@ export default function AgencyDashboard() {
   const getClientStatusBadge = (status: string) => {
     switch ((status || "").toLowerCase()) {
       case "active":
-        return { label: "نشط", className: "bg-emerald-500/10 text-emerald-600 border-emerald-300 text-[10px] font-bold" };
+        return (
+          <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-300 text-[10px] font-bold">
+            نشط
+          </Badge>
+        );
       case "lead":
-        return { label: "عميل محتمل (Lead)", className: "bg-blue-500/10 text-blue-600 border-blue-300 text-[10px] font-bold" };
+        return (
+          <Badge variant="outline" className="bg-blue-500/10 text-blue-600 border-blue-300 text-[10px] font-bold">
+            عميل محتمل (Lead)
+          </Badge>
+        );
       case "paused":
-        return { label: "متوقف مؤقتاً", className: "bg-amber-500/10 text-amber-600 border-amber-300 text-[10px] font-bold" };
+        return (
+          <Badge variant="outline" className="bg-amber-500/10 text-amber-600 border-amber-300 text-[10px] font-bold">
+            متوقف مؤقتاً
+          </Badge>
+        );
       case "completed":
-        return { label: "مكتمل", className: "bg-zinc-500/10 text-zinc-600 border-zinc-300 text-[10px] font-bold" };
+        return (
+          <Badge variant="outline" className="bg-zinc-500/10 text-zinc-600 border-zinc-300 text-[10px] font-bold">
+            مكتمل
+          </Badge>
+        );
       default:
-        return { label: status, className: "bg-muted text-muted-foreground text-[10px] font-bold" };
+        return (
+          <Badge variant="outline" className="bg-muted text-muted-foreground text-[10px] font-bold">
+            {status}
+          </Badge>
+        );
     }
   };
 
