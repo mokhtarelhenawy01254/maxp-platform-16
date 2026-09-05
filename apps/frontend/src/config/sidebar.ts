@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, Printer, Radio, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 
 type SidebarCompany = {
@@ -819,16 +819,17 @@ export const getSidebarConfig = (
             hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
         },
 
-        // 4️⃣.9️⃣ وكالة التسويق (Agency OS)
+        // 4️⃣.9️⃣ إدارة الوكالة (Agency OS)
         {
             id: 'marketing-agency',
-            title: t('sidebar.marketingAgencySection', { defaultValue: 'وكالة التسويق (Agency OS)' }),
+            title: t('sidebar.marketingAgencySection', { defaultValue: 'إدارة الوكالة' }),
             icon: Briefcase,
             items: [
-                { to: '/agency', icon: BarChart3, label: t('sidebar.agencyOverview', { defaultValue: 'لوحة تحكم الوكالة' }) },
-                { to: '/agency?tab=clients', icon: Users, label: t('sidebar.agencyClients', { defaultValue: 'العملاء وميزانيات الإعلانات' }) },
-                { to: '/agency?tab=approvals', icon: ClipboardCheck, label: t('sidebar.agencyApprovals', { defaultValue: 'موافقات التصاميم والمحتوى' }) },
-                { to: '/agency?tab=suite', icon: Briefcase, label: t('sidebar.agencySuite', { defaultValue: 'المنظومة المترابطة' }) },
+                { to: '/agency', icon: BarChart3, label: t('sidebar.agencyOverview', { defaultValue: 'لوحة التحكم' }) },
+                { to: '/agency?tab=clients', icon: Users, label: t('sidebar.agencyClients', { defaultValue: 'العملاء والأسعار' }) },
+                { to: '/agency?tab=invoices', icon: Receipt, label: t('sidebar.agencyInvoices', { defaultValue: 'الفواتير والأرباح' }) },
+                { to: '/agency?tab=approvals', icon: ClipboardCheck, label: t('sidebar.agencyApprovals', { defaultValue: 'موافقات المحتوى' }) },
+                { to: '/agency?tab=suite', icon: Briefcase, label: t('sidebar.agencySuite', { defaultValue: 'الأدوات المتكاملة' }) },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAppActive('marketing-agency-pro'),
         },

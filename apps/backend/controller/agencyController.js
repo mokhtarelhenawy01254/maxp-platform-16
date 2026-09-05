@@ -601,6 +601,14 @@ const getInvoices = async (req, res) => {
                 totalUnpaid += totalAmount;
             }
 
+            const spend = feeInfo.spend;
+            const sales = feeInfo.sales;
+            const orders = feeInfo.orders;
+            const units = feeInfo.units;
+            const roas = spend > 0 ? Number((sales / spend).toFixed(2)) : 0;
+            const cpa = orders > 0 ? Math.round(spend / orders) : 0;
+            const aov = orders > 0 ? Math.round(sales / orders) : 0;
+
             return {
                 clientId: client.id,
                 clientName: client.name,
@@ -611,10 +619,13 @@ const getInvoices = async (req, res) => {
                 isOffPlatform: Boolean(client.isOffPlatform),
                 month,
                 performance: {
-                    spend: feeInfo.spend,
-                    sales: feeInfo.sales,
-                    orders: feeInfo.orders,
-                    units: feeInfo.units,
+                    spend,
+                    sales,
+                    orders,
+                    units,
+                    roas,
+                    cpa,
+                    aov,
                 },
                 baseAgencyFee: feeInfo.fee,
                 calculationExplanation: feeInfo.calculationExplanation,

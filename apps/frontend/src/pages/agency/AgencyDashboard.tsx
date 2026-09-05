@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate, useParams } from "react-router-dom";
 import {
   Briefcase,
   Users,
@@ -28,7 +28,8 @@ import {
   Sparkles,
   ChevronRight,
   Package,
-  ShoppingCart
+  ShoppingCart,
+  Printer
 } from "lucide-react";
 import { apiClient } from "../../services/apiClient";
 import { toast } from "sonner";
@@ -128,6 +129,9 @@ interface ClientInvoiceStatement {
     sales: number;
     orders: number;
     units: number;
+    roas?: number;
+    cpa?: number;
+    aov?: number;
   };
   baseAgencyFee: number;
   calculationExplanation: string;
@@ -196,7 +200,8 @@ const EXTRA_SERVICE_PRESETS = [
 export default function AgencyDashboard() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const activeTab = searchParams.get("tab") || "overview";
+  const { tab: paramTab } = useParams<{ tab?: string }>();
+  const activeTab = paramTab || searchParams.get("tab") || "overview";
 
   const [loading, setLoading] = useState(true);
   const [currency] = useState("ج.م");
@@ -223,6 +228,8 @@ export default function AgencyDashboard() {
   const [approvals, setApprovals] = useState<AgencyApproval[]>([]);
   const [invoicesData, setInvoicesData] = useState<InvoicesResponse | null>(null);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<ClientInvoiceStatement | null>(null);
 
   // Client modal state
   const [clientModalOpen, setClientModalOpen] = useState(false);
@@ -363,7 +370,134 @@ export default function AgencyDashboard() {
   }, [activeTab, selectedMonth]);
 
   const handleTabChange = (val: string) => {
-    setSearchParams({ tab: val });
+    if (paramTab) {
+      navigate(`/agency/${val}`);
+    } else {
+      setSearchParams({ tab: val });
+    }
+  };
+
+  const handleOpenFormalInvoice = (stmt: ClientInvoiceStatement) => {
+    setSelectedInvoice(stmt);
+    setInvoiceModalOpen(true);
+  };
+
+  const handleOpenFormalInvoiceFromClient = async (client: AgencyClient) => {
+    let stmt = invoicesData?.statements?.find((s) => s.clientId === client.id);
+    if (!stmt) {
+      try {
+        setInvoicesLoading(true);
+        const res = await apiClient.get(`/agency/invoices?month=${selectedMonth}`);
+        if (res.data?.success) {
+          setInvoicesData(res.data.data);
+          stmt = res.data.data?.statements?.find((s: any) => s.clientId === client.id);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch invoices for client statement", err);
+      } finally {
+        setInvoicesLoading(false);
+      }
+    }
+
+    if (stmt) {
+      setSelectedInvoice(stmt);
+      setInvoiceModalOpen(true);
+    } else {
+      // Create on-the-fly statement representation
+      const logs = Array.isArray(client.monthlyLogs) ? client.monthlyLogs : [];
+      const currentLog = logs.find((l) => l.month === selectedMonth) || {
+        month: selectedMonth,
+        adSpend: client.currentSpend || 0,
+        salesRevenue: client.monthlySales || 0,
+        ordersCount: client.monthlyOrders || 0,
+        unitsSold: client.monthlyUnits || 0,
+        isPaid: false
+      };
+      const spend = Number(currentLog.adSpend) || 0;
+      const sales = Number(currentLog.salesRevenue) || 0;
+      const orders = Number(currentLog.ordersCount) || 0;
+      const units = Number(currentLog.unitsSold) || 0;
+      const roas = spend > 0 ? Number((sales / spend).toFixed(2)) : 0;
+      const cpa = orders > 0 ? Math.round(spend / orders) : 0;
+      const aov = orders > 0 ? Math.round(sales / orders) : 0;
+
+      let baseAgencyFee = 0;
+      let explanation = "";
+      const rate = Number(client.pricingRate) || 0;
+      const retainer = Number(client.baseRetainer) || 0;
+      const perOrder = Number(client.feePerOrder) || 0;
+      const perItem = Number(client.feePerItem) || 0;
+
+      switch (client.pricingModel) {
+        case "PERCENT_SPEND":
+          baseAgencyFee = Math.round(spend * (rate / 100));
+          explanation = `${rate}% من إجمالي الإنفاق الإعلاني (${spend.toLocaleString()} ${currency})`;
+          break;
+        case "PERCENT_SALES":
+          baseAgencyFee = Math.round(sales * (rate / 100));
+          explanation = `${rate}% من إجمالي المبيعات المحققة (${sales.toLocaleString()} ${currency})`;
+          break;
+        case "FIXED_ORDER":
+          baseAgencyFee = Math.round(orders * perOrder);
+          explanation = `${orders} طلب × ${perOrder} ${currency} لكل طلب`;
+          break;
+        case "FIXED_ITEM":
+          baseAgencyFee = Math.round(units * perItem);
+          explanation = `${units} قطعة × ${perItem} ${currency} لكل قطعة`;
+          break;
+        case "HYBRID": {
+          let comm = 0;
+          if (client.hybridType === "PERCENT_SPEND") {
+            comm = Math.round(spend * (rate / 100));
+            explanation = `اشتراك ثابت (${retainer.toLocaleString()}) + ${rate}% من الإنفاق (${comm.toLocaleString()})`;
+          } else if (client.hybridType === "PERCENT_SALES") {
+            comm = Math.round(sales * (rate / 100));
+            explanation = `اشتراك ثابت (${retainer.toLocaleString()}) + ${rate}% من المبيعات (${comm.toLocaleString()})`;
+          } else {
+            comm = Math.round(orders * perOrder);
+            explanation = `اشتراك ثابت (${retainer.toLocaleString()}) + ${orders} طلب × ${perOrder} (${comm.toLocaleString()})`;
+          }
+          baseAgencyFee = retainer + comm;
+          break;
+        }
+        case "RETAINER":
+        default:
+          baseAgencyFee = retainer;
+          explanation = `اشتراك شهري ثابت`;
+          break;
+      }
+
+      const extraServices = (client.extraServices || []).filter((s) => !s.month || s.month === selectedMonth);
+      const extraServicesSum = extraServices.reduce((sum, s) => sum + (Number(s.amount) || 0), 0);
+
+      setSelectedInvoice({
+        clientId: client.id,
+        clientName: client.name,
+        contactPerson: client.contactPerson,
+        phone: client.phone,
+        email: client.email,
+        pricingModel: client.pricingModel || "RETAINER",
+        isOffPlatform: Boolean(client.isOffPlatform),
+        month: selectedMonth,
+        performance: {
+          spend,
+          sales,
+          orders,
+          units,
+          roas,
+          cpa,
+          aov
+        },
+        baseAgencyFee,
+        calculationExplanation: explanation,
+        extraServices,
+        extraServicesSum,
+        totalAmount: baseAgencyFee + extraServicesSum,
+        isPaid: Boolean(currentLog.isPaid),
+        paidAt: currentLog.paidAt || null
+      });
+      setInvoiceModalOpen(true);
+    }
   };
 
   // Client Handlers
@@ -997,6 +1131,11 @@ export default function AgencyDashboard() {
             {filteredClients.map((client) => {
               const budget = Number(client.monthlyBudget) || 0;
               const spend = Number(client.currentSpend) || 0;
+              const sales = Number(client.monthlySales) || 0;
+              const orders = Number(client.monthlyOrders) || 0;
+              const roas = spend > 0 ? (sales / spend).toFixed(2) : null;
+              const cpa = orders > 0 ? Math.round(spend / orders) : null;
+              const aov = orders > 0 ? Math.round(sales / orders) : null;
               const pacingPct = budget > 0 ? Math.round((spend / budget) * 100) : 0;
               const modelMeta = PRICING_MODEL_LABELS[client.pricingModel] || PRICING_MODEL_LABELS.RETAINER;
 
@@ -1109,6 +1248,30 @@ export default function AgencyDashboard() {
                       </div>
                     </div>
 
+                    {/* Marketing Performance KPIs (ROAS, CPA, AOV) */}
+                    {(sales > 0 || orders > 0 || spend > 0) && (
+                      <div className="grid grid-cols-3 gap-1.5 p-2 bg-background/80 rounded-xl border border-border/50 text-[10px] text-center font-bold">
+                        <div className="flex flex-col items-center">
+                          <span className="text-muted-foreground text-[9px]">عائد ROAS</span>
+                          <span className={`font-black ${Number(roas) >= 3 ? "text-emerald-600" : Number(roas) >= 2 ? "text-blue-600" : "text-amber-600"}`}>
+                            {roas ? `${roas}x` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center border-x border-border/40">
+                          <span className="text-muted-foreground text-[9px]">تكلفة CPA</span>
+                          <span className="font-black text-foreground">
+                            {cpa ? `${cpa} ${currency}` : "—"}
+                          </span>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <span className="text-muted-foreground text-[9px]">متوسط AOV</span>
+                          <span className="font-black text-foreground">
+                            {aov ? `${aov} ${currency}` : "—"}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
                     {/* Action buttons on client card */}
                     <div className="grid grid-cols-2 gap-2 pt-1">
                       <Button
@@ -1128,6 +1291,15 @@ export default function AgencyDashboard() {
                       >
                         <Plus className="size-3.5 ml-1 text-emerald-600" />
                         بند إضافي / نفقة
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-8 text-[11px] font-bold bg-primary/5 hover:bg-primary/10 border-primary/20 text-primary col-span-2"
+                        onClick={() => handleOpenFormalInvoiceFromClient(client)}
+                      >
+                        <Printer className="size-3.5 ml-1" />
+                        معاينة الفاتورة الرسمية والطباعة
                       </Button>
                     </div>
 
@@ -1280,6 +1452,17 @@ export default function AgencyDashboard() {
                             )}
                           </button>
 
+                          {/* Formal Invoice Preview & Print Button */}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2.5 text-xs font-bold gap-1 border-border/80 hover:bg-muted"
+                            onClick={() => handleOpenFormalInvoice(stmt)}
+                          >
+                            <Printer className="size-3.5 ml-1 text-primary" />
+                            معاينة وطباعة الفاتورة
+                          </Button>
+
                           {/* WhatsApp Share Button */}
                           <Button
                             size="sm"
@@ -1319,6 +1502,28 @@ export default function AgencyDashboard() {
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">عدد الطلبات / القطع:</span>
                               <span>{stmt.performance.orders} طلب / {stmt.performance.units} قطعة</span>
+                            </div>
+                          </div>
+
+                          {/* ROAS, CPA, AOV Badges */}
+                          <div className="grid grid-cols-3 gap-1 pt-1.5 border-t border-border/30 text-[10px] text-center font-bold">
+                            <div className="bg-background/80 p-1 rounded border border-border/40">
+                              <span className="text-muted-foreground block text-[9px]">عائد ROAS</span>
+                              <span className="text-emerald-600 font-black">
+                                {stmt.performance.roas || (stmt.performance.spend > 0 ? (stmt.performance.sales / stmt.performance.spend).toFixed(2) : 0)}x
+                              </span>
+                            </div>
+                            <div className="bg-background/80 p-1 rounded border border-border/40">
+                              <span className="text-muted-foreground block text-[9px]">تكلفة CPA</span>
+                              <span className="text-primary font-black">
+                                {stmt.performance.cpa || (stmt.performance.orders > 0 ? Math.round(stmt.performance.spend / stmt.performance.orders) : 0)} {currency}
+                              </span>
+                            </div>
+                            <div className="bg-background/80 p-1 rounded border border-border/40">
+                              <span className="text-muted-foreground block text-[9px]">متوسط AOV</span>
+                              <span className="text-foreground font-black">
+                                {stmt.performance.aov || (stmt.performance.orders > 0 ? Math.round(stmt.performance.sales / stmt.performance.orders) : 0)} {currency}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -2118,6 +2323,282 @@ export default function AgencyDashboard() {
               إلغاء
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* MODAL 5: FORMAL PRINTABLE INVOICE MODAL */}
+      <Dialog open={invoiceModalOpen} onOpenChange={setInvoiceModalOpen}>
+        <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto p-0" dir="rtl">
+          {selectedInvoice && (
+            <div className="bg-background">
+              <style>{`
+                @media print {
+                  body * {
+                    visibility: hidden !important;
+                  }
+                  #agency-formal-invoice-print-area, #agency-formal-invoice-print-area * {
+                    visibility: visible !important;
+                  }
+                  #agency-formal-invoice-print-area {
+                    position: fixed !important;
+                    left: 0 !important;
+                    top: 0 !important;
+                    width: 100vw !important;
+                    margin: 0 !important;
+                    padding: 24px !important;
+                    background: #ffffff !important;
+                    color: #000000 !important;
+                    z-index: 99999 !important;
+                  }
+                  .no-print {
+                    display: none !important;
+                  }
+                }
+              `}</style>
+
+              {/* Header / Actions Bar (Hidden in Print) */}
+              <div className="p-4 bg-muted/40 border-b border-border flex items-center justify-between no-print">
+                <div className="flex items-center gap-2">
+                  <div className="p-2 bg-primary/10 text-primary rounded-lg">
+                    <Receipt className="size-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black">معاينة الفاتورة وكشف الحساب الرسمي</h3>
+                    <p className="text-[11px] text-muted-foreground">جاهزة للطباعة، الحفظ كـ PDF، أو الإرسال للعميل</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 font-bold text-xs gap-1.5"
+                    onClick={() => window.print()}
+                  >
+                    <Printer className="size-3.5 text-primary" />
+                    طباعة / حفظ PDF
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-8 font-bold text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                    onClick={() => handleShareInvoiceWhatsApp(selectedInvoice)}
+                  >
+                    <MessageCircle className="size-3.5" />
+                    مشاركة عبر واتساب
+                  </Button>
+                </div>
+              </div>
+
+              {/* PRINTABLE INVOICE SHEET */}
+              <div id="agency-formal-invoice-print-area" className="p-6 md:p-8 bg-card text-card-foreground space-y-6">
+                {/* Agency Letterhead */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b-2 border-primary/20 pb-5">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <div className="size-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center font-black text-base shadow-sm">
+                        M
+                      </div>
+                      <h2 className="text-xl font-black tracking-tight text-foreground">
+                        {invoicesData?.agencyName || "وكالة التسويق الرقمي وإدارة الحملات"}
+                      </h2>
+                    </div>
+                    <p className="text-xs text-muted-foreground font-medium">
+                      منظومة إدارة أداء وحسابات الإعلانات والتسويق الرقمي
+                    </p>
+                  </div>
+
+                  <div className="text-left sm:text-left space-y-1" dir="ltr">
+                    <div className="inline-block">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs px-2.5 py-0.5 font-black uppercase tracking-wider ${
+                          selectedInvoice.isPaid
+                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-400"
+                            : "bg-amber-500/10 text-amber-600 border-amber-400"
+                        }`}
+                      >
+                        {selectedInvoice.isPaid ? "PAID / مسددة بالكامل ✅" : "PAYMENT DUE / بانتظار التحصيل ⏳"}
+                      </Badge>
+                    </div>
+                    <p className="text-xs font-mono font-bold text-muted-foreground">
+                      #INV-{selectedInvoice.month.replace("-", "")}-{selectedInvoice.clientId.slice(-4).toUpperCase()}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Month: {selectedInvoice.month}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bill To & Details Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl bg-muted/20 border border-border/60 text-xs">
+                  <div className="space-y-1.5">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">مفوتر إلى (العميل):</span>
+                    <h4 className="text-sm font-black text-foreground">{selectedInvoice.clientName}</h4>
+                    {selectedInvoice.contactPerson && (
+                      <p className="text-muted-foreground">المسؤول: {selectedInvoice.contactPerson}</p>
+                    )}
+                    {selectedInvoice.phone && (
+                      <p className="text-muted-foreground font-mono" dir="ltr">الهاتف: {selectedInvoice.phone}</p>
+                    )}
+                    {selectedInvoice.email && (
+                      <p className="text-muted-foreground">البريد: {selectedInvoice.email}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5 sm:border-r sm:border-border/60 sm:pr-4">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">تفاصيل التعاقد والحملة:</span>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">نموذج التسعير:</span>
+                      <Badge variant="outline" className={`text-[10px] font-bold ${PRICING_MODEL_LABELS[selectedInvoice.pricingModel]?.badgeColor}`}>
+                        {PRICING_MODEL_LABELS[selectedInvoice.pricingModel]?.label}
+                      </Badge>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">شهر الفاتورة:</span>
+                      <span className="font-bold">{selectedInvoice.month}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">نطاق العمل:</span>
+                      <span className="font-bold">
+                        {selectedInvoice.isOffPlatform ? "تتبع إعلاني خارجي" : "متصل بالمنصة"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Campaign Performance Snapshot */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <BarChart3 className="size-3.5 text-primary" />
+                      ملخص أداء الحملات الإعلانية المعتمد
+                    </h4>
+                  </div>
+
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                      <span className="text-[10px] font-bold text-muted-foreground block">الإنفاق الإعلاني الفعلي</span>
+                      <span className="text-sm font-black text-primary mt-0.5 block">
+                        {selectedInvoice.performance.spend.toLocaleString()} {currency}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                      <span className="text-[10px] font-bold text-muted-foreground block">إجمالي المبيعات المحققة</span>
+                      <span className="text-sm font-black text-foreground mt-0.5 block">
+                        {selectedInvoice.performance.sales.toLocaleString()} {currency}
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                      <span className="text-[10px] font-bold text-muted-foreground block">عائد الإنفاق (ROAS)</span>
+                      <span className="text-sm font-black text-emerald-600 mt-0.5 block">
+                        {selectedInvoice.performance.roas || (selectedInvoice.performance.spend > 0 ? (selectedInvoice.performance.sales / selectedInvoice.performance.spend).toFixed(2) : 0)}x
+                      </span>
+                    </div>
+                    <div className="p-3 rounded-lg border border-border/60 bg-muted/10">
+                      <span className="text-[10px] font-bold text-muted-foreground block">تكلفة الطلب (CPA)</span>
+                      <span className="text-sm font-black text-foreground mt-0.5 block">
+                        {selectedInvoice.performance.cpa || (selectedInvoice.performance.orders > 0 ? Math.round(selectedInvoice.performance.spend / selectedInvoice.performance.orders) : 0)} {currency}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Itemized Invoice Breakdown Table */}
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    <Receipt className="size-3.5 text-primary" />
+                    بيان الأتعاب والخدمات المفوترة
+                  </h4>
+
+                  <div className="border border-border/60 rounded-xl overflow-hidden text-xs">
+                    <div className="grid grid-cols-12 bg-muted/40 p-2.5 font-black border-b border-border/60 text-[11px] text-muted-foreground">
+                      <div className="col-span-6">البند / الخدمة</div>
+                      <div className="col-span-3">النوع والتفاصيل</div>
+                      <div className="col-span-3 text-left">المبلغ المستحق</div>
+                    </div>
+
+                    {/* Core Agency Fee Row */}
+                    <div className="grid grid-cols-12 p-3 border-b border-border/40 items-center font-medium bg-background/50">
+                      <div className="col-span-6">
+                        <p className="font-black text-foreground">أتعاب إدارة الحملات والتسويق الرقمي</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                          {selectedInvoice.calculationExplanation}
+                        </p>
+                      </div>
+                      <div className="col-span-3">
+                        <Badge variant="outline" className="text-[10px] font-bold">
+                          أتعاب أساسية
+                        </Badge>
+                      </div>
+                      <div className="col-span-3 text-left font-black text-sm text-foreground">
+                        {selectedInvoice.baseAgencyFee.toLocaleString()} {currency}
+                      </div>
+                    </div>
+
+                    {/* Extra Services Rows */}
+                    {selectedInvoice.extraServices.map((srv) => (
+                      <div key={srv.id} className="grid grid-cols-12 p-3 border-b border-border/40 items-center font-medium">
+                        <div className="col-span-6">
+                          <p className="font-bold text-foreground">{srv.title}</p>
+                          {srv.notes && <p className="text-[10px] text-muted-foreground mt-0.5">{srv.notes}</p>}
+                        </div>
+                        <div className="col-span-3">
+                          <Badge variant="secondary" className="text-[10px] font-bold">
+                            {srv.category}
+                          </Badge>
+                        </div>
+                        <div className="col-span-3 text-left font-black text-sm text-foreground">
+                          {srv.amount.toLocaleString()} {currency}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Totals Summary */}
+                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pt-2">
+                  <div className="text-xs text-muted-foreground space-y-1 max-w-sm">
+                    <p className="font-bold text-foreground">شروط ومعلومات السداد:</p>
+                    <p>
+                      كافة الأتعاب والعمولات مبنية على أرقام الأداء والبنود المعتمدة لشهر {selectedInvoice.month}.
+                      في حال وجود أي استفسار يرجى مراجعة إدارة الوكالة مباشرة.
+                    </p>
+                  </div>
+
+                  <div className="w-full sm:w-72 space-y-2 p-3.5 bg-muted/20 rounded-xl border border-border/60 text-xs">
+                    <div className="flex justify-between font-bold">
+                      <span className="text-muted-foreground">أتعاب الوكالة الأساسية:</span>
+                      <span>{selectedInvoice.baseAgencyFee.toLocaleString()} {currency}</span>
+                    </div>
+                    {selectedInvoice.extraServicesSum > 0 && (
+                      <div className="flex justify-between font-bold">
+                        <span className="text-muted-foreground">إجمالي البنود الإضافية:</span>
+                        <span>{selectedInvoice.extraServicesSum.toLocaleString()} {currency}</span>
+                      </div>
+                    )}
+                    <div className="pt-2 border-t-2 border-primary/20 flex justify-between items-baseline font-black">
+                      <span className="text-sm text-foreground">إجمالي الفاتورة المستحق:</span>
+                      <span className="text-base text-primary">
+                        {selectedInvoice.totalAmount.toLocaleString()} {currency}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Stamp / Signature Area */}
+                <div className="pt-4 border-t border-border/40 flex items-center justify-between text-xs text-muted-foreground">
+                  <div className="space-y-1">
+                    <p className="font-bold">اعتماد إدارة الوكالة:</p>
+                    <p className="font-mono text-[10px] text-muted-foreground/80">Digital Signature Verified</p>
+                  </div>
+                  <div className="text-left space-y-1">
+                    <p className="font-bold">تاريخ الإصدار:</p>
+                    <p className="font-mono text-[10px]">{new Date().toISOString().slice(0, 10)}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
