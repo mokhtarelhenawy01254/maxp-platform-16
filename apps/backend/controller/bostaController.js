@@ -14,20 +14,35 @@ exports.createShipment = async (req, res) => {
 
     const order = await safeQuery(() =>
       prisma.order.findFirst({
-        where: { id: orderId, companyId: req.user.companyId },
-        include: { customer: true, orderItems: { include: { product: true } } },
+        where: {
+          OR: [
+            { id: orderId },
+            { orderNumber: orderId },
+          ],
+          companyId: req.user.companyId,
+        },
+        include: {
+          customer: true,
+          orderItems: { include: { product: true } },
+          shipments: {
+            where: { carrierType: 'BOSTA' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
+        },
       })
     , 2);
 
-    if (!order) return res.status(404).json({ success: false, error: 'Order not found' });
+    if (!order) return res.status(404).json({ success: false, error: 'الطلب غير موجود' });
 
     const payload = service.formatOrderForBosta(order, order.customer);
     const result = await service.createDelivery(payload);
 
     // Upsert or update shipment in DB
-    const existingShipment = await safeQuery(() =>
+    const existingShipment = order.shipments?.[0] || await safeQuery(() =>
       prisma.shipment.findFirst({
-        where: { orderId, companyId: req.user.companyId },
+        where: { orderId: order.id, companyId: req.user.companyId, carrierType: 'BOSTA' },
+        orderBy: { createdAt: 'desc' },
       })
     , 2);
 
@@ -52,7 +67,7 @@ exports.createShipment = async (req, res) => {
         prisma.shipment.create({
           data: {
             companyId: req.user.companyId,
-            orderId,
+            orderId: order.id,
             externalShipmentId: result._id,
             trackingNumber: result.trackingNumber,
             status: 'CREATED',
@@ -85,13 +100,20 @@ exports.bulkCreateShipments = async (req, res) => {
     const orders = await safeQuery(() =>
       prisma.order.findMany({
         where: {
-          id: { in: orderIds },
+          OR: [
+            { id: { in: orderIds } },
+            { orderNumber: { in: orderIds } },
+          ],
           companyId: req.user.companyId,
         },
         include: {
           customer: true,
           orderItems: { include: { product: true } },
-          shipment: true,
+          shipments: {
+            where: { carrierType: 'BOSTA' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
         },
       })
     , 2);
@@ -102,9 +124,10 @@ exports.bulkCreateShipments = async (req, res) => {
     const results = [];
 
     for (const order of orders) {
-      if (order.shipment?.trackingNumber && order.shipment.carrierType === 'BOSTA') {
+      const existingBostaShipment = order.shipments?.[0];
+      if (existingBostaShipment?.trackingNumber && existingBostaShipment.carrierType === 'BOSTA') {
         skippedCount++;
-        results.push({ orderId: order.id, orderNumber: order.orderNumber, success: true, skipped: true, trackingNumber: order.shipment.trackingNumber });
+        results.push({ orderId: order.id, orderNumber: order.orderNumber, success: true, skipped: true, trackingNumber: existingBostaShipment.trackingNumber });
         continue;
       }
 
@@ -112,16 +135,10 @@ exports.bulkCreateShipments = async (req, res) => {
         const payload = service.formatOrderForBosta(order, order.customer);
         const result = await service.createDelivery(payload);
 
-        const existingShipment = await safeQuery(() =>
-          prisma.shipment.findFirst({
-            where: { orderId: order.id, companyId: req.user.companyId },
-          })
-        , 2);
-
-        if (existingShipment) {
+        if (existingBostaShipment) {
           await safeQuery(() =>
             prisma.shipment.update({
-              where: { id: existingShipment.id },
+              where: { id: existingBostaShipment.id },
               data: {
                 externalShipmentId: result._id,
                 trackingNumber: result.trackingNumber,
@@ -215,9 +232,23 @@ exports.getOrderShipment = async (req, res) => {
     const { companyId } = req.user;
     const { orderId } = req.params;
     const prisma = getSharedPrismaClient();
+
+    let targetOrderId = orderId;
+    const order = await safeQuery(() =>
+      prisma.order.findFirst({
+        where: {
+          OR: [{ id: orderId }, { orderNumber: orderId }],
+          companyId,
+        },
+        select: { id: true },
+      })
+    , 2);
+
+    if (order) targetOrderId = order.id;
+
     const shipment = await safeQuery(() =>
       prisma.shipment.findFirst({
-        where: { orderId, companyId, carrierType: 'BOSTA' },
+        where: { orderId: targetOrderId, companyId, carrierType: 'BOSTA' },
         orderBy: { createdAt: 'desc' },
       })
     , 2);

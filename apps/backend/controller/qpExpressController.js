@@ -23,8 +23,11 @@ exports.createShipment = async (req, res) => {
 
     // 1. Fetch Order from DB (Check order or guestOrder)
     let order = await safeQuery(() =>
-      prisma.order.findUnique({
-        where: { id: orderId },
+      prisma.order.findFirst({
+        where: {
+          OR: [{ id: orderId }, { orderNumber: orderId }],
+          ...(req.user?.companyId ? { companyId: req.user.companyId } : {}),
+        },
         include: {
           customer: true,
           orderItems: { include: { product: true } },
@@ -35,8 +38,11 @@ exports.createShipment = async (req, res) => {
     let isGuest = false;
     if (!order) {
       order = await safeQuery(() =>
-        prisma.guestOrder.findUnique({
-          where: { id: orderId },
+        prisma.guestOrder.findFirst({
+          where: {
+            OR: [{ id: orderId }, { orderNumber: orderId }],
+            ...(req.user?.companyId ? { companyId: req.user.companyId } : {}),
+          },
         })
       , 2);
       isGuest = true;
@@ -267,13 +273,20 @@ exports.bulkCreateShipments = async (req, res) => {
     const orders = await safeQuery(() =>
       prisma.order.findMany({
         where: {
-          id: { in: orderIds },
+          OR: [
+            { id: { in: orderIds } },
+            { orderNumber: { in: orderIds } },
+          ],
           ...(companyId ? { companyId } : {}),
         },
         include: {
           customer: true,
           orderItems: { include: { product: true } },
-          shipment: true,
+          shipments: {
+            where: { carrierType: 'QP_EXPRESS' },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
         },
         take: 100,
       })
@@ -287,11 +300,12 @@ exports.bulkCreateShipments = async (req, res) => {
 
     for (const order of orders) {
       try {
-        if (order.shipment?.trackingNumber && order.shipment.carrierType === 'QP_EXPRESS') {
+        const existingShipment = order.shipments?.[0];
+        if (existingShipment?.trackingNumber && existingShipment.carrierType === 'QP_EXPRESS') {
           results.skipped.push({
             orderId: order.id,
             orderNumber: order.orderNumber,
-            reason: 'الطلب مسجل له شحنة بالفعل برقم ' + order.shipment.trackingNumber,
+            reason: 'الطلب مسجل له شحنة بالفعل برقم ' + existingShipment.trackingNumber,
           });
           continue;
         }
@@ -329,7 +343,6 @@ exports.bulkCreateShipments = async (req, res) => {
         const result = await service.createShipment(orderData);
 
         if (result.success && result.trackingNumber) {
-          const existingShipment = order.shipment;
           if (existingShipment) {
             await safeQuery(() =>
               prisma.shipment.update({

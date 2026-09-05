@@ -129,6 +129,10 @@ class BostaService {
     return this.request('get', `deliveries/${trackingNumber}/tracking`);
   }
 
+  async trackShipment(trackingNumber) {
+    return this.trackDelivery(trackingNumber);
+  }
+
   async updateDelivery(deliveryId, updatePayload) {
     return this.request('put', `deliveries/${deliveryId}`, updatePayload);
   }
@@ -166,10 +170,37 @@ class BostaService {
   }
 
   formatOrderForBosta(order, customer) {
-    const type = order.paymentMethod === 'cod' ? BOSTA_DELIVERY_TYPES.CASH_COLLECTION : BOSTA_DELIVERY_TYPES.FORWARD;
-    const codAmount = order.paymentMethod === 'cod' ? Number(order.total || 0) : 0;
+    const rawMethod = String(order.paymentMethod || 'CASH').toUpperCase();
+    const isCod = ['CASH', 'COD'].includes(rawMethod);
+    const type = isCod ? BOSTA_DELIVERY_TYPES.CASH_COLLECTION : BOSTA_DELIVERY_TYPES.FORWARD;
+    const codAmount = isCod ? Number(order.total || 0) : 0;
     const items = order.orderItems || [];
     const totalWeight = items.reduce((sum, item) => sum + Number(item.product?.weight || item.weight || 0.5), 0.5);
+
+    // Format address
+    let addressLine = order.customerAddress || order.shippingAddress || customer?.address || '';
+    let parsedCity = order.city || order.governorate || customer?.city || customer?.governorate || 'Cairo';
+    let parsedDistrict = order.city || undefined;
+
+    if (typeof addressLine === 'string' && addressLine.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(addressLine);
+        if (parsed && typeof parsed === 'object') {
+          addressLine = parsed.address || parsed.addressLine1 || parsed.street || addressLine;
+          if (parsed.city) parsedCity = parsed.city;
+          if (parsed.governorate && !parsedCity) parsedCity = parsed.governorate;
+          if (parsed.district) parsedDistrict = parsed.district;
+        }
+      } catch {
+        // keep string as is
+      }
+    }
+
+    const fullName = (order.customerName || customer?.name || customer?.firstName || 'عميل').trim();
+    const nameParts = fullName.split(/\s+/);
+    const firstName = nameParts[0] || 'عميل';
+    const lastName = nameParts.slice(1).join(' ') || '.';
+    const phone = order.customerPhone || customer?.phone || '';
 
     return {
       type,
@@ -178,15 +209,19 @@ class BostaService {
         description: `Order #${order.orderNumber || order.id}`,
       },
       cod: { collectionAmount: codAmount },
-      dropOffAddress: { locationId: null },
+      dropOffAddress: {
+        firstLine: addressLine || 'العنوان غير محدد',
+        city: parsedCity,
+        district: parsedDistrict,
+      },
       businessReference: { businessReference: String(order.orderNumber || order.id) },
       receiver: {
-        firstName: customer?.firstName || customer?.name || '',
-        lastName: customer?.lastName || '',
-        phone: customer?.phone || '',
-        email: customer?.email || '',
+        firstName,
+        lastName,
+        phone,
+        email: order.customerEmail || customer?.email || '',
       },
-      notes: `Order ID: ${order.id}`,
+      notes: `Order ID: ${order.orderNumber || order.id}`,
     };
   }
 }
