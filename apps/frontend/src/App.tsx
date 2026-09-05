@@ -1654,6 +1654,7 @@ if (typeof window !== "undefined") {
   p["/my-apps"] = () => import("./pages/marketplace/MyApps");
   p["/mindmap"] = () => import("./pages/mindmap/MindMapPage");
   p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
+  p["/test-quick-order"] = () => import("./pages/QuickOrderMobileTest");
 }
 
 // Create a separate component that uses auth
@@ -4177,7 +4178,9 @@ const AppContent = () => {
                   path="/platform-integrations"
                   element={
                     <Layout>
-                      <PlatformIntegrations />
+                      <AppAccessRoute requiredAppSlugs={['woocommerce-pro', 'webhooks-pro']}>
+                        <PlatformIntegrations />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4559,7 +4562,9 @@ const AppContent = () => {
                   path="/orders/automation"
                   element={
                     <Layout>
-                      <OrderStatusAutomationPage />
+                      <AppAccessRoute requiredAppSlugs={['order-automation']}>
+                        <OrderStatusAutomationPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4567,7 +4572,9 @@ const AppContent = () => {
                   path="/orders/status-templates"
                   element={
                     <Layout>
-                      <OrderStatusTemplatesPage />
+                      <AppAccessRoute requiredAppSlugs={['whatsapp-business']}>
+                        <OrderStatusTemplatesPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4645,7 +4652,9 @@ const AppContent = () => {
                   path="/orders/shipments"
                   element={
                     <Layout>
-                      <UnifiedShipmentsPage />
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                        <UnifiedShipmentsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4653,7 +4662,9 @@ const AppContent = () => {
                   path="/orders/turbo-records"
                   element={
                     <Layout>
-                      <UnifiedShipmentsPage />
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                        <UnifiedShipmentsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4685,7 +4696,9 @@ const AppContent = () => {
                   path="/orders/bulk"
                   element={
                     <Layout>
-                      <BulkOrders />
+                      <AppAccessRoute requiredAppSlugs={['bulk-orders']}>
+                        <BulkOrders />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4693,7 +4706,9 @@ const AppContent = () => {
                   path="/orders/quick-status"
                   element={
                     <Layout>
-                      <QuickStatusChange />
+                      <AppAccessRoute requiredAppSlugs={['quick-status']}>
+                        <QuickStatusChange />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4710,7 +4725,9 @@ const AppContent = () => {
                   path="/orders/invoices"
                   element={
                     <Layout>
-                      <OrderInvoices />
+                      <AppAccessRoute requiredAppSlugs={['order-invoicing', 'store-pro']}>
+                        <OrderInvoices />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4736,9 +4753,11 @@ const AppContent = () => {
                   path="/returns/settings"
                   element={
                     <Layout>
-                      <PermissionProtectedRoute requiredPermissions={['orders.return-settings.view']}>
-                        <ReturnSettingsPage />
-                      </PermissionProtectedRoute>
+                      <AppAccessRoute requiredAppSlugs={['returns-settings', 'store-pro']}>
+                        <PermissionProtectedRoute requiredPermissions={['orders.return-settings.view']}>
+                          <ReturnSettingsPage />
+                        </PermissionProtectedRoute>
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4760,7 +4779,9 @@ const AppContent = () => {
                   path="/bulk-search"
                   element={
                     <Layout>
-                      <BulkSearchPage />
+                      <AppAccessRoute requiredAppSlugs={['bulk-search']}>
+                        <BulkSearchPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4778,7 +4799,9 @@ const AppContent = () => {
                   path="/orders/status-summary"
                   element={
                     <Layout>
-                      <StatusSummaryReport />
+                      <AppAccessRoute requiredAppSlugs={['status-summary']}>
+                        <StatusSummaryReport />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5893,7 +5916,9 @@ const AppContent = () => {
                   path="/settings/customer-blocks"
                   element={
                     <Layout fullWidth>
-                      <CustomerBlockSettings />
+                      <AppAccessRoute requiredAppSlugs={['customer-blocks']}>
+                        <CustomerBlockSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5909,7 +5934,9 @@ const AppContent = () => {
                   path="/settings/order-invoice"
                   element={
                     <Layout>
-                      <OrderInvoiceSettings />
+                      <AppAccessRoute requiredAppSlugs={['order-invoicing', 'store-pro']}>
+                        <OrderInvoiceSettings />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5945,7 +5972,9 @@ const AppContent = () => {
                   path="/settings/order-workflow"
                   element={
                     <Layout>
-                      <OrderWorkflow />
+                      <AppAccessRoute requiredAppSlugs={['order-workflow']}>
+                        <OrderWorkflow />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6077,7 +6106,9 @@ const AppContent = () => {
                     path="/settings/cod-deposit"
                     element={
                       <Layout>
-                        <CodDepositSettings />
+                        <AppAccessRoute requiredAppSlugs={['cod-deposit']}>
+                          <CodDepositSettings />
+                        </AppAccessRoute>
                       </Layout>
                     }
                   />
@@ -6183,7 +6214,9 @@ const AppContent = () => {
                   path="/shipping-companies"
                   element={
                     <Layout>
-                      <ShippingCompanies />
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                        <ShippingCompanies />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6191,7 +6224,9 @@ const AppContent = () => {
                   path="/shipping-companies/:id"
                   element={
                     <Layout>
-                      <ShippingCompanyDetail />
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                        <ShippingCompanyDetail />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6199,7 +6234,9 @@ const AppContent = () => {
                   path="/shipping-settlement"
                   element={
                     <Layout>
-                      <ShippingSettlement />
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                        <ShippingSettlement />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6207,7 +6244,9 @@ const AppContent = () => {
                   path="/orders/bulk-status"
                   element={
                     <Layout>
-                      <BulkStatusUpdate />
+                      <AppAccessRoute requiredAppSlugs={['bulk-orders']}>
+                        <BulkStatusUpdate />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />

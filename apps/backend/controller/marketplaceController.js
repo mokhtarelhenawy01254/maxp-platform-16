@@ -221,6 +221,7 @@ async function ensureCompanyAppInstalled(tx, {
   companyId,
   app,
   pricingModel,
+  billingCycle = 'monthly',
   visited = new Set(),
   autoInstalledApps = [],
   allowAlreadyInstalled = true,
@@ -264,6 +265,7 @@ async function ensureCompanyAppInstalled(tx, {
         companyId,
         app: requiredApp,
         pricingModel: normalizePricingModel(requiredApp.pricingModel, 'SUBSCRIPTION'),
+        billingCycle,
         visited,
         autoInstalledApps,
         allowAlreadyInstalled: true,
@@ -284,8 +286,19 @@ async function ensureCompanyAppInstalled(tx, {
     pricingModel,
     normalizePricingModel(app.pricingModel, 'SUBSCRIPTION')
   );
+  const normalizedBillingCycle = String(billingCycle || '').toLowerCase() === 'yearly' ? 'yearly' : 'monthly';
+  const isYearly = normalizedBillingCycle === 'yearly';
+
   const isExpired = existing && existing.validUntil && new Date(existing.validUntil) < new Date();
-  const canTransition = existing && existing.activePricingModel === 'PAY_PER_USE' && requestedPricingModel === 'SUBSCRIPTION';
+  const existingSettings = typeof existing?.settings === 'string'
+    ? (() => { try { return JSON.parse(existing.settings); } catch { return {}; } })()
+    : (existing?.settings || {});
+  const existingBillingCycle = existingSettings?.billing?.cycle || 'monthly';
+  const isCycleChange = requestedPricingModel === 'SUBSCRIPTION' && existing?.activePricingModel === 'SUBSCRIPTION' && existingBillingCycle !== normalizedBillingCycle;
+  const canTransition = existing && (
+    existing.activePricingModel !== requestedPricingModel ||
+    isCycleChange
+  );
   const isInactive = existing && !ACTIVE_STATUSES.includes(existing.status);
 
   if (existing && !isInactive && !isExpired && !canTransition) {
@@ -295,7 +308,8 @@ async function ensureCompanyAppInstalled(tx, {
     return autoInstalledApps;
   }
 
-  const validUntil = !inTrial && requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null;
+  const validUntilDays = isYearly ? 365 : 30;
+  const validUntil = !inTrial && requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + validUntilDays * 24 * 60 * 60 * 1000) : null;
   const resolvedStatus = inTrial ? 'TRIAL' : 'ACTIVE';
   const resolvedTrialEnds = inTrial
     ? (inTrialEndsAt ? new Date(inTrialEndsAt) : existing?.trialEndsAt || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000))
@@ -306,9 +320,16 @@ async function ensureCompanyAppInstalled(tx, {
     {
       general: {
         enabled: true,
-      }
+      },
+      billing: {
+        cycle: normalizedBillingCycle,
+        pricingModel: requestedPricingModel
+      },
+      installedInTrial: inTrial
     }
   );
+
+  const nextBillingAt = !inTrial && requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + validUntilDays * 24 * 60 * 60 * 1000) : null;
 
   if (existing) {
     await tx.companyApp.update({
@@ -318,8 +339,8 @@ async function ensureCompanyAppInstalled(tx, {
         status: inTrial ? 'TRIAL' : 'ACTIVE',
         validUntil,
         trialEndsAt: resolvedTrialEnds,
-        installedInTrial: inTrial,
         settings: installedSettings,
+        nextBillingAt,
         updatedAt: new Date()
       }
     });
@@ -333,9 +354,8 @@ async function ensureCompanyAppInstalled(tx, {
         status: resolvedStatus,
         validUntil,
         trialEndsAt: resolvedTrialEnds,
-        installedInTrial: inTrial,
         settings: installedSettings,
-        nextBillingAt: !inTrial && requestedPricingModel === 'SUBSCRIPTION' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : null
+        nextBillingAt
       }
     });
 
@@ -1414,7 +1434,9 @@ exports.installApp = async (req, res) => {
         message: 'ÙŠØ¬Ø¨ ØªØ­Ø¯ÙŠØ¯ Ø§Ù„Ø´Ø±ÙƒØ© Ù„Ø¥ØªÙ…Ø§Ù… Ø§Ù„Ø¹Ù…Ù„ÙŠØ©'
       });
     }
-    const { pricingModel } = req.body;
+    const { pricingModel, billingCycle } = req.body;
+    const normalizedBillingCycle = String(billingCycle || '').toLowerCase() === 'yearly' ? 'yearly' : 'monthly';
+    const isYearly = normalizedBillingCycle === 'yearly';
 
     const app = await ensureDbAppBySlug(slug);
 
@@ -1440,10 +1462,14 @@ exports.installApp = async (req, res) => {
     // 🆓 Company-level free trial (تفعيل تجريبي): لو الشركة في فترة تجربة مجانية
     // فعّالة لكل التطبيقات → التثبيت مجاني بدون خصم من المحفظة أو فحص الرصيد.
     const trialCompany = await executeWithRetry(async () => {
-      return await getSharedPrismaClient().company.findUnique({
-        where: { id: companyId },
-        select: { trialModeEnabled: true, trialEndsAt: true }
-      });
+      try {
+        return await getSharedPrismaClient().company.findUnique({
+          where: { id: companyId },
+          select: { trialModeEnabled: true, trialEndsAt: true }
+        });
+      } catch (err) {
+        return null;
+      }
     });
     const isTrialActive = Boolean(
       trialCompany?.trialModeEnabled &&
@@ -1458,6 +1484,7 @@ exports.installApp = async (req, res) => {
           companyId,
           app,
           pricingModel: requestedPricingModel,
+          billingCycle: normalizedBillingCycle,
           autoInstalledApps,
           allowAlreadyInstalled: false,
           inTrial: isTrialActive,
@@ -1487,10 +1514,8 @@ exports.installApp = async (req, res) => {
 
         const cost =
           requestedPricingModel === 'SUBSCRIPTION'
-            ? Number(app.monthlyPrice)
-            : requestedPricingModel === 'PAY_PER_USE'
-              ? Number(app.unitPrice || 0)
-              : 0;
+            ? (isYearly ? Number(app.yearlyPrice || Number(app.monthlyPrice) * 12) : Number(app.monthlyPrice))
+            : 0;
 
         // أثناء التجربة المجانية: لا يُخصم أي مبلغ (التثبيت مجاني بالكامل)
         const effectiveCost = isTrialActive ? 0 : cost;
@@ -1510,13 +1535,17 @@ exports.installApp = async (req, res) => {
             }
           });
 
+          const cycleLabel = requestedPricingModel === 'SUBSCRIPTION'
+            ? (isYearly ? ' (اشتراك سنوي)' : ' (اشتراك شهري)')
+            : ' (حسب الاستخدام)';
+
           await tx.transaction.create({
             data: {
               id: uuidv4(),
               walletId: wallet.id,
               type: 'PAYMENT',
               amount: effectiveCost,
-              description: `تفعيل ${app.name}${requestedPricingModel === 'SUBSCRIPTION' ? ' (اشتراك شهري)' : ' (وحدة)'}`,
+              description: `تفعيل ${app.name}${cycleLabel}`,
               referenceId: `APP_${app.slug}_${Date.now()}`
             }
           });

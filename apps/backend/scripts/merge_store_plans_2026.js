@@ -101,6 +101,11 @@ const RENAMES = {
     nameEn: 'MultiView - Product Gallery',
     description: 'عرض المنتج بزوايا وصور متعددة داخل صفحة المنتج.',
   },
+  'store': {
+    name: 'المتجر',
+    nameEn: 'Store',
+    description: 'إدارة الطلبات والمنتجات والمتجر الإلكتروني — كل حاجة المتجر في تطبيق واحد.',
+  },
 };
 
 // `store` is a permanent PAY_PER_USE app (2 EGP/order) and must NOT be treated as legacy.

@@ -10,6 +10,7 @@ import {
   ChevronLeft,
   FileText, Clock,
   HelpCircle, Headphones,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -66,6 +67,8 @@ function getEmbedUrl(url: string | undefined | null): string | null {
   return null;
 }
 
+type PlanOption = "PAY_PER_USE" | "MONTHLY" | "YEARLY";
+
 export default function AppDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
@@ -80,8 +83,28 @@ export default function AppDetails() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [installing, setInstalling] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<PlanOption>("PAY_PER_USE");
 
   useEffect(() => { if (slug) fetchAppDetails(); }, [slug]);
+
+  useEffect(() => {
+    if (app) {
+      const activeModel = app.activePricingModel;
+      const settings = (app.settings || {}) as Record<string, any>;
+      const billingCycle = settings?.billing?.cycle;
+      if (activeModel === "PAY_PER_USE") {
+        setSelectedPlan("PAY_PER_USE");
+      } else if (activeModel === "SUBSCRIPTION") {
+        setSelectedPlan(billingCycle === "yearly" ? "YEARLY" : "MONTHLY");
+      } else if (app.unitPrice && Number(app.unitPrice) > 0) {
+        setSelectedPlan("PAY_PER_USE");
+      } else if (app.pricingModel === "PAY_PER_USE") {
+        setSelectedPlan("PAY_PER_USE");
+      } else {
+        setSelectedPlan("MONTHLY");
+      }
+    }
+  }, [app]);
 
   const fetchAppDetails = async () => {
     try {
@@ -97,18 +120,27 @@ export default function AppDetails() {
     }
   };
 
-  const handleInstall = async () => {
+  const handleInstall = async (planToInstall: PlanOption = selectedPlan) => {
     if (!app) return;
     setInstalling(true);
     try {
-      await apiClient.post(`/marketplace/apps/${app.slug}/install`, {
-        pricingModel: app.pricingModel,
-      });
+      const isPpu = planToInstall === "PAY_PER_USE";
+      const payload: { pricingModel: string; billingCycle?: string } = {
+        pricingModel: isPpu ? "PAY_PER_USE" : "SUBSCRIPTION",
+      };
+      if (planToInstall === "YEARLY") {
+        payload.billingCycle = "yearly";
+      } else if (planToInstall === "MONTHLY") {
+        payload.billingCycle = "monthly";
+      }
+
+      await apiClient.post(`/marketplace/apps/${app.slug}/install`, payload);
       toast.success("تم تفعيل التطبيق بنجاح");
       setIsInstalled(true);
       await fetchAppDetails();
-    } catch {
-      toast.error("فشل تفعيل التطبيق");
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      toast.error(e.response?.data?.message || "فشل تفعيل التطبيق");
     } finally {
       setInstalling(false);
     }
@@ -185,6 +217,36 @@ export default function AppDetails() {
   const changelog = Array.isArray(app.changelog) ? app.changelog : [];
   const reviews = Array.isArray(app.reviews) ? app.reviews : [];
 
+  const hasPpu = Boolean((app.unitPrice && Number(app.unitPrice) > 0) || app.pricingModel === "PAY_PER_USE");
+  const hasMonthly = Boolean((app.monthlyPrice && Number(app.monthlyPrice) > 0) || app.pricingModel === "SUBSCRIPTION");
+  const hasYearly = Boolean(app.yearlyPrice && Number(app.yearlyPrice) > 0);
+  const isFree = app.pricingModel === "FREE" && !hasPpu && !hasMonthly;
+  const hasMultiplePlans = !isFree && [hasPpu, hasMonthly, hasYearly].filter(Boolean).length > 1;
+
+  const yearlySavingsPercent = (hasMonthly && hasYearly && Number(app.monthlyPrice) > 0)
+    ? Math.max(0, Math.round((1 - Number(app.yearlyPrice) / (Number(app.monthlyPrice) * 12)) * 100))
+    : 0;
+
+  const appSettings = (app.settings || {}) as Record<string, any>;
+  const activeCycle = appSettings?.billing?.cycle;
+  const currentActivePlan: PlanOption | null = isInstalled
+    ? (app.activePricingModel === "PAY_PER_USE" ? "PAY_PER_USE" : activeCycle === "yearly" ? "YEARLY" : "MONTHLY")
+    : null;
+
+  const isCurrentPlanActive = isInstalled && currentActivePlan === selectedPlan;
+
+  const planTitles: Record<PlanOption, string> = {
+    PAY_PER_USE: "حسب الاستخدام",
+    MONTHLY: "اشتراك شهري",
+    YEARLY: "اشتراك سنوي",
+  };
+
+  const planPrices: Record<PlanOption, string> = {
+    PAY_PER_USE: `${formatMoney(app.unitPrice || 1)} / ${app.unitName || "طلب"}`,
+    MONTHLY: `${formatMoney(app.monthlyPrice)} / شهر`,
+    YEARLY: `${formatMoney(app.yearlyPrice)} / سنة`,
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-[1280px] px-4 pb-10 pt-5 sm:px-6 lg:px-8">
@@ -207,7 +269,7 @@ export default function AppDetails() {
               />
             </div>
           )}
-          <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_320px] lg:p-6">
+          <div className="grid gap-5 p-5 lg:grid-cols-[minmax(0,1fr)_340px] lg:p-6">
             <div className="min-w-0 text-right">
               <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
                 <span className="rounded-full bg-muted/50 px-3 py-1 text-xs font-bold text-muted-foreground">
@@ -247,45 +309,201 @@ export default function AppDetails() {
               </div>
             </div>
 
-            <aside className="rounded-2xl border bg-card p-4 text-right lg:sticky lg:top-5 lg:self-start">
+            <aside className="rounded-2xl border bg-card p-4 text-right lg:sticky lg:top-5 lg:self-start space-y-4">
+              {/* Header Summary Box */}
               <div className="rounded-xl border bg-background p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <div className="text-foreground text-sm font-bold">{pricingSummary.title}</div>
-                    <p className="text-muted-foreground mt-1 text-xs leading-5">{pricingSummary.helper}</p>
+                    <div className="text-foreground text-sm font-bold">
+                      {isFree ? "مجاني" : planTitles[selectedPlan]}
+                    </div>
+                    <p className="text-muted-foreground mt-1 text-xs leading-5">
+                      {isFree
+                        ? "يمكن تفعيلها مباشرة من غير اشتراك."
+                        : selectedPlan === "PAY_PER_USE"
+                          ? "ادفع فقط مقابل الاستهلاك الفعلي مع كل طلب."
+                          : selectedPlan === "YEARLY"
+                            ? "اشتراك سنوي مستمر مع توفير أكبر."
+                            : "وصول كامل لجميع مميزات الأداة مع تجديد شهري."}
+                    </p>
                   </div>
                   <div className="text-left">
-                    <div className="text-lg font-extrabold text-primary">{pricingSummary.price}</div>
+                    <div className="text-lg font-extrabold text-primary">
+                      {isFree ? "بدون تكلفة" : planPrices[selectedPlan]}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-3 space-y-2">
+              {/* Plan Options Selector (when multiple plans available) */}
+              {!isFree && hasMultiplePlans && (
+                <div className="space-y-2">
+                  <div className="text-xs font-bold text-muted-foreground flex items-center justify-between px-1">
+                    <span>اختر نظام الاشتراك:</span>
+                    {isInstalled && currentActivePlan && (
+                      <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
+                        <Check size={12} /> مفعل: {planTitles[currentActivePlan]}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Pay-per-use Option */}
+                  {hasPpu && (
+                    <div
+                      onClick={() => setSelectedPlan("PAY_PER_USE")}
+                      className={cn(
+                        "relative cursor-pointer rounded-xl border p-3 transition-all text-right",
+                        selectedPlan === "PAY_PER_USE"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                          : "border-border/60 bg-background hover:border-border hover:bg-muted/30",
+                        currentActivePlan === "PAY_PER_USE" && "ring-1 ring-emerald-500/50"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "flex size-4 items-center justify-center rounded-full border text-[10px]",
+                              selectedPlan === "PAY_PER_USE"
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-muted-foreground/40"
+                            )}
+                          >
+                            {selectedPlan === "PAY_PER_USE" && <Check size={10} strokeWidth={3} />}
+                          </span>
+                          <span className="text-sm font-bold text-foreground">حسب الاستخدام</span>
+                        </div>
+                        <div className="text-left font-extrabold text-primary text-sm">
+                          {formatMoney(app.unitPrice || 1)}
+                          <span className="text-xs font-normal text-muted-foreground"> / {app.unitName || "طلب"}</span>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground pr-6 leading-relaxed">
+                        ادفع فقط مع كل طلب يتم تسجيله، بدون أي اشتراك شهري ثابت.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Monthly Option */}
+                  {hasMonthly && (
+                    <div
+                      onClick={() => setSelectedPlan("MONTHLY")}
+                      className={cn(
+                        "relative cursor-pointer rounded-xl border p-3 transition-all text-right",
+                        selectedPlan === "MONTHLY"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                          : "border-border/60 bg-background hover:border-border hover:bg-muted/30",
+                        currentActivePlan === "MONTHLY" && "ring-1 ring-emerald-500/50"
+                      )}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "flex size-4 items-center justify-center rounded-full border text-[10px]",
+                              selectedPlan === "MONTHLY"
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-muted-foreground/40"
+                            )}
+                          >
+                            {selectedPlan === "MONTHLY" && <Check size={10} strokeWidth={3} />}
+                          </span>
+                          <span className="text-sm font-bold text-foreground">اشتراك شهري</span>
+                        </div>
+                        <div className="text-left font-extrabold text-primary text-sm">
+                          {formatMoney(app.monthlyPrice)}
+                          <span className="text-xs font-normal text-muted-foreground"> / شهر</span>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground pr-6 leading-relaxed">
+                        وصول كامل غير محدود لإدارة المتجر مع تجديد شهري.
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Yearly Option */}
+                  {hasYearly && (
+                    <div
+                      onClick={() => setSelectedPlan("YEARLY")}
+                      className={cn(
+                        "relative cursor-pointer rounded-xl border p-3 transition-all text-right",
+                        selectedPlan === "YEARLY"
+                          ? "border-primary bg-primary/5 ring-1 ring-primary/30"
+                          : "border-border/60 bg-background hover:border-border hover:bg-muted/30",
+                        currentActivePlan === "YEARLY" && "ring-1 ring-emerald-500/50"
+                      )}
+                    >
+                      {yearlySavingsPercent > 0 && (
+                        <span className="absolute -top-2 left-3 rounded-full bg-emerald-600 text-white text-[10px] font-extrabold px-2 py-0.5 shadow-sm">
+                          وفر {yearlySavingsPercent}%
+                        </span>
+                      )}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "flex size-4 items-center justify-center rounded-full border text-[10px]",
+                              selectedPlan === "YEARLY"
+                                ? "border-primary bg-primary text-primary-foreground"
+                                : "border-muted-foreground/40"
+                            )}
+                          >
+                            {selectedPlan === "YEARLY" && <Check size={10} strokeWidth={3} />}
+                          </span>
+                          <span className="text-sm font-bold text-foreground">اشتراك سنوي</span>
+                        </div>
+                        <div className="text-left font-extrabold text-primary text-sm">
+                          {formatMoney(app.yearlyPrice)}
+                          <span className="text-xs font-normal text-muted-foreground"> / سنة</span>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground pr-6 leading-relaxed">
+                        صلاحية سنة كاملة (365 يوم) مع أفضل قيمة واستقرار للمتجر.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-1 space-y-2">
                 {isInstalled ? (
                   <>
-                    <Button disabled className="w-full gap-2" size="sm">
-                      <Check size={14} /> مثبت
-                    </Button>
+                    {isCurrentPlanActive ? (
+                      <Button disabled className="w-full gap-2" size="sm">
+                        <Check size={14} /> مفعل حالياً ({planTitles[selectedPlan]})
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full gap-2 bg-primary hover:bg-primary/90 font-bold"
+                        size="sm"
+                        disabled={installing}
+                        onClick={() => handleInstall(selectedPlan)}
+                      >
+                        {installing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                        تغيير الاشتراك إلى {planTitles[selectedPlan]}
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="sm"
-                      className="w-full gap-2"
+                      className="w-full gap-2 text-destructive hover:bg-destructive/10"
                       disabled={installing}
                       onClick={handleUninstall}
                     >
                       {installing ? <Loader2 size={14} className="animate-spin" /> : null}
-                      تعطيل
+                      تعطيل التطبيق
                     </Button>
                   </>
                 ) : (
                   <Button
-                    className="w-full gap-2"
+                    className="w-full gap-2 font-bold"
                     size="sm"
                     disabled={installing}
-                    onClick={handleInstall}
+                    onClick={() => handleInstall(selectedPlan)}
                   >
                     {installing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    تثبيت التطبيق
+                    تفعيل {isFree ? "التطبيق" : `${planTitles[selectedPlan]} (${planPrices[selectedPlan]})`}
                   </Button>
                 )}
               </div>
