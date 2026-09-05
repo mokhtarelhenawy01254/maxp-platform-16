@@ -155,111 +155,41 @@
     "home": {
       "sections": [
         {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "عروض حصرية",
+            "message": "شحن سريع لمعظم المحافظات • معاينة واستبدال المقاس عند الاستلام",
+            "saleLabel": "خصم حتى 28%",
+            "shippingLabel": "شحن خلال 48 ساعة",
+            "returnLabel": "استبدال خلال 14 يوم",
+            "ctaText": "شاهدي العروض",
+            "ctaLink": "/sale"
+          }
+        },
+        {
           "type": "hero-banner",
           "variant": "cinematic-plinth",
           "settings": {
-            "eyebrow": "Crafted in Cairo",
-            "title": "أناقة تسبق خطواتك",
-            "subtitle": "كوتشيات وأحذية حريمي بلمسة فاخرة تمزج بين روح القاهرة، الجلد المصري، والذوق التحريري الهادئ.",
-            "ctaText": "تسوقي دلوقتي",
+            "eyebrow": "Swan Official Store",
+            "title": "خطوتك القادمة تبدأ من Swan",
+            "subtitle": "سنيكرز وأحذية حريمي تجمع الراحة والشياكة لكل يوم، بخامات مريحة وتقفيل مصري متقن.",
+            "ctaText": "تسوقي الكولكشن الجديد",
             "ctaLink": "/shop",
-            "secondaryCtaText": "اكتشفي المجموعات",
-            "secondaryCtaLink": "/collections",
+            "secondaryCtaText": "عروض التوفير",
+            "secondaryCtaLink": "/sale",
             "backgroundImage": "https://lh3.googleusercontent.com/aida-public/AB6AXuBpVmwIwRrTq6gOXxo-t6Eq-8rQp_afRWAxKZtqTPQEPV_BHvK70RQU1ChcmMHilgUfT0O0M7rAb0rUNtgWCzUmk4-rPCnB-BI6hVb4xnoQBLYbZn_rhuq7PAiwttKE7_BVvctERAP0YkNCesMys_lI4U1I4d9D5uYwJvG5Ey7gAf77R2DD2NJA7oD64tur3DbNkyJnPx-Q5gr43qJBSI_dnBVx-aZi8mvArOuBSQ8Z-4lRsnCuk-33VDcoegn7hD2Pq7kq3SvyYh4",
             "highlights": [
               {
-                "label": "شحن",
-                "value": "داخل مصر خلال 48 ساعة"
+                "label": "شحن سريع",
+                "value": "لباب البيت خلال 48 ساعة"
               },
               {
-                "label": "استبدال",
-                "value": "مقاس خلال 14 يوم"
+                "label": "معاينة واستبدال",
+                "value": "مقاس سهل خلال 14 يوم"
               },
               {
                 "label": "الدفع",
-                "value": "عند الاستلام"
-              }
-            ]
-          }
-        },
-        {
-          "type": "featured-collections",
-          "variant": "gallery-columns",
-          "settings": {
-            "title": "مجموعات تتحرك بإيقاع مختلف",
-            "subtitle": "ثلاث مسارات رئيسية تقودكِ إلى الإحساس المناسب بدل رفوف متشابهة.",
-            "limit": 3,
-            "preferRuntimeCategories": true,
-            "ctaText": "عرض كل المجموعات",
-            "ctaLink": "/collections",
-            "collections": [
-              {
-                "title": "Run-Luxe",
-                "subtitle": "سنيكرز فاخر للحركة اليومية بخط نظيف وحضور واضح.",
-                "image": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=1200",
-                "link": "/shop?category=sneakers"
-              },
-              {
-                "title": "Casual Chic",
-                "subtitle": "موديلات خفيفة للمشاوير والعمل والنهار الطويل.",
-                "image": "https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=1200",
-                "link": "/shop?category=flats"
-              },
-              {
-                "title": "Heritage",
-                "subtitle": "جلود وخطوط أهدأ تعكس لمسة مصرية أصلية بقراءة معاصرة.",
-                "image": "https://images.unsplash.com/photo-1515347619252-60a4bf4fff4f?auto=format&fit=crop&q=80&w=1200",
-                "link": "/shop?category=heels"
-              }
-            ]
-          }
-        },
-        {
-          "type": "story-parallax",
-          "variant": "split-editorial",
-          "settings": {
-            "badge": "قصة الحرفة",
-            "title": "صناعة يدوية في القاهرة بجلود مصرية فاخرة",
-            "content": "في KHEMET LUXE نرى الحذاء امتدادًا للهوية لا مجرد قطعة للارتداء. لذلك نمزج بين مهارة الحرفي المصري، خامات الجلد المختارة، وإيقاع بصري معاصر يجعل كل موديل أقرب لقطعة توقيع.",
-            "image": "https://lh3.googleusercontent.com/aida-public/AB6AXuA_Jk0j_Aqzqz6TG_m3ZyMRFImWU1VZ87KCmYU7d06wbK9DbaX34AC42tux2Q5WBWTzbT3pdNtVCgitQpDuJQ-B-1BPTeiN61r-9OAxEOwouuY2gJ5GJLOM3LwQmAeWD-giGVsbCAxdhqg50qmrHKVwk834e5B1bH7WWt1ZUZbIR4ElcnQBQwSKvFrqZjzvQztMsSjHmcc59bZKDtqZUJyyFxwLZ6UL33F-95OCwPOO-Xo1v3iQM2GutG2myc74HpR8P0Vs9py5plk",
-            "ctaText": "شاهدي كل المجموعات",
-            "ctaLink": "/collections"
-          }
-        },
-        {
-          "type": "offer-bento",
-          "variant": "editorial-columns",
-          "settings": {
-            "badge": "عرض حصري لفترة محدودة",
-            "title": "ليه KHEMET LUXE؟",
-            "subtitle": "عرض واضح، خامة مضمونة، وإصدارات بعدد محدود — تلات حاجات تخلي القرار أسرع.",
-            "cards": [
-              {
-                "label": "لفترة محدودة",
-                "title": "اشتري 2 والثالث مجانًا",
-                "subtitle": "اختاري 3 أزواج من نفس الروح ووفّري في نفس الطلب.",
-                "ctaText": "تسوقي العرض الآن",
-                "link": "/sale",
-                "tone": "primary",
-                "stat": "3 = 2"
-              },
-              {
-                "label": "خامة الدار",
-                "title": "جلد مصري يبان من أول لمسة",
-                "subtitle": "نختار خاماتنا لتعيش أطول وتحتفظ بحضورها في اللبسة اليومية.",
-                "ctaText": "اكتشفي التفاصيل",
-                "link": "/collections",
-                "tone": "accent",
-                "stat": "100% Leather"
-              },
-              {
-                "label": "إصدار محدود",
-                "title": "موديلات بعدد أقل ولمسة أهدأ",
-                "subtitle": "قطع لا نكررها كثيرًا حتى يظل الإحساس حصريًا من أول drop.",
-                "ctaText": "شاهدي المحدود",
-                "link": "/shop?sortBy=createdAt&sortOrder=desc",
-                "tone": "slate",
-                "stat": "Limited"
+                "value": "نقداً عند الاستلام"
               }
             ]
           }
@@ -268,35 +198,105 @@
           "type": "featured-products",
           "variant": "boutique-rail",
           "settings": {
-            "eyebrow": "Best Sellers",
-            "title": "الأكثر مبيعاً",
-            "subtitle": "موديلات تم اختيارها لتقود الصفحة كريل تحريري مفتوح لا كشبكة كروت معتادة.",
-            "ctaText": "عرض الكل",
+            "eyebrow": "الأكثر طلباً",
+            "title": "الأكثر مبيعاً هذا الأسبوع",
+            "subtitle": "الموديلات الأكثر طلباً من زبائننا بتصميم مريح وأسعار مميزة",
+            "ctaText": "عرض كل الموديلات",
             "ctaLink": "/shop",
-            "limit": 6
+            "limit": 8
+          }
+        },
+        {
+          "type": "offer-bento",
+          "variant": "editorial-columns",
+          "settings": {
+            "badge": "عروض وخصومات مميزة",
+            "title": "ليه تختاري Swan؟",
+            "subtitle": "عروض توفير حقيقية، خامات مضمونة، وتجربة شراء بدون أي قلق.",
+            "cards": [
+              {
+                "label": "عرض التوفير",
+                "title": "اشتري 2 والثالث مجاناً",
+                "subtitle": "اختاري 3 أزواج من نفس الموديل أو موديلات مختلفة ووفّري فوراً.",
+                "ctaText": "تسوقي العرض الآن",
+                "link": "/sale",
+                "tone": "primary",
+                "stat": "3 = 2"
+              },
+              {
+                "label": "شحن سريع",
+                "title": "توصيل خلال 48 ساعة",
+                "subtitle": "معاينة وتجربة الحذاء قبل الدفع مع شحن مجاني للطلبات الكبيرة.",
+                "ctaText": "تفاصيل الشحن",
+                "link": "/shipping",
+                "tone": "accent",
+                "stat": "Fast Delivery"
+              },
+              {
+                "label": "راحة وضمان",
+                "title": "استبدال مقاس سهل",
+                "subtitle": "المقاس مش مظبوط؟ بنبدلهولك بكل سهولة لحد باب البيت خلال 14 يوم.",
+                "ctaText": "دليل المقاسات",
+                "link": "/size-guide",
+                "tone": "slate",
+                "stat": "14 Days"
+              }
+            ]
+          }
+        },
+        {
+          "type": "featured-collections",
+          "variant": "gallery-columns",
+          "settings": {
+            "title": "تسوقي حسب الستايل",
+            "subtitle": "اختاري الستايل المناسب ليومك وخطوتك من بين تشكيلاتنا المتنوعة.",
+            "limit": 3,
+            "preferRuntimeCategories": false,
+            "ctaText": "عرض كل التشكيلات",
+            "ctaLink": "/collections",
+            "collections": [
+              {
+                "title": "سنيكرز وكوتشيات",
+                "subtitle": "كوتشيات بلاتفورم وسنيكرز خفيفة ومريحة للمشاوير واليوم الطويل.",
+                "image": "https://images.unsplash.com/photo-1608231387042-66d1773070a5?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=sneakers"
+              },
+              {
+                "title": "فلات وأحذية عملية",
+                "subtitle": "موديلات فلات وسكوتش أنيقة تناسب الشغل والجامعة والخروجات اليومية.",
+                "image": "https://images.unsplash.com/photo-1576792741377-eb0f4f6d1a47?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=flats"
+              },
+              {
+                "title": "أحذية كعب وسهرة",
+                "subtitle": "شياكة وأناقة مريحة ترفع إطلالتك في المناسبات والخروجات الخاصة.",
+                "image": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1200",
+                "link": "/shop?category=heels"
+              }
+            ]
           }
         },
         {
           "type": "features-bar",
           "variant": "trust-strip",
           "settings": {
-            "title": "خدمة واضحة قبل الطلب وبعده",
-            "subtitle": "كل اللي محتاجة تعرفيه ظاهر من بدري: موعد الشحن، الخامة، وسياسة الاستبدال.",
+            "title": "تجربة تسوق مريحة ومضمونة",
+            "subtitle": "كل اللي محتاجة تعرفيه ظاهر من البداية: موعد الشحن، سياسة المعاينة والاستبدال.",
             "items": [
               {
                 "icon": "truck",
                 "title": "توصيل سريع",
-                "description": "خلال 48 ساعة لمعظم المحافظات مع تحديث أوضح لحالة الطلب."
+                "description": "خلال 48 ساعة لمعظم المحافظات مع متابعة مباشرة لحالة الطلب."
               },
               {
                 "icon": "shield",
-                "title": "جلد طبيعي 100%",
-                "description": "خامات منتقاة وتشطيب محسوب يوازن الراحة مع الشكل الفاخر."
+                "title": "معاينة قبل الدفع",
+                "description": "شوفي الحذاء وعاينيه واطمني على المقاس والجودة قبل ما تدفعي."
               },
               {
                 "icon": "star",
-                "title": "موديلات حصرية",
-                "description": "قطع بعدد محدود من تصميمنا الخاص، مش موديلات متكررة في كل مكان."
+                "title": "استبدال خلال 14 يوم",
+                "description": "فريق خدمة العملاء معاكي على الواتساب للاستبدال الفوري بكل سهولة."
               }
             ]
           }
@@ -305,8 +305,8 @@
           "type": "newsletter",
           "variant": "editorial-strip",
           "settings": {
-            "title": "انضمي إلى نادي Luxe",
-            "subtitle": "خصم 10% على أول أوردر + أول واحدة تعرف بالكبسولات الجديدة.",
+            "title": "انضمي إلى عائلة Swan",
+            "subtitle": "اشتركي ليصلك تنبيه بأحدث كولكشنات الأحذية وعروض الخصم الحصرية قبل نفاد المقاسات.",
             "buttonText": "اشتراك",
             "placeholder": "بريدك الإلكتروني"
           }
