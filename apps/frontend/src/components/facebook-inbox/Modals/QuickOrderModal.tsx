@@ -572,8 +572,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   // Sync customer data when modal opens or props change
   useEffect(() => {
     if (isOpen) {
-      setPhone(initialCustomerPhone || "");
-      setCustomerName(initialCustomerName || convCustomerName || "");
+      setPhone(initialCustomerPhone ? String(initialCustomerPhone) : "");
+      setCustomerName(
+        initialCustomerName
+          ? String(initialCustomerName)
+          : convCustomerName
+          ? String(convCustomerName)
+          : ""
+      );
     }
   }, [isOpen, initialCustomerName, initialCustomerPhone, convCustomerName]);
 
@@ -597,20 +603,23 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
   // Auto-fill customer details from previous orders when a phone number is entered
   useEffect(() => {
-    const digits = phone.replace(/\D/g, "");
+    const phoneStr = String(phone || "");
+    const digits = phoneStr.replace(/\D/g, "");
     if (!isOpen || digits.length < 9) return;
 
     let cancelled = false;
     const timeoutId = setTimeout(async () => {
       try {
-        const customer = await lookupCustomerByPhone(phone);
+        const customer = await lookupCustomerByPhone(phoneStr);
         if (cancelled || !customer) return;
 
-        const fullName = `${customer.firstName} ${customer.lastName}`.trim();
-        setCustomerName((prev) => prev.trim() || fullName);
-        setAddress((prev) => prev.trim() || customer.address || "");
+        const firstNameStr = String(customer.firstName || "").trim();
+        const lastNameStr = String(customer.lastName || "").trim();
+        const fullName = `${firstNameStr} ${lastNameStr}`.trim();
+        setCustomerName((prev) => String(prev || "").trim() || fullName);
+        setAddress((prev) => String(prev || "").trim() || (customer.address ? String(customer.address) : ""));
         setCity((prev) => prev || customer.governorate || customer.city || "");
-        setNotes((prev) => prev.trim() || customer.notes || "");
+        setNotes((prev) => String(prev || "").trim() || (customer.notes ? String(customer.notes) : ""));
       } catch (error) {
         console.error("Quick order customer lookup error:", error);
       }
