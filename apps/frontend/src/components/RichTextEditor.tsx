@@ -9,6 +9,7 @@ interface RichTextEditorProps {
   onChange: (value: string) => void;
   placeholder?: string;
   minHeight?: string;
+  allowTableGrid?: boolean;
 }
 
 // Suppress findDOMNode warning from react-quill (known issue with React 18)
@@ -99,12 +100,13 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onChange,
   placeholder = "اكتب الوصف هنا...",
   minHeight = "200px",
+  allowTableGrid = false,
 }) => {
   const quillRef = useRef<ReactQuill>(null);
   const toolbarId = useId().replace(/:/g, "");
   
-  // Determine mode: 'table' if value has <table>, otherwise 'visual' or 'code'
-  const hasTable = Boolean(value && typeof value === "string" && value.includes("<table"));
+  // Determine mode: 'table' if allowTableGrid is true and value has <table>, otherwise 'visual'
+  const hasTable = Boolean(allowTableGrid && value && typeof value === "string" && value.includes("<table"));
   const [editorMode, setEditorMode] = useState<"table" | "code" | "visual">(() =>
     hasTable ? "table" : "visual"
   );
@@ -258,25 +260,27 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
         {/* Mode Selector Tabs */}
         <div className="flex items-center gap-1 bg-gray-200 dark:bg-gray-800 p-0.5 rounded-lg text-xs">
-          <button
-            type="button"
-            onClick={() => {
-              if (!value || !value.includes("<table")) {
-                handleInsertTableTemplate();
-              }
-              setEditorMode("table");
-            }}
-            className={`px-2.5 py-1 rounded-md transition-all font-bold flex items-center gap-1 ${
-              editorMode === "table"
-                ? "bg-indigo-600 text-white shadow-sm"
-                : "text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700"
-            }`}
-          >
-            <svg className="w-3.5 h-3.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18M3 3h18v18H3V3z" />
-            </svg>
-            <span>جدول المقاسات</span>
-          </button>
+          {allowTableGrid && (
+            <button
+              type="button"
+              onClick={() => {
+                if (!value || !value.includes("<table")) {
+                  handleInsertTableTemplate();
+                }
+                setEditorMode("table");
+              }}
+              className={`px-2.5 py-1 rounded-md transition-all font-bold flex items-center gap-1 ${
+                editorMode === "table"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-700"
+              }`}
+            >
+              <svg className="w-3.5 h-3.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18M3 3h18v18H3V3z" />
+              </svg>
+              <span>جدول المقاسات</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -305,7 +309,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       </div>
 
       {/* Mode 1: Table Grid Editor */}
-      {editorMode === "table" && (
+      {allowTableGrid && editorMode === "table" && (
         <div className="p-3 bg-white dark:bg-gray-800 space-y-4">
           <div className="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-gray-200 dark:border-gray-700">
             <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">

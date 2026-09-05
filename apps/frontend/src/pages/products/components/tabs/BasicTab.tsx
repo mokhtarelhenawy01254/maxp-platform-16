@@ -160,6 +160,7 @@ export const BasicTab: React.FC<BasicTabProps> = ({
                 }
                 placeholder="اكتب دليل المقاسات هنا... يمكنك تنسيق النصوص واستخدام زر الجدول كجدول منظم"
                 minHeight="160px"
+                allowTableGrid={true}
               />
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 أدخل مقاسات المنتج وطريقة القياس. سيظهر هذا المحتوى لعملائك عند الضغط على زر &quot;دليل المقاسات&quot;.

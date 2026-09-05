@@ -425,6 +425,7 @@ export const AdvancedTab: React.FC<AdvancedTabProps> = ({
                   }
                   placeholder="أدخل دليل المقاسات هنا... يمكنك تنسيق النصوص واستخدام القوائم والجداول"
                   minHeight="160px"
+                  allowTableGrid={true}
                 />
               ) : (
                 <textarea
