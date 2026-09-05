@@ -1654,7 +1654,6 @@ if (typeof window !== "undefined") {
   p["/my-apps"] = () => import("./pages/marketplace/MyApps");
   p["/mindmap"] = () => import("./pages/mindmap/MindMapPage");
   p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
-  p["/test-quick-order"] = () => import("./pages/QuickOrderMobileTest");
 }
 
 // Create a separate component that uses auth

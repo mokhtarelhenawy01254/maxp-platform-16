@@ -1538,13 +1538,31 @@ const listInvoices = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
-    const { doctorId, status } = req.query;
+    const { doctorId, status, search, from, to } = req.query;
     const where = { companyId };
     if (doctorId) where.doctorId = doctorId;
     if (status) {
       const s = String(status).toUpperCase();
       if (!INVOICE_STATUSES.has(s)) return res.status(400).json({ success: false, error: 'حالة الفاتورة غير صحيحة' });
       where.status = s;
+    }
+    if (search && String(search).trim()) {
+      const q = String(search).trim();
+      where.OR = [
+        { invoiceNumber: { contains: q, mode: 'insensitive' } },
+        { doctorName: { contains: q, mode: 'insensitive' } },
+        { notes: { contains: q, mode: 'insensitive' } },
+        { case: { patientName: { contains: q, mode: 'insensitive' } } },
+        { case: { caseNumber: { contains: q, mode: 'insensitive' } } },
+      ];
+    }
+    const fromDate = parseDate(from);
+    let toDate = parseDate(to); if (toDate) toDate = getEndOfDayInTimezone(toDate);
+    if (fromDate) {
+      where.createdAt = { ...(where.createdAt || {}), gte: fromDate };
+    }
+    if (toDate) {
+      where.createdAt = { ...(where.createdAt || {}), lte: toDate };
     }
 
     const { pageNum, limitNum, skip } = parsePagination(req.query);
@@ -1553,7 +1571,32 @@ const listInvoices = async (req, res) => {
       prisma.dentalInvoice.findMany({
         where,
         include: {
-          case: { select: { id: true, caseNumber: true, patientName: true } },
+          case: {
+            select: {
+              id: true,
+              caseNumber: true,
+              patientName: true,
+              patientPhone: true,
+              workTypeName: true,
+              unitsCount: true,
+              unitPrice: true,
+              teeth: true,
+              shade: true,
+              material: true,
+              status: true,
+              dueDate: true,
+              total: true,
+            },
+          },
+          doctor: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              clinicName: true,
+              creditLimit: true,
+            },
+          },
           payments: { orderBy: { createdAt: 'desc' } },
         },
         orderBy: { createdAt: 'desc' },
@@ -1765,6 +1808,7 @@ const getUninvoicedSummary = async (req, res) => {
         isDeleted: false,
         status: { in: ['DELIVERED', 'COMPLETED', 'READY'] },
         invoices: { none: {} },
+        paymentStatus: { not: 'INVOICED' },
       },
       include: {
         doctor: { select: { id: true, name: true, phone: true, clinicName: true } },
@@ -1832,7 +1876,7 @@ const batchCreateMonthlyInvoices = async (req, res) => {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
     const prisma = getSharedPrismaClient();
-    const { doctorIds, dueDate, notes } = req.body || {};
+    const { doctorIds, dueDate, notes, mode = 'CONSOLIDATED' } = req.body || {};
 
     const where = {
       companyId,
@@ -1856,59 +1900,129 @@ const batchCreateMonthlyInvoices = async (req, res) => {
       return res.status(400).json({ success: false, error: 'لا توجد حالات غير مفوترة لهؤلاء الأطباء' });
     }
 
-    // Group cases by doctor
-    const byDoctor = new Map();
-    for (const c of cases) {
-      const docId = c.doctorId || 'unknown';
-      if (!byDoctor.has(docId)) byDoctor.set(docId, []);
-      byDoctor.get(docId).push(c);
-    }
-
     const createdInvoices = [];
     const now = new Date();
     const monthYear = `${now.getMonth() + 1}/${now.getFullYear()}`;
+    const parsedDueDate = parseDate(dueDate) || new Date(now.getFullYear(), now.getMonth() + 1, 10);
 
-    for (const [docId, docCases] of byDoctor.entries()) {
-      const doctorName = docCases[0]?.doctorName || docCases[0]?.doctor?.name || 'غير محدد';
-      const totalAmount = round2(docCases.reduce((sum, c) => sum + (Number(c.total) || 0), 0));
-      const totalDiscount = round2(docCases.reduce((sum, c) => sum + (Number(c.discount) || 0), 0));
-      const totalPaid = round2(docCases.reduce((sum, c) => sum + (Number(c.paid) || 0), 0));
-      const remaining = round2(Math.max(0, totalAmount - totalPaid));
-      const status = deriveInvoiceStatus(totalAmount, totalPaid);
-      const invoiceNotes = notes ? `${notes} (تجميع حالات شهر ${monthYear} - ${docCases.length} حالة)` : `فاتورة مجمعة لشهر ${monthYear} (${docCases.length} حالة)`;
+    if (mode === 'PER_CASE') {
+      for (const c of cases) {
+        const doctorName = c.doctorName || c.doctor?.name || 'غير محدد';
+        const total = Number(c.total) || 0;
+        const discount = Number(c.discount) || 0;
+        const paid = Number(c.paid) || 0;
+        const remaining = round2(Math.max(0, total - paid));
+        const status = deriveInvoiceStatus(total, paid);
+        const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
 
-      const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
-      const invoice = await prisma.dentalInvoice.create({
-        data: {
-          companyId,
-          invoiceNumber,
-          doctorId: docId !== 'unknown' ? docId : null,
-          doctorName,
-          total: totalAmount,
-          discount: totalDiscount,
-          paid: totalPaid,
-          remaining,
-          status,
-          dueDate: parseDate(dueDate) || new Date(now.getFullYear(), now.getMonth() + 1, 10),
-          notes: invoiceNotes,
-        },
-      });
-
-      for (const c of docCases) {
-        await prisma.dentalCaseStatusHistory.create({
+        const inv = await prisma.dentalInvoice.create({
           data: {
             companyId,
+            invoiceNumber,
             caseId: c.id,
-            dimension: 'PAYMENT',
-            status: 'INVOICED',
-            changedBy: req.user?.id || req.user?.email || null,
-            userName: adminDisplayName(req),
-            reason: `تم تضمين الحالة في الفاتورة المجمعة رقم ${invoiceNumber}`,
+            doctorId: c.doctorId || null,
+            doctorName,
+            total,
+            discount,
+            paid,
+            remaining,
+            status,
+            dueDate: parsedDueDate,
+            notes: notes ? String(notes) : `فاتورة حالة ${c.caseNumber || c.id.slice(0, 8)}`,
           },
-        }).catch(() => null);
+        });
+
+        if (typeof prisma.dentalLabCase?.update === 'function') {
+          try {
+            await prisma.dentalLabCase.update({
+              where: { id: c.id },
+              data: { paymentStatus: status === 'PAID' ? 'PAID' : (paid > 0 ? 'PARTIAL' : 'UNPAID') },
+            });
+          } catch {}
+        }
+
+        if (typeof prisma.dentalCaseStatusHistory?.create === 'function') {
+          try {
+            await prisma.dentalCaseStatusHistory.create({
+              data: {
+                companyId,
+                caseId: c.id,
+                dimension: 'PAYMENT',
+                status: 'INVOICED',
+                changedBy: req.user?.id || req.user?.email || null,
+                userName: adminDisplayName(req),
+                reason: `تم إصدار الفاتورة رقم ${invoiceNumber}`,
+              },
+            });
+          } catch {}
+        }
+
+        createdInvoices.push(inv);
+      }
+    } else {
+      const byDoctor = new Map();
+      for (const c of cases) {
+        const docId = c.doctorId || 'unknown';
+        if (!byDoctor.has(docId)) byDoctor.set(docId, []);
+        byDoctor.get(docId).push(c);
       }
 
-      createdInvoices.push(invoice);
+      for (const [docId, docCases] of byDoctor.entries()) {
+        const doctorName = docCases[0]?.doctorName || docCases[0]?.doctor?.name || 'غير محدد';
+        const totalAmount = round2(docCases.reduce((sum, c) => sum + (Number(c.total) || 0), 0));
+        const totalDiscount = round2(docCases.reduce((sum, c) => sum + (Number(c.discount) || 0), 0));
+        const totalPaid = round2(docCases.reduce((sum, c) => sum + (Number(c.paid) || 0), 0));
+        const remaining = round2(Math.max(0, totalAmount - totalPaid));
+        const status = deriveInvoiceStatus(totalAmount, totalPaid);
+        const invoiceNotes = notes ? `${notes} (تجميع حالات شهر ${monthYear} - ${docCases.length} حالة)` : `فاتورة مجمعة لشهر ${monthYear} (${docCases.length} حالة)`;
+
+        const invoiceNumber = await generateInvoiceNumber(prisma, companyId);
+        const invoice = await prisma.dentalInvoice.create({
+          data: {
+            companyId,
+            invoiceNumber,
+            doctorId: docId !== 'unknown' ? docId : null,
+            doctorName,
+            total: totalAmount,
+            discount: totalDiscount,
+            paid: totalPaid,
+            remaining,
+            status,
+            dueDate: parsedDueDate,
+            notes: invoiceNotes,
+          },
+        });
+
+        if (typeof prisma.dentalLabCase?.updateMany === 'function') {
+          const caseIds = docCases.map((c) => c.id);
+          try {
+            await prisma.dentalLabCase.updateMany({
+              where: { id: { in: caseIds }, companyId },
+              data: { paymentStatus: 'INVOICED' },
+            });
+          } catch {}
+        }
+
+        if (typeof prisma.dentalCaseStatusHistory?.create === 'function') {
+          for (const c of docCases) {
+            try {
+              await prisma.dentalCaseStatusHistory.create({
+                data: {
+                  companyId,
+                  caseId: c.id,
+                  dimension: 'PAYMENT',
+                  status: 'INVOICED',
+                  changedBy: req.user?.id || req.user?.email || null,
+                  userName: adminDisplayName(req),
+                  reason: `تم تضمين الحالة في الفاتورة المجمعة رقم ${invoiceNumber}`,
+                },
+              });
+            } catch {}
+          }
+        }
+
+        createdInvoices.push(invoice);
+      }
     }
 
     res.json({
@@ -1918,7 +2032,7 @@ const batchCreateMonthlyInvoices = async (req, res) => {
         invoicedCasesCount: cases.length,
         invoices: createdInvoices,
       },
-      message: `تم إنشاء ${createdInvoices.length} فاتورة مجمعة بنجاح لـ ${cases.length} حالة`,
+      message: `تم إنشاء ${createdInvoices.length} فاتورة بنجاح لـ ${cases.length} حالة`,
     });
   } catch (error) {
     console.error('Error batch creating monthly invoices:', error);
