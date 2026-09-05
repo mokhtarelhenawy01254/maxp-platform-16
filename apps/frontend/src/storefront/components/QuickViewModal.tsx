@@ -18,6 +18,8 @@ import {
   navigateStorefrontDocument,
   shouldStorefrontForceDocumentNavigation,
 } from '../utils/navigationGuards';
+import { sanitizeStorefrontHtml } from '../utils/html';
+import { sanitizeProductCopy } from '../utils/productCopy';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -72,6 +74,8 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
   const selectedVariant = variants.find((v) => v.id === selectedVariantId) || variants[0];
   const activePrice = selectedVariant?.price ?? price;
   const activeComparePrice = selectedVariant?.comparePrice ?? product.comparePrice;
+  const sanitizedDescription = sanitizeStorefrontHtml(description);
+  const hasVisibleDescription = Boolean(sanitizeProductCopy(description));
 
   const shouldForceDocumentNavigation = shouldStorefrontForceDocumentNavigation(
     theme.id,
@@ -227,9 +231,16 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   </div>
                 </div>
                 
-                <div className="prose prose-sm text-muted-foreground line-clamp-4 pt-1">
-                  {description || (isRtl ? 'لا يوجد وصف متوفر لهذا المنتج.' : 'No description available for this product.')}
-                </div>
+                {hasVisibleDescription && sanitizedDescription ? (
+                  <div
+                    className="prose prose-sm text-muted-foreground line-clamp-4 pt-1"
+                    dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
+                  />
+                ) : (
+                  <div className="prose prose-sm text-muted-foreground line-clamp-4 pt-1">
+                    {isRtl ? 'لا يوجد وصف متوفر لهذا المنتج.' : 'No description available for this product.'}
+                  </div>
+                )}
               </div>
 
               {/* Conversion Buttons */}
