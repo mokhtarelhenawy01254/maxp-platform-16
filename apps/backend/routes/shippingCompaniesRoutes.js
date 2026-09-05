@@ -48,11 +48,82 @@ const buildProviderFields = (body, carrier = {}) => {
   };
 };
 
+const ensureDefaultShippingCompanies = async (prisma, companyId) => {
+  if (!companyId) return;
+
+  try {
+    const existing = await prisma.shippingCompany.findMany({
+      where: { companyId },
+      select: { providerKey: true, slug: true },
+    });
+
+    const existingKeys = new Set(existing.map((c) => c.providerKey));
+    const existingSlugs = new Set(existing.map((c) => c.slug));
+
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { bostaApiKey: true, bostaEnabled: true },
+    });
+
+    // 1. Ensure Turbo
+    if (!existingKeys.has('TURBO') && !existingSlugs.has('turbo')) {
+      await prisma.shippingCompany.create({
+        data: {
+          companyId,
+          name: 'Turbo',
+          slug: 'turbo',
+          providerKey: 'TURBO',
+          integrationMode: 'LIVE',
+          website: 'https://turbo-eg.com',
+          phone: '19685',
+          isActive: true,
+        },
+      }).catch((e) => console.warn('Could not auto-seed Turbo:', e.message));
+    }
+
+    // 2. Ensure Bosta
+    if (!existingKeys.has('BOSTA') && !existingSlugs.has('bosta')) {
+      await prisma.shippingCompany.create({
+        data: {
+          companyId,
+          name: 'بوستا (Bosta)',
+          slug: 'bosta',
+          providerKey: 'BOSTA',
+          integrationMode: 'LIVE',
+          website: 'https://bosta.co',
+          phone: '19000',
+          apiKey: company?.bostaApiKey || null,
+          isActive: Boolean(company?.bostaEnabled),
+        },
+      }).catch((e) => console.warn('Could not auto-seed Bosta:', e.message));
+    }
+
+    // 3. Ensure QP Express
+    if (!existingKeys.has('QP_EXPRESS') && !existingSlugs.has('qp-express')) {
+      await prisma.shippingCompany.create({
+        data: {
+          companyId,
+          name: 'كيو بي إكسبريس (QP Express)',
+          slug: 'qp-express',
+          providerKey: 'QP_EXPRESS',
+          integrationMode: 'LIVE',
+          website: 'https://qpxpress.com',
+          phone: '19252',
+          isActive: false,
+        },
+      }).catch((e) => console.warn('Could not auto-seed QP Express:', e.message));
+    }
+  } catch (err) {
+    console.warn('⚠️ [SHIPPING-COMPANIES] Error ensuring default companies:', err.message);
+  }
+};
+
 // Get all shipping companies for the current company with pagination and filters
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const { companyId } = req.user;
+    await ensureDefaultShippingCompanies(prisma, companyId);
     const { page, limit, search, status, integrationMode, all } = req.query;
 
     const where = { companyId };
@@ -134,6 +205,27 @@ router.post('/demo-carriers', verifyToken.authenticateToken, async (req, res) =>
     });
   } catch (error) {
     console.error('Error ensuring demo shipping carriers:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Ensure standard shipping providers (QP Express, Bosta, Turbo) are created for company
+router.post('/ensure-defaults', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { companyId } = req.user;
+    await ensureDefaultShippingCompanies(prisma, companyId);
+    const companies = await prisma.shippingCompany.findMany({
+      where: { companyId },
+      orderBy: { createdAt: 'desc' },
+    });
+    res.json({
+      success: true,
+      message: 'تم تجهيز شركات الشحن المعتمدة بنجاح',
+      data: companies,
+    });
+  } catch (error) {
+    console.error('Error ensuring default shipping carriers:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });

@@ -27,6 +27,16 @@ const DEMO_CARRIER_DEFINITIONS = Object.freeze([
     serviceLevel: 'Next-day demo',
   },
   {
+    providerKey: PROVIDER_KEYS.QP_EXPRESS,
+    integrationMode: 'DEMO',
+    name: 'QP Express Demo',
+    slug: 'qp-express-demo',
+    phone: '19252',
+    website: 'https://qpxpress.com',
+    apiUrl: 'https://demo.maxp.local/providers/qpexpress',
+    serviceLevel: 'Express demo',
+  },
+  {
     providerKey: PROVIDER_KEYS.MYLERZ_DEMO,
     integrationMode: 'DEMO',
     name: 'Mylerz Demo',

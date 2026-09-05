@@ -58,6 +58,7 @@ const ShippingCompanies: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
   const [creatingDemo, setCreatingDemo] = useState(false);
+  const [ensuringDefaults, setEnsuringDefaults] = useState(false);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [testingConnection, setTestingConnection] = useState(false);
 
@@ -160,7 +161,7 @@ const ShippingCompanies: React.FC = () => {
     }
   };
 
-  const handleOpenSettings = (company: ShippingCompany) => {
+  const handleOpenSettings = (company: ShippingCompany, autoActivate = false) => {
     const settings = parseSettings(company.settings) as any;
     setEditingCompany(company);
     setFormData({
@@ -174,7 +175,7 @@ const ShippingCompanies: React.FC = () => {
       providerKey: company.providerKey || "MANUAL",
       integrationMode: company.integrationMode || "MANUAL",
       autoCreateShipments: Boolean(settings.autoCreateShipments),
-      isActive: company.isActive,
+      isActive: autoActivate ? true : company.isActive,
       username: settings.username || "",
       password: settings.password || "",
       customerId: settings.customerId ? String(settings.customerId) : "",
@@ -285,6 +286,23 @@ const ShippingCompanies: React.FC = () => {
     }
   };
 
+  const handleEnsureDefaultCarriers = async () => {
+    setEnsuringDefaults(true);
+    try {
+      const res: any = await apiClient.post("/shipping-companies/ensure-defaults");
+      if (res.data?.success) {
+        toast.success(res.data.message || "تم تجهيز شركات الشحن المعتمدة (Bosta, QP Express, Turbo) بنجاح");
+        fetchCompanies();
+      } else {
+        toast.error(res.data?.error || "فشل تجهيز الشركات المعتمدة");
+      }
+    } catch {
+      toast.error("تعذر تجهيز شركات الشحن المعتمدة");
+    } finally {
+      setEnsuringDefaults(false);
+    }
+  };
+
   const copyWebhookUrl = () => {
     const webhookUrl = `${envConfig.backendUrl}/api/v1/shipments/webhook`;
     navigator.clipboard.writeText(webhookUrl);
@@ -313,6 +331,15 @@ const ShippingCompanies: React.FC = () => {
             سجلات الشحنات
           </Link>
           <button
+            onClick={handleEnsureDefaultCarriers}
+            disabled={ensuringDefaults}
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-60 transition shadow-sm"
+            title="تجهيز شركات الشحن المعتمدة (بوستا، كيو بي إكسبريس، وتربو) بضغطة واحدة"
+          >
+            <CheckCircleIcon className="h-4 w-4" />
+            <span>{ensuringDefaults ? "جاري التجهيز..." : "تجهيز شركات الشحن المعتمدة"}</span>
+          </button>
+          <button
             onClick={handleEnsureDemoCarriers}
             disabled={creatingDemo}
             className="px-3.5 py-2 text-xs sm:text-sm font-medium bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-60 transition shadow-sm"
@@ -326,6 +353,156 @@ const ShippingCompanies: React.FC = () => {
             <PlusIcon className="h-4 w-4" />
             <span>إضافة شركة شحن</span>
           </button>
+        </div>
+      </div>
+
+      {/* Quick Integration Hub / Standard Supported Couriers */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {/* QP Express Quick Tile */}
+        <div className="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-indigo-100 dark:border-indigo-900/40 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 rounded-lg bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-bold text-xs shrink-0">
+              QP
+            </div>
+            <div className="truncate">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
+                كيو بي إكسبريس (QP Express)
+              </h4>
+              <p className="text-[11px] text-gray-500 truncate">ربط JWT وبوالص حرارية 80×50</p>
+            </div>
+          </div>
+          {companies.some((c) => c.providerKey === "QP_EXPRESS" && c.isActive) ? (
+            <button
+              type="button"
+              onClick={() => {
+                const qp = companies.find((c) => c.providerKey === "QP_EXPRESS");
+                if (qp) handleOpenSettings(qp);
+              }}
+              className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 shrink-0"
+            >
+              مفعلة (تعديل)
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const qp = companies.find((c) => c.providerKey === "QP_EXPRESS");
+                if (qp) handleOpenSettings(qp, true);
+                else {
+                  handleOpenNewModal();
+                  setFormData((prev) => ({
+                    ...prev,
+                    name: "كيو بي إكسبريس (QP Express)",
+                    providerKey: "QP_EXPRESS",
+                    integrationMode: "LIVE",
+                    website: "https://qpxpress.com",
+                    isActive: true,
+                  }));
+                }
+              }}
+              className="px-3 py-1.5 text-xs font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 shadow-sm shrink-0"
+            >
+              تفعيل الربط
+            </button>
+          )}
+        </div>
+
+        {/* Bosta Quick Tile */}
+        <div className="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-orange-100 dark:border-orange-900/40 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 rounded-lg bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 font-bold text-xs shrink-0">
+              Bosta
+            </div>
+            <div className="truncate">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
+                بوستا (Bosta Courier)
+              </h4>
+              <p className="text-[11px] text-gray-500 truncate">ربط API Key وبوالص AWB رسمية</p>
+            </div>
+          </div>
+          {companies.some((c) => c.providerKey === "BOSTA" && c.isActive) ? (
+            <button
+              type="button"
+              onClick={() => {
+                const bosta = companies.find((c) => c.providerKey === "BOSTA");
+                if (bosta) handleOpenSettings(bosta);
+              }}
+              className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 shrink-0"
+            >
+              مفعلة (تعديل)
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const bosta = companies.find((c) => c.providerKey === "BOSTA");
+                if (bosta) handleOpenSettings(bosta, true);
+                else {
+                  handleOpenNewModal();
+                  setFormData((prev) => ({
+                    ...prev,
+                    name: "بوستا (Bosta)",
+                    providerKey: "BOSTA",
+                    integrationMode: "LIVE",
+                    website: "https://bosta.co",
+                    isActive: true,
+                  }));
+                }
+              }}
+              className="px-3 py-1.5 text-xs font-bold bg-orange-600 text-white rounded-lg hover:bg-orange-700 shadow-sm shrink-0"
+            >
+              تفعيل الربط
+            </button>
+          )}
+        </div>
+
+        {/* Turbo Quick Tile */}
+        <div className="bg-white dark:bg-gray-800 p-3.5 rounded-xl border border-blue-100 dark:border-blue-900/40 shadow-sm flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 font-bold text-xs shrink-0">
+              Turbo
+            </div>
+            <div className="truncate">
+              <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white truncate">
+                تربو (Turbo Courier)
+              </h4>
+              <p className="text-[11px] text-gray-500 truncate">شحن سريع ومزامنة بوالص</p>
+            </div>
+          </div>
+          {companies.some((c) => c.providerKey === "TURBO" && c.isActive) ? (
+            <button
+              type="button"
+              onClick={() => {
+                const turbo = companies.find((c) => c.providerKey === "TURBO");
+                if (turbo) handleOpenSettings(turbo);
+              }}
+              className="px-2.5 py-1 text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg hover:bg-emerald-100 shrink-0"
+            >
+              مفعلة (تعديل)
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                const turbo = companies.find((c) => c.providerKey === "TURBO");
+                if (turbo) handleOpenSettings(turbo, true);
+                else {
+                  handleOpenNewModal();
+                  setFormData((prev) => ({
+                    ...prev,
+                    name: "تربو (Turbo)",
+                    providerKey: "TURBO",
+                    integrationMode: "LIVE",
+                    website: "https://turbo-eg.com",
+                    isActive: true,
+                  }));
+                }
+              }}
+              className="px-3 py-1.5 text-xs font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm shrink-0"
+            >
+              تفعيل الربط
+            </button>
+          )}
         </div>
       </div>
 
@@ -438,7 +615,7 @@ const ShippingCompanies: React.FC = () => {
                 className={`bg-white dark:bg-gray-800 rounded-xl border transition shadow-sm hover:shadow-md flex flex-col justify-between p-4 sm:p-5 ${
                   company.isActive
                     ? "border-gray-200 dark:border-gray-700"
-                    : "border-gray-200 dark:border-gray-700 opacity-75 bg-gray-50/50"
+                    : "border-indigo-200 dark:border-indigo-800/80 bg-gradient-to-b from-indigo-50/25 to-transparent dark:from-indigo-950/20"
                 }`}
               >
                 {/* Card Top: Logo, Name & Toggle Switch */}
@@ -448,7 +625,7 @@ const ShippingCompanies: React.FC = () => {
                       <div className={`p-2.5 rounded-xl ${
                         company.isActive
                           ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400"
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-400"
+                          : "bg-indigo-100/70 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300"
                       }`}>
                         <TruckIcon className="h-6 w-6" />
                       </div>
@@ -464,8 +641,10 @@ const ShippingCompanies: React.FC = () => {
 
                     {/* Quick Toggle Active Switch */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                        {company.isActive ? "مفعلة" : "متوقفة"}
+                      <span className={`text-[11px] font-bold ${
+                        company.isActive ? "text-emerald-600 dark:text-emerald-400" : "text-indigo-600 dark:text-indigo-400"
+                      }`}>
+                        {company.isActive ? "مفعلة" : "جاهزة للربط"}
                       </span>
                       <button
                         type="button"
@@ -502,6 +681,12 @@ const ShippingCompanies: React.FC = () => {
                       {company.providerKey || "MANUAL"}
                     </span>
 
+                    {!company.isActive && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[11px] font-semibold bg-indigo-100 dark:bg-indigo-900/50 text-indigo-700 dark:text-indigo-300">
+                        ⚡ غير مفعلة (جاهزة للربط)
+                      </span>
+                    )}
+
                     {/* Connection Indicator */}
                     {isLive && (
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-medium ${
@@ -529,14 +714,27 @@ const ShippingCompanies: React.FC = () => {
                 <div className="pt-4 mt-4 border-t border-gray-100 dark:border-gray-700/60 flex items-center justify-between gap-2">
                   <button
                     type="button"
-                    onClick={() => handleOpenSettings(company)}
-                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100 transition"
+                    onClick={() => handleOpenSettings(company, !company.isActive)}
+                    className={`flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition shadow-sm ${
+                      company.isActive
+                        ? "bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800 hover:bg-indigo-100"
+                        : "bg-indigo-600 text-white hover:bg-indigo-700"
+                    }`}
                   >
-                    <PencilIcon className="h-3.5 w-3.5" />
-                    <span>إعدادات الربط والـ API</span>
+                    {company.isActive ? (
+                      <>
+                        <PencilIcon className="h-3.5 w-3.5" />
+                        <span>إعدادات الربط والـ API</span>
+                      </>
+                    ) : (
+                      <>
+                        <KeyIcon className="h-3.5 w-3.5" />
+                        <span>تفعيل وإعدادات الربط</span>
+                      </>
+                    )}
                   </button>
 
-                  {isLive && (
+                  {isLive && company.isActive && (
                     <button
                       type="button"
                       onClick={() => handleTestConnection(company.id)}
@@ -587,10 +785,12 @@ const ShippingCompanies: React.FC = () => {
                     </span>
                   </td>
                   <td className="px-5 py-4 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
-                      company.isActive ? "text-emerald-600" : "text-gray-400"
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                      company.isActive
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+                        : "bg-indigo-50 text-indigo-700 dark:bg-indigo-950/40 dark:text-indigo-300"
                     }`}>
-                      {company.isActive ? "● تعمل حالياً" : "○ متوقفة"}
+                      {company.isActive ? "● مفعلة وتعمل" : "⚡ جاهزة للربط"}
                     </span>
                   </td>
                   <td className="px-5 py-4 whitespace-nowrap">
@@ -612,10 +812,14 @@ const ShippingCompanies: React.FC = () => {
                   <td className="px-5 py-4 whitespace-nowrap text-center">
                     <button
                       type="button"
-                      onClick={() => handleOpenSettings(company)}
-                      className="px-3 py-1 text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                      onClick={() => handleOpenSettings(company, !company.isActive)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-semibold transition ${
+                        company.isActive
+                          ? "text-indigo-600 hover:text-indigo-800 bg-indigo-50 dark:bg-indigo-950/40"
+                          : "bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                      }`}
                     >
-                      فتح الإعدادات
+                      {company.isActive ? "إعدادات الربط" : "تفعيل والربط"}
                     </button>
                   </td>
                 </tr>
@@ -985,6 +1189,23 @@ const ShippingCompanies: React.FC = () => {
                     <ClipboardDocumentIcon className="h-4 w-4" />
                   </button>
                 </div>
+              </div>
+
+              {/* Active Status Checkbox */}
+              <div className="flex items-start gap-2 p-2.5 rounded-lg bg-indigo-50/50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/40">
+                <input
+                  type="checkbox"
+                  id="modalIsActive"
+                  checked={formData.isActive}
+                  onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                />
+                <label htmlFor="modalIsActive" className="text-xs text-gray-700 dark:text-gray-300 cursor-pointer">
+                  <span className="font-bold text-gray-900 dark:text-white">تفعيل شركة الشحن للعمل بالمتجر فوراً</span>
+                  <span className="block text-[11px] text-gray-500 dark:text-gray-400">
+                    عند التفعيل تظهر الشركة مباشرة في شحن الطلبات الفردية والجماعية وتوليد البوالص
+                  </span>
+                </label>
               </div>
 
               {/* Auto Create Shipments Checkbox */}
