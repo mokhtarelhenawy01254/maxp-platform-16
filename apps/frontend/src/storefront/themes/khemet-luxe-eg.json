@@ -403,9 +403,9 @@
           "type": "quantity-offers",
           "variant": "selection-rail",
           "settings": {
-            "title": "وفّر مع العروض",
-            "subtitle": "اقتصدي عند طلب قطعتين أو أكثر — اختاري اللون والمقاس لكل قطعة.",
-            "decisionMode": "supporting",
+            "title": "عروض التوفير الخاصة",
+            "subtitle": "اختاري باقتك المناسبة ووفّري مع إمكانية تحديد مقاس ولون كل قطعة.",
+            "decisionMode": "primary",
             "continueToFormLabel": "كمّلي البيانات",
             "placement": "inline-buybox"
           }
@@ -421,6 +421,7 @@
             "formVariant": "khemet-luxe-eg",
             "placement": "before-description",
             "surfaceMode": "merged-buybox",
+            "decisionMode": "primary",
             "showQuantity": false,
             "showAddToCartButton": false,
             "showOrderSummary": true,
