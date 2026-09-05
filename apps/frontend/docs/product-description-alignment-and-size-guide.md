@@ -7,8 +7,9 @@ Fixed two storefront and product display issues:
    - Updated `sanitizeStorefrontHtml` in `html.ts` to preserve `style`, `class`, `dir`, `align`, `target`, and `iframe` tags.
    - Removed `max-w-lg` limitation in `ProductDescription.tsx` to allow full width and proper centering on desktop and mobile.
 
-2. **Custom Size Guide (`product.sizeGuide`)**:
+2. **Custom Size Guide (`product.sizeGuide`) & Table Editor**:
    - Added `formatCustomSizeGuide` in `dynamicSectionContent.ts` to parse Markdown, plain text, lists, tables, or HTML into structured, safe HTML markup.
+   - Enhanced `RichTextEditor.tsx` with a dedicated "جدول" (Table) insertion button to generate responsive size guide tables and an `</>` (Code) view mode toggle for editing raw HTML/Markdown markup.
    - Updated `ProductInfoModals.tsx` to accept and render `customSizeGuide` in `ProductInfoSizeGuideDialog`.
    - Updated `ProductInfo.tsx` so `showSizeGuide` and `canOpenSizeGuide` are enabled when `product.sizeGuide` is present.
    - Updated `SizeGuide.tsx` to render product-specific size guides.

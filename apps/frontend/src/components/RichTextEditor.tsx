@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useCallback, useId } from "react";
+import React, { useMemo, useRef, useCallback, useId, useState } from "react";
 import i18n from "../i18n";
 import ReactQuill from "react-quill";
 import "react-quill/dist/quill.snow.css";
@@ -25,6 +25,30 @@ console.error = (...args) => {
   originalError.call(console, ...args);
 };
 
+const DEFAULT_TABLE_TEMPLATE = `<div class="overflow-x-auto my-3">
+  <table style="width: 100%; border-collapse: collapse; text-align: center; border: 1px solid #d1d5db;" class="w-full border-collapse border border-gray-300 text-sm text-center">
+    <thead>
+      <tr style="background-color: #f3f4f6;">
+        <th style="border: 1px solid #d1d5db; padding: 10px; font-weight: bold;">المقاس</th>
+        <th style="border: 1px solid #d1d5db; padding: 10px; font-weight: bold;">الوزن المناسب</th>
+        <th style="border: 1px solid #d1d5db; padding: 10px; font-weight: bold;">ملاحظات الفيتينج</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td style="border: 1px solid #d1d5db; padding: 10px; font-weight: 600;">L</td>
+        <td style="border: 1px solid #d1d5db; padding: 10px;">من 60 ك إلى 70 ك</td>
+        <td style="border: 1px solid #d1d5db; padding: 10px;">مقاس مريح ومناسب</td>
+      </tr>
+      <tr>
+        <td style="border: 1px solid #d1d5db; padding: 10px; font-weight: 600;">XL</td>
+        <td style="border: 1px solid #d1d5db; padding: 10px;">من 70 ك إلى 80 ك</td>
+        <td style="border: 1px solid #d1d5db; padding: 10px;">اختاري الأكبر غالبًا للراحة</td>
+      </tr>
+    </tbody>
+  </table>
+</div>`;
+
 const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
@@ -33,6 +57,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const quillRef = useRef<ReactQuill>(null);
   const toolbarId = useId().replace(/:/g, "");
+  const [isCodeMode, setIsCodeMode] = useState(false);
 
   // Handle image upload
   const handleImageUpload = useCallback(() => {
@@ -46,18 +71,18 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
       if (!file) return;
 
       try {
-        // Upload image to server
         const result = await uploadFiles([file]);
         if (result.success && result.data?.[0]) {
           const imageUrl = result.data[0].fullUrl || result.data[0].url;
 
-          // Insert image into editor
           const quill = quillRef.current?.getEditor();
           if (quill) {
             const range = quill.getSelection();
             if (range) {
               quill.insertEmbed(range.index, "image", imageUrl);
               quill.setSelection({ index: range.index + 1, length: 0 });
+            } else {
+              quill.insertEmbed(quill.getLength(), "image", imageUrl);
             }
           }
         }
@@ -68,6 +93,22 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     };
   }, []);
 
+  // Insert Table handler
+  const handleInsertTable = useCallback(() => {
+    if (isCodeMode) {
+      onChange((value || "") + "\n" + DEFAULT_TABLE_TEMPLATE);
+    } else {
+      const quill = quillRef.current?.getEditor();
+      if (quill) {
+        const range = quill.getSelection(true);
+        const insertIndex = range ? range.index : quill.getLength();
+        quill.clipboard.dangerouslyPasteHTML(insertIndex, DEFAULT_TABLE_TEMPLATE);
+      } else {
+        onChange((value || "") + "\n" + DEFAULT_TABLE_TEMPLATE);
+      }
+    }
+  }, [isCodeMode, onChange, value]);
+
   const modules = useMemo(
     () => ({
       toolbar: {
@@ -77,7 +118,7 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
         },
       },
     }),
-    [handleImageUpload, toolbarId],
+    [handleImageUpload, toolbarId]
   );
 
   const formats = [
@@ -99,12 +140,11 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
     "code-block",
   ];
 
-  // Ensure value is always a string
   const editorValue = value || "";
 
   return (
     <div className="rich-text-editor">
-      <div id={toolbarId} className="rich-text-toolbar">
+      <div id={toolbarId} className="rich-text-toolbar flex flex-wrap items-center gap-1 p-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-t-md">
         <span className="ql-formats">
           <select
             className="ql-header"
@@ -160,18 +200,58 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
           <button type="button" className="ql-video" title="إضافة فيديو" />
           <button type="button" className="ql-clean" title="مسح التنسيق" />
         </span>
+
+        {/* Custom Table & HTML Code View buttons */}
+        <span className="ql-formats border-r border-gray-300 dark:border-gray-600 pr-2 mr-2 flex items-center gap-1">
+          <button
+            type="button"
+            onClick={handleInsertTable}
+            className="p-1 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors flex items-center gap-1 text-xs font-semibold"
+            title="إدراج جدول مقاسات"
+          >
+            <svg className="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M3 14h18M10 3v18M14 3v18M3 3h18v18H3V3z" />
+            </svg>
+            <span>جدول</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setIsCodeMode(!isCodeMode)}
+            className={`p-1 px-2 rounded transition-colors text-xs font-bold ${
+              isCodeMode
+                ? "bg-indigo-600 text-white"
+                : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+            }`}
+            title={isCodeMode ? "العودة للمحرر المرئي" : "محرر HTML / كود"}
+          >
+            &lt;/&gt; {isCodeMode ? "مرئي" : "كود"}
+          </button>
+        </span>
       </div>
 
-      <ReactQuill
-        ref={quillRef}
-        theme="snow"
-        value={editorValue}
-        onChange={onChange}
-        modules={modules}
-        formats={formats}
-        placeholder={placeholder}
-        style={{ minHeight }}
-      />
+      {isCodeMode ? (
+        <textarea
+          value={editorValue}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="أدخل كود HTML أو جدول Markdown هنا..."
+          style={{ minHeight }}
+          className="w-full p-3 font-mono text-xs border border-t-0 border-gray-300 dark:border-gray-600 rounded-b-md bg-gray-900 text-green-400 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+          dir="ltr"
+        />
+      ) : (
+        <ReactQuill
+          ref={quillRef}
+          theme="snow"
+          value={editorValue}
+          onChange={onChange}
+          modules={modules}
+          formats={formats}
+          placeholder={placeholder}
+          style={{ minHeight }}
+        />
+      )}
+
       <style>{`
         .rich-text-editor .ql-container {
           font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -298,3 +378,4 @@ const RichTextEditor: React.FC<RichTextEditorProps> = ({
 };
 
 export default RichTextEditor;
+
