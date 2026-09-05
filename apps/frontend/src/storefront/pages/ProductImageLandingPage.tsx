@@ -866,7 +866,7 @@ const ProductImageLandingPage: React.FC = () => {
         <div className="pil-hero-shade" />
         <div className="pil-hero-content">
           <span className="pil-hero-kicker">
-            {landingData?.company?.name || "Swan"} · طلب سريع
+            {landingData?.company?.name || "المتجر"} · طلب سريع
           </span>
           <h1 id="pil-hero-title">{activeProduct.name}</h1>
           <p>

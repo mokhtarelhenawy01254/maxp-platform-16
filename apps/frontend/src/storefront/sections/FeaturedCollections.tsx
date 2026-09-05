@@ -213,7 +213,7 @@ export const shouldPreferRuntimeFeaturedCollections = ({
   settingsPreferRuntimeCategories === true ||
   (settingsPreferRuntimeCategories !== false &&
     isKhemetLuxeTheme(themeId) &&
-    variant === "gallery-columns");
+    (variant === "gallery-columns" || variant === "legacy-circle-categories"));
 
 const normalizeMatchText = (value: string): string =>
   value

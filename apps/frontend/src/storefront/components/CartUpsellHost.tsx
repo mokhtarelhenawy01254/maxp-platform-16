@@ -199,7 +199,7 @@ const KhemetCinematicUpsellCard: React.FC<KhemetCinematicUpsellCardProps> = ({
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           fallback={
             <div className="flex h-full w-full items-center justify-center text-xs font-bold text-muted-foreground">
-              {product.name?.[0] || "Swan"}
+              {product.name?.[0] || ""}
             </div>
           }
         />

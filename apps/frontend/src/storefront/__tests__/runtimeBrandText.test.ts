@@ -70,4 +70,47 @@ describe('runtime storefront brand text helpers', () => {
 
     expect(replaceThemeBrandText('سلة KHEMET LUXE')).toBe('سلة KHEMET LUXE');
   });
+
+  it('replaces any leaked Swan references with runtime store name for non-Swan stores', () => {
+    const tatoSettings = {
+      storefront: {
+        settings: {
+          storeName: 'TA TI',
+        },
+      },
+      company: {
+        name: 'TATO',
+      },
+    };
+
+    const { replaceThemeBrandText } = createStorefrontThemeTextReplacer({
+      theme,
+      settings: tatoSettings,
+    });
+
+    expect(replaceThemeBrandText('ليه تختاري Swan؟')).toBe('ليه تختاري TA TI؟');
+    expect(replaceThemeBrandText('انضمي إلى عائلة Swan')).toBe('انضمي إلى عائلة TA TI');
+    expect(replaceThemeBrandText('خطوتك القادمة تبدأ من KHEMET LUXE')).toBe('خطوتك القادمة تبدأ من TA TI');
+  });
+
+  it('preserves Swan brand name when the store itself is Swan', () => {
+    const swanSettings = {
+      storefront: {
+        settings: {
+          storeName: 'Swan',
+        },
+      },
+      company: {
+        name: 'Swan',
+      },
+    };
+
+    const { replaceThemeBrandText } = createStorefrontThemeTextReplacer({
+      theme,
+      settings: swanSettings,
+    });
+
+    expect(replaceThemeBrandText('ليه تختاري Swan؟')).toBe('ليه تختاري Swan؟');
+    expect(replaceThemeBrandText('خطوتك القادمة تبدأ من KHEMET LUXE')).toBe('خطوتك القادمة تبدأ من Swan');
+  });
 });

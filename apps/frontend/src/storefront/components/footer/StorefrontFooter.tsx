@@ -134,8 +134,8 @@ const StorefrontFooter: React.FC<{ isMinimal?: boolean }> = ({ isMinimal }) => {
         value: footerSettings.address,
       });
     }
-    // If no user settings, fall back to theme contact rows
-    if (rows.length === 0 && theme.footer?.contactRows) {
+    // If no user settings and not a live applied storefront, fall back to theme contact rows
+    if (rows.length === 0 && !isAppliedRuntimeStorefront && theme.footer?.contactRows) {
       return theme.footer.contactRows.filter(
         (row): row is { label: string; value: string; href?: string } => Boolean(row?.label && row?.value),
       );

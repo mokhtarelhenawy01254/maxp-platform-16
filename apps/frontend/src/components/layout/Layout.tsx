@@ -167,7 +167,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   );
 
   const storeUrl = useMemo(() => {
-    const slug = user?.company?.slug || "swan";
+    const slug = user?.company?.slug || "";
     const customDomain = user?.company?.customDomain;
     const companyId = user?.companyId || user?.company?.id;
     return buildStoreUrl(slug, "/shop", customDomain || undefined, companyId || undefined);

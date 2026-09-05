@@ -2186,7 +2186,7 @@ const CreateAdWizard: React.FC = () => {
             ) : (
               <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-700">
                 اختر Business ثم الحساب الإعلاني المقصود. لن نختار أول حساب
-                تلقائيا عند وجود أكثر من حساب، حتى لا تختلط حملات Swan مع أي
+                تلقائيا عند وجود أكثر من حساب، حتى لا تختلط حملات المتجر مع أي
                 حساب آخر.
               </div>
             )}

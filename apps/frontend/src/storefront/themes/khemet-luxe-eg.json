@@ -81,44 +81,44 @@
   },
   "footer": {
     "variant": "signature-panel",
-    "description": "أحذية حريمي مصنوعة بروح القاهرة: جلد مختار، صور أوضح، ومشهد بيع هادئ يخلي القرار أسرع.",
+    "description": "منتجات مميزة بروح القاهرة: جودة مختارة، صور أوضح، وتجربة تسوق هادئة تخلي القرار أسرع.",
     "copyrightText": "© 2026 KHEMET LUXE. CRAFTED IN EGYPT.",
     "contactRows": [
       {
         "label": "واتساب",
-        "value": "01123087745",
-        "href": "https://wa.me/201123087745"
+        "value": "+20 100 000 0000",
+        "href": "https://wa.me/201000000000"
       },
       {
         "label": "البريد",
-        "value": "swan@h2m.com",
-        "href": "mailto:swan@h2m.com"
+        "value": "hello@khemetluxe.com",
+        "href": "mailto:hello@khemetluxe.com"
       }
     ],
     "socialLinks": {
       "instagram": "https://instagram.com",
       "facebook": "https://facebook.com",
-      "whatsapp": "https://wa.me/201123087745"
+      "whatsapp": "https://wa.me/201000000000"
     },
     "navigation": [
       {
         "title": "التسوق",
         "links": [
           {
-            "label": "كل الأحذية",
+            "label": "كل المنتجات",
             "to": "/shop"
-          },
-          {
-            "label": "الكوتشيات",
-            "to": "/shop?category=sneakers"
-          },
-          {
-            "label": "الفلات",
-            "to": "/shop?category=flats"
           },
           {
             "label": "العروض الحصرية",
             "to": "/sale"
+          },
+          {
+            "label": "المجموعات",
+            "to": "/collections"
+          },
+          {
+            "label": "الأكثر مبيعاً",
+            "to": "/shop?sortBy=bestSelling"
           }
         ]
       },
@@ -170,9 +170,9 @@
           "type": "hero-banner",
           "variant": "cinematic-plinth",
           "settings": {
-            "eyebrow": "Swan Official Store",
-            "title": "خطوتك القادمة تبدأ من Swan",
-            "subtitle": "سنيكرز وأحذية حريمي تجمع الراحة والشياكة لكل يوم، بخامات مريحة وتقفيل مصري متقن.",
+            "eyebrow": "Crafted with Passion",
+            "title": "خطوتك القادمة تبدأ من KHEMET LUXE",
+            "subtitle": "تصاميم عصرية تجمع الراحة والشياكة لكل يوم، بخامات مضمونة وتقفيل مصري متقن.",
             "ctaText": "تسوقي الكولكشن الجديد",
             "ctaLink": "/shop",
             "secondaryCtaText": "عروض التوفير",
@@ -201,7 +201,7 @@
             "title": "تسوقي حسب الستايل",
             "subtitle": "اختاري الستايل المناسب ليومك وخطوتك من بين تشكيلاتنا المتنوعة.",
             "limit": 4,
-            "preferRuntimeCategories": false,
+            "preferRuntimeCategories": true,
             "hideCardDescriptions": true,
             "hideCardCtas": true,
             "ctaText": "عرض كل الموديلات",
@@ -247,13 +247,13 @@
           "variant": "editorial-columns",
           "settings": {
             "badge": "عروض وخصومات مميزة",
-            "title": "ليه تختاري Swan؟",
+            "title": "ليه تختاري KHEMET LUXE؟",
             "subtitle": "عروض توفير حقيقية، خامات مضمونة، وتجربة شراء بدون أي قلق.",
             "cards": [
               {
                 "label": "عرض التوفير",
                 "title": "اشتري 2 والثالث مجاناً",
-                "subtitle": "اختاري 3 أزواج من نفس الموديل أو موديلات مختلفة ووفّري فوراً.",
+                "subtitle": "اختاري 3 قطع من نفس الموديل أو موديلات مختلفة ووفّري فوراً.",
                 "ctaText": "تسوقي العرض الآن",
                 "link": "/sale",
                 "tone": "primary",
@@ -262,7 +262,7 @@
               {
                 "label": "شحن سريع",
                 "title": "توصيل خلال 48 ساعة",
-                "subtitle": "معاينة وتجربة الحذاء قبل الدفع مع شحن مجاني للطلبات الكبيرة.",
+                "subtitle": "معاينة وتجربة المنتج قبل الدفع مع شحن مجاني للطلبات الكبيرة.",
                 "ctaText": "تفاصيل الشحن",
                 "link": "/shipping",
                 "tone": "accent",
@@ -270,8 +270,8 @@
               },
               {
                 "label": "راحة وضمان",
-                "title": "استبدال مقاس سهل",
-                "subtitle": "المقاس مش مظبوط؟ بنبدلهولك بكل سهولة لحد باب البيت خلال 14 يوم.",
+                "title": "استبدال واسترجاع سهل",
+                "subtitle": "الطلب مش مظبوط؟ بنبدلهولك بكل سهولة لحد باب البيت خلال 14 يوم.",
                 "ctaText": "دليل المقاسات",
                 "link": "/size-guide",
                 "tone": "slate",
@@ -295,7 +295,7 @@
               {
                 "icon": "shield",
                 "title": "معاينة قبل الدفع",
-                "description": "شوفي الحذاء وعاينيه واطمني على المقاس والجودة قبل ما تدفعي."
+                "description": "شوفي المنتج وعاينيه واطمني على الجودة قبل ما تدفعي."
               },
               {
                 "icon": "star",
@@ -309,8 +309,8 @@
           "type": "newsletter",
           "variant": "editorial-strip",
           "settings": {
-            "title": "انضمي إلى عائلة Swan",
-            "subtitle": "اشتركي ليصلك تنبيه بأحدث كولكشنات الأحذية وعروض الخصم الحصرية قبل نفاد المقاسات.",
+            "title": "انضمي إلى عائلة KHEMET LUXE",
+            "subtitle": "اشتركي ليصلك تنبيه بأحدث التشكيلات وعروض الخصم الحصرية قبل نفاد الكمية.",
             "buttonText": "اشتراك",
             "placeholder": "بريدك الإلكتروني"
           }

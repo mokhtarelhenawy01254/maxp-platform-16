@@ -200,7 +200,7 @@ const Header: React.FC = () => {
   const showSearchInHeader = settings.showOrderSearchInHeader !== false;
 
   const storeUrl = React.useMemo(() => {
-    const slug = user?.company?.slug || company?.slug || "swan";
+    const slug = user?.company?.slug || company?.slug || "";
     const customDomain = user?.company?.customDomain || company?.customDomain;
     const companyId = user?.companyId || user?.company?.id || company?.id;
     return buildStoreUrl(slug, "/shop", customDomain || undefined, companyId || undefined);

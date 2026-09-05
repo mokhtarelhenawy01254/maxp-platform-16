@@ -15,10 +15,19 @@ const escapeRegExp = (value: string): string =>
 const getRuntimeStoreName = (settings?: RuntimeStorefrontSettings): string =>
   String(settings?.storefront?.settings?.storeName || settings?.company?.name || '').trim();
 
-const getThemeBrandNames = (theme: StorefrontTheme): string[] =>
-  [theme.header?.brandName, theme.name]
-    .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
-    .map((value) => value.trim());
+const getThemeBrandNames = (theme: StorefrontTheme): string[] => {
+  const names = [theme.header?.brandName, theme.name];
+  if (theme.id?.includes('khemet')) {
+    names.push('KHEMET LUXE', 'Khemet Luxe');
+  }
+  return Array.from(
+    new Set(
+      names
+        .filter((value): value is string => typeof value === 'string' && Boolean(value.trim()))
+        .map((value) => value.trim()),
+    ),
+  );
+};
 
 export const createStorefrontThemeTextReplacer = ({
   theme,
@@ -42,6 +51,17 @@ export const createStorefrontThemeTextReplacer = ({
     Boolean(runtimeStoreName) &&
     themeBrandNames.some((brandName) => brandName !== runtimeStoreName);
 
+  const isSwanStore =
+    runtimeStoreName.trim().toLowerCase() === 'swan' ||
+    displayStoreName.trim().toLowerCase() === 'swan';
+
+  const replacementCandidates = Array.from(
+    new Set([
+      ...themeBrandNames,
+      ...(!isSwanStore ? ['Swan'] : []),
+    ]),
+  );
+
   const replaceThemeBrandText = (value?: string | null): string => {
     if (!value) {
       return '';
@@ -51,7 +71,7 @@ export const createStorefrontThemeTextReplacer = ({
       return value;
     }
 
-    return themeBrandNames.reduce((text, brandName) => {
+    return replacementCandidates.reduce((text, brandName) => {
       if (!brandName || brandName === displayStoreName) {
         return text;
       }

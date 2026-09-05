@@ -231,8 +231,8 @@ const FALLBACK_PRODUCT: Product = {
 
 const FALLBACK_COMPANY = {
   id: "demo-company",
-  name: "Swan",
-  slug: "swan",
+  name: "المتجر",
+  slug: "store",
   currency: "EGP",
 };
 
