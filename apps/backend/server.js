@@ -1252,6 +1252,15 @@ try {
   console.error("❌ [LEAD-FOLLOWUP-CRON] Failed to start lead follow-up scheduler:", error);
 }
 
+// Start QP Express automated background status sync cron — every 30 minutes
+try {
+  const { startQpExpressSyncCron } = require("./cron/qpExpressSyncCron");
+  startQpExpressSyncCron();
+  console.log("✅ [QP-EXPRESS-CRON] Automated status sync scheduler started (runs every 30 min)");
+} catch (error) {
+  console.error("❌ [QP-EXPRESS-CRON] Failed to start QP Express sync scheduler:", error);
+}
+
 // Start WhatsApp Journey scheduler — follow-up messages
 try {
   const { startWhatsAppJourneyScheduler } = require("./cron/whatsappJourneyCron");

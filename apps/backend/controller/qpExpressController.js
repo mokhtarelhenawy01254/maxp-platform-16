@@ -476,10 +476,15 @@ function renderThermalStickerHtml(order) {
   const phone = order.phone || order.customerPhone || order.recipientPhone || '';
   const city = order.city || order.destinationCity || 'القاهرة';
   const address = order.address || order.shippingAddress || '';
-  const contents = order.shipment_contents || order.items || 'بضائع متنوعة';
+  const contents = order.shipment_contents || order.items || 'منتجات المتجر';
   const totalAmount = order.total_amount !== undefined ? order.total_amount : (order.amount || 0);
   const companyName = order.company_name || order.companyName || order.customer || 'متجر معتمد';
-  const notes = order.notes || 'معاينة مسموحة';
+
+  // Sanitize notes: If raw API returns question marks or empty, use clean standard Arabic instructions
+  const rawNotes = typeof order.notes === 'string' ? order.notes.trim() : '';
+  const isCorruptedNotes = rawNotes.includes('???') || rawNotes === '';
+  const notes = !isCorruptedNotes ? rawNotes : 'المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة';
+
   const orderDate = order.order_date ? String(order.order_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
   const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${serial}&scale=2&width=40&height=10&includetext&alttext=QP${serial}`;
 
@@ -531,16 +536,62 @@ exports.printWaybill = async (req, res) => {
 
     // 1. Fetch tracking data from QP Express
     const tracking = await service.trackShipment(trackingNumber);
-    const orderData = (tracking && tracking.raw) ? tracking.raw : {
+
+    // 2. Fetch local shipment and order to ensure clean Arabic data & items
+    let localData = {};
+    try {
+      const localShipment = await safeQuery(() =>
+        prisma.shipment.findFirst({
+          where: { trackingNumber: String(trackingNumber), ...(req.user?.companyId ? { companyId: req.user.companyId } : {}) },
+          include: {
+            order: {
+              include: {
+                customer: true,
+                orderItems: { include: { product: true } }
+              }
+            }
+          }
+        })
+      , 2);
+
+      if (localShipment?.order) {
+        const o = localShipment.order;
+        const c = o.customer;
+        const fullName = (c ? `${c.firstName || ''} ${c.lastName || ''}`.trim() : null) || o.customerName;
+        let contents = null;
+        if (o.orderItems && o.orderItems.length > 0) {
+          contents = o.orderItems.map(i => `${i.product?.title || i.productName || 'منتج'} × ${i.quantity || 1}`).join(' + ');
+        }
+        localData = {
+          customer_serial: o.orderNumber,
+          full_name: fullName,
+          phone: c?.phone || o.customerPhone,
+          city: o.city || o.governorate,
+          address: o.address,
+          notes: o.notes || o.customerNotes,
+          shipment_contents: contents,
+          total_amount: Number(o.total || 0),
+        };
+      }
+    } catch (dbErr) {
+      console.warn('⚠️ [QP_EXPRESS] Could not load local order data for waybill:', dbErr.message);
+    }
+
+    const raw = (tracking && tracking.raw) ? tracking.raw : {};
+    const orderData = {
       serial: trackingNumber,
-      full_name: tracking?.recipientName,
-      phone: tracking?.recipientPhone,
-      city: tracking?.city,
-      total_amount: tracking?.totalAmount,
-      shipment_contents: 'شحنة كيو بي إكسبريس',
+      customer_serial: localData.customer_serial || raw.customer_serial || trackingNumber,
+      full_name: localData.full_name || raw.full_name || tracking?.recipientName || 'عميل',
+      phone: localData.phone || raw.phone || tracking?.recipientPhone || '',
+      city: localData.city || raw.city || tracking?.city || 'القاهرة',
+      address: localData.address || raw.address || '',
+      total_amount: localData.total_amount !== undefined ? localData.total_amount : (raw.total_amount !== undefined ? raw.total_amount : (tracking?.totalAmount || 0)),
+      shipment_contents: localData.shipment_contents || raw.shipment_contents || 'شحنة كيو بي إكسبريس',
+      notes: localData.notes || raw.notes,
+      company_name: req.company?.name || raw.company_name || 'أميرال',
     };
 
-    // 2. Mark as printed in QP Express portal
+    // 3. Mark as printed in QP Express portal
     try {
       await service.getClient().post('/addorders/bulkPrint', {
         isprint: 1,
@@ -550,7 +601,7 @@ exports.printWaybill = async (req, res) => {
       console.warn('⚠️ [QP_EXPRESS] Could not mark order as printed on portal:', e.message);
     }
 
-    // 3. Render printable 80x50 mm sticker page
+    // 4. Render printable 80x50 mm sticker page
     const stickerHtml = renderThermalStickerHtml(orderData);
     const fullHtml = `<!DOCTYPE html>
 <html dir="rtl" lang="ar">
@@ -629,13 +680,18 @@ exports.bulkPrintWaybills = async (req, res) => {
     for (const serial of cleanSerials) {
       try {
         const tracking = await service.trackShipment(serial);
-        const orderData = (tracking && tracking.raw) ? tracking.raw : {
+        const raw = (tracking && tracking.raw) ? tracking.raw : {};
+        const orderData = {
           serial,
-          full_name: tracking?.recipientName,
-          phone: tracking?.recipientPhone,
-          city: tracking?.city,
-          total_amount: tracking?.totalAmount,
-          shipment_contents: 'شحنة كيو بي إكسبريس',
+          customer_serial: raw.customer_serial || serial,
+          full_name: raw.full_name || tracking?.recipientName || 'عميل',
+          phone: raw.phone || tracking?.recipientPhone || '',
+          city: raw.city || tracking?.city || 'القاهرة',
+          total_amount: raw.total_amount !== undefined ? raw.total_amount : (tracking?.totalAmount || 0),
+          shipment_contents: raw.shipment_contents || 'شحنة كيو بي إكسبريس',
+          notes: raw.notes,
+          address: raw.address || '',
+          company_name: req.company?.name || raw.company_name || 'أميرال',
         };
         stickersHtmlList.push(renderThermalStickerHtml(orderData));
       } catch (err) {
