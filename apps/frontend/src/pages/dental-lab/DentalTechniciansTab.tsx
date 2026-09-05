@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2, Users, Wallet, X as XMarkIcon } from "lucide-react";
+import { Loader2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2, Users, Wallet, Receipt, Printer, X as XMarkIcon } from "lucide-react";
 import {
-  DentalTechnician, DentalTechnicianRole, fetchTechnicians, createTechnician, updateTechnician, deleteTechnician,
+  DentalTechnician, DentalTechnicianRole, DentalTechnicianPayout, TechnicianPayoutType, TechnicianPayoutSummary,
+  fetchTechnicians, createTechnician, updateTechnician, deleteTechnician,
+  fetchTechnicianPayouts, createTechnicianPayout, deleteTechnicianPayout,
   fetchTeam, TeamMember,
-  ROLE_CONFIG, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney,
+  ROLE_CONFIG, MODAL_CONTENT_CLS, MODAL_INPUT_CLS, fmtMoney, fmtDate,
 } from "./shared";
 
 interface TechnicianForm {
@@ -28,6 +30,8 @@ export default function DentalTechniciansTab() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<TechnicianForm | null>(null);
+  const [payoutModalTech, setPayoutModalTech] = useState<DentalTechnician | null>(null);
+  const [ledgerModalTech, setLedgerModalTech] = useState<DentalTechnician | null>(null);
   const [saving, setSaving] = useState(false);
   const [removingId, setRemovingId] = useState<string | null>(null);
 
@@ -149,13 +153,15 @@ export default function DentalTechniciansTab() {
   const inputCls = `${MODAL_INPUT_CLS} text-sm`;
   const labelCls = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
   const totalWages = rows.reduce((s, x) => s + (x.totalEarnings ?? 0), 0);
+  const totalPaid = rows.reduce((s, x) => s + (x.totalPaid ?? 0), 0);
+  const totalBalanceDue = rows.reduce((s, x) => s + (x.balanceDue ?? 0), 0);
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold">فريق العمل والمحطات</h2>
-          <p className="text-sm text-gray-500 dark:text-gray-400">إدارة تخصصات ومحطات فريق المعمل وأجور المراحل المكتملة</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">إدارة تخصصات ومحطات فريق المعمل، أجور المراحل، وسندات صرف المستحقات والسلف</p>
         </div>
         <div className="flex items-center gap-2">
           <button onClick={() => load()} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -174,18 +180,24 @@ export default function DentalTechniciansTab() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">أجر المرحلة الافتراضي بالمعمل</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">أجر المرحلة الافتراضي</p>
           <p className="text-xl font-bold mt-1">{fmtMoney(wageDefault)} {t("dentalLab.common.egp")}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي مستحقات المراحل</p>
-          <p className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{fmtMoney(totalWages)} {t("dentalLab.common.egp")}</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي مستحقات الإنتاج</p>
+          <p className="text-xl font-bold mt-1 text-blue-600 dark:text-blue-400">{fmtMoney(totalWages)} {t("dentalLab.common.egp")}</p>
         </div>
         <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-          <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي أعضاء الفريق</p>
-          <p className="text-xl font-bold mt-1">{rows.length} عضو</p>
+          <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي المنصرف والسلف</p>
+          <p className="text-xl font-bold mt-1 text-purple-600 dark:text-purple-400">{fmtMoney(totalPaid)} {t("dentalLab.common.egp")}</p>
+        </div>
+        <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
+          <p className="text-xs text-gray-500 dark:text-gray-400">صافي المستحق القائم للفريق</p>
+          <p className={`text-xl font-bold mt-1 ${totalBalanceDue > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-600 dark:text-gray-300"}`}>
+            {fmtMoney(totalBalanceDue)} {t("dentalLab.common.egp")}
+          </p>
         </div>
       </div>
 
@@ -218,8 +230,10 @@ export default function DentalTechniciansTab() {
                   <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.phone")}</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">التخصص / المحطة</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">أجر المرحلة</th>
-                  <th className="text-right py-3 px-3 whitespace-nowrap">المراحل المنجزة</th>
-                  <th className="text-right py-3 px-3 whitespace-nowrap">إجمالي الأجر</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">المراحل</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">إجمالي المكتسب</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">المنصرف والسلف</th>
+                  <th className="text-right py-3 px-3 whitespace-nowrap">صافي المتبقي</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">حساب المنصة</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.status")}</th>
                   <th className="text-right py-3 px-3 whitespace-nowrap">{t("dentalLab.common.actions")}</th>
@@ -239,7 +253,11 @@ export default function DentalTechniciansTab() {
                       )}
                     </td>
                     <td className="py-3 px-3 font-mono font-medium text-blue-600 dark:text-blue-400">{x.completedStages ?? 0}</td>
-                    <td className="py-3 px-3 font-semibold text-emerald-600 dark:text-emerald-400">{fmtMoney(x.totalEarnings)} ج.م</td>
+                    <td className="py-3 px-3 font-semibold text-blue-600 dark:text-blue-400">{fmtMoney(x.totalEarnings)} ج.م</td>
+                    <td className="py-3 px-3 font-semibold text-purple-600 dark:text-purple-400">{fmtMoney(x.totalPaid ?? 0)} ج.م</td>
+                    <td className={`py-3 px-3 font-bold ${(x.balanceDue ?? 0) > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-600 dark:text-gray-300"}`}>
+                      {fmtMoney(x.balanceDue ?? 0)} ج.م
+                    </td>
                     <td className="py-3 px-3 text-xs text-gray-500 dark:text-gray-400">{teamName(x.userId)}</td>
                     <td className="py-3 px-3">
                       <button
@@ -250,8 +268,22 @@ export default function DentalTechniciansTab() {
                       </button>
                     </td>
                     <td className="py-3 px-3">
-                      <div className="flex gap-1">
-                        <button onClick={() => openEdit(x)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title={t("dentalLab.common.edit")}>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setPayoutModalTech(x)}
+                          className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg"
+                          title="صرف مستحقات / سلفة"
+                        >
+                          <Wallet className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setLedgerModalTech(x)}
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
+                          title="كشف حساب وسجل السندات"
+                        >
+                          <Receipt className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => openEdit(x)} className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg" title={t("dentalLab.common.edit")}>
                           <Pencil className="w-4 h-4" />
                         </button>
                         <button onClick={() => remove(x)} disabled={removingId !== null} className="p-1.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-lg disabled:opacity-40" title={t("dentalLab.common.delete")}>
@@ -336,6 +368,431 @@ export default function DentalTechniciansTab() {
           </div>
         </div>
       )}
+
+      {payoutModalTech && (
+        <TechnicianPayoutModal
+          tech={payoutModalTech}
+          onClose={() => setPayoutModalTech(null)}
+          onSaved={async () => {
+            setPayoutModalTech(null);
+            await load(true);
+          }}
+        />
+      )}
+
+      {ledgerModalTech && (
+        <TechnicianLedgerModal
+          tech={ledgerModalTech}
+          onClose={() => setLedgerModalTech(null)}
+          onAddPayout={() => {
+            const current = ledgerModalTech;
+            setLedgerModalTech(null);
+            setPayoutModalTech(current);
+          }}
+          onDataChanged={async () => {
+            await load(true);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+interface PayoutModalProps {
+  tech: DentalTechnician;
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+function TechnicianPayoutModal({ tech, onClose, onSaved }: PayoutModalProps) {
+  const [amount, setAmount] = useState("");
+  const [type, setType] = useState<TechnicianPayoutType>("PAYOUT");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [reference, setReference] = useState("");
+  const [notes, setNotes] = useState("");
+  const [paidAt, setPaidAt] = useState(() => new Date().toISOString().split("T")[0]);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const val = parseFloat(amount);
+    if (!val || val <= 0) {
+      toast.error("يرجى إدخال مبلغ صحيح أكبر من الصفر");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createTechnicianPayout(tech.id, {
+        amount: val,
+        type,
+        paymentMethod,
+        reference: reference.trim() || undefined,
+        notes: notes.trim() || undefined,
+        paidAt: paidAt ? new Date(paidAt).toISOString() : undefined,
+      });
+      toast.success("تم تسجيل السند المالي بنجاح");
+      onSaved();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "حدث خطأ أثناء حفظ السند");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const typeConfig: Record<TechnicianPayoutType, { label: string; desc: string; color: string }> = {
+    PAYOUT: { label: "صرف مستحقات إنتاج", desc: "دفع أجر المراحل المكتملة", color: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800" },
+    ADVANCE: { label: "سلفة نقدية على الحساب", desc: "سلفة تخصم لاحقاً من الأرباح", color: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800" },
+    BONUS: { label: "مكافأة أداء / حافز", desc: "إضافة مالية تضاف للمستحقات", color: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800" },
+    DEDUCTION: { label: "خصم (تالف / إعادة شغل)", desc: "خصم يقلل المستحق للفني", color: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800" },
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3" onClick={onClose}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-lg max-h-[92vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-3 border-b dark:border-gray-700">
+          <div>
+            <h3 className="text-lg font-bold">تسجيل حركة مالية / سند صرف</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">الفني: {tech.name} (المتبقي الحالي: {fmtMoney(tech.balanceDue ?? 0)} ج.م)</p>
+          </div>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-2">نوع الحركة المالية *</label>
+            <div className="grid grid-cols-2 gap-2">
+              {(Object.keys(typeConfig) as TechnicianPayoutType[]).map(tKey => {
+                const cfg = typeConfig[tKey];
+                const isSelected = type === tKey;
+                return (
+                  <button
+                    key={tKey}
+                    type="button"
+                    onClick={() => setType(tKey)}
+                    className={`p-2.5 rounded-lg border text-right transition-all text-xs ${isSelected ? `${cfg.color} ring-2 ring-blue-500 font-bold shadow-sm` : "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"}`}
+                  >
+                    <div>{cfg.label}</div>
+                    <div className="text-[10px] text-gray-400 mt-0.5 font-normal">{cfg.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">المبلغ (ج.م) *</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0.01"
+                required
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                placeholder="0.00"
+                className={`${MODAL_INPUT_CLS} text-sm font-bold`}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">طريقة الصرف *</label>
+              <select
+                value={paymentMethod}
+                onChange={e => setPaymentMethod(e.target.value)}
+                className={`${MODAL_INPUT_CLS} text-sm`}
+              >
+                <option value="CASH">نقدي (كاش الخزينة)</option>
+                <option value="BANK_TRANSFER">تحويل بنكي</option>
+                <option value="WALLET">محفظة إلكترونية / فودافون كاش / إنستاباي</option>
+                <option value="CHECK">شيك بنكي</option>
+                <option value="OTHER">أخرى</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">تاريخ الصرف</label>
+              <input
+                type="date"
+                value={paidAt}
+                onChange={e => setPaidAt(e.target.value)}
+                className={`${MODAL_INPUT_CLS} text-sm`}
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">الرقم المرجعي / رقم الإيصال</label>
+              <input
+                type="text"
+                value={reference}
+                onChange={e => setReference(e.target.value)}
+                placeholder="مثال: رقم الحوالة أو سند الصرف"
+                className={`${MODAL_INPUT_CLS} text-sm`}
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">البيان / الملاحظات</label>
+            <textarea
+              rows={2}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="مثال: صرف دفعة مستحقات عن الأسبوع الأول من الشهر..."
+              className={`${MODAL_INPUT_CLS} text-sm`}
+            />
+          </div>
+
+          <div className="flex items-center justify-end gap-2 pt-3 border-t dark:border-gray-700">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={saving}
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-300 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              إلغاء
+            </button>
+            <button
+              type="submit"
+              disabled={saving || !amount}
+              className="px-5 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 font-semibold shadow-sm flex items-center gap-1.5"
+            >
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4" />}
+              حفظ وتأكيد السند
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+interface LedgerModalProps {
+  tech: DentalTechnician;
+  onClose: () => void;
+  onAddPayout: () => void;
+  onDataChanged: () => void;
+}
+
+function TechnicianLedgerModal({ tech, onClose, onAddPayout, onDataChanged }: LedgerModalProps) {
+  const [loading, setLoading] = useState(true);
+  const [payouts, setPayouts] = useState<DentalTechnicianPayout[]>([]);
+  const [summary, setSummary] = useState<TechnicianPayoutSummary | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetchTechnicianPayouts(tech.id);
+      setPayouts(res.payouts || []);
+      setSummary(res.summary);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "حدث خطأ في تحميل كشف حساب الفني");
+    } finally {
+      setLoading(false);
+    }
+  }, [tech.id]);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleDelete = async (payoutId: string) => {
+    if (!window.confirm("هل أنت متأكد من حذف هذا السند المالي؟ سيتم تحديث رصيد الفني تلقائياً.")) return;
+    setDeletingId(payoutId);
+    try {
+      await deleteTechnicianPayout(payoutId);
+      toast.success("تم حذف السند بنجاح");
+      await loadData();
+      onDataChanged();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "حدث خطأ أثناء حذف السند");
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const typeBadge = (type: string) => {
+    switch (type) {
+      case "PAYOUT":
+        return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">صرف مستحقات</span>;
+      case "ADVANCE":
+        return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">سلفة نقدية</span>;
+      case "BONUS":
+        return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">مكافأة أداء</span>;
+      case "DEDUCTION":
+        return <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300">خصم تالف/إعادة</span>;
+      default:
+        return <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700">{type}</span>;
+    }
+  };
+
+  const methodLabel: Record<string, string> = {
+    CASH: "نقدي",
+    BANK_TRANSFER: "تحويل بنكي",
+    WALLET: "محفظة إلكترونية",
+    CHECK: "شيك بنكي",
+    OTHER: "أخرى",
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 print:p-0 print:bg-white print:static" onClick={onClose}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-4xl max-h-[92vh] flex flex-col overflow-hidden print:max-w-none print:shadow-none print:border-none print:p-0`} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between pb-3 border-b dark:border-gray-700 print:hidden">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            <div>
+              <h3 className="text-lg font-bold">كشف حساب وسجل مستحقات الفني</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{tech.name} — {tech.phone || "بدون هاتف"}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              طباعة كشف الحساب
+            </button>
+            <button
+              onClick={onAddPayout}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 shadow-sm"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              صرف جديد / سلفة
+            </button>
+            <button onClick={onClose} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg">
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
+
+        {/* Printable Header */}
+        <div className="hidden print:block mb-6 border-b pb-4 text-right" dir="rtl">
+          <h2 className="text-2xl font-bold">سند كشف حساب فني معمل الأسنان</h2>
+          <div className="grid grid-cols-2 gap-4 mt-3 text-sm text-gray-600">
+            <div>
+              <p><span className="font-bold">اسم الفني:</span> {tech.name}</p>
+              <p><span className="font-bold">التخصص:</span> {tech.role}</p>
+              <p><span className="font-bold">الهاتف:</span> {tech.phone || "—"}</p>
+            </div>
+            <div className="text-left" dir="ltr">
+              <p><span className="font-bold">تاريخ الطباعة:</span> {new Date().toLocaleDateString("ar-EG")}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Summary Strip */}
+        <div className="p-4 bg-gray-50 dark:bg-gray-800/50 border-b dark:border-gray-700 shrink-0">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border dark:border-gray-700">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 block">أجر الإنتاج المكتسب</span>
+              <span className="text-base font-bold text-blue-600 dark:text-blue-400">{fmtMoney(summary?.totalEarned ?? 0)} ج.م</span>
+              <span className="text-[10px] text-gray-400 block mt-0.5">{summary?.completedStages ?? 0} مرحلة ({summary?.completedUnits ?? 0} وحدة)</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border dark:border-gray-700">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 block">إجمالي ما صُرف للفني</span>
+              <span className="text-base font-bold text-purple-600 dark:text-purple-400">{fmtMoney(summary?.totalPaid ?? 0)} ج.م</span>
+              <span className="text-[10px] text-gray-400 block mt-0.5">سلف: {fmtMoney(summary?.totalAdvances ?? 0)} ج.م</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border dark:border-gray-700">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 block">المكافآت والحوافز</span>
+              <span className="text-base font-bold text-emerald-600 dark:text-emerald-400">+{fmtMoney(summary?.totalBonuses ?? 0)} ج.م</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border dark:border-gray-700">
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 block">الخصومات والتوالف</span>
+              <span className="text-base font-bold text-red-600 dark:text-red-400">-{fmtMoney(summary?.totalDeductions ?? 0)} ج.م</span>
+            </div>
+            <div className="bg-white dark:bg-gray-800 p-3 rounded-lg border-2 border-emerald-500/40 col-span-2 sm:col-span-1">
+              <span className="text-[11px] text-emerald-700 dark:text-emerald-300 font-semibold block">صافي المستحق القائم</span>
+              <span className={`text-lg font-bold block ${Number(summary?.netDue ?? 0) > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-700 dark:text-gray-300"}`}>
+                {fmtMoney(summary?.netDue ?? 0)} ج.م
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Ledger Table */}
+        <div className="overflow-y-auto flex-1 p-4">
+          <h4 className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-2.5">سجل الحركات وسندات الصرف</h4>
+          {loading ? (
+            <div className="py-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
+          ) : payouts.length === 0 ? (
+            <div className="text-center py-12 text-gray-400 dark:text-gray-500 text-sm">
+              <Receipt className="w-10 h-10 mx-auto mb-2 opacity-40" />
+              لا توجد سندات صرف أو حركات مسجلة لهذا الفني حتى الآن
+            </div>
+          ) : (
+            <div className="overflow-x-auto border dark:border-gray-700 rounded-lg">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-800 border-b dark:border-gray-700 text-gray-500">
+                    <th className="py-2.5 px-3 text-right">التاريخ</th>
+                    <th className="py-2.5 px-3 text-right">نوع الحركة</th>
+                    <th className="py-2.5 px-3 text-right">المبلغ</th>
+                    <th className="py-2.5 px-3 text-right">طريقة الدفع</th>
+                    <th className="py-2.5 px-3 text-right">المرجع</th>
+                    <th className="py-2.5 px-3 text-right">البيان والملاحظات</th>
+                    <th className="py-2.5 px-3 text-right">المدخل</th>
+                    <th className="py-2.5 px-3 text-right print:hidden">إجراء</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y dark:divide-gray-700">
+                  {payouts.map(p => (
+                    <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/50">
+                      <td className="py-2.5 px-3 font-mono whitespace-nowrap">{fmtDate(p.paidAt)}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap">{typeBadge(p.type)}</td>
+                      <td className={`py-2.5 px-3 font-bold font-mono whitespace-nowrap ${p.type === "DEDUCTION" ? "text-red-600" : p.type === "BONUS" ? "text-blue-600" : "text-emerald-600"}`}>
+                        {p.type === "DEDUCTION" ? "-" : "+"}{fmtMoney(p.amount)} ج.م
+                      </td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-gray-600 dark:text-gray-300">{methodLabel[p.paymentMethod] || p.paymentMethod}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap text-gray-500 font-mono">{p.reference || "—"}</td>
+                      <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 max-w-xs truncate">{p.notes || "—"}</td>
+                      <td className="py-2.5 px-3 text-gray-400 whitespace-nowrap">{p.createdByName || "الإدارة"}</td>
+                      <td className="py-2.5 px-3 whitespace-nowrap print:hidden">
+                        <button
+                          onClick={() => handleDelete(p.id)}
+                          disabled={deletingId === p.id}
+                          className="p-1 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition-colors disabled:opacity-40"
+                          title="حذف السند"
+                        >
+                          {deletingId === p.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* Printable Signature Footer */}
+          <div className="hidden print:grid grid-cols-2 gap-8 mt-12 pt-8 border-t text-sm">
+            <div className="text-right">
+              <p className="font-bold">توقيع الفني المستلم:</p>
+              <div className="mt-8 border-b border-dashed border-gray-400 w-48"></div>
+            </div>
+            <div className="text-left" dir="ltr">
+              <p className="font-bold">توقيع الإدارة / الحسابات:</p>
+              <div className="mt-8 border-b border-dashed border-gray-400 w-48 ml-auto"></div>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-3 border-t dark:border-gray-700 flex justify-end print:hidden">
+          <button
+            onClick={onClose}
+            className="px-4 py-1.5 text-xs text-gray-700 dark:text-gray-300 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            إغلاق
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

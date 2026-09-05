@@ -85,6 +85,37 @@ export interface DentalTechnician {
   completedStages?: number;
   completedUnits?: number;
   totalEarnings?: number;
+  totalPaid?: number;
+  balanceDue?: number;
+}
+
+export type TechnicianPayoutType = "PAYOUT" | "ADVANCE" | "BONUS" | "DEDUCTION";
+
+export interface DentalTechnicianPayout {
+  id: string;
+  companyId?: string;
+  technicianId: string;
+  type: TechnicianPayoutType;
+  amount: number;
+  paymentMethod: "CASH" | "BANK_TRANSFER" | "WALLET" | "CHECK" | "OTHER";
+  reference?: string;
+  notes?: string;
+  paidAt: string;
+  createdBy?: string;
+  createdByName?: string;
+  createdAt?: string;
+}
+
+export interface TechnicianPayoutSummary {
+  totalEarned: number;
+  completedStages: number;
+  completedUnits: number;
+  totalPayouts: number;
+  totalAdvances: number;
+  totalPaid: number;
+  totalBonuses: number;
+  totalDeductions: number;
+  netDue: number;
 }
 
 export interface DentalCaseStage {
@@ -403,6 +434,9 @@ export interface MyWage {
   totalWage?: number;
   thisMonthStages?: number;
   thisMonthWage?: number;
+  totalPaid?: number;
+  totalAdvances?: number;
+  balanceDue?: number;
 }
 
 export interface AgingBucket {
@@ -652,6 +686,31 @@ export const fetchTechnicians = async (): Promise<{ items: DentalTechnician[]; w
 export const createTechnician = async (body: Partial<DentalTechnician>): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.post("/dental-lab/technicians", body));
 export const updateTechnician = async (id: string, body: Partial<DentalTechnician>): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.put(`/dental-lab/technicians/${id}`, body));
 export const deleteTechnician = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/technicians/${id}`); };
+
+export const fetchTechnicianPayouts = async (technicianId: string, params?: { type?: string; from?: string; to?: string }): Promise<{
+  technician: DentalTechnician;
+  payouts: DentalTechnicianPayout[];
+  summary: TechnicianPayoutSummary;
+}> => {
+  const res = await apiClient.get(`/dental-lab/technicians/${technicianId}/payouts`, { params });
+  return unwrapEnvelope(res);
+};
+
+export const createTechnicianPayout = async (technicianId: string, body: {
+  amount: number;
+  type?: TechnicianPayoutType;
+  paymentMethod?: string;
+  reference?: string;
+  notes?: string;
+  paidAt?: string;
+}): Promise<DentalTechnicianPayout> => {
+  const res = await apiClient.post(`/dental-lab/technicians/${technicianId}/payouts`, body);
+  return unwrapEnvelope<DentalTechnicianPayout>(res);
+};
+
+export const deleteTechnicianPayout = async (payoutId: string): Promise<void> => {
+  await apiClient.delete(`/dental-lab/technicians/payouts/${payoutId}`);
+};
 
 export const fetchCases = async (params?: {
   status?: string;

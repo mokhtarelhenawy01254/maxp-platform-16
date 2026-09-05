@@ -100,6 +100,12 @@ dentalRefabrication: {
       findMany: jest.fn(),
       findFirst: jest.fn(),
     },
+    dentalTechnicianPayout: {
+      findMany: jest.fn().mockResolvedValue([]),
+      findFirst: jest.fn(),
+      create: jest.fn(),
+      delete: jest.fn(),
+    },
     userCompany: {
       findMany: jest.fn(),
     },
@@ -786,6 +792,115 @@ test('allows READY when a passed quality check exists', async () => {
       expect(price).toBe(700);
       const fallback = await pricing.resolveDoctorWorkTypePrice(prisma, 'company-1', 'doc-1', { id: 'wt-9', price: 500 });
       expect(fallback).toBe(500);
+    });
+  });
+
+  describe('technician payouts & ledger', () => {
+    test('recordTechnicianPayout validates positive amount and valid type', async () => {
+      const prisma = createPrisma();
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res1 = createResponse();
+      await controller.recordTechnicianPayout(req({ params: { id: 'tech-1' }, body: { amount: -50 } }), res1);
+      expect(res1.statusCode).toBe(400);
+
+      const res2 = createResponse();
+      await controller.recordTechnicianPayout(req({ params: { id: 'tech-1' }, body: { amount: 100, type: 'INVALID' } }), res2);
+      expect(res2.statusCode).toBe(400);
+    });
+
+    test('recordTechnicianPayout creates payout record successfully', async () => {
+      const prisma = createPrisma();
+      prisma.dentalTechnician.findFirst.mockResolvedValue({ id: 'tech-1', companyId: 'company-1', name: 'أحمد' });
+      prisma.dentalTechnicianPayout.create.mockResolvedValue({
+        id: 'pay-1',
+        technicianId: 'tech-1',
+        companyId: 'company-1',
+        type: 'PAYOUT',
+        amount: 500,
+        paymentMethod: 'CASH',
+      });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.recordTechnicianPayout(
+        req({
+          params: { id: 'tech-1' },
+          body: { amount: 500, type: 'PAYOUT', paymentMethod: 'CASH', reference: 'REC-001', notes: 'دفعة أسبوعية' },
+          user: { companyId: 'company-1', id: 'user-1', name: 'المدير' },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(201);
+      expect(prisma.dentalTechnicianPayout.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            companyId: 'company-1',
+            technicianId: 'tech-1',
+            type: 'PAYOUT',
+            amount: 500,
+            paymentMethod: 'CASH',
+            reference: 'REC-001',
+            notes: 'دفعة أسبوعية',
+          }),
+        })
+      );
+    });
+
+    test('listTechnicianPayouts aggregates earnings, payouts, advances and calculates netDue', async () => {
+      const prisma = createPrisma();
+      prisma.dentalTechnician.findFirst.mockResolvedValue({
+        id: 'tech-1',
+        name: 'أحمد فني',
+        role: 'CAD_DESIGNER',
+        wagePerStage: 50,
+      });
+      prisma.dentalCaseStage.findMany.mockResolvedValue([
+        { assigneeId: 'tech-1', case: { teeth: '11,12' } },
+        { assigneeId: 'tech-1', case: { teeth: '21' } },
+      ]);
+      prisma.dentalTechnician.findMany.mockResolvedValue([
+        { id: 'tech-1', name: 'أحمد فني', wagePerStage: 50 },
+      ]);
+      prisma.dentalSetting.findMany.mockResolvedValue([]);
+
+      prisma.dentalTechnicianPayout.findMany.mockResolvedValue([
+        { id: 'p1', type: 'PAYOUT', amount: 70, paidAt: new Date() },
+        { id: 'p2', type: 'ADVANCE', amount: 30, paidAt: new Date() },
+        { id: 'p3', type: 'BONUS', amount: 20, paidAt: new Date() },
+        { id: 'p4', type: 'DEDUCTION', amount: 10, paidAt: new Date() },
+      ]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.listTechnicianPayouts(req({ params: { id: 'tech-1' }, query: {} }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.data.summary).toEqual(
+        expect.objectContaining({
+          totalEarned: 150,
+          totalPayouts: 70,
+          totalAdvances: 30,
+          totalPaid: 100,
+          totalBonuses: 20,
+          totalDeductions: 10,
+          netDue: 60,
+        })
+      );
+    });
+
+    test('deleteTechnicianPayout removes payout record', async () => {
+      const prisma = createPrisma();
+      prisma.dentalTechnicianPayout.findFirst.mockResolvedValue({ id: 'p1', companyId: 'company-1' });
+      prisma.dentalTechnicianPayout.delete.mockResolvedValue({ id: 'p1' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.deleteTechnicianPayout(req({ params: { payoutId: 'p1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalTechnicianPayout.delete).toHaveBeenCalledWith({ where: { id: 'p1' } });
     });
   });
 });

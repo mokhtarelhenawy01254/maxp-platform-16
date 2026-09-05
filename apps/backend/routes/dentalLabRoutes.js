@@ -100,6 +100,9 @@ router.get('/technicians', verifyToken.authenticateToken, dentalRoleGuard(['OWNE
 router.post('/technicians', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.createTechnician);
 router.put('/technicians/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateTechnician);
 router.delete('/technicians/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteTechnician);
+router.get('/technicians/:id/payouts', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.listTechnicianPayouts);
+router.post('/technicians/:id/payouts', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.recordTechnicianPayout);
+router.delete('/technicians/payouts/:payoutId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteTechnicianPayout);
 
 // Cases
 router.get('/cases', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.listCases);

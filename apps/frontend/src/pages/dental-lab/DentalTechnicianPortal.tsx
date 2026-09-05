@@ -1,4 +1,4 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { CheckCircle2, ClipboardList, Loader2, RefreshCw, Wallet, ArrowUpCircle } from "lucide-react";
@@ -82,20 +82,30 @@ export default function DentalTechnicianPortal() {
       {loading ? (
         <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
       ) : tab === "wage" ? (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.myWage.rate")}</p>
             <p className="text-xl font-bold mt-1">{fmtMoney(wage?.rate)} {t("dentalLab.common.egp")}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-5">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.myWage.thisMonth")}</p>
-            <p className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{fmtMoney(wage?.thisMonthWage)} {t("dentalLab.common.egp")}</p>
+            <p className="text-xl font-bold mt-1 text-blue-600 dark:text-blue-400">{fmtMoney(wage?.thisMonthWage)} {t("dentalLab.common.egp")}</p>
             <p className="text-xs text-gray-400 mt-1">{wage?.thisMonthStages ?? 0} {t("dentalLab.myWage.stages")}</p>
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-5">
+          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
             <p className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.myWage.total")}</p>
-            <p className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{fmtMoney(wage?.totalWage)} {t("dentalLab.common.egp")}</p>
+            <p className="text-xl font-bold mt-1 text-blue-600 dark:text-blue-400">{fmtMoney(wage?.totalWage)} {t("dentalLab.common.egp")}</p>
             <p className="text-xs text-gray-400 mt-1">{wage?.completedStages ?? 0} {t("dentalLab.myWage.stages")}</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
+            <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي المصروف والسلف</p>
+            <p className="text-xl font-bold mt-1 text-purple-600 dark:text-purple-400">{fmtMoney(wage?.totalPaid ?? 0)} {t("dentalLab.common.egp")}</p>
+            <p className="text-xs text-gray-400 mt-1">منها سلف: {fmtMoney(wage?.totalAdvances ?? 0)} ج.م</p>
+          </div>
+          <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-emerald-500/50 p-4">
+            <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">مستحقاتك المتبقية للصرف</p>
+            <p className="text-xl font-bold mt-1 text-emerald-600 dark:text-emerald-400">{fmtMoney(wage?.balanceDue ?? 0)} {t("dentalLab.common.egp")}</p>
+            <p className="text-xs text-gray-400 mt-1">رصيدك في ذمة المعمل</p>
           </div>
         </div>
       ) : cases.length === 0 ? (

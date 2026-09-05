@@ -582,12 +582,42 @@ const listTechnicians = async (req, res) => {
     ]);
     const earnings = await computeTechnicianEarnings(prisma, companyId, { from, to });
     const earningById = new Map(earnings.map((e) => [e.technicianId, e]));
+
+    let payoutAggByTech = new Map();
+    if (prisma.dentalTechnicianPayout && typeof prisma.dentalTechnicianPayout.findMany === 'function') {
+      try {
+        const techIds = items.map((t) => t.id);
+        const allPayouts = techIds.length ? ((await prisma.dentalTechnicianPayout.findMany({
+          where: { companyId, technicianId: { in: techIds } },
+          select: { technicianId: true, type: true, amount: true },
+        })) || []) : [];
+        for (const p of allPayouts) {
+          if (!payoutAggByTech.has(p.technicianId)) {
+            payoutAggByTech.set(p.technicianId, { paid: 0, bonuses: 0, deductions: 0 });
+          }
+          const curr = payoutAggByTech.get(p.technicianId);
+          const amt = Number(p.amount) || 0;
+          if (p.type === 'PAYOUT' || p.type === 'ADVANCE') curr.paid += amt;
+          else if (p.type === 'BONUS') curr.bonuses += amt;
+          else if (p.type === 'DEDUCTION') curr.deductions += amt;
+        }
+      } catch (err) {
+        console.warn('Could not aggregate technician payouts:', err.message);
+      }
+    }
+
     const enriched = items.map((t) => {
       const e = earningById.get(t.id) || { completedStages: 0, wage: 0 };
+      const pAgg = payoutAggByTech.get(t.id) || { paid: 0, bonuses: 0, deductions: 0 };
+      const wage = round2(e.wage || 0);
+      const totalPaid = round2(pAgg.paid);
+      const balanceDue = round2((wage + pAgg.bonuses) - (totalPaid + pAgg.deductions));
       return {
         ...t,
         completedStages: e.completedStages || 0,
-        totalEarnings: e.wage || 0,
+        totalEarnings: wage,
+        totalPaid,
+        balanceDue,
       };
     });
     const defaults = await getTechnicianWageDefaults(prisma, companyId);
@@ -688,6 +718,169 @@ const deleteTechnician = async (req, res) => {
   } catch (error) {
     console.error('Error deleting dental technician:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في حذف الفني' });
+  }
+};
+
+// ==================== TECHNICIAN PAYOUTS & ADVANCES ====================
+
+const listTechnicianPayouts = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const technician = await prisma.dentalTechnician.findFirst({
+      where: { id, companyId },
+      select: { id: true, name: true, role: true, phone: true, wagePerStage: true },
+    });
+    if (!technician) {
+      return res.status(404).json({ success: false, error: 'الفني غير موجود' });
+    }
+
+    const { type, from, to } = req.query || {};
+    const where = { companyId, technicianId: id };
+    if (type) where.type = String(type).toUpperCase();
+    const fromDate = parseDate(from);
+    const toDate = parseDate(to);
+    if (fromDate || toDate) {
+      where.paidAt = {};
+      if (fromDate) where.paidAt.gte = fromDate;
+      if (toDate) where.paidAt.lte = getEndOfDayInTimezone(toDate);
+    }
+
+    let payouts = [];
+    if (prisma.dentalTechnicianPayout && typeof prisma.dentalTechnicianPayout.findMany === 'function') {
+      payouts = await prisma.dentalTechnicianPayout.findMany({
+        where,
+        orderBy: { paidAt: 'desc' },
+      });
+    }
+
+    const { computeTechnicianEarnings } = require('../services/dentalPricing');
+    const earnings = await computeTechnicianEarnings(prisma, companyId, { technicianId: id, from, to });
+    const totalEarned = earnings.length ? round2(earnings[0].wage || 0) : 0;
+    const completedStages = earnings.length ? (earnings[0].completedStages || 0) : 0;
+    const completedUnits = earnings.length ? (earnings[0].completedUnits || 0) : 0;
+
+    let totalPayouts = 0;
+    let totalAdvances = 0;
+    let totalBonuses = 0;
+    let totalDeductions = 0;
+
+    for (const p of payouts) {
+      const amt = Number(p.amount) || 0;
+      if (p.type === 'PAYOUT') totalPayouts += amt;
+      else if (p.type === 'ADVANCE') totalAdvances += amt;
+      else if (p.type === 'BONUS') totalBonuses += amt;
+      else if (p.type === 'DEDUCTION') totalDeductions += amt;
+    }
+
+    totalPayouts = round2(totalPayouts);
+    totalAdvances = round2(totalAdvances);
+    totalBonuses = round2(totalBonuses);
+    totalDeductions = round2(totalDeductions);
+
+    const totalPaid = round2(totalPayouts + totalAdvances);
+    const netDue = round2((totalEarned + totalBonuses) - (totalPaid + totalDeductions));
+
+    res.json({
+      success: true,
+      data: {
+        technician,
+        payouts,
+        summary: {
+          totalEarned,
+          completedStages,
+          completedUnits,
+          totalPayouts,
+          totalAdvances,
+          totalPaid,
+          totalBonuses,
+          totalDeductions,
+          netDue,
+        },
+      },
+    });
+  } catch (error) {
+    console.error('Error listing dental technician payouts:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب مدفوعات الفني' });
+  }
+};
+
+const recordTechnicianPayout = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const { amount, type = 'PAYOUT', paymentMethod = 'CASH', reference, notes, paidAt } = req.body || {};
+
+    const amt = Number(amount);
+    if (!amt || isNaN(amt) || amt <= 0) {
+      return res.status(400).json({ success: false, error: 'المبلغ يجب أن يكون رقماً موجباً أكبر من الصفر' });
+    }
+
+    const validTypes = ['PAYOUT', 'ADVANCE', 'BONUS', 'DEDUCTION'];
+    const normType = String(type).toUpperCase();
+    if (!validTypes.includes(normType)) {
+      return res.status(400).json({ success: false, error: 'نوع الحركة غير صالح' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const technician = await prisma.dentalTechnician.findFirst({
+      where: { id, companyId },
+    });
+    if (!technician) {
+      return res.status(404).json({ success: false, error: 'الفني غير موجود' });
+    }
+
+    const createdBy = req.user?.id || null;
+    const createdByName = req.user?.name || req.user?.email || null;
+
+    const payout = await prisma.dentalTechnicianPayout.create({
+      data: {
+        companyId,
+        technicianId: id,
+        type: normType,
+        amount: round2(amt),
+        paymentMethod: String(paymentMethod || 'CASH').toUpperCase(),
+        reference: reference ? String(reference).trim() : null,
+        notes: notes ? String(notes).trim() : null,
+        paidAt: paidAt ? new Date(paidAt) : new Date(),
+        createdBy,
+        createdByName,
+      },
+    });
+
+    res.status(201).json({ success: true, data: payout, message: 'تم تسجيل الحركة المالية بنجاح' });
+  } catch (error) {
+    console.error('Error recording technician payout:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل الدفعة' });
+  }
+};
+
+const deleteTechnicianPayout = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { payoutId } = req.params;
+
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalTechnicianPayout.findFirst({
+      where: { id: payoutId, companyId },
+    });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'السند غير موجود' });
+    }
+
+    await prisma.dentalTechnicianPayout.delete({
+      where: { id: payoutId },
+    });
+
+    res.json({ success: true, message: 'تم حذف السند بنجاح' });
+  } catch (error) {
+    console.error('Error deleting technician payout:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في حذف السند' });
   }
 };
 
@@ -3194,6 +3387,31 @@ const getMyWage = async (req, res) => {
     const rate = technician.wagePerStage != null ? Number(technician.wagePerStage) : (await getTechnicianWageDefaults(prisma, companyId)).defaultPerStage;
     const total = all.find((e) => e.technicianId === technician.id) || { completedStages: 0, wage: 0 };
     const month = thisMonth.find((e) => e.technicianId === technician.id) || { completedStages: 0, wage: 0 };
+
+    let totalPaid = 0;
+    let totalAdvances = 0;
+    let totalBonuses = 0;
+    let totalDeductions = 0;
+    if (prisma.dentalTechnicianPayout && typeof prisma.dentalTechnicianPayout.findMany === 'function') {
+      try {
+        const payouts = (await prisma.dentalTechnicianPayout.findMany({
+          where: { companyId, technicianId: technician.id },
+          select: { type: true, amount: true },
+        })) || [];
+        for (const p of payouts) {
+          const amt = Number(p.amount) || 0;
+          if (p.type === 'PAYOUT') totalPaid += amt;
+          else if (p.type === 'ADVANCE') totalAdvances += amt;
+          else if (p.type === 'BONUS') totalBonuses += amt;
+          else if (p.type === 'DEDUCTION') totalDeductions += amt;
+        }
+      } catch (err) {
+        console.warn('Could not load technician payouts in getMyWage:', err.message);
+      }
+    }
+    const allPaid = round2(totalPaid + totalAdvances);
+    const balanceDue = round2(((total.wage || 0) + totalBonuses) - (allPaid + totalDeductions));
+
     res.json({
       success: true,
       data: {
@@ -3203,6 +3421,9 @@ const getMyWage = async (req, res) => {
         totalWage: total.wage || 0,
         thisMonthStages: month.completedStages || 0,
         thisMonthWage: month.wage || 0,
+        totalPaid: allPaid,
+        totalAdvances: round2(totalAdvances),
+        balanceDue,
       },
     });
   } catch (error) {
@@ -3859,6 +4080,9 @@ module.exports = {
   createTechnician,
   updateTechnician,
   deleteTechnician,
+  listTechnicianPayouts,
+  recordTechnicianPayout,
+  deleteTechnicianPayout,
   listCases,
   createCase,
   getCaseDetail,

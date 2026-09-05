@@ -59,6 +59,7 @@ model DentalTechnician {
   updatedAt    DateTime @updatedAt
 
   assignments DentalCaseAssignment[]
+  payouts     DentalTechnicianPayout[]
 
   @@index([companyId])
   @@index([userId])
@@ -353,4 +354,27 @@ model DentalRefabrication {
 
   @@index([companyId, caseId])
   @@map("dental_refabrications")
+}
+
+model DentalTechnicianPayout {
+  id            String   @id @default(cuid())
+  companyId     String?
+  technicianId  String
+  type          String   @default("PAYOUT") // PAYOUT | ADVANCE | BONUS | DEDUCTION
+  amount        Float    @default(0)
+  paymentMethod String   @default("CASH") // CASH | BANK_TRANSFER | WALLET | CHECK | OTHER
+  reference     String?  // رقم الإيصال / الحوالة / السند
+  notes         String?  // بيان / ملاحظات
+  paidAt        DateTime @default(now())
+  createdBy     String?
+  createdByName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  technician DentalTechnician @relation(fields: [technicianId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([technicianId])
+  @@index([companyId, paidAt])
+  @@map("dental_technician_payouts")
 }
