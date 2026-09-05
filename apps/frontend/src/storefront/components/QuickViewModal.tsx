@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { X, ShoppingCart, Zap, Check, Plus, Minus } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -20,6 +20,8 @@ import {
 } from '../utils/navigationGuards';
 import { sanitizeStorefrontHtml } from '../utils/html';
 import { sanitizeProductCopy } from '../utils/productCopy';
+import VariantSelector from './VariantSelector';
+import { getVariantAttributes } from '../utils/variants';
 
 interface QuickViewModalProps {
   product: Product | null;
@@ -45,37 +47,93 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
   const navigate = useNavigate();
   const location = useLocation();
 
-  const variants = product?.productVariants || product?.variants || [];
-  const [selectedVariantId, setSelectedVariantId] = useState<string>('');
+  const rawVariants = useMemo(() => {
+    return product?.productVariants || product?.variants || [];
+  }, [product?.productVariants, product?.variants]);
+
+  // Filter out explicitly inactive variants
+  const variants = useMemo(() => {
+    return rawVariants.filter((v) => v.isActive !== false);
+  }, [rawVariants]);
+
+  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>({});
   const [quantity, setQuantity] = useState<number>(1);
   const [addedAnimation, setAddedAnimation] = useState<boolean>(false);
 
   useEffect(() => {
     if (variants.length > 0) {
-      setSelectedVariantId(variants[0].id);
+      const firstAttrs = getVariantAttributes(variants[0]);
+      setSelectedAttributes(firstAttrs);
     } else {
-      setSelectedVariantId('');
+      setSelectedAttributes({});
     }
     setQuantity(1);
     setAddedAnimation(false);
-  }, [product?.id, isOpen]);
+  }, [product?.id, isOpen, variants]);
+
+  const selectedVariant = useMemo(() => {
+    if (!variants.length) return null;
+    if (Object.keys(selectedAttributes).length === 0) return variants[0];
+
+    return (
+      variants.find((variant) => {
+        const variantAttributes = getVariantAttributes(variant);
+        const variantEntries = Object.entries(variantAttributes);
+        if (variantEntries.length === 0) return false;
+        return (
+          variantEntries.length === Object.keys(selectedAttributes).length &&
+          variantEntries.every(([key, value]) => selectedAttributes[key] === value)
+        );
+      }) || variants[0]
+    );
+  }, [variants, selectedAttributes]);
 
   if (!product) return null;
 
   const { id, name, price, description, slug } = product;
-  const imageCandidates = getProductImageCandidates(product);
   const primaryImage = getPrimaryProductImage(product);
+  const activeImage =
+    selectedVariant?.imageUrl ||
+    (selectedVariant as { image?: string })?.image ||
+    primaryImage;
+
+  const imageCandidates = (() => {
+    const baseCandidates = getProductImageCandidates(product);
+    if (activeImage && !baseCandidates.includes(activeImage)) {
+      return [activeImage, ...baseCandidates];
+    }
+    return baseCandidates;
+  })();
+
   const productPath = buildStorefrontPath(
     location.pathname,
     `/product/${slug || id}`,
     location.search,
   );
   const hasVariantChoices = Boolean(variants.length);
-  const selectedVariant = variants.find((v) => v.id === selectedVariantId) || variants[0];
   const activePrice = selectedVariant?.price ?? price;
   const activeComparePrice = selectedVariant?.comparePrice ?? product.comparePrice;
   const sanitizedDescription = sanitizeStorefrontHtml(description);
   const hasVisibleDescription = Boolean(sanitizeProductCopy(description));
+
+  const fitNote =
+    (theme?.sections as any)?.['product-info']?.settings?.fitNote ||
+    (theme as any)?.settings?.fitNote ||
+    (theme as any)?.pdpSettings?.fitNote ||
+    (theme?.id?.includes('khemet')
+      ? 'لو مقاسك بين رقمين أو هتلبسي جورب تقيل شوية، اختاري الأكبر غالبًا.'
+      : null);
+
+  const variantSettings = {
+    styles: {
+      Style: 'thumbnails',
+      الطراز: 'thumbnails',
+      Color: 'circles',
+      اللون: 'circles',
+      Size: 'radio',
+      المقاس: 'radio',
+    },
+  };
 
   const shouldForceDocumentNavigation = shouldStorefrontForceDocumentNavigation(
     theme.id,
@@ -100,13 +158,13 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
       productId: id,
       variantId: selectedVariant?.id,
       selectedVariant: selectedVariant || undefined,
-      attributes: selectedVariant?.attributes || undefined,
+      attributes: selectedVariant?.attributes || (Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined),
       name: selectedVariant?.name ? `${name} - ${selectedVariant.name}` : name,
       price: finalPrice,
       basePrice: finalPrice,
       comparePrice: finalComparePrice,
       quantity,
-      imageUrl: selectedVariant?.imageUrl || primaryImage,
+      imageUrl: activeImage,
       volumeDiscounts: getProductVolumeDiscounts(product),
     });
 
@@ -134,13 +192,13 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
         productId: id,
         variantId: selectedVariant?.id,
         selectedVariant: selectedVariant || undefined,
-        attributes: selectedVariant?.attributes || undefined,
+        attributes: selectedVariant?.attributes || (Object.keys(selectedAttributes).length > 0 ? selectedAttributes : undefined),
         name: selectedVariant?.name ? `${name} - ${selectedVariant.name}` : name,
         price: finalPrice,
         basePrice: finalPrice,
         comparePrice: finalComparePrice,
         quantity,
-        imageUrl: selectedVariant?.imageUrl || primaryImage,
+        imageUrl: activeImage,
         volumeDiscounts: getProductVolumeDiscounts(product),
       },
       { openCart: false },
@@ -212,32 +270,23 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
                   )}
                 </div>
 
-                {/* Variant Selector (Sizes, Colors, etc.) */}
+                {/* Unified Variant Selector (Colors circles & Size buttons) */}
                 {hasVariantChoices && (
-                  <div className="space-y-2 pt-2">
-                    <label className="text-xs font-bold text-foreground">
-                      {isRtl ? 'المقاس / اللون المتاح:' : 'Available Options:'}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {variants.map((variant) => {
-                        const isSelected = selectedVariant?.id === variant.id;
-                        const label = variant.name || Object.values(variant.attributes || {}).join(' - ') || variant.id;
-                        return (
-                          <button
-                            key={variant.id}
-                            type="button"
-                            onClick={() => setSelectedVariantId(variant.id)}
-                            className={`px-3 py-1.5 rounded-lg border text-xs font-bold transition-all ${
-                              isSelected
-                                ? 'border-primary bg-primary text-primary-foreground shadow-sm scale-105'
-                                : 'border-border bg-background text-foreground hover:border-primary/50'
-                            }`}
-                          >
-                            {label}
-                          </button>
-                        );
-                      })}
-                    </div>
+                  <div className="space-y-3 pt-2">
+                    <VariantSelector
+                      variants={variants}
+                      selectedAttributes={selectedAttributes}
+                      onChange={setSelectedAttributes}
+                      density="compact"
+                      variantSettings={variantSettings}
+                      isOpen={hasVariantChoices}
+                    />
+                    {fitNote ? (
+                      <div className="flex items-center gap-2 rounded-[0.8rem] border border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-xs text-amber-900 dark:text-amber-200">
+                        <span className="font-bold shrink-0">💡 {isRtl ? 'نصيحة المقاس:' : 'Fit tip:'}</span>
+                        <span className="leading-snug">{fitNote}</span>
+                      </div>
+                    ) : null}
                   </div>
                 )}
 
@@ -268,11 +317,11 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
                 
                 {hasVisibleDescription && sanitizedDescription ? (
                   <div
-                    className="prose prose-sm text-muted-foreground line-clamp-4 pt-1"
+                    className="prose prose-sm text-muted-foreground line-clamp-3 pt-1 text-xs leading-relaxed"
                     dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
                   />
                 ) : (
-                  <div className="prose prose-sm text-muted-foreground line-clamp-4 pt-1">
+                  <div className="prose prose-sm text-muted-foreground line-clamp-3 pt-1 text-xs leading-relaxed">
                     {isRtl ? 'لا يوجد وصف متوفر لهذا المنتج.' : 'No description available for this product.'}
                   </div>
                 )}

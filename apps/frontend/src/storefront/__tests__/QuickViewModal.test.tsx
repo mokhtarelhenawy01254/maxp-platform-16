@@ -110,4 +110,44 @@ describe('QuickViewModal', () => {
     const quickBuyBtn = screen.getByRole('button', { name: /شراء فوري الآن/i });
     expect(quickBuyBtn).toBeInTheDocument();
   });
+
+  it('renders variants through VariantSelector with separated attributes and fit tip', () => {
+    const queryClient = createQueryClient();
+    const productWithVariants = {
+      ...productWithQuillDescription,
+      productVariants: [
+        {
+          id: 'var-1',
+          name: 'اسود مورد - ون سايز من 50 الي 75ك',
+          price: 349,
+          attributes: { Color: 'اسود مورد', Size: 'ون سايز من 50 الي 75ك' },
+          stock: 50,
+          isActive: true,
+        },
+        {
+          id: 'var-2',
+          name: 'بنفسجي - بيج سايز من 80 ك الي 110 ك',
+          price: 349,
+          attributes: { Color: 'بنفسجي', Size: 'بيج سايز من 80 ك الي 110 ك' },
+          stock: 50,
+          isActive: true,
+        },
+      ],
+    };
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StorefrontThemeProvider initialThemeId="khemet-fashion-eg">
+          <QuickViewModal
+            isOpen={true}
+            onClose={() => {}}
+            product={productWithVariants}
+          />
+        </StorefrontThemeProvider>
+      </QueryClientProvider>,
+    );
+
+    // Verify fit tip note from theme is rendered
+    expect(screen.getByText(/نصيحة المقاس:/i)).toBeInTheDocument();
+  });
 });
