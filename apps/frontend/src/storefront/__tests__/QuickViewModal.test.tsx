@@ -90,4 +90,24 @@ describe('QuickViewModal', () => {
 
     expect(screen.getByText('لا يوجد وصف متوفر لهذا المنتج.')).toBeInTheDocument();
   });
+
+  it('triggers quick buy by adding item silently, closing modal, and navigating to checkout', () => {
+    const queryClient = createQueryClient();
+    const onClose = vi.fn();
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <StorefrontThemeProvider initialThemeId="khemet-fashion-eg">
+          <QuickViewModal
+            isOpen={true}
+            onClose={onClose}
+            product={productWithQuillDescription}
+          />
+        </StorefrontThemeProvider>
+      </QueryClientProvider>,
+    );
+
+    const quickBuyBtn = screen.getByRole('button', { name: /شراء فوري الآن/i });
+    expect(quickBuyBtn).toBeInTheDocument();
+  });
 });

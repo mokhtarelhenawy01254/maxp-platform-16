@@ -227,16 +227,19 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       return;
     }
 
-    addItem({
-      productId: id,
-      name,
-      price: typeof price === 'string' ? parseFloat(price) : price,
-      basePrice: typeof price === 'string' ? parseFloat(price) : price,
-      comparePrice: typeof numericComparePrice === 'number' ? numericComparePrice : undefined,
-      quantity: 1,
-      imageUrl: getPrimaryProductImage(product),
-      volumeDiscounts: getProductVolumeDiscounts(product),
-    });
+    addItem(
+      {
+        productId: id,
+        name,
+        price: typeof price === 'string' ? parseFloat(price) : price,
+        basePrice: typeof price === 'string' ? parseFloat(price) : price,
+        comparePrice: typeof numericComparePrice === 'number' ? numericComparePrice : undefined,
+        quantity: 1,
+        imageUrl: getPrimaryProductImage(product),
+        volumeDiscounts: getProductVolumeDiscounts(product),
+      },
+      { openCart: false },
+    );
 
     trackAddToCartEvent({
       id,
@@ -246,7 +249,13 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       category: product.category?.name,
     });
 
-    navigate(buildStorefrontPath(location.pathname, '/checkout', location.search));
+    const targetCheckoutPath = buildStorefrontPath(location.pathname, '/checkout', location.search);
+    if (shouldForceDocumentNavigation) {
+      navigateStorefrontDocument(targetCheckoutPath);
+      return;
+    }
+
+    navigate(targetCheckoutPath);
   };
 
   const handleQuickView = (e: React.MouseEvent) => {

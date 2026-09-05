@@ -126,8 +126,43 @@ const QuickViewModal: React.FC<QuickViewModalProps> = ({
   };
 
   const handleQuickBuy = () => {
-    handleAddToCart();
-    navigate(buildStorefrontPath(location.pathname, '/checkout', location.search));
+    const finalPrice = typeof activePrice === 'string' ? parseFloat(activePrice) : Number(activePrice);
+    const finalComparePrice = typeof activeComparePrice === 'number' ? activeComparePrice : undefined;
+
+    addItem(
+      {
+        productId: id,
+        variantId: selectedVariant?.id,
+        selectedVariant: selectedVariant || undefined,
+        attributes: selectedVariant?.attributes || undefined,
+        name: selectedVariant?.name ? `${name} - ${selectedVariant.name}` : name,
+        price: finalPrice,
+        basePrice: finalPrice,
+        comparePrice: finalComparePrice,
+        quantity,
+        imageUrl: selectedVariant?.imageUrl || primaryImage,
+        volumeDiscounts: getProductVolumeDiscounts(product),
+      },
+      { openCart: false },
+    );
+
+    trackAddToCartEvent({
+      id,
+      name,
+      price: finalPrice,
+      quantity,
+      category: product.category?.name,
+    });
+
+    onClose();
+
+    const checkoutPath = buildStorefrontPath(location.pathname, '/checkout', location.search);
+    if (shouldForceDocumentNavigation) {
+      navigateStorefrontDocument(checkoutPath);
+      return;
+    }
+
+    navigate(checkoutPath);
   };
 
   const displayPrice = formatStorefrontCurrency(
