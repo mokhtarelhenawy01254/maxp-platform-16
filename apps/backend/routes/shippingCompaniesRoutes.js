@@ -62,10 +62,10 @@ const ensureDefaultShippingCompanies = async (prisma, companyId) => {
 
     const company = await prisma.company.findUnique({
       where: { id: companyId },
-      select: { bostaApiKey: true, bostaEnabled: true },
+      select: { bostaApiKey: true, bostaEnabled: true, turboApiKey: true, turboEnabled: true },
     });
 
-    // 1. Ensure Turbo
+    // 1. Ensure Turbo (default inactive unless company already has active Turbo config)
     if (!existingKeys.has('TURBO') && !existingSlugs.has('turbo')) {
       await prisma.shippingCompany.create({
         data: {
@@ -76,12 +76,13 @@ const ensureDefaultShippingCompanies = async (prisma, companyId) => {
           integrationMode: 'LIVE',
           website: 'https://turbo-eg.com',
           phone: '19685',
-          isActive: true,
+          apiKey: company?.turboApiKey || null,
+          isActive: Boolean(company?.turboEnabled && company?.turboApiKey),
         },
       }).catch((e) => console.warn('Could not auto-seed Turbo:', e.message));
     }
 
-    // 2. Ensure Bosta
+    // 2. Ensure Bosta (default inactive unless company already has active Bosta config)
     if (!existingKeys.has('BOSTA') && !existingSlugs.has('bosta')) {
       await prisma.shippingCompany.create({
         data: {
@@ -93,12 +94,12 @@ const ensureDefaultShippingCompanies = async (prisma, companyId) => {
           website: 'https://bosta.co',
           phone: '19000',
           apiKey: company?.bostaApiKey || null,
-          isActive: Boolean(company?.bostaEnabled),
+          isActive: Boolean(company?.bostaEnabled && company?.bostaApiKey),
         },
       }).catch((e) => console.warn('Could not auto-seed Bosta:', e.message));
     }
 
-    // 3. Ensure QP Express
+    // 3. Ensure QP Express (default inactive)
     if (!existingKeys.has('QP_EXPRESS') && !existingSlugs.has('qp-express')) {
       await prisma.shippingCompany.create({
         data: {
@@ -135,6 +136,25 @@ const deduplicateShippingCompanies = (list) => {
   }
   return deduped;
 };
+
+// Get only active shipping companies for current tenant (for dropdowns, order fulfillment, preparation queue)
+router.get('/active-carriers', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const prisma = getSharedPrismaClient();
+    const { companyId } = req.user;
+    await ensureDefaultShippingCompanies(prisma, companyId);
+
+    const companies = await prisma.shippingCompany.findMany({
+      where: { companyId, isActive: true },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    res.json({ success: true, data: deduplicateShippingCompanies(companies) });
+  } catch (error) {
+    console.error('Error fetching active shipping companies:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // Get all shipping companies for the current company with pagination and filters
 router.get('/', verifyToken.authenticateToken, async (req, res) => {

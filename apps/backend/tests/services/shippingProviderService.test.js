@@ -20,13 +20,14 @@ describe("shippingProviderService", () => {
       "company-1",
     );
 
-    expect(carriers).toHaveLength(3);
+    expect(carriers).toHaveLength(4);
     expect(carriers.map((carrier) => carrier.providerKey)).toEqual([
       "BOSTA_DEMO",
+      "QP_EXPRESS",
       "MYLERZ_DEMO",
       "ARAMEX_DEMO",
     ]);
-    expect(prisma.shippingCompany.upsert).toHaveBeenCalledTimes(3);
+    expect(prisma.shippingCompany.upsert).toHaveBeenCalledTimes(4);
     expect(prisma.shippingCompany.upsert).toHaveBeenCalledWith(
       expect.objectContaining({
         where: {

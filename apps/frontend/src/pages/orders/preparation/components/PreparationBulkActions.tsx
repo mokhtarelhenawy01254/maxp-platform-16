@@ -28,7 +28,8 @@ interface PreparationBulkActionsProps {
   onClear: () => void;
   onSelectAll: () => void;
   onClearSelection: () => void;
-  onSendToTurbo: () => void;
+  onSendToTurbo?: () => void;
+  onSendToShipping?: () => void;
   onPrintInvoices?: () => void;
 }
 
@@ -52,6 +53,7 @@ const PreparationBulkActions = ({
   onSelectAll,
   onClearSelection,
   onSendToTurbo,
+  onSendToShipping,
   onPrintInvoices,
 }: PreparationBulkActionsProps) => {
   const { t } = useTranslation();
@@ -178,10 +180,10 @@ const PreparationBulkActions = ({
           </button>
         ) : null}
 
-        {/* Send to Turbo */}
+        {/* Send to Shipping */}
         <span className="mx-1 hidden h-5 w-px bg-gray-200 sm:block dark:bg-gray-700" />
         <button
-          onClick={onSendToTurbo}
+          onClick={onSendToShipping || onSendToTurbo}
           disabled={selectedOrdersCount === 0 || sendingToTurbo}
           className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-700 dark:hover:bg-blue-600 max-sm:flex-1"
         >
@@ -190,7 +192,7 @@ const PreparationBulkActions = ({
           ) : (
             <TruckIcon className="h-4 w-4" />
           )}
-          {t("preparation.bulkActions.sendToTurbo")}
+          {t("preparation.bulkActions.sendToShipping", "شحن الطلبات المحددة")}
         </button>
       </div>
 

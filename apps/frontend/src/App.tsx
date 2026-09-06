@@ -1691,9 +1691,9 @@ const AppContent = () => {
           if (!r.ok) throw new Error("API not available");
           return r.json();
         })
-        .then((pages: any[]) => {
+        .then((pages: Array<{ isActive?: boolean; slug?: string }>) => {
           if (cancelled) return;
-          setActiveLpSlugs(new Set(pages.filter((p) => p.isActive).map((p) => p.slug)));
+          setActiveLpSlugs(new Set(pages.filter((p) => p.isActive && p.slug).map((p) => p.slug as string)));
         })
         .catch(() => {
           if (!cancelled) setActiveLpSlugs(null);
@@ -4665,7 +4665,7 @@ const AppContent = () => {
                   path="/orders/shipments"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <UnifiedShipmentsPage />
                       </AppAccessRoute>
                     </Layout>
@@ -4675,7 +4675,7 @@ const AppContent = () => {
                   path="/orders/turbo-records"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <UnifiedShipmentsPage />
                       </AppAccessRoute>
                     </Layout>
@@ -6224,10 +6224,18 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/shipping"
+                  element={<Navigate to="/shipping-companies" replace />}
+                />
+                <Route
+                  path="/apps/shipping"
+                  element={<Navigate to="/shipping-companies" replace />}
+                />
+                <Route
                   path="/shipping-companies"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <ShippingCompanies />
                       </AppAccessRoute>
                     </Layout>
@@ -6237,7 +6245,7 @@ const AppContent = () => {
                   path="/shipping-companies/:id"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <ShippingCompanyDetail />
                       </AppAccessRoute>
                     </Layout>
@@ -6247,7 +6255,7 @@ const AppContent = () => {
                   path="/shipping-settlement"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
                         <ShippingSettlement />
                       </AppAccessRoute>
                     </Layout>

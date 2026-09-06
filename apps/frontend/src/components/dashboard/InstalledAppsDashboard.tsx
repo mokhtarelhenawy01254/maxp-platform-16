@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -47,7 +47,12 @@ const APP_ROUTE_MAP: Record<string, string> = {
   'affiliate-pro': '/affiliates/dashboard',
   'amazon-affiliate-pro': '/amazon-affiliate',
   'blog-pro': '/articles',
-  'order-shipping-turbo': '/shipping',
+  'order-shipping-turbo': '/shipping-companies',
+  'order-shipping-hub': '/shipping-companies',
+  'order-shipping-bosta': '/shipping-companies',
+  'order-shipping-qpexpress': '/shipping-companies',
+  'order-shipping': '/shipping-companies',
+  shipping: '/shipping-companies',
   'procurement-pro': '/procurement',
   'hr-basic': '/hr',
   'unified-inbox': '/unified-inbox',

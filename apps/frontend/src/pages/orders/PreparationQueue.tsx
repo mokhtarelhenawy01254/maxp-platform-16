@@ -67,6 +67,7 @@ import PreparationOrdersTable from "./preparation/components/PreparationOrdersTa
 import PreparationStatusChangeDialog from "./preparation/components/PreparationStatusChangeDialog";
 import ProblemHoldReasonDialog from "./preparation/components/ProblemHoldReasonDialog";
 import MerchantOperationsSummary from "./preparation/components/MerchantOperationsSummary";
+import DispatchCarrierModal, { type ActiveCarrier } from "./preparation/components/DispatchCarrierModal";
 
 type BulkStatusResult = {
   id?: string | number | null;
@@ -211,6 +212,8 @@ const PreparationQueue: React.FC = () => {
     reason: string;
   } | null>(null);
   const [sendingToTurbo, setSendingToTurbo] = useState(false);
+  const [activeCarriers, setActiveCarriers] = useState<ActiveCarrier[]>([]);
+  const [showDispatchModal, setShowDispatchModal] = useState(false);
   const [printingInvoices, setPrintingInvoices] = useState(false);
   const [visibleColumns, setVisibleColumns] = useState<PreparationTableColumn[]>(() => {
     if (typeof window === "undefined") return [...PREPARATION_TABLE_COLUMNS];
@@ -1575,41 +1578,103 @@ const PreparationQueue: React.FC = () => {
     [fetchInventory, inventorySummaryByProduct, selectedWarehouseId],
   );
 
-  const handleSendToTurbo = useCallback(async () => {
+  const fetchActiveCarriers = useCallback(async () => {
+    try {
+      const res = await apiClient.get('/shipping-companies/active-carriers');
+      if (res.data?.success) {
+        setActiveCarriers(res.data.data || []);
+      }
+    } catch (e) {
+      console.warn('Failed to fetch active shipping carriers:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    void fetchActiveCarriers();
+  }, [fetchActiveCarriers]);
+
+  const handleOpenDispatchModal = useCallback(async () => {
     if (selectedOrders.length === 0) {
       toast.error(t('preparation.page.selectOrderFirst'));
       return;
     }
+    await fetchActiveCarriers();
+    setShowDispatchModal(true);
+  }, [fetchActiveCarriers, selectedOrders.length, t]);
 
-    const confirmed = window.confirm(
-      t("preparation.confirm.sendToTurbo", { count: selectedOrders.length }),
-    );
-    if (!confirmed) return;
-
-    try {
-      setSendingToTurbo(true);
-      const response = await apiClient.post("/turbo/bulk/create-shipments", {
-        orderIds: selectedOrders,
-      });
-
-      if (response.data?.success) {
-        const data = response.data.data;
-        toast.success(
-          t("preparation.toasts.turboPartial", { success: data.success || 0 }) +
-            (data.failed > 0 ? t("preparation.toasts.turboPartialMore", { failed: data.failed }) : ""),
-        );
-        uiActions.clearBulkControls();
-        void fetchAll();
-      } else {
-        toast.error(response.data?.error || t('preparation.page.failedToTurbo'));
+  const handleDispatchToCarrier = useCallback(
+    async (carrier: ActiveCarrier) => {
+      if (selectedOrders.length === 0) {
+        toast.error(t('preparation.page.selectOrderFirst'));
+        return;
       }
-    } catch (error: unknown) {
-      console.error("Failed to send to Turbo:", error);
-      toast.error(getApiErrorMessage(error) || t('preparation.page.failedToTurbo'));
-    } finally {
-      setSendingToTurbo(false);
-    }
-  }, [fetchAll, selectedOrders, uiActions]);
+
+      try {
+        setSendingToTurbo(true);
+        let response: {
+          data?: {
+            success?: boolean;
+            data?: { success?: number; failed?: number };
+            error?: string;
+          };
+        };
+
+        if (carrier.providerKey === 'QP_EXPRESS') {
+          response = await apiClient.post('/qp-express/bulk/create-shipments', {
+            orderIds: selectedOrders,
+          });
+        } else if (carrier.providerKey === 'BOSTA') {
+          response = await apiClient.post('/bosta/bulk/create-shipments', {
+            orderIds: selectedOrders,
+          });
+        } else if (carrier.providerKey === 'TURBO') {
+          response = await apiClient.post('/turbo/bulk/create-shipments', {
+            orderIds: selectedOrders,
+          });
+        } else {
+          let successCount = 0;
+          for (const orderId of selectedOrders) {
+            try {
+              await apiClient.post('/shipments/create', {
+                orderId,
+                shippingCompanyId: carrier.id,
+              });
+              successCount++;
+            } catch (err) {
+              console.warn(`Failed to create shipment for order ${orderId}:`, err);
+            }
+          }
+          response = {
+            data: {
+              success: true,
+              data: { success: successCount, failed: selectedOrders.length - successCount },
+            },
+          };
+        }
+
+        if (response.data?.success) {
+          const data = response.data.data || {};
+          const successCount = data.success ?? selectedOrders.length;
+          const failedCount = data.failed ?? 0;
+          toast.success(
+            `تم بنجاح إرسال ${successCount} طلب إلى ${carrier.name}` +
+              (failedCount > 0 ? ` (فشل ${failedCount})` : '')
+          );
+          setShowDispatchModal(false);
+          uiActions.clearBulkControls();
+          void fetchAll();
+        } else {
+          toast.error(response.data?.error || `فشل إرسال الشحنات إلى ${carrier.name}`);
+        }
+      } catch (error: unknown) {
+        console.error('Failed to dispatch shipments:', error);
+        toast.error(getApiErrorMessage(error) || `فشل إرسال الشحنات إلى ${carrier.name}`);
+      } finally {
+        setSendingToTurbo(false);
+      }
+    },
+    [fetchAll, selectedOrders, uiActions],
+  );
 
   const handlePrintInvoices = useCallback(async () => {
     if (selectedOrders.length === 0) {
@@ -1913,7 +1978,8 @@ const PreparationQueue: React.FC = () => {
             onClear={uiActions.clearBulkControls}
             onSelectAll={toggleSelectAllVisible}
             onClearSelection={() => uiActions.clearBulkControls()}
-            onSendToTurbo={() => void handleSendToTurbo()}
+            onSendToTurbo={() => void handleOpenDispatchModal()}
+            onSendToShipping={() => void handleOpenDispatchModal()}
             onPrintInvoices={() => void handlePrintInvoices()}
           />
         </div>
@@ -2291,6 +2357,15 @@ const PreparationQueue: React.FC = () => {
         )}
         onClose={() => setEditReasonOrder(null)}
         onConfirm={(reason) => void handleConfirmEditReason(reason)}
+      />
+
+      <DispatchCarrierModal
+        isOpen={showDispatchModal}
+        onClose={() => setShowDispatchModal(false)}
+        ordersCount={selectedOrders.length}
+        carriers={activeCarriers}
+        onConfirm={(carrier) => void handleDispatchToCarrier(carrier)}
+        loading={sendingToTurbo}
       />
     </div>
   );

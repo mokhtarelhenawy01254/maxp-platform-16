@@ -36,7 +36,13 @@ const LEGACY_APP_SLUG_ALIASES = {
   'analytics-advanced': ['orders-analytics', 'analytics-basic', 'analytics'],
   // Booking / Services aliases:
   'booking-app': ['service-request-app', 'service-requests'],
-  'service-request-app': ['booking-app', 'service-requests']
+  'service-request-app': ['booking-app', 'service-requests'],
+  // Shipping multi-carrier hub & carrier aliases:
+  'order-shipping-hub': ['order-shipping-turbo', 'order-shipping-bosta', 'order-shipping-qpexpress', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
+  'order-shipping-turbo': ['order-shipping-hub', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
+  'order-shipping-bosta': ['order-shipping-hub', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
+  'order-shipping-qpexpress': ['order-shipping-hub', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
+  'order-shipping': ['order-shipping-hub', 'order-shipping-turbo', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store-basic', 'store', 'ecommerce-basic']
 };
 
 const getCandidateAppSlugs = (appSlug) => {
@@ -78,11 +84,12 @@ const checkAppAccess = (appSlug) => {
       const company = await executeWithRetry(async () => {
         return await getSharedPrismaClient().company.findUnique({
           where: { id: companyId },
-          select: { trialModeEnabled: true, trialEndsAt: true, turboEnabled: true, turboApiKey: true }
+          select: { trialModeEnabled: true, trialEndsAt: true, turboEnabled: true, turboApiKey: true, bostaApiKey: true, bostaEnabled: true }
         });
       });
 
-      if (appSlug === 'order-shipping-turbo' && company && (company.turboEnabled || company.turboApiKey)) {
+      const isShippingApp = ['order-shipping-turbo', 'order-shipping-hub', 'order-shipping', 'order-shipping-bosta', 'order-shipping-qpexpress'].includes(appSlug);
+      if (isShippingApp && company && (company.turboEnabled || company.turboApiKey || company.bostaEnabled || company.bostaApiKey)) {
         return next();
       }
 
