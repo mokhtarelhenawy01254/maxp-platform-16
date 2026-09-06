@@ -25,8 +25,17 @@ export const validateEmail = (email: string): boolean => {
  * التحقق من رقم الهاتف المصري
  */
 export const validateEgyptianPhone = (phone: string): boolean => {
-  const phoneRegex = /^(01)[0-9]{9}$/;
-  return phoneRegex.test(phone.replace(/[\s-]/g, ""));
+  if (!phone) return false;
+  const ascii = String(phone)
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .trim();
+  const digits = ascii.replace(/\D/g, "");
+  let normalized = digits;
+  if (normalized.startsWith("0020")) normalized = "0" + normalized.slice(4);
+  else if (normalized.startsWith("2001") && normalized.length === 13) normalized = "0" + normalized.slice(3);
+  else if (normalized.startsWith("201") && normalized.length === 12) normalized = "0" + normalized.slice(2);
+  return /^01[0-9]{9}$/.test(normalized);
 };
 
 /**

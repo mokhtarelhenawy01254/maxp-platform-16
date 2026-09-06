@@ -542,20 +542,56 @@ export function validateOrderItems(
 }
 
 /**
- * Validate Egyptian phone number
+ * Validate Egyptian phone number (supporting local, international, Arabic digits, & hidden formatting characters)
  */
 export function validateEgyptianPhone(phone: string): {
   isValid: boolean;
   error?: string;
 } {
   if (!phone) return { isValid: true };
-  const phoneRegex = /^(01)[0-9]{9}$/;
-  const valid = phoneRegex.test(phone.replace(/[\s-]/g, ""));
-  if (!valid) {
+
+  // Convert Arabic-Indic (٠-٩) and Eastern Arabic (۰-۹) digits to ASCII (0-9)
+  const ascii = String(phone)
+    .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+    .trim();
+
+  // Strip all non-digits except optional leading '+'
+  const hasPlus = ascii.startsWith("+");
+  const digits = ascii.replace(/\D/g, "");
+  if (!digits) {
     return {
       isValid: false,
-      error: "رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01",
+      error: "رقم الهاتف غير صحيح",
     };
   }
-  return { isValid: true };
+
+  // Normalize Egyptian format (+20, 0020, 20 prefix to 01...)
+  let normalized = digits;
+  if (normalized.startsWith("0020")) {
+    normalized = "0" + normalized.slice(4);
+  } else if (normalized.startsWith("2001") && normalized.length === 13) {
+    normalized = "0" + normalized.slice(3);
+  } else if (normalized.startsWith("201") && normalized.length === 12) {
+    normalized = "0" + normalized.slice(2);
+  }
+
+  // Check Egyptian mobile pattern: 01 followed by 9 digits (11 digits total)
+  const isEgyptian = /^01[0-9]{9}$/.test(normalized);
+  if (isEgyptian) {
+    return { isValid: true };
+  }
+
+  // General E.164 international phone format (+ or 00 followed by 8-15 digits)
+  if (hasPlus && /^\+[1-9]\d{7,14}$/.test(`+${digits}`)) {
+    return { isValid: true };
+  }
+  if (digits.startsWith("00") && /^00[1-9]\d{7,14}$/.test(digits)) {
+    return { isValid: true };
+  }
+
+  return {
+    isValid: false,
+    error: "رقم الهاتف يجب أن يكون 11 رقم ويبدأ بـ 01",
+  };
 }

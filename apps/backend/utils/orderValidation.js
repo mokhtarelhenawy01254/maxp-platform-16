@@ -3,33 +3,54 @@
  */
 
 /**
- * Validate Egyptian phone number
+ * Validate Egyptian phone number (supporting local, international, Arabic digits, & hidden formatting characters)
  */
 const validateEgyptianPhone = (phone) => {
-    if (!phone || phone.trim() === '') {
+    if (!phone || String(phone).trim() === '') {
         return { isValid: false, error: 'رقم الهاتف مطلوب' };
     }
 
-    // Remove spaces and dashes
-    const cleanPhone = phone.replace(/[\s-]/g, '');
+    // Convert Arabic-Indic (٠-٩) and Eastern Arabic (۰-۹) digits to ASCII (0-9)
+    const ascii = String(phone)
+        .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+        .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+        .trim();
 
-    // Egyptian phone patterns
-    const patterns = [
-        /^01[0-2,5]{1}[0-9]{8}$/, // 01xxxxxxxxx
-        /^\+2001[0-2,5]{1}[0-9]{8}$/, // +201xxxxxxxxx
-        /^00201[0-2,5]{1}[0-9]{8}$/, // 00201xxxxxxxxx
-    ];
-
-    const isValid = patterns.some(pattern => pattern.test(cleanPhone));
-
-    if (!isValid) {
-        return {
-            isValid: false,
-            error: 'رقم الهاتف غير صحيح. يجب أن يبدأ بـ 010 أو 011 أو 012 أو 015'
-        };
+    // Strip non-digits except optional leading '+'
+    const hasPlus = ascii.startsWith('+');
+    const digits = ascii.replace(/\D/g, '');
+    if (!digits) {
+        return { isValid: false, error: 'رقم الهاتف غير صحيح' };
     }
 
-    return { isValid: true };
+    // Normalize Egyptian formats (+20, 0020, 20 prefix to 01...)
+    let normalized = digits;
+    if (normalized.startsWith('0020')) {
+        normalized = '0' + normalized.slice(4);
+    } else if (normalized.startsWith('2001') && normalized.length === 13) {
+        normalized = '0' + normalized.slice(3);
+    } else if (normalized.startsWith('201') && normalized.length === 12) {
+        normalized = '0' + normalized.slice(2);
+    }
+
+    // Check Egyptian mobile pattern: 01 followed by 9 digits (11 digits total)
+    const isEgyptian = /^01[0-9]{9}$/.test(normalized);
+    if (isEgyptian) {
+        return { isValid: true };
+    }
+
+    // General E.164 international phone format (+ or 00 followed by 8-15 digits)
+    if (hasPlus && /^\+[1-9]\d{7,14}$/.test(`+${digits}`)) {
+        return { isValid: true };
+    }
+    if (digits.startsWith('00') && /^00[1-9]\d{7,14}$/.test(digits)) {
+        return { isValid: true };
+    }
+
+    return {
+        isValid: false,
+        error: 'رقم الهاتف غير صحيح. يجب أن يبدأ بـ 01 ويتكون من 11 رقمًا'
+    };
 };
 
 /**

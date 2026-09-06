@@ -49,8 +49,16 @@ function validateEmployeeData(data, isUpdate = false) {
 
   // التحقق من رقم الهاتف
   if (data.phone) {
-    const phoneRegex = /^(01)[0-9]{9}$/;
-    if (!phoneRegex.test(data.phone.replace(/[\s-]/g, ''))) {
+    const ascii = String(data.phone)
+      .replace(/[٠-٩]/g, (d) => String(d.charCodeAt(0) - 0x0660))
+      .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0))
+      .trim();
+    const digits = ascii.replace(/\D/g, "");
+    let normalized = digits;
+    if (normalized.startsWith("0020")) normalized = "0" + normalized.slice(4);
+    else if (normalized.startsWith("2001") && normalized.length === 13) normalized = "0" + normalized.slice(3);
+    else if (normalized.startsWith("201") && normalized.length === 12) normalized = "0" + normalized.slice(2);
+    if (!/^01[0-9]{9}$/.test(normalized)) {
       errors.push({ field: 'phone', message: 'رقم الهاتف غير صحيح (يجب أن يبدأ بـ 01 ويتكون من 11 رقم)' });
     }
   }
