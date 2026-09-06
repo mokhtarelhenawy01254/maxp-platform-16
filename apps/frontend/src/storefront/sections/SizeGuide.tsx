@@ -80,6 +80,27 @@ const DEFAULT_FIT_TIPS = [
   'لو المقاس مضبوط في الصباح وضيّق في المساء، اختر المقاس الأكبر.',
 ];
 
+const DEFAULT_CLOTHING_MEASUREMENT_STEPS: MeasurementStep[] = [
+  {
+    title: 'قِس أبعاد الجسم بدقة',
+    description: 'استخدم شريط قياس مرن لمعرفة محيط الصدر، الخصر، والأرداف بشكل مريح.',
+  },
+  {
+    title: 'قارن القياس بجدول المقاسات',
+    description: 'اختر المقاس الأقرب لقياساتك الفعلية مع الأخذ في الاعتبار قصة القطعة ورغبتك في الراحة.',
+  },
+  {
+    title: 'بين مقاسين؟ اختر الأكبر',
+    description: 'إذا كان القياس بين رقمين أو تفضل قصة مريحة وغير ضيقة، ننصح باختيار المقاس الأكبر.',
+  },
+];
+
+const DEFAULT_CLOTHING_FIT_TIPS = [
+  'الخامات المطاطية توفر مرونة أكبر وتتناسب مع القياسات القريبة.',
+  'القصات الفضفاضة (Oversized) مصممة لتكون واسعة، اختر مقاسك المعتاد.',
+  'إذا كنت بين مقاسين، اختر المقاس الأكبر لضمان حرية الحركة.',
+];
+
 const parseMeasurementSteps = (value: unknown): MeasurementStep[] => {
   if (typeof value !== 'string' || !value.trim()) {
     return [];
@@ -110,7 +131,25 @@ const parseFitTips = (value: unknown): string[] => {
 const SizeGuide: React.FC<SizeGuideProps> = ({ section, settings }) => {
   const location = useLocation();
   const { id } = useParams<{ id: string }>();
-  const { product } = useProduct(id);
+  const searchParams = React.useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const productIdOrSlug =
+    id ||
+    searchParams.get('product') ||
+    searchParams.get('productId') ||
+    searchParams.get('id') ||
+    undefined;
+  const { product } = useProduct(productIdOrSlug);
+
+  const productCategoryString = String(
+    product?.categoryId || product?.category?.id || product?.category?.slug || product?.category?.name || ''
+  ).toLowerCase();
+
+  const productLooksLikeShoes = product
+    ? ['shoe', 'shoes', 'sneaker', 'sneakers', 'flat', 'flats', 'heel', 'heels', 'loafer', 'boot', 'boots', 'أحذية', 'حذاء', 'سنيكر', 'فلات', 'كعب', 'لوفر'].some((token) =>
+        productCategoryString.includes(token)
+      )
+    : false;
+
   const variant = normalizeSizeGuideVariant(section?.variant);
   const configuredRows = parseSizeGuideRows(settings?.guideRows);
   const resolvedGuideRows = resolveSizeGuideRowsForProduct(configuredRows, product);
@@ -128,7 +167,9 @@ const SizeGuide: React.FC<SizeGuideProps> = ({ section, settings }) => {
   const note =
     matchedOverride?.note ||
     settings?.note ||
-    'إذا كنت بين مقاسين أو القدم عريضة من الأمام، ننصح غالبًا بالمقاس الأكبر.';
+    (product && !productLooksLikeShoes
+      ? 'إذا كنت بين مقاسين، ننصح غالبًا باختيار المقاس الأكبر لضمان أفضل راحة.'
+      : 'إذا كنت بين مقاسين أو القدم عريضة من الأمام، ننصح غالبًا بالمقاس الأكبر.');
   const ctaText = settings?.ctaText || 'ابدأ التسوق';
   const ctaLink =
     typeof settings?.ctaLink === 'string' && settings.ctaLink.trim()
@@ -145,14 +186,29 @@ const SizeGuide: React.FC<SizeGuideProps> = ({ section, settings }) => {
       : '';
 
   const customSteps = parseMeasurementSteps(settings?.measurementSteps);
-  const measurementSteps = customSteps.length > 0 ? customSteps : DEFAULT_MEASUREMENT_STEPS;
+  const measurementSteps =
+    customSteps.length > 0
+      ? customSteps
+      : product && !productLooksLikeShoes
+        ? DEFAULT_CLOTHING_MEASUREMENT_STEPS
+        : DEFAULT_MEASUREMENT_STEPS;
 
   const customTips = parseFitTips(settings?.fitTips);
-  const fitTips = customTips.length > 0 ? customTips : DEFAULT_FIT_TIPS;
+  const fitTips =
+    customTips.length > 0
+      ? customTips
+      : product && !productLooksLikeShoes
+        ? DEFAULT_CLOTHING_FIT_TIPS
+        : DEFAULT_FIT_TIPS;
 
   const isCompact = variant === 'compact';
   const isQuick = variant === 'quick';
-  const baseRows = resolvedGuideRows.length > 0 ? resolvedGuideRows : SIZE_ROWS;
+  const baseRows =
+    resolvedGuideRows.length > 0
+      ? resolvedGuideRows
+      : configuredRows.length > 0
+        ? configuredRows
+        : SIZE_ROWS;
   const rows = isCompact ? baseRows.slice(0, 4) : baseRows;
   const customProductSizeGuideHtml = product?.sizeGuide
     ? formatCustomSizeGuide(product.sizeGuide)

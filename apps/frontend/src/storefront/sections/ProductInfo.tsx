@@ -1836,7 +1836,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
         <div className="mt-6">
           <a
-            href={buildStorefrontPath(location.pathname, '/size-guide', location.search)}
+            href={sizeGuideHref || buildStorefrontPath(location.pathname, productKey ? `/size-guide?product=${encodeURIComponent(productKey)}` : '/size-guide', location.search)}
             className="inline-flex items-center gap-2 text-sm text-[#171717] underline-offset-4 hover:underline"
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
@@ -2486,12 +2486,23 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       : prefersArabicCopy
         ? 'اختيار المقاس'
         : 'Choose your size';
-  const rawSizeGuideHref = sizeGuideLink
+  const productKey = product?.slug || product?.id || '';
+  const targetSizeGuideRoute = sizeGuideLink
     ? isExternalHref(sizeGuideLink)
       ? sizeGuideLink
+      : (() => {
+          const routePath = sizeGuideLink.startsWith('/') ? sizeGuideLink : `/${sizeGuideLink}`;
+          if (!productKey || routePath.includes('product=')) return routePath;
+          const separator = routePath.includes('?') ? '&' : '?';
+          return `${routePath}${separator}product=${encodeURIComponent(productKey)}`;
+        })()
+    : '';
+  const rawSizeGuideHref = targetSizeGuideRoute
+    ? isExternalHref(targetSizeGuideRoute)
+      ? targetSizeGuideRoute
       : buildStorefrontPath(
           location.pathname,
-          sizeGuideLink.startsWith('/') ? sizeGuideLink : `/${sizeGuideLink}`,
+          targetSizeGuideRoute,
           location.search,
         )
     : '';
