@@ -9183,6 +9183,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           label={prefersArabicCopy ? 'اشتر الآن' : 'Buy Now'}
         />
       )}
+      {sizeGuideDialog}
+      {shippingDialog}
+      {questionDialog}
     </section>
   );
 };
