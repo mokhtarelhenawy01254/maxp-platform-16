@@ -17,6 +17,5 @@ router.get('/facebook/diagnostics', verifyToken.authenticateToken, checkAppAcces
 router.delete('/facebook/:pageId', verifyToken.authenticateToken, checkAppAccess('crm-basic'), facebookIntegration.disconnectFacebookPage);
 router.put('/facebook/:pageId', verifyToken.authenticateToken, checkAppAccess('crm-basic'), facebookIntegration.updateFacebookPageSettings);
 router.get('/facebook/:pageId', verifyToken.authenticateToken, checkAppAccess('crm-basic'), facebookIntegration.getFacebookPageDetails);
-router.post('/facebook/publish', verifyToken.authenticateToken, checkAppAccess('crm-basic'), facebookPublishController.createPost);
 
 module.exports = router;

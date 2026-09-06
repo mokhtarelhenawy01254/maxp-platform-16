@@ -675,6 +675,7 @@ router.post(
         appId: req.body?.appId,
         appSecret: req.body?.appSecret,
         redirectUri: req.body?.redirectUri,
+        facebookWebhookVerifyToken: req.body?.facebookWebhookVerifyToken,
         whatsappAppId: req.body?.whatsappAppId,
         whatsappAppSecret: req.body?.whatsappAppSecret,
         whatsappConfigId: req.body?.whatsappConfigId,

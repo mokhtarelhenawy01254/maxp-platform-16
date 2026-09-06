@@ -70,6 +70,9 @@ const saveFacebookOAuthConfig = (config) => {
     appId: normalizeCredential(config?.appId),
     appSecret: normalizeCredential(config?.appSecret),
     redirectUri: normalizeCredential(config?.redirectUri),
+    facebookWebhookVerifyToken: normalizeCredential(
+      config?.facebookWebhookVerifyToken || config?.webhookVerifyToken
+    ),
     whatsappAppId: normalizeCredential(config?.whatsappAppId),
     whatsappAppSecret: normalizeCredential(config?.whatsappAppSecret),
     whatsappConfigId: normalizeCredential(config?.whatsappConfigId),
@@ -91,12 +94,17 @@ const getFacebookOAuthConfig = () => {
   const stored = getStoredFacebookOAuthConfig() || {};
 
   return {
-    appId: chooseCredential(stored.appId),
-    appSecret: chooseCredential(stored.appSecret),
+    appId: chooseCredential(stored.appId, process.env.FACEBOOK_APP_ID),
+    appSecret: chooseCredential(stored.appSecret, process.env.FACEBOOK_APP_SECRET),
     redirectUri:
       normalizeCredential(stored.redirectUri) ||
       buildFacebookBackendCallbackUrl("page"),
     configId: normalizeCredential(stored.configId || FACEBOOK_LOGIN_CONFIG_ID),
+    facebookWebhookVerifyToken:
+      normalizeCredential(stored.facebookWebhookVerifyToken) ||
+      normalizeCredential(process.env.FACEBOOK_VERIFY_TOKEN) ||
+      normalizeCredential(process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN) ||
+      "61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314",
     whatsappAppId: chooseCredential(stored.whatsappAppId),
     whatsappAppSecret: chooseCredential(stored.whatsappAppSecret),
     whatsappConfigId: normalizeCredential(stored.whatsappConfigId),

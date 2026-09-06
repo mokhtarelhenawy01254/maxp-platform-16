@@ -150,8 +150,8 @@ const createEnvironmentConfig = () => {
   const isDevelopment = environment === 'development';
   const isProduction = environment === 'production';
 
-  // Get main domain from env or default to mokhtarelhenawy.online
-  const MAIN_DOMAIN = process.env.MAIN_DOMAIN || 'mokhtarelhenawy.online';
+  // Get main domain from env or default to maxp.online
+  const MAIN_DOMAIN = process.env.MAIN_DOMAIN || 'maxp.online';
   const allowedDomains = resolveAllowedDomains(MAIN_DOMAIN);
 
   let frontendUrl;

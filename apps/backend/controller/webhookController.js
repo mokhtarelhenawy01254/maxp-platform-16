@@ -102,25 +102,35 @@ setInterval(() => {
 }, 30 * 60 * 1000); // Every 30 minutes
 
 const getWebhook = async (req, res) => {
-  // 🔐 Use environment variable if available, fallback only for development
-  const VERIFY_TOKEN = process.env.FACEBOOK_VERIFY_TOKEN || 'simple_chat_verify_token_2025';
-
   const mode = req.query['hub.mode'];
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
   if (mode && token) {
-    if (mode === 'subscribe' && token === VERIFY_TOKEN) {
+    const { getFacebookOAuthConfig } = require('../config/facebookAppConfig');
+    const fbConfig = getFacebookOAuthConfig();
+    const validVerifyTokens = new Set(
+      [
+        process.env.FACEBOOK_VERIFY_TOKEN,
+        process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN,
+        fbConfig.facebookWebhookVerifyToken,
+        fbConfig.whatsappWebhookVerifyToken,
+        '61d94df61ed00ab77e2a7e2c15458d7ce9ec8abc4520a6a83f0b483829617314',
+        'simple_chat_verify_token_2025'
+      ].filter((t) => typeof t === 'string' && t.trim() !== '')
+    );
+
+    if (mode === 'subscribe' && validVerifyTokens.has(token)) {
       console.log('✅ [WEBHOOK] Facebook webhook verified successfully');
-      res.status(200).send(challenge);
+      return res.status(200).send(challenge);
     } else {
       return whatsappMetaWebhookController.getWebhook(req, res);
     }
   } else {
     console.warn('⚠️ [WEBHOOK] Missing mode or token in verification request');
-    res.sendStatus(400);
+    return res.sendStatus(400);
   }
-}
+};
 
 const postWebhook = async (req, res) => {
   if (req.body?.object === 'whatsapp_business_account') {
