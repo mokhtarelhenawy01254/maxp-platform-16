@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { Lock, Mail, Eye, EyeOff } from "lucide-react";
 import { AuthSurface, AuthNotice } from "../../components/auth/AuthSurface";
+import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 
 const Login: React.FC = () => {
@@ -22,27 +23,7 @@ const Login: React.FC = () => {
     try {
       const userData = await login({ email, password });
 
-      let redirectPath = "/facebook-inbox";
-
-      if (userData) {
-        const systemRoles = [
-          "SUPER_ADMIN",
-        ];
-        const isSystemRole = systemRoles.includes(userData.role);
-
-        if (isSystemRole) {
-          redirectPath = "/super-admin/dashboard";
-        } else {
-          const userCompany = userData.company || (userData.companies || []).find((c: { isCurrent?: boolean }) => c.isCurrent);
-          const userApps: string[] = userCompany?.activeApps ?? [];
-          const appSet = new Set(userApps.map((a: string) => a.toLowerCase()));
-          if (appSet.has("unified-inbox") && !appSet.has("ecommerce-basic")) {
-            redirectPath = "/unified-inbox";
-          } else {
-            redirectPath = "/company-dashboard";
-          }
-        }
-      }
+      let redirectPath = resolvePostAuthDestination(userData);
 
       window.location.href = redirectPath;
     } catch (error: unknown) {

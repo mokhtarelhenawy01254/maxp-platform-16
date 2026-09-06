@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../../hooks/useAuthSimple";
+import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
 
 const SimpleLogin: React.FC = () => {
   const [email, setEmail] = useState("");
@@ -17,24 +18,7 @@ const SimpleLogin: React.FC = () => {
     try {
       const userData = await login({ email, password });
 
-      // Determine redirect path based on user role
-      let redirectPath = "/facebook-inbox";
-
-      if (userData) {
-        // Check user role and redirect accordingly
-        if (userData.role === "SUPER_ADMIN") {
-          redirectPath = "/super-admin/dashboard";
-        } else {
-          const userCompany = userData.company || (userData.companies || []).find((c: { isCurrent?: boolean }) => c.isCurrent);
-          const userApps: string[] = userCompany?.activeApps ?? [];
-          const appSet = new Set(userApps.map((a: string) => a.toLowerCase()));
-          if (appSet.has("unified-inbox") && !appSet.has("ecommerce-basic")) {
-            redirectPath = "/unified-inbox";
-          } else {
-            redirectPath = "/company-dashboard";
-          }
-        }
-      }
+      let redirectPath = resolvePostAuthDestination(userData);
 
       // إعادة توجيه حسب دور المستخدم
       window.location.href = redirectPath;
