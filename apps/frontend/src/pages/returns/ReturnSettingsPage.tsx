@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import React, { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   returnService,
   ReturnReason,
@@ -202,9 +203,27 @@ const ReturnSettingsPage: React.FC = () => {
     showDateColumn: true,
     showActionsColumn: true,
   }), [ORDER_STATUS_FIELDS]);
-  const [activeTab, setActiveTab] = useState<"display" | "reasons" | "types">(
-    "display",
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = (searchParams.get("tab") as "display" | "reasons" | "types") || "display";
+  const [activeTab, setActiveTabState] = useState<"display" | "reasons" | "types">(
+    ["display", "reasons", "types"].includes(initialTab) ? initialTab : "display",
   );
+
+  const setActiveTab = (tab: "display" | "reasons" | "types") => {
+    setActiveTabState(tab);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("tab", tab);
+      return next;
+    }, { replace: true });
+  };
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab") as "display" | "reasons" | "types" | null;
+    if (tabParam && ["display", "reasons", "types"].includes(tabParam) && tabParam !== activeTab) {
+      setActiveTabState(tabParam);
+    }
+  }, [searchParams]);
 
   // Display settings state
   const [displayConfig, setDisplayConfig] = useState<ReviewDisplayConfig>(
