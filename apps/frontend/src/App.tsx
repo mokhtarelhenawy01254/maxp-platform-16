@@ -3611,6 +3611,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/advertising/landing-builder"
+                  element={
+                    <Layout>
+                      <ProductLandingPages />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/advertising/funnel-wizard"
                   element={
                     <Layout>
@@ -5644,6 +5652,14 @@ const AppContent = () => {
 
                 <Route
                   path="/advertising/product-landing-pages"
+                  element={
+                    <Layout>
+                      <ProductLandingPages />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/landing-builder"
                   element={
                     <Layout>
                       <ProductLandingPages />
