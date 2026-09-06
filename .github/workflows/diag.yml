@@ -26,7 +26,7 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           key: ${{ secrets.SERVER_SSH_KEY }}
 
-      - name: Run Diagnostics on Server
+      - name: Run Diagnostics & Database Fix on Server
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -35,26 +35,31 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
-            echo "=== PM2 Status & Update ==="
-            pm2 update
-            pm2 list
-            echo "=== Restarting AI Service ==="
-            pm2 restart maxp-ai-service || pm2 start /var/www/ai-service/pm2.config.js || pm2 restart all
-            
-            echo "=== Recent Failed Provider Logs ==="
+            echo "=== 🚀 Running Storefront Brand Name Database Sync ==="
             cd /var/www/backend2
-            node -e "
-              const path = require('path');
-              const { PrismaClient } = require('./prisma/generated/postgresql_v2');
-              const prisma = new PrismaClient();
-              async function run() {
-                const logs = await prisma.\$queryRaw\`
-                  SELECT id, status, reply_preview, reason, violations, created_at 
-                  FROM ai.self_review_log 
-                  ORDER BY created_at DESC 
-                  LIMIT 15
-                \`;
-                console.log(JSON.stringify(logs, null, 2));
-              }
-              run().catch(console.error).finally(() => prisma.\$disconnect());
+            PGPASSWORD=mokhtar1234 psql -h localhost -U appuser -d maxp -c "
+              UPDATE storefront_settings 
+              SET \"designTokens\" = jsonb_set(\"designTokens\"::jsonb, '{storeName}', '\"TATO\"')::text,
+                  \"updatedAt\" = NOW()
+              WHERE \"companyId\" = 'cmtk4862e0sq6judiubpvklni';
             "
+            PGPASSWORD=mokhtar1234 psql -h localhost -U appuser -d maxp -c "
+              UPDATE store_pages
+              SET sections = REPLACE(sections::text, 'TA TI', 'TATO')::jsonb,
+                  \"updatedAt\" = NOW()
+              WHERE \"companyId\" = 'cmtk4862e0sq6judiubpvklni' AND sections::text ILIKE '%TA TI%';
+            "
+            PGPASSWORD=mokhtar1234 psql -h localhost -U appuser -d maxp -c "
+              UPDATE store_pages
+              SET sections = REPLACE(sections::text, 'TATI', 'TATO')::jsonb,
+                  \"updatedAt\" = NOW()
+              WHERE \"companyId\" = 'cmtk4862e0sq6judiubpvklni' AND sections::text ILIKE '%TATI%';
+            "
+            echo "=== 🧹 Purging Redis & Backend HTML Cache ==="
+            redis-cli --scan --pattern 'storefront_settings:*' 2>/dev/null | xargs -r redis-cli del 2>/dev/null || true
+            PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2-)"
+            if [ -n "$PURGE_SECRET" ]; then
+              curl -sS -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:3007/api/v1/internal/purge-cache" || true
+            fi
+            echo "=== ✅ Storefront Brand Name Database Sync Completed ==="
+

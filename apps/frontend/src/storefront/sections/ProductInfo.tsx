@@ -2578,14 +2578,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       : hasCustomProductSizeGuide
         ? true
         : sizeGuideVisibility === 'shoes-only'
-          ? productLooksLikeShoes
-          : true;
+          ? productLooksLikeShoes && (hasCustomProductSizeGuide || rawSizeGuideQuickRows.length > 0)
+          : sizeGuideVisibility === 'always'
+            ? true
+            : Boolean(hasCustomProductSizeGuide || rawSizeGuideQuickRows.length > 0);
   const fitNote = showSizeGuide ? rawFitNote : '';
   const sizeGuideHref = showSizeGuide ? rawSizeGuideHref : '';
   const sizeGuideQuickRows = showSizeGuide ? rawSizeGuideQuickRows : [];
   const sizeGuideQuickNote = showSizeGuide ? rawSizeGuideQuickNote : '';
   const canOpenSizeGuide = Boolean(
-    hasCustomProductSizeGuide || sizeGuideHref || sizeGuideQuickRows.length > 0 || fitNote,
+    showSizeGuide && (hasCustomProductSizeGuide || rawSizeGuideQuickRows.length > 0)
   );
   const breadcrumbHomeLabel = prefersArabicCopy ? 'الرئيسية' : 'Home';
   const breadcrumbShopLabel = prefersArabicCopy ? 'المتجر' : 'Shop';
