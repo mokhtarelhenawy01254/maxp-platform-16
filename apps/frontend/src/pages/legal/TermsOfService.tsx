@@ -255,21 +255,19 @@ const TermsOfService: React.FC = () => {
                 <div className="bg-gray-100 p-4 rounded-lg">
                   <p className="text-gray-700">
                     <strong>البريد الإلكتروني:</strong>{" "}
-                    elhnnawyfromnew@gmail.com
+                    support@maxp.online
                     <br />
                     <strong>الهاتف:</strong> +201123087745
                     <br />
                     <strong>العنوان:</strong> مصر
                     <br />
-                    هذه السياسة تخص تطبيق <strong>m2</strong> التابع لشركة{" "}
-                    <strong>MaxP</strong>
-                    والموقع الإلكتروني الرسمي
+                    هذه الشروط تخص منصة وتطبيق <strong>MaxP</strong>
+                    والموقع الإلكتروني الرسمي{" "}
                     <a
-                      href="https://www.mokhtarelhenawy.online"
+                      href="https://maxp.online"
                       className="text-blue-600"
                     >
-                      {" "}
-                      https://www.mokhtarelhenawy.online
+                      https://maxp.online
                     </a>
                     .
                   </p>

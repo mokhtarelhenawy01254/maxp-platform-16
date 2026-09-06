@@ -20,8 +20,7 @@ const PrivacyPolicy: React.FC = () => {
                   1. مقدمة
                 </h2>
                 <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
-                  نحن في تطبيق <strong>m2</strong> والمملوك من قبل{" "}
-                  <strong>MaxP</strong> نقدر خصوصيتك ونلتزم بحماية معلوماتك
+                  نحن في منصة وتطبيق <strong>MaxP</strong> نقدر خصوصيتك ونلتزم بحماية معلوماتك
                   الشخصية. توضح سياسة الخصوصية هذه كيفية جمعنا واستخدامنا
                   وحمايتنا لمعلوماتك عند استخدامك لمنصتنا.
                 </p>
@@ -178,22 +177,38 @@ const PrivacyPolicy: React.FC = () => {
                 <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg">
                   <p className="text-gray-700 dark:text-gray-300">
                     <strong>البريد الإلكتروني:</strong>{" "}
-                    elhnnawyfromnew@gmail.com
+                    support@maxp.online
                     <br />
                     <strong>الهاتف:</strong> +201123087745
                     <br />
                     <strong>العنوان:</strong> مصر
                   </p>
-                  <p className="text-gray-700 dark:text-gray-300 mt-6">
-                    هذه السياسة تخص تطبيق <strong>m2</strong> التابع لشركة{" "}
-                    <strong>MaxP</strong> والموقع الإلكتروني الرسمي{" "}
+                  <p className="text-gray-700 dark:text-gray-300 mt-4">
+                    هذه السياسة تخص منصة وتطبيق <strong>MaxP</strong> والموقع الإلكتروني الرسمي{" "}
                     <a
-                      href="https://www.mokhtarelhenawy.online"
+                      href="https://maxp.online"
                       className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                     >
-                      https://www.mokhtarelhenawy.online
+                      https://maxp.online
                     </a>
                     .
+                  </p>
+                </div>
+              </section>
+
+              <section className="mb-8">
+                <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+                  11. تعليمات حذف بيانات المستخدم (User Data Deletion)
+                </h2>
+                <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-4">
+                  وفقاً لسياسة منصة فيسبوك (Meta Platform Policy)، يمكنك طلب حذف بياناتك أو إلغاء ربط حسابك في أي وقت:
+                </p>
+                <div className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg text-sm space-y-2">
+                  <p>
+                    1. لإلغاء ربط التطبيق من فيسبوك: انتقل إلى حسابك على فيسبوك &gt; الإعدادات والخصوصية &gt; الإعدادات &gt; التطبيقات والمواقع الإلكترونية &gt; اختر MaxP واضغط إزالة (Remove).
+                  </p>
+                  <p>
+                    2. لطلب حذف كافة السجلات والبيانات المخزنة لدينا نهائياً: يرجى زيارة صفحة <a href="/data-deletion" className="text-blue-600 dark:text-blue-400 underline">تعليمات حذف البيانات</a> أو مراسلتنا عبر البريد الإلكتروني support@maxp.online وسيتم تأكيد الحذف خلال 48 ساعة.
                   </p>
                 </div>
               </section>

@@ -37,6 +37,11 @@ const ResetPassword = React.lazy(() => import("./pages/auth/ResetPassword"));
 const AcceptInvitation = React.lazy(
   () => import("./pages/auth/AcceptInvitation"),
 );
+// Legal & Compliance Pages (Public)
+const PrivacyPolicy = React.lazy(() => import("./pages/legal/PrivacyPolicy"));
+const TermsOfService = React.lazy(() => import("./pages/legal/TermsOfService"));
+const DataDeletionPage = React.lazy(() => import("./pages/legal/DataDeletionPage"));
+
 // Import HR pages
 const PayrollTesting = React.lazy(() => import("./pages/hr/PayrollTesting"));
 
@@ -2028,6 +2033,13 @@ const AppContent = () => {
             <Route path="/request-service" element={<ServiceRequestForm />} />
             <Route path="/faq" element={faqRouteElement} />
             <Route path="/support/faq" element={faqRouteElement} />
+            {/* Legal and Compliance Routes (Public - Required for Facebook/Meta App Review) */}
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/policies" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/data-deletion" element={<DataDeletionPage />} />
             {/* Public Storefront Routes - No Authentication Required */}
             <Route path="/test-minimal" element={<TestMinimal />} />
             <Route path="/test-public" element={<TestPublic />} />
