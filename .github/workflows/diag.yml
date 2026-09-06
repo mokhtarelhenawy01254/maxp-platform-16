@@ -39,8 +39,7 @@ jobs:
             cd /var/www/backend2
             PGPASSWORD=mokhtar1234 psql -h localhost -U appuser -d maxp -c "
               UPDATE storefront_settings 
-              SET \"designTokens\" = jsonb_set(\"designTokens\", '{storeName}', '\"TATO\"'),
-                  \"storeName\" = 'TATO',
+              SET \"designTokens\" = '{\"themeId\": \"khemet-luxe-eg\", \"currency\": \"EGP\", \"storeName\": \"TATO\"}',
                   \"updatedAt\" = NOW()
               WHERE \"companyId\" = 'cmtk4862e0sq6judiubpvklni';
             "
