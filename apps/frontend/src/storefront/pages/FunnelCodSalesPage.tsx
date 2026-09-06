@@ -303,20 +303,36 @@ const FunnelCodSalesPage: React.FC = () => {
         setLoading(true);
         setError(null);
         resolvedCompanyId = getCompanyId();
-        const res = await storefrontApi.getFunnel?.(slug, {
-          companyId: resolvedCompanyId ?? undefined,
-        });
-        if (cancelled) return;
-        if (res) {
-          setFunnel(res.funnel);
-          setProduct(res.product ?? FALLBACK_PRODUCT);
-          if (res.company) {
-            setCompany({
-              id: res.company.id,
-              name: res.company.name || FALLBACK_COMPANY.name,
-              slug: res.company.slug || FALLBACK_COMPANY.slug,
-              currency: res.company.currency || FALLBACK_COMPANY.currency,
-            });
+        const isCustomLandingSlug = ["ultra-9-watch", "d3e043e2-b581-45cd-93eb-2ef0617d1c07", "easyorders", "watch", "smartwatch", "offer"].includes(slug?.toLowerCase());
+        
+        if (isCustomLandingSlug) {
+          setFunnel({
+            id: "custom-watch-funnel",
+            companyId: "maxp-store",
+            productId: FALLBACK_PRODUCT.id,
+            slug,
+            title: FALLBACK_PRODUCT.name,
+            status: "PUBLISHED",
+            config: FALLBACK_CONFIG,
+          });
+          setProduct(FALLBACK_PRODUCT);
+          setCompany(FALLBACK_COMPANY);
+        } else {
+          const res = await storefrontApi.getFunnel?.(slug, {
+            companyId: resolvedCompanyId ?? undefined,
+          });
+          if (cancelled) return;
+          if (res) {
+            setFunnel(res.funnel);
+            setProduct(res.product ?? FALLBACK_PRODUCT);
+            if (res.company) {
+              setCompany({
+                id: res.company.id,
+                name: res.company.name || FALLBACK_COMPANY.name,
+                slug: res.company.slug || FALLBACK_COMPANY.slug,
+                currency: res.company.currency || FALLBACK_COMPANY.currency,
+              });
+            }
           }
         }
       } catch (err) {
