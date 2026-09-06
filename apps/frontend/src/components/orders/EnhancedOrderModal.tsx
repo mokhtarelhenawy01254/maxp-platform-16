@@ -638,14 +638,14 @@ const EnhancedOrderModal: React.FC<EnhancedOrderModalProps> = ({
                             item.productSize ||
                             item.metadata?.color ||
                             item.metadata?.size) && (
-                            <div className="text-xs text-muted-foreground mt-1 flex gap-3">
+                            <div className="text-[11px] mt-1 flex items-center gap-2 flex-nowrap overflow-x-auto max-w-full">
                               {(item.productColor || item.metadata?.color) && (
-                                <span>
+                                <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 font-semibold border border-blue-200 dark:border-blue-800">
                                   🎨 {item.productColor || item.metadata?.color}
                                 </span>
                               )}
                               {(item.productSize || item.metadata?.size) && (
-                                <span>
+                                <span className="whitespace-nowrap shrink-0 px-2 py-0.5 rounded bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 font-semibold border border-purple-200 dark:border-purple-800">
                                   📏 {item.productSize || item.metadata?.size}
                                 </span>
                               )}

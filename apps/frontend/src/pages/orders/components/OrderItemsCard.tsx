@@ -443,14 +443,14 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
     const variantValues = normalizeVariantBadges(item, itemMetadata);
 
     return variantValues.color || variantValues.size ? (
-      <div className="flex items-center gap-1.5 flex-wrap">
+      <div className="flex items-center gap-1.5 flex-nowrap max-w-full overflow-x-auto py-0.5 no-scrollbar">
         {variantValues.color && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-xs sm:text-sm font-semibold border border-blue-200 dark:border-blue-800 max-w-full break-words">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-[11px] sm:text-xs font-semibold border border-blue-200 dark:border-blue-800 whitespace-nowrap shrink-0">
             🎨 {variantValues.color}
           </span>
         )}
         {variantValues.size && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md text-xs sm:text-sm font-semibold border border-purple-200 dark:border-purple-800 max-w-full break-words">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md text-[11px] sm:text-xs font-semibold border border-purple-200 dark:border-purple-800 whitespace-nowrap shrink-0">
             📏 {variantValues.size}
           </span>
         )}

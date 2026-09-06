@@ -584,16 +584,18 @@ const OrderModalEnhanced: React.FC<OrderModalEnhancedProps> = ({
                           <span className="font-medium">
                             {item.productName}
                           </span>
-                          {item.productColor && (
-                            <span className="text-xs text-gray-600 mr-2">
-                              • {item.productColor}
-                            </span>
-                          )}
-                          {item.productSize && (
-                            <span className="text-xs text-gray-600 mr-2">
-                              • {item.productSize}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto max-w-full mt-1 text-[11px]">
+                            {item.productColor && (
+                              <span className="bg-blue-100 text-blue-700 font-semibold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">
+                                🎨 {item.productColor}
+                              </span>
+                            )}
+                            {item.productSize && (
+                              <span className="bg-purple-100 text-purple-700 font-semibold px-1.5 py-0.5 rounded whitespace-nowrap shrink-0">
+                                📏 {item.productSize}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-sm text-gray-600">
                             ({item.price} ج.م)
                           </div>

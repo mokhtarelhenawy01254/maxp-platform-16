@@ -756,14 +756,14 @@ const OrderModal: React.FC<OrderModalProps> = ({
                             </div>
                           )}
 
-                          <div className="flex gap-2 mt-2">
+                          <div className="flex items-center gap-1.5 flex-nowrap overflow-x-auto max-w-full mt-2">
                             {item.productColor && (
-                              <span className="text-xs bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded">
+                              <span className="text-[11px] font-semibold bg-blue-100 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded whitespace-nowrap shrink-0">
                                 🎨 {item.productColor}
                               </span>
                             )}
                             {item.productSize && (
-                              <span className="text-xs bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded">
+                              <span className="text-[11px] font-semibold bg-purple-100 dark:bg-purple-900/20 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded whitespace-nowrap shrink-0">
                                 📏 {item.productSize}
                               </span>
                             )}
