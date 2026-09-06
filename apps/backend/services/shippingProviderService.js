@@ -165,7 +165,7 @@ const buildTurboOrderPayload = (shipment) => {
   return turboService.formatOrderForTurbo(order, customer, items);
 };
 
-const createTurboShipment = async (shipment) => {
+const createTurboShipment = async (shipment, options = {}) => {
   const settings = normalizeSettings(
     shipment.shippingCompany?.settings,
     PROVIDER_KEYS.TURBO,
@@ -173,7 +173,7 @@ const createTurboShipment = async (shipment) => {
   );
   const company = shipment.company || {};
 
-  if (!settings.autoCreateShipments) {
+  if (!settings.autoCreateShipments && !options.force && !options.allowLiveCreate) {
     return {
       success: false,
       skipped: true,
@@ -182,7 +182,7 @@ const createTurboShipment = async (shipment) => {
   }
 
   const turboApiKey = settings.apiKey || shipment.shippingCompany?.apiKey || company.turboApiKey;
-  if (!company.turboEnabled && !turboApiKey) {
+  if (!turboApiKey) {
     return {
       success: false,
       skipped: true,
@@ -323,7 +323,7 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
       });
     }
 
-    const result = await createTurboShipment(shipment);
+    const result = await createTurboShipment(shipment, options);
     return updateShipmentFromProviderResult(prisma, shipment, provider, result);
   }
 

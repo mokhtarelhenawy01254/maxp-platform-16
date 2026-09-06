@@ -379,6 +379,13 @@ router.post('/', verifyToken.authenticateToken, async (req, res) => {
       }).catch(err => console.warn('Non-blocking bosta sync error:', err.message));
     }
 
+    if (providerFields.providerKey === 'TURBO' && apiKey) {
+      await prisma.company.update({
+        where: { id: companyId },
+        data: { turboApiKey: apiKey, turboEnabled: isActive !== undefined ? isActive : true },
+      }).catch(err => console.warn('Non-blocking turbo sync error:', err.message));
+    }
+
     res.json({ success: true, data: company });
   } catch (error) {
     console.error('Error creating shipping company:', error);
@@ -471,6 +478,18 @@ router.put('/:id', verifyToken.authenticateToken, async (req, res) => {
       }
     }
 
+    if (providerFields.providerKey === 'TURBO' || existing.providerKey === 'TURBO') {
+      const activeKey = apiKey !== undefined ? apiKey : existing.apiKey;
+      const activeStatus = isActive !== undefined ? isActive : existing.isActive;
+      await prisma.company.update({
+        where: { id: companyId },
+        data: {
+          turboApiKey: activeKey || undefined,
+          turboEnabled: Boolean(activeStatus && activeKey),
+        },
+      }).catch(err => console.warn('Non-blocking turbo sync error:', err.message));
+    }
+
     res.json({ success: true, data: updated, message: 'تم تحديث إعدادات الشركة بنجاح' });
   } catch (error) {
     console.error('Error updating shipping company:', error);
@@ -500,6 +519,20 @@ router.patch('/:id/toggle', verifyToken.authenticateToken, async (req, res) => {
       where: { id },
       data: { isActive: newStatus },
     });
+
+    if (existing.providerKey === 'TURBO') {
+      await prisma.company.update({
+        where: { id: companyId },
+        data: { turboEnabled: Boolean(newStatus && existing.apiKey) },
+      }).catch(err => console.warn('Non-blocking turbo toggle sync error:', err.message));
+    }
+
+    if (existing.providerKey === 'BOSTA') {
+      await prisma.company.update({
+        where: { id: companyId },
+        data: { bostaEnabled: Boolean(newStatus && existing.apiKey) },
+      }).catch(err => console.warn('Non-blocking bosta toggle sync error:', err.message));
+    }
 
     res.json({
       success: true,

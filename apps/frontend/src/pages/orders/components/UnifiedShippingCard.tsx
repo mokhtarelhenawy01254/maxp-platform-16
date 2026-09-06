@@ -1,4 +1,6 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
 import {
   TruckIcon,
@@ -10,6 +12,7 @@ import {
   ClockIcon,
   ArrowTopRightOnSquareIcon,
   ExclamationCircleIcon,
+  ExclamationTriangleIcon,
   PaperAirplaneIcon,
   PhoneIcon,
   UserIcon,
@@ -44,8 +47,9 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
   const { formatPrice } = useCurrency();
 
   const [companies, setCompanies] = useState<ShippingCompany[]>([]);
+  const [loadingCompanies, setLoadingCompanies] = useState(true);
   const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
-  const [courierMode, setCourierMode] = useState<"qp" | "bosta" | "api" | "manual">("qp");
+  const [courierMode, setCourierMode] = useState<"turbo" | "qp" | "bosta" | "custom" | "manual">("manual");
   const [isManualCourier, setIsManualCourier] = useState(false);
   const [manualTracking, setManualTracking] = useState("");
   const [manualNotes, setManualNotes] = useState("");
@@ -127,6 +131,12 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
   const bostaCompany = companies.find(
     (c) => c.providerKey === "BOSTA" || c.name?.toLowerCase().includes("bosta") || c.name?.includes("بوستا")
   );
+  const turboCompany = companies.find(
+    (c) => c.providerKey === "TURBO" || c.slug === "turbo" || c.name?.toLowerCase().includes("turbo") || c.name?.includes("تربو")
+  );
+  const customCompanies = companies.filter(
+    (c) => c !== qpCompany && c !== bostaCompany && c !== turboCompany
+  );
 
   const qpSettings = React.useMemo(() => {
     if (!qpCompany?.settings) return {};
@@ -146,22 +156,90 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
     "PENDING";
 
   useEffect(() => {
+    let cancelled = false;
     const fetchCompanies = async () => {
+      setLoadingCompanies(true);
       try {
-        const res: any = await apiClient.get("/shipping-companies?all=true");
-        if (res.data?.success && Array.isArray(res.data.data)) {
-          const activeOnes = res.data.data.filter((c: ShippingCompany) => c.isActive);
-          setCompanies(activeOnes);
-          if (activeOnes.length > 0 && !selectedCompanyId) {
-            setSelectedCompanyId(activeOnes[0].id);
+        let activeOnes: ShippingCompany[] = [];
+        try {
+          const res: any = await apiClient.get("/shipping-companies/active-carriers");
+          if (res.data?.success && Array.isArray(res.data.data)) {
+            activeOnes = res.data.data;
           }
+        } catch {
+          const fallbackRes: any = await apiClient.get("/shipping-companies?status=active&all=true");
+          if (fallbackRes.data?.success && Array.isArray(fallbackRes.data.data)) {
+            activeOnes = fallbackRes.data.data.filter((c: ShippingCompany) => c.isActive);
+          }
+        }
+
+        if (cancelled) return;
+        setCompanies(activeOnes);
+
+        if (activeOnes.length > 0) {
+          setSelectedCompanyId(activeOnes[0].id);
+          const hasTurbo = activeOnes.some((c) => c.providerKey === "TURBO" || c.slug === "turbo" || c.name?.toLowerCase().includes("turbo") || c.name?.includes("تربو"));
+          const hasQp = activeOnes.some((c) => c.providerKey === "QP_EXPRESS" || c.name?.toLowerCase().includes("qp") || c.name?.includes("كيو بي"));
+          const hasBosta = activeOnes.some((c) => c.providerKey === "BOSTA" || c.name?.toLowerCase().includes("bosta") || c.name?.includes("بوستا"));
+
+          if (hasTurbo) {
+            setCourierMode("turbo");
+            setIsManualCourier(false);
+          } else if (hasQp) {
+            setCourierMode("qp");
+            setIsManualCourier(false);
+          } else if (hasBosta) {
+            setCourierMode("bosta");
+            setIsManualCourier(false);
+          } else {
+            setCourierMode("custom");
+            setIsManualCourier(false);
+          }
+        } else {
+          setCourierMode("manual");
+          setIsManualCourier(true);
         }
       } catch (err) {
         console.error("Error fetching shipping companies:", err);
+      } finally {
+        if (!cancelled) setLoadingCompanies(false);
       }
     };
     fetchCompanies();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  // Dispatch via Turbo directly
+  const handleTurboDirectShipment = async () => {
+    if (!canManageShipments) {
+      toast.error("ليس لديك صلاحية إدارة الشحن");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const orderIdentifier = order?.orderNumber || order?.id;
+      const res: any = await apiClient.post(`/turbo/orders/${orderIdentifier}/shipment`);
+
+      if (res.data?.success) {
+        toast.success(res.data.message || "تم إنشاء بوليصة الشحن بنجاح لدى Turbo");
+        if (onOrderUpdated) onOrderUpdated();
+      } else {
+        toast.error(res.data?.error || "تعذر إنشاء الشحنة مع Turbo");
+      }
+    } catch (err: any) {
+      console.error("Turbo dispatch error:", err);
+      toast.error(
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        "حدث خطأ أثناء الشحن عبر Turbo"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const copyTracking = () => {
     if (existingTracking) {
@@ -655,6 +733,19 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
               </button>
             )}
 
+            {isTurbo && (order?.turboTrackingNumber || order?.turboShipmentId || shipment?.trackingNumber) && (
+              <a
+                href={`/api/v1/turbo/orders/${order.orderNumber || order.id}/waybill`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-800 dark:text-blue-300 border border-blue-300 dark:border-blue-800 hover:bg-blue-100 transition shadow-sm"
+                title="طباعة بوليصة شحن تربو الرسمية"
+              >
+                <PrinterIcon className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <span>طباعة بوليصة تربو AWB</span>
+              </a>
+            )}
+
             <button
               type="button"
               onClick={() => setShowCancelModal(true)}
@@ -668,54 +759,102 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
       ) : (
         /* Case 2: Order NOT shipped yet - Select courier and dispatch */
         <div className="space-y-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 p-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs font-medium">
-            <button
-              type="button"
-              onClick={() => {
-                setCourierMode("qp");
-                setIsManualCourier(false);
-              }}
-              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
-                courierMode === "qp"
-                  ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
-              }`}
-            >
-              <BoltIcon className="h-3.5 w-3.5 text-amber-500" />
-              <span>كيو بي (QP Express)</span>
-            </button>
+          {/* If no integrated carriers are active, show alert banner */}
+          {companies.length === 0 && !loadingCompanies && (
+            <div className="p-3.5 rounded-xl border border-amber-200 bg-amber-50 dark:border-amber-900/50 dark:bg-amber-950/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <ExclamationTriangleIcon className="h-5 w-5 text-amber-600 shrink-0" />
+                <div>
+                  <p className="text-xs sm:text-sm font-semibold text-amber-900 dark:text-amber-200">
+                    لا توجد شركات شحن مفعلة حالياً
+                  </p>
+                  <p className="text-xs text-amber-700 dark:text-amber-400 mt-0.5">
+                    يمكنك تفعيل شركات الشحن (تربو، كيو بي إكسبريس، بوستا) وإدخال بيانات الربط للبدء في الشحن الآلي.
+                  </p>
+                </div>
+              </div>
+              <Link
+                to="/shipping-companies"
+                className="px-3 py-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition shrink-0"
+              >
+                تفعيل شركات الشحن
+              </Link>
+            </div>
+          )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setCourierMode("bosta");
-                setIsManualCourier(false);
-              }}
-              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
-                courierMode === "bosta"
-                  ? "bg-white dark:bg-gray-800 text-orange-600 dark:text-orange-400 font-bold shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
-              }`}
-            >
-              <TruckIcon className="h-3.5 w-3.5 text-orange-500" />
-              <span>بوستا (Bosta)</span>
-            </button>
+          {/* Active Carriers Tabs (Only Active Providers are Shown) */}
+          <div className="flex flex-wrap gap-1.5 p-1 bg-gray-100 dark:bg-gray-900 rounded-lg text-xs font-medium">
+            {turboCompany && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCourierMode("turbo");
+                  setIsManualCourier(false);
+                }}
+                className={`py-2 px-3.5 rounded-md transition flex items-center justify-center gap-1.5 ${
+                  courierMode === "turbo"
+                    ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-bold shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                }`}
+              >
+                <TruckIcon className="h-3.5 w-3.5 text-blue-500" />
+                <span>تربو (Turbo)</span>
+              </button>
+            )}
 
-            <button
-              type="button"
-              onClick={() => {
-                setCourierMode("api");
-                setIsManualCourier(false);
-              }}
-              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
-                courierMode === "api"
-                  ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
-              }`}
-            >
-              <TruckIcon className="h-3.5 w-3.5" />
-              <span>الشركات المسجلة</span>
-            </button>
+            {qpCompany && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCourierMode("qp");
+                  setIsManualCourier(false);
+                }}
+                className={`py-2 px-3.5 rounded-md transition flex items-center justify-center gap-1.5 ${
+                  courierMode === "qp"
+                    ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                }`}
+              >
+                <BoltIcon className="h-3.5 w-3.5 text-amber-500" />
+                <span>كيو بي (QP Express)</span>
+              </button>
+            )}
+
+            {bostaCompany && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCourierMode("bosta");
+                  setIsManualCourier(false);
+                }}
+                className={`py-2 px-3.5 rounded-md transition flex items-center justify-center gap-1.5 ${
+                  courierMode === "bosta"
+                    ? "bg-white dark:bg-gray-800 text-orange-600 dark:text-orange-400 font-bold shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                }`}
+              >
+                <TruckIcon className="h-3.5 w-3.5 text-orange-500" />
+                <span>بوستا (Bosta)</span>
+              </button>
+            )}
+
+            {customCompanies.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCourierMode("custom");
+                  setIsManualCourier(false);
+                }}
+                className={`py-2 px-3.5 rounded-md transition flex items-center justify-center gap-1.5 ${
+                  courierMode === "custom"
+                    ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                }`}
+              >
+                <TruckIcon className="h-3.5 w-3.5" />
+                <span>الشركات المفعلة الأخرى</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -723,7 +862,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
                 setCourierMode("manual");
                 setIsManualCourier(true);
               }}
-              className={`py-2 px-3 rounded-md transition flex items-center justify-center gap-1.5 ${
+              className={`py-2 px-3.5 rounded-md transition flex items-center justify-center gap-1.5 ${
                 courierMode === "manual"
                   ? "bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 font-bold shadow-sm"
                   : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
@@ -734,8 +873,39 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
             </button>
           </div>
 
-          {/* 1. QP Express Direct Mode */}
-          {courierMode === "qp" && (
+          {/* 1. Turbo Direct Mode */}
+          {courierMode === "turbo" && turboCompany && (
+            <div className="p-3.5 rounded-lg border border-blue-100 dark:border-blue-950/60 bg-blue-50/30 dark:bg-blue-950/20 space-y-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-blue-900 dark:text-blue-300 flex items-center gap-1.5">
+                  <TruckIcon className="h-4 w-4 text-blue-600" />
+                  إرسال فوري إلى شركة تربو (Turbo Courier)
+                </span>
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  ● الحساب مفعل وجاهز
+                </span>
+              </div>
+
+              <p className="text-xs text-gray-600 dark:text-gray-400">
+                سيتم إرسال بيانات العميل والمنتجات ومبلغ التحصيل ({formatPrice(order?.total || 0)}) فوراً إلى حسابك لدى تربو وتوليد رقم التتبع وبوليصة الشحن.
+              </p>
+
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleTurboDirectShipment}
+                  disabled={loading}
+                  className="w-full sm:w-auto px-5 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition shadow-sm flex items-center justify-center gap-2"
+                >
+                  <PaperAirplaneIcon className="h-4 w-4 rotate-180" />
+                  <span>{loading ? "جاري الإرسال لتربو وتوليد البوليصة..." : "إرسال إلى شركة تربو وتوليد البوليصة"}</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* 2. QP Express Direct Mode */}
+          {courierMode === "qp" && qpCompany && (
             <div className="p-3.5 rounded-lg border border-indigo-100 dark:border-indigo-950/60 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-indigo-900 dark:text-indigo-300">
@@ -745,22 +915,12 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
                   <span className="text-[11px] text-gray-500 font-mono">
                     عميل رقم: #{qpSettings.customerId}
                   </span>
-                ) : qpCompany ? (
+                ) : (
                   <span className="text-[11px] text-emerald-600 font-mono">
                     ● متصل
                   </span>
-                ) : (
-                  <span className="text-[11px] text-amber-600">
-                    ⚠️ غير مهيأ بالكامل
-                  </span>
                 )}
               </div>
-
-              {!qpCompany && (
-                <div className="p-2 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs">
-                  تنبيه: لم يتم حفظ بيانات الربط لشركة QP Express في إعدادات الشركة بعد. يرجى إضافتها من صفحة شركات الشحن.
-                </div>
-              )}
 
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -789,29 +949,17 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
             </div>
           )}
 
-          {/* 2. Bosta Direct Mode */}
-          {courierMode === "bosta" && (
+          {/* 3. Bosta Direct Mode */}
+          {courierMode === "bosta" && bostaCompany && (
             <div className="p-3.5 rounded-lg border border-orange-100 dark:border-orange-950/60 bg-orange-50/30 dark:bg-orange-950/20 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-orange-900 dark:text-orange-300">
                   إرسال فوري إلى شركة بوستا (Bosta)
                 </span>
-                {bostaCompany ? (
-                  <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
-                    ● مفتاح الـ API مسجل
-                  </span>
-                ) : (
-                  <span className="text-[11px] text-amber-600">
-                    ⚠️ غير مهيأ بعد
-                  </span>
-                )}
+                <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium">
+                  ● مفتاح الـ API مسجل
+                </span>
               </div>
-
-              {!bostaCompany && (
-                <div className="p-2 rounded bg-amber-50 dark:bg-amber-950/30 text-amber-800 dark:text-amber-300 text-xs">
-                  تنبيه: لم يتم حفظ مفتاح API لشركة بوستا في إعدادات الشركة بعد. يرجى إضافته من صفحة شركات الشحن.
-                </div>
-              )}
 
               <p className="text-xs text-gray-600 dark:text-gray-400">
                 سيتم إرسال عنوان العميل، المحافظة، والمنتجات، ومبلغ التحصيل فوراً لتوليد بوليصة بوستا الرسمية (AWB).
@@ -831,8 +979,8 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
             </div>
           )}
 
-          {/* 2. Registered API Companies */}
-          {courierMode === "api" && (
+          {/* 4. Other Active Custom Companies */}
+          {courierMode === "custom" && customCompanies.length > 0 && (
             <div className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -843,7 +991,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
                   onChange={(e) => setSelectedCompanyId(e.target.value)}
                   className="w-full px-3 py-2 text-xs sm:text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
                 >
-                  {companies.map((c) => (
+                  {customCompanies.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.name} {c.integrationMode ? `(${c.integrationMode})` : ""}
                     </option>
@@ -865,7 +1013,7 @@ const UnifiedShippingCard: React.FC<UnifiedShippingCardProps> = ({
             </div>
           )}
 
-          {/* 3. Manual Courier */}
+          {/* 5. Manual Courier */}
           {courierMode === "manual" && (
             <div className="space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

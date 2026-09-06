@@ -16,14 +16,30 @@ const createShipment = async (req, res) => {
     if (!order) order = await safeQuery(async () => prisma.order.findUnique({ where: { id: orderId }, include: { customer: true, orderItems: { include: { product: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true, turboAutoCreate: true } } } }), 3);
     if (!order) return res.status(404).json({ success: false, error: 'Order not found', searchedValue: orderId });
     if (order.companyId !== companyId) return res.status(403).json({ success: false, error: 'Unauthorized access to this order' });
-    if (!order.company.turboEnabled || !order.company.turboApiKey) return res.status(400).json({ success: false, error: 'Turbo is not enabled or API key is not configured' });
+    let turboApiKey = order.company?.turboApiKey;
+    let turboEnabled = order.company?.turboEnabled;
+    if (!turboEnabled || !turboApiKey) {
+      const turboCarrier = await prisma.shippingCompany.findFirst({
+        where: { companyId, providerKey: 'TURBO', isActive: true },
+      });
+      if (turboCarrier && turboCarrier.apiKey) {
+        turboApiKey = turboCarrier.apiKey;
+        turboEnabled = true;
+        await prisma.company.update({
+          where: { id: companyId },
+          data: { turboApiKey, turboEnabled: true },
+        }).catch(() => {});
+      }
+    }
+
+    if (!turboEnabled || !turboApiKey) return res.status(400).json({ success: false, error: 'Turbo is not enabled or API key is not configured' });
     const existingTurboShipment = Boolean(order.turboShipmentId || order.turboTrackingNumber || order.turboShipmentStatus || order.turboLabelUrl);
     const normalizedTurboStatus = String(order.turboShipmentStatus || '').toLowerCase();
     const isDeliveredTurboShipment = ['delivered', 'completed', '7', '8'].includes(normalizedTurboStatus);
     if (existingTurboShipment && !replaceExisting) return res.status(400).json({ success: false, error: 'Shipment already exists for this order', shipmentId: order.turboShipmentId, trackingNumber: order.turboTrackingNumber });
     if (existingTurboShipment && replaceExisting && isDeliveredTurboShipment) return res.status(400).json({ success: false, error: 'Cannot recreate Turbo shipment after delivery or completion', shipmentId: order.turboShipmentId, trackingNumber: order.turboTrackingNumber, status: order.turboShipmentStatus });
     const previousTurboShipment = existingTurboShipment && replaceExisting ? { shipmentId: order.turboShipmentId || null, trackingNumber: order.turboTrackingNumber || null, status: order.turboShipmentStatus || null, labelUrl: order.turboLabelUrl || null, metadata: parseTurboMetadata(order.turboMetadata), replacedAt: new Date().toISOString() } : null;
-    const turboService = new TurboService(order.company.turboApiKey, companyId);
+    const turboService = new TurboService(turboApiKey, companyId);
     const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems || order.items);
     const validation = validateOrderForTurbo(order, orderData);
     if (!validation.isValid) return res.status(400).json({ success: false, validationError: true, error: validation.message, missingFields: validation.missingFields, suggestions: validation.suggestions, message: validation.message });
@@ -53,10 +69,25 @@ const bulkCreateShipments = async (req, res) => {
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) return res.status(400).json({ success: false, error: 'يرجى تحديد طلب واحد على الأقل لإرساله لتربو' });
     const prisma = getSharedPrismaClient();
     const company = await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { turboApiKey: true, turboEnabled: true } }), 3);
-    if (!company?.turboEnabled || !company?.turboApiKey) return res.status(400).json({ success: false, error: 'خدمة شحن تربو غير مفعلة في إعدادات الشركة أو لم يتم إدخال مفتاح API' });
+    let turboApiKey = company?.turboApiKey;
+    let turboEnabled = company?.turboEnabled;
+    if (!turboEnabled || !turboApiKey) {
+      const turboCarrier = await prisma.shippingCompany.findFirst({
+        where: { companyId, providerKey: 'TURBO', isActive: true },
+      });
+      if (turboCarrier && turboCarrier.apiKey) {
+        turboApiKey = turboCarrier.apiKey;
+        turboEnabled = true;
+        await safeQuery(() => prisma.company.update({
+          where: { id: companyId },
+          data: { turboApiKey, turboEnabled: true },
+        }), 3).catch(() => {});
+      }
+    }
+    if (!turboEnabled || !turboApiKey) return res.status(400).json({ success: false, error: 'خدمة شحن تربو غير مفعلة في إعدادات الشركة أو لم يتم إدخال مفتاح API' });
     const orders = await safeQuery(() => prisma.order.findMany({ where: { OR: [{ orderNumber: { in: orderIds } }, { id: { in: orderIds } }], companyId, turboShipmentId: null }, include: { customer: true, orderItems: { include: { product: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true } } }, take: 100 }), 3);
     if (orders.length === 0) return res.status(404).json({ success: false, error: 'لم يتم العثور على أي طلبات غير مشحونة بحاجة للإرسال لتربو' });
-    const turboService = new TurboService(company.turboApiKey, companyId);
+    const turboService = new TurboService(turboApiKey, companyId);
     const results = { success: [], failed: [], skipped: [] };
     for (const order of orders) {
       try {
