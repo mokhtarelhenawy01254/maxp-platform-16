@@ -1000,6 +1000,7 @@ export const fetchInvoicePdf = async (id: string): Promise<Blob> => {
 
 export const fetchInvoicePaymentLink = async (id: string): Promise<{ configured: boolean; message?: string; checkoutUrl?: string | null }> =>
   unwrapEnvelope<{ configured: boolean; message?: string; checkoutUrl?: string | null }>(await apiClient.get(`/dental-lab/invoices/${id}/payment-link`));
+export const getInvoicePaymentLink = fetchInvoicePaymentLink;
 
 export const fetchDoctorPricing = async (doctorId: string): Promise<Record<string, number>> =>
   unwrapEnvelope<Record<string, number>>(await apiClient.get(`/dental-lab/doctors/${doctorId}/pricing`));
