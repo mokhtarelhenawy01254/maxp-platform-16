@@ -35,19 +35,48 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
-            echo "=== 🚀 Running Storefront Brand Name Database Sync ==="
+            echo "=== 🚀 Cleaning Size Guide Settings from DB ==="
             cd /var/www/backend2
-            PGPASSWORD=mokhtar1234 psql -h localhost -U appuser -d maxp -c "
-              UPDATE storefront_settings 
-              SET \"designTokens\" = '{\"themeId\": \"khemet-luxe-eg\", \"currency\": \"EGP\", \"storeName\": \"TATO\"}',
-                  \"updatedAt\" = NOW()
-              WHERE \"companyId\" = 'cmtk4862e0sq6judiubpvklni';
+            node -e "
+            const { getSharedPrismaClientAsync } = require('./services/sharedDatabase');
+            async function main() {
+              const prisma = await getSharedPrismaClientAsync();
+              const allSettings = await prisma.storefrontSettings.findMany();
+              console.log('Total storefront settings records:', allSettings.length);
+              let cleanedCount = 0;
+              for (const item of allSettings) {
+                let modified = false;
+                const tokens = item.designTokens || {};
+                if (tokens.pageOverrides?.pdp?.sections) {
+                  for (const section of tokens.pageOverrides.pdp.sections) {
+                    if (section.settings) {
+                      if (section.settings.guideRows) { delete section.settings.guideRows; modified = true; }
+                      if (section.settings.fitNote) { delete section.settings.fitNote; modified = true; }
+                      if (section.settings.sizeGuideText) { delete section.settings.sizeGuideText; modified = true; }
+                      if (section.settings.sizeGuideLink) { delete section.settings.sizeGuideLink; modified = true; }
+                    }
+                  }
+                }
+                if (modified) {
+                  console.log('Cleaning size guide settings for company:', item.companyId);
+                  await prisma.storefrontSettings.update({
+                    where: { id: item.id },
+                    data: { designTokens: tokens, updatedAt: new Date() }
+                  });
+                  cleanedCount++;
+                }
+              }
+              console.log('Finished cleaning size guide settings. Updated companies:', cleanedCount);
+            }
+            main().catch(console.error).finally(() => process.exit(0));
             "
             echo "=== 🧹 Purging Redis & Backend HTML Cache ==="
-            redis-cli --scan --pattern 'storefront_settings:*' 2>/dev/null | xargs -r redis-cli del 2>/dev/null || true
+            redis-cli --scan --pattern 'storefront_*' 2>/dev/null | xargs -r redis-cli del 2>/dev/null || true
+            redis-cli --scan --pattern 'page_*' 2>/dev/null | xargs -r redis-cli del 2>/dev/null || true
             PURGE_SECRET="$(grep '^DEPLOY_SECRET=' /var/www/backend2/.env 2>/dev/null | cut -d= -f2-)"
             if [ -n "$PURGE_SECRET" ]; then
               curl -sS -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:3007/api/v1/internal/purge-cache" || true
+              curl -sS -X POST -H "x-deploy-secret: $PURGE_SECRET" "http://127.0.0.1:3008/api/v1/internal/purge-cache" || true
             fi
-            echo "=== ✅ Storefront Brand Name Database Sync Completed ==="
+            echo "=== ✅ Storefront Size Guide Cleanup Completed ==="
 
