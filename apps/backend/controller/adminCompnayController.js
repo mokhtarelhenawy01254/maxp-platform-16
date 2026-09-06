@@ -1538,6 +1538,30 @@ const updateCompany = async (req, res) => {
             }
         });
 
+        if (name && typeof name === "string" && name.trim()) {
+            try {
+                const sf = await getSharedPrismaClient().storefrontSettings.findUnique({
+                    where: { companyId },
+                });
+                if (sf) {
+                    let tokens = sf.designTokens;
+                    if (typeof tokens === "string") {
+                        try { tokens = JSON.parse(tokens); } catch (e) { tokens = {}; }
+                    }
+                    if (!tokens || typeof tokens !== "object") {
+                        tokens = {};
+                    }
+                    tokens.storeName = name.trim();
+                    await getSharedPrismaClient().storefrontSettings.update({
+                        where: { companyId },
+                        data: { designTokens: tokens },
+                    });
+                }
+            } catch (sfErr) {
+                console.warn("⚠️ Could not auto-sync storefrontSettings storeName on admin company update:", sfErr);
+            }
+        }
+
         res.json({
             success: true,
             message: 'تم تحديث الشركة بنجاح',
