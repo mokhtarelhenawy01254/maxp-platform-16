@@ -67,6 +67,7 @@ interface Metric {
 
 interface EditForm {
   name: string; email: string; phone: string; website: string; currency: string; isActive: boolean; notes: string;
+  businessSpecialtyId?: string;
 }
 
 interface EmployeeForm {
@@ -132,7 +133,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
   const [editOpen, setEditOpen] = useState(false);
   const [editSaving, setEditSaving] = useState(false);
   const [editForm, setEditForm] = useState<EditForm>({
-    name: "", email: "", phone: "", website: "", currency: "EGP", isActive: true, notes: "",
+    name: "", email: "", phone: "", website: "", currency: "EGP", isActive: true, notes: "", businessSpecialtyId: "none",
   });
   const [editErrors, setEditErrors] = useState<any>({});
 
@@ -186,6 +187,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
       currency: nextCompany.currency || "EGP",
       isActive: nextCompany.isActive ?? true,
       notes: (nextCompany as any)["notes"] || "",
+      businessSpecialtyId: nextCompany.businessSpecialtyId || nextCompany.businessSpecialty?.id || "none",
     });
   };
 
@@ -281,6 +283,7 @@ export function useCompanyDetails(): UseCompanyDetailsReturn {
         name: editForm["name"].trim(), email: editForm["email"].trim(), phone: editForm["phone"].trim(),
         website: editForm["website"].trim(), currency: editForm["currency"], isActive: editForm["isActive"],
         notes: editForm["notes"].trim(),
+        businessSpecialtyId: editForm["businessSpecialtyId"] === "none" ? null : (editForm["businessSpecialtyId"] || null),
       });
       if (response.data?.success) { tToast.success("companyDetails.success_update_a26a"); setEditOpen(false); await refreshCompanyWorkspace({ background: true }); }
       else toast.error(response.data?.message || "فشل في تحديث الشركة");

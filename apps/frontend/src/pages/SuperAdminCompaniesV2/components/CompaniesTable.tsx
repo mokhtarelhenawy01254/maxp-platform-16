@@ -120,21 +120,57 @@ export function CompaniesTable({
     }),
     columnHelper.accessor("name", {
       header: "الشركة",
-      cell: ({ row }) => (
-        <div className="space-y-1">
-          <button
-            type="button"
-            className="text-right text-xs font-bold text-foreground hover:text-primary"
-            onClick={() => onOpenDetails(row.original)}
-          >
-            {row.original.name}
-          </button>
-          <p className="flex items-center gap-1 text-xs text-muted-foreground/70">
-            <Mail className="size-3" />
-            {row.original.email}
-          </p>
-        </div>
-      ),
+      cell: ({ row }) => {
+        const company = row.original;
+        const waUrl = getWhatsAppUrl(company.phone);
+        return (
+          <div className="space-y-1 py-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              <button
+                type="button"
+                className="text-right text-xs font-black text-foreground hover:text-primary transition-colors"
+                onClick={(e) => { e.stopPropagation(); onOpenDetails(company); }}
+              >
+                {company.name}
+              </button>
+              {company.businessSpecialty ? (
+                <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full border-primary/25 bg-primary/5 px-2 py-0.5 text-[10px] font-black text-primary">
+                  <span className="size-1.5 rounded-full bg-primary" />
+                  {company.businessSpecialty.nameAr || company.businessSpecialty.nameEn}
+                </Badge>
+              ) : (
+                <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground/70 bg-muted/40 border border-border/40">
+                  عام
+                </span>
+              )}
+            </div>
+            <p className="flex items-center gap-1 text-xs text-muted-foreground/70">
+              <Mail className="size-3" />
+              {company.email}
+            </p>
+            {company.phone ? (
+              <div className="flex items-center gap-2 pt-0.5">
+                <span className="flex items-center gap-1 text-[11px] font-bold text-muted-foreground/80 dir-ltr font-mono">
+                  <Phone className="size-2.5 opacity-70" />
+                  {company.phone}
+                </span>
+                {waUrl ? (
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200"
+                    title="مراسلة واتساب فورية"
+                  >
+                    <MessageCircle className="size-2.5" /> واتساب
+                  </a>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        );
+      },
     }),
     columnHelper.accessor("isActive", {
       header: "الحالة",
@@ -370,11 +406,12 @@ export function CompaniesTable({
             const isExpanded = expandedId === company.id;
             const attention = company.followUpAutomation?.needsEscalation || company.followUpAutomation?.needsUrgentEscalation;
             const critical = company.followUpAutomation?.needsUrgentEscalation;
+            const waUrl = getWhatsAppUrl(company.phone);
             return (
               <div key={company.id} className={cn(
                 "rounded-lg border bg-white shadow-sm dark:bg-card",
-                attention ? "border-l-2 border-l-amber-400 border-amber-200 bg-amber-50/25" : "border-border/60",
-                critical && "border-l-rose-500 bg-rose-50/35",
+                attention ? "border-r-4 border-r-amber-500 border-amber-200 bg-amber-50/25" : "border-border/60",
+                critical && "border-r-4 border-r-rose-500 bg-rose-50/35",
               )}>
                 <div className="flex items-start gap-3 p-3">
                   <div className="flex flex-col items-center gap-1 pt-1">
@@ -403,6 +440,15 @@ export function CompaniesTable({
                           <Badge variant="outline" className={cn("rounded-full px-2 py-0.5 text-xs font-black", company.isActive ? "border-emerald-200/60 bg-emerald-50 text-emerald-700" : "border-rose-200/60 bg-rose-50 text-rose-700")}>
                             {company.isActive ? "نشطة" : "متوقفة"}
                           </Badge>
+                          {company.businessSpecialty ? (
+                            <Badge variant="outline" className="rounded-full border-primary/25 bg-primary/5 px-2 py-0.5 text-xs font-black text-primary">
+                              {company.businessSpecialty.nameAr || company.businessSpecialty.nameEn}
+                            </Badge>
+                          ) : (
+                            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-bold text-muted-foreground/70 bg-muted/40 border border-border/40">
+                              عام
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -442,8 +488,27 @@ export function CompaniesTable({
                       </div>
                     </div>
 
-                    <div className="mt-2 space-y-1.5 text-[13px] font-medium text-muted-foreground">
-                      <p className="flex items-center gap-2"><Mail className="size-3.5 text-primary/60" /> {company.email}</p>
+                    <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] font-medium text-muted-foreground">
+                      <p className="flex items-center gap-1.5"><Mail className="size-3.5 text-primary/60" /> {company.email}</p>
+                      {company.phone ? (
+                        <div className="flex items-center gap-2">
+                          <span className="flex items-center gap-1 dir-ltr font-mono text-xs font-bold text-muted-foreground/90">
+                            <Phone className="size-3 text-primary/60" />
+                            {company.phone}
+                          </span>
+                          {waUrl ? (
+                            <a
+                              href={waUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-black text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors border border-emerald-200"
+                            >
+                              <MessageCircle className="size-2.5" /> واتساب
+                            </a>
+                          ) : null}
+                        </div>
+                      ) : null}
                     </div>
 
                     <div className="mt-2 grid grid-cols-4 gap-2">
@@ -530,8 +595,8 @@ export function CompaniesTable({
                       className={cn(
                         "group/row border-border/40 transition-colors hover:bg-primary/5 cursor-pointer",
                         idx % 2 === 1 && "bg-muted/[0.03]",
-                        attention && "border-l-2 border-l-amber-400 bg-amber-50/[0.25] hover:bg-amber-50/40",
-                        critical && "border-l-2 border-l-rose-500 bg-rose-50/[0.35] hover:bg-rose-50/50",
+                        attention && "border-r-4 border-r-amber-500 bg-amber-50/[0.25] hover:bg-amber-50/40",
+                        critical && "border-r-4 border-r-rose-500 bg-rose-50/[0.35] hover:bg-rose-50/50",
                       )}
                       onClick={() => setExpandedId(expandedId === row.original.id ? null : row.original.id)}
                     >
@@ -634,13 +699,27 @@ function ExpandedRowContent({
 }) {
   const followUp = company.followUp;
   const followUpAuto = company.followUpAutomation;
-
   const waUrl = getWhatsAppUrl(company.phone);
 
   return (
-    <div className="flex flex-wrap items-start gap-6">
-      {/* Left: follow-up status */}
-      <div className="min-w-[200px] flex-1 space-y-3">
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-8">
+      {/* Left: Info & follow-up status */}
+      <div className="min-w-[240px] flex-1 space-y-3">
+        {company.businessSpecialty ? (
+          <div>
+            <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">نوع الشركة / التخصص</p>
+            <div className="mt-1 flex items-center gap-2">
+              <Badge variant="outline" className="rounded-full border-primary/25 bg-primary/5 px-2.5 py-0.5 text-xs font-black text-primary">
+                <Building2 className="ml-1 size-3" />
+                {company.businessSpecialty.nameAr || company.businessSpecialty.nameEn}
+              </Badge>
+              {company.businessSpecialty.slug ? (
+                <span className="text-[11px] font-mono text-muted-foreground/70">({company.businessSpecialty.slug})</span>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {followUp ? (
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">حالة المتابعة</p>
@@ -652,6 +731,7 @@ function ExpandedRowContent({
             </div>
           </div>
         ) : null}
+
         {followUp?.callStatus ? (
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">حالة الاتصال</p>
@@ -660,6 +740,7 @@ function ExpandedRowContent({
             </span>
           </div>
         ) : null}
+
         {company.installedApps && company.installedApps.length > 0 ? (
           <div>
             <p className="text-[11px] font-black uppercase tracking-widest text-muted-foreground/60">التطبيقات المثبتة</p>
@@ -684,46 +765,66 @@ function ExpandedRowContent({
         ) : null}
       </div>
 
-      {/* Right: action buttons */}
-      <div className="flex flex-wrap gap-2">
-        <Button type="button" size="sm" variant="default" className="h-8 rounded-lg text-xs font-black shadow-sm" onClick={() => onOpenFollowUp(company)}>
-          <CheckCircle2 className="ml-1.5 size-3.5" /> متابعة
-        </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onLoginAsAdmin(company)}>
-          <LogIn className="ml-1.5 size-3.5" /> دخول كأدمن
-        </Button>
-        {onOpenWhatsApp && waUrl ? (
-          <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={() => onOpenWhatsApp(company)}>
-            <MessageCircle className="ml-1.5 size-3.5" /> واتساب
-          </Button>
-        ) : null}
-        {followUpAuto?.needsUrgentEscalation || followUpAuto?.needsEscalation ? (
-          <Button type="button" size="sm" variant="destructive" className="h-8 rounded-lg text-xs font-black" onClick={() => onRunFollowUpAction(company, "escalate")}>
-            <AlertTriangle className="ml-1.5 size-3.5" /> تصعيد
-          </Button>
-        ) : followUpAuto?.needsReminder ? (
-          <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => onRunFollowUpAction(company, "remind")}>
-            <RefreshCw className="ml-1.5 size-3.5" /> تذكير
-          </Button>
-        ) : null}
-        <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onOpenUsers(company)}>
-          <Users className="ml-1.5 size-3.5" /> الأعضاء
-        </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onOpenFacebookPages(company)}>
-          <Facebook className="ml-1.5 size-3.5" /> الصفحات
-        </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onTransferOwnership(company)}>
-          <ArrowLeftRight className="ml-1.5 size-3.5" /> نقل ملكية
-        </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onAddEmployee(company)}>
-          <UserPlus className="ml-1.5 size-3.5" /> موظف
-        </Button>
-        <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onEdit(company)}>
-          <Pencil className="ml-1.5 size-3.5" /> تعديل
-        </Button>
-        <Button type="button" size="sm" variant="ghost" className="h-8 rounded-lg text-xs font-black text-rose-600 hover:bg-rose-50 hover:text-rose-700" onClick={() => onDelete(company)}>
-          <Trash2 className="ml-1.5 size-3.5" /> حذف
-        </Button>
+      {/* Right: grouped action buttons */}
+      <div className="flex flex-col gap-3 shrink-0">
+        {/* Operational actions */}
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground/60 mb-1.5">إجراءات المتابعة والتشغيل</p>
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" size="sm" variant="default" className="h-8 rounded-lg text-xs font-black shadow-sm" onClick={() => onOpenFollowUp(company)}>
+              <CheckCircle2 className="ml-1.5 size-3.5" /> متابعة
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black border-primary/30 text-primary hover:bg-primary/5" onClick={() => onLoginAsAdmin(company)}>
+              <LogIn className="ml-1.5 size-3.5" /> دخول كأدمن
+            </Button>
+            {onOpenWhatsApp && waUrl ? (
+              <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black border-emerald-200 text-emerald-700 hover:bg-emerald-50" onClick={() => onOpenWhatsApp(company)}>
+                <MessageCircle className="ml-1.5 size-3.5" /> واتساب
+              </Button>
+            ) : null}
+            {followUpAuto?.needsUrgentEscalation || followUpAuto?.needsEscalation ? (
+              <Button type="button" size="sm" variant="destructive" className="h-8 rounded-lg text-xs font-black" onClick={() => onRunFollowUpAction(company, "escalate")}>
+                <AlertTriangle className="ml-1.5 size-3.5" /> تصعيد
+              </Button>
+            ) : followUpAuto?.needsReminder ? (
+              <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black border-amber-200 text-amber-700 hover:bg-amber-50" onClick={() => onRunFollowUpAction(company, "remind")}>
+                <RefreshCw className="ml-1.5 size-3.5" /> تذكير
+              </Button>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Management & apps */}
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground/60 mb-1.5">الفريق والخدمات</p>
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onOpenUsers(company)}>
+              <Users className="ml-1.5 size-3.5" /> الأعضاء
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onOpenFacebookPages(company)}>
+              <Facebook className="ml-1.5 size-3.5" /> الصفحات
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onAddEmployee(company)}>
+              <UserPlus className="ml-1.5 size-3.5" /> موظف جديد
+            </Button>
+            <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onTransferOwnership(company)}>
+              <ArrowLeftRight className="ml-1.5 size-3.5" /> نقل ملكية
+            </Button>
+          </div>
+        </div>
+
+        {/* Settings & dangerous */}
+        <div>
+          <p className="text-[11px] font-black uppercase tracking-wider text-muted-foreground/60 mb-1.5">البيانات والحساب</p>
+          <div className="flex flex-wrap gap-1.5">
+            <Button type="button" size="sm" variant="outline" className="h-8 rounded-lg text-xs font-black" onClick={() => onEdit(company)}>
+              <Pencil className="ml-1.5 size-3.5" /> تعديل البيانات
+            </Button>
+            <Button type="button" size="sm" variant="ghost" className="h-8 rounded-lg text-xs font-black text-rose-600 hover:bg-rose-50 hover:text-rose-700" onClick={() => onDelete(company)}>
+              <Trash2 className="ml-1.5 size-3.5" /> حذف
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   );

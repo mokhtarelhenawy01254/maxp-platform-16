@@ -13,6 +13,15 @@ export interface CompanyInstalledApp {
   status: string;
 }
 
+export interface CompanySpecialty {
+  id: string;
+  nameAr: string;
+  nameEn: string;
+  slug: string;
+  icon?: string | null;
+  descriptionAr?: string | null;
+}
+
 export interface Company {
   id: string;
   name: string;
@@ -22,6 +31,8 @@ export interface Company {
   currency: "EGP" | "USD" | "EUR";
   isActive: boolean;
   createdAt: string;
+  businessSpecialtyId?: string | null;
+  businessSpecialty?: CompanySpecialty | null;
   _count?: CompanyCount;
   followUp?: FollowUpState;
   followUpReminder?: FollowUpReminder;

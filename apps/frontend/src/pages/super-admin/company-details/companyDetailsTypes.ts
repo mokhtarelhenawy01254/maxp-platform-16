@@ -9,6 +9,15 @@ export interface CompanyData {
   isActive: boolean;
   slug?: string;
   createdAt?: string;
+  businessSpecialtyId?: string | null;
+  businessSpecialty?: {
+    id: string;
+    nameAr: string;
+    nameEn: string;
+    slug: string;
+    icon?: string | null;
+    descriptionAr?: string | null;
+  } | null;
   trialModeEnabled?: boolean;
   trialStartedAt?: string | null;
   trialEndsAt?: string | null;

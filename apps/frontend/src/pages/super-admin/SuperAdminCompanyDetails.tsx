@@ -1,7 +1,8 @@
 import { AlertTriangle, ArrowLeft, ArrowLeftRight, CheckCircle2, Loader2, LogIn, MessageSquare, RefreshCw, Sparkles, Timer, UserPlus, Wallet } from "lucide-react";
-import { useCallback, useState, type ChangeEvent } from "react";
+import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { cn } from "../../lib/utils";
 import i18n from "../../i18n";
+import { businessSpecialtyService, type BusinessSpecialty } from "../../services/businessSpecialtyService";
 import { Alert, AlertDescription, AlertTitle } from "../../components/ui/alert";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
@@ -67,6 +68,11 @@ const SuperAdminCompanyDetails = () => {
   const [linkOpen, setLinkOpen] = useState(false);
   const [partnerCodeInput, setPartnerCodeInput] = useState("");
   const [linking, setLinking] = useState(false);
+  const [specialties, setSpecialties] = useState<BusinessSpecialty[]>([]);
+
+  useEffect(() => {
+    businessSpecialtyService.listPublicSpecialties().then(setSpecialties).catch(() => setSpecialties([]));
+  }, []);
 
   const openLinkDialog = useCallback(() => {
     setPartnerCodeInput("");
@@ -292,6 +298,25 @@ const SuperAdminCompanyDetails = () => {
               <SelectTrigger className="h-11 min-w-0 rounded-2xl"><SelectValue /></SelectTrigger>
               <SelectContent>
                 {CURRENCY_OPTIONS.map((option) => (<SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>))}
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          <FormField label="نوع الشركة (تخصص النشاط)">
+            <Select
+              value={editForm.businessSpecialtyId || "none"}
+              onValueChange={(value: string | null) => setEditForm((current) => ({ ...current, businessSpecialtyId: value ?? "none" }))}
+            >
+              <SelectTrigger className="h-11 min-w-0 rounded-2xl">
+                <SelectValue placeholder="اختر تخصص الشركة..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">بدون تخصص محدد (تخصيص عام)</SelectItem>
+                {specialties.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.nameAr || s.nameEn}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </FormField>

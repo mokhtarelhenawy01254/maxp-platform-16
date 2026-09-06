@@ -1,5 +1,5 @@
 import type { CompanyData, CompanyReview, CompanyUser } from "./companyDetailsTypes";
-import { CalendarClock, Globe, Mail, Phone, ShieldCheck } from "lucide-react";
+import { Building2, CalendarClock, Globe, Mail, Phone, ShieldCheck } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Card, CardContent } from "../../../components/ui/card";
 import { StatusBadge } from "./StatusBadge";
@@ -24,6 +24,17 @@ export function CompanyHeroCard({ company, review, ownerUser }: {
                 {company.name}
               </h1>
               <StatusBadge isActive={company.isActive} />
+              {company.businessSpecialty ? (
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-full border-primary/30 bg-primary/10 px-3 py-1 text-xs font-black text-primary shadow-sm">
+                  <Building2 className="size-3.5" />
+                  نوع الشركة: {company.businessSpecialty.nameAr || company.businessSpecialty.nameEn}
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="inline-flex items-center gap-1.5 rounded-full border-border/60 bg-muted/40 px-3 py-1 text-xs font-bold text-muted-foreground">
+                  <Building2 className="size-3.5 opacity-60" />
+                  نوع الشركة: عام (بدون تخصص)
+                </Badge>
+              )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <InfoLine icon={Mail}>{company.email || "غير متوفر"}</InfoLine>

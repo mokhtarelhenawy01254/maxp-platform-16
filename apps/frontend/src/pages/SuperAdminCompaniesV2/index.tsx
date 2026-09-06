@@ -497,7 +497,18 @@ export default function SuperAdminCompaniesV2() {
   }, []);
 
   const handleEditCompany = useCallback((company: Company) => {
-    setCompanyForm({ name: company.name || "", email: company.email || "", phone: company.phone || "", website: company.website || "", currency: company.currency || "EGP", businessSpecialtyId: "", adminFirstName: "", adminLastName: "", adminEmail: "", adminPassword: "" });
+    setCompanyForm({
+      name: company.name || "",
+      email: company.email || "",
+      phone: company.phone || "",
+      website: company.website || "",
+      currency: company.currency || "EGP",
+      businessSpecialtyId: company.businessSpecialtyId || (company.businessSpecialty?.id || ""),
+      adminFirstName: "",
+      adminLastName: "",
+      adminEmail: "",
+      adminPassword: ""
+    });
     setCompanyFormErrors({});
     setCompanyModal({ open: true, mode: "edit", company });
   }, []);
@@ -536,6 +547,7 @@ export default function SuperAdminCompaniesV2() {
           id: companyModal.company.id, name: companyForm.name.trim(), email: companyForm.email.trim(),
           phone: companyForm.phone.trim() || "", website: companyForm.website.trim() || "",
           currency: companyForm.currency,
+          businessSpecialtyId: companyForm.businessSpecialtyId || null,
         });
       }
       setCompanyModal((prev) => ({ ...prev, open: false }));
@@ -786,13 +798,24 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={handleClearFilters}
-                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-primary/40 hover:bg-primary/[0.02] hover:shadow-md dark:bg-card"
+                className={cn(
+                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
+                  savedView === "ALL"
+                    ? "border-primary/60 bg-primary/[0.04] ring-2 ring-primary/40 shadow-sm"
+                    : "border-border/40 bg-white hover:border-primary/40 hover:bg-primary/[0.02]"
+                )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
                     <Building2 className="size-5" />
                   </div>
-                  <BadgeCheck className="size-4 text-emerald-500/60 transition-opacity group-hover:text-emerald-600" aria-hidden="true" />
+                  {savedView === "ALL" ? (
+                    <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-[10px] font-black text-primary px-2 py-0.5">
+                      العرض الحالي
+                    </Badge>
+                  ) : (
+                    <BadgeCheck className="size-4 text-emerald-500/60 transition-opacity group-hover:text-emerald-600" aria-hidden="true" />
+                  )}
                 </div>
                 <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.totalCompanies}</p>
                 <p className="mt-0.5 text-xs font-bold text-muted-foreground">إجمالي الشركات</p>
@@ -801,12 +824,22 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={() => handleOpenView("FOLLOW_UP_NOW")}
-                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-amber-400/60 hover:bg-amber-50/30 hover:shadow-md dark:bg-card"
+                className={cn(
+                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
+                  savedView === "FOLLOW_UP_NOW"
+                    ? "border-amber-400 bg-amber-50/50 ring-2 ring-amber-400/50 shadow-sm"
+                    : "border-border/40 bg-white hover:border-amber-400/60 hover:bg-amber-50/30"
+                )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
                     <AlertTriangle className="size-5" />
                   </div>
+                  {savedView === "FOLLOW_UP_NOW" ? (
+                    <Badge variant="outline" className="rounded-full border-amber-300 bg-amber-100/70 text-[10px] font-black text-amber-700 px-2 py-0.5">
+                      محدد
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}</p>
                 <p className="mt-0.5 text-xs font-bold text-muted-foreground">محتاجة متابعة</p>
@@ -815,12 +848,22 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={() => handleOpenView("STALE_72H")}
-                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-rose-400/60 hover:bg-rose-50/30 hover:shadow-md dark:bg-card"
+                className={cn(
+                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
+                  savedView === "STALE_72H"
+                    ? "border-rose-400 bg-rose-50/50 ring-2 ring-rose-400/50 shadow-sm"
+                    : "border-border/40 bg-white hover:border-rose-400/60 hover:bg-rose-50/30"
+                )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
                     <Clock className="size-5" />
                   </div>
+                  {savedView === "STALE_72H" ? (
+                    <Badge variant="outline" className="rounded-full border-rose-300 bg-rose-100/70 text-[10px] font-black text-rose-700 px-2 py-0.5">
+                      محدد
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.stale72h}</p>
                 <p className="mt-0.5 text-xs font-bold text-muted-foreground">متوقفة 72 ساعة+</p>
@@ -829,12 +872,22 @@ export default function SuperAdminCompaniesV2() {
               <button
                 type="button"
                 onClick={() => handleOpenView("MY_TODAY")}
-                className="group rounded-xl border border-border/40 bg-white p-4 text-right shadow-sm transition-all hover:border-sky-400/60 hover:bg-sky-50/30 hover:shadow-md dark:bg-card"
+                className={cn(
+                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
+                  savedView === "MY_TODAY"
+                    ? "border-sky-400 bg-sky-50/50 ring-2 ring-sky-400/50 shadow-sm"
+                    : "border-border/40 bg-white hover:border-sky-400/60 hover:bg-sky-50/30"
+                )}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex size-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
                     <Users className="size-5" />
                   </div>
+                  {savedView === "MY_TODAY" ? (
+                    <Badge variant="outline" className="rounded-full border-sky-300 bg-sky-100/70 text-[10px] font-black text-sky-700 px-2 py-0.5">
+                      محدد
+                    </Badge>
+                  ) : null}
                 </div>
                 <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.myDueToday}</p>
                 <p className="mt-0.5 text-xs font-bold text-muted-foreground">متابعاتي اليوم</p>
@@ -979,26 +1032,24 @@ export default function SuperAdminCompaniesV2() {
                 </SelectContent>
               </Select>
             </FormField>
-            {companyModal.mode === "create" ? (
-              <FormField label="تخصص الشركة (تثبيت التطبيقات تلقائياً)">
-                <Select
-                  value={companyForm.businessSpecialtyId || "none"}
-                  onValueChange={(v) => setCompanyForm((prev) => ({ ...prev, businessSpecialtyId: v === "none" ? "" : v }))}
-                >
-                  <SelectTrigger aria-label="تخصص الشركة" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-black shadow-sm">
-                    <SelectValue placeholder="اختر مجال الشركة..." />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg">
-                    <SelectItem value="none">بدون تخصص محدد (تثبيت الحزمة العامة)</SelectItem>
-                    {specialties.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.nameAr || s.nameEn} ({s.appSlugs.length} تطبيق)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </FormField>
-            ) : null}
+            <FormField label={companyModal.mode === "create" ? "تخصص الشركة (تثبيت التطبيقات تلقائياً)" : "نوع الشركة / تخصص النشاط"}>
+              <Select
+                value={companyForm.businessSpecialtyId || "none"}
+                onValueChange={(v) => setCompanyForm((prev) => ({ ...prev, businessSpecialtyId: v === "none" ? "" : v }))}
+              >
+                <SelectTrigger aria-label="تخصص الشركة" className="h-12 w-full rounded-lg border-border/60 bg-background px-5 text-sm font-black shadow-sm">
+                  <SelectValue placeholder="اختر مجال الشركة..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg">
+                  <SelectItem value="none">بدون تخصص محدد (تخصيص عام)</SelectItem>
+                  {specialties.map((s) => (
+                    <SelectItem key={s.id} value={s.id}>
+                      {s.nameAr || s.nameEn} ({s.appSlugs.length} تطبيق)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </FormField>
           </div>
           {companyModal.mode === "create" ? (
             <div className="space-y-5 rounded-lg border border-border/60 bg-muted/20 p-6 shadow-inner">

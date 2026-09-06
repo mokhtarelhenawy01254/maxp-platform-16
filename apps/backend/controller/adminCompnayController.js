@@ -392,6 +392,16 @@ const buildCompanyDetailsInclude = ({ includeCouponRedemptions = true } = {}) =>
             },
         },
     },
+    businessSpecialty: {
+        select: {
+            id: true,
+            nameAr: true,
+            nameEn: true,
+            slug: true,
+            icon: true,
+            descriptionAr: true,
+        },
+    },
     platformSubscription: true,
     platformEnterprisePlan: true,
     ...(includeCouponRedemptions
@@ -503,6 +513,15 @@ const getAllCompanies = async (req, res) => {
                             customers: true,
                             facebookPages: true,
                             installedApps: true,
+                        }
+                    },
+                    businessSpecialty: {
+                        select: {
+                            id: true,
+                            nameAr: true,
+                            nameEn: true,
+                            slug: true,
+                            icon: true,
                         }
                     }
                 },
@@ -1454,7 +1473,8 @@ const updateCompany = async (req, res) => {
             website,
             currency,
             isActive,
-            notes
+            notes,
+            businessSpecialtyId
         } = req.body;
 
         console.log(req.body);
@@ -1500,7 +1520,21 @@ const updateCompany = async (req, res) => {
                 ...(website !== undefined && { website }),
                 ...(currency !== undefined && { currency }),
                 ...(isActive !== undefined && { isActive }),
-                ...(notes !== undefined && { notes })
+                ...(notes !== undefined && { notes }),
+                ...(businessSpecialtyId !== undefined && {
+                    businessSpecialtyId: businessSpecialtyId === "none" || !businessSpecialtyId ? null : businessSpecialtyId
+                })
+            },
+            include: {
+                businessSpecialty: {
+                    select: {
+                        id: true,
+                        nameAr: true,
+                        nameEn: true,
+                        slug: true,
+                        icon: true,
+                    }
+                }
             }
         });
 
