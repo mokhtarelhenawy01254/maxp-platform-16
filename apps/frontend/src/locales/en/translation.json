@@ -11094,6 +11094,19 @@
       "created": "Doctor added successfully",
       "updated": "Doctor updated successfully",
       "deleted": "Doctor deleted successfully",
+      "detail": {
+        "title": "Doctor Details",
+        "overview": "Overview",
+        "cases": "Doctor Cases",
+        "invoices": "Invoices & Payments",
+        "statement": "Account Statement",
+        "pricing": "Custom Rate Sheet",
+        "portal": "Doctor Portal & Account",
+        "quickOrder": "New Case Order",
+        "editDoctor": "Edit Doctor",
+        "activeDoctor": "Active Doctor",
+        "archivedDoctor": "Archived / Inactive"
+      },
       "ledger": {
         "title": "Customer debt ledger",
         "totalOutstanding": "Total outstanding",

@@ -55,6 +55,16 @@ export interface DentalLabDoctor {
   creditExceeded?: boolean;
 }
 
+export interface DentalLabDoctorDetail extends DentalLabDoctor {
+  hasPortalPin?: boolean;
+  casesCount?: number;
+  completedCases?: number;
+  invoicesCount?: number;
+  creditTotal?: number;
+  customPricing?: Record<string, number>;
+  updatedAt?: string;
+}
+
 export interface DentalWorkType {
   id: string;
   name: string;
@@ -686,6 +696,9 @@ export const fetchDoctorsFull = async (params?: { search?: string; isActive?: bo
     archivedCount: typeof data["archivedCount"] === "number" ? data["archivedCount"] : 0,
   };
 };
+
+export const fetchDoctorDetail = async (id: string): Promise<DentalLabDoctorDetail> =>
+  unwrapEnvelope<DentalLabDoctorDetail>(await apiClient.get(`/dental-lab/doctors/${id}`));
 
 export const createDoctor = async (body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.post("/dental-lab/doctors", body));
 export const updateDoctor = async (id: string, body: Partial<DentalLabDoctor>): Promise<DentalLabDoctor> => unwrapEnvelope<DentalLabDoctor>(await apiClient.put(`/dental-lab/doctors/${id}`, body));

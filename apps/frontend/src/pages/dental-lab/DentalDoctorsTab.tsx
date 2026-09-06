@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Archive, BadgePercent, Banknote, Loader2, Pencil, Plus, RefreshCw, RotateCcw, Search, Trash2, Users, X as XMarkIcon } from "lucide-react";
+import { Archive, BadgePercent, Banknote, Eye, Loader2, Pencil, Plus, RefreshCw, RotateCcw, Search, Trash2, Users, X as XMarkIcon } from "lucide-react";
 import {
   DentalLabDoctor, DentalWorkType, fetchDoctors, fetchDoctorsFull, createDoctor, updateDoctor, deleteDoctor,
   restoreDoctor, permanentDeleteDoctor,
@@ -481,7 +482,15 @@ export default function DentalDoctorsTab() {
               <tbody>
                 {rows.map(d => (
                   <tr key={d.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="py-3 px-3 font-medium">{d.name}</td>
+                    <td className="py-3 px-3 font-bold">
+                      <Link
+                        to={`/dental-lab/doctors/${d.id}`}
+                        className="text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1.5"
+                        title="عرض صفحة تفاصيل الطبيب"
+                      >
+                        <span>{d.name}</span>
+                      </Link>
+                    </td>
                     <td className="py-3 px-3 text-gray-500 dark:text-gray-400" dir="ltr">{d.phone || "—"}</td>
                     <td className="py-3 px-3">{d.clinicName || "—"}</td>
                     <td className="py-3 px-3">{d.governorate || "—"}</td>
@@ -518,6 +527,13 @@ export default function DentalDoctorsTab() {
                     </td>
                     <td className="py-3 px-3">
                       <div className="flex gap-1">
+                        <Link
+                          to={`/dental-lab/doctors/${d.id}`}
+                          className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                          title="عرض تفاصيل الطبيب"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Link>
                         {viewMode === "ACTIVE" ? (
                           <>
                             <button onClick={() => openEdit(d)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg" title={t("dentalLab.common.edit")}>

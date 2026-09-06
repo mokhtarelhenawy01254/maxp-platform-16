@@ -256,6 +256,86 @@ const listDoctors = async (req, res) => {
   }
 };
 
+const getDoctorDetail = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const prisma = getSharedPrismaClient();
+
+    const doctor = await prisma.dentalLabDoctor.findFirst({
+      where: { id, companyId },
+    });
+    if (!doctor) return res.status(404).json({ success: false, error: 'الطبيب غير موجود' });
+
+    const [invAgg, creditAgg, casesCount, activeCasesCount, completedCasesCount, overdueCasesCount] = await Promise.all([
+      prisma.dentalInvoice.aggregate({
+        where: { companyId, doctorId: id, status: { not: 'VOID' } },
+        _sum: { total: true, paid: true, remaining: true },
+        _count: { _all: true },
+      }),
+      prisma.dentalCreditNote.aggregate({
+        where: { companyId, doctorId: id },
+        _sum: { amount: true },
+      }),
+      prisma.dentalLabCase.count({
+        where: { companyId, doctorId: id, isDeleted: false },
+      }),
+      prisma.dentalLabCase.count({
+        where: { companyId, doctorId: id, isDeleted: false, status: { notIn: ['DELIVERED', 'CLOSED'] } },
+      }),
+      prisma.dentalLabCase.count({
+        where: { companyId, doctorId: id, isDeleted: false, status: { in: ['DELIVERED', 'CLOSED'] } },
+      }),
+      prisma.dentalLabCase.count({
+        where: {
+          companyId,
+          doctorId: id,
+          isDeleted: false,
+          dueDate: { lt: new Date() },
+          status: { notIn: ['DELIVERED', 'CLOSED'] },
+        },
+      }),
+    ]);
+
+    const totalBilled = round2(Number(invAgg._sum.total) || 0);
+    const totalPaid = round2(Number(invAgg._sum.paid) || 0);
+    const creditTotal = round2(Number(creditAgg._sum.amount) || 0);
+    const outstanding = round2(Math.max(0, (Number(invAgg._sum.remaining) || 0) - creditTotal));
+    const creditLimit = Number(doctor.creditLimit) || 0;
+    const creditExceeded = creditLimit > 0 && outstanding > creditLimit;
+
+    const rows = await prisma.dentalSetting.findMany({ where: { companyId } });
+    const merged = mergeSettings(rows);
+    const customPricing = (merged.doctorPricing || {})[id] || {};
+
+    const { portalPin, ...safeDoctor } = doctor;
+
+    res.json({
+      success: true,
+      data: {
+        ...safeDoctor,
+        hasPortalPin: Boolean(portalPin),
+        totalBilled,
+        totalPaid,
+        outstanding,
+        creditTotal,
+        creditLimit,
+        creditExceeded,
+        invoicesCount: invAgg._count._all || 0,
+        casesCount,
+        activeCases: activeCasesCount,
+        completedCases: completedCasesCount,
+        overdueCases: overdueCasesCount,
+        customPricing,
+      },
+    });
+  } catch (error) {
+    console.error('Error fetching dental doctor detail:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في جلب تفاصيل الطبيب' });
+  }
+};
+
 const createDoctor = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
@@ -4707,6 +4787,7 @@ const getRemakesAnalysisReport = async (req, res) => {
 module.exports = {
   CASE_STATUS_CHAIN,
   listDoctors,
+  getDoctorDetail,
   createDoctor,
   updateDoctor,
   deleteDoctor,

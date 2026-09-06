@@ -64,6 +64,7 @@ type Step = 1 | 2 | 3;
 interface QuickOrderModalProps {
   onClose: () => void;
   onSaved: (created: DentalLabCase) => void;
+  preselectedDoctor?: DentalLabDoctor | null;
 }
 
 const inputCls = `${MODAL_INPUT_CLS} text-sm`;
@@ -245,9 +246,9 @@ function NewDoctorInline({
   );
 }
 
-export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalProps) {
+export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }: QuickOrderModalProps) {
   const { t } = useTranslation();
-  const [step, setStep] = useState<Step>(1);
+  const [step, setStep] = useState<Step>(preselectedDoctor ? 2 : 1);
 
   // Reference data
   const [workTypes, setWorkTypes] = useState<DentalWorkType[]>([]);
@@ -256,7 +257,7 @@ export default function QuickOrderModal({ onClose, onSaved }: QuickOrderModalPro
 
   // Step 1: Doctor selection & financial check
   const [doctorSearch, setDoctorSearch] = useState("");
-  const [selectedDoctor, setSelectedDoctor] = useState<DentalLabDoctor | null>(null);
+  const [selectedDoctor, setSelectedDoctor] = useState<DentalLabDoctor | null>(preselectedDoctor || null);
   const [showNewDoctor, setShowNewDoctor] = useState(false);
   const [doctorsLoading, setDoctorsLoading] = useState(false);
   const [bypassCreditCheck, setBypassCreditCheck] = useState(false);

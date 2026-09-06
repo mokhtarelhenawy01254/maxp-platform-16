@@ -886,6 +886,51 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
   });
 
   describe('doctors', () => {
+    test('getDoctorDetail returns doctor information, financial aggregations and custom pricing', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabDoctor.findFirst.mockResolvedValue({
+        id: 'doc-1',
+        companyId: 'company-1',
+        name: 'د. محمود',
+        phone: '01012345678',
+        clinicName: 'عيادة النور',
+        creditLimit: 5000,
+        portalPin: '$2a$10$hashedpin',
+        isActive: true,
+      });
+      prisma.dentalInvoice.aggregate.mockResolvedValue({
+        _sum: { total: 10000, paid: 6000, remaining: 4000 },
+        _count: { _all: 5 },
+      });
+      prisma.dentalCreditNote.aggregate.mockResolvedValue({
+        _sum: { amount: 500 },
+      });
+      prisma.dentalLabCase.count
+        .mockResolvedValueOnce(12)
+        .mockResolvedValueOnce(4)
+        .mockResolvedValueOnce(8)
+        .mockResolvedValueOnce(1);
+      prisma.dentalSetting.findMany.mockResolvedValue([
+        { key: 'doctorPricing', value: { 'doc-1': { 'wt-1': 850 } } },
+      ]);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.getDoctorDetail(req({ params: { id: 'doc-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.data.name).toBe('د. محمود');
+      expect(res.payload.data.hasPortalPin).toBe(true);
+      expect(res.payload.data.portalPin).toBeUndefined();
+      expect(res.payload.data.totalBilled).toBe(10000);
+      expect(res.payload.data.totalPaid).toBe(6000);
+      expect(res.payload.data.outstanding).toBe(3500);
+      expect(res.payload.data.casesCount).toBe(12);
+      expect(res.payload.data.activeCases).toBe(4);
+      expect(res.payload.data.customPricing).toEqual({ 'wt-1': 850 });
+    });
+
     test('createDoctor requires a name and stores credit limit', async () => {
       const prisma = createPrisma();
       prisma.dentalLabDoctor.create.mockResolvedValue({ id: 'doc-1' });

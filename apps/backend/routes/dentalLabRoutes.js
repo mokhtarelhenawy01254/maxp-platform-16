@@ -82,6 +82,7 @@ router.get('/design-review/:name', async (req, res) => {
 
 // Doctors
 router.get('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.listDoctors);
+router.get('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'ACCOUNTANT']), controller.getDoctorDetail);
 router.post('/doctors', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.createDoctor);
 router.post('/doctors/:id/bulk-payment', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.recordDoctorBulkPayment);
 router.put('/doctors/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateDoctor);

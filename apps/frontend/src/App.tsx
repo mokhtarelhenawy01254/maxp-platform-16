@@ -1024,6 +1024,9 @@ const DentalLabManagementPage = React.lazy(
 const DentalCaseDetailPage = React.lazy(
   () => import("./pages/dental-lab/DentalCaseDetailPage"),
 );
+const DentalDoctorDetailPage = React.lazy(
+  () => import("./pages/dental-lab/DentalDoctorDetailPage"),
+);
 const DentalPortalRoutes = React.lazy(
   () => import("./pages/dental-doctor/dentalPortalRoutes"),
 );
@@ -7567,6 +7570,14 @@ const AppContent = () => {
                   element={
                     <Layout fullWidth>
                       <DentalCaseDetailPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/dental-lab/doctors/:id"
+                  element={
+                    <Layout fullWidth>
+                      <DentalDoctorDetailPage />
                     </Layout>
                   }
                 />
