@@ -35,38 +35,26 @@ jobs:
           port: ${{ env.SERVER_SSH_PORT }}
           debug: true
           script: |
-            echo "=== 🚀 Cleaning Size Guide Settings from DB ==="
+            echo "=== 🔍 Inspecting Product mlabs-nsaeyh-1788425645 in DB ==="
             cd /var/www/backend2
             node -e "
             const { getSharedPrismaClientAsync } = require('./services/sharedDatabase');
             async function main() {
               const prisma = await getSharedPrismaClientAsync();
-              const allSettings = await prisma.storefrontSettings.findMany();
-              console.log('Total storefront settings records:', allSettings.length);
-              let cleanedCount = 0;
-              for (const item of allSettings) {
-                let modified = false;
-                const tokens = item.designTokens || {};
-                if (tokens.pageOverrides?.pdp?.sections) {
-                  for (const section of tokens.pageOverrides.pdp.sections) {
-                    if (section.settings) {
-                      if (section.settings.guideRows) { delete section.settings.guideRows; modified = true; }
-                      if (section.settings.fitNote) { delete section.settings.fitNote; modified = true; }
-                      if (section.settings.sizeGuideText) { delete section.settings.sizeGuideText; modified = true; }
-                      if (section.settings.sizeGuideLink) { delete section.settings.sizeGuideLink; modified = true; }
-                    }
-                  }
+              const product = await prisma.product.findFirst({
+                where: {
+                  OR: [
+                    { slug: 'mlabs-nsaeyh-1788425645' },
+                    { id: 'mlabs-nsaeyh-1788425645' },
+                    { handle: 'mlabs-nsaeyh-1788425645' }
+                  ]
                 }
-                if (modified) {
-                  console.log('Cleaning size guide settings for company:', item.companyId);
-                  await prisma.storefrontSettings.update({
-                    where: { id: item.id },
-                    data: { designTokens: tokens, updatedAt: new Date() }
-                  });
-                  cleanedCount++;
-                }
+              });
+              console.log('PRODUCT RECORD:', JSON.stringify(product, null, 2));
+              if (product && product.sizeGuide) {
+                console.log('Product sizeGuide content length:', product.sizeGuide.length);
+                console.log('Product sizeGuide RAW:', JSON.stringify(product.sizeGuide));
               }
-              console.log('Finished cleaning size guide settings. Updated companies:', cleanedCount);
             }
             main().catch(console.error).finally(() => process.exit(0));
             "
