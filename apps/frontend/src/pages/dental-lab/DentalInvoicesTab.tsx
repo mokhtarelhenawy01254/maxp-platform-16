@@ -1,13 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
+  AlertTriangle,
+  ArrowRight,
   Banknote,
+  Building2,
   CalendarClock,
   Check,
+  CheckCircle2,
   CheckSquare,
+  ChevronDown,
+  ChevronUp,
   Clock,
   CreditCard,
+  ExternalLink,
   Eye,
   FileCheck,
   FileSpreadsheet,
@@ -16,15 +24,18 @@ import {
   Loader2,
   Lock,
   MessageCircle,
+  Phone,
   Plus,
   Printer,
   RefreshCw,
   Search,
   ShieldAlert,
+  SlidersHorizontal,
   Sparkles,
   Square,
   Unlock,
   User,
+  Users,
   X as XMarkIcon,
 } from "lucide-react";
 import {
@@ -1726,11 +1737,29 @@ export default function DentalInvoicesTab() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filters & selection
+  // Sub tab: "invoices" | "doctors"
+  const [activeSubTab, setActiveSubTab] = useState<"invoices" | "doctors">("invoices");
+
+  // Invoices Filters & selection
   const [selectedDoctorId, setSelectedDoctorId] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [datePreset, setDatePreset] = useState<"ALL" | "THIS_MONTH" | "LAST_MONTH">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Doctors Sub-Tab Filters & State
+  const [doctorSearch, setDoctorSearch] = useState("");
+  const [doctorStatusFilter, setDoctorStatusFilter] = useState<"ALL" | "WITH_DEBT" | "PAID_OFF" | "CREDIT_EXCEEDED" | "UNINVOICED">("ALL");
+  const [doctorSortBy, setDoctorSortBy] = useState<"DEBT_DESC" | "BILLED_DESC" | "CASES_DESC" | "NAME_ASC">("DEBT_DESC");
+  const [expandedDoctorIds, setExpandedDoctorIds] = useState<Set<string>>(new Set());
+
+  const toggleDoctorExpand = (id: string) => {
+    setExpandedDoctorIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   // Modals state
   const [createOpen, setCreateOpen] = useState(false);
@@ -1818,6 +1847,95 @@ export default function DentalInvoicesTab() {
     };
   }, [activeDoctor, rows, uninvoicedSummary]);
 
+  // Doctors enriched and filtered
+  const enrichedDoctors = useMemo(() => {
+    return doctors.map((d) => {
+      const docInvoices = rows.filter((r) => r.doctorId === d.id || (r.doctorName && r.doctorName === d.name));
+      const docCases = cases.filter((c) => c.doctorId === d.id);
+      const uninv = uninvoicedSummary?.doctors.find((u) => u.doctorId === d.id);
+      const uninvCases = uninv?.casesCount || 0;
+      const uninvAmount = uninv?.totalAmount || 0;
+
+      const billed = Number(d.totalBilled ?? docInvoices.reduce((s, r) => s + (Number(r.total) || 0), 0));
+      const paid = Number(d.totalPaid ?? docInvoices.reduce((s, r) => s + (Number(r.paid) || 0), 0));
+      const outstanding = Number(d.outstanding ?? Math.max(0, billed - paid));
+      const creditLimit = Number(d.creditLimit || 0);
+      const creditExceeded = d.creditExceeded ?? (creditLimit > 0 && outstanding > creditLimit);
+      const creditPercent = creditLimit > 0 ? Math.min(100, Math.round((outstanding / creditLimit) * 100)) : 0;
+
+      return {
+        ...d,
+        computedBilled: billed,
+        computedPaid: paid,
+        computedOutstanding: outstanding,
+        computedCreditLimit: creditLimit,
+        computedCreditExceeded: creditExceeded,
+        creditPercent,
+        invoices: docInvoices,
+        cases: docCases,
+        uninvoicedCases: uninvCases,
+        uninvoicedAmount: uninvAmount,
+      };
+    });
+  }, [doctors, rows, cases, uninvoicedSummary]);
+
+  const filteredDoctors = useMemo(() => {
+    let list = [...enrichedDoctors];
+    if (doctorSearch.trim()) {
+      const q = doctorSearch.trim().toLowerCase();
+      list = list.filter(
+        (d) =>
+          (d.name && d.name.toLowerCase().includes(q)) ||
+          (d.clinicName && d.clinicName.toLowerCase().includes(q)) ||
+          (d.phone && d.phone.includes(q)) ||
+          (d.governorate && d.governorate.toLowerCase().includes(q))
+      );
+    }
+    if (doctorStatusFilter === "WITH_DEBT") {
+      list = list.filter((d) => d.computedOutstanding > 0);
+    } else if (doctorStatusFilter === "PAID_OFF") {
+      list = list.filter((d) => d.computedOutstanding <= 0 && d.computedBilled > 0);
+    } else if (doctorStatusFilter === "CREDIT_EXCEEDED") {
+      list = list.filter((d) => d.computedCreditExceeded);
+    } else if (doctorStatusFilter === "UNINVOICED") {
+      list = list.filter((d) => d.uninvoicedCases > 0);
+    }
+
+    list.sort((a, b) => {
+      if (doctorSortBy === "DEBT_DESC") return b.computedOutstanding - a.computedOutstanding;
+      if (doctorSortBy === "BILLED_DESC") return b.computedBilled - a.computedBilled;
+      if (doctorSortBy === "CASES_DESC") return (b.activeCases ?? b.cases.length) - (a.activeCases ?? a.cases.length);
+      if (doctorSortBy === "NAME_ASC") return a.name.localeCompare(b.name, "ar");
+      return 0;
+    });
+
+    return list;
+  }, [enrichedDoctors, doctorSearch, doctorStatusFilter, doctorSortBy]);
+
+  const doctorsOverviewTotals = useMemo(() => {
+    const totalOutstanding = enrichedDoctors.reduce((sum, d) => sum + d.computedOutstanding, 0);
+    const totalBilled = enrichedDoctors.reduce((sum, d) => sum + d.computedBilled, 0);
+    const totalPaid = enrichedDoctors.reduce((sum, d) => sum + d.computedPaid, 0);
+    const overCreditCount = enrichedDoctors.filter((d) => d.computedCreditExceeded).length;
+    const withDebtCount = enrichedDoctors.filter((d) => d.computedOutstanding > 0).length;
+    const paidOffCount = enrichedDoctors.filter((d) => d.computedOutstanding <= 0 && d.computedBilled > 0).length;
+    const withUninvoicedCount = enrichedDoctors.filter((d) => d.uninvoicedCases > 0).length;
+    const uninvoicedTotal = uninvoicedSummary?.totalAmount || 0;
+    const uninvoicedCasesTotal = uninvoicedSummary?.totalCases || 0;
+
+    return {
+      totalOutstanding,
+      totalBilled,
+      totalPaid,
+      overCreditCount,
+      withDebtCount,
+      paidOffCount,
+      withUninvoicedCount,
+      uninvoicedTotal,
+      uninvoicedCasesTotal,
+    };
+  }, [enrichedDoctors, uninvoicedSummary]);
+
   return (
     <div className="space-y-4">
       {/* Top Header */}
@@ -1870,6 +1988,61 @@ export default function DentalInvoicesTab() {
         </div>
       </div>
 
+      {/* Sub-Tab Switcher */}
+      <div className="flex items-center gap-2 border-b dark:border-gray-800 pb-2 overflow-x-auto">
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("invoices")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[42px] ${
+            activeSubTab === "invoices"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+        >
+          <FileText className="w-4 h-4" />
+          <span>سجل الفواتير</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeSubTab === "invoices"
+                ? "bg-white/20 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            {rows.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveSubTab("doctors")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold transition-all whitespace-nowrap min-h-[42px] ${
+            activeSubTab === "doctors"
+              ? "bg-blue-600 text-white shadow-sm"
+              : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-800"
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          <span>حسابات الأطباء</span>
+          <span
+            className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+              activeSubTab === "doctors"
+                ? "bg-white/20 text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+            }`}
+          >
+            {doctors.length}
+          </span>
+          {doctors.some((d) => d.creditExceeded) && (
+            <span
+              className="w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-900 animate-pulse"
+              title="يوجد أطباء تجاوزوا الحد الائتماني"
+            />
+          )}
+        </button>
+      </div>
+
+      {activeSubTab === "invoices" && (
+        <>
       {/* Uninvoiced Billing Banner */}
       {uninvoicedSummary && uninvoicedSummary.totalCases > 0 && !selectedDoctorId && (
         <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/40 dark:to-indigo-950/40 border border-blue-200 dark:border-blue-800 rounded-xl p-3.5 sm:p-4 flex flex-wrap items-center justify-between gap-3">
@@ -2199,6 +2372,651 @@ export default function DentalInvoicesTab() {
           </div>
         )}
       </div>
+      </>
+      )}
+
+      {/* ==================== DOCTORS SUB-TAB ==================== */}
+      {activeSubTab === "doctors" && (
+        <div className="space-y-4">
+          {/* Doctors KPI Summary Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 sm:gap-3">
+            <div className="p-3 sm:p-3.5 bg-red-50/80 dark:bg-red-950/20 border border-red-200 dark:border-red-900/40 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-red-700 dark:text-red-400">إجمالي المديونية المستحقة</span>
+                <CreditCard className="w-4 h-4 text-red-500" />
+              </div>
+              <p className="text-lg sm:text-xl font-black text-red-700 dark:text-red-300 mt-1">
+                {fmtMoney(doctorsOverviewTotals.totalOutstanding)} <span className="text-xs font-normal">ج.م</span>
+              </p>
+              <p className="text-[11px] text-red-600/80 mt-0.5">
+                مستحقة على {doctorsOverviewTotals.withDebtCount} طبيب
+              </p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 bg-blue-50/80 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900/40 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-blue-700 dark:text-blue-400">إجمالي المفوتر</span>
+                <FileText className="w-4 h-4 text-blue-500" />
+              </div>
+              <p className="text-lg sm:text-xl font-black text-blue-800 dark:text-blue-300 mt-1">
+                {fmtMoney(doctorsOverviewTotals.totalBilled)} <span className="text-xs font-normal">ج.م</span>
+              </p>
+              <p className="text-[11px] text-blue-600/80 mt-0.5">
+                إجمالي التعاملات المفوترة
+              </p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 bg-green-50/80 dark:bg-green-950/20 border border-green-200 dark:border-green-900/40 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-green-700 dark:text-green-400">إجمالي المسدد</span>
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              </div>
+              <p className="text-lg sm:text-xl font-black text-green-700 dark:text-green-400 mt-1">
+                {fmtMoney(doctorsOverviewTotals.totalPaid)} <span className="text-xs font-normal">ج.م</span>
+              </p>
+              <p className="text-[11px] text-green-600/80 mt-0.5">
+                {doctorsOverviewTotals.paidOffCount} طبيب خالص تماماً
+              </p>
+            </div>
+
+            <div
+              className={`p-3 sm:p-3.5 rounded-xl border ${
+                doctorsOverviewTotals.overCreditCount > 0
+                  ? "bg-amber-50/90 dark:bg-amber-950/30 border-amber-300 dark:border-amber-800"
+                  : "bg-gray-50 dark:bg-gray-800/60 border-gray-200 dark:border-gray-700"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-amber-800 dark:text-amber-400">تجاوز الحد الائتماني</span>
+                <AlertTriangle className="w-4 h-4 text-amber-600" />
+              </div>
+              <p
+                className={`text-lg sm:text-xl font-black mt-1 ${
+                  doctorsOverviewTotals.overCreditCount > 0
+                    ? "text-amber-700 dark:text-amber-400"
+                    : "text-gray-700 dark:text-gray-300"
+                }`}
+              >
+                {doctorsOverviewTotals.overCreditCount} <span className="text-xs font-normal">أطباء</span>
+              </p>
+              <p className="text-[11px] text-gray-500 mt-0.5">
+                {doctorsOverviewTotals.overCreditCount > 0 ? "يتطلب مراجعة فورية للتحصيل" : "جميع الحسابات ضمن الحدود"}
+              </p>
+            </div>
+
+            <div className="p-3 sm:p-3.5 bg-indigo-50/80 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-900/40 rounded-xl">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-400">حالات غير مفوترة</span>
+                <CalendarClock className="w-4 h-4 text-indigo-500" />
+              </div>
+              <p className="text-lg sm:text-xl font-black text-indigo-700 dark:text-indigo-300 mt-1">
+                {fmtMoney(doctorsOverviewTotals.uninvoicedTotal)} <span className="text-xs font-normal">ج.م</span>
+              </p>
+              <p className="text-[11px] text-indigo-600/80 mt-0.5">
+                {doctorsOverviewTotals.uninvoicedCasesTotal} حالة معلقة لـ {doctorsOverviewTotals.withUninvoicedCount} طبيب
+              </p>
+            </div>
+          </div>
+
+          {/* Doctors Search & Filter Bar */}
+          <div className="bg-white dark:bg-gray-900 border dark:border-gray-800 rounded-xl p-3 shadow-sm flex flex-wrap items-center justify-between gap-3">
+            {/* Search Input */}
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                className="w-full pl-3 pr-9 py-1.5 border dark:border-gray-700 rounded-lg text-xs sm:text-sm dark:bg-gray-800 focus:ring-2 focus:ring-blue-500"
+                placeholder="بحث باسم الطبيب، اسم العيادة، الهاتف، المحافظة..."
+                value={doctorSearch}
+                onChange={(e) => setDoctorSearch(e.target.value)}
+              />
+              {doctorSearch && (
+                <button
+                  type="button"
+                  onClick={() => setDoctorSearch("")}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                >
+                  <XMarkIcon className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Chips */}
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0">
+              {[
+                { id: "ALL", label: "الكل", count: enrichedDoctors.length },
+                { id: "WITH_DEBT", label: "عليهم مديونية", count: doctorsOverviewTotals.withDebtCount },
+                { id: "PAID_OFF", label: "خالص", count: doctorsOverviewTotals.paidOffCount },
+                { id: "CREDIT_EXCEEDED", label: "متجاوز الائتمان", count: doctorsOverviewTotals.overCreditCount },
+                { id: "UNINVOICED", label: "حالات غير مفوترة", count: doctorsOverviewTotals.withUninvoicedCount },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setDoctorStatusFilter(f.id as any)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors flex items-center gap-1.5 ${
+                    doctorStatusFilter === f.id
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800"
+                  }`}
+                >
+                  <span>{f.label}</span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      doctorStatusFilter === f.id
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                    }`}
+                  >
+                    {f.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Sort Selector */}
+            <div className="flex items-center gap-1.5 border-r dark:border-gray-800 pr-2">
+              <SlidersHorizontal className="w-3.5 h-3.5 text-gray-400" />
+              <span className="text-xs text-gray-500 whitespace-nowrap">ترتيب:</span>
+              <select
+                className="border dark:border-gray-700 rounded-lg px-2.5 py-1 text-xs dark:bg-gray-800 dark:text-gray-100 focus:ring-2 focus:ring-blue-500"
+                value={doctorSortBy}
+                onChange={(e) => setDoctorSortBy(e.target.value as any)}
+              >
+                <option value="DEBT_DESC">الأعلى مديونية</option>
+                <option value="BILLED_DESC">الأعلى تعاملاً (مفوتر)</option>
+                <option value="CASES_DESC">الأكثر حالات نشطة</option>
+                <option value="NAME_ASC">الاسم (أبجدياً)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Doctors Table */}
+          <div className="bg-white dark:bg-gray-900 rounded-xl border dark:border-gray-800 overflow-hidden shadow-sm">
+            {loading ? (
+              <div className="flex justify-center py-16">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : filteredDoctors.length === 0 ? (
+              <div className="p-12 text-center text-gray-400 dark:text-gray-500">
+                <Users className="w-10 h-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+                <p className="text-base font-semibold text-gray-600 dark:text-gray-300">لا يوجد أطباء مطابقين لشروط البحث</p>
+                <p className="text-xs text-gray-400 mt-1">جرّب تغيير كلمات البحث أو الفلاتر</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs sm:text-sm text-right">
+                  <thead className="border-b dark:border-gray-800 bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-300 font-bold">
+                    <tr>
+                      <th className="py-3 px-3.5 whitespace-nowrap">الطبيب والعيادة</th>
+                      <th className="py-3 px-3 whitespace-nowrap">المديونية المستحقة</th>
+                      <th className="py-3 px-3 whitespace-nowrap">المفوتر / المسدد</th>
+                      <th className="py-3 px-3 whitespace-nowrap">الحد الائتماني</th>
+                      <th className="py-3 px-3 whitespace-nowrap">الحالات</th>
+                      <th className="py-3 px-3 whitespace-nowrap">غير مفوتر</th>
+                      <th className="py-3 px-3 whitespace-nowrap">الفواتير</th>
+                      <th className="py-3 px-3.5 whitespace-nowrap text-center">إجراءات سريعة</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y dark:divide-gray-800">
+                    {filteredDoctors.map((doc) => {
+                      const isExpanded = expandedDoctorIds.has(doc.id);
+                      return (
+                        <Fragment key={doc.id}>
+                          <tr
+                            className={`hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors cursor-pointer ${
+                              isExpanded ? "bg-blue-50/20 dark:bg-blue-950/20" : ""
+                            }`}
+                            onClick={() => toggleDoctorExpand(doc.id)}
+                          >
+                            {/* Doctor & Clinic */}
+                            <td className="py-3 px-3.5">
+                              <div className="flex items-center gap-2.5">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    toggleDoctorExpand(doc.id);
+                                  }}
+                                  className="p-1 text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 rounded"
+                                  title={isExpanded ? "طي التفاصيل" : "عرض تفاصيل الطبيب"}
+                                >
+                                  {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                                </button>
+                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center font-bold text-xs shrink-0">
+                                  {doc.name.slice(0, 2)}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <Link
+                                      to={`/dental-lab/doctors/${doc.id}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                      title="عرض الصفحة الكاملة للطبيب"
+                                    >
+                                      <span>د. {doc.name}</span>
+                                      <ExternalLink className="w-3 h-3 opacity-60" />
+                                    </Link>
+                                    {doc.governorate && (
+                                      <span className="px-1.5 py-0.2 rounded bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 text-[10px]">
+                                        {doc.governorate}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 flex-wrap">
+                                    {doc.clinicName && (
+                                      <span className="flex items-center gap-0.5">
+                                        <Building2 className="w-3 h-3 text-gray-400" />
+                                        <span>{doc.clinicName}</span>
+                                      </span>
+                                    )}
+                                    {doc.phone && (
+                                      <span className="flex items-center gap-0.5" dir="ltr">
+                                        <Phone className="w-3 h-3 text-gray-400" />
+                                        <span>{doc.phone}</span>
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Outstanding Debt */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {doc.computedOutstanding > 0 ? (
+                                <div className="flex flex-col">
+                                  <span className="font-black text-red-600 dark:text-red-400 text-sm sm:text-base">
+                                    {fmtMoney(doc.computedOutstanding)} ج.م
+                                  </span>
+                                  <span className="text-[10px] text-red-500/80">متبقي مستحق</span>
+                                </div>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">
+                                  <Check className="w-3 h-3" />
+                                  خالص
+                                </span>
+                              )}
+                            </td>
+
+                            {/* Billed / Paid */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <div className="flex flex-col text-xs">
+                                <span className="font-semibold text-gray-900 dark:text-gray-100">
+                                  مفوتر: {fmtMoney(doc.computedBilled)}
+                                </span>
+                                <span className="text-green-600 dark:text-green-400 font-medium">
+                                  مسدد: {fmtMoney(doc.computedPaid)}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Credit Limit & Status */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {doc.computedCreditLimit > 0 ? (
+                                <div className="w-28 space-y-1">
+                                  <div className="flex items-center justify-between text-[11px]">
+                                    <span className="text-gray-500">حد: {fmtMoney(doc.computedCreditLimit)}</span>
+                                    <span
+                                      className={`font-bold ${
+                                        doc.computedCreditExceeded ? "text-red-600" : "text-gray-700 dark:text-gray-300"
+                                      }`}
+                                    >
+                                      {doc.creditPercent}%
+                                    </span>
+                                  </div>
+                                  <div className="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${
+                                        doc.computedCreditExceeded
+                                          ? "bg-red-500"
+                                          : doc.creditPercent > 75
+                                          ? "bg-amber-500"
+                                          : "bg-blue-500"
+                                      }`}
+                                      style={{ width: `${Math.min(100, doc.creditPercent)}%` }}
+                                    />
+                                  </div>
+                                  {doc.computedCreditExceeded ? (
+                                    <span className="inline-block px-1.5 py-0.2 rounded bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 text-[10px] font-bold">
+                                      تجاوز الائتمان
+                                    </span>
+                                  ) : (
+                                    <span className="inline-block px-1.5 py-0.2 rounded bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 text-[10px]">
+                                      ضمن الحد
+                                    </span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-xs text-gray-400">غير محدد</span>
+                              )}
+                            </td>
+
+                            {/* Cases */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <div className="flex items-center gap-1 flex-wrap">
+                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">
+                                  {doc.activeCases ?? doc.cases.length} نشطة
+                                </span>
+                                {(doc.overdueCases ?? 0) > 0 && (
+                                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">
+                                    {doc.overdueCases} متأخرة
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Uninvoiced */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              {doc.uninvoicedCases > 0 ? (
+                                <span className="inline-flex flex-col text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 px-2 py-1 rounded-lg border border-amber-200 dark:border-amber-800">
+                                  <span>{doc.uninvoicedCases} حالة معلقة</span>
+                                  <span className="text-[10px] font-normal">{fmtMoney(doc.uninvoicedAmount)} ج.م</span>
+                                </span>
+                              ) : (
+                                <span className="text-gray-400 text-xs">—</span>
+                              )}
+                            </td>
+
+                            {/* Invoices Count */}
+                            <td className="py-3 px-3 whitespace-nowrap">
+                              <span className="text-xs text-gray-600 dark:text-gray-300 font-medium">
+                                {doc.invoices.length} فاتورة
+                              </span>
+                            </td>
+
+                            {/* Quick Actions */}
+                            <td className="py-3 px-3.5 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
+                              <div className="flex items-center justify-center gap-1">
+                                {/* Statement */}
+                                <button
+                                  type="button"
+                                  onClick={() => setStatementDoctor(doc)}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
+                                  title="كشف حساب الطبيب"
+                                >
+                                  <FileSpreadsheet className="w-4 h-4" />
+                                </button>
+
+                                {/* Bulk Payment */}
+                                <button
+                                  type="button"
+                                  onClick={() => setBulkPaymentDoctor(doc)}
+                                  className="p-1.5 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg"
+                                  title="تسجيل دفعة على الحساب"
+                                >
+                                  <Banknote className="w-4 h-4" />
+                                </button>
+
+                                {/* Monthly Settlement */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSettlementDoctorId(doc.id);
+                                    setSettlementOpen(true);
+                                  }}
+                                  className="p-1.5 text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-lg"
+                                  title="تقفيل مستحقات الشهر"
+                                >
+                                  <CalendarClock className="w-4 h-4" />
+                                </button>
+
+                                {/* Create Invoice */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedDoctorId(doc.id);
+                                    setCreateOpen(true);
+                                  }}
+                                  className="p-1.5 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg"
+                                  title="إصدار فاتورة جديدة للطبيب"
+                                >
+                                  <Plus className="w-4 h-4" />
+                                </button>
+
+                                {/* Filter Invoices by this doctor */}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedDoctorId(doc.id);
+                                    setActiveSubTab("invoices");
+                                  }}
+                                  className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-lg"
+                                  title="عرض فواتير هذا الطبيب في تبويبة الفواتير"
+                                >
+                                  <CreditCard className="w-4 h-4" />
+                                </button>
+
+                                {/* WhatsApp */}
+                                {doc.phone && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      shareStatementWhatsApp(doc.name, doc.phone, {
+                                        invoiced: doc.computedBilled,
+                                        paid: doc.computedPaid,
+                                        remaining: doc.computedOutstanding,
+                                        cases: doc.invoices.length,
+                                      })
+                                    }
+                                    className="p-1.5 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 rounded-lg"
+                                    title="إرسال كشف الحساب عبر واتساب"
+                                  >
+                                    <MessageCircle className="w-4 h-4" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Expanded Row Accordion */}
+                          {isExpanded && (
+                            <tr className="bg-blue-50/30 dark:bg-gray-800/40">
+                              <td colSpan={8} className="p-3 sm:p-4 border-y dark:border-gray-800">
+                                <div className="space-y-3">
+                                  <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b dark:border-gray-700/60">
+                                    <div className="flex items-center gap-2">
+                                      <User className="w-4 h-4 text-blue-600" />
+                                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100">
+                                        تفاصيل حساب د. {doc.name}
+                                      </span>
+                                      {doc.clinicName && (
+                                        <span className="text-xs text-gray-500 dark:text-gray-400">({doc.clinicName})</span>
+                                      )}
+                                    </div>
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <button
+                                        type="button"
+                                        onClick={() => setStatementDoctor(doc)}
+                                        className="px-3 py-1 bg-blue-600 text-white rounded-lg text-xs font-semibold hover:bg-blue-700 flex items-center gap-1.5"
+                                      >
+                                        <FileSpreadsheet className="w-3.5 h-3.5" />
+                                        <span>كشف حساب كامل ومطبوع</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => setBulkPaymentDoctor(doc)}
+                                        className="px-3 py-1 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 flex items-center gap-1.5"
+                                      >
+                                        <Banknote className="w-3.5 h-3.5" />
+                                        <span>تحصيل دفعة مجمعة</span>
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setSelectedDoctorId(doc.id);
+                                          setActiveSubTab("invoices");
+                                        }}
+                                        className="px-3 py-1 border dark:border-gray-700 rounded-lg text-xs font-medium hover:bg-white dark:hover:bg-gray-800 flex items-center gap-1.5"
+                                      >
+                                        <span>عرض كافة فواتيره ({doc.invoices.length})</span>
+                                        <ArrowRight className="w-3 h-3" />
+                                      </button>
+                                      <Link
+                                        to={`/dental-lab/doctors/${doc.id}`}
+                                        className="px-3 py-1 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg text-xs font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 flex items-center gap-1"
+                                      >
+                                        <span>الملف الكامل</span>
+                                        <ExternalLink className="w-3 h-3" />
+                                      </Link>
+                                    </div>
+                                  </div>
+
+                                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                                    {/* Recent Invoices Card */}
+                                    <div className="bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-800 p-3 shadow-xs">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                          <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                          <span>أحدث الفواتير المسجلة ({doc.invoices.length})</span>
+                                        </h4>
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            setSelectedDoctorId(doc.id);
+                                            setCreateOpen(true);
+                                          }}
+                                          className="text-[11px] text-blue-600 hover:underline flex items-center gap-1"
+                                        >
+                                          <Plus className="w-3 h-3" />
+                                          <span>فاتورة جديدة</span>
+                                        </button>
+                                      </div>
+
+                                      {doc.invoices.length === 0 ? (
+                                        <p className="text-xs text-gray-400 py-4 text-center">لا توجد فواتير مسجلة لهذا الطبيب حتى الآن</p>
+                                      ) : (
+                                        <div className="overflow-x-auto">
+                                          <table className="w-full text-xs text-right">
+                                            <thead>
+                                              <tr className="border-b dark:border-gray-800 text-gray-400 font-semibold">
+                                                <th className="py-1.5 px-2">رقم الفاتورة</th>
+                                                <th className="py-1.5 px-2">المريض</th>
+                                                <th className="py-1.5 px-2">الإجمالي</th>
+                                                <th className="py-1.5 px-2">المتبقي</th>
+                                                <th className="py-1.5 px-2">الحالة</th>
+                                                <th className="py-1.5 px-2 text-center">إجراء</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y dark:divide-gray-800/60">
+                                              {doc.invoices.slice(0, 5).map((inv) => (
+                                                <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                  <td className="py-1.5 px-2 font-bold text-blue-600">
+                                                    {inv.invoiceNumber || inv.id.slice(0, 8)}
+                                                  </td>
+                                                  <td className="py-1.5 px-2 text-gray-700 dark:text-gray-300">
+                                                    {inv.patientName || inv.case?.patientName || "—"}
+                                                  </td>
+                                                  <td className="py-1.5 px-2 font-medium">{fmtMoney(inv.total)}</td>
+                                                  <td
+                                                    className={`py-1.5 px-2 font-bold ${
+                                                      inv.remaining > 0 ? "text-red-600" : "text-green-600"
+                                                    }`}
+                                                  >
+                                                    {fmtMoney(inv.remaining)}
+                                                  </td>
+                                                  <td className="py-1.5 px-2">{invoiceBadge(inv.status)}</td>
+                                                  <td className="py-1.5 px-2 text-center">
+                                                    <div className="flex items-center justify-center gap-1">
+                                                      <button
+                                                        type="button"
+                                                        onClick={() => setDetailInvoice(inv)}
+                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-gray-500"
+                                                        title="معاينة"
+                                                      >
+                                                        <Eye className="w-3.5 h-3.5" />
+                                                      </button>
+                                                      {inv.remaining > 0 && (
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => setPaymentInvoice(inv)}
+                                                          className="px-1.5 py-0.5 bg-green-50 text-green-700 border border-green-300 rounded text-[10px] font-semibold"
+                                                          title="سداد"
+                                                        >
+                                                          سداد
+                                                        </button>
+                                                      )}
+                                                    </div>
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+                                    </div>
+
+                                    {/* Active Cases Card */}
+                                    <div className="bg-white dark:bg-gray-900 rounded-lg border dark:border-gray-800 p-3 shadow-xs">
+                                      <div className="flex items-center justify-between mb-2">
+                                        <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                                          <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                                          <span>الحالات الجارية للطبيب ({doc.cases.length})</span>
+                                        </h4>
+                                        <Link
+                                          to={`/dental-lab/cases`}
+                                          className="text-[11px] text-blue-600 hover:underline flex items-center gap-1"
+                                        >
+                                          <span>إدارة الحالات</span>
+                                          <ArrowRight className="w-3 h-3" />
+                                        </Link>
+                                      </div>
+
+                                      {doc.cases.length === 0 ? (
+                                        <p className="text-xs text-gray-400 py-4 text-center">لا توجد حالات جارية حالياً</p>
+                                      ) : (
+                                        <div className="overflow-x-auto">
+                                          <table className="w-full text-xs text-right">
+                                            <thead>
+                                              <tr className="border-b dark:border-gray-800 text-gray-400 font-semibold">
+                                                <th className="py-1.5 px-2">رقم الحالة</th>
+                                                <th className="py-1.5 px-2">المريض</th>
+                                                <th className="py-1.5 px-2">نوع الشغل</th>
+                                                <th className="py-1.5 px-2">المرحلة</th>
+                                                <th className="py-1.5 px-2">الاستحقاق</th>
+                                              </tr>
+                                            </thead>
+                                            <tbody className="divide-y dark:divide-gray-800/60">
+                                              {doc.cases.slice(0, 5).map((c) => (
+                                                <tr key={c.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                                                  <td className="py-1.5 px-2 font-bold text-indigo-600">
+                                                    {c.caseNumber || c.id.slice(0, 8)}
+                                                  </td>
+                                                  <td className="py-1.5 px-2 text-gray-700 dark:text-gray-300">
+                                                    {c.patientName || "—"}
+                                                  </td>
+                                                  <td className="py-1.5 px-2 text-gray-500">
+                                                    {c.workTypeName || c.workType?.name || "—"}
+                                                  </td>
+                                                  <td className="py-1.5 px-2">
+                                                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-gray-100 dark:bg-gray-800">
+                                                      {c.status}
+                                                    </span>
+                                                  </td>
+                                                  <td className="py-1.5 px-2 text-gray-500">
+                                                    {c.dueDate ? fmtDate(c.dueDate) : "—"}
+                                                  </td>
+                                                </tr>
+                                              ))}
+                                            </tbody>
+                                          </table>
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </Fragment>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* All modals */}
       {createOpen && (
