@@ -5828,7 +5828,7 @@ async function getPinnedMessage(req, res) {
         res.json({ success: true, pinnedMessage: pinned });
     } catch (error) {
         console.error('❌ Error getting pinned message:', error);
-        res.status(500).json({ error: 'حدث خطأ أثناء جلب الرسالة المثبتة' });
+        res.json({ success: true, pinnedMessage: null });
     }
 }
 

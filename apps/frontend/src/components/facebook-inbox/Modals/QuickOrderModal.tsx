@@ -549,6 +549,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
 
   // Cart State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [showMobileCart, setShowMobileCart] = useState(false);
 
   // Customer Form State
   const [phone, setPhone] = useState(initialCustomerPhone || "");
