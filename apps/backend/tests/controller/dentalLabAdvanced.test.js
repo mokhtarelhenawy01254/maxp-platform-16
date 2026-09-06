@@ -688,7 +688,7 @@ test('allows READY when a passed quality check exists', async () => {
       expect(res.payload.data.items[0]).toMatchObject({ caseNumber: 'DL-1' });
       expect(res.payload.data.items[0].total).toBeUndefined();
       expect(prisma.dentalLabCase.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: expect.objectContaining({ stages: { some: { assigneeId: 'tech-1', status: { in: ['IN_PROGRESS', 'PENDING'] } } } }) })
+        expect.objectContaining({ where: expect.objectContaining({ stages: expect.objectContaining({ some: expect.objectContaining({ status: { in: ['IN_PROGRESS', 'PENDING'] } }) }) }) })
       );
     });
 

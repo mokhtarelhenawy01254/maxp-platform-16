@@ -11087,6 +11087,19 @@ declare module 'react-i18next' {
           created: string;
           updated: string;
           deleted: string;
+          detail: {
+            title: string;
+            overview: string;
+            cases: string;
+            invoices: string;
+            statement: string;
+            pricing: string;
+            portal: string;
+            quickOrder: string;
+            editDoctor: string;
+            activeDoctor: string;
+            archivedDoctor: string;
+          };
           ledger: {
             title: string;
             totalOutstanding: string;

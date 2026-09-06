@@ -1,7 +1,7 @@
 const path = require('path');
 const PDFDocument = require('pdfkit');
 const QRCode = require('qrcode');
-const { shapeArabic } = require('../utils/arabicShaping');
+const { shapeArabic, hasArabic } = require('../utils/arabicShaping');
 
 const FONT = path.join(__dirname, '..', 'fonts', 'NotoSansArabic-Regular.ttf');
 
@@ -56,7 +56,7 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
   }
 
   return new Promise((resolve, reject) => {
-    const doc = new PDFDocument({ size: 'A4', margin: 40, bufferPages: false });
+    const doc = new PDFDocument({ size: 'A4', margins: { top: 30, bottom: 20, left: 40, right: 40 }, bufferPages: false });
     const chunks = [];
     doc.on('data', (chunk) => chunks.push(chunk));
     doc.on('end', () => resolve({ buffer: Buffer.concat(chunks), caseNumber }));
@@ -105,7 +105,7 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
       const labelW = 85;
       const valW = halfW - labelW - 16;
       doc.fontSize(8.5).fillColor('#6b7280').text(k, colX + valW + 4, yy, { width: labelW, align: 'right' });
-      doc.fontSize(9).fillColor('#111827').text(v, colX + 8, yy, { width: valW, align: 'right' });
+      doc.fontSize(9).fillColor('#111827').text(v, colX + 8, yy, { width: valW, align: hasArabic(v) ? 'right' : 'left' });
     }
 
     // ── Amounts ──────────────────────────────────────────────
@@ -144,7 +144,7 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
       });
       y += 20;
       stages.forEach((stage, idx) => {
-        if (y > doc.page.height - 80) { doc.addPage(); y = 40; }
+        if (y > doc.page.height - 100) { doc.addPage(); y = 40; }
         if (idx % 2 === 1) doc.rect(tableX, y, pageWidth, 18).fill('#fafafa');
         doc.rect(tableX, y, pageWidth, 18).stroke('#e5e7eb');
         doc.fontSize(9);
@@ -160,15 +160,15 @@ async function generateWorkOrderPdf({ company, caseRow, workOrderHeader }) {
 
     // ── QR code (bottom-left) ────────────────────────────────
     if (qrBuffer) {
-      doc.image(qrBuffer, 40, doc.page.height - 140, { width: 110 });
-      doc.fontSize(7).fillColor('#6b7280').text(AR(caseNumber), 40, doc.page.height - 36, { width: 110, align: 'center' });
+      doc.image(qrBuffer, 40, doc.page.height - 135, { width: 100 });
+      doc.fontSize(8).fillColor('#6b7280').text(AR(caseNumber), 40, doc.page.height - 35, { width: 100, align: 'center', lineBreak: false });
     }
 
     // ── Footer ───────────────────────────────────────────────
     doc.fontSize(8).fillColor('#9ca3af').text(
       AR(`تم إنشاء أمر الشغل بتاريخ ${fmtDate(new Date())}`),
-      160, doc.page.height - 50,
-      { align: 'center', width: pageWidth - 120 }
+      160, doc.page.height - 35,
+      { align: 'center', width: pageWidth - 120, lineBreak: false }
     );
 
     doc.end();
@@ -183,7 +183,7 @@ module.exports = { generateWorkOrderPdf, generateInvoicePdf, generatePanLabelPdf
 function generateInvoicePdf({ company, invoice, dentalCase, workOrderHeader }) {
   return new Promise((resolve, reject) => {
     try {
-      const doc = new PDFDocument({ size: 'A4', margin: 40 });
+      const doc = new PDFDocument({ size: 'A4', margins: { top: 30, bottom: 20, left: 40, right: 40 } });
       const chunks = [];
       doc.on('data', (c) => chunks.push(c));
       doc.on('end', () => resolve({ buffer: Buffer.concat(chunks), invoiceNumber: invoice.invoiceNumber }));
@@ -194,8 +194,12 @@ function generateInvoicePdf({ company, invoice, dentalCase, workOrderHeader }) {
 
       // Header
       doc.fontSize(16).fillColor('#1f2937').text(AR(workOrderHeader.labName || company?.name || ''), { align: 'center' });
-      doc.fontSize(9).fillColor('#6b7280').text(AR(workOrderHeader.address || ''), { align: 'center' });
-      doc.fontSize(9).fillColor('#6b7280').text(AR('هاتف: ' + (workOrderHeader.phone || '—')), { align: 'center' });
+      if (workOrderHeader.address) {
+        doc.fontSize(9).fillColor('#6b7280').text(AR(workOrderHeader.address), { align: 'center' });
+      }
+      if (workOrderHeader.phone) {
+        doc.fontSize(9).fillColor('#6b7280').text(AR('هاتف: ' + workOrderHeader.phone), { align: 'center' });
+      }
       doc.moveDown(0.5);
       doc.moveTo(40, doc.y).lineTo(pageWidth - 40, doc.y).strokeColor('#d1d5db').lineWidth(1).stroke();
       doc.moveDown(0.5);
@@ -209,26 +213,24 @@ function generateInvoicePdf({ company, invoice, dentalCase, workOrderHeader }) {
 
       // Parties
       doc.fontSize(10).fillColor('#1f2937');
-      doc.text(AR('العميل (الطبيب): ' + (invoice.doctorName || '—')));
-      doc.text(AR('المريض: ' + (dentalCase?.patientName || invoice.patientName || '—')));
-      if (dentalCase) doc.text(AR('الحالة: ' + dentalCase.caseNumber + ' — ' + (dentalCase.workTypeName || '')));
+      doc.text(AR('العميل (الطبيب): ' + (invoice.doctorName || '—')), { align: 'right' });
+      doc.text(AR('المريض: ' + (dentalCase?.patientName || invoice.patientName || '—')), { align: 'right' });
+      if (dentalCase) doc.text(AR('الحالة: ' + dentalCase.caseNumber + ' — ' + (dentalCase.workTypeName || '')), { align: 'right' });
       doc.moveDown(0.5);
 
       // Amounts table
-      const startY = doc.y;
-      doc.fontSize(10);
+      doc.fontSize(9).fillColor('#6b7280').text(AR('التفاصيل'), { underline: true, align: 'right' });
+      doc.moveDown(0.2);
       const rows = [
         ['الإجمالي', invoice.total],
         ['الخصم', invoice.discount],
         ['المدفوع', invoice.paid],
         ['المتبقي', invoice.remaining],
       ];
-      doc.fontSize(9).fillColor('#6b7280').text(AR('التفاصيل'), { underline: true });
-      doc.moveDown(0.2);
       for (const [label, value] of rows) {
         doc.fontSize(10).fillColor('#1f2937');
-        doc.text(AR(label), 60, doc.y, { width: 200 });
-        doc.text(String(value), pageWidth - 200, doc.y - doc.currentLineHeight(), { width: 150, align: 'left' });
+        doc.text(AR(label), pageWidth - 240, doc.y, { width: 200, align: 'right' });
+        doc.text(AR(String(value ?? 0) + ' ج.م'), 40, doc.y - doc.currentLineHeight(), { width: 150, align: 'left' });
         doc.moveDown(0.2);
       }
       doc.moveDown(0.5);
@@ -237,10 +239,10 @@ function generateInvoicePdf({ company, invoice, dentalCase, workOrderHeader }) {
 
       // Payments
       if (invoice.payments && invoice.payments.length > 0) {
-        doc.fontSize(10).fillColor('#1f2937').text(AR('الدفعات:'));
+        doc.fontSize(10).fillColor('#1f2937').text(AR('الدفعات:'), { align: 'right' });
         doc.moveDown(0.2);
         for (const p of invoice.payments) {
-          doc.fontSize(9).fillColor('#374151').text(AR(`${fmtDate(p.createdAt)} — ${p.amount} (${p.method || 'OTHER'})`), { indent: 20 });
+          doc.fontSize(9).fillColor('#374151').text(AR(`${fmtDate(p.createdAt)} — ${p.amount} (${p.method || 'OTHER'})`), { align: 'right' });
         }
         doc.moveDown(0.5);
       }
@@ -248,8 +250,8 @@ function generateInvoicePdf({ company, invoice, dentalCase, workOrderHeader }) {
       // Footer
       doc.fontSize(8).fillColor('#9ca3af').text(
         AR(`أُعدت بتاريخ ${fmtDate(new Date())}`),
-        0, doc.page.height - 50,
-        { align: 'center', width: pageWidth }
+        0, doc.page.height - 35,
+        { align: 'center', width: pageWidth, lineBreak: false }
       );
 
       doc.end();
@@ -353,7 +355,7 @@ async function generateWarrantyCertificatePdf({ company, caseRow, workOrderHeade
 
   return new Promise((resolve, reject) => {
     // A5 Portrait (419.53 x 595.28 pt)
-    const doc = new PDFDocument({ size: 'A5', margin: 24 });
+    const doc = new PDFDocument({ size: 'A5', margins: { top: 20, bottom: 10, left: 20, right: 20 } });
     const chunks = [];
     doc.on('data', (chunk) => chunks.push(chunk));
     doc.on('end', () => resolve({ buffer: Buffer.concat(chunks), caseNumber }));
@@ -439,7 +441,7 @@ async function generateWarrantyCertificatePdf({ company, caseRow, workOrderHeade
     doc.fontSize(7).fillColor('#94a3b8').text(
       AR([header.phone && `هاتف: ${header.phone}`, header.address].filter(Boolean).join(' | ')),
       margin, pageHeight - margin - 14,
-      { width: w, align: 'center' }
+      { width: w, align: 'center', lineBreak: false }
     );
 
     doc.end();

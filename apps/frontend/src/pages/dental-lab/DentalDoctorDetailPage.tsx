@@ -50,7 +50,7 @@ import {
   recordDoctorBulkPayment,
   addInvoicePayment,
   fetchInvoicePdf,
-  getInvoicePaymentLink,
+  fetchInvoicePaymentLink,
   CASE_STATUS_MAP,
   PRIORITY_CONFIG,
   PAYMENT_STATUS_MAP,
@@ -644,7 +644,7 @@ export default function DentalDoctorDetailPage() {
   /* ---------------------------- Copy Payment Link ---------------------------- */
   const handleCopyPaymentLink = async (invId: string) => {
     try {
-      const res = await getInvoicePaymentLink(invId);
+      const res = await fetchInvoicePaymentLink(invId);
       if (res.checkoutUrl) {
         await navigator.clipboard.writeText(res.checkoutUrl);
         toast.success("تم نسخ رابط الدفع الإلكتروني للحافظة");
