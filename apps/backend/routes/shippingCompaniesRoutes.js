@@ -114,6 +114,33 @@ const ensureDefaultShippingCompanies = async (prisma, companyId) => {
         },
       }).catch((e) => console.warn('Could not auto-seed QP Express:', e.message));
     }
+    if (company?.turboApiKey) {
+      await prisma.shippingCompany.updateMany({
+        where: {
+          companyId,
+          providerKey: 'TURBO',
+          OR: [{ apiKey: null }, { apiKey: '' }],
+        },
+        data: {
+          apiKey: company.turboApiKey,
+          integrationMode: 'LIVE',
+        },
+      }).catch(() => {});
+    }
+
+    if (company?.bostaApiKey) {
+      await prisma.shippingCompany.updateMany({
+        where: {
+          companyId,
+          providerKey: 'BOSTA',
+          OR: [{ apiKey: null }, { apiKey: '' }],
+        },
+        data: {
+          apiKey: company.bostaApiKey,
+          integrationMode: 'LIVE',
+        },
+      }).catch(() => {});
+    }
   } catch (err) {
     console.warn('⚠️ [SHIPPING-COMPANIES] Error ensuring default companies:', err.message);
   }
