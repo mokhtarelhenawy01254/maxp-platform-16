@@ -92,6 +92,7 @@ interface AuthContextType {
   logout: () => void;
   switchCompany: (companyId: string) => Promise<boolean>; // التبديل بين الشركات
   setDefaultCompany: (companyId: string) => Promise<boolean>; // تعيين الشركة الافتراضية
+  refreshUser: () => Promise<User | null>; // تحديث بيانات المستخدم والشركات والتطبيقات
   isSwitchingCompany: boolean; // هل يتم التبديل حالياً؟
 }
 
@@ -749,6 +750,49 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
   };
 
+  const refreshUser = async (): Promise<User | null> => {
+    try {
+      const token = tokenManager.getAccessToken();
+      if (!token) return null;
+
+      let mePath = '/auth/me';
+      try {
+        const parts = token.split('.');
+        const payloadBase64 = parts[1];
+        if (payloadBase64) {
+          const payloadJson = JSON.parse(atob(payloadBase64));
+          if (payloadJson?.role === 'CUSTOMER') {
+            mePath = '/public/customers/me';
+          }
+        }
+      } catch (e) {
+        // ignore decode error
+      }
+
+      const response = await fetch(`${getApiUrl()}${mePath}?t=${Date.now()}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        credentials: 'include',
+      });
+
+      if (response.ok || response.status === 304) {
+        const data = await response.json();
+        if (data.success) {
+          const userObj = data.data?.user || data.data;
+          setUser(userObj);
+          localStorage.setItem('user', JSON.stringify(userObj));
+          return userObj;
+        }
+      }
+      return null;
+    } catch (e) {
+      warnLog('⚠️ [AuthProvider] Failed to refresh user profile:', e);
+      return null;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
@@ -758,6 +802,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     logout,
     switchCompany,
     setDefaultCompany,
+    refreshUser,
     isSwitchingCompany,
   };
 

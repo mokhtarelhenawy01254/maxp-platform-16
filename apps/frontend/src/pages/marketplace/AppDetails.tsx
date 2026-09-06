@@ -72,7 +72,7 @@ type PlanOption = "PAY_PER_USE" | "MONTHLY" | "YEARLY";
 export default function AppDetails() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { t } = useTranslation();
   const [app, setApp] = useState<MPA | null>(null);
   const [loading, setLoading] = useState(true);
@@ -97,8 +97,6 @@ export default function AppDetails() {
       } else if (activeModel === "SUBSCRIPTION") {
         setSelectedPlan(billingCycle === "yearly" ? "YEARLY" : "MONTHLY");
       } else if (app.unitPrice && Number(app.unitPrice) > 0) {
-        setSelectedPlan("PAY_PER_USE");
-      } else if (app.pricingModel === "PAY_PER_USE") {
         setSelectedPlan("PAY_PER_USE");
       } else {
         setSelectedPlan("MONTHLY");
@@ -137,7 +135,10 @@ export default function AppDetails() {
       await apiClient.post(`/marketplace/apps/${app.slug}/install`, payload);
       toast.success("تم تفعيل التطبيق بنجاح");
       setIsInstalled(true);
-      await fetchAppDetails();
+      await Promise.allSettled([
+        fetchAppDetails(),
+        refreshUser?.(),
+      ]);
     } catch (err: unknown) {
       const e = err as { response?: { data?: { message?: string } } };
       toast.error(e.response?.data?.message || "فشل تفعيل التطبيق");
@@ -153,7 +154,10 @@ export default function AppDetails() {
       await apiClient.post(`/marketplace/apps/${app.slug}/uninstall`);
       toast.success("تم تعطيل التطبيق");
       setIsInstalled(false);
-      await fetchAppDetails();
+      await Promise.allSettled([
+        fetchAppDetails(),
+        refreshUser?.(),
+      ]);
     } catch {
       toast.error("فشل تعطيل التطبيق");
     } finally {

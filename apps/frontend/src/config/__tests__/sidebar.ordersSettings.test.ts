@@ -39,4 +39,19 @@ describe("orders settings sidebar links", () => {
       ),
     ).toBe(true);
   });
+
+  it("recognizes active apps when provided as object shapes or mixed casing", () => {
+    const config = createOwnerSidebar([
+      "STORE",
+      { slug: "CUSTOMER-BLOCKS" },
+      { app: { slug: "order-automation" } },
+    ] as any);
+    const ordersSection = config.find((section) => section.id === "orders");
+    const visibleItems =
+      ordersSection?.items?.filter((item) => item.hidden !== true) || [];
+
+    expect(ordersSection?.hidden).toBe(false);
+    expect(visibleItems.some((item) => item.to === "/settings/customer-blocks")).toBe(true);
+    expect(visibleItems.some((item) => item.to === "/orders/automation")).toBe(true);
+  });
 });

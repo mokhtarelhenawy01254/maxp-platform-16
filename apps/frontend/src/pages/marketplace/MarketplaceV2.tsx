@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import { useAuth } from "../../hooks/useAuthSimple";
 import { toast } from "sonner";
 import {
   Package, Loader2,
@@ -142,6 +143,7 @@ function getCategoryDisplayCategories(categories: Category[]) {
 
 export default function MarketplaceV2() {
   const { t } = useTranslation();
+  const { refreshUser } = useAuth();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -220,6 +222,7 @@ export default function MarketplaceV2() {
       toast.success(res.data.message || t('marketplace.deactivatedSuccess', { name: app.name }));
       setApps(prev => prev.map(a => a.slug === app.slug ? { ...a, isInstalled: false } : a));
       setConfirmUninstallApp(null);
+      await refreshUser?.();
     } catch (error: unknown) {
       const e = error as MarketplaceApiError;
       if (e.response?.status === 401) { toast.error(t('marketplace.pleaseLogin')); return; }

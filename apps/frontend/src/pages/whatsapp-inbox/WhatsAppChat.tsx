@@ -935,9 +935,9 @@ const WhatsAppChat: React.FC<WhatsAppChatProps> = ({ companyId, superAdminMode }
       <QuickOrderModal
         isOpen={showOrderModal}
         onClose={() => setShowOrderModal(false)}
-        conversationId={conversation.id}
-        customerId={conversation.customer.id}
-        customerName={conversation.customer.name}
+        conversationId={conversation?.id}
+        customerId={conversation?.customer?.id}
+        customerName={conversation?.customer?.name}
         platform="whatsapp"
         pageName="WhatsApp"
         onOrderCreated={(orderId) => {

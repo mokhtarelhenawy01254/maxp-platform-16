@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { apiClient } from "../../../../services/apiClient";
+import { useAuth } from "../../../../hooks/useAuthSimple";
 import {
   QuantityOffer,
   createEmptyQuantityOffer,
@@ -38,6 +39,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
   hasVariants,
   productName,
 }) => {
+  const { refreshUser } = useAuth();
   const referenceUnitPrice = getReferenceUnitPrice(baseUnitPrice, currentUnitPrice);
 
   const [appStatus, setAppStatus] = React.useState<
@@ -93,6 +95,7 @@ export const QuantityOffersTab: React.FC<QuantityOffersTabProps> = ({
       });
       toast.success("تم تفعيل تطبيق عروض الكميات بنجاح لمتجرك");
       setAppStatus("installed");
+      await refreshUser?.();
     } catch (error) {
       console.error("Failed to activate quantity offers app:", error);
       toast.error("فشل تفعيل التطبيق، يرجى المحاولة من صفحة الماركت بليس");

@@ -39,15 +39,27 @@ export const AppAccessRoute: React.FC<AppAccessRouteProps> = ({
     return <>{children}</>;
   }
 
-  const activeApps = Array.isArray(user?.company?.activeApps)
-    ? user.company.activeApps
-    : Array.isArray(user?.activeApps)
-      ? user.activeApps
-      : [];
+  const currentCompany = user?.companies?.find((c) => c.isCurrent) || user?.company;
+  const activeApps = Array.isArray(currentCompany?.activeApps)
+    ? currentCompany.activeApps
+    : Array.isArray(user?.company?.activeApps)
+      ? user.company.activeApps
+      : Array.isArray(user?.activeApps)
+        ? user.activeApps
+        : [];
 
-  const hasAccess = requiredAppSlugs.some((slug) =>
-    activeApps.some((a) => String(a?.slug || a) === slug),
-  );
+  const hasAccess = requiredAppSlugs.some((requiredSlug) => {
+    const target = requiredSlug.trim().toLowerCase();
+    return activeApps.some((a) => {
+      if (typeof a === 'string') return a.trim().toLowerCase() === target;
+      if (a && typeof a === 'object') {
+        const obj = a as { slug?: string; app?: { slug?: string } };
+        if (typeof obj.slug === 'string' && obj.slug.trim().toLowerCase() === target) return true;
+        if (obj.app && typeof obj.app.slug === 'string' && obj.app.slug.trim().toLowerCase() === target) return true;
+      }
+      return false;
+    });
+  });
 
   if (!hasAccess) {
     return <AccessDenied message="هذه الميزة تتطلب تفعيل تطبيق مخصص. يرجى تفعيل التطبيق من متجر التطبيقات." />;

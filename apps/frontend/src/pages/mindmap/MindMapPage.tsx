@@ -346,7 +346,7 @@ export const createMasterBlueprint = (companyName?: string): MapNode[] => [
 
 export default function MindMapPage() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const companyName = user?.company?.name || "";
   const companyId = user?.company?.id || user?.companyId || "default";
 
@@ -369,9 +369,9 @@ export default function MindMapPage() {
     if (isSuperAdmin || installedLocally) return true;
     return (
       companyActiveApps.includes("executable-mindmap") ||
-      companyActiveApps.includes("cat-app-executable-mindmap")
+      companyActiveApps.includes("mindmap")
     );
-  }, [isSuperAdmin, installedLocally, companyActiveApps]);
+  }, [companyActiveApps, isSuperAdmin, installedLocally]);
 
   // تفعيل التطبيق بنقرة واحدة
   const handleInstallMindmap = async () => {
@@ -382,6 +382,7 @@ export default function MindMapPage() {
       });
       setInstalledLocally(true);
       toast.success(`🎉 تم تفعيل تطبيق الخرائط الذهنية بنجاح لشركة ${companyName || ""}`);
+      await refreshUser?.();
     } catch (err: any) {
       toast.error(err?.response?.data?.message || "تعذر تفعيل التطبيق، يرجى تفعيله من متجر التطبيقات");
     } finally {

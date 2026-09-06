@@ -233,12 +233,17 @@ export const getSidebarConfig = (
     const isFeatureEnabled = (key: string): boolean => FEATURE_FLAG_MAP[key] === true;
 
     const isAppActive = (slug: string) => {
-        // ponytail: isSuperCompany removed — app visibility now purely per activeApps
-
-        // Ensure activeApps is an array and check for the slug
-        return Array.isArray(activeApps) && activeApps.some(a =>
-            typeof a === 'string' && a.toLowerCase() === slug.toLowerCase()
-        );
+        if (!slug || !Array.isArray(activeApps)) return false;
+        const targetSlug = slug.trim().toLowerCase();
+        return activeApps.some(a => {
+            if (typeof a === 'string') return a.trim().toLowerCase() === targetSlug;
+            if (a && typeof a === 'object') {
+                const obj = a as { slug?: string; app?: { slug?: string } };
+                if (typeof obj.slug === 'string' && obj.slug.trim().toLowerCase() === targetSlug) return true;
+                if (obj.app && typeof obj.app.slug === 'string' && obj.app.slug.trim().toLowerCase() === targetSlug) return true;
+            }
+            return false;
+        });
     };
     const isAnyAppActive = (slugs: string[]) => slugs.some((slug) => isAppActive(slug));
     const hasMultipleCompanies = (user?.companies?.length ?? 0) > 1;

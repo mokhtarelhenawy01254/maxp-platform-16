@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
+import { useAuth } from "../../hooks/useAuthSimple";
 import { toast } from "sonner";
 import {
   Package, Settings2, X, Loader2, CheckCircle2,
@@ -196,6 +197,7 @@ const STARTER_APPS = [
 export function MyApps() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { refreshUser } = useAuth();
 
   const [apps, setApps] = useState<InstalledApp[]>([]);
   const [loading, setLoading] = useState(true);
@@ -250,6 +252,7 @@ export function MyApps() {
       if (selectedAppForDrawer?.id === confirmUninstall.id) {
         setSelectedAppForDrawer(null);
       }
+      await refreshUser?.();
     } catch {
       toast.error(
         t("marketplace.deactivationError", "حدث خطأ أثناء إلغاء التفعيل، يرجى المحاولة لاحقاً")
@@ -296,6 +299,7 @@ export function MyApps() {
     setSelectedIds(new Set());
     setIsBulkDeleting(false);
     setConfirmBulkUninstall(false);
+    await refreshUser?.();
   };
 
   const handleExportSelected = () => {
