@@ -2572,21 +2572,12 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     ].some((token) => sizeGuideCategoryValue.includes(token.toLowerCase())) ||
     (variantSizeValues.length > 0 && variantSizeValues.every((value) => /^\d{1,2}$/.test(value)));
   const hasCustomProductSizeGuide = Boolean(product?.sizeGuide && product.sizeGuide.trim());
-  const showSizeGuide =
-    sizeGuideVisibility === 'hidden'
-      ? false
-      : hasCustomProductSizeGuide
-        ? true
-        : sizeGuideVisibility === 'shoes-only'
-          ? productLooksLikeShoes && (hasCustomProductSizeGuide || rawSizeGuideQuickRows.length > 0)
-          : sizeGuideVisibility === 'always'
-            ? true
-            : Boolean(hasCustomProductSizeGuide || rawSizeGuideQuickRows.length > 0);
+  const showSizeGuide = sizeGuideVisibility !== 'hidden' && hasCustomProductSizeGuide;
   const fitNote = showSizeGuide ? rawFitNote : '';
   const sizeGuideHref = showSizeGuide ? rawSizeGuideHref : '';
   const sizeGuideQuickRows = showSizeGuide ? rawSizeGuideQuickRows : [];
   const sizeGuideQuickNote = showSizeGuide ? rawSizeGuideQuickNote : '';
-  const canOpenSizeGuide = Boolean(showSizeGuide && hasCustomProductSizeGuide);
+  const canOpenSizeGuide = showSizeGuide;
   const breadcrumbHomeLabel = prefersArabicCopy ? 'الرئيسية' : 'Home';
   const breadcrumbShopLabel = prefersArabicCopy ? 'المتجر' : 'Shop';
   const breadcrumbClassName = isBiteRush
@@ -7023,7 +7014,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
     return (
       <>
-        {sizeGuideDialog}
+        {canOpenSizeGuide ? sizeGuideDialog : null}
         {shippingPolicyDialog}
         {questionDialog}
         {mobileVariantSheet}
@@ -8620,7 +8611,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
         {isWomenUtilityRail ? (
           <>
-            {sizeGuideDialog}
+            {canOpenSizeGuide ? sizeGuideDialog : null}
             {shippingInteraction === 'modal' ? shippingPolicyDialog : null}
           </>
         ) : isVelaFashionDirectBuybox ? (
@@ -8637,8 +8628,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           <>{shippingInteraction === 'modal' ? shippingPolicyDialog : null}</>
         ) : sizeGuideInteraction === 'modal' ? (
           <>
-            {sizeGuideTriggerButton}
-            {sizeGuideDialog}
+            {canOpenSizeGuide ? sizeGuideTriggerButton : null}
+            {canOpenSizeGuide ? sizeGuideDialog : null}
           </>
         ) : sizeGuideHref || fitNote ? (
           <div className={sizeGuideWrapperClassName}>
@@ -9220,7 +9211,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           label={prefersArabicCopy ? 'اشتر الآن' : 'Buy Now'}
         />
       )}
-      {sizeGuideDialog}
+      {canOpenSizeGuide ? sizeGuideDialog : null}
       {shippingDialog}
       {questionDialog}
     </section>
