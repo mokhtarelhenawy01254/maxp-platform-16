@@ -143,7 +143,7 @@ const SizeGuide: React.FC<SizeGuideProps> = ({ section, settings }) => {
           />
         </div>
       ) : null}
-      {!customProductSizeGuideHtml ? (
+      {!customProductSizeGuideHtml && rows.length > 0 ? (
         <div className="overflow-hidden rounded-[var(--radius)] border border-border">
           <table className="w-full border-collapse text-sm" aria-label={badge}>
             <caption className="sr-only">{title}</caption>

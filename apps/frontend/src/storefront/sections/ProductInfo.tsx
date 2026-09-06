@@ -2586,9 +2586,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const sizeGuideHref = showSizeGuide ? rawSizeGuideHref : '';
   const sizeGuideQuickRows = showSizeGuide ? rawSizeGuideQuickRows : [];
   const sizeGuideQuickNote = showSizeGuide ? rawSizeGuideQuickNote : '';
-  const canOpenSizeGuide = Boolean(
-    showSizeGuide && (hasCustomProductSizeGuide || rawSizeGuideQuickRows.length > 0)
-  );
+  const canOpenSizeGuide = Boolean(showSizeGuide && hasCustomProductSizeGuide);
   const breadcrumbHomeLabel = prefersArabicCopy ? 'الرئيسية' : 'Home';
   const breadcrumbShopLabel = prefersArabicCopy ? 'المتجر' : 'Shop';
   const breadcrumbClassName = isBiteRush
