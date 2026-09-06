@@ -55,6 +55,10 @@ export interface Product {
     canEditStock?: boolean;
     inventorySnapshot?: ProductInventorySnapshot | null;
   } | null;
+  metadata?: any;
+  hasQuantityOffers?: boolean;
+  quantityOffersCount?: number;
+  quantityOffers?: any[];
 }
 
 export type SortField = "name" | "price" | "stock" | "createdAt" | "updatedAt";

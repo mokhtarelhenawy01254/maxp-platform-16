@@ -4,13 +4,15 @@ import {
   FunnelIcon,
   XMarkIcon,
   AdjustmentsHorizontalIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 
-interface FiltersState {
+export interface FiltersState {
   searchQuery: string;
   categoryFilter: string;
   statusFilter: string;
   stockFilter: string;
+  offersOnly?: string;
   priceMin: string;
   priceMax: string;
   dateFrom: string;
@@ -18,10 +20,11 @@ interface FiltersState {
   tagsFilter: string;
 }
 
-interface ProductsFiltersProps {
+export interface ProductsFiltersProps {
   filters: FiltersState;
   categories: string[];
   allTags: string[];
+  offersCount?: number;
   showAdvancedFilters: boolean;
   onFilterChange: (key: keyof FiltersState, value: string) => void;
   onToggleAdvancedFilters: () => void;
@@ -32,6 +35,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
   filters,
   categories,
   allTags,
+  offersCount,
   showAdvancedFilters,
   onFilterChange,
   onToggleAdvancedFilters,
@@ -44,6 +48,7 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
     filters.categoryFilter !== "all" ? 1 : 0,
     filters.statusFilter !== "all" ? 1 : 0,
     filters.stockFilter !== "all" ? 1 : 0,
+    filters.offersOnly === "true" ? 1 : 0,
     filters.priceMin ? 1 : 0,
     filters.priceMax ? 1 : 0,
     filters.dateFrom ? 1 : 0,
@@ -55,22 +60,38 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
   const quickChips = [
     {
       label: "الكل",
-      isActive: filters.statusFilter === "all" && filters.stockFilter === "all",
+      isActive: filters.statusFilter === "all" && filters.stockFilter === "all" && !filters.offersOnly,
+      isSpecial: false,
+      icon: null,
       onClick: () => {
         onFilterChange("statusFilter", "all");
         onFilterChange("stockFilter", "all");
+        onFilterChange("offersOnly", "");
       },
     },
     {
       label: "منشور",
       isActive: filters.statusFilter === "published",
+      isSpecial: false,
+      icon: null,
       onClick: () => {
         onFilterChange("statusFilter", filters.statusFilter === "published" ? "all" : "published");
       },
     },
     {
+      label: "عروض الكميات" + (offersCount !== undefined && offersCount > 0 ? ` (${offersCount})` : ""),
+      isActive: filters.offersOnly === "true",
+      isSpecial: true,
+      icon: SparklesIcon,
+      onClick: () => {
+        onFilterChange("offersOnly", filters.offersOnly === "true" ? "" : "true");
+      },
+    },
+    {
       label: "مخزون منخفض",
       isActive: filters.stockFilter === "low-stock",
+      isSpecial: false,
+      icon: null,
       onClick: () => {
         onFilterChange("stockFilter", filters.stockFilter === "low-stock" ? "all" : "low-stock");
       },
@@ -78,6 +99,8 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
     {
       label: "نفد المخزون",
       isActive: filters.stockFilter === "out-of-stock",
+      isSpecial: false,
+      icon: null,
       onClick: () => {
         onFilterChange("stockFilter", filters.stockFilter === "out-of-stock" ? "all" : "out-of-stock");
       },
@@ -85,6 +108,8 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
     {
       label: "مسودة",
       isActive: filters.statusFilter === "draft",
+      isSpecial: false,
+      icon: null,
       onClick: () => {
         onFilterChange("statusFilter", filters.statusFilter === "draft" ? "all" : "draft");
       },
@@ -92,6 +117,8 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
     {
       label: "قيد المراجعة",
       isActive: filters.statusFilter === "in_review",
+      isSpecial: false,
+      icon: null,
       onClick: () => {
         onFilterChange("statusFilter", filters.statusFilter === "in_review" ? "all" : "in_review");
       },
@@ -185,20 +212,28 @@ const ProductsFilters: React.FC<ProductsFiltersProps> = ({
           </select>
         )}
 
-        {quickChips.map((chip) => (
-          <button
-            key={chip.label}
-            type="button"
-            onClick={chip.onClick}
-            className={`whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all shrink-0 ${
-              chip.isActive
-                ? "bg-indigo-600 text-white shadow-xs"
-                : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50"
-            }`}
-          >
-            {chip.label}
-          </button>
-        ))}
+        {quickChips.map((chip) => {
+          const Icon = chip.icon;
+          return (
+            <button
+              key={chip.label}
+              type="button"
+              onClick={chip.onClick}
+              className={`inline-flex items-center gap-1 whitespace-nowrap px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold transition-all shrink-0 ${
+                chip.isActive
+                  ? chip.isSpecial
+                    ? "bg-emerald-600 text-white shadow-xs"
+                    : "bg-indigo-600 text-white shadow-xs"
+                  : chip.isSpecial
+                    ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 border border-emerald-200/60 dark:border-emerald-800/40"
+                    : "bg-gray-100 dark:bg-gray-700/70 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-200/50 dark:border-gray-600/50"
+              }`}
+            >
+              {Icon && <Icon className="w-3.5 h-3.5" />}
+              <span>{chip.label}</span>
+            </button>
+          );
+        })}
 
         {activeCount > 0 && (
           <button

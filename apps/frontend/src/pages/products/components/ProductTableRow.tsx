@@ -15,6 +15,7 @@ import {
   PhotoIcon,
   EyeSlashIcon,
   PaperAirplaneIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import {
   canApprove,
@@ -104,6 +105,18 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
     product.merchantContext?.stockLocationLabel;
   const hasImage = !!(product.mainImage || (product.images && product.images.length > 0));
   const [imageError, setImageError] = useState(false);
+
+  const quantityOffersTooltip = React.useMemo(() => {
+    if (!product.hasQuantityOffers) return "";
+    if (product.quantityOffers && product.quantityOffers.length > 0) {
+      const summary = product.quantityOffers
+        .slice(0, 3)
+        .map((o) => o.buyText || `${o.quantity} قطع بسعر ${o.unitPrice}`)
+        .join(" | ");
+      return `عروض الكميات: ${summary}${product.quantityOffers.length > 3 ? "..." : ""} (انقر للتعديل)`;
+    }
+    return `يحتوي هذا المنتج على عروض كميات أو خصومات حجمية نشطة (انقر للتعديل)`;
+  }, [product]);
 
   const openStorefront = () => {
     prepareStorefrontContext();
@@ -199,12 +212,12 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
         </td>
       )}
       <td className="px-6 py-4 whitespace-nowrap">
-        <a
-          href={getStorefrontUrl(product)}
-          onClick={prepareStorefrontContext}
-          className="flex items-center hover:opacity-80 transition-opacity"
-        >
-          <div className="flex-shrink-0 h-20 w-20 relative">
+        <div className="flex items-center">
+          <a
+            href={getStorefrontUrl(product)}
+            onClick={prepareStorefrontContext}
+            className="flex-shrink-0 h-20 w-20 relative hover:opacity-80 transition-opacity"
+          >
             {hasImage && !imageError ? (
               <img
                 src={getImageUrl(product.mainImage || product.images[0]) || ""}
@@ -219,12 +232,42 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
                 <PhotoIcon className="h-8 w-8 text-gray-400" />
               </div>
             )}
+          </a>
+          <div className="mr-4 flex flex-col gap-1">
+            <a
+              href={getStorefrontUrl(product)}
+              onClick={prepareStorefrontContext}
+              className="text-sm font-semibold text-gray-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors block"
+            >
+              {product.name}
+            </a>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-xs text-gray-500 dark:text-gray-400">{product.category}</span>
+              {product.hasQuantityOffers && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    window.open(
+                      `/products/${product.id}/edit?tab=quantity-offers`,
+                      "_blank",
+                      "noopener,noreferrer",
+                    )
+                  }
+                  title={quantityOffersTooltip}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors shadow-xs"
+                >
+                  <SparklesIcon className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <span>عروض كميات</span>
+                  {product.quantityOffersCount ? (
+                    <span className="font-mono text-[10px]">
+                      ({product.quantityOffersCount})
+                    </span>
+                  ) : null}
+                </button>
+              )}
+            </div>
           </div>
-          <div className="mr-4">
-            <div className="text-sm font-semibold text-gray-900 dark:text-white">{product.name}</div>
-            <div className="text-xs text-gray-500 dark:text-gray-400">{product.category}</div>
-          </div>
-        </a>
+        </div>
       </td>
       <td className="px-6 py-4 whitespace-nowrap">
         <div className="flex flex-col gap-1">

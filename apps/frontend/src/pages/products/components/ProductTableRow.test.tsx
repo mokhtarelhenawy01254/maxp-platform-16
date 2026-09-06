@@ -80,12 +80,41 @@ const renderProductRow = (product: Product = baseProduct) =>
   );
 
 describe("ProductTableRow", () => {
-  it("keeps SKU hidden in the products management table row", () => {
+  it("renders product name, category, and SKU in the table row", () => {
     renderProductRow();
 
     expect(screen.getByText("Swan Speaker")).toBeInTheDocument();
     expect(screen.getByText("Audio")).toBeInTheDocument();
-    expect(screen.queryByText(/SKU:/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(baseProduct.sku)).not.toBeInTheDocument();
+    expect(screen.getByText(baseProduct.sku)).toBeInTheDocument();
+    expect(screen.queryByText(/عروض كميات/i)).not.toBeInTheDocument();
+  });
+
+  it("renders quantity offers badge when product has active quantity offers", () => {
+    const productWithOffers: Product = {
+      ...baseProduct,
+      hasQuantityOffers: true,
+      quantityOffersCount: 2,
+      quantityOffers: [
+        {
+          id: "qo-1",
+          quantity: 2,
+          unitPrice: 400,
+          buyText: "اشتري 2 بـ 800",
+          isActive: true,
+        },
+        {
+          id: "qo-2",
+          quantity: 3,
+          unitPrice: 350,
+          buyText: "اشتري 3 بـ 1050",
+          isActive: true,
+        },
+      ],
+    };
+
+    renderProductRow(productWithOffers);
+
+    expect(screen.getByText(/عروض كميات/i)).toBeInTheDocument();
+    expect(screen.getByText("(2)")).toBeInTheDocument();
   });
 });

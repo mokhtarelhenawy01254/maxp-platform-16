@@ -62,6 +62,7 @@ const Products: React.FC = () => {
     hasActiveFilters,
     categories,
     allTags,
+    offersCount,
     sortedProducts,
     totalPages,
     startIndex,
@@ -340,6 +341,7 @@ const Products: React.FC = () => {
         filters={filters}
         categories={categories}
         allTags={allTags}
+        offersCount={offersCount}
         showAdvancedFilters={showAdvancedFilters}
         onFilterChange={handleFilterChange}
         onToggleAdvancedFilters={() => setShowAdvancedFilters((v) => !v)}

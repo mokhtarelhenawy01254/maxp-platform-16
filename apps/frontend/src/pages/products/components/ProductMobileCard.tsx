@@ -244,6 +244,17 @@ export const ProductMobileCard: React.FC<ProductMobileCardProps> = ({
                 {product.variantsCount} متغير
               </span>
             )}
+            {product.hasQuantityOffers && (
+              <Link
+                to={`/products/${product.id}/edit?tab=quantity-offers`}
+                className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.2 text-[9px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors"
+                title="عروض الكميات متاحة - انقر للتعديل"
+              >
+                <span>⚡</span>
+                <span>عروض كميات</span>
+                {product.quantityOffersCount ? ` (${product.quantityOffersCount})` : ""}
+              </Link>
+            )}
             {product.isHidden && (
               <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[9px] font-semibold bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300">
                 <EyeSlashIcon className="h-2.5 w-2.5 ml-0.5" />

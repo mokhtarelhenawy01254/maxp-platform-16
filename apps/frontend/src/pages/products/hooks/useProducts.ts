@@ -10,6 +10,7 @@ import {
 import { FiltersState } from "../components/ProductsFilters";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { buildStoreUrl } from "../../../utils/storeUrl";
+import { normalizeQuantityOffers } from "../../../utils/quantityOffers";
 import {
   canManageProductWorkflowByRole,
   canSubmitProductReviewByRole,
@@ -31,6 +32,7 @@ const initialFilters: FiltersState = {
   categoryFilter: "all",
   statusFilter: "all",
   stockFilter: "all",
+  offersOnly: "",
   priceMin: "",
   priceMax: "",
   dateFrom: "",
@@ -131,6 +133,38 @@ export const useProducts = () => {
         0,
       );
 
+      const rawMetadata = p.metadata !== undefined ? p.metadata : fallback?.metadata;
+      let rawOffers: any[] = [];
+      if (Array.isArray(p.quantityOffers) && p.quantityOffers.length > 0) {
+        rawOffers = p.quantityOffers;
+      } else if (rawMetadata) {
+        try {
+          rawOffers = normalizeQuantityOffers(rawMetadata);
+        } catch {
+          rawOffers = [];
+        }
+      }
+
+      const activeOffers = (rawOffers || []).filter(
+        (offer: any) => offer && offer.isActive !== false,
+      );
+
+      const rawDiscounts = Array.isArray(p.volumeDiscounts)
+        ? p.volumeDiscounts
+        : Array.isArray(fallback?.volumeDiscounts)
+          ? fallback.volumeDiscounts
+          : [];
+      const activeVolumeDiscounts = rawDiscounts.filter(
+        (d: any) => d && d.isActive !== false,
+      );
+
+      const hasQuantityOffers =
+        activeOffers.length > 0 || activeVolumeDiscounts.length > 0;
+      const quantityOffersCount =
+        activeOffers.length > 0
+          ? activeOffers.length
+          : activeVolumeDiscounts.length;
+
       return {
         id: p.id,
         slug: p.slug || fallback?.slug || undefined,
@@ -196,6 +230,10 @@ export const useProducts = () => {
         ),
         productType: resolvedVariantsCount > 0 ? "variable" : "simple",
         variantsCount: resolvedVariantsCount,
+        metadata: rawMetadata,
+        hasQuantityOffers,
+        quantityOffersCount,
+        quantityOffers: activeOffers,
       };
     },
     [],
@@ -233,6 +271,7 @@ export const useProducts = () => {
     filters.categoryFilter !== "all" ||
     filters.statusFilter !== "all" ||
     filters.stockFilter !== "all" ||
+    filters.offersOnly ||
     filters.priceMin ||
     filters.priceMax ||
     filters.dateFrom ||
@@ -291,6 +330,7 @@ export const useProducts = () => {
 
   const categories = Array.from(new Set(products.map((p) => p.category)));
   const allTags = Array.from(new Set(products.flatMap((p) => p.tags || [])));
+  const offersCount = products.filter((p) => p.hasQuantityOffers).length;
 
   const filteredProducts = hasActiveFilters
     ? products.filter((p) => {
@@ -305,6 +345,9 @@ export const useProducts = () => {
         const matchesStatus = matchesWorkflowFilter(p.workflow, filters.statusFilter);
         const stockStatus = getStockStatus(p);
         const matchesStock = filters.stockFilter === "all" || stockStatus === filters.stockFilter;
+        const matchesOffers =
+          !filters.offersOnly ||
+          (filters.offersOnly === "true" ? Boolean(p.hasQuantityOffers) : !p.hasQuantityOffers);
         const matchesPriceMin =
           !filters.priceMin || (p.price != null && p.price >= parseFloat(filters.priceMin));
         const matchesPriceMax =
@@ -323,6 +366,7 @@ export const useProducts = () => {
           matchesCategory &&
           matchesStatus &&
           matchesStock &&
+          matchesOffers &&
           matchesPriceMin &&
           matchesPriceMax &&
           matchesDateFrom &&
@@ -639,6 +683,7 @@ export const useProducts = () => {
     hasActiveFilters,
     categories,
     allTags,
+    offersCount,
     sortedProducts,
     totalPages,
     startIndex,

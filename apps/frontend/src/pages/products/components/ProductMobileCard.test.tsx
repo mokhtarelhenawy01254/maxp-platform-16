@@ -98,4 +98,22 @@ describe("ProductMobileCard", () => {
     expect(fullEditLink).toBeInTheDocument();
     expect(fullEditLink).toHaveAttribute("href", "/products/product-101/edit");
   });
+
+  it("renders quantity offers badge linking directly to quantity-offers tab", () => {
+    const productWithOffers: Product = {
+      ...baseProduct,
+      hasQuantityOffers: true,
+      quantityOffersCount: 3,
+    };
+
+    renderCard(productWithOffers);
+
+    const offersBadge = screen.getByRole("link", { name: /عروض كميات/i });
+    expect(offersBadge).toBeInTheDocument();
+    expect(offersBadge).toHaveAttribute(
+      "href",
+      "/products/product-101/edit?tab=quantity-offers",
+    );
+    expect(screen.getByText("(3)")).toBeInTheDocument();
+  });
 });
