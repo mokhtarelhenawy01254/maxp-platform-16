@@ -443,14 +443,14 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
     const variantValues = normalizeVariantBadges(item, itemMetadata);
 
     return variantValues.color || variantValues.size ? (
-      <div className="flex items-center gap-1.5 flex-nowrap max-w-full overflow-x-auto py-0.5 no-scrollbar">
+      <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
         {variantValues.color && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-[11px] sm:text-xs font-semibold border border-blue-200 dark:border-blue-800 whitespace-nowrap shrink-0">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 rounded-md text-xs sm:text-sm font-semibold border border-blue-200 dark:border-blue-800">
             🎨 {variantValues.color}
           </span>
         )}
         {variantValues.size && (
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md text-[11px] sm:text-xs font-semibold border border-purple-200 dark:border-purple-800 whitespace-nowrap shrink-0">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 sm:px-2.5 sm:py-1 bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 rounded-md text-xs sm:text-sm font-semibold border border-purple-200 dark:border-purple-800">
             📏 {variantValues.size}
           </span>
         )}
@@ -477,117 +477,113 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
         key={`${item.id || item.productId || "item"}-${index}`}
         className="p-3.5 sm:p-6 hover:bg-gray-50 dark:hover:bg-gray-900/30 transition-colors"
       >
-        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-          <div className="flex gap-3 sm:gap-4 items-start flex-1 min-w-0">
-            <div className="flex-shrink-0">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
-                {productImage ? (
-                  <img
-                    src={productImage}
-                    alt={item.productName}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <PhotoIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-500" />
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 mb-0.5 truncate">
-                    {item.productName}
-                  </h4>
-
-                  {(item.productSku) && (
-                    <div className="inline-flex items-center gap-1.5 rounded bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 mb-2">
-                      <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">SKU</span>
-                      <span className="text-xs font-mono font-semibold text-blue-700 dark:text-blue-300">
-                        {item.productSku}
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
-                    {stockInfo.stock > 0 && (
-                      <span
-                        className={`font-semibold ${
-                          stockInfo.status === "available"
-                            ? "text-green-600 dark:text-green-400"
-                            : stockInfo.status === "low"
-                              ? "text-orange-600 dark:text-orange-400"
-                              : "text-red-600 dark:text-red-400"
-                        }`}
-                      >
-                        {stockInfo.status === "available"
-                          ? "🟢 متوفر"
-                          : stockInfo.status === "low"
-                            ? `🟡 متبقي ${stockInfo.stock}`
-                            : "🔴 نفذ"}
-                      </span>
-                    )}
-                  </div>
-
-                  {quantityOfferSummary ? (
-                    <div className="mb-2 flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className="inline-flex items-center gap-1 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs sm:text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
-                        عرض كميات
-                      </span>
-                      <span className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs sm:text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        {quantityOfferSummary.offerLabel}
-                      </span>
-                      {quantityOfferSummary.freeShipping ? (
-                        <span className="inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs sm:text-sm font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
-                          شحن مجاني
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : null}
-
-                  {renderVariantBadges(item, itemMetadata)}
+        <div className="flex gap-3 sm:gap-4">
+          <div className="flex-shrink-0">
+            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600">
+              {productImage ? (
+                <img
+                  src={productImage}
+                  alt={item.productName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center">
+                  <PhotoIcon className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-500" />
                 </div>
-
-                {isEditing && (
-                  <div className="relative flex-shrink-0">
-                    <button
-                      onClick={() =>
-                        setOpenMenuIndex(openMenuIndex === index ? null : index)
-                      }
-                      className="p-1.5 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                    >
-                      <EllipsisVerticalIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                    </button>
-
-                    {openMenuIndex === index && (
-                      <>
-                        <div
-                          className="fixed inset-0 z-10"
-                          onClick={() => setOpenMenuIndex(null)}
-                        />
-                        <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
-                          <button
-                            onClick={() => handleDeleteClick(index, item)}
-                            className="w-full px-4 py-2 text-right text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                            <span>حذف المنتج</span>
-                          </button>
-                        </div>
-                      </>
-                    )}
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           </div>
 
-          <div className="w-full sm:w-auto mt-2 pt-2.5 border-t border-gray-100 dark:border-gray-800 sm:border-t-0 sm:mt-0 sm:pt-0">
-            <div className="grid grid-cols-3 gap-2 sm:gap-4 items-center bg-gray-50/70 dark:bg-gray-800/40 p-2 sm:p-0 rounded-xl sm:bg-transparent sm:dark:bg-transparent">
-              <div className="text-center sm:text-right">
-                <label className="block text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <div className="flex-1 min-w-0">
+                <h4 className="text-sm sm:text-base font-bold text-gray-900 dark:text-gray-100 mb-0.5">
+                  {item.productName}
+                </h4>
+
+                {(item.productSku) && (
+                  <div className="inline-flex items-center gap-1.5 rounded bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 mb-2">
+                    <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider">SKU</span>
+                    <span className="text-xs font-mono font-semibold text-blue-700 dark:text-blue-300">
+                      {item.productSku}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex items-center gap-3 text-xs sm:text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  {stockInfo.stock > 0 && (
+                    <span
+                      className={`font-semibold ${
+                        stockInfo.status === "available"
+                          ? "text-green-600 dark:text-green-400"
+                          : stockInfo.status === "low"
+                            ? "text-orange-600 dark:text-orange-400"
+                            : "text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      {stockInfo.status === "available"
+                        ? "🟢 متوفر"
+                        : stockInfo.status === "low"
+                          ? `🟡 متبقي ${stockInfo.stock}`
+                          : "🔴 نفذ"}
+                    </span>
+                  )}
+                </div>
+
+                {quantityOfferSummary ? (
+                  <div className="mb-3 flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs sm:text-sm font-semibold text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/20 dark:text-amber-300">
+                      عرض كميات
+                    </span>
+                    <span className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs sm:text-sm font-medium text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                      {quantityOfferSummary.offerLabel}
+                    </span>
+                    {quantityOfferSummary.freeShipping ? (
+                      <span className="inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-emerald-50 px-2 py-0.5 sm:px-2.5 sm:py-1 text-xs sm:text-sm font-semibold text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/20 dark:text-emerald-300">
+                        شحن مجاني
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {renderVariantBadges(item, itemMetadata)}
+              </div>
+
+              {isEditing && (
+                <div className="relative flex-shrink-0">
+                  <button
+                    onClick={() =>
+                      setOpenMenuIndex(openMenuIndex === index ? null : index)
+                    }
+                    className="p-1.5 sm:p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <EllipsisVerticalIcon className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+                  </button>
+
+                  {openMenuIndex === index && (
+                    <>
+                      <div
+                        className="fixed inset-0 z-10"
+                        onClick={() => setOpenMenuIndex(null)}
+                      />
+                      <div className="absolute left-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20">
+                        <button
+                          onClick={() => handleDeleteClick(index, item)}
+                          className="w-full px-4 py-2 text-right text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                        >
+                          <TrashIcon className="w-4 h-4" />
+                          <span>حذف المنتج</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-3 gap-2 sm:gap-4 items-center sm:items-end mt-3 pt-2 sm:pt-0 border-t border-gray-100 dark:border-gray-800 sm:border-t-0 bg-gray-50/70 dark:bg-gray-800/40 p-2 sm:p-0 rounded-xl sm:bg-transparent sm:dark:bg-transparent">
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 sm:mb-1.5">
                   💰 السعر
                 </label>
                 {isEditing ? (
@@ -613,19 +609,19 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                     )}
                   </div>
                 ) : (
-                  <p className="text-xs sm:text-base font-bold text-gray-900 dark:text-gray-100 truncate">
+                  <p className="text-xs sm:text-base font-bold text-gray-900 dark:text-gray-100">
                     {formatPrice(item.price || 0)}
                   </p>
                 )}
               </div>
 
-              <div className="text-center">
-                <label className="block text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 sm:mb-1.5">
                   📦 الكمية
                 </label>
                 {isEditing ? (
                   <div>
-                    <div className="flex items-center justify-center gap-0.5 sm:gap-1">
+                    <div className="flex items-center gap-0.5 sm:gap-1">
                       <button
                         onClick={() =>
                           decrementQuantity(index, item.quantity || 1)
@@ -675,11 +671,11 @@ const OrderItemsCard: React.FC<OrderItemsCardProps> = ({
                 )}
               </div>
 
-              <div className="text-center sm:text-right">
-                <label className="block text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1">
+              <div>
+                <label className="block text-[11px] sm:text-xs font-semibold text-gray-600 dark:text-gray-400 mb-1 sm:mb-1.5">
                   💵 الإجمالي
                 </label>
-                <p className="text-xs sm:text-lg font-bold text-blue-600 dark:text-blue-400 truncate">
+                <p className="text-xs sm:text-lg font-bold text-blue-600 dark:text-blue-400">
                   {formatPrice(itemTotal)}
                 </p>
               </div>
