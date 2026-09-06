@@ -13532,6 +13532,8 @@ declare module 'react-i18next' {
         searchArea: string;
         areaCity: string;
         addressLine: string;
+        detailedAddress: string;
+        addressPlaceholder: string;
         nearestLandmark: string;
         customerNote: string;
         customerNotePlaceholder: string;

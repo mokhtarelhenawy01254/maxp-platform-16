@@ -13539,6 +13539,8 @@
     "searchArea": "اكتب اسم المنطقة أو المحافظة...",
     "areaCity": "المنطقة / المدينة",
     "addressLine": "العنوان",
+    "detailedAddress": "العنوان التفصيلي",
+    "addressPlaceholder": "أدخل العنوان التفصيلي...",
     "nearestLandmark": "أقرب معلم",
     "customerNote": "ملاحظة العميل",
     "customerNotePlaceholder": "ملاحظة العميل...",

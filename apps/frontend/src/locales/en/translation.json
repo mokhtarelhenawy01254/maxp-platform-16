@@ -13539,6 +13539,8 @@
     "searchArea": "Type area or governorate...",
     "areaCity": "Area / City",
     "addressLine": "Address",
+    "detailedAddress": "Detailed Address",
+    "addressPlaceholder": "Enter detailed address...",
     "nearestLandmark": "Nearest Landmark",
     "customerNote": "Customer Note",
     "customerNotePlaceholder": "Customer note...",

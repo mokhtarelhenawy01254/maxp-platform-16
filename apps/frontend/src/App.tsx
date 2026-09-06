@@ -2086,6 +2086,8 @@ const AppContent = () => {
             <Route path="/store/articles/:slug" element={<StorefrontArticlePage />} />
             {/* Phase 3 — COD Sales Landing (#3 of 4 product display shapes) */}
             <Route path="/funnel/:slug" element={<FunnelCodSalesPage />} />
+            <Route path="/p/:slug" element={<FunnelCodSalesPage />} />
+            <Route path="/products/:slug" element={<FunnelCodSalesPage />} />
             {/* New Storefront Theme Engine - Fully Isolated */}
             <Route path="/store/*" element={<StorefrontShell />} />
             <Route path="/shop" element={<StorefrontShell />} />
