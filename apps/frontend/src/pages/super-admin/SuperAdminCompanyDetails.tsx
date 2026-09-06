@@ -71,7 +71,10 @@ const SuperAdminCompanyDetails = () => {
   const [specialties, setSpecialties] = useState<BusinessSpecialty[]>([]);
 
   useEffect(() => {
-    businessSpecialtyService.listPublicSpecialties().then(setSpecialties).catch(() => setSpecialties([]));
+    businessSpecialtyService
+      .listSpecialties()
+      .then((list) => setSpecialties(list.filter((s) => s.isActive)))
+      .catch(() => setSpecialties([]));
   }, []);
 
   const openLinkDialog = useCallback(() => {

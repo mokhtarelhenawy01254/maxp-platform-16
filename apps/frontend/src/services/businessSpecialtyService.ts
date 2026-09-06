@@ -121,6 +121,17 @@ export const businessSpecialtyService = {
       : [];
   },
 
+  async listPublicSpecialties(): Promise<BusinessSpecialty[]> {
+    try {
+      const response = await apiClient.get("/auth/business-specialties");
+      const data = unwrapData<{ items?: unknown[] } | unknown[]>(response.data, {});
+      const items = Array.isArray(data) ? data : ((data as any)?.items ?? []);
+      return Array.isArray(items) ? items.map(normalizeSpecialty) : [];
+    } catch {
+      return this.listSpecialties();
+    }
+  },
+
   async listAppOptions(): Promise<MarketplaceAppOption[]> {
     const response = await apiClient.get(
       "/super-admin/platform/business-specialties/app-options",
