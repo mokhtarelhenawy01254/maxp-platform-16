@@ -12,6 +12,68 @@ export interface RouteAccessUser {
 
 const SUPER_ADMIN_ROLE = "SUPER_ADMIN";
 
+const ROLE_SYNONYMS: Record<string, string> = {
+  // Moderator
+  "MODERATOR": "MODERATOR",
+  "موديريتور": "MODERATOR",
+  "مشرف": "MODERATOR",
+  "moderator": "MODERATOR",
+
+  // Company Admin
+  "COMPANY_ADMIN": "COMPANY_ADMIN",
+  "ADMIN": "COMPANY_ADMIN",
+  "مدير الشركة": "COMPANY_ADMIN",
+  "أدمن": "COMPANY_ADMIN",
+  "ادمن": "COMPANY_ADMIN",
+
+  // Owner
+  "OWNER": "OWNER",
+  "المالك": "OWNER",
+  "مالك": "OWNER",
+
+  // Manager
+  "MANAGER": "MANAGER",
+  "مدير": "MANAGER",
+
+  // Team Leader
+  "TEAM_LEADER": "TEAM_LEADER",
+  "Team Lead": "TEAM_LEADER",
+  "Team Leader": "TEAM_LEADER",
+  "قائد الفريق": "TEAM_LEADER",
+
+  // Employee
+  "EMPLOYEE": "EMPLOYEE",
+  "موظف": "EMPLOYEE",
+
+  // Agent
+  "AGENT": "AGENT",
+  "Agent": "AGENT",
+  "وكيل": "AGENT",
+
+  // HR Manager
+  "HR_MANAGER": "HR_MANAGER",
+  "مدير الموارد البشرية": "HR_MANAGER",
+
+  // Super Admin
+  "SUPER_ADMIN": "SUPER_ADMIN",
+  "سوبر أدمن": "SUPER_ADMIN",
+
+  // Merchant
+  "MERCHANT": "MERCHANT",
+  "تاجر": "MERCHANT",
+
+  // Affiliate
+  "AFFILIATE": "AFFILIATE",
+  "مسوق": "AFFILIATE",
+  "افيليت": "AFFILIATE",
+};
+
+export const normalizeRole = (role?: string | null): string => {
+  if (!role) return "";
+  const trimmed = role.trim();
+  return ROLE_SYNONYMS[trimmed] || ROLE_SYNONYMS[trimmed.toUpperCase()] || trimmed;
+};
+
 const COMPANY_ROLES = new Set([
   "COMPANY_ADMIN",
   "OWNER",
@@ -54,8 +116,14 @@ const PREFIX_ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
   { prefix: "/merchant-portal", roles: ["MERCHANT"] },
 ];
 
-export const isCompanyRole = (role?: string | null): boolean =>
-  Boolean(role && COMPANY_ROLES.has(role));
+export const isCompanyRole = (role?: string | null): boolean => {
+  if (!role) return false;
+  const normalized = normalizeRole(role);
+  if (normalized === SUPER_ADMIN_ROLE || normalized === "MERCHANT" || normalized === "AFFILIATE") {
+    return false;
+  }
+  return true;
+};
 
 /**
  * True when the given path may be opened by the user. Unknown/unguarded app
@@ -67,22 +135,28 @@ export const isPathAllowedForUser = (
   user?: RouteAccessUser | null,
 ): boolean => {
   if (!user) return false;
-  const role = user.role || "";
+  const rawRole = user.role || "";
+  const role = normalizeRole(rawRole);
   if (role === SUPER_ADMIN_ROLE) return true;
 
   // Special shells: only the matching role may open them.
   const roleGate = PREFIX_ROLE_GATES.find(
     (g) => path === g.prefix || path.startsWith(`${g.prefix}/`),
   );
-  if (roleGate) return roleGate.roles.includes(role);
+  if (roleGate) {
+    const allowedNormalized = roleGate.roles.map((r) => normalizeRole(r));
+    return allowedNormalized.includes(role) || roleGate.roles.includes(rawRole);
+  }
 
-  const exact = EXACT_ROUTE_PERMISSIONS[path];
+  const cleanPath = path.split("#")[0]?.split("?")[0] || path;
+
+  const exact = EXACT_ROUTE_PERMISSIONS[cleanPath] || EXACT_ROUTE_PERMISSIONS[path];
   if (exact) {
     return exact.every((p) => (user.permissions || []).includes(p));
   }
 
   const prefixRule = PREFIX_ROUTE_PERMISSIONS.find((r) =>
-    path.startsWith(r.prefix),
+    cleanPath.startsWith(r.prefix),
   );
   if (prefixRule) {
     return prefixRule.permissions.every((p) =>

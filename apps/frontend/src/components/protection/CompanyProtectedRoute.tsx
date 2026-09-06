@@ -100,6 +100,8 @@ export const withCompanyProtection = (
   };
 };
 
+import { normalizeRole } from "../../utils/routeAccess";
+
 // Role-based protection
 interface RoleProtectedRouteProps {
   children: ReactNode;
@@ -131,7 +133,10 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
     );
   }
 
-  if (!allowedRoles.includes(user.role)) {
+  const userRoleNormalized = normalizeRole(user.role);
+  const normalizedAllowedRoles = allowedRoles.map((r) => normalizeRole(r));
+
+  if (!normalizedAllowedRoles.includes(userRoleNormalized) && !allowedRoles.includes(user.role)) {
     return fallback || <AccessDenied />;
   }
 

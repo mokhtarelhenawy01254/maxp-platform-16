@@ -54,7 +54,12 @@ export function DefaultPageSelector({
   const { t } = useTranslation();
 
   const selectedOption = useMemo(
-    () => DEFAULT_PAGE_OPTIONS.find((o) => o.value === value),
+    () =>
+      DEFAULT_PAGE_OPTIONS.find(
+        (o) =>
+          o.value === value ||
+          (o.value.startsWith("/whatsapp") && value.startsWith("/whatsapp")),
+      ),
     [value],
   );
 
