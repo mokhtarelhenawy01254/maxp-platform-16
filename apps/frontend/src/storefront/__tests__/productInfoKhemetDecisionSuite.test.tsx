@@ -121,6 +121,14 @@ const storefrontSettings = {
           },
         },
       },
+      'quantity-offers-pro': {
+        enabled: true,
+        settings: {
+          modules: {
+            renderOnProductPage: true,
+          },
+        },
+      },
     },
   },
   storefrontSettings: {
@@ -238,5 +246,45 @@ describe('KHEMET inline quick-order buybox', () => {
     );
 
     expect(await screen.findByTestId('inline-quantity-offers')).toBeInTheDocument();
+  });
+
+  it('renders variant selectors when quantity offers module renderOnProductPage is false', async () => {
+    mockUseStorefrontSettings.mockReturnValue({
+      settings: {
+        ...storefrontSettings,
+        storefront: {
+          ...storefrontSettings.storefront,
+          apps: {
+            ...storefrontSettings.storefront.apps,
+            'quantity-offers-pro': {
+              enabled: true,
+              settings: {
+                modules: {
+                  renderOnProductPage: false,
+                },
+              },
+            },
+          },
+        },
+      },
+      isLoading: false,
+      error: null,
+      previewThemeId: null,
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/store/products/khemet-cloud-sneaker?companyId=company123']}>
+        <Routes>
+          <Route
+            path="/store/products/:id"
+            element={<ProductInfo section={{ variant: 'elessi-care-buybox' }} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByTestId('inline-quantity-offers')).not.toBeInTheDocument();
+    expect((await screen.findAllByText('37')).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('أبيض').length).toBeGreaterThanOrEqual(1);
   });
 });

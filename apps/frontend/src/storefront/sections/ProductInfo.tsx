@@ -55,6 +55,7 @@ import {
   calculateVolumeDiscountPricing,
   getProductVolumeDiscounts,
 } from '../utils/volumeDiscounts';
+import { getActiveQuantityOffers } from '../../utils/quantityOffers';
 import { usePdpSelectionStore } from '../store/usePdpSelectionStore';
 import PdpQuickOrderPanel from './PdpQuickOrderPanel';
 import PlayfulStoryBuybox from './product-info/buyboxes/PlayfulStoryBuybox';
@@ -810,7 +811,31 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const shouldRenderInlinePdpQuickOrder =
     forceInlineKhemetQuickOrder ||
     (hasEmbeddedPdpCheckout && supportsInlineQuickOrderPlacement);
+  const quantityOffersEnabled = isStorefrontMarketplaceAppEnabled(
+    storefrontSettings,
+    'quantity-offers-pro',
+  );
+  const quantityOffersSettings = getStorefrontMarketplaceAppSettings(
+    storefrontSettings,
+    'quantity-offers-pro',
+  );
+  const quantityOffersModules =
+    (quantityOffersSettings['modules'] as Record<string, unknown> | undefined) ||
+    {};
+  const explicitQuantityOffers = getActiveQuantityOffers(product?.metadata);
+  const productVolumeDiscounts = getProductVolumeDiscounts(product);
+  const hasConfiguredQuantityOffers =
+    explicitQuantityOffers.length > 0 || productVolumeDiscounts.length > 0;
+  const hideWhenSingleOffer =
+    embeddedQuantityOffersSettings?.hideWhenSingleOffer === true;
+
+  const canRenderQuantityOffers =
+    quantityOffersEnabled &&
+    quantityOffersModules['renderOnProductPage'] !== false &&
+    (!hideWhenSingleOffer || hasConfiguredQuantityOffers);
+
   const shouldRenderInlineQuantityOffers =
+    canRenderQuantityOffers &&
     Boolean(embeddedQuantityOffersSection) &&
     embeddedQuantityOffersSettings?.placement === 'inline-buybox';
   const isPrimaryQuantityOffersDecision =
@@ -3298,6 +3323,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     placement: pdpQuickOrderPlacement,
     surfaceMode: pdpQuickOrderSurfaceMode,
     decisionMode:
+      isPrimaryQuantityOffersDecision &&
       typeof embeddedQuantityOffersSettings?.decisionMode === 'string'
         ? embeddedQuantityOffersSettings.decisionMode
         : undefined,
