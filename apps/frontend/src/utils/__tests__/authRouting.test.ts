@@ -65,7 +65,7 @@ describe("getPostAuthDestination", () => {
     ).toBe("/apps/whatsapp");
   });
 
-  it("ignores defaultPage equal to /apps and falls back to role", () => {
+  it("accepts defaultPage equal to /apps when explicitly configured", () => {
     expect(
       getPostAuthDestination({
         role: "AGENT",
@@ -135,7 +135,13 @@ describe("resolvePostAuthDestination precedence", () => {
     );
   });
 
-  it("falls back to the last saved page before logout", () => {
+  it("prioritizes saved default page over last saved path", () => {
+    const user = companyUser({ settings: { defaultPage: "/whatsapp#chat" } });
+    saveLastPath(user, "/settings");
+    expect(resolvePostAuthDestination(user)).toBe("/whatsapp#chat");
+  });
+
+  it("falls back to the last saved page before logout when default page is not set", () => {
     const user = companyUser();
     saveLastPath(user, "/settings");
     expect(resolvePostAuthDestination(user)).toBe("/settings");

@@ -1160,6 +1160,7 @@ const getCompanyUsers = async (req, res) => {
               lastLoginAt: true,
               createdAt: true,
               updatedAt: true,
+              settings: true,
               // ✅ Include Employee fields directly from User
               employeeNumber: true,
               contractType: true,
@@ -1293,6 +1294,15 @@ const getCompanyUsers = async (req, res) => {
       lastLoginAt: uc.user.lastLoginAt,
       createdAt: uc.user.createdAt,
       updatedAt: uc.user.updatedAt,
+      defaultPage: (() => {
+        try {
+          if (uc.user.settings) {
+            const parsed = JSON.parse(uc.user.settings);
+            return parsed.defaultPage || "/apps";
+          }
+        } catch { /* ignore */ }
+        return "/apps";
+      })(),
       // ✅ Include Employee (HR) data from User fields
       employee: uc.user.employeeNumber
         ? {
@@ -2089,6 +2099,7 @@ const updateUser = async (req, res) => {
               lastLoginAt: true,
               createdAt: true,
               updatedAt: true,
+              settings: true,
               // ✅ Include Employee fields directly from User
               employeeNumber: true,
               contractType: true,
@@ -2131,6 +2142,15 @@ const updateUser = async (req, res) => {
       lastLoginAt: userCompanyAfterUpdate.user.lastLoginAt,
       createdAt: userCompanyAfterUpdate.user.createdAt,
       updatedAt: userCompanyAfterUpdate.user.updatedAt,
+      defaultPage: (() => {
+        try {
+          if (userCompanyAfterUpdate.user.settings) {
+            const parsed = JSON.parse(userCompanyAfterUpdate.user.settings);
+            return parsed.defaultPage || "/apps";
+          }
+        } catch { /* ignore */ }
+        return "/apps";
+      })(),
       employee: userCompanyAfterUpdate.user.employeeNumber
         ? {
             id: userCompanyAfterUpdate.user.id, // Use user.id as employee id

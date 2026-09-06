@@ -34,10 +34,14 @@ const isSystemUserRole = (role?: string | null): boolean =>
 
 const readDefaultPage = (settings: unknown): string | null => {
   if (!settings) return null;
-  const parsed =
-    typeof settings === "string" ? JSON.parse(settings) : settings;
-  const page = (parsed as { defaultPage?: string } | null)?.defaultPage;
-  return page && page !== "/apps" ? page : null;
+  try {
+    const parsed =
+      typeof settings === "string" ? JSON.parse(settings) : settings;
+    const page = (parsed as { defaultPage?: string } | null)?.defaultPage;
+    return page && isAllowedPostAuthPath(page) ? page : null;
+  } catch {
+    return null;
+  }
 };
 
 /** Paths that are public / auth / checkout and must never be a post-auth landing. */
@@ -130,24 +134,24 @@ export const resolvePostAuthDestination = (
     return stateFromPath;
   }
 
-  // 2) Last app page before logout.
-  const lastPath = getLastPath(user);
-  if (lastPath && isResumePathAllowed(lastPath, user)) {
-    return lastPath;
-  }
-
-  // 3) Saved default landing page.
+  // 2) Saved default landing page (user's configured preference).
   try {
     const defaultPage = readDefaultPage(user?.settings);
-    if (defaultPage) return defaultPage;
+    if (defaultPage && isResumePathAllowed(defaultPage, user)) return defaultPage;
   } catch {
     // ignore malformed settings
   }
   try {
     const stored = localStorage.getItem("maxp-default-page");
-    if (stored && stored !== "/apps") return stored;
+    if (stored && isResumePathAllowed(stored, user)) return stored;
   } catch {
     // ignore storage errors
+  }
+
+  // 3) Last app page before logout.
+  const lastPath = getLastPath(user);
+  if (lastPath && isResumePathAllowed(lastPath, user)) {
+    return lastPath;
   }
 
   // 4) Role-based fallback.

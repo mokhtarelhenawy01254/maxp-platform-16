@@ -892,6 +892,14 @@ const UsersManagement: React.FC = () => {
         throw new Error(response.message || String(t("users.saveError")));
       }
 
+      if (isEditMode && editingUser?.id === user?.id && userForm.defaultPage) {
+        try {
+          localStorage.setItem("maxp-default-page", userForm.defaultPage);
+        } catch {
+          // storage unavailable
+        }
+      }
+
       toast.success(
         isEditMode ? "تم تحديث المستخدم بنجاح" : "تم إنشاء المستخدم بنجاح",
       );
