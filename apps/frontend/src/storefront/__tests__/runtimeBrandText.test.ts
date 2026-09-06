@@ -88,9 +88,10 @@ describe('runtime storefront brand text helpers', () => {
       settings: tatoSettings,
     });
 
-    expect(replaceThemeBrandText('ليه تختاري Swan؟')).toBe('ليه تختاري TA TI؟');
-    expect(replaceThemeBrandText('انضمي إلى عائلة Swan')).toBe('انضمي إلى عائلة TA TI');
-    expect(replaceThemeBrandText('خطوتك القادمة تبدأ من KHEMET LUXE')).toBe('خطوتك القادمة تبدأ من TA TI');
+    expect(replaceThemeBrandText('ليه تختاري Swan؟')).toBe('ليه تختاري TATO؟');
+    expect(replaceThemeBrandText('انضمي إلى عائلة Swan')).toBe('انضمي إلى عائلة TATO؟'.replace('؟', ''));
+    expect(replaceThemeBrandText('خطوتك القادمة تبدأ من KHEMET LUXE')).toBe('خطوتك القادمة تبدأ من TATO');
+    expect(replaceThemeBrandText('خطوتك القادمة تبدأ من TA TI')).toBe('خطوتك القادمة تبدأ من TATO');
   });
 
   it('preserves Swan brand name when the store itself is Swan', () => {

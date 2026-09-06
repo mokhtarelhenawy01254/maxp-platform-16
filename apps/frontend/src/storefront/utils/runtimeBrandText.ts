@@ -13,7 +13,7 @@ const escapeRegExp = (value: string): string =>
   value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const getRuntimeStoreName = (settings?: RuntimeStorefrontSettings): string =>
-  String(settings?.storefront?.settings?.storeName || settings?.company?.name || '').trim();
+  String(settings?.company?.name || settings?.storefront?.settings?.storeName || '').trim();
 
 const getThemeBrandNames = (theme: StorefrontTheme): string[] => {
   const names = [theme.header?.brandName, theme.name];
@@ -42,14 +42,13 @@ export const createStorefrontThemeTextReplacer = ({
   const themeBrandNames = getThemeBrandNames(theme);
   const displayStoreName =
     (isThemePreview && theme.header?.brandName) ||
+    settings?.company?.name ||
     runtimeStoreName ||
     theme.header?.brandName ||
-    settings?.company?.name ||
     theme.name;
   const shouldReplaceThemeBrand =
     !isThemePreview &&
-    Boolean(runtimeStoreName) &&
-    themeBrandNames.some((brandName) => brandName !== runtimeStoreName);
+    Boolean(displayStoreName);
 
   const isSwanStore =
     runtimeStoreName.trim().toLowerCase() === 'swan' ||
@@ -59,6 +58,8 @@ export const createStorefrontThemeTextReplacer = ({
     new Set([
       ...themeBrandNames,
       ...(!isSwanStore ? ['Swan'] : []),
+      'TA TI',
+      'TATI',
     ]),
   );
 
