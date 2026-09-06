@@ -71,6 +71,42 @@ export const isAllowedPostAuthPath = (path: string | null | undefined): boolean 
   return true;
 };
 
+const getDefaultPageKey = (user?: PostAuthUser | null): string => {
+  const companyId = user?.companyId || user?.company?.id;
+  const suffix = [user?.id, companyId].filter(Boolean).join(":");
+  return suffix ? `maxp_defaultPage:${suffix}` : "maxp_defaultPage";
+};
+
+export const saveDefaultPagePreference = (
+  user: PostAuthUser | null | undefined,
+  page: string,
+): void => {
+  if (!isAllowedPostAuthPath(page)) return;
+  try {
+    const key = getDefaultPageKey(user);
+    localStorage.setItem(key, page);
+    // Remove legacy un-scoped key if present
+    localStorage.removeItem("maxp-default-page");
+  } catch {
+    // storage unavailable
+  }
+};
+
+export const getDefaultPagePreference = (
+  user?: PostAuthUser | null,
+): string | null => {
+  try {
+    const key = getDefaultPageKey(user);
+    const stored = localStorage.getItem(key);
+    if (stored && isAllowedPostAuthPath(stored)) return stored;
+    const legacy = localStorage.getItem("maxp-default-page");
+    if (legacy && isAllowedPostAuthPath(legacy)) return legacy;
+    return null;
+  } catch {
+    return null;
+  }
+};
+
 const getLastPathKey = (user?: PostAuthUser | null): string => {
   const companyId = user?.companyId || user?.company?.id;
   const suffix = [user?.id, companyId].filter(Boolean).join(":");
@@ -137,12 +173,15 @@ export const resolvePostAuthDestination = (
   // 2) Saved default landing page (user's configured preference).
   try {
     const defaultPage = readDefaultPage(user?.settings);
-    if (defaultPage && isResumePathAllowed(defaultPage, user)) return defaultPage;
+    if (defaultPage && isResumePathAllowed(defaultPage, user)) {
+      saveDefaultPagePreference(user, defaultPage);
+      return defaultPage;
+    }
   } catch {
     // ignore malformed settings
   }
   try {
-    const stored = localStorage.getItem("maxp-default-page");
+    const stored = getDefaultPagePreference(user);
     if (stored && isResumePathAllowed(stored, user)) return stored;
   } catch {
     // ignore storage errors

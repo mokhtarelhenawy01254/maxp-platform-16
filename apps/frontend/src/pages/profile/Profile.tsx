@@ -42,6 +42,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/ta
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useSearchParams } from "react-router-dom";
 import { DefaultPageSelector } from "../../components/settings/DefaultPageSelector";
+import { saveDefaultPagePreference } from "../../utils/postAuthRouting";
 import { apiClient } from "../../services/apiClient";
 
 interface Employee {
@@ -382,6 +383,7 @@ const Profile: React.FC = () => {
 
   const handleDefaultPageChange = async (page: string) => {
     setDefaultPage(page);
+    saveDefaultPagePreference(user, page);
     try {
       await apiClient.put("/user/settings", { settings: { defaultPage: page } });
     } catch {

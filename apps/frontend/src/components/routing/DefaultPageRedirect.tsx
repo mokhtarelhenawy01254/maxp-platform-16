@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
-import { resolvePostAuthDestination } from "../../utils/postAuthRouting";
+import { resolvePostAuthDestination, saveDefaultPagePreference } from "../../utils/postAuthRouting";
 
 export function DefaultPageRedirect() {
   const { user } = useAuth();
@@ -13,13 +13,13 @@ export function DefaultPageRedirect() {
 
     // Warm the local default-page cache from the server so the user's saved
     // preference keeps working, then let the unified resolver decide the
-    // landing (last page → saved default → role fallback).
+    // landing (saved default → last page → role fallback).
     apiClient
       .get("/user/settings", { _skipErrorToast: true } as Record<string, unknown>)
       .then((res: any) => {
         const dp = res?.data?.data?.defaultPage;
-        if (dp && dp !== "/apps") {
-          localStorage.setItem("maxp-default-page", dp);
+        if (dp) {
+          saveDefaultPagePreference(user, dp);
         }
       })
       .catch(() => {})

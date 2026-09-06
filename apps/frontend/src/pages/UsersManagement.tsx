@@ -101,6 +101,7 @@ import { getProtectedUserActionMessage } from "../utils/usersManagementGuards";
 import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
 import { DefaultPageSelector } from "../components/settings/DefaultPageSelector";
+import { saveDefaultPagePreference } from "../utils/postAuthRouting";
 
 type RoleRecord = Record<string, { name: string }>;
 
@@ -894,7 +895,7 @@ const UsersManagement: React.FC = () => {
 
       if (isEditMode && editingUser?.id === user?.id && userForm.defaultPage) {
         try {
-          localStorage.setItem("maxp-default-page", userForm.defaultPage);
+          saveDefaultPagePreference(user, userForm.defaultPage);
         } catch {
           // storage unavailable
         }
