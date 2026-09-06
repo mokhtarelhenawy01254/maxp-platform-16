@@ -2876,8 +2876,8 @@ const CinematicPlinthHero: React.FC<HeroVariantProps> = (props) => {
             requestedWidth={1280}
             responsiveWidths={[640, 960, 1280, 1600]}
             responsiveSizes="100vw"
-            imageQuality={78}
-            className="h-full w-full object-cover object-center grayscale-[18%]"
+            imageQuality={82}
+            className="h-full w-full object-cover object-center"
           />
         ) : null}
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,13,11,0.18)_0%,rgba(9,13,11,0.46)_34%,rgba(9,13,11,0.78)_100%)]" />

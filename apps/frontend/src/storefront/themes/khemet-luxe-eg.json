@@ -47,7 +47,7 @@
     "description": "بوتيك أحذية حريمي فاخر للسوق المصري يمزج الحرفة المصرية مع عرض تحريري هادئ ومسارات شراء أقرب للحسم."
   },
   "preview": {
-    "imageUrl": "https://images.unsplash.com/photo-1543163521-1bf539c55dd2?auto=format&fit=crop&q=80&w=1400",
+    "imageUrl": "/assets/themes/khemet-luxe-eg/hero.jpg",
     "colors": [
       "151 34% 16%",
       "41 45% 63%",
@@ -177,7 +177,7 @@
             "ctaLink": "/shop",
             "secondaryCtaText": "عروض التوفير",
             "secondaryCtaLink": "/sale",
-            "backgroundImage": "https://lh3.googleusercontent.com/aida-public/AB6AXuBpVmwIwRrTq6gOXxo-t6Eq-8rQp_afRWAxKZtqTPQEPV_BHvK70RQU1ChcmMHilgUfT0O0M7rAb0rUNtgWCzUmk4-rPCnB-BI6hVb4xnoQBLYbZn_rhuq7PAiwttKE7_BVvctERAP0YkNCesMys_lI4U1I4d9D5uYwJvG5Ey7gAf77R2DD2NJA7oD64tur3DbNkyJnPx-Q5gr43qJBSI_dnBVx-aZi8mvArOuBSQ8Z-4lRsnCuk-33VDcoegn7hD2Pq7kq3SvyYh4",
+            "backgroundImage": "/assets/themes/khemet-luxe-eg/hero.jpg",
             "highlights": [
               {
                 "label": "شحن سريع",
