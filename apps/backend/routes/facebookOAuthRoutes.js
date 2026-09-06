@@ -1910,42 +1910,65 @@ router.get("/callback", async (req, res) => {
         }
 
         // Update or Create page
-        if (existingPageInDB && existingPageInDB.companyId === companyId) {
-          await getSharedPrismaClient().facebookPage.update({
-            where: { pageId: page.id },
-            data: {
-              pageAccessToken: page.access_token,
-              pageName: page.name,
-              status: "connected",
-              connectedAt: new Date(),
-              disconnectedAt: null,
-              ...accountLink,
-            },
-          });
-        } else {
-          await getSharedPrismaClient().facebookPage.upsert({
-            where: { pageId: page.id },
-            update: {
-              pageAccessToken: page.access_token,
-              pageName: page.name,
-              status: "connected",
-              connectedAt: new Date(),
-              disconnectedAt: null,
-              companyId: companyId,
-              ...accountLink,
-            },
-            create: {
-              id: uuidv4(),
-              pageId: page.id,
-              pageName: page.name,
-              pageAccessToken: page.access_token,
-              status: "connected",
-              connectedAt: new Date(),
-              updatedAt: new Date(),
-              company: { connect: { id: companyId } },
-              ...accountLink,
-            },
-          });
+        const pageDataToUpdate = {
+          pageAccessToken: page.access_token,
+          pageName: page.name,
+          status: "connected",
+          connectedAt: new Date(),
+          disconnectedAt: null,
+          companyId: companyId,
+          ...(accountConnectionId ? { facebookAccountId: accountConnectionId } : {}),
+        };
+
+        const pageDataToCreate = {
+          id: uuidv4(),
+          pageId: page.id,
+          pageName: page.name,
+          pageAccessToken: page.access_token,
+          status: "connected",
+          connectedAt: new Date(),
+          updatedAt: new Date(),
+          companyId: companyId,
+          ...(accountConnectionId ? { facebookAccountId: accountConnectionId } : {}),
+        };
+
+        try {
+          if (existingPageInDB && existingPageInDB.companyId === companyId) {
+            await getSharedPrismaClient().facebookPage.update({
+              where: { pageId: page.id },
+              data: pageDataToUpdate,
+            });
+          } else {
+            await getSharedPrismaClient().facebookPage.upsert({
+              where: { pageId: page.id },
+              update: pageDataToUpdate,
+              create: pageDataToCreate,
+            });
+          }
+        } catch (dbErr) {
+          // If Prisma complains about facebookAccountId / facebookAccount relation syntax mismatch, retry without accountLink
+          if (String(dbErr.message).includes("facebookAccount")) {
+            console.warn("⚠️ [OAUTH] Retrying page save without accountLink:", dbErr.message);
+            const fallbackUpdate = { ...pageDataToUpdate };
+            delete fallbackUpdate.facebookAccountId;
+            const fallbackCreate = { ...pageDataToCreate };
+            delete fallbackCreate.facebookAccountId;
+
+            if (existingPageInDB && existingPageInDB.companyId === companyId) {
+              await getSharedPrismaClient().facebookPage.update({
+                where: { pageId: page.id },
+                data: fallbackUpdate,
+              });
+            } else {
+              await getSharedPrismaClient().facebookPage.upsert({
+                where: { pageId: page.id },
+                update: fallbackUpdate,
+                create: fallbackCreate,
+              });
+            }
+          } else {
+            throw dbErr;
+          }
         }
 
         savedPages.push({
