@@ -232,9 +232,10 @@ const getConversations = async (req, res) => {
                 status: { in: ['ACTIVE', 'PENDING'] }
             };
         } else {
-            // 'all' or undefined - include ALL conversations regardless of status
+            // 'all' or undefined - usually excludes RESOLVED/CLOSED
             tabWhere = {
-                ...where
+                ...where,
+                status: { in: ['ACTIVE', 'PENDING'] }
             };
         }
 
