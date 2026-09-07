@@ -2150,20 +2150,12 @@ const getApiError = (error: unknown): ApiErrorLike => {
           </>
         )}
 
-        {/* Mobile Sidebar Overlay */}
-        {showSidebar && (
-          <div
-            className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-20"
-            onClick={() => setShowSidebar(false)}
-          />
-        )}
-
-        {/* Left: Conversations */}
+{/* Left: Conversations */}
         <div
           className={`
                     ${showSidebar ? "translate-x-0" : "-translate-x-full"}
                     md:translate-x-0
-                    fixed md:relative
+                    absolute md:relative
                     inset-y-0 left-0
                     w-full sm:w-80 md:w-72 lg:w-80
                     z-30
@@ -2226,7 +2218,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
               </div>
             ) : filteredConversations.length === 0 ? (
               <div className="business-inbox-empty p-8">
-                <div className="text-6xl mb-4">ðŸ’¬</div>
+                <div className="text-6xl mb-4">💬</div>
                 <p>{t("facebookInbox.noConversations")}</p>
               </div>
             ) : (
@@ -2756,7 +2748,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 >
                   <Menu size={24} />
                 </button>
-                <div className="text-6xl mb-4">ðŸ’¬</div>
+                <div className="text-6xl mb-4">💬</div>
                 <h3
                   className="text-lg font-medium mb-2"
                   style={{ color: "var(--color-foreground)" }}
