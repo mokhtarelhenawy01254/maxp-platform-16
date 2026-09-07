@@ -2100,19 +2100,6 @@ const getApiError = (error: unknown): ApiErrorLike => {
     <div
       className={`business-inbox-shell${selectedConversation ? " business-inbox-shell--conversation-active" : ""}`}
     >
-      <div className={selectedConversation ? "hidden md:block" : ""}>
-        <InboxTabs
-          activeTab={activeTab}
-          onTabChange={(newTab) => {
-            setActiveTab(newTab);
-          }}
-          counts={tabCounts}
-          onSearch={setSearchQuery}
-          onToggleFilters={() => setShowFilters(!showFilters)}
-          onShowStats={() => setShowStats(true)}
-        />
-      </div>
-
       <StatsDashboard
         isOpen={showStats}
         onClose={() => setShowStats(false)}
@@ -2159,19 +2146,32 @@ const getApiError = (error: unknown): ApiErrorLike => {
           />
         )}
 
-        {/* Left: Conversations */}
+        {/* Left: Conversations Column */}
         <div
           className={`
                     ${showSidebar ? "translate-x-0" : "-translate-x-full"}
                     md:translate-x-0
                     fixed md:relative
                     inset-y-0 left-0
-                    w-full sm:w-80 md:w-72 lg:w-80
+                    w-full sm:w-80 md:w-80 lg:w-96
                     z-30
-                    business-inbox-column business-inbox-column--list flex flex-col
+                    business-inbox-column business-inbox-column--list flex flex-col bg-background border-r border-border/40
                     transition-transform duration-300 ease-in-out
                 `}
         >
+          {/* Header Tabs & Search Bar inside List Column */}
+          <div className="border-b border-border/40 bg-background/95 backdrop-blur-sm sticky top-0 z-10">
+            <InboxTabs
+              activeTab={activeTab}
+              onTabChange={(newTab) => {
+                setActiveTab(newTab);
+              }}
+              counts={tabCounts}
+              onSearch={setSearchQuery}
+              onToggleFilters={() => setShowFilters(!showFilters)}
+              onShowStats={() => setShowStats(true)}
+            />
+          </div>
           {/* Bulk Actions Bar Overlay */}
           <BulkActionsBar
             selectedCount={selectedIds.size}
