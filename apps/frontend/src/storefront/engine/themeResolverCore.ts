@@ -406,15 +406,15 @@ const normalizeThemeOverrides = (
     },
   };
 
-  const header = (input.header ||
-    designTokens.header ||
+  const header = (designTokens.header ||
     settingsDesignTokens.header ||
-    settings?.["header"]) as StorefrontHeaderConfig | undefined;
+    settings?.["header"] ||
+    input.header) as StorefrontHeaderConfig | undefined;
 
-  const footer = (input.footer ||
-    designTokens.footer ||
+  const footer = (designTokens.footer ||
     settingsDesignTokens.footer ||
-    settings?.["footer"]) as StorefrontFooterConfig | undefined;
+    settings?.["footer"] ||
+    input.footer) as StorefrontFooterConfig | undefined;
 
   const seo = extractSEOConfig(input);
   const normalized: Partial<StorefrontTheme> = {};
