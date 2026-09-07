@@ -2151,7 +2151,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
           className={`
                     ${showSidebar ? "translate-x-0" : "-translate-x-full"}
                     md:translate-x-0
-                    absolute md:relative
+                    fixed md:relative
                     inset-y-0 left-0
                     w-full sm:w-80 md:w-80 lg:w-96
                     z-30
