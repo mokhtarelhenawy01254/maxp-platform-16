@@ -51,6 +51,7 @@ import {
   MoreHorizontal,
   PanelRightClose,
   PanelRightOpen,
+  MessageSquare,
 } from "lucide-react";
 import {
   CheckCircleIcon,
@@ -943,7 +944,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         // ðŸ†• Update conversation state - message is now from us (not customer)
         updateSelectedConversation({
           lastMessageIsFromCustomer: false,
-          lastMessage: `ðŸ“Ž ${file.name}`,
+          lastMessage: `📎 ${file.name}`,
           lastMessageTime: new Date(),
         });
 
@@ -2225,9 +2226,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 {error}
               </div>
             ) : filteredConversations.length === 0 ? (
-              <div className="business-inbox-empty p-8">
-                <div className="text-6xl mb-4">ðŸ’¬</div>
-                <p>{t("facebookInbox.noConversations")}</p>
+              <div className="business-inbox-empty p-8 flex flex-col items-center justify-center text-center">
+                <MessageSquare className="w-12 h-12 text-muted-foreground opacity-50 mb-3" />
+                <p className="text-sm font-medium text-muted-foreground">{t("facebookInbox.noConversations")}</p>
               </div>
             ) : (
               <div>
@@ -2756,7 +2757,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 >
                   <Menu size={24} />
                 </button>
-                <div className="text-6xl mb-4">ðŸ’¬</div>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <MessageSquare className="h-8 w-8" />
+                </div>
                 <h3
                   className="text-lg font-medium mb-2"
                   style={{ color: "var(--color-foreground)" }}
