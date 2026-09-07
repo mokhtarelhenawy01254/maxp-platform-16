@@ -4924,9 +4924,15 @@ select {
   border-inline-start: 1px solid var(--business-muted-line);
 }
 
-@media (max-width: 767px) {
-  .quick-order-modal .business-side-panel {
-    display: none !important;
+/* ── QuickOrderModal Responsive Layout Protection ── */
+.quick-order-modal .quick-order-desktop-cart-sidebar,
+.quick-order-modal .business-side-panel {
+  display: none !important;
+}
+
+@media (min-width: 1024px) {
+  .quick-order-modal .quick-order-desktop-cart-sidebar {
+    display: flex !important;
   }
 }
 

@@ -20,6 +20,8 @@ import {
   ArchiveBoxIcon,
   Squares2X2Icon,
   ListBulletIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import i18n from "../../../i18n";
@@ -550,6 +552,37 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   // Cart State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showMobileCart, setShowMobileCart] = useState(false);
+
+  // Detect mobile or narrow viewports (handles normal mobile, tablets, and mobile Chrome with Desktop Site mode)
+  const [isMobileView, setIsMobileView] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const isMobileUA =
+      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent,
+      );
+    const isNarrow =
+      window.innerWidth < 1024 ||
+      (window.screen && window.screen.width < 768) ||
+      (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+    return isMobileUA || isNarrow;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobileUA =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        );
+      const isNarrow =
+        window.innerWidth < 1024 ||
+        (window.screen && window.screen.width < 768) ||
+        (navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+      setIsMobileView(isMobileUA || isNarrow);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   // Customer Form State
   const [phone, setPhone] = useState(initialCustomerPhone || "");
@@ -1152,7 +1185,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           {step === "products" ? (
             <>
               {/* Products Grid */}
-              <div className="flex flex-1 flex-col overflow-hidden min-w-0">
+              <div className="flex flex-1 flex-col overflow-hidden min-w-0 w-full">
                 {/* Search */}
                 <div
                   className="p-3 sm:p-4 flex items-center gap-2"
@@ -1391,10 +1424,10 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                   )}
                 </div>
 
-                {/* Mobile Bottom Cart Bar (visible only on mobile < md when cart has items) */}
-                {cartItems.length > 0 && (
+                {/* Mobile Bottom Cart Bar (visible only on mobile / narrow viewports when cart has items) */}
+                {cartItems.length > 0 && isMobileView && (
                   <div
-                    className="md:hidden flex items-center justify-between gap-2 p-2.5 sm:p-3 border-t bg-[var(--business-surface-strong)] flex-shrink-0 shadow-lg"
+                    className="flex items-center justify-between gap-2 p-2.5 sm:p-3 border-t bg-[var(--business-surface-strong)] flex-shrink-0 shadow-lg lg:hidden"
                     style={{ borderColor: "var(--business-muted-line)" }}
                   >
                     <button
@@ -1436,7 +1469,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
               {/* Mobile Cart Overlay/Drawer */}
               {showMobileCart && (
                 <div
-                  className="md:hidden absolute inset-0 z-30 flex flex-col bg-[var(--business-surface-panel)] animate-in fade-in slide-in-from-bottom-5 duration-200"
+                  className="absolute inset-0 z-30 flex flex-col bg-[var(--business-surface-panel)] animate-in fade-in slide-in-from-bottom-5 duration-200 lg:hidden"
                   style={{
                     background: "var(--business-surface-panel)",
                   }}
@@ -1511,52 +1544,60 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                 </div>
               )}
 
-              {/* Desktop Cart Sidebar (hidden on mobile, visible on md+) */}
-              <div className="hidden md:flex md:w-72 md:flex-col business-side-panel flex-shrink-0">
-                <div className="business-side-panel-header">
-                  <h3
-                    className="flex items-center gap-2 font-semibold"
-                    style={headingStyle}
-                  >
-                    <ShoppingCartIcon className="h-5 w-5" />
-                    السلة ({cartItems.length})
-                  </h3>
-                </div>
+              {/* Desktop Cart Sidebar (strictly hidden on mobile, rendered only on large desktop screens lg+) */}
+              {!isMobileView && (
+                <div
+                  className="hidden lg:flex lg:w-72 lg:flex-col quick-order-desktop-cart-sidebar flex-shrink-0"
+                  style={{
+                    background: "var(--business-surface-panel)",
+                    borderInlineStart: "1px solid var(--business-muted-line)",
+                  }}
+                >
+                  <div className="business-side-panel-header">
+                    <h3
+                      className="flex items-center gap-2 font-semibold"
+                      style={headingStyle}
+                    >
+                      <ShoppingCartIcon className="h-5 w-5" />
+                      السلة ({cartItems.length})
+                    </h3>
+                  </div>
 
-                <div className="flex-1 space-y-2 overflow-y-auto p-2">
-                  {cartItems.length === 0 ? (
-                    <div className="business-inbox-empty py-8">
-                      <ShoppingCartIcon
-                        className="h-10 w-10 opacity-30"
-                        style={mutedStyle}
-                      />
-                      <p className="text-sm">السلة فارغة</p>
+                  <div className="flex-1 space-y-2 overflow-y-auto p-2">
+                    {cartItems.length === 0 ? (
+                      <div className="business-inbox-empty py-8">
+                        <ShoppingCartIcon
+                          className="h-10 w-10 opacity-30"
+                          style={mutedStyle}
+                        />
+                        <p className="text-sm">السلة فارغة</p>
+                      </div>
+                    ) : (
+                      cartItems.map((item) => renderCartItem(item))
+                    )}
+                  </div>
+
+                  {/* Cart Total */}
+                  {cartItems.length > 0 && (
+                    <div className="business-footer-bar">
+                      <div className="mb-2 flex justify-between text-sm">
+                        <span style={mutedStyle}>المجموع</span>
+                        <span className="font-bold" style={headingStyle}>
+                          {subtotal.toLocaleString()} ج.م
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setStep("checkout")}
+                        className="business-chip-button w-full py-2 font-medium"
+                        data-active="true"
+                      >
+                        متابعة الطلب
+                      </button>
                     </div>
-                  ) : (
-                    cartItems.map((item) => renderCartItem(item))
                   )}
                 </div>
-
-                {/* Cart Total */}
-                {cartItems.length > 0 && (
-                  <div className="business-footer-bar">
-                    <div className="mb-2 flex justify-between text-sm">
-                      <span style={mutedStyle}>المجموع</span>
-                      <span className="font-bold" style={headingStyle}>
-                        {subtotal.toLocaleString()} ج.م
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setStep("checkout")}
-                      className="business-chip-button w-full py-2 font-medium"
-                      data-active="true"
-                    >
-                      متابعة الطلب
-                    </button>
-                  </div>
-                )}
-              </div>
+              )}
             </>
           ) : (
             /* Checkout Step */
@@ -1761,14 +1802,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
             {step === "checkout" ? "رجوع" : "إلغاء"}
           </button>
 
-          {step === "products" && cartItems.length > 0 && (
+          {step === "products" && cartItems.length > 0 && isMobileView && (
             <button
               type="button"
               onClick={() => {
                 setShowMobileCart(false);
                 setStep("checkout");
               }}
-              className="business-chip-button md:hidden flex items-center gap-1.5 px-4 py-2 text-xs font-bold"
+              className="business-chip-button lg:hidden flex items-center gap-1.5 px-4 py-2 text-xs font-bold"
               data-active="true"
             >
               <span>متابعة الطلب</span>
