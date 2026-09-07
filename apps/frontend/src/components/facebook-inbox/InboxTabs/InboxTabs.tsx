@@ -69,49 +69,14 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
   ];
 
   return (
-    <div className="business-inbox-header p-2">
-      <div className="flex flex-col md:flex-row gap-2 items-stretch md:items-center">
-        {/* Search, Filter, and Stats buttons */}
-        <div className="business-inbox-toolbar flex items-center gap-2">
-          {/* Search */}
-          <div className="business-inbox-search-wrap flex-1 relative">
-            <Search className="business-inbox-search-icon absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-            <input
-              type="text"
-              placeholder={String(t("inbox.searchPlaceholder"))}
-              onChange={(e) => onSearch(e.target.value)}
-              className="business-inbox-search w-full pr-9 pl-3 text-sm md:w-64"
-            />
-          </div>
-
-          {/* Filters Toggle */}
-          <button
-            onClick={onToggleFilters}
-            className="business-chip-button p-2 flex-shrink-0"
-            title={String(t("inbox.advancedFilters"))}
-          >
-            <SlidersHorizontal className="w-4 h-4" />
-          </button>
-
-          {/* Stats Button */}
-          {onShowStats && (
-            <button
-              onClick={onShowStats}
-              className="business-chip-button p-2 flex-shrink-0"
-              title={String(t("inbox.statistics"))}
-            >
-              <BarChart3 className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Tabs horizontal scroll container */}
-        <div className="business-inbox-tabs business-inbox-tabs--scroll flex-1 overflow-x-auto flex items-center gap-1">
+    <div className="business-inbox-header">
+      <div className="business-inbox-header-row business-inbox-header-row--tabs">
+        <div className="business-inbox-tabs business-inbox-tabs--scroll flex-1">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => onTabChange(tab.id)}
-              className="business-inbox-tab flex-shrink-0"
+              className="business-inbox-tab"
               data-active={activeTab === tab.id ? "true" : "false"}
             >
               <span>{tab.label}</span>
@@ -120,6 +85,40 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
               )}
             </button>
           ))}
+        </div>
+
+        {/* Search, Filter, and Stats buttons */}
+        <div className="business-inbox-toolbar">
+          {/* Stats Button */}
+          {onShowStats && (
+            <button
+              onClick={onShowStats}
+              className="business-chip-button"
+              title={String(t("inbox.statistics"))}
+            >
+              <BarChart3 className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* Search */}
+          <div className="business-inbox-search-wrap">
+            <Search className="business-inbox-search-icon right-3 left-auto w-5 h-5" />
+            <input
+              type="text"
+              placeholder={String(t("inbox.searchPlaceholder"))}
+              onChange={(e) => onSearch(e.target.value)}
+              className="business-inbox-search w-full pr-10 pl-4 md:w-64"
+            />
+          </div>
+
+          {/* Filters Toggle */}
+          <button
+            onClick={onToggleFilters}
+            className="business-chip-button"
+            title={String(t("inbox.advancedFilters"))}
+          >
+            <SlidersHorizontal className="w-5 h-5" />
+          </button>
         </div>
       </div>
     </div>
