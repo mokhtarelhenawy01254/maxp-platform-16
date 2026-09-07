@@ -272,7 +272,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
     >
       <div
         className="business-modal-surface product-picker-modal flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden"
-        style={{ background: "#ffffff" }}
+        style={{ background: "var(--color-card)" }}
       >
         {/* Header */}
         <div className="business-gallery-toolbar flex items-center justify-between">
@@ -390,18 +390,18 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                           key={product.id}
                           onClick={() => handleSelectProduct(product)}
                           className="business-product-card group cursor-pointer"
-                          style={{ background: "#ffffff" }}
+                          style={{ background: "var(--color-card)" }}
                         >
                           <div
                             className="business-product-card-media relative h-28 sm:h-32"
-                            style={{ background: "#ffffff" }}
+                            style={{ background: "var(--color-card)" }}
                           >
                             {image ? (
                               <img
                                 src={image}
                                 alt={product.name}
                                 className="h-full w-full object-contain p-2"
-                                style={{ background: "#ffffff" }}
+                                style={{ background: "var(--color-card)" }}
                               />
                             ) : (
                               <div
@@ -437,7 +437,7 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                                     alt=""
                                     className="h-7 w-7 rounded-md border object-contain p-0.5 sm:h-8 sm:w-8"
                                     style={{
-                                      background: "#ffffff",
+                                      background: "var(--color-card)",
                                       borderColor:
                                         "var(--business-muted-line)",
                                     }}
@@ -528,14 +528,14 @@ const ProductImagePickerModal: React.FC<ProductImagePickerModalProps> = ({
                       key={`${image.url}-${index}`}
                       className="business-gallery-card relative group cursor-pointer overflow-hidden border-2"
                       data-selected={selectedImages.has(index)}
-                      style={{ background: "#ffffff" }}
+                      style={{ background: "var(--color-card)" }}
                       onClick={() => toggleImage(index)}
                     >
                       <img
                         src={image.url}
                         alt={image.filename}
                         className="h-40 w-full object-contain p-2"
-                        style={{ background: "#ffffff" }}
+                        style={{ background: "var(--color-card)" }}
                       />
                       <div
                         className="business-gallery-check absolute left-2 top-2 cursor-pointer"
