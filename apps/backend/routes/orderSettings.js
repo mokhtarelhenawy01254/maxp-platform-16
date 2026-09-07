@@ -147,11 +147,11 @@ router.put('/', async (req, res) => {
 
         if (duplicateOrderWindowMinutes !== undefined) {
             const windowValue = parseInt(duplicateOrderWindowMinutes, 10);
-            if (Number.isNaN(windowValue) || windowValue < 5 || windowValue > 1440) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Duplicate order window must be between 5 and 1440 minutes'
-                });
+            if (Number.isNaN(windowValue) || windowValue < 5 || windowValue > 10080) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'مدة كشف الطلبات المكررة يجب أن تكون بين 5 دقائق و 7 أيام'
+                    });
             }
         }
 
