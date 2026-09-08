@@ -147,9 +147,15 @@ export function getStorefrontDisplay(company: Company): string | null {
 }
 
 export function getSubscriptionBadge(company: Company): { label: string; tone: string; sub?: string } {
-  if (company.trialModeEnabled || company.platformSubscription?.status === "trialing") {
-    if (company.trialEndsAt) {
-      const remainingMs = new Date(company.trialEndsAt).getTime() - Date.now();
+  const sub = company.platformSubscription;
+
+  // Trial detection: either company-level trialModeEnabled or subscription has a trialEndDate
+  const isTrialing = company.trialModeEnabled || (sub?.trialEndDate != null);
+  const trialEnd = company.trialEndsAt || sub?.trialEndDate;
+
+  if (isTrialing) {
+    if (trialEnd) {
+      const remainingMs = new Date(trialEnd).getTime() - Date.now();
       const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
       if (remainingDays <= 0) {
         return { label: "تجربة منتهية", tone: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300", sub: "يحتاج اشتراك" };
@@ -165,12 +171,18 @@ export function getSubscriptionBadge(company: Company): { label: string; tone: s
     return { label: "تجريبي", tone: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800/50 dark:bg-purple-950/30 dark:text-purple-300" };
   }
 
-  if (company.platformSubscription?.status === "active") {
+  // Active paid subscription: has a platformSubscription with monthlyFee > 0
+  if (sub && sub.monthlyFee > 0) {
     return {
-      label: company.platformSubscription.plan || "اشتراك نشط",
+      label: `اشتراك ${sub.monthlyFee} ${company.currency || "EGP"}/شهر`,
       tone: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
       sub: "مدفوع",
     };
+  }
+
+  // Has subscription record but free plan
+  if (sub) {
+    return { label: "باقة مجانية", tone: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400" };
   }
 
   return { label: "غير مشترك", tone: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400" };

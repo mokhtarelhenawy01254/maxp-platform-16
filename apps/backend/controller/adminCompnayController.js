@@ -537,9 +537,13 @@ const getAllCompanies = async (req, res) => {
                     },
                     platformSubscription: {
                         select: {
-                            status: true,
-                            plan: true,
-                            currentPeriodEnd: true,
+                            id: true,
+                            monthlyFee: true,
+                            billingDay: true,
+                            nextBillingDate: true,
+                            trialEndDate: true,
+                            lastBillingDate: true,
+                            failedAttempts: true,
                         }
                     }
                 },

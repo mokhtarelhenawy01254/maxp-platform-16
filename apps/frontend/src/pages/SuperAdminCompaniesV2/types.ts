@@ -39,7 +39,15 @@ export interface Company {
   trialEndsAt?: string | null;
   trialStartedAt?: string | null;
   wallet?: { balance: number; currency: string } | null;
-  platformSubscription?: { status: string; plan?: string | null; currentPeriodEnd?: string | null } | null;
+  platformSubscription?: {
+    id: string;
+    monthlyFee: number;
+    billingDay: number;
+    nextBillingDate?: string | null;
+    trialEndDate?: string | null;
+    lastBillingDate?: string | null;
+    failedAttempts: number;
+  } | null;
   businessSpecialtyId?: string | null;
   businessSpecialty?: CompanySpecialty | null;
   _count?: CompanyCount;
