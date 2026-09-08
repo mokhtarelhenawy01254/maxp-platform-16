@@ -4,6 +4,11 @@ import {
   PaperClipIcon,
   FaceSmileIcon,
   XMarkIcon,
+  PlusIcon,
+  PhotoIcon,
+  DocumentTextIcon,
+  ShoppingBagIcon,
+  BoltIcon,
 } from "@heroicons/react/24/outline";
 import EmojiPicker from "emoji-picker-react";
 import QuickReplyDropdown, {
@@ -15,10 +20,10 @@ import {
 } from "../../../utils/quickReplyUtils";
 
 interface MessageInputProps {
-  onSendMessage: (content: string) => void;
-  onSendFile: (file: File) => void;
-  sending: boolean;
-  uploadingFile: boolean;
+  onSendMessage?: (content: string) => void;
+  onSendFile?: (file: File) => void;
+  sending?: boolean;
+  uploadingFile?: boolean;
   conversation?: any;
   user?: any;
   replyTo?: any;
@@ -26,13 +31,17 @@ interface MessageInputProps {
   onOpenTextGallery?: () => void;
   onOpenImageGallery?: () => void;
   onOpenProductPicker?: () => void;
+  // Compatibility with other inbox pages
+  onSend?: (content: string) => void;
+  isSending?: boolean;
+  platform?: string;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   onSendFile,
-  sending,
-  uploadingFile,
+  sending = false,
+  uploadingFile = false,
   conversation,
   user,
   replyTo,
@@ -40,37 +49,42 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onOpenTextGallery,
   onOpenImageGallery,
   onOpenProductPicker,
+  onSend,
+  isSending = false,
 }) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showQuickReplies, setShowQuickReplies] = useState(false);
+  const [showMobileTools, setShowMobileTools] = useState(false);
   const [isCompactMobile, setIsCompactMobile] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  const isBusy = sending || isSending;
+  const handleSendAction = onSendMessage || onSend;
 
   // Focus input on mount and after sending message
   React.useEffect(() => {
-    // Focus input when component mounts
-    if (messageInputRef.current && !sending && !uploadingFile) {
+    if (messageInputRef.current && !isBusy && !uploadingFile) {
       messageInputRef.current.focus();
     }
   }, []);
 
   // Keep input focused after sending message
   React.useEffect(() => {
-    if (!sending && messageInputRef.current) {
-      // Small delay to ensure DOM is updated
+    if (!isBusy && messageInputRef.current) {
       setTimeout(() => {
         messageInputRef.current?.focus();
       }, 50);
     }
-  }, [sending]);
+  }, [isBusy]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const updateViewportMode = () => {
-      setIsCompactMobile(window.innerWidth < 480);
+      setIsCompactMobile(window.innerWidth < 640);
     };
 
     updateViewportMode();
@@ -81,13 +95,36 @@ const MessageInput: React.FC<MessageInputProps> = ({
     };
   }, []);
 
-  const handleSend = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (message.trim() && !sending) {
-      onSendMessage(message);
+  // Close mobile tools dropdown on outside click
+  React.useEffect(() => {
+    if (!showMobileTools) return undefined;
+    const handleClickOutside = (e: MouseEvent | TouchEvent) => {
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(e.target as Node)
+      ) {
+        setShowMobileTools(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, [showMobileTools]);
+
+  const handleSend = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (message.trim() && !isBusy && handleSendAction) {
+      handleSendAction(message);
       setMessage("");
       setShowQuickReplies(false);
-      // Focus input after sending to allow immediate typing
+      setShowMobileTools(false);
+      setShowEmojiPicker(false);
+      if (messageInputRef.current) {
+        messageInputRef.current.style.height = "auto";
+      }
       setTimeout(() => {
         messageInputRef.current?.focus();
       }, 100);
@@ -95,10 +132,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    // Don't send on Enter if quick replies dropdown is open
     if (e.key === "Enter" && !e.shiftKey && !showQuickReplies) {
       e.preventDefault();
-      handleSend(e);
+      handleSend();
     }
   };
 
@@ -106,26 +142,29 @@ const MessageInput: React.FC<MessageInputProps> = ({
     const value = e.target.value;
     setMessage(value);
 
-    // Show quick replies if starts with /
     if (value.startsWith("/")) {
       setShowQuickReplies(true);
     } else {
       setShowQuickReplies(false);
     }
 
-    // Auto-resize textarea
     const textarea = e.target;
     textarea.style.height = "auto";
-    textarea.style.height = Math.min(textarea.scrollHeight, 150) + "px";
+    textarea.style.height = Math.min(textarea.scrollHeight, 120) + "px";
   };
 
   const handleSelectQuickReply = (reply: QuickReply) => {
-    // Replace variables in content
     const contextVars = getContextVariables(conversation, user);
     const processedContent = replaceVariables(reply.content, contextVars);
 
     setMessage(processedContent);
     setShowQuickReplies(false);
+    setShowMobileTools(false);
+    if (messageInputRef.current) {
+      setTimeout(() => {
+        messageInputRef.current?.focus();
+      }, 50);
+    }
   };
 
   const handleEmojiClick = (emojiData: any) => {
@@ -134,12 +173,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file && !uploadingFile) {
+    if (file && !uploadingFile && onSendFile) {
       onSendFile(file);
     }
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
+    setShowMobileTools(false);
   };
 
   return (
@@ -153,10 +193,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
         />
       )}
 
-      {/* Reply Banner - الآن داخل منطقة الإدخال */}
+      {/* Reply Banner */}
       {replyTo && (
         <div
-          className="flex justify-between items-center text-xs sm:text-sm px-2 sm:px-3 md:px-4 py-1.5 sm:py-2"
+          className="flex justify-between items-center text-xs sm:text-sm px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2"
           style={{
             background:
               "color-mix(in srgb, white 74%, var(--color-background) 26%)",
@@ -190,40 +230,189 @@ const MessageInput: React.FC<MessageInputProps> = ({
         </div>
       )}
 
+      {/* Main Single-Line Composer Form */}
       <form
         onSubmit={handleSend}
-        className="business-chat-composer-form flex items-end gap-2 p-2.5 sm:p-3"
+        className="business-chat-composer-form flex items-end gap-1.5 sm:gap-2 p-2 sm:p-2.5"
       >
-        <div className="business-chat-composer-tools flex flex-shrink-0 items-center gap-1 sm:gap-1.5">
-          {/* File Upload */}
-          <div className="relative flex-shrink-0">
-            <input
-              ref={fileInputRef}
-              type="file"
-              className="hidden"
-              onChange={handleFileSelect}
-              accept="image/*,.pdf,.doc,.docx,.txt"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingFile}
-              className="business-icon-button rounded-xl p-1.5 transition-colors disabled:opacity-50 sm:p-2"
-              title="إرفاق ملف"
+        {/* Hidden File Input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileSelect}
+          accept="image/*,.pdf,.doc,.docx,.txt"
+        />
+
+        {/* Mobile Tools Plus Button & Popover (hidden on sm+) */}
+        <div className="relative flex-shrink-0 sm:hidden" ref={mobileMenuRef}>
+          <button
+            type="button"
+            onClick={() => setShowMobileTools((prev) => !prev)}
+            className={`business-icon-button flex h-[38px] w-[38px] items-center justify-center rounded-xl transition-all duration-200 ${
+              showMobileTools
+                ? "text-white"
+                : "text-foreground"
+            }`}
+            style={{
+              background: showMobileTools
+                ? "var(--color-primary)"
+                : "color-mix(in srgb, var(--color-foreground) 8%, transparent)",
+              transform: showMobileTools ? "rotate(45deg)" : "none",
+            }}
+            title="المرفقات والأدوات"
+            aria-label="المرفقات والأدوات"
+          >
+            <PlusIcon className="h-5 w-5" />
+          </button>
+
+          {/* Mobile Tools Popover */}
+          {showMobileTools && (
+            <div
+              className="absolute bottom-[calc(100%+8px)] start-0 z-50 min-w-[210px] max-w-[260px] rounded-2xl p-1.5 shadow-2xl border animate-in fade-in zoom-in-95 duration-150"
+              style={{
+                background: "var(--business-surface-strong, #182234)",
+                borderColor: "var(--business-card-border, rgba(255,255,255,0.12))",
+                boxShadow: "0 12px 36px -4px rgba(0, 0, 0, 0.45)",
+              }}
             >
-              {uploadingFile ? (
-                <div
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent sm:h-5 sm:w-5"
-                  style={{
-                    borderColor: "var(--color-primary)",
-                    borderTopColor: "transparent",
+              <div className="px-2.5 py-1 text-[11px] font-semibold text-muted-foreground border-b border-white/10 flex items-center justify-between mb-1">
+                <span>أدوات المحادثة</span>
+                <span className="text-[10px] opacity-70">مرفقات سريعة</span>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                {/* Image Gallery */}
+                {onOpenImageGallery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenImageGallery();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
+                      <PhotoIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">معرض الصور</span>
+                      <span className="text-[10px] text-muted-foreground truncate">إرسال صور من الحافظة</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Text Gallery */}
+                {onOpenTextGallery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenTextGallery();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-blue-500/20 text-blue-400">
+                      <DocumentTextIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">النصوص والقوالب</span>
+                      <span className="text-[10px] text-muted-foreground truncate">ردود مجهزة مسبقاً</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Product Picker */}
+                {onOpenProductPicker && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      onOpenProductPicker();
+                    }}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-amber-500/20 text-amber-400">
+                      <ShoppingBagIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">اختيار منتج</span>
+                      <span className="text-[10px] text-muted-foreground truncate">مشاركة كارت منتج</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* File Upload */}
+                {onSendFile && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowMobileTools(false);
+                      fileInputRef.current?.click();
+                    }}
+                    disabled={uploadingFile}
+                    className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15 disabled:opacity-50"
+                  >
+                    <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-purple-500/20 text-purple-400">
+                      <PaperClipIcon className="h-4 w-4" />
+                    </div>
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="font-semibold text-xs truncate">إرفاق ملف</span>
+                      <span className="text-[10px] text-muted-foreground truncate">صور أو مستندات</span>
+                    </div>
+                  </button>
+                )}
+
+                {/* Quick Replies */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowMobileTools(false);
+                    setMessage((prev) => (prev.startsWith("/") ? prev : "/" + prev));
+                    setShowQuickReplies(true);
+                    messageInputRef.current?.focus();
                   }}
-                />
-              ) : (
-                <PaperClipIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-              )}
-            </button>
-          </div>
+                  className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
+                >
+                  <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg bg-yellow-500/20 text-yellow-400">
+                    <BoltIcon className="h-4 w-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0 flex-1">
+                    <span className="font-semibold text-xs truncate">الردود السريعة</span>
+                    <span className="text-[10px] text-muted-foreground truncate">قائمة الردود (/)</span>
+                  </div>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Tools Row (visible on sm+) */}
+        <div className="hidden sm:flex flex-shrink-0 items-center gap-1 sm:gap-1.5 business-chat-composer-tools">
+          {/* File Upload */}
+          {onSendFile && (
+            <div className="relative flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingFile}
+                className="business-icon-button rounded-xl p-1.5 transition-colors disabled:opacity-50 sm:p-2"
+                title="إرفاق ملف"
+              >
+                {uploadingFile ? (
+                  <div
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent sm:h-5 sm:w-5"
+                    style={{
+                      borderColor: "var(--color-primary)",
+                      borderTopColor: "transparent",
+                    }}
+                  />
+                ) : (
+                  <PaperClipIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                )}
+              </button>
+            </div>
+          )}
 
           {/* Text Gallery Button */}
           {onOpenTextGallery && (
@@ -234,19 +423,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 className="business-icon-button rounded-xl p-1.5 transition-colors sm:p-2"
                 title="حافظة النصوص المحفوظة"
               >
-                <svg
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
+                <DocumentTextIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           )}
@@ -260,19 +437,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 className="business-icon-button rounded-xl p-1.5 transition-colors sm:p-2"
                 title="حافظة الصور المحفوظة"
               >
-                <svg
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                  />
-                </svg>
+                <PhotoIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           )}
@@ -284,26 +449,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 type="button"
                 onClick={onOpenProductPicker}
                 className="business-icon-button rounded-xl p-1.5 transition-colors sm:p-2"
-                title="اختيار منتج من المتجر وإرسال صوره كرسالة"
+                title="اختيار منتج من المتجر"
               >
-                <svg
-                  className="h-4 w-4 sm:h-5 sm:w-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 7l9-4 9 4-9 4-9-4zm0 5l9 4 9-4m-9 4v5"
-                  />
-                </svg>
+                <ShoppingBagIcon className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
           )}
 
-          {/* Emoji Picker */}
+          {/* Desktop Emoji Picker Button */}
           <div className="relative flex-shrink-0">
             <button
               type="button"
@@ -313,94 +466,107 @@ const MessageInput: React.FC<MessageInputProps> = ({
             >
               <FaceSmileIcon className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
-
-            {showEmojiPicker && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setShowEmojiPicker(false)}
-                />
-                <div className="fixed bottom-20 left-4 z-50 overflow-visible rounded-lg shadow-2xl">
-                  <EmojiPicker
-                    onEmojiClick={handleEmojiClick}
-                    width={350}
-                    height={450}
-                  />
-                </div>
-              </>
-            )}
           </div>
         </div>
 
-        <div className="business-chat-composer-main flex min-w-0 flex-1 items-end gap-2">
-          {/* Text Input */}
-          <div className="relative min-w-0 flex-1">
-            <textarea
-              ref={messageInputRef}
-              value={message}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyPress}
-              placeholder={
-                isCompactMobile
-                  ? "اكتب رسالة..."
-                  : "اكتب رسالة... (أو / للردود السريعة) - Shift+Enter لسطر جديد"
-              }
-              disabled={sending || uploadingFile}
-              autoFocus
-              rows={1}
-              className="business-chat-input resize-none overflow-hidden px-3 py-2 text-sm disabled:opacity-50 sm:px-4 sm:text-base"
-              style={{
-                minHeight: "42px",
-                maxHeight: "150px",
-                ...(sending || uploadingFile
-                  ? {
-                      background:
-                        "color-mix(in srgb, white 70%, var(--color-background) 30%)",
-                    }
-                  : {}),
-              }}
-            />
-            {message.startsWith("/") && !showQuickReplies && (
-              <div
-                className="absolute left-2 top-1/2 -translate-y-1/2 text-xs"
-                style={{ color: "var(--color-muted-foreground)" }}
-              >
-                ⚡
-              </div>
-            )}
-          </div>
-
-          {/* Send Button */}
-          <button
-            type="submit"
-            disabled={!message.trim() || sending || uploadingFile}
-            className="business-chat-send-button business-chip-button flex h-[42px] flex-shrink-0 items-center gap-1.5 rounded-xl px-3 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:text-base"
+        {/* Text Input Container - Takes flex-1 to maximize typing area */}
+        <div className="relative min-w-0 flex-1 flex items-center">
+          <textarea
+            ref={messageInputRef}
+            value={message}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyPress}
+            placeholder={
+              isCompactMobile
+                ? "اكتب رسالة..."
+                : "اكتب رسالة... (أو / للردود السريعة) - Shift+Enter لسطر جديد"
+            }
+            disabled={isBusy || uploadingFile}
+            autoFocus
+            rows={1}
+            className="business-chat-input w-full resize-none overflow-y-auto ps-3 pe-8 sm:pe-3 py-2 text-xs sm:text-sm md:text-base leading-relaxed disabled:opacity-50"
             style={{
-              background:
-                "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
-              borderColor: "transparent",
-              color: "white",
+              minHeight: "38px",
+              maxHeight: "120px",
+              height: "38px",
+              ...(isBusy || uploadingFile
+                ? {
+                    background:
+                      "color-mix(in srgb, white 70%, var(--color-background) 30%)",
+                  }
+                : {}),
             }}
+          />
+
+          {/* Mobile Emoji Button inside input box */}
+          <button
+            type="button"
+            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+            className="absolute end-2 top-1/2 -translate-y-1/2 sm:hidden p-1 text-muted-foreground hover:text-foreground transition-colors"
+            title="إيموجي"
           >
-            {sending ? (
-              <>
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-white sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">جاري الإرسال...</span>
-              </>
-            ) : (
-              <>
-                <PaperAirplaneIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="hidden md:inline">إرسال</span>
-              </>
-            )}
+            <FaceSmileIcon className="h-4 w-4" />
           </button>
+
+          {/* Quick Reply Lightning Indicator */}
+          {message.startsWith("/") && !showQuickReplies && (
+            <div
+              className="absolute end-8 sm:end-2 top-1/2 -translate-y-1/2 text-xs"
+              style={{ color: "var(--color-muted-foreground)" }}
+            >
+              ⚡
+            </div>
+          )}
         </div>
+
+        {/* Send Button - Compact icon on mobile, full button on desktop */}
+        <button
+          type="submit"
+          disabled={!message.trim() || isBusy || uploadingFile}
+          className="business-chat-send-button business-chip-button flex h-[38px] w-[38px] sm:h-[40px] sm:w-auto flex-shrink-0 items-center justify-center gap-1.5 rounded-xl px-0 sm:px-4 text-sm font-medium disabled:cursor-not-allowed disabled:opacity-50 sm:text-base shadow-sm transition-transform active:scale-95"
+          style={{
+            background:
+              "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+            borderColor: "transparent",
+            color: "white",
+          }}
+          title="إرسال"
+        >
+          {isBusy ? (
+            <>
+              <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent border-white sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">جاري الإرسال...</span>
+            </>
+          ) : (
+            <>
+              <PaperAirplaneIcon className="h-4 w-4 sm:h-5 sm:w-5 rtl:-scale-x-100" />
+              <span className="hidden md:inline">إرسال</span>
+            </>
+          )}
+        </button>
       </form>
+
+      {/* Floating Emoji Picker Popover */}
+      {showEmojiPicker && (
+        <>
+          <div
+            className="fixed inset-0 z-40 bg-black/20"
+            onClick={() => setShowEmojiPicker(false)}
+          />
+          <div className="fixed bottom-16 start-2 sm:start-4 z-50 overflow-visible rounded-xl shadow-2xl max-w-[calc(100vw-16px)]">
+            <EmojiPicker
+              onEmojiClick={handleEmojiClick}
+              width={isCompactMobile ? Math.min(window.innerWidth - 24, 320) : 350}
+              height={isCompactMobile ? 360 : 420}
+            />
+          </div>
+        </>
+      )}
 
       {/* Helper Text */}
       {message.startsWith("/") && (
         <div
-          className="mt-2 text-xs flex items-center gap-1 px-2 sm:px-3 md:px-4 pb-2"
+          className="mt-1 text-xs flex items-center gap-1 px-2.5 sm:px-3 md:px-4 pb-1.5"
           style={{ color: "var(--color-muted-foreground)" }}
         >
           <span>💡</span>
