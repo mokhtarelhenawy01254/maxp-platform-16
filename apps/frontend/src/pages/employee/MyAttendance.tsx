@@ -414,8 +414,8 @@ const MyAttendance: React.FC = () => {
         (resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: true,
-            timeout: 5000,
-            maximumAge: 10000,
+            timeout: 12000,
+            maximumAge: 30000,
           });
         },
       );
@@ -425,9 +425,36 @@ const MyAttendance: React.FC = () => {
         longitude: position.coords.longitude,
         accuracy: position.coords.accuracy,
       };
-      console.log(`📍 Location accuracy: ${position.coords.accuracy}m`);
-    } catch (error) {
-      console.log("Location not available");
+      console.log(`📍 Location accuracy (high accuracy): ${position.coords.accuracy}m`);
+      return location;
+    } catch (highAccError: any) {
+      console.warn("High accuracy GPS failed or timed out, trying standard network location fallback...", highAccError);
+      try {
+        const fallbackPosition = await new Promise<GeolocationPosition>(
+          (resolve, reject) => {
+            navigator.geolocation.getCurrentPosition(resolve, reject, {
+              enableHighAccuracy: false,
+              timeout: 10000,
+              maximumAge: 60000,
+            });
+          },
+        );
+
+        location = {
+          latitude: fallbackPosition.coords.latitude,
+          longitude: fallbackPosition.coords.longitude,
+          accuracy: fallbackPosition.coords.accuracy,
+        };
+        console.log(`📍 Location accuracy (fallback): ${fallbackPosition.coords.accuracy}m`);
+        return location;
+      } catch (fallbackError: any) {
+        console.warn("Geolocation fallback also failed:", fallbackError);
+        if (fallbackError?.code === 1 || highAccError?.code === 1) {
+          toast.error("يرجى تفعيل وتصريح صلاحية تحديد الموقع (GPS) من إعدادات المتصفح والجهاز للبصمة.");
+        } else if (fallbackError?.code === 3 || highAccError?.code === 3) {
+          toast.error("تعذر تحديد موقعك بدقة (مهلة البحث انتهت)، يرجى التأكد من تشغيل الموقع والمحاولة مجدداً.");
+        }
+      }
     }
 
     return location;

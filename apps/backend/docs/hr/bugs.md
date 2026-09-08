@@ -2,6 +2,23 @@
 
 > Domain-specific bug tracker for HR assets, recruitment, payroll, and attendance.
 
+### [FIX] HR Attendance — Geofencing Check-in Failures, Dashboard Employee Stats Sync & Absent Filters
+- **Date**: 2026-09-08
+- **Description**: Employees were unable to clock in due to 5s GPS timeouts indoors and narrow 100m geofence. Admin manual check-ins were blocked with 403 location errors. Dashboard employee cards showed 9 (active 6) vs today attendance 12. Absent filter in attendance table returned 0 rows, and absent rows showed invalid delete buttons.
+- **Root Cause**:
+    1. Geolocation in `MyAttendance.tsx` used `timeout: 5000` with `enableHighAccuracy: true` only, failing indoors and sending `location: null`.
+    2. Backend `attendanceService.checkIn` and `checkOut` enforced geofencing without excluding `method: "manual"`.
+    3. `employeeService.getEmployeeStats` queried direct `companyId` only, ignoring users mapped via `userCompanies` with `employeeNumber`.
+    4. `attendanceService.getAttendance` only injected absent placeholders if `!status`, returning 0 when filtering by `ABSENT`.
+- **Resolution**:
+    1. Added indoor fallback (Wi-Fi/cell) and 12s timeout with user-friendly error toasts in `MyAttendance.tsx`.
+    2. Bypassed geofence check in `attendanceService` when `method === "manual"`.
+    3. Aligned `getEmployeeStats` with `getEmployees` using `baseEmployeeWhere` (`companyId` OR active `userCompanies` with `employeeNumber`).
+    4. Supported `status === "ABSENT"` in `attendanceService.getAttendance` and fixed `pagination.total`.
+    5. Cleaned up work hours display (hide `0.0 س` on active shifts) and removed delete action on temp absent rows.
+- **Files Modified**: `apps/backend/services/hr/attendanceService.js`, `apps/backend/services/hr/employeeService.js`, `apps/frontend/src/pages/employee/MyAttendance.tsx`, `apps/frontend/src/pages/hr/Attendance.tsx`, `apps/frontend/src/pages/hr/HRDashboard.tsx`
+- **Status**: ✅ Resolved.
+
 ### [FIX] Recruitment — Pipeline Applicant Deletion & Full Stage Loading
 - **Date**: 2026-05-17
 - **Description**: Hiring pipeline cards had no delete action for old/test applicants, and the selected pipeline stage rendered only a limited subset instead of every applicant in that status.

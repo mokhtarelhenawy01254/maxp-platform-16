@@ -350,8 +350,13 @@ class AttendanceService {
       // تجهيز بيانات الموقع للتخزين
       // Already normalized above
 
-      // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل)
-      if (hrSettings && hrSettings.geofenceEnabled && data.workMode !== "HOME") {
+      // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل والتسجيل اليدوي من الإدارة)
+      if (
+        hrSettings &&
+        hrSettings.geofenceEnabled &&
+        data.workMode !== "HOME" &&
+        data.method !== "manual"
+      ) {
         if (!data.location) {
           const error = new AttendanceError(
             "يجب السماح بالوصول للموقع لتسجيل الحضور من المكتب",
@@ -657,8 +662,13 @@ class AttendanceService {
       // تجهيز بيانات الموقع للتخزين
       // Already normalized above
 
-      // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل)
-      if (hrSettings && hrSettings.geofenceEnabled && data.workMode !== "HOME") {
+      // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل والتسجيل اليدوي من الإدارة)
+      if (
+        hrSettings &&
+        hrSettings.geofenceEnabled &&
+        data.workMode !== "HOME" &&
+        data.method !== "manual"
+      ) {
         if (!data.location) {
           const error = new AttendanceError(
             "يجب السماح بالوصول للموقع لتسجيل الانصراف من المكتب",
@@ -1135,7 +1145,7 @@ class AttendanceService {
         isSingleDay &&
         isTodayDate &&
         !employeeId &&
-        !status &&
+        (!status || status === "ABSENT") &&
         !autoClosedFilterEnabled &&
         !normalizedAutoCloseReviewStatus &&
         pageNum === 1 &&
@@ -1181,7 +1191,14 @@ class AttendanceService {
             },
           }));
 
-        mappedRecords = [...mappedRecords, ...missingUserRecords];
+        if (status === "ABSENT") {
+          mappedRecords = [
+            ...mappedRecords.filter((r) => r.status === "ABSENT"),
+            ...missingUserRecords,
+          ];
+        } else {
+          mappedRecords = [...mappedRecords, ...missingUserRecords];
+        }
       }
 
       const autoCloseSummary = autoCloseAuditTableAvailable
@@ -1197,6 +1214,8 @@ class AttendanceService {
           )
         : this.getDefaultAutoCloseSummary();
 
+      const effectiveTotal = Math.max(total, mappedRecords.length);
+
       return {
         records: mappedRecords,
         timezone,
@@ -1204,8 +1223,8 @@ class AttendanceService {
         pagination: {
           page: pageNum,
           limit: limitNum,
-          total: total || mappedRecords.length,
-          totalPages: Math.ceil((total || mappedRecords.length) / limitNum),
+          total: effectiveTotal,
+          totalPages: Math.ceil(effectiveTotal / limitNum),
         },
       };
     } catch (error) {
@@ -1741,7 +1760,7 @@ class AttendanceService {
       originalData.earlyLeaveMinutes !== undefined
         ? parseInt(originalData.earlyLeaveMinutes)
         : 0;
-    let workHours = 0;
+    let workHours = null;
     let overtimeHours = 0;
 
     const shift = await this.getEmployeeShiftForDate(
@@ -1855,7 +1874,7 @@ class AttendanceService {
       lateMinutes,
       status,
       earlyLeaveMinutes,
-      workHours: Math.round(workHours * 100) / 100,
+      workHours: workHours !== null ? Math.round(workHours * 100) / 100 : null,
       overtimeHours: Math.round(overtimeHours * 100) / 100,
     };
   }

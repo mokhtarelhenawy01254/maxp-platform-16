@@ -653,8 +653,9 @@ const Attendance: React.FC = () => {
       late: false,
       early: false,
     });
-    setEditingRecordId(record.id);
-    setIsEditMode(true);
+    const isTempRecord = record.id.startsWith("temp-");
+    setEditingRecordId(isTempRecord ? null : record.id);
+    setIsEditMode(!isTempRecord);
     setShowManualDialog(true);
   };
 
@@ -1046,7 +1047,7 @@ const Attendance: React.FC = () => {
                       {renderLocationInfo(record.checkInLocation, record.checkOutLocation, record.workMode)}
                     </TableCell>
                     <TableCell>
-                      {record.workHours ? (
+                      {record.workHours && Number(record.workHours) > 0 && record.checkOut ? (
                         <span className="font-bold text-gray-700">{Number(record.workHours).toFixed(1)} س</span>
                       ) : (
                         <span className="text-gray-300">-</span>
@@ -1152,14 +1153,16 @@ const Attendance: React.FC = () => {
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
-                        <button
-                          type="button"
-                          className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all border border-red-100"
-                          onClick={() => confirmDelete(record.id)}
-                          title="حذف"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
+                        {!record.id.startsWith("temp-") && (
+                          <button
+                            type="button"
+                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all border border-red-100"
+                            onClick={() => confirmDelete(record.id)}
+                            title="حذف"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

@@ -982,6 +982,14 @@ class EmployeeService {
    */
   async getEmployeeStats(companyId) {
     try {
+      const baseEmployeeWhere = {
+        employeeNumber: { not: null },
+        OR: [
+          { companyId },
+          { userCompanies: { some: { companyId, isActive: true } } }
+        ]
+      };
+
       const [
         totalEmployees,
         activeEmployees,
@@ -993,20 +1001,18 @@ class EmployeeService {
       ] = await executeWithRetry(async () => {
         return await Promise.all([
           this.prisma.user.count({
-            where: {
-              companyId
-            }
+            where: baseEmployeeWhere
           }),
           this.prisma.user.count({
             where: {
-              companyId,
+              ...baseEmployeeWhere,
               isActive: true
             }
           }),
           // Group by departmentId
           this.prisma.user.findMany({
             where: {
-              companyId,
+              ...baseEmployeeWhere,
               isActive: true,
               departmentId: { not: null }
             },
@@ -1015,7 +1021,7 @@ class EmployeeService {
           // Group by contractType
           this.prisma.user.findMany({
             where: {
-              companyId,
+              ...baseEmployeeWhere,
               isActive: true,
               contractType: { not: null }
             },
@@ -1024,14 +1030,14 @@ class EmployeeService {
           // Status grouping (active vs inactive)
           this.prisma.user.count({
             where: {
-              companyId,
+              ...baseEmployeeWhere,
               isActive: true
             }
           }),
           // Recent hires
           this.prisma.user.findMany({
             where: {
-              companyId,
+              ...baseEmployeeWhere,
               isActive: true,
               hireDate: { not: null }
             },
