@@ -41,6 +41,8 @@ export interface Company {
   wallet?: { balance: number; currency: string } | null;
   platformSubscription?: {
     id: string;
+    plan?: string | null;
+    status?: string | null;
     monthlyFee: number;
     billingDay: number;
     nextBillingDate?: string | null;

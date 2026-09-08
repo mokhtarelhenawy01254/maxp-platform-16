@@ -149,8 +149,8 @@ export function getStorefrontDisplay(company: Company): string | null {
 export function getSubscriptionBadge(company: Company): { label: string; tone: string; sub?: string } {
   const sub = company.platformSubscription;
 
-  // Trial detection: either company-level trialModeEnabled or subscription has a trialEndDate
-  const isTrialing = company.trialModeEnabled || (sub?.trialEndDate != null);
+  // Trial detection: company-level flag, subscription status, or trialEndDate present
+  const isTrialing = company.trialModeEnabled || sub?.status === "TRIAL" || sub?.status === "trialing" || (sub?.trialEndDate != null && !sub?.lastBillingDate);
   const trialEnd = company.trialEndsAt || sub?.trialEndDate;
 
   if (isTrialing) {
@@ -171,18 +171,18 @@ export function getSubscriptionBadge(company: Company): { label: string; tone: s
     return { label: "تجريبي", tone: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800/50 dark:bg-purple-950/30 dark:text-purple-300" };
   }
 
-  // Active paid subscription: has a platformSubscription with monthlyFee > 0
-  if (sub && sub.monthlyFee > 0) {
+  // Active paid subscription
+  if (sub?.status === "ACTIVE" || sub?.status === "active") {
     return {
-      label: `اشتراك ${sub.monthlyFee} ${company.currency || "EGP"}/شهر`,
+      label: sub.plan || "اشتراك نشط",
       tone: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
       sub: "مدفوع",
     };
   }
 
-  // Has subscription record but free plan
+  // Has subscription record but not active
   if (sub) {
-    return { label: "باقة مجانية", tone: "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-400" };
+    return { label: sub.status || "غير نشط", tone: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400" };
   }
 
   return { label: "غير مشترك", tone: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400" };

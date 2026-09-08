@@ -463,7 +463,7 @@ const getAllCompanies = async (req, res) => {
             if (view === 'MY_TODAY') return { followUp: { status: { in: ACTIONABLE }, assigned_owner_id: req.user.id, OR: [{ next_action_at: { lte: now } }, { next_action_at: null }] } };
             if (view === 'ESCALATION_DUE') return { followUp: { status: { in: ACTIONABLE }, next_action_at: { lte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } };
             if (view === 'STALE_72H') return { followUp: null, createdAt: { lte: new Date(now.getTime() - 72 * 60 * 60 * 1000) } };
-            if (view === 'TRIAL') return { OR: [{ trialModeEnabled: true }, { platformSubscription: { status: 'trialing' } }] };
+            if (view === 'TRIAL') return { OR: [{ trialModeEnabled: true }, { platformSubscription: { status: 'TRIAL' } }] };
             if (view === 'ONBOARDING_STUCK') return { products: { none: {} } };
             if (view === 'ACTIVE_STORES') return { orders: { some: {} } };
             return {};
@@ -538,6 +538,8 @@ const getAllCompanies = async (req, res) => {
                     platformSubscription: {
                         select: {
                             id: true,
+                            plan: true,
+                            status: true,
                             monthlyFee: true,
                             billingDay: true,
                             nextBillingDate: true,
