@@ -55,6 +55,7 @@ const createPrisma = (overrides = {}) => {
     },
     dentalCaseStage: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       update: jest.fn(),
       updateMany: jest.fn(),
     },
@@ -304,6 +305,49 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       expect(res.statusCode).toBe(200);
       expect(prisma.dentalInvoice.create).toHaveBeenCalledWith(
         expect.objectContaining({ data: expect.objectContaining({ caseId: 'case-1', total: 200, doctorId: null }) })
+      );
+    });
+
+    test('assigns technician directly on createCase when technicianId is provided', async () => {
+      const prisma = createPrisma();
+      prisma.dentalSetting.findMany.mockResolvedValue([]);
+      prisma.dentalLabCase.findFirst.mockResolvedValue(null);
+      prisma.dentalLabCase.create.mockResolvedValue(makeCase({ id: 'case-tech-1' }));
+      prisma.dentalTechnician.findFirst.mockResolvedValue({ id: 'tech-1', name: 'أحمد فني', role: 'CAD_DESIGNER', isActive: true });
+      prisma.dentalCaseAssignment.create.mockResolvedValue({ id: 'assign-1' });
+      prisma.dentalCaseStage.findFirst.mockResolvedValue({ id: 'stage-1', assigneeId: null });
+      prisma.dentalCaseStage.update.mockResolvedValue({ id: 'stage-1', assigneeId: 'tech-1' });
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createCase(req({
+        body: {
+          workTypeName: 'تاج زيركون',
+          patientName: 'محمد حسام',
+          technicianId: 'tech-1',
+          technicianRole: 'CAD_DESIGNER',
+        },
+      }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalCaseAssignment.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            caseId: 'case-tech-1',
+            technicianId: 'tech-1',
+            role: 'CAD_DESIGNER',
+          }),
+        })
+      );
+      expect(prisma.dentalCaseStage.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'stage-1' },
+          data: expect.objectContaining({
+            assigneeId: 'tech-1',
+            assigneeName: 'أحمد فني',
+          }),
+        })
       );
     });
 

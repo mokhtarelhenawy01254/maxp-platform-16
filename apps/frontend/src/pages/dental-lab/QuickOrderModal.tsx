@@ -32,21 +32,29 @@ import {
   Trash2,
   Upload,
   User,
+  UserCheck,
   UserPlus,
   Users2,
   Wallet,
+  Printer,
+  RotateCcw,
   X as XMarkIcon,
 } from "lucide-react";
 import {
   DentalLabCase,
   DentalLabDoctor,
   DentalWorkType,
+  DentalTechnician,
+  DentalTechnicianRole,
+  ROLE_CONFIG,
   PRIORITY_CONFIG,
   ScanParseResult,
   createCase,
   createDoctor,
   fetchDoctors,
   fetchWorkTypes,
+  fetchTechnicians,
+  fetchPanLabelPdf,
   fmtMoney,
   parseScan,
   uploadCaseAttachments,
@@ -253,6 +261,7 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   // Reference data
   const [workTypes, setWorkTypes] = useState<DentalWorkType[]>([]);
   const [allDoctors, setAllDoctors] = useState<DentalLabDoctor[]>([]);
+  const [technicians, setTechnicians] = useState<DentalTechnician[]>([]);
   const [refsLoading, setRefsLoading] = useState(true);
 
   // Step 1: Doctor selection & financial check
@@ -279,12 +288,19 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const [patientPhone, setPatientPhone] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"NORMAL" | "URGENT" | "STAT">("NORMAL");
+  const [selectedTechnicianId, setSelectedTechnicianId] = useState("");
+  const [selectedTechnicianRole, setSelectedTechnicianRole] = useState<DentalTechnicianRole>("CAD_DESIGNER");
   const [notes, setNotes] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [submittingAndPrint, setSubmittingAndPrint] = useState(false);
   const [parseMsg, setParseMsg] = useState("");
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Draft key & restoration state
+  const DRAFT_KEY = "maxp_dental_quick_order_draft_v1";
+  const [draftRestored, setDraftRestored] = useState(false);
 
   // Per-file upload progress
   const [upProgress, setUpProgress] = useState<Record<string, number>>({});
@@ -292,15 +308,121 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   const [upTotalPct, setUpTotalPct] = useState(0);
   const [upDoneCount, setUpDoneCount] = useState(0);
 
+  // Restore draft once on mount
+  useEffect(() => {
+    try {
+      const savedDraft = sessionStorage.getItem(DRAFT_KEY);
+      if (savedDraft) {
+        const d = JSON.parse(savedDraft);
+        if (d && typeof d === "object") {
+          if (d.doctor && !preselectedDoctor) setSelectedDoctor(d.doctor);
+          if (Array.isArray(d.selectedServiceIds) && d.selectedServiceIds.length > 0) setSelectedServiceIds(d.selectedServiceIds);
+          if (Array.isArray(d.selectedTeeth)) setSelectedTeeth(d.selectedTeeth);
+          if (d.unitsCount) setUnitsCount(d.unitsCount);
+          if (d.shade) setShade(d.shade);
+          if (d.customShade) setCustomShade(d.customShade);
+          if (d.material) setMaterial(d.material);
+          if (d.impressionType) setImpressionType(d.impressionType);
+          if (d.caseIntent) setCaseIntent(d.caseIntent);
+          if (d.priceSnapshot) setPriceSnapshot(d.priceSnapshot);
+          if (d.discount) setDiscount(d.discount);
+          if (d.patientName) setPatientName(d.patientName);
+          if (d.patientPhone) setPatientPhone(d.patientPhone);
+          if (d.dueDate) setDueDate(d.dueDate);
+          if (d.priority) setPriority(d.priority);
+          if (d.notes) setNotes(d.notes);
+          if (d.technicianId) setSelectedTechnicianId(d.technicianId);
+          if (d.technicianRole) setSelectedTechnicianRole(d.technicianRole);
+          setDraftRestored(true);
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [preselectedDoctor]);
+
+  // Debounced auto-save draft
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (selectedDoctor || selectedServiceIds.length > 0 || patientName.trim()) {
+        try {
+          const draft = {
+            doctor: selectedDoctor,
+            selectedServiceIds,
+            selectedTeeth,
+            unitsCount,
+            shade,
+            customShade,
+            material,
+            impressionType,
+            caseIntent,
+            priceSnapshot,
+            discount,
+            patientName,
+            patientPhone,
+            dueDate,
+            priority,
+            notes,
+            technicianId: selectedTechnicianId,
+            technicianRole: selectedTechnicianRole,
+          };
+          sessionStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+        } catch {
+          // ignore
+        }
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [
+    selectedDoctor, selectedServiceIds, selectedTeeth, unitsCount, shade, customShade,
+    material, impressionType, caseIntent, priceSnapshot, discount, patientName, patientPhone,
+    dueDate, priority, notes, selectedTechnicianId, selectedTechnicianRole,
+  ]);
+
+  const clearDraft = () => {
+    try {
+      sessionStorage.removeItem(DRAFT_KEY);
+      setDraftRestored(false);
+      if (!preselectedDoctor) setSelectedDoctor(null);
+      setSelectedServiceIds([]);
+      setSelectedTeeth([]);
+      setUnitsCount(1);
+      setShade("");
+      setCustomShade("");
+      setMaterial("");
+      setImpressionType("SILICONE");
+      setCaseIntent("FINAL");
+      setPriceSnapshot(0);
+      setDiscount(0);
+      setPatientName("");
+      setPatientPhone("");
+      setDueDate("");
+      setPriority("NORMAL");
+      setNotes("");
+      setSelectedTechnicianId("");
+      setSelectedTechnicianRole("CAD_DESIGNER");
+      setStep(preselectedDoctor ? 2 : 1);
+      toast.info("تم تفريغ المسودة وإعادة تعيين النموذج");
+    } catch {
+      // ignore
+    }
+  };
+
   // Load Initial Refs
   useEffect(() => {
     let mounted = true;
     setRefsLoading(true);
-    Promise.all([fetchWorkTypes(), fetchDoctors()])
-      .then(([wts, docs]) => {
+    Promise.all([
+      fetchWorkTypes(),
+      fetchDoctors(),
+      fetchTechnicians().catch(() => ({ items: [] })),
+    ])
+      .then(([wts, docs, techRes]) => {
         if (!mounted) return;
         setWorkTypes(Array.isArray(wts) ? wts : []);
         setAllDoctors(Array.isArray(docs) ? docs : []);
+        const rawTechs = (techRes as any)?.items || techRes;
+        setTechnicians(Array.isArray(rawTechs) ? rawTechs.filter((x: any) => x.isActive) : []);
       })
       .catch(() => {
         toast.error("فشل تحميل البيانات المرجعية");
@@ -415,8 +537,8 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
   };
 
   // Submit Quick Order
-  const submitOrder = async () => {
-    if (submitting) return;
+  const submitOrder = async (andPrint = false) => {
+    if (submitting || submittingAndPrint) return;
     if (!selectedDoctor) {
       toast.error("يرجى اختيار الطبيب أولاً");
       setStep(1);
@@ -454,7 +576,12 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
     const finalNotes = metadataParts.join(" | ") || undefined;
     const teethStr = selectedTeeth.length > 0 ? selectedTeeth.join(", ") : undefined;
 
-    setSubmitting(true);
+    if (andPrint) {
+      setSubmittingAndPrint(true);
+    } else {
+      setSubmitting(true);
+    }
+
     try {
       const created = await createCase({
         doctorId: selectedDoctor.id,
@@ -473,7 +600,15 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
         priority,
         notes: finalNotes,
         source: "QUICK_ORDER",
+        technicianId: selectedTechnicianId || undefined,
+        technicianRole: selectedTechnicianId ? selectedTechnicianRole : undefined,
       });
+
+      try {
+        sessionStorage.removeItem(DRAFT_KEY);
+      } catch {
+        // ignore
+      }
 
       if (files.length > 0) {
         try {
@@ -517,11 +652,24 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
         toast.success("تم إنشاء أمر الشغل السريع بنجاح!");
       }
 
+      if (andPrint) {
+        try {
+          const blob = await fetchPanLabelPdf(created.id);
+          const url = URL.createObjectURL(blob);
+          window.open(url, "_blank");
+          toast.success("تم فتح كارت الباركود (Pan Label) للطباعة فوراً!");
+        } catch (printErr) {
+          console.error("Failed to fetch pan label:", printErr);
+          toast.warning("تم حفظ الحالة ولكن تعذر فتح كارت الباركود تلقائياً");
+        }
+      }
+
       onSaved(created);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "فشل إنشاء الحالة");
     } finally {
       setSubmitting(false);
+      setSubmittingAndPrint(false);
     }
   };
 
@@ -533,17 +681,32 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
         {/* Header */}
         <div className="flex items-center justify-between p-4 sm:p-5 border-b dark:border-gray-700 shrink-0">
           <div>
-            <h3 className="text-lg font-bold flex items-center gap-2">
-              <Stethoscope className="w-5 h-5 text-blue-600" />
-              الطلب السريع لأمر الشغل (Quick Order 2026)
-            </h3>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Stethoscope className="w-5 h-5 text-blue-600" />
+                الطلب السريع لأمر الشغل (Quick Order 2026)
+              </h3>
+              {draftRestored && (
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 text-[11px] font-semibold border border-amber-200 dark:border-amber-800">
+                  <span>مسودة مسترجعة</span>
+                  <button
+                    type="button"
+                    onClick={clearDraft}
+                    title="تفريغ المسودة وبدء طلب جديد"
+                    className="hover:text-red-600 p-0.5"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+            </div>
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              تسجيل حالة جديدة، تحديد الأسنان، التحقق من الائتمان، ورفع الملفات في 3 خطوات بسيطة
+              تسجيل حالة جديدة، تحديد الأسنان، التحقق من الائتمان، وإسناد الفني في 3 خطوات بسيطة
             </p>
           </div>
           <button
             type="button"
-            onClick={() => !submitting && onClose()}
+            onClick={() => !submitting && !submittingAndPrint && onClose()}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300"
           >
             <XMarkIcon className="w-5 h-5" />
@@ -855,6 +1018,60 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                 />
               </div>
 
+              {/* Technician Assignment */}
+              <div className="rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/50 dark:bg-blue-950/30 p-3.5 space-y-2.5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-blue-900 dark:text-blue-200">
+                    <UserCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span>إسناد أمر الشغل لفني المعمل (اختياري)</span>
+                  </div>
+                  <span className="text-[11px] text-blue-600 dark:text-blue-400 font-medium">
+                    يظهر فوراً في بوابة الفني
+                  </span>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>الفني المسؤول</label>
+                    <select
+                      className={inputCls}
+                      value={selectedTechnicianId}
+                      onChange={(e) => {
+                        const id = e.target.value;
+                        setSelectedTechnicianId(id);
+                        const tech = technicians.find((t) => t.id === id);
+                        if (tech?.role) setSelectedTechnicianRole(tech.role);
+                      }}
+                    >
+                      <option value="">-- بدون إسناد (سيتم التعيين لاحقاً) --</option>
+                      {technicians.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.name} {t.role && ROLE_CONFIG[t.role]?.label ? `(${ROLE_CONFIG[t.role].label})` : ""}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className={labelCls}>دور الفني في هذه الحالة</label>
+                    <select
+                      className={inputCls}
+                      disabled={!selectedTechnicianId}
+                      value={selectedTechnicianRole}
+                      onChange={(e) => setSelectedTechnicianRole(e.target.value as DentalTechnicianRole)}
+                    >
+                      <option value="CAD_DESIGNER">تصميم كاد (CAD Designer)</option>
+                      <option value="CAM_OPERATOR">تفريز وكام (CAM Operator)</option>
+                      <option value="CERAMIST">خزف وسيراميك (Ceramist)</option>
+                      <option value="ORTHODONTIC">تقويم (Orthodontic)</option>
+                      <option value="CASTING_WAX">صب وشمع (Wax & Casting)</option>
+                      <option value="MODEL_MAKER">صب قوالب (Model Maker)</option>
+                      <option value="FINISHING_POLISHING">فينشنج وتلميع (Finishing & Polish)</option>
+                      <option value="QC_INSPECTOR">مراقبة جودة (QC Inspector)</option>
+                      <option value="GENERAL_TECHNICIAN">فني أسنان عام (General)</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               {/* Multi-file drop zone */}
               <div>
                 <div className="flex items-center justify-between mb-1">
@@ -997,15 +1214,27 @@ export default function QuickOrderModal({ onClose, onSaved, preselectedDoctor }:
                 <ArrowLeft className="w-4 h-4" />
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={submitOrder}
-                disabled={submitting || !patientName.trim()}
-                className="px-6 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
-              >
-                {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                حفظ وإرسال أمر الشغل
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => submitOrder(true)}
+                  disabled={submitting || submittingAndPrint || !patientName.trim()}
+                  className="px-4 py-2 border border-emerald-600 dark:border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 rounded-lg text-sm font-bold hover:bg-emerald-100 dark:hover:bg-emerald-900/60 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                  title="حفظ أمر الشغل وفتح كارت الباركود فوراً للطباعة"
+                >
+                  {submittingAndPrint ? <Loader2 className="w-4 h-4 animate-spin" /> : <Printer className="w-4 h-4" />}
+                  حفظ وطباعة الباركود
+                </button>
+                <button
+                  type="button"
+                  onClick={() => submitOrder(false)}
+                  disabled={submitting || submittingAndPrint || !patientName.trim()}
+                  className="px-5 py-2 bg-emerald-600 text-white rounded-lg text-sm font-bold hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                  حفظ أمر الشغل
+                </button>
+              </div>
             )}
           </div>
         </div>

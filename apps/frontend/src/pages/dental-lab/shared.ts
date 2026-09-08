@@ -431,6 +431,8 @@ export interface DentalLabCase {
   paymentStatus?: DentalPaymentStatus;
   dueDate?: string;
   priority: DentalCasePriority;
+  technicianId?: string;
+  technicianRole?: DentalTechnicianRole;
   source?: string;
   notes?: string;
   status: DentalCaseStatus;

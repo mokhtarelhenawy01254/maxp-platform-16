@@ -1243,7 +1243,7 @@ const createCase = async (req, res) => {
       }
     }
 
-await recordDentalLabStatusHistory(prisma, {
+    await recordDentalLabStatusHistory(prisma, {
       companyId,
       caseId: dentalCase.id,
       dimension: 'STAGE',
@@ -1252,6 +1252,56 @@ await recordDentalLabStatusHistory(prisma, {
       changedBy: req.user?.id || req.user?.email || null,
       userName: adminDisplayName(req),
     });
+
+    if (body.technicianId) {
+      try {
+        const tech = await prisma.dentalTechnician.findFirst({
+          where: { id: String(body.technicianId), companyId, isActive: true },
+        });
+        if (tech) {
+          const techRole = body.technicianRole || tech.role || 'TECHNICIAN';
+          await prisma.dentalCaseAssignment.create({
+            data: {
+              companyId,
+              caseId: dentalCase.id,
+              technicianId: tech.id,
+              role: techRole,
+            },
+          });
+          const firstStage = await prisma.dentalCaseStage.findFirst({
+            where: { caseId: dentalCase.id, companyId },
+            orderBy: { sortOrder: 'asc' },
+          });
+          if (firstStage && !firstStage.assigneeId) {
+            await prisma.dentalCaseStage.update({
+              where: { id: firstStage.id },
+              data: {
+                assigneeId: tech.id,
+                assigneeName: tech.name,
+                startedAt: new Date(),
+              },
+            });
+          }
+          await recordDentalLabStatusHistory(prisma, {
+            companyId,
+            caseId: dentalCase.id,
+            dimension: 'STAGE',
+            status: 'ASSIGNED',
+            oldStatus: null,
+            changedBy: req.user?.id || req.user?.email || null,
+            userName: adminDisplayName(req),
+            reason: `تم إسناد العمل إلى ${tech.name}`,
+          });
+          const updatedCase = await prisma.dentalLabCase.findFirst({
+            where: { id: dentalCase.id, companyId },
+            include: CASE_LIST_INCLUDE,
+          });
+          if (updatedCase) dentalCase = updatedCase;
+        }
+      } catch (assignErr) {
+        console.error('Error assigning technician on createCase:', assignErr);
+      }
+    }
 
     if (billingPolicy.invoiceMode === 'AUTO_ON_RECEIPT') {
       await autoCreateInvoiceForCase(prisma, companyId, dentalCase, {
