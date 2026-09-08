@@ -20,8 +20,39 @@ import {
   BoltIcon,
   TruckIcon,
   ArrowTopRightOnSquareIcon,
+  ChartBarIcon,
+  CheckCircleIcon,
+  CreditCardIcon,
+  ShoppingBagIcon,
+  ArrowDownIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useInRouterContext } from "react-router-dom";
+import {
+  AreaChart,
+  Area,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  AnalyticsData,
+  DataHealthStatus,
+  DailyAnalyticsPoint,
+  FunnelMetric,
+  TopProduct,
+  buildDataHealthStatus,
+  buildFunnelMetrics,
+  coerceNumber,
+  generateExecutiveBriefing,
+  getConversionTone,
+  getTopProductImage,
+  getTopProductPurchases,
+} from "./storeAnalyticsDashboard.utils";
 
 interface SafeActionLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   to: string;
@@ -49,35 +80,6 @@ const SafeActionLink: React.FC<SafeActionLinkProps> = ({
     </a>
   );
 };
-import {
-  AreaChart,
-  Area,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-import {
-  AnalyticsData,
-  DataHealthStatus,
-  DailyAnalyticsPoint,
-  FunnelMetric,
-  TopProduct,
-  buildDataHealthStatus,
-  buildFunnelMetrics,
-  coerceNumber,
-  generateExecutiveBriefing,
-  getConversionTone,
-  getTopProductImage,
-  getTopProductPurchases,
-} from "./storeAnalyticsDashboard.utils";
-import StoreAnalyticsTabs from "./StoreAnalyticsTabs";
-
-
 
 type FilterState = {
   period: string;
@@ -122,80 +124,6 @@ const timeFormatter = new Intl.DateTimeFormat("ar-EG", {
   minute: "2-digit",
 });
 
-const shellSurfaceStyle: React.CSSProperties = {
-  background:
-    "linear-gradient(180deg, color-mix(in srgb, white 84%, var(--color-background) 16%) 0%, color-mix(in srgb, white 72%, var(--color-background) 28%) 100%)",
-  border: "1px solid color-mix(in srgb, var(--color-primary) 14%, var(--color-border))",
-  boxShadow: "0 28px 72px -48px rgba(7, 17, 32, 0.42)",
-};
-
-const heroSurfaceStyle: React.CSSProperties = {
-  background:
-    "linear-gradient(135deg, color-mix(in srgb, white 92%, var(--color-background) 8%) 0%, color-mix(in srgb, var(--color-primary) 10%, white) 44%, color-mix(in srgb, var(--color-secondary) 8%, white) 100%)",
-  border: "1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border))",
-  boxShadow: "0 40px 110px -68px rgba(7, 17, 32, 0.5)",
-};
-
-const controlSurfaceStyle: React.CSSProperties = {
-  background: "color-mix(in srgb, white 76%, var(--color-background) 24%)",
-  borderColor: "color-mix(in srgb, var(--color-primary) 12%, var(--color-border))",
-  color: "var(--color-foreground)",
-};
-
-const dateInputClassName =
-  "h-11 w-full rounded-2xl border px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15";
-
-const softMediaSurfaceStyle: React.CSSProperties = {
-  background: "color-mix(in srgb, var(--color-border) 30%, var(--color-background))",
-};
-
-const trackSurfaceStyle: React.CSSProperties = {
-  background: "color-mix(in srgb, var(--color-border) 38%, transparent)",
-};
-
-const buildPanelStyle = (accent: string): React.CSSProperties => ({
-  ...shellSurfaceStyle,
-  border: `1px solid color-mix(in srgb, ${accent} 16%, var(--color-border))`,
-});
-
-const buildTintStyle = (accent: string, strength = 12): React.CSSProperties => ({
-  background: `color-mix(in srgb, ${accent} ${strength}%, var(--color-background))`,
-  border: `1px solid color-mix(in srgb, ${accent} 18%, transparent)`,
-  color: accent,
-});
-
-const unwrapResponseData = <T,>(value: unknown): T | null => {
-  if (value && typeof value === "object" && "data" in value) {
-    return ((value as { data?: T }).data ?? null) as T | null;
-  }
-
-  return (value as T | null) ?? null;
-};
-
-const getErrorMessage = (error: unknown, fallback: string): string => {
-  if (typeof error === "string" && error.trim()) {
-    return error;
-  }
-
-  if (error && typeof error === "object") {
-    const maybeError = error as {
-      response?: { data?: { message?: string } };
-      message?: string;
-    };
-    const nestedMessage = maybeError.response?.data?.message;
-
-    if (typeof nestedMessage === "string" && nestedMessage.trim()) {
-      return nestedMessage;
-    }
-
-    if (typeof maybeError.message === "string" && maybeError.message.trim()) {
-      return maybeError.message;
-    }
-  }
-
-  return fallback;
-};
-
 const formatCount = (value: unknown): string =>
   numberFormatter.format(coerceNumber(value));
 
@@ -206,48 +134,52 @@ const formatPercent = (value: unknown): string =>
   `${percentFormatter.format(coerceNumber(value))}%`;
 
 const formatDateLabel = (value: string): string => {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
     return value;
   }
-
-  return shortDateFormatter.format(date);
+  return shortDateFormatter.format(parsed);
 };
 
 const formatRangeLabel = ({ period, startDate, endDate }: FilterState): string => {
   if (period === "custom" && startDate && endDate) {
     return `${longDateFormatter.format(new Date(startDate))} - ${longDateFormatter.format(new Date(endDate))}`;
   }
-
-  return PERIOD_OPTIONS.find((option) => option.value === period)?.label ?? "آخر 30 يوم";
+  return PERIOD_OPTIONS.find((opt) => opt.value === period)?.label ?? "آخر 30 يوم";
 };
 
-const conversionToneMap = {
-  excellent: "var(--color-success)",
-  good: "var(--color-primary)",
-  emerging: "var(--color-warning)",
-  cold: "var(--color-muted-foreground)",
-} as const;
+const unwrapResponseData = <T,>(payload: unknown): T | null => {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return (payload as { data?: T }).data ?? null;
+  }
+  return (payload as T) ?? null;
+};
 
-const healthToneAccentMap = {
-  healthy: "var(--color-success)",
-  partial: "var(--color-warning)",
-  critical: "var(--color-warning)",
-} satisfies Record<DataHealthStatus["tone"], string>;
-
-const funnelAccentMap = [
-  "var(--color-primary)",
-  "var(--color-secondary)",
-  "var(--color-warning)",
-  "color-mix(in srgb, var(--color-primary) 74%, var(--color-secondary))",
-  "var(--color-success)",
-];
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (typeof error === "string" && error.trim()) {
+    return error;
+  }
+  if (error && typeof error === "object") {
+    const candidate = error as {
+      message?: string;
+      response?: { data?: { message?: string } };
+    };
+    const responseMsg = candidate.response?.data?.message;
+    if (typeof responseMsg === "string" && responseMsg.trim()) {
+      return responseMsg;
+    }
+    if (typeof candidate.message === "string" && candidate.message.trim()) {
+      return candidate.message;
+    }
+  }
+  return fallback;
+};
 
 const StoreAnalyticsDashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [dailyData, setDailyData] = useState<DailyAnalyticsPoint[]>([]);
-  const [filters, setFilters] = useState<FilterState>({
+  const [filterDraft, setFilterDraft] = useState<FilterState>({
     period: "1",
     startDate: "",
     endDate: "",
@@ -258,42 +190,27 @@ const StoreAnalyticsDashboard: React.FC = () => {
     endDate: "",
   });
   const [loadState, setLoadState] = useState<LoadState>("initial");
-  const [error, setError] = useState<string | null>(null);
-  const [warnings, setWarnings] = useState<string[]>([]);
-  const [lastUpdatedAt, setLastUpdatedAt] = useState<string | null>(null);
-  const [isDarkMode, setIsDarkMode] = useState(
-    document.documentElement.classList.contains("dark"),
-  );
-  const [chartView, setChartView] = useState<"volume" | "conversion">("volume");
-  const hasDataRef = useRef(false);
-  const analyticsRef = useRef<AnalyticsData | null>(null);
-  const customStartDateInputRef = useRef<HTMLInputElement | null>(null);
-  const customEndDateInputRef = useRef<HTMLInputElement | null>(null);
+  const [pageError, setPageError] = useState<string | null>(null);
+  const [partialWarnings, setPartialWarnings] = useState<string[]>([]);
+  const [lastRefreshedAt, setLastRefreshedAt] = useState<string | null>(null);
+  const [chartMode, setChartMode] = useState<"volume" | "conversion">("volume");
 
-  const showCustomRange = filters.period === "custom";
+  const hasLoadedOnceRef = useRef(false);
+  const previousAnalyticsRef = useRef<AnalyticsData | null>(null);
+  const startDateInputRef = useRef<HTMLInputElement>(null);
+  const endDateInputRef = useRef<HTMLInputElement>(null);
+
+  const isCustomPeriod = filterDraft.period === "custom";
   const isRefreshing = loadState === "refreshing";
-  const hasDashboardData =
+  const hasExistingData =
     analytics !== null || topProducts.length > 0 || dailyData.length > 0;
-  const isInitialLoading = loadState === "initial" && !hasDashboardData;
+  const isInitialLoading = loadState === "initial" && !hasExistingData;
 
   useEffect(() => {
-    hasDataRef.current =
+    hasLoadedOnceRef.current =
       analytics !== null || topProducts.length > 0 || dailyData.length > 0;
-    analyticsRef.current = analytics;
+    previousAnalyticsRef.current = analytics;
   }, [analytics, dailyData.length, topProducts.length]);
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDarkMode(document.documentElement.classList.contains("dark"));
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   useEffect(() => {
     if (
@@ -303,20 +220,20 @@ const StoreAnalyticsDashboard: React.FC = () => {
       return;
     }
 
-    const controller = new AbortController();
+    const abortController = new AbortController();
 
     const fetchAnalytics = async () => {
-      setLoadState(hasDataRef.current ? "refreshing" : "initial");
-      setWarnings([]);
-      setError(null);
+      setLoadState(hasLoadedOnceRef.current ? "refreshing" : "initial");
+      setPartialWarnings([]);
+      setPageError(null);
 
-      const [analyticsResult, topProductsResult, dailyResult] =
+      const [storeResult, topProductsResult, dailyResult] =
         await Promise.allSettled([
           analyticsService.getStoreAnalytics(
             appliedFilters.period,
             appliedFilters.startDate,
             appliedFilters.endDate,
-            controller.signal,
+            abortController.signal,
           ),
           analyticsService.getTopProducts(
             appliedFilters.period,
@@ -328,79 +245,76 @@ const StoreAnalyticsDashboard: React.FC = () => {
             appliedFilters.period,
             appliedFilters.startDate,
             appliedFilters.endDate,
-            controller.signal,
+            abortController.signal,
           ),
         ]);
 
-      if (controller.signal.aborted) {
+      if (abortController.signal.aborted) {
         return;
       }
 
-      const nextWarnings: string[] = [];
-      let hasFreshPayload = false;
-      let analyticsLoaded = false;
+      const warnings: string[] = [];
+      let hadAnySuccess = false;
+      let summarySucceeded = false;
 
-      if (analyticsResult.status === "fulfilled") {
-        const nextAnalytics =
-          unwrapResponseData<AnalyticsData>(analyticsResult.value);
-        if (nextAnalytics) {
-          setAnalytics(nextAnalytics);
-          analyticsLoaded = true;
-          hasFreshPayload = true;
+      if (storeResult.status === "fulfilled") {
+        const data = unwrapResponseData<AnalyticsData>(storeResult.value);
+        if (data) {
+          setAnalytics(data);
+          summarySucceeded = true;
+          hadAnySuccess = true;
         } else {
-          nextWarnings.push("تم تحميل الصفحة لكن ملخص الأداء الرئيسي رجع فارغًا.");
+          warnings.push("تم تحميل البيانات ولكن الملخص الرئيسي رجع فارغاً.");
         }
       } else {
-        nextWarnings.push(
+        warnings.push(
           getErrorMessage(
-            analyticsResult.reason,
-            "تعذر تحديث ملخص الأداء الرئيسي.",
+            storeResult.reason,
+            "تعذر جلب ملخص تحليلات المتجر ومعدل التحويل.",
           ),
         );
       }
 
       if (topProductsResult.status === "fulfilled") {
-        const nextProducts =
+        const data =
           unwrapResponseData<TopProduct[]>(topProductsResult.value) ?? [];
-        setTopProducts(Array.isArray(nextProducts) ? nextProducts : []);
-        hasFreshPayload = true;
+        setTopProducts(Array.isArray(data) ? data : []);
+        hadAnySuccess = true;
       } else {
-        nextWarnings.push(
+        warnings.push(
           getErrorMessage(
             topProductsResult.reason,
-            "تعذر تحديث قائمة المنتجات الأعلى أداءً.",
+            "تعذر تحديث قائمة المنتجات الأكثر تحويلاً ومبيعاً.",
           ),
         );
       }
 
       if (dailyResult.status === "fulfilled") {
-        const nextDailyData =
+        const data =
           unwrapResponseData<DailyAnalyticsPoint[]>(dailyResult.value) ?? [];
-        setDailyData(Array.isArray(nextDailyData) ? nextDailyData : []);
-        hasFreshPayload = true;
+        setDailyData(Array.isArray(data) ? data : []);
+        hadAnySuccess = true;
       } else {
-        nextWarnings.push(
+        warnings.push(
           getErrorMessage(
             dailyResult.reason,
-            "تعذر تحديث السلسلة اليومية للزيارات والإيرادات.",
+            "تعذر جلب الاتجاه اليومي للزيارات والإيرادات.",
           ),
         );
       }
 
-      setWarnings(nextWarnings);
+      setPartialWarnings(warnings);
 
-      if (!analyticsLoaded && !analyticsRef.current) {
-        setError(
-          nextWarnings[0] ?? "تعذر تحميل ملخص المتجر في الوقت الحالي.",
+      if (!summarySucceeded && !previousAnalyticsRef.current) {
+        setPageError(
+          warnings[0] ?? "تعذر تحميل لوحة تحليلات المتجر في الوقت الحالي.",
         );
+      } else if (summarySucceeded) {
+        setPageError(null);
       }
 
-      if (analyticsLoaded) {
-        setError(null);
-      }
-
-      if (hasFreshPayload) {
-        setLastUpdatedAt(new Date().toISOString());
+      if (hadAnySuccess) {
+        setLastRefreshedAt(new Date().toISOString());
       }
 
       setLoadState("ready");
@@ -408,84 +322,113 @@ const StoreAnalyticsDashboard: React.FC = () => {
 
     void fetchAnalytics();
 
-    return () => controller.abort();
-  }, [
-    appliedFilters.endDate,
-    appliedFilters.period,
-    appliedFilters.startDate,
-  ]);
+    return () => {
+      abortController.abort();
+    };
+  }, [appliedFilters.endDate, appliedFilters.period, appliedFilters.startDate]);
 
-  const funnelMetrics = useMemo(
-    () => buildFunnelMetrics(analytics),
-    [analytics],
-  );
-
+  const funnelMetrics = useMemo(() => buildFunnelMetrics(analytics), [analytics]);
   const dataHealth = useMemo(
     () => buildDataHealthStatus(analytics, dailyData),
     [analytics, dailyData],
   );
 
-  const chartData = useMemo(
-    () =>
-      dailyData.map((point) => {
-        const visits = coerceNumber(point.totalVisits);
-        const purchases = coerceNumber(point.totalPurchases);
-        const rate = visits > 0 ? parseFloat(((purchases / visits) * 100).toFixed(2)) : 0;
-        return {
-          date: formatDateLabel(point.date),
-          visits,
-          purchases,
-          revenue: coerceNumber(point.totalRevenue),
-          rate,
-        };
-      }),
-    [dailyData],
-  );
+  const chartData = useMemo(() => {
+    return dailyData.map((item) => {
+      const visits = coerceNumber(item.totalVisits);
+      const purchases = coerceNumber(item.totalPurchases);
+      const rate =
+        visits > 0 ? parseFloat(((purchases / visits) * 100).toFixed(2)) : 0;
+      return {
+        date: formatDateLabel(item.date),
+        visits,
+        purchases,
+        revenue: coerceNumber(item.totalRevenue),
+        rate,
+      };
+    });
+  }, [dailyData]);
 
   const executiveBriefing = useMemo(
     () => generateExecutiveBriefing(analytics, topProducts, dataHealth),
     [analytics, topProducts, dataHealth],
   );
 
+  // Core metrics
+  const totalVisits = coerceNumber(analytics?.totalVisits);
+  const totalViews = coerceNumber(analytics?.totalProductViews);
+  const totalCarts = coerceNumber(analytics?.addToCarts);
+  const totalCheckouts = coerceNumber(analytics?.checkouts);
+  const totalPurchases = coerceNumber(analytics?.purchases);
+  const totalRevenue = coerceNumber(analytics?.totalRevenue);
+  const conversionRate = coerceNumber(analytics?.conversionRate);
+  const avgOrderValue = coerceNumber(analytics?.avgOrderValue);
+  const deliveredOrders = coerceNumber(analytics?.deliveredOrders);
+  const deliveryRate = coerceNumber(analytics?.deliveryRate);
   const activeVisitors = coerceNumber(analytics?.activeVisitors);
 
-  const strokeColor = isDarkMode ? "#93abc7" : "#647991";
-  const gridColor = isDarkMode ? "rgba(147, 171, 199, 0.14)" : "rgba(100, 121, 145, 0.14)";
-  const tooltipBg = isDarkMode ? "#0b1729" : "#ffffff";
-  const tooltipText = isDarkMode ? "#edf4ff" : "#0f1b2d";
+  // Step-by-step conversion ratios
+  const visitorToCart = totalVisits > 0 ? ((totalCarts / totalVisits) * 100).toFixed(1) : "0.0";
+  const cartToCheckout = totalCarts > 0 ? ((totalCheckouts / totalCarts) * 100).toFixed(1) : "0.0";
+  const checkoutToOrder = totalCheckouts > 0 ? ((totalPurchases / totalCheckouts) * 100).toFixed(1) : "0.0";
 
-  const highlightedProduct = topProducts[0] ?? null;
-  const rankedProducts = highlightedProduct
-    ? topProducts.slice(1, 6)
-    : topProducts.slice(0, 6);
-  const decisionValue = analytics
-    ? dataHealth.tone === "critical"
-      ? "راجع التتبع"
-      : formatPercent(analytics.conversionRate)
-    : "--";
-  const decisionDescription =
-    dataHealth.tone === "critical"
-      ? "هناك شراء أو تصفح لاحق بينما الزيارات المرجعية غير مكتملة، لذلك معدل التحويل الحالي لا يصلح كمرجع قرار."
-      : dataHealth.tone === "partial"
-        ? "الملخص العام مفيد كبداية، لكن توجد فجوة محدودة في التتبع أو في الاتجاه اليومي يجب أخذها في الاعتبار."
-        : "قراءة سريعة من الزيارات المسجلة إلى إتمام الشراء خلال الفترة المحددة.";
-  const healthChipDescription =
-    dataHealth.tone === "healthy"
-      ? "الملخص صالح للقراءة اليومية السريعة"
-      : dataHealth.tone === "partial"
-        ? "بعض المسارات تحتاج مراجعة بسيطة"
-        : "راجع التتبع قبل الحكم على التحويل";
+  // Quick order indicator
+  const isDirectOrderStore = totalPurchases > 0 && totalCarts === 0;
+
+  // Drop-off analysis
+  const dropOffAnalysis = useMemo(() => {
+    if (totalVisits === 0) return null;
+    const viewDrop = totalVisits > 0 ? ((totalVisits - totalViews) / totalVisits) * 100 : 0;
+    const cartDrop = totalViews > 0 ? ((totalViews - totalCarts) / totalViews) * 100 : 0;
+    const checkoutDrop = totalCarts > 0 ? ((totalCarts - totalPurchases) / totalCarts) * 100 : 0;
+
+    if (totalCarts === 0 && totalPurchases > 0) {
+      return {
+        stage: "طلب سريع ومباشر",
+        description: "المتجر يعتمد نموذج الطلب الفوري من صفحة المنتج متجاوزاً السلة.",
+        recommendation: "أداء ممتاز! عزز سرعة نموذج الشراء الفوري وشارات الثقة.",
+      };
+    }
+
+    if (viewDrop > 60 && totalVisits > 20) {
+      return {
+        stage: "بين الزيارة وتصفح المنتجات",
+        description: `أكثر من ${viewDrop.toFixed(0)}% من الزوار يغادرون الصفحة الرئيسية دون تصفح صفحة منتج.`,
+        recommendation: "قم بتحسين سرعة المتجر ووضع أفضل المنتجات مبيعاً في واجهة المتجر الرئيسية.",
+      };
+    }
+
+    if (cartDrop > 70 && totalViews > 20) {
+      return {
+        stage: "بين مشاهدة المنتج والإضافة للسلة",
+        description: `أكثر من ${cartDrop.toFixed(0)}% من مشاهدي المنتجات لا يضيفونها للسلة.`,
+        recommendation: "راجع وضوح زر الشراء، صور المنتج، السعر، وتفعيل زر الشراء الفوري.",
+      };
+    }
+
+    if (checkoutDrop > 50 && totalCarts > 5) {
+      return {
+        stage: "بين السلة وإتمام الطلب",
+        description: `تسرب ملحوظ بنسبة ${checkoutDrop.toFixed(0)}% للعملاء بعد إضافة المنتج للسلة.`,
+        recommendation: "فعّل رسائل استرجاع السلات المتروكة وبسط خطوات الدفع.",
+      };
+    }
+
+    return {
+      stage: "مسار التحويل متزن",
+      description: "المسار بين الزيارات والطلبات يسير بنسب مقبولة دون انقطاع حاد.",
+      recommendation: "استمر في زيادة حركة الزيارات المستهدفة من الحملات الإعلانية المربحة.",
+    };
+  }, [totalVisits, totalViews, totalCarts, totalPurchases]);
+
+  const starProduct = topProducts[0] ?? null;
+  const secondaryProducts = starProduct ? topProducts.slice(1, 6) : topProducts.slice(0, 6);
 
   const handlePeriodChange = (nextPeriod: string) => {
-    setFilters((previous) => ({
-      ...previous,
+    setFilterDraft((prev) => ({
+      ...prev,
       period: nextPeriod,
-      ...(nextPeriod === "custom"
-        ? {}
-        : {
-            startDate: "",
-            endDate: "",
-          }),
+      ...(nextPeriod === "custom" ? {} : { startDate: "", endDate: "" }),
     }));
 
     if (nextPeriod !== "custom") {
@@ -498,284 +441,290 @@ const StoreAnalyticsDashboard: React.FC = () => {
   };
 
   const applyCustomRange = () => {
-    const nextStartDate =
-      filters.startDate || customStartDateInputRef.current?.value || "";
-    const nextEndDate =
-      filters.endDate || customEndDateInputRef.current?.value || "";
+    const start = filterDraft.startDate || startDateInputRef.current?.value || "";
+    const end = filterDraft.endDate || endDateInputRef.current?.value || "";
 
-    if (!nextStartDate || !nextEndDate) {
-      setError("اختر تاريخ البداية والنهاية قبل تطبيق الفترة المخصصة.");
+    if (!start || !end) {
+      setPageError("اختر تاريخ البداية والنهاية قبل تطبيق الفترة المخصصة.");
       return;
     }
 
-    if (nextStartDate > nextEndDate) {
-      setError("تاريخ البداية يجب أن يكون قبل تاريخ النهاية.");
+    if (start > end) {
+      setPageError("تاريخ البداية يجب أن يكون قبل تاريخ النهاية.");
       return;
     }
 
-    setError(null);
-    setFilters((previous) => ({
-      ...previous,
-      startDate: nextStartDate,
-      endDate: nextEndDate,
-    }));
+    setPageError(null);
+    setFilterDraft((prev) => ({ ...prev, startDate: start, endDate: end }));
     setAppliedFilters({
       period: "custom",
-      startDate: nextStartDate,
-      endDate: nextEndDate,
+      startDate: start,
+      endDate: end,
     });
   };
 
   if (isInitialLoading) {
-    return <DashboardLoadingState />;
+    return (
+      <div className="relative min-h-screen px-4 pb-12 pt-6 sm:px-6 lg:px-8 bg-gray-50/50 dark:bg-gray-950/50" dir="rtl">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="h-32 animate-pulse rounded-3xl bg-white/70 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-800" />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="h-28 animate-pulse rounded-2xl bg-white/70 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-800" />
+            ))}
+          </div>
+          <div className="h-96 animate-pulse rounded-3xl bg-white/70 dark:bg-gray-900/60 border border-gray-200/60 dark:border-gray-800" />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="relative px-4 pb-10 pt-6 sm:px-6 lg:px-10" dir="rtl">
-      <div
-        className="pointer-events-none absolute inset-0 -z-20"
-        style={{ background: "var(--app-bg-gradient)" }}
-      />
-      <div
-        className="pointer-events-none absolute inset-0 -z-10 opacity-90"
-        style={{ background: "var(--app-bg-glow)" }}
-      />
+    <div className="relative min-h-screen px-3 py-4 sm:px-6 sm:py-6 lg:px-8 bg-gray-50/60 dark:bg-gray-950 text-gray-900 dark:text-gray-100" dir="rtl">
+      <div className="mx-auto max-w-7xl space-y-6">
 
-      <div className="mx-auto max-w-[1480px] space-y-6">
-        <StoreAnalyticsTabs />
-        <section
-          className="relative overflow-hidden rounded-[34px] px-5 py-6 sm:px-8 sm:py-8"
-          style={heroSurfaceStyle}
-        >
-          <div className="pointer-events-none absolute -left-12 top-0 h-40 w-40 rounded-full bg-white/35 blur-3xl dark:bg-white/10" />
-          <div className="pointer-events-none absolute bottom-0 right-0 h-36 w-36 rounded-full bg-cyan-200/35 blur-3xl dark:bg-cyan-500/10" />
-
-          <div className="relative grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px] xl:items-start">
-            <div className="space-y-5">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge
-                  variant="outline"
-                  className="rounded-full px-3 py-1 text-[11px] tracking-[0.26em]"
-                  style={buildTintStyle("var(--color-primary)", 10)}
-                >
-                  STORE ANALYTICS
+        {/* 1. Header & Navigation Hub (2026 Master Header) */}
+        <header className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 p-5 sm:p-7 shadow-sm backdrop-blur-xl">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+              <div className="flex flex-wrap items-center gap-2 mb-2">
+                <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary font-bold text-xs px-3 py-1">
+                  STORE INTELLIGENCE 2026
                 </Badge>
-                <Badge
-                  variant="outline"
-                  className="rounded-full px-3 py-1 text-[11px]"
-                  style={buildTintStyle("var(--color-secondary)", 10)}
-                >
+                <Badge variant="outline" className="rounded-full border-gray-300 dark:border-gray-700 bg-gray-100/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 text-xs px-3 py-1">
                   {formatRangeLabel(appliedFilters)}
                 </Badge>
-                <div
-                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium"
-                  style={buildTintStyle("var(--color-success)", 10)}
-                >
+                {/* Live Pulse */}
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   <span className="relative flex size-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
                   </span>
-                  <span>
-                    {activeVisitors > 0
-                      ? `${formatCount(activeVisitors)} نشط الآن`
-                      : "النبض الحي متصل"}
-                  </span>
+                  <span>{activeVisitors > 0 ? `${formatCount(activeVisitors)} نشط الآن في المتجر` : "النبض الحي متصل"}</span>
                 </div>
                 {isRefreshing && (
-                  <Badge
-                    variant="outline"
-                    className="rounded-full px-3 py-1 text-[11px]"
-                    style={buildTintStyle("var(--color-warning)", 10)}
-                  >
-                    جارٍ التحديث
+                  <Badge variant="outline" className="rounded-full border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs px-3 py-1 animate-pulse">
+                    جارٍ التحديث...
                   </Badge>
                 )}
               </div>
 
-              <div className="max-w-[68ch] space-y-3">
-                <h1
-                  className="text-3xl font-semibold leading-tight text-[var(--color-foreground)] sm:text-4xl lg:text-[3.1rem]"
-                  style={{ fontFamily: "var(--theme-font-heading)" }}
-                >
-                  لوحة أداء المتجر
-                </h1>
-                <p className="max-w-[65ch] text-sm leading-7 text-[var(--color-muted-foreground)] sm:text-base">
-                  ملخص سريع للحركة، التحويل، والمنتجات الأقوى خلال الفترة
-                  المحددة. وعند وجود فجوة في التتبع ستظهر هنا بوضوح بدل أن
-                  تختبئ داخل الأرقام.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <BriefingChip
-                  label="إجمالي الإيراد"
-                  value={analytics ? formatCurrency(analytics.totalRevenue) : "--"}
-                  description="ما حققته الفترة الحالية بالكامل"
-                  accent="var(--color-success)"
-                />
-                <BriefingChip
-                  label="المشتريات"
-                  value={analytics ? formatCount(analytics.purchases) : "--"}
-                  description="عدد عمليات الشراء المكتملة"
-                  accent="var(--color-secondary)"
-                />
-                <BriefingChip
-                  label="حالة البيانات"
-                  value={dataHealth.label}
-                  description={healthChipDescription}
-                  accent={healthToneAccentMap[dataHealth.tone]}
-                />
-              </div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+                لوحة أداء المتجر
+              </h1>
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-2xl leading-relaxed">
+                مركز الاستخبارات الشامل والحي لمتابعة الزيارات، مسار التحويل الكامل، كفاءة الشحن، والمنتجات الأعلى إيراداً لعام 2026.
+              </p>
             </div>
 
-            <div
-              className="rounded-[28px] p-4 sm:p-5"
-              style={buildPanelStyle("var(--color-secondary)")}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold tracking-[0.22em] text-[var(--color-muted-foreground)] uppercase">
-                    الفترة
-                  </p>
-                  <h2
-                    className="mt-1 text-lg font-semibold text-[var(--color-foreground)]"
-                    style={{ fontFamily: "var(--theme-font-heading)" }}
-                  >
-                    تصفية التقرير
-                  </h2>
-                </div>
+            {/* Quick Period Buttons & Actions */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-1 overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/60 p-1">
+                {PERIOD_OPTIONS.slice(0, 5).map((opt) => {
+                  const isActive = filterDraft.period === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handlePeriodChange(opt.value)}
+                      className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all whitespace-nowrap ${
+                        isActive
+                          ? "bg-white dark:bg-gray-900 text-primary shadow-sm"
+                          : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <select
+                  aria-label="الفترة"
+                  value={filterDraft.period}
+                  onChange={(e) => handlePeriodChange(e.target.value)}
+                  className="h-10 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 text-xs font-medium text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  {PERIOD_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setAppliedFilters({ ...appliedFilters })}
-                  className="rounded-full"
+                  className="h-10 rounded-2xl gap-1 px-3.5 border-gray-200 dark:border-gray-800 text-xs font-semibold"
                 >
-                  <ArrowPathIcon className="size-4" />
-                  تحديث
+                  <ArrowPathIcon className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+                  <span>تحديث</span>
                 </Button>
               </div>
+            </div>
+          </div>
 
-              <div className="mt-4 space-y-4">
-                <label className="grid gap-2 text-sm">
-                  <span className="text-[var(--color-muted-foreground)]">
-                    الفترة
-                  </span>
-                  <select
-                    value={filters.period}
-                    onChange={(event) => handlePeriodChange(event.target.value)}
-                    className="h-11 rounded-2xl border px-4 text-sm outline-none transition focus:border-primary focus:ring-4 focus:ring-primary/15"
-                    style={controlSurfaceStyle}
-                  >
-                    {PERIOD_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+          {/* Custom Date Inputs if 'custom' is selected */}
+          {isCustomPeriod && (
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center gap-3">
+              <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                <span>من:</span>
+                <input
+                  ref={startDateInputRef}
+                  type="date"
+                  aria-label="من"
+                  value={filterDraft.startDate}
+                  onChange={(e) => setFilterDraft((prev) => ({ ...prev, startDate: e.target.value }))}
+                  className="h-9 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 text-xs"
+                />
+              </label>
 
-                {showCustomRange && (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <label className="grid gap-2 text-sm">
-                      <span className="text-[var(--color-muted-foreground)]">
-                        من
-                      </span>
-                      <input
-                        ref={customStartDateInputRef}
-                        type="date"
-                        name="analytics-start-date"
-                        autoComplete="off"
-                        value={filters.startDate}
-                        onChange={(event) =>
-                          setFilters((previous) => ({
-                            ...previous,
-                            startDate: event.target.value,
-                          }))
-                        }
-                        className={dateInputClassName}
-                        style={controlSurfaceStyle}
-                      />
-                    </label>
-                    <label className="grid gap-2 text-sm">
-                      <span className="text-[var(--color-muted-foreground)]">
-                        إلى
-                      </span>
-                      <input
-                        ref={customEndDateInputRef}
-                        type="date"
-                        name="analytics-end-date"
-                        autoComplete="off"
-                        value={filters.endDate}
-                        onChange={(event) =>
-                          setFilters((previous) => ({
-                            ...previous,
-                            endDate: event.target.value,
-                          }))
-                        }
-                        className={dateInputClassName}
-                        style={controlSurfaceStyle}
-                      />
-                    </label>
-                    <Button
-                      onClick={applyCustomRange}
-                      className="h-11 rounded-2xl sm:col-span-2"
-                    >
-                      تطبيق الفترة
-                    </Button>
-                  </div>
-                )}
+              <label className="flex items-center gap-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+                <span>إلى:</span>
+                <input
+                  ref={endDateInputRef}
+                  type="date"
+                  aria-label="إلى"
+                  value={filterDraft.endDate}
+                  onChange={(e) => setFilterDraft((prev) => ({ ...prev, endDate: e.target.value }))}
+                  className="h-9 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 text-xs"
+                />
+              </label>
 
-                <div className="flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
-                  <CalendarDaysIcon className="size-4" />
-                  {lastUpdatedAt
-                    ? `آخر تحديث ${timeFormatter.format(new Date(lastUpdatedAt))}`
-                    : "سيظهر وقت آخر تحديث بعد أول تحميل ناجح"}
-                </div>
+              <Button
+                size="sm"
+                onClick={applyCustomRange}
+                className="h-9 rounded-xl text-xs px-4 bg-primary text-white font-semibold"
+              >
+                تطبيق الفترة
+              </Button>
+            </div>
+          )}
+
+          {lastRefreshedAt && (
+            <div className="mt-3 text-[11px] text-gray-400 dark:text-gray-500">
+              آخر مزامنة حية: {timeFormatter.format(new Date(lastRefreshedAt))}
+            </div>
+          )}
+        </header>
+
+        {/* Error / Warning alerts */}
+        {pageError && (
+          <Alert className="rounded-2xl border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200 p-4">
+            <ExclamationTriangleIcon className="size-5 text-amber-600 dark:text-amber-400" />
+            <AlertTitle className="font-bold">تنبيه في البيانات</AlertTitle>
+            <AlertDescription className="text-xs mt-1">{pageError}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* 2. Top Row - The 4 Core Business Pillars */}
+        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Card 1: Revenue */}
+          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">إجمالي الإيرادات</span>
+              <span className="p-2 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                <CreditCardIcon className="size-5" />
+              </span>
+            </div>
+            <div className="mt-3">
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white">
+                {analytics ? formatCurrency(totalRevenue) : "--"}
+              </h3>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                مبيعات الفترة المحددة بالكامل
+              </p>
+            </div>
+          </div>
+
+          {/* Card 2: Orders & AOV */}
+          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">الطلبات المؤكدة</span>
+              <span className="p-2 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                <ShoppingBagIcon className="size-5" />
+              </span>
+            </div>
+            <div className="mt-3">
+              <h3 className="text-2xl font-black text-gray-900 dark:text-white">
+                {analytics ? formatCount(totalPurchases) : "--"} <span className="text-xs font-normal text-gray-400">طلب</span>
+              </h3>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                متوسط الطلب: {avgOrderValue > 0 ? formatCurrency(avgOrderValue) : "--"}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Overall Conversion Rate */}
+          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">معدل التحويل العام</span>
+              <span className="p-2 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                <ChartBarIcon className="size-5" />
+              </span>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-2xl font-black text-purple-600 dark:text-purple-400">
+                  {analytics ? formatPercent(conversionRate) : "--"}
+                </h3>
+                <Badge variant="outline" className="text-[10px] rounded-full px-2 py-0.5 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  {conversionRate >= 3 ? "استثنائي" : conversionRate >= 1.2 ? "متزن" : "يحتاج دفع"}
+                </Badge>
               </div>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                {formatCount(totalVisits)} زيارة ➔ {formatCount(totalPurchases)} طلب
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Delivery Rate (Fulfillment) */}
+          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">نسبة تسليم الشحنات</span>
+              <span className="p-2 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <TruckIcon className="size-5" />
+              </span>
+            </div>
+            <div className="mt-3">
+              <div className="flex items-baseline gap-2">
+                <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400">
+                  {deliveryRate > 0 ? formatPercent(deliveryRate) : "--"}
+                </h3>
+                <span className="text-xs text-gray-400">({formatCount(deliveredOrders)} مسلم)</span>
+              </div>
+              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                نسبة الشحنات المسلمة بنجاح (COD)
+              </p>
             </div>
           </div>
         </section>
 
-        {/* 2026 AI Executive Briefing Banner */}
-        <section
-          className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 transition-all"
-          style={buildPanelStyle(
-            executiveBriefing.tone === "positive"
-              ? "var(--color-success)"
-              : executiveBriefing.tone === "attention"
-                ? "var(--color-warning)"
-                : "var(--color-primary)",
-          )}
-        >
+        {/* 3. AI Executive Diagnostic Briefing */}
+        <section className={`rounded-3xl border p-5 sm:p-6 transition-all shadow-sm ${
+          executiveBriefing.tone === "positive"
+            ? "border-emerald-500/30 bg-gradient-to-l from-emerald-500/10 via-emerald-500/5 to-transparent"
+            : executiveBriefing.tone === "attention"
+            ? "border-amber-500/30 bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent"
+            : "border-primary/30 bg-gradient-to-l from-primary/10 via-primary/5 to-transparent"
+        }`}>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div className="space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <SparklesIcon className="size-5 text-primary animate-pulse" />
-                <Badge
-                  variant="outline"
-                  className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wider"
-                  style={buildTintStyle(
-                    executiveBriefing.tone === "positive"
-                      ? "var(--color-success)"
-                      : executiveBriefing.tone === "attention"
-                        ? "var(--color-warning)"
-                        : "var(--color-primary)",
-                    14,
-                  )}
-                >
+                <Badge variant="outline" className="rounded-full px-3 py-0.5 text-xs font-bold border-primary/40 bg-primary/10 text-primary">
                   الموجز التنفيذي الذكي
                 </Badge>
-                <span className="text-xs text-[var(--color-muted-foreground)]">
+                <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                   {executiveBriefing.metricsSnapshot}
                 </span>
               </div>
-              <h3
-                className="text-lg sm:text-xl font-bold text-[var(--color-foreground)]"
-                style={{ fontFamily: "var(--theme-font-heading)" }}
-              >
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 {executiveBriefing.headline}
               </h3>
-              <p className="max-w-[78ch] text-xs sm:text-sm leading-6 text-[var(--color-muted-foreground)]">
+              <p className="max-w-3xl text-xs sm:text-sm leading-relaxed text-gray-600 dark:text-gray-300">
                 {executiveBriefing.summary}
               </p>
             </div>
@@ -783,7 +732,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             {executiveBriefing.actionSuggestion && (
               <SafeActionLink
                 to={executiveBriefing.actionSuggestion.path}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-95 transition-all min-h-[44px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-primary/90 transition-all min-h-[44px]"
               >
                 <BoltIcon className="size-4" />
                 <span>{executiveBriefing.actionSuggestion.label}</span>
@@ -793,770 +742,471 @@ const StoreAnalyticsDashboard: React.FC = () => {
           </div>
         </section>
 
-        {(error || warnings.length > 0 || dataHealth.issues.length > 0) && (
-          <div className="grid gap-3 xl:grid-cols-3">
-            {error && (
-              <Alert
-                className="rounded-[24px] p-4"
-                style={buildPanelStyle("var(--color-warning)")}
-              >
-                <ExclamationTriangleIcon className="size-5" />
-                <AlertTitle>الملخص الرئيسي لم يكتمل</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+        {/* 4. Complete Unified Sales & Conversion Funnel (قمع التحويل الشامل) */}
+        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <ChartBarIcon className="size-5 text-primary" />
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                  قمع التحويل ومسار رحلة العميل (Full Funnel)
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                رصد حركة العميل خطوة بخطوة من الزيارة الأولى وحتى استلام الشحنة.
+              </p>
+            </div>
 
-            {warnings.length > 0 && (
-              <Alert
-                className="rounded-[24px] p-4"
-                style={buildPanelStyle("var(--color-secondary)")}
-              >
-                <InformationCircleIcon className="size-5" />
-                <AlertTitle>بعض الأقسام تعمل جزئيًا</AlertTitle>
-                <AlertDescription className="space-y-1">
-                  {warnings.map((warning, index) => (
-                    <p key={`${warning}-${index}`}>{warning}</p>
-                  ))}
-                </AlertDescription>
-              </Alert>
-            )}
-
-            {dataHealth.issues.length > 0 && (
-              <Alert
-                className="rounded-[24px] p-4"
-                style={buildPanelStyle(healthToneAccentMap[dataHealth.tone])}
-              >
-                <ExclamationTriangleIcon className="size-5" />
-                <AlertTitle>{dataHealth.title}</AlertTitle>
-                <AlertDescription className="space-y-1">
-                  <p>{dataHealth.description}</p>
-                  {dataHealth.issues.slice(0, 2).map((issue, index) => (
-                    <p key={`${issue}-${index}`}>{issue}</p>
-                  ))}
-                </AlertDescription>
-              </Alert>
+            {isDirectOrderStore && (
+              <Badge variant="outline" className="rounded-xl border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs px-3 py-1 self-start sm:self-auto">
+                ⚡ متجر يدعم الطلب المباشر الفوري
+              </Badge>
             )}
           </div>
-        )}
 
-        <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(340px,0.82fr)]">
-          <section
-            className="rounded-[30px] p-5 sm:p-6"
-            style={buildPanelStyle("var(--color-primary)")}
-          >
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:items-end">
-              <div className="space-y-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-muted-foreground)]">
-                  قراءة التحويل
-                </p>
-                <div className="space-y-2">
-                  <h2
-                    className="text-4xl font-semibold text-[var(--color-foreground)] sm:text-[3.4rem]"
-                    style={{ fontFamily: "var(--theme-font-heading)" }}
-                  >
-                    {decisionValue}
-                  </h2>
-                  <p className="max-w-[28rem] text-sm leading-7 text-[var(--color-muted-foreground)]">
-                    {decisionDescription}
+          {/* Funnel Visual Pipeline (Desktop & Mobile) */}
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+            {/* Step 1: Visits */}
+            <div className="relative rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>1. زيارات المتجر</span>
+                  <span className="font-bold text-blue-600">100%</span>
+                </div>
+                <div className="text-xl font-black text-gray-900 dark:text-white">
+                  {formatCount(totalVisits)}
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] text-gray-400">مدخل حركة المرور</div>
+            </div>
+
+            {/* Step 2: Views */}
+            <div className="relative rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>2. مشاهدات المنتجات</span>
+                  <span className="font-bold text-sky-600">
+                    {totalVisits > 0 ? `${((totalViews / totalVisits) * 100).toFixed(0)}%` : "--"}
+                  </span>
+                </div>
+                <div className="text-xl font-black text-gray-900 dark:text-white">
+                  {formatCount(totalViews)}
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] text-gray-400">تصفح الكتالوج</div>
+            </div>
+
+            {/* Step 3: Add to Cart */}
+            <div className="relative rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>3. إضافات السلة</span>
+                  <span className="font-bold text-amber-600">{visitorToCart}%</span>
+                </div>
+                <div className="text-xl font-black text-gray-900 dark:text-white">
+                  {formatCount(totalCarts)}
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] text-gray-400">نية الشراء</div>
+            </div>
+
+            {/* Step 4: Checkouts */}
+            <div className="relative rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>4. شاشة الدفع</span>
+                  <span className="font-bold text-indigo-600">{cartToCheckout}%</span>
+                </div>
+                <div className="text-xl font-black text-gray-900 dark:text-white">
+                  {formatCount(totalCheckouts)}
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] text-gray-400">بدء إدخال البيانات</div>
+            </div>
+
+            {/* Step 5: Purchases */}
+            <div className="relative rounded-2xl border border-emerald-500/20 dark:border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1">
+                  <span>5. إتمام الشراء</span>
+                  <span>{formatPercent(conversionRate)}</span>
+                </div>
+                <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
+                  {formatCount(totalPurchases)}
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] text-emerald-600/80">الطلبات المؤكدة</div>
+            </div>
+
+            {/* Step 6: Delivered */}
+            <div className="relative rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  <span>6. تم التسليم</span>
+                  <span className="font-bold text-amber-600">{deliveryRate > 0 ? `${deliveryRate.toFixed(0)}%` : "--"}</span>
+                </div>
+                <div className="text-xl font-black text-gray-900 dark:text-white">
+                  {formatCount(deliveredOrders)}
+                </div>
+              </div>
+              <div className="mt-3 text-[11px] text-gray-400">التحصيل الفعلي (COD)</div>
+            </div>
+          </div>
+
+          {/* Drop-off Diagnosis Box */}
+          {dropOffAnalysis && (
+            <div className="mt-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                  <InformationCircleIcon className="size-5" />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-gray-900 dark:text-white">
+                      تشخيص تسرب العملاء: {dropOffAnalysis.stage}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                    {dropOffAnalysis.description} {dropOffAnalysis.recommendation}
                   </p>
                 </div>
               </div>
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <MetricPanel
-                  label="إجمالي الزيارات"
-                  value={analytics ? formatCount(analytics.totalVisits) : "--"}
-                  meta="بداية الرحلة التي نقيس عليها البقية"
-                  accent="var(--color-primary)"
-                  icon={<UserGroupIcon className="size-5" />}
-                />
-                <MetricPanel
-                  label="مشاهدات المنتجات"
-                  value={analytics ? formatCount(analytics.totalProductViews) : "--"}
-                  meta="عدد مرات الدخول إلى صفحات المنتجات"
-                  accent="var(--color-secondary)"
-                  icon={<EyeIcon className="size-5" />}
-                />
-                <MetricPanel
-                  label="إضافات السلة"
-                  value={analytics ? formatCount(analytics.addToCarts) : "--"}
-                  meta="إشارات نية الشراء داخل الفترة"
-                  accent="var(--color-warning)"
-                  icon={<ShoppingCartIcon className="size-5" />}
-                />
-                <MetricPanel
-                  label="المشتريات"
-                  value={analytics ? formatCount(analytics.purchases) : "--"}
-                  meta="عدد عمليات الإتمام خلال الفترة"
-                  accent="var(--color-success)"
-                  icon={<ShoppingCartIcon className="size-5" />}
-                />
-              </div>
-            </div>
-          </section>
-
-        </div>
-
-        <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-          <section
-            className="rounded-[30px] p-5 sm:p-6"
-            style={buildPanelStyle("var(--color-primary)")}
-          >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-muted-foreground)]">
-                  الإيقاع الزمني الذكي
-                </p>
-                <h2
-                  className="mt-1 text-xl font-semibold text-[var(--color-foreground)]"
-                  style={{ fontFamily: "var(--theme-font-heading)" }}
-                >
-                  {chartView === "volume"
-                    ? "الزيارات والإيرادات عبر الفترة"
-                    : "تطور معدل التحويل اليومي %"}
-                </h2>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="inline-flex rounded-2xl border border-gray-200/80 bg-white/60 p-1 dark:border-gray-800 dark:bg-gray-900/60">
-                  <button
-                    type="button"
-                    onClick={() => setChartView("volume")}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
-                      chartView === "volume"
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
-                    }`}
-                  >
-                    الزيارات والإيراد
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setChartView("conversion")}
-                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
-                      chartView === "conversion"
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
-                    }`}
-                  >
-                    معدل التحويل %
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5">
-              {dailyData.length > 0 ? (
-                <div className="h-[360px]">
-                  {chartView === "volume" ? (
-                    <ResponsiveContainer width="100%" height={360}>
-                      <AreaChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} />
-                        <YAxis yAxisId="left" orientation="right" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الزيارات", angle: -90, position: "insideRight", fill: strokeColor, style: { fontSize: 12 } }} />
-                        <YAxis yAxisId="right" orientation="left" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الإيراد", angle: 90, position: "insideLeft", fill: strokeColor, style: { fontSize: 12 } }} />
-                        <Tooltip contentStyle={{ backgroundColor: tooltipBg, color: tooltipText, border: `1px solid ${isDarkMode ? "#24384f" : "#d7e4f4"}`, borderRadius: 8 }} />
-                        <Legend wrapperStyle={{ color: strokeColor }} />
-                        <Area yAxisId="left" type="monotone" dataKey="visits" name="الزيارات" stroke="#2f6bff" fill="rgba(47, 107, 255, 0.12)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                        <Area yAxisId="right" type="monotone" dataKey="revenue" name="الإيراد" stroke="#14b87a" fill="rgba(20, 184, 122, 0.1)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  ) : (
-                    <ResponsiveContainer width="100%" height={360}>
-                      <LineChart data={chartData}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} />
-                        <YAxis axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} unit="%" />
-                        <Tooltip
-                          formatter={(val: any) => [`${val}%`, "معدل التحويل"]}
-                          contentStyle={{ backgroundColor: tooltipBg, color: tooltipText, border: `1px solid ${isDarkMode ? "#24384f" : "#d7e4f4"}`, borderRadius: 8 }}
-                        />
-                        <Line type="monotone" dataKey="rate" name="معدل التحويل %" stroke="#2f6bff" strokeWidth={2.5} dot={{ r: 3, fill: "#2f6bff" }} activeDot={{ r: 5 }} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  )}
-                </div>
-              ) : (
-                <EmptyPanel
-                  title="السلسلة اليومية غير متاحة"
-                  description="ملخص الفترة موجود، لكن لم تصل بيانات يومية كافية لبناء اتجاه موثوق."
-                />
-              )}
-            </div>
-          </section>
-
-          <section
-            className="rounded-[30px] p-5 sm:p-6"
-            style={buildPanelStyle("var(--color-secondary)")}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-muted-foreground)]">
-                  مسار التحويل
-                </p>
-                <h2
-                  className="mt-1 text-xl font-semibold text-[var(--color-foreground)]"
-                  style={{ fontFamily: "var(--theme-font-heading)" }}
-                >
-                  أين يتحرك الزائر وأين يفقد الزخم؟
-                </h2>
-              </div>
-              <Badge
-                variant="outline"
-                className="rounded-full px-3 py-1 text-[11px]"
-                style={buildTintStyle("var(--color-primary)", 9)}
+              <SafeActionLink
+                to="/settings/store/tools"
+                className="shrink-0 text-xs font-bold text-primary hover:underline"
               >
-                {formatRangeLabel(appliedFilters)}
-              </Badge>
+                تفعيل أدوات تقليل الفقد ⬅️
+              </SafeActionLink>
             </div>
+          )}
+        </section>
 
-            <div className="mt-5 space-y-4">
-              {funnelMetrics.length > 0 ? (
-                funnelMetrics.map((metric, index) => (
-                  <FunnelRow
-                    key={metric.key}
-                    metric={metric}
-                    accent={funnelAccentMap[index] ?? "var(--color-primary)"}
-                    isFirst={index === 0}
-                  />
-                ))
-              ) : (
-                <EmptyPanel
-                  title="لا توجد رحلة تحويل بعد"
-                  description="بمجرد وصول زيارات وتفاعلات كافية ستظهر خطوات الرحلة هنا بشكل بصري أوضح."
-                />
-              )}
-            </div>
-          </section>
-        </div>
-
-        <section
-          className="rounded-[30px] p-5 sm:p-6"
-          style={buildPanelStyle("var(--color-primary)")}
-        >
-          <div className="flex flex-wrap items-start justify-between gap-4">
+        {/* 5. Dual-Mode Interactive Chart (Volume vs Daily Conversion Rate) */}
+        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-muted-foreground)]">
-                أبرز المنتجات
+              <div className="flex items-center gap-2">
+                <ArrowTrendingUpIcon className="size-5 text-primary" />
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                  {chartMode === "volume" ? "مسار الزيارات والإيرادات اليومي" : "تطور معدل التحويل اليومي %"}
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {chartMode === "volume"
+                  ? "تتبع العلاقة بين نمو الزيارات وحجم الإيرادات المحققة يوماً بيوم."
+                  : "مراقبة ثبات أو تقلبات نسبة التحويل عبر الأيام لاكتشاف أفضل الأيام أداءً."}
               </p>
-              <h2
-                className="mt-1 text-xl font-semibold text-[var(--color-foreground)]"
-                style={{ fontFamily: "var(--theme-font-heading)" }}
-              >
-                المنتجات التي تحوّل الزيارة إلى نية شراء
-              </h2>
             </div>
-            <div className="text-sm text-[var(--color-muted-foreground)]">
-              أفضل {formatCount(topProducts.length)} منتج في الفترة الحالية
+
+            {/* Toggle Switch */}
+            <div className="inline-flex rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 p-1">
+              <button
+                type="button"
+                onClick={() => setChartMode("volume")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                  chartMode === "volume"
+                    ? "bg-white dark:bg-gray-900 text-primary shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                الحجم والإيرادات
+              </button>
+              <button
+                type="button"
+                onClick={() => setChartMode("conversion")}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all ${
+                  chartMode === "conversion"
+                    ? "bg-white dark:bg-gray-900 text-primary shadow-sm"
+                    : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                }`}
+              >
+                معدل التحويل اليومي %
+              </button>
             </div>
           </div>
 
-          <div className="mt-5">
-            {topProducts.length === 0 ? (
-              <EmptyPanel
-                title="لا توجد بيانات منتجات كافية"
-                description="سنملأ هذه المنطقة بمجرد تسجيل مشاهدات ومنتجات متكررة داخل الفترة المحددة."
-              />
-            ) : (
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(340px,0.92fr)]">
-                {highlightedProduct && (
-                  <FeaturedProductCard product={highlightedProduct} />
-                )}
-
-                <div className="grid gap-3">
-                  {rankedProducts.map((product, index) => (
-                    <ProductLeaderboardRow
-                      key={product.id}
-                      product={product}
-                      rank={highlightedProduct ? index + 2 : index + 1}
+          <div className="h-80 w-full" data-testid="analytics-chart">
+            {chartData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                {chartMode === "volume" ? (
+                  <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorVisits" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} opacity={0.5} />
+                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="left" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: "16px",
+                        border: "1px solid #e5e7eb",
+                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                        direction: "rtl",
+                      }}
                     />
-                  ))}
-                </div>
+                    <Legend wrapperStyle={{ fontSize: 12, paddingTop: 10 }} />
+                    <Area yAxisId="left" type="monotone" dataKey="visits" name="الزيارات" stroke="#3b82f6" strokeWidth={2.5} fillOpacity={1} fill="url(#colorVisits)" />
+                    <Area yAxisId="right" type="monotone" dataKey="revenue" name="الإيرادات (ج.م)" stroke="#10b981" strokeWidth={2.5} fillOpacity={1} fill="url(#colorRevenue)" />
+                  </AreaChart>
+                ) : (
+                  <LineChart data={chartData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} opacity={0.5} />
+                    <XAxis dataKey="date" stroke="#9ca3af" fontSize={12} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#9ca3af" fontSize={12} unit="%" tickLine={false} axisLine={false} />
+                    <Tooltip
+                      formatter={(val: any) => [`${val}%`, "معدل التحويل"]}
+                      contentStyle={{
+                        borderRadius: "16px",
+                        border: "1px solid #e5e7eb",
+                        boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1)",
+                        direction: "rtl",
+                      }}
+                    />
+                    <Line type="monotone" dataKey="rate" name="معدل التحويل %" stroke="#8b5cf6" strokeWidth={3} dot={{ r: 4, fill: "#8b5cf6" }} activeDot={{ r: 6 }} />
+                  </LineChart>
+                )}
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex h-full flex-col items-center justify-center text-center p-6 text-gray-400">
+                <ChartBarIcon className="size-10 mb-2 stroke-1" />
+                <p className="text-sm font-semibold">لا توجد بيانات حركة كافية للفترة المحددة</p>
+                <p className="text-xs mt-1">اختر فترة زمنية أوسع أو انتظر تدفق المزيد من الزيارات</p>
               </div>
             )}
           </div>
         </section>
 
-        {/* 2026 1-Click Growth Action Hub (مركز إجراءات النمو والتنشيط الفوري) */}
-        <section
-          className="rounded-[30px] p-5 sm:p-6"
-          style={buildPanelStyle("var(--color-primary)")}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* 6. Top Converting Products & Growth Actions (2 Columns) */}
+        <section className="grid gap-6 lg:grid-cols-3">
+          {/* Star Product Card */}
+          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary text-xs font-bold px-3 py-1">
+                  المنتج البطل (الأعلى تحويلاً)
+                </Badge>
+                <SparklesIcon className="size-5 text-amber-500" />
+              </div>
+
+              {starProduct ? (
+                <div>
+                  <div className="aspect-video w-full rounded-2xl overflow-hidden bg-gray-100 dark:bg-gray-800 mb-4 flex items-center justify-center">
+                    {getTopProductImage(starProduct) ? (
+                      <img
+                        src={getTopProductImage(starProduct)!}
+                        alt={starProduct.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <ShoppingBagIcon className="size-10 text-gray-400" />
+                    )}
+                  </div>
+                  <h4 className="font-bold text-base text-gray-900 dark:text-white line-clamp-1">
+                    {starProduct.name}
+                  </h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                    {formatCurrency(starProduct.price)}
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-2">
+                      <span className="text-[10px] text-gray-400">المشاهدات</span>
+                      <p className="text-sm font-bold text-gray-900 dark:text-white">{formatCount(starProduct.views)}</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-2">
+                      <span className="text-[10px] text-gray-400">السلة</span>
+                      <p className="text-sm font-bold text-amber-600">{formatCount(starProduct.addToCarts)}</p>
+                    </div>
+                    <div className="rounded-xl bg-gray-50 dark:bg-gray-800/50 p-2">
+                      <span className="text-[10px] text-gray-400">الطلبات</span>
+                      <p className="text-sm font-bold text-emerald-600">{formatCount(getTopProductPurchases(starProduct))}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-xs text-gray-400">
+                  لا توجد بيانات منتجات كافية للفترة الحالية
+                </div>
+              )}
+            </div>
+
+            <SafeActionLink
+              to="/products"
+              className="mt-5 text-center text-xs font-bold text-primary hover:underline"
+            >
+              عرض كافة المنتجات والكتالوج ⬅️
+            </SafeActionLink>
+          </div>
+
+          {/* Leaderboard Table (Top 5) */}
+          <div className="lg:col-span-2 rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                  أفضل المنتجات حسب المبيعات والتحويل
+                </h3>
+                <span className="text-xs text-gray-400">ترتيب تنازلي</span>
+              </div>
+
+              {secondaryProducts.length > 0 ? (
+                <div className="space-y-2.5">
+                  {secondaryProducts.map((prod, idx) => (
+                    <div
+                      key={prod.id || idx}
+                      className="flex items-center justify-between gap-3 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="flex size-7 items-center justify-center rounded-xl bg-gray-200 dark:bg-gray-700 text-xs font-bold text-gray-700 dark:text-gray-300 shrink-0">
+                          #{idx + 2}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-xs font-bold text-gray-900 dark:text-white truncate">
+                            {prod.name}
+                          </p>
+                          <p className="text-[11px] text-gray-400">
+                            {formatCurrency(prod.price)}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-left shrink-0">
+                        <div>
+                          <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                            {formatCount(getTopProductPurchases(prod))} طلب
+                          </p>
+                          <p className="text-[10px] text-gray-400">
+                            {formatCount(prod.views)} مشاهدة
+                          </p>
+                        </div>
+                        <Badge variant="outline" className="text-[10px] rounded-full border-gray-200 dark:border-gray-700">
+                          {formatPercent(prod.conversionRate)}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-12 text-center text-xs text-gray-400">
+                  بانتظار تسجيل المزيد من طلبات المنتجات
+                </div>
+              )}
+            </div>
+
+            <div className="mt-5 pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-400">
+              <span>يتم تحديث الترتيب تلقائياً مع كل طلب شراء مكتمل</span>
+              <SafeActionLink to="/analytics/orders/products" className="font-bold text-primary hover:underline">
+                تقرير أداء المنتجات التفصيلي ⬅️
+              </SafeActionLink>
+            </div>
+          </div>
+        </section>
+
+        {/* 7. 1-Click Growth Action Hub (مركز إجراءات النمو والتنشيط الفوري) */}
+        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
             <div>
               <div className="flex items-center gap-2">
                 <BoltIcon className="size-5 text-primary" />
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-muted-foreground)]">
-                  إجراءات النمو الفورية (1-Click Actions)
-                </p>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                  إجراءات النمو الفورية (1-Click Growth Actions)
+                </h2>
               </div>
-              <h2
-                className="mt-1 text-xl font-semibold text-[var(--color-foreground)]"
-                style={{ fontFamily: "var(--theme-font-heading)" }}
-              >
-                توصيات مباشرة لتحسين التحويل ومضاعفة المبيعات
-              </h2>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                إجراءات جاهزة بنقرة واحدة لتحسين نسب التحويل واسترجاع السلات المفقودة.
+              </p>
             </div>
-            <Badge
-              variant="outline"
-              className="rounded-full px-3 py-1 text-[11px]"
-              style={buildTintStyle("var(--color-primary)", 10)}
-            >
+            <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary text-xs font-bold px-3 py-1">
               جاهزة للتنفيذ
             </Badge>
           </div>
 
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {/* Action 1: Abandoned Carts */}
             <SafeActionLink
               to="/analytics/orders/abandoned-cart"
-              className="group flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-gray-800 dark:bg-gray-900/40 dark:hover:bg-gray-900"
+              className="group flex flex-col justify-between rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 p-5 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all"
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <span className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
                     <ShoppingCartIcon className="size-5" />
                   </span>
                   <ArrowTopRightOnSquareIcon className="size-4 text-gray-400 group-hover:text-primary transition" />
                 </div>
-                <h4 className="mt-3 text-sm font-bold text-gray-900 dark:text-white">
+                <h4 className="mt-4 text-sm font-bold text-gray-900 dark:text-white">
                   استرجاع السلات المتروكة
                 </h4>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-5">
-                  أرسل تنبيهات واسترجع العملاء الذين أضافوا منتجات وخرجوا قبل إتمام الشراء.
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  تواصل مع العملاء الذين أضافوا منتجات وخرجوا قبل إتمام الشراء عبر الواتساب واسترجع طلبات مؤكدة.
                 </p>
               </div>
-              <span className="mt-4 inline-flex items-center text-xs font-semibold text-primary">
-                فتح تقرير السلات ⬅️
+              <span className="mt-4 text-xs font-bold text-primary group-hover:underline">
+                فتح تقرير واسترجاع السلات ⬅️
               </span>
             </SafeActionLink>
 
+            {/* Action 2: Conversion Boost Tools */}
             <SafeActionLink
               to="/settings/store/tools"
-              className="group flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-gray-800 dark:bg-gray-900/40 dark:hover:bg-gray-900"
+              className="group flex flex-col justify-between rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 p-5 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all"
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                  <span className="p-2.5 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
                     <BoltIcon className="size-5" />
                   </span>
                   <ArrowTopRightOnSquareIcon className="size-4 text-gray-400 group-hover:text-primary transition" />
                 </div>
-                <h4 className="mt-3 text-sm font-bold text-gray-900 dark:text-white">
-                  أدوات تسريع الشراء والتحويل
+                <h4 className="mt-4 text-sm font-bold text-gray-900 dark:text-white">
+                  أدوات تسريع وتحسين الشراء
                 </h4>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-5">
-                  فعّل زر الشراء الفوري (Sticky Buy Now)، شارات الثقة، وعدادات الخصم في صفحة المنتج.
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  فعّل زر الشراء الفوري (Sticky Buy Now)، شارات الثقة، وعداد التخفيض في صفحة المنتج لتسهيل الطلب.
                 </p>
               </div>
-              <span className="mt-4 inline-flex items-center text-xs font-semibold text-primary">
+              <span className="mt-4 text-xs font-bold text-primary group-hover:underline">
                 إعداد أدوات التحويل ⬅️
               </span>
             </SafeActionLink>
 
+            {/* Action 3: Campaign Attribution */}
             <SafeActionLink
               to="/analytics/orders/campaign-attribution"
-              className="group flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-gray-800 dark:bg-gray-900/40 dark:hover:bg-gray-900"
+              className="group flex flex-col justify-between rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/60 dark:bg-gray-800/40 p-5 hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all"
             >
               <div>
                 <div className="flex items-center justify-between">
-                  <span className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  <span className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
                     <ArrowTrendingUpIcon className="size-5" />
                   </span>
                   <ArrowTopRightOnSquareIcon className="size-4 text-gray-400 group-hover:text-primary transition" />
                 </div>
-                <h4 className="mt-3 text-sm font-bold text-gray-900 dark:text-white">
+                <h4 className="mt-4 text-sm font-bold text-gray-900 dark:text-white">
                   إسناد الحملات الإعلانية
                 </h4>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-5">
-                  قارن عوائد إعلانات فيسبوك وتيك توك لمعرفة الإعلانات التي تحقق أعلى معدل تحويل.
+                <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  قارن عوائد إعلانات فيسبوك وتيك توك لمعرفة الإعلانات التي تحقق أعلى معدل تحويل فعلي.
                 </p>
               </div>
-              <span className="mt-4 inline-flex items-center text-xs font-semibold text-primary">
+              <span className="mt-4 text-xs font-bold text-primary group-hover:underline">
                 فحص مصادر الإعلانات ⬅️
               </span>
             </SafeActionLink>
           </div>
         </section>
+
       </div>
     </div>
   );
 };
-
-interface BriefingChipProps {
-  label: string;
-  value: string;
-  description: string;
-  accent: string;
-}
-
-const BriefingChip: React.FC<BriefingChipProps> = ({
-  label,
-  value,
-  description,
-  accent,
-}) => (
-  <div className="rounded-[24px] p-4" style={buildPanelStyle(accent)}>
-    <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted-foreground)]">
-      {label}
-    </p>
-    <p className="mt-3 text-lg font-semibold text-[var(--color-foreground)]">
-      {value}
-    </p>
-    <p className="mt-1 text-xs leading-6 text-[var(--color-muted-foreground)]">
-      {description}
-    </p>
-  </div>
-);
-
-interface MetricPanelProps {
-  label: string;
-  value: string;
-  meta: string;
-  accent: string;
-  icon: React.ReactNode;
-}
-
-const MetricPanel: React.FC<MetricPanelProps> = ({
-  label,
-  value,
-  meta,
-  accent,
-  icon,
-}) => (
-  <div className="rounded-[24px] p-4" style={buildPanelStyle(accent)}>
-    <div className="flex items-center justify-between gap-3">
-      <p className="text-sm font-semibold text-[var(--color-foreground)]">
-        {label}
-      </p>
-      <span
-        className="inline-flex size-10 items-center justify-center rounded-2xl"
-        style={buildTintStyle(accent, 11)}
-      >
-        {icon}
-      </span>
-    </div>
-    <p className="mt-4 text-2xl font-semibold text-[var(--color-foreground)]">
-      {value}
-    </p>
-    <p className="mt-2 text-xs leading-6 text-[var(--color-muted-foreground)]">
-      {meta}
-    </p>
-  </div>
-);
-
-interface FunnelRowProps {
-  metric: FunnelMetric;
-  accent: string;
-  isFirst: boolean;
-}
-
-const FunnelRow: React.FC<FunnelRowProps> = ({ metric, accent, isFirst }) => {
-  const hasMissingBaseline = !isFirst && metric.value > 0 && metric.baselineRate === 0;
-  const supportingText = isFirst
-    ? "المرجع الأساسي الذي تُقرأ نسبة بقية المراحل عليه"
-    : hasMissingBaseline
-      ? "هذه المرحلة موجودة لكن الزيارات المرجعية غير مسجلة، لذلك يجب مراجعة التتبع قبل قراءة النسب"
-      : metric.key === "views" && metric.baselineRate > 100
-        ? "الزيارة الواحدة قد تتضمن أكثر من مشاهدة منتج، لذلك تجاوز 100% هنا طبيعي ولا يعني خللًا بحد ذاته"
-      : metric.key === "started-orders"
-        ? "هذه الخطوة تمثل بدء الطلب سواء بدأ من السلة أو من الطلب السريع المباشر"
-      : metric.exceedsVisits
-      ? "هذه المرحلة أعلى من عدد الزيارات المسجلة، لذا تُقرأ كإشارة أداء لا كمسار خطي صارم"
-      : metric.stepRate !== null
-        ? `من المرحلة السابقة ${formatPercent(metric.stepRate)}`
-        : "لا توجد مرحلة سابقة للمقارنة";
-  const baselineText = hasMissingBaseline
-    ? "المرجع غير متاح"
-    : `من الزيارات ${formatPercent(metric.baselineRate)}`;
-
-  return (
-    <div className="space-y-2 rounded-[22px] p-4" style={buildPanelStyle(accent)}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="space-y-1">
-          <p className="text-sm font-semibold text-[var(--color-foreground)]">
-            {metric.label}
-          </p>
-          <p className="text-xs leading-6 text-[var(--color-muted-foreground)]">
-            {supportingText}
-          </p>
-        </div>
-        <div className="text-left">
-          <p className="text-lg font-semibold text-[var(--color-foreground)]">
-            {formatCount(metric.value)}
-          </p>
-          <p className="text-xs text-[var(--color-muted-foreground)]">
-            {baselineText}
-          </p>
-        </div>
-      </div>
-
-      <div
-        className="h-3 overflow-hidden rounded-full"
-        style={trackSurfaceStyle}
-      >
-        <div
-          className="h-full rounded-full transition-[width] duration-500 ease-out"
-          style={{
-            width: `${metric.visualShare}%`,
-            background: accent,
-          }}
-        />
-      </div>
-    </div>
-  );
-};
-
-const FeaturedProductCard: React.FC<{ product: TopProduct }> = ({ product }) => {
-  const image = getTopProductImage(product);
-  const views = coerceNumber(product.views);
-  const purchases = getTopProductPurchases(product);
-  const hasTrackingGap = views === 0 && purchases > 0;
-  const tone = getConversionTone(product.conversionRate);
-  const accent = hasTrackingGap
-    ? "var(--color-warning)"
-    : conversionToneMap[tone];
-  const conversionLabel = hasTrackingGap
-    ? "تتبع ناقص"
-    : formatPercent(product.conversionRate);
-
-  return (
-    <article className="overflow-hidden rounded-[28px]" style={buildPanelStyle(accent)}>
-      <div className="grid gap-5 p-5 lg:grid-cols-[220px_minmax(0,1fr)] lg:items-center">
-        <div
-          className="relative aspect-square overflow-hidden rounded-[24px]"
-          style={softMediaSurfaceStyle}
-        >
-          {image ? (
-            <img
-              src={image}
-              alt={product.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-sm text-[var(--color-muted-foreground)]">
-              لا توجد صورة
-            </div>
-          )}
-        </div>
-
-        <div className="space-y-4">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-muted-foreground)]">
-                المنتج الأوضح أثرًا
-              </p>
-              <h3
-                className="mt-1 text-2xl font-semibold text-[var(--color-foreground)]"
-                style={{ fontFamily: "var(--theme-font-heading)" }}
-              >
-                {product.name}
-              </h3>
-              <p className="mt-2 text-sm text-[var(--color-muted-foreground)]">
-                {formatCurrency(product.price)}
-              </p>
-            </div>
-            <Badge
-              variant="outline"
-              className="rounded-full px-3 py-1 text-[11px]"
-              style={buildTintStyle(accent, 10)}
-            >
-              {conversionLabel}
-            </Badge>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            <ProductStat
-              label="المشاهدات"
-              value={formatCount(views)}
-              accent="var(--color-primary)"
-            />
-            <ProductStat
-              label="السلة"
-              value={formatCount(product.addToCarts)}
-              accent="var(--color-warning)"
-            />
-            <ProductStat
-              label="المبيعات"
-              value={formatCount(purchases)}
-              accent="var(--color-success)"
-            />
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-};
-
-interface ProductLeaderboardRowProps {
-  product: TopProduct;
-  rank: number;
-}
-
-const ProductLeaderboardRow: React.FC<ProductLeaderboardRowProps> = ({
-  product,
-  rank,
-}) => {
-  const image = getTopProductImage(product);
-  const views = coerceNumber(product.views);
-  const purchases = getTopProductPurchases(product);
-  const hasTrackingGap = views === 0 && purchases > 0;
-  const tone = getConversionTone(product.conversionRate);
-  const accent = hasTrackingGap
-    ? "var(--color-warning)"
-    : conversionToneMap[tone];
-  const conversionLabel = hasTrackingGap
-    ? "تتبع ناقص"
-    : formatPercent(product.conversionRate);
-  const supportingLabel = hasTrackingGap
-    ? `${formatCount(purchases)} مبيعات`
-    : `${formatCount(views)} مشاهدة`;
-
-  return (
-    <article className="rounded-[24px] p-4" style={buildPanelStyle(accent)}>
-      <div className="flex items-center gap-4">
-        <span
-          className="inline-flex size-11 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold"
-          style={buildTintStyle(accent, 10)}
-        >
-          #{rank}
-        </span>
-
-        <div
-          className="relative h-14 w-14 shrink-0 overflow-hidden rounded-[18px]"
-          style={softMediaSurfaceStyle}
-        >
-          {image ? (
-            <img
-              src={image}
-              alt={product.name}
-              className="h-full w-full object-cover"
-            />
-          ) : null}
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-semibold text-[var(--color-foreground)]">
-            {product.name}
-          </p>
-          <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-            {formatCurrency(product.price)}
-          </p>
-        </div>
-
-        <div className="text-left">
-          <p className="text-sm font-semibold text-[var(--color-foreground)]">
-            {conversionLabel}
-          </p>
-          <p className="mt-1 text-xs text-[var(--color-muted-foreground)]">
-            {supportingLabel}
-          </p>
-        </div>
-      </div>
-    </article>
-  );
-};
-
-const ProductStat: React.FC<{
-  label: string;
-  value: string;
-  accent: string;
-}> = ({ label, value, accent }) => (
-  <div className="rounded-[20px] p-3" style={buildPanelStyle(accent)}>
-    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-muted-foreground)]">
-      {label}
-    </p>
-    <p className="mt-2 text-lg font-semibold text-[var(--color-foreground)]">
-      {value}
-    </p>
-  </div>
-);
-
-const EmptyPanel: React.FC<{
-  title: string;
-  description: string;
-}> = ({ title, description }) => (
-  <div
-    className="rounded-[24px] p-5 text-center"
-    style={buildPanelStyle("var(--color-muted-foreground)")}
-  >
-    <p
-      className="text-lg font-semibold text-[var(--color-foreground)]"
-      style={{ fontFamily: "var(--theme-font-heading)" }}
-    >
-      {title}
-    </p>
-    <p className="mt-2 text-sm leading-7 text-[var(--color-muted-foreground)]">
-      {description}
-    </p>
-  </div>
-);
-
-const DashboardLoadingState: React.FC = () => (
-  <div className="relative px-4 pb-10 pt-6 sm:px-6 lg:px-10" dir="rtl">
-    <div
-      className="pointer-events-none absolute inset-0 -z-20"
-      style={{ background: "var(--app-bg-gradient)" }}
-    />
-    <div
-      className="pointer-events-none absolute inset-0 -z-10 opacity-90"
-      style={{ background: "var(--app-bg-glow)" }}
-    />
-
-    <div className="mx-auto max-w-[1480px] space-y-6">
-      <div
-        className="rounded-[34px] px-5 py-6 sm:px-8 sm:py-8"
-        style={heroSurfaceStyle}
-      >
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1.2fr)_360px]">
-          <div className="space-y-4">
-            <div className="h-6 w-36 animate-pulse rounded-full bg-white/55 dark:bg-white/10" />
-            <div className="h-14 w-full max-w-[36rem] animate-pulse rounded-[22px] bg-white/55 dark:bg-white/10" />
-            <div className="h-5 w-full max-w-[40rem] animate-pulse rounded-full bg-white/45 dark:bg-white/10" />
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[1, 2, 3].map((item) => (
-                <div
-                  key={item}
-                  className="h-28 animate-pulse rounded-[24px] bg-white/45 dark:bg-white/10"
-                />
-              ))}
-            </div>
-          </div>
-          <div className="h-[290px] animate-pulse rounded-[28px] bg-white/45 dark:bg-white/10" />
-        </div>
-      </div>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(340px,0.82fr)]">
-        <div
-          className="h-[280px] animate-pulse rounded-[30px] bg-white/70 dark:bg-white/5"
-          style={shellSurfaceStyle}
-        />
-        <div
-          className="h-[280px] animate-pulse rounded-[30px] bg-white/70 dark:bg-white/5"
-          style={shellSurfaceStyle}
-        />
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        {[1, 2, 3, 4].map((item) => (
-          <div
-            key={item}
-            className="h-[184px] animate-pulse rounded-[28px] bg-white/70 dark:bg-white/5"
-            style={shellSurfaceStyle}
-          />
-        ))}
-      </div>
-
-      <div className="grid gap-5 2xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]">
-        <div
-          className="h-[460px] animate-pulse rounded-[30px] bg-white/70 dark:bg-white/5"
-          style={shellSurfaceStyle}
-        />
-        <div
-          className="h-[460px] animate-pulse rounded-[30px] bg-white/70 dark:bg-white/5"
-          style={shellSurfaceStyle}
-        />
-      </div>
-    </div>
-  </div>
-);
 
 export default StoreAnalyticsDashboard;

@@ -5202,19 +5202,11 @@ const AppContent = () => {
                 />
                 <Route
                   path="/analytics/orders/funnel"
-                  element={
-                    <Layout>
-                      <FunnelAnalytics />
-                    </Layout>
-                  }
+                  element={<Navigate to="/analytics/store" replace />}
                 />
                 <Route
                   path="/analytics/orders/conversion"
-                  element={
-                    <Layout>
-                      <ConversionRateAnalytics />
-                    </Layout>
-                  }
+                  element={<Navigate to="/analytics/store" replace />}
                 />
                 <Route
                   path="/analytics/orders/team-performance"

@@ -607,7 +607,7 @@ export const getSidebarConfig = (
             icon: BarChart3,
             items: [
                 { to: '/analytics/orders', icon: BarChart3, label: t('dashboard.overview') },
-                { to: '/analytics/store', icon: LineChart, label: t('sidebar.storeAnalytics') },
+                { to: '/analytics/store', icon: LineChart, label: 'تحليلات المتجر ومسار التحويل' },
                 { to: '/analytics/orders/orders', icon: Archive, label: t('sidebar.orderAnalytics') },
                 { to: '/analytics/orders/revenue', icon: Banknote, label: t('sidebar.revenueAnalytics') },
                 { to: '/analytics/orders/products', icon: ShoppingBag, label: t('sidebar.productAnalytics') },
@@ -628,8 +628,8 @@ export const getSidebarConfig = (
                 { to: '/analytics/orders/regions', icon: MapPin, label: t('sidebar.regionAnalytics') },
                 { to: '/analytics/orders/returns', icon: Undo2, label: t('sidebar.returnAnalytics') },
                 { to: '/analytics/orders/returns-reasons', icon: ListChecks, label: t('sidebar.returnReasonsAnalytics') },
-                { to: '/analytics/orders/funnel', icon: Filter, label: t('sidebar.conversionFunnel') },
-                { to: '/analytics/orders/conversion', icon: BarChart3, label: t('sidebar.conversionRate') },
+                { to: '/analytics/store', icon: Filter, label: t('sidebar.conversionFunnel'), hidden: true },
+                { to: '/analytics/store', icon: BarChart3, label: t('sidebar.conversionRate'), hidden: true },
                 { to: '/analytics/orders/team-performance', icon: Users, label: t('sidebar.teamPerformance') },
                 { to: '/analytics/orders/abandoned-cart', icon: ShoppingCart, label: t('sidebar.abandonedCart') },
                 { to: '/analytics/orders/advanced-plan', icon: ClipboardCheck, label: t('sidebar.developmentPlan') },
@@ -697,14 +697,14 @@ export const getSidebarConfig = (
                 {
                     to: '/analytics/store',
                     icon: LineChart,
-                    label: t('sidebar.storeAnalytics'),
+                    label: 'تحليلات المتجر ومسار التحويل',
                     hidden: !isAppActive('analytics-advanced')
                 },
                 {
-                    to: '/analytics/orders/funnel',
+                    to: '/analytics/store',
                     icon: Filter,
                     label: t('sidebar.conversionFunnel'),
-                    hidden: !isAppActive('analytics-advanced')
+                    hidden: true
                 },
                 {
                     to: '/analytics/orders/abandoned-cart',
