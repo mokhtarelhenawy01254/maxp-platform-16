@@ -11580,6 +11580,7 @@ declare module 'react-i18next' {
         last7Days: string;
         last30Days: string;
         thisMonth: string;
+        allTime: string;
         custom: string;
         export: string;
         loading: string;

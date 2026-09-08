@@ -799,6 +799,25 @@ async function handlePageReply(webhookEvent, pageId = null) {
     } catch (e) {
     }
 
+    // 🆕 Fallback: If no lastSenderId was in metadata, attribute to conversation's assigned user
+    if (!senderUserId && conversation.assignedUserId) {
+      senderUserId = conversation.assignedUserId;
+      try {
+        const assignedUser = await safeQuery(async () => {
+          const prisma = getPrisma();
+          return await prisma.user.findUnique({
+            where: { id: senderUserId },
+            select: { firstName: true, lastName: true, email: true }
+          });
+        }, 2);
+        if (assignedUser) {
+          senderUserName = `${assignedUser.firstName || ''} ${assignedUser.lastName || ''}`.trim() || assignedUser.email || 'موظف';
+        }
+      } catch (uErr) {
+        // silent fallback
+      }
+    }
+
     // 📊 تحديد نوع الرسالة والمحتوى قبل فحص existingMessage (يستخدم في حالة existingMessage)
     let statMessageType = messageType;
     let statMessageContent = messageContent;

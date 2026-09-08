@@ -3609,34 +3609,47 @@ const getUsersStatistics = async (req, res) => {
     const { startDate, endDate } = req.query;
 
     // Validate companyId
-    if (!companyId) {
+    if (!companyId || companyId === "null" || companyId === "undefined") {
       return res.status(400).json({
         success: false,
         message: "معرف الشركة مطلوب",
       });
     }
 
+    const prisma = getSharedPrismaClient();
+
     // Parse dates
     let dateFilter = {};
-    if (startDate || endDate) {
+    const hasStartDate = startDate && startDate !== "undefined" && startDate !== "null" && startDate.trim() !== "";
+    const hasEndDate = endDate && endDate !== "undefined" && endDate !== "null" && endDate.trim() !== "";
+
+    if (hasStartDate || hasEndDate) {
       dateFilter.createdAt = {};
-      if (startDate) {
-        const start = new Date(startDate);
+      if (hasStartDate) {
+        const start = new Date(startDate.trim());
         start.setHours(0, 0, 0, 0);
-        dateFilter.createdAt.gte = start;
+        if (!isNaN(start.getTime())) {
+          const startUtc = new Date(startDate.trim() + "T00:00:00.000Z");
+          const minStart = new Date(Math.min(start.getTime(), startUtc.getTime() - 4 * 3600000));
+          dateFilter.createdAt.gte = minStart;
+        }
       }
-      if (endDate) {
-        const end = new Date(endDate);
+      if (hasEndDate) {
+        const end = new Date(endDate.trim());
         end.setHours(23, 59, 59, 999);
-        dateFilter.createdAt.lte = end;
+        if (!isNaN(end.getTime())) {
+          const endUtc = new Date(endDate.trim() + "T23:59:59.999Z");
+          const maxEnd = new Date(Math.max(end.getTime(), endUtc.getTime() + 4 * 3600000));
+          dateFilter.createdAt.lte = maxEnd;
+        }
       }
     }
 
-    // Get all users in the company through UserCompany relationship
-    const userCompanies = await getSharedPrismaClient().userCompany.findMany({
+    // 1. Get users from UserCompany
+    const userCompanies = await prisma.userCompany.findMany({
       where: {
         companyId: companyId,
-        isActive: true, // Only active users in this company
+        isActive: true,
       },
       select: {
         role: true,
@@ -3651,73 +3664,198 @@ const getUsersStatistics = async (req, res) => {
       },
     });
 
-    // Transform to users array
-    const users = userCompanies.map((uc) => ({
-      id: uc.user.id,
-      firstName: uc.user.firstName,
-      lastName: uc.user.lastName,
-      email: uc.user.email,
-      role: uc.role, // Role from UserCompany table
-    }));
+    const usersMap = new Map();
 
-    // Calculate statistics for each user
-    const statistics = await Promise.all(
-      users.map(async (user) => {
-        // Build where clause for messages
-        const messagesWhere = {
-          senderId: user.id,
-          isFromCustomer: false, // Only employee messages
-          conversation: {
-            companyId: companyId,
-          },
-          ...dateFilter,
-        };
-
-        // Count distinct conversations
-        const distinctConversations =
-          await getSharedPrismaClient().message.groupBy({
-            by: ["conversationId"],
-            where: messagesWhere,
-          });
-
-        // Count total messages
-        const messagesCount = await getSharedPrismaClient().message.count({
-          where: messagesWhere,
+    userCompanies.forEach((uc) => {
+      if (uc.user && uc.user.id) {
+        usersMap.set(uc.user.id, {
+          id: uc.user.id,
+          firstName: uc.user.firstName || "",
+          lastName: uc.user.lastName || "",
+          email: uc.user.email || "",
+          role: uc.role || "AGENT",
         });
+      }
+    });
 
-        // Count orders created by this user
-        const ordersWhere = {
+    // 2. Also fetch direct company users from User table
+    const directUsers = await prisma.user.findMany({
+      where: {
+        companyId: companyId,
+        isActive: true,
+      },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        role: true,
+      },
+    });
+
+    directUsers.forEach((u) => {
+      if (!usersMap.has(u.id)) {
+        usersMap.set(u.id, {
+          id: u.id,
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email || "",
+          role: u.role || "AGENT",
+        });
+      }
+    });
+
+    // 3. Batch fetch all employee messages for this company within date range
+    const messages = await prisma.message.findMany({
+      where: {
+        conversation: {
           companyId: companyId,
-          createdBy: user.id,
-          ...dateFilter,
-        };
+        },
+        isFromCustomer: false, // Employee/Page replies
+        ...dateFilter,
+      },
+      select: {
+        id: true,
+        conversationId: true,
+        senderId: true,
+        metadata: true,
+        createdAt: true,
+        conversation: {
+          select: {
+            assignedUserId: true,
+            channel: true,
+          },
+        },
+      },
+    });
 
-        const ordersCount = await getSharedPrismaClient().order.count({
-          where: ordersWhere,
+    // Find any sender IDs present in messages that are not yet in usersMap
+    const unknownSenderIds = new Set();
+    messages.forEach((msg) => {
+      let candidateId = msg.senderId;
+      if (!candidateId && msg.metadata) {
+        try {
+          const meta = typeof msg.metadata === "string" ? JSON.parse(msg.metadata) : msg.metadata;
+          candidateId = meta.employeeId || meta.lastSenderId || null;
+        } catch (e) {}
+      }
+      if (!candidateId && msg.conversation?.assignedUserId) {
+        candidateId = msg.conversation.assignedUserId;
+      }
+      if (candidateId && !usersMap.has(candidateId)) {
+        unknownSenderIds.add(candidateId);
+      }
+    });
+
+    if (unknownSenderIds.size > 0) {
+      const extraUsers = await prisma.user.findMany({
+        where: {
+          id: { in: Array.from(unknownSenderIds) },
+        },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          role: true,
+        },
+      });
+
+      extraUsers.forEach((u) => {
+        usersMap.set(u.id, {
+          id: u.id,
+          firstName: u.firstName || "",
+          lastName: u.lastName || "",
+          email: u.email || "",
+          role: u.role || "AGENT",
         });
+      });
+    }
 
-        // Calculate conversion rate (orders / conversations * 100)
-        const conversionRate =
-          distinctConversations.length > 0
-            ? ((ordersCount / distinctConversations.length) * 100).toFixed(2)
-            : "0.00";
+    // 4. Batch fetch orders created in this company within date range
+    const orders = await prisma.order.findMany({
+      where: {
+        companyId: companyId,
+        ...dateFilter,
+      },
+      select: {
+        id: true,
+        createdBy: true,
+        conversationId: true,
+      },
+    });
 
-        return {
-          userId: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          conversationsCount: distinctConversations.length,
-          messagesCount: messagesCount,
-          ordersCount: ordersCount,
-          conversionRate: parseFloat(conversionRate),
-        };
-      }),
-    );
+    // Initialize stats containers for each user
+    const userStats = new Map();
+    usersMap.forEach((u) => {
+      userStats.set(u.id, {
+        userId: u.id,
+        firstName: u.firstName,
+        lastName: u.lastName,
+        email: u.email,
+        role: u.role,
+        conversationsSet: new Set(),
+        messagesCount: 0,
+        ordersCount: 0,
+      });
+    });
 
-    // Sort by conversationsCount descending
-    statistics.sort((a, b) => b.conversationsCount - a.conversationsCount);
+    // Process messages
+    messages.forEach((msg) => {
+      let resolvedEmployeeId = msg.senderId;
+
+      // Fallback 1: check metadata
+      if (!resolvedEmployeeId && msg.metadata) {
+        try {
+          const meta = typeof msg.metadata === "string" ? JSON.parse(msg.metadata) : msg.metadata;
+          resolvedEmployeeId = meta.employeeId || meta.lastSenderId || null;
+        } catch (e) {}
+      }
+
+      // Fallback 2: check conversation assigned user
+      if (!resolvedEmployeeId && msg.conversation?.assignedUserId) {
+        resolvedEmployeeId = msg.conversation.assignedUserId;
+      }
+
+      if (resolvedEmployeeId && userStats.has(resolvedEmployeeId)) {
+        const stats = userStats.get(resolvedEmployeeId);
+        stats.messagesCount += 1;
+        if (msg.conversationId) {
+          stats.conversationsSet.add(msg.conversationId);
+        }
+      }
+    });
+
+    // Process orders
+    orders.forEach((order) => {
+      if (order.createdBy && userStats.has(order.createdBy)) {
+        userStats.get(order.createdBy).ordersCount += 1;
+      }
+    });
+
+    // Format statistics array
+    const statistics = Array.from(userStats.values()).map((st) => {
+      const convCount = st.conversationsSet.size;
+      const ordersCount = st.ordersCount;
+      const conversionRate = convCount > 0
+        ? parseFloat(((ordersCount / convCount) * 100).toFixed(2))
+        : 0;
+
+      return {
+        userId: st.userId,
+        firstName: st.firstName,
+        lastName: st.lastName,
+        email: st.email,
+        role: st.role,
+        conversationsCount: convCount,
+        messagesCount: st.messagesCount,
+        ordersCount: ordersCount,
+        conversionRate: conversionRate,
+      };
+    });
+
+    // Sort by conversationsCount descending, then messagesCount descending
+    statistics.sort((a, b) => b.conversationsCount - a.conversationsCount || b.messagesCount - a.messagesCount);
 
     res.json({
       success: true,
@@ -3734,11 +3872,6 @@ const getUsersStatistics = async (req, res) => {
   } catch (error) {
     console.error("❌ Error fetching users statistics:", error);
     console.error("Error stack:", error.stack);
-    console.error("Error details:", {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-    });
     res.status(500).json({
       success: false,
       message: "فشل في جلب إحصائيات المستخدمين",

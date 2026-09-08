@@ -130,7 +130,9 @@ const postMessageConverstation = async (req, res) => {
       metadata: JSON.stringify(conversationMetadata),
       updatedAt: new Date(),
       // 🆕 FIX: Mark as replied (not from customer) so it disappears from "unreplied" tab
-      lastMessageIsFromCustomer: false
+      lastMessageIsFromCustomer: false,
+      // 🆕 Auto-assign to employee if currently unassigned
+      ...(senderId && !conversation.assignedUserId ? { assignedUserId: senderId } : {})
     };
 
     // 🔧 FIX: Calculate actual unread count instead of resetting to 0
