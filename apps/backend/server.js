@@ -1234,6 +1234,18 @@ try {
   );
 }
 
+// Start Dental Lab overdue cases scan Cron Service
+try {
+  const { startDentalLabOverdueScheduler } = require("./cron/dentalLabOverdueCron");
+  startDentalLabOverdueScheduler();
+  console.log("✅ [DENTAL-LAB-OVERDUE-CRON] Dental Lab overdue service started");
+} catch (error) {
+  console.error(
+    "❌ [DENTAL-LAB-OVERDUE-CRON] Failed to start dental lab overdue service:",
+    error,
+  );
+}
+
 // Product Embedding Cron — daily backfill via Python ai-service
 try {
   const productEmbeddingCron = require("./cron/productEmbeddingCron");

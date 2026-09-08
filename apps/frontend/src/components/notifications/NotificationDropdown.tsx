@@ -51,6 +51,8 @@ export interface NotificationItem {
     role?: string;
     expiresAt?: string;
     invitationLink?: string;
+    url?: string;
+    [key: string]: unknown;
   };
 }
 
@@ -714,93 +716,124 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                 <p>لا توجد إشعارات</p>
               </div>
             ) : (
-              notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
-                    !notification.isRead ? "bg-blue-50" : ""
-                  }`}
-                >
-                  <div className="flex items-start space-x-3 space-x-reverse">
-                    <div className="flex-shrink-0 mt-1">
-                      {getIcon(notification.type)}
-                    </div>
+              notifications.map((notification) => {
+                const targetUrl =
+                  (notification.data as any)?.url ||
+                  (notification.metadata as any)?.url ||
+                  (notification.type === "invitation" ? notification.data?.invitationLink : null);
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p
-                            className={`text-sm font-medium ${!notification.isRead ? "text-gray-900" : "text-gray-700"}`}
-                          >
-                            {notification.title}
-                            {notification.silent && (
-                              <span className="mr-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
-                                صامت
-                              </span>
-                            )}
-                          </p>
-                          <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                            {notification.message}
-                          </p>
+                return (
+                  <div
+                    key={notification.id}
+                    onClick={() => {
+                      if (targetUrl) {
+                        if (!notification.isRead) {
+                          markAsRead(notification.id);
+                        }
+                        setIsOpen(false);
+                        window.location.href = targetUrl;
+                      }
+                    }}
+                    className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
+                      targetUrl ? "cursor-pointer" : ""
+                    } ${
+                      !notification.isRead ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    <div className="flex items-start space-x-3 space-x-reverse">
+                      <div className="flex-shrink-0 mt-1">
+                        {getIcon(notification.type)}
+                      </div>
 
-                          {/* Invitation Action Buttons */}
-                          {notification.type === "invitation" &&
-                            notification.data && (
-                              <div className="flex items-center gap-2 mt-3">
-                                <button
-                                  onClick={() =>
-                                    handleAcceptInvitation(notification)
-                                  }
-                                  className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-sm"
-                                >
-                                  ✅ قبول الدعوة
-                                </button>
-                                <button
-                                  onClick={() =>
-                                    handleDeclineInvitation(notification)
-                                  }
-                                  className="px-3 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors duration-200"
-                                >
-                                  ❌ رفض
-                                </button>
-                              </div>
-                            )}
-
-                          <div className="flex items-center justify-between mt-2">
-                            <span className="text-xs text-gray-400">
-                              {formatTimestamp(notification.timestamp)}
-                            </span>
-                            {notification.customerId && (
-                              <span className="text-xs text-gray-500">
-                                العميل: {notification.customerId.slice(-8)}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center space-x-1 space-x-reverse mr-2">
-                          {!notification.isRead && (
-                            <button
-                              onClick={() => markAsRead(notification.id)}
-                              className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-                              title="تحديد كمقروء"
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-medium ${!notification.isRead ? "text-gray-900" : "text-gray-700"}`}
                             >
-                              <EyeIcon className="w-4 h-4" />
+                              {notification.title}
+                              {notification.silent && (
+                                <span className="mr-2 text-xs bg-gray-200 text-gray-600 px-2 py-1 rounded">
+                                  صامت
+                                </span>
+                              )}
+                            </p>
+                            <p className="text-sm text-gray-600 mt-1 line-clamp-2">
+                              {notification.message}
+                            </p>
+
+                            {/* Invitation Action Buttons */}
+                            {notification.type === "invitation" &&
+                              notification.data && (
+                                <div className="flex items-center gap-2 mt-3">
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleAcceptInvitation(notification);
+                                    }}
+                                    className="flex-1 px-3 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all duration-200 shadow-sm"
+                                  >
+                                    ✅ قبول الدعوة
+                                  </button>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleDeclineInvitation(notification);
+                                    }}
+                                    className="px-3 py-2 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors duration-200"
+                                  >
+                                    ❌ رفض
+                                  </button>
+                                </div>
+                              )}
+
+                            <div className="flex items-center justify-between mt-2">
+                              <span className="text-xs text-gray-400">
+                                {formatTimestamp(notification.timestamp)}
+                              </span>
+                              {targetUrl && (
+                                <span className="text-xs text-blue-600 font-medium hover:underline">
+                                  عرض التفاصيل ←
+                                </span>
+                              )}
+                              {notification.customerId && !targetUrl && (
+                                <span className="text-xs text-gray-500">
+                                  العميل: {notification.customerId.slice(-8)}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-1 space-x-reverse mr-2">
+                            {!notification.isRead && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
+                                className="p-1 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                                title="تحديد كمقروء"
+                              >
+                                <EyeIcon className="w-4 h-4" />
+                              </button>
+                            )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(notification.id);
+                              }}
+                              className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                              title="حذف"
+                            >
+                              <TrashIcon className="w-4 h-4" />
                             </button>
-                          )}
-                          <button
-                            onClick={() => deleteNotification(notification.id)}
-                            className="p-1 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                            title="حذف"
-                          >
-                            <TrashIcon className="w-4 h-4" />
-                          </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 

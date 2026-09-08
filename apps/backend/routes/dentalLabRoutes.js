@@ -116,6 +116,7 @@ router.post('/cases/:id/restore', verifyToken.authenticateToken, dentalRoleGuard
 router.delete('/cases/:id/permanent', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.permanentDeleteCase);
 router.post('/cases/:id/advance', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.advanceCaseStatus);
 router.post('/cases/:id/assign', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.assignTechnician);
+router.delete('/cases/:id/assignments/:assignmentId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.removeCaseAssignment);
 router.post('/cases/:id/stages/:stageId/assignees', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.addStageAssignee);
 router.delete('/cases/:id/stages/:stageId/assignees/:technicianId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.removeStageAssignee);
 router.post('/cases/:id/attachments', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), upload.any(), controller.uploadCaseAttachment);

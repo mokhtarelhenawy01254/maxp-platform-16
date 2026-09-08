@@ -60,7 +60,9 @@ const createPrisma = (overrides = {}) => {
     },
     dentalCaseAssignment: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
       create: jest.fn(),
+      delete: jest.fn(),
     },
     dentalCaseAttachment: {
       findMany: jest.fn(),
@@ -659,6 +661,54 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       expect(res.statusCode).toBe(400);
       expect(res.payload.error).toBe('الفني لا ينتمي لهذه الشركة');
       expect(prisma.dentalCaseAssignment.create).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('removeCaseAssignment', () => {
+    test('removes an assignment and records history', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst
+        .mockResolvedValueOnce({ id: 'case-1', companyId: 'company-1' })
+        .mockResolvedValueOnce(makeCase());
+      prisma.dentalCaseAssignment.findFirst.mockResolvedValue({
+        id: 'asg-1',
+        companyId: 'company-1',
+        caseId: 'case-1',
+        technician: { name: 'أحمد فني' },
+      });
+      prisma.dentalCaseAssignment.delete.mockResolvedValue({});
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.removeCaseAssignment(
+        req({ params: { id: 'case-1', assignmentId: 'asg-1' } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(prisma.dentalCaseAssignment.delete).toHaveBeenCalledWith({ where: { id: 'asg-1' } });
+      expect(prisma.dentalCaseStatusHistory.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({ caseId: 'case-1', dimension: 'STAGE', status: 'ASSIGNMENT_REMOVED' }),
+        })
+      );
+    });
+
+    test('returns 404 when assignment not found', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue({ id: 'case-1', companyId: 'company-1' });
+      prisma.dentalCaseAssignment.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.removeCaseAssignment(
+        req({ params: { id: 'case-1', assignmentId: 'non-existent' } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(404);
+      expect(res.payload.error).toBe('الإسناد غير موجود');
     });
   });
 

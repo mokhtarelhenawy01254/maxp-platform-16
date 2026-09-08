@@ -251,89 +251,114 @@ const Notifications: React.FC = () => {
             </div>
           ) : (
             <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredNotifications.map((notification: NotificationItem) => (
-                <div
-                  key={notification.id}
-                  className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${
-                    !notification.isRead
-                      ? "bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-500"
-                      : ""
-                  }`}
-                >
-                  <div className="flex items-start space-x-4 space-x-reverse">
-                    <div className="flex-shrink-0 mt-1">
-                      {getIcon(notification.type, notification.severity)}
-                    </div>
+              {filteredNotifications.map((notification: NotificationItem) => {
+                const targetUrl =
+                  (notification as any).data?.url ||
+                  notification.metadata?.url;
 
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 space-x-reverse mb-2">
-                            <h3
-                              className={`text-lg font-medium ${!notification.isRead ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"}`}
-                            >
-                              {notification.title}
-                            </h3>
-                            <span
-                              className={`px-2 py-1 text-xs rounded-full border ${getTypeColor(notification.type, notification.severity)}`}
-                            >
-                              {notification.type === "test"
-                                  ? "تجريبي"
-                                  : notification.type === "success"
-                                    ? "نجاح"
-                                    : notification.type === "error"
-                                      ? "خطأ"
-                                      : notification.type === "warning"
-                                        ? "تحذير"
-                                        : "معلومات"}
-                            </span>
-                          </div>
+                return (
+                  <div
+                    key={notification.id}
+                    onClick={() => {
+                      if (targetUrl) {
+                        if (!notification.isRead) {
+                          markAsRead(notification.id);
+                        }
+                        window.location.href = targetUrl;
+                      }
+                    }}
+                    className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${
+                      targetUrl ? "cursor-pointer" : ""
+                    } ${
+                      !notification.isRead
+                        ? "bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-500"
+                        : ""
+                    }`}
+                  >
+                    <div className="flex items-start space-x-4 space-x-reverse">
+                      <div className="flex-shrink-0 mt-1">
+                        {getIcon(notification.type, notification.severity)}
+                      </div>
 
-                          <p className="text-gray-600 dark:text-gray-400 mb-3 whitespace-pre-wrap">
-                            {notification.message}
-                          </p>
-
-                          <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-500 dark:text-gray-400">
-                            <span>
-                              {new Date(notification.timestamp).toLocaleString(
-                                "ar-EG",
-                              )}
-                            </span>
-                            {notification.isRead && (
-                              <span className="flex items-center space-x-1 space-x-reverse">
-                                <CheckIcon className="h-4 w-4" />
-                                <span>مقروء</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center space-x-2 space-x-reverse mb-2">
+                              <h3
+                                className={`text-lg font-medium ${!notification.isRead ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"}`}
+                              >
+                                {notification.title}
+                              </h3>
+                              <span
+                                className={`px-2 py-1 text-xs rounded-full border ${getTypeColor(notification.type, notification.severity)}`}
+                              >
+                                {notification.type === "test"
+                                    ? "تجريبي"
+                                    : notification.type === "success"
+                                      ? "نجاح"
+                                      : notification.type === "error"
+                                        ? "خطأ"
+                                        : notification.type === "warning"
+                                          ? "تحذير"
+                                          : "معلومات"}
                               </span>
-                            )}
+                            </div>
+
+                            <p className="text-gray-600 dark:text-gray-400 mb-3 whitespace-pre-wrap">
+                              {notification.message}
+                            </p>
+
+                            <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-500 dark:text-gray-400">
+                              <span>
+                                {new Date(notification.timestamp).toLocaleString(
+                                  "ar-EG",
+                                )}
+                              </span>
+                              {targetUrl && (
+                                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline">
+                                  عرض التفاصيل ←
+                                </span>
+                              )}
+                              {notification.isRead && (
+                                <span className="flex items-center space-x-1 space-x-reverse">
+                                  <CheckIcon className="h-4 w-4" />
+                                  <span>مقروء</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center space-x-2 space-x-reverse mr-4">
-                          {!notification.isRead && (
+                          <div className="flex items-center space-x-2 space-x-reverse mr-4">
+                            {!notification.isRead && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  markAsRead(notification.id);
+                                }}
+                                className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                                title="تحديد كمقروء"
+                              >
+                                <EyeIcon className="h-5 w-5" />
+                              </button>
+                            )}
+
                             <button
-                              onClick={() =>
-                                markAsRead(notification.id)
-                              }
-                              className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-                              title="تحديد كمقروء"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deleteNotification(notification.id);
+                              }}
+                              className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                              title="حذف الإشعار"
                             >
-                              <EyeIcon className="h-5 w-5" />
+                              <TrashIcon className="h-5 w-5" />
                             </button>
-                          )}
-
-                          <button
-                            onClick={() => deleteNotification(notification.id)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                            title="حذف الإشعار"
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                          </button>
+                          </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

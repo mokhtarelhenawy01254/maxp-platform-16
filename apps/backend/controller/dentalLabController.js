@@ -969,6 +969,10 @@ const deleteTechnicianPayout = async (req, res) => {
 const CASE_LIST_INCLUDE = {
   doctor: { select: { id: true, name: true, clinicName: true, phone: true } },
   workType: { select: { id: true, name: true, category: true, price: true } },
+  assignments: {
+    include: { technician: { select: { id: true, name: true, role: true } } },
+    orderBy: { assignedAt: 'desc' },
+  },
 };
 
 const CASE_DETAIL_INCLUDE = {
@@ -982,14 +986,10 @@ const CASE_DETAIL_INCLUDE = {
       },
     },
   },
-  assignments: {
-    include: { technician: { select: { id: true, name: true, role: true } } },
-    orderBy: { assignedAt: 'desc' },
-  },
   attachments: { orderBy: { createdAt: 'desc' } },
   invoices: { include: { payments: { orderBy: { createdAt: 'desc' } } }, orderBy: { createdAt: 'desc' } },
   customValues: { include: { field: true } },
-history: { orderBy: { createdAt: 'asc' } },
+  history: { orderBy: { createdAt: 'asc' } },
   qualityChecks: { orderBy: { checkedAt: 'desc' } },
   refabrications: { orderBy: { createdAt: 'desc' } },
   creditNotes: { orderBy: { createdAt: 'desc' } },
@@ -999,7 +999,20 @@ const listCases = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
-    const { status, doctorId, search, trash, isDeleted, overdueOnly } = req.query;
+    const {
+      status,
+      doctorId,
+      search,
+      trash,
+      isDeleted,
+      overdueOnly,
+      workTypeId,
+      priority,
+      paymentStatus,
+      technicianId,
+      dueDateFrom,
+      dueDateTo,
+    } = req.query;
     const where = { companyId };
 
     const isTrash = trash === 'true' || isDeleted === 'true' || status === 'TRASH';
@@ -1015,12 +1028,59 @@ const listCases = async (req, res) => {
       where.status = { notIn: ['DELIVERED', 'CLOSED'] };
     }
     if (doctorId) where.doctorId = doctorId;
-    if (search) {
-      where.OR = [
-        { caseNumber: { contains: search, mode: 'insensitive' } },
-        { patientName: { contains: search, mode: 'insensitive' } },
-        { doctorName: { contains: search, mode: 'insensitive' } },
+    if (workTypeId) where.workTypeId = String(workTypeId);
+    if (priority) {
+      const p = String(priority).toUpperCase();
+      if (['NORMAL', 'URGENT', 'STAT'].includes(p)) {
+        where.priority = p;
+      }
+    }
+    if (paymentStatus) {
+      const ps = String(paymentStatus).toUpperCase();
+      if (['UNPAID', 'PARTIAL', 'PAID'].includes(ps)) {
+        where.paymentStatus = ps;
+      }
+    }
+
+    if (dueDateFrom || dueDateTo) {
+      where.dueDate = where.dueDate || {};
+      if (dueDateFrom) {
+        const df = parseDate(dueDateFrom);
+        if (df) {
+          df.setHours(0, 0, 0, 0);
+          where.dueDate.gte = df;
+        }
+      }
+      if (dueDateTo) {
+        const dt = parseDate(dueDateTo);
+        if (dt) {
+          dt.setHours(23, 59, 59, 999);
+          where.dueDate.lte = dt;
+        }
+      }
+    }
+
+    const searchOr = search ? [
+      { caseNumber: { contains: search, mode: 'insensitive' } },
+      { patientName: { contains: search, mode: 'insensitive' } },
+      { doctorName: { contains: search, mode: 'insensitive' } },
+    ] : null;
+
+    let techOr = null;
+    if (technicianId) {
+      const techId = String(technicianId);
+      techOr = [
+        { assignments: { some: { technicianId: techId } } },
+        { stages: { some: { OR: [{ assigneeId: techId }, { assignees: { some: { technicianId: techId } } }] } } },
       ];
+    }
+
+    if (searchOr && techOr) {
+      where.AND = [{ OR: searchOr }, { OR: techOr }];
+    } else if (searchOr) {
+      where.OR = searchOr;
+    } else if (techOr) {
+      where.OR = techOr;
     }
 
     const { pageNum, limitNum, skip } = parsePagination(req.query);
@@ -1063,7 +1123,10 @@ const createCase = async (req, res) => {
 
     let dueDate = parseDate(body.dueDate);
     if (!dueDate && body.workTypeId) {
-      dueDate = await suggestDueDate(prisma, companyId, body.workTypeId);
+      dueDate = await suggestDueDate(prisma, companyId, body.workTypeId, new Date(), { priority: body.priority });
+    }
+    if (!dueDate) {
+      dueDate = await suggestDueDate(prisma, companyId, null, new Date(), { priority: body.priority });
     }
 
     // Calculation of unitsCount & unitPrice
@@ -1703,6 +1766,38 @@ const assignTechnician = async (req, res) => {
   } catch (error) {
     console.error('Error assigning dental technician:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في إسناد الفني' });
+  }
+};
+
+const removeCaseAssignment = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id, assignmentId } = req.params;
+    const prisma = getSharedPrismaClient();
+    const existing = await prisma.dentalCaseAssignment.findFirst({
+      where: { id: assignmentId, caseId: id, companyId },
+      include: { technician: { select: { name: true } } },
+    });
+    if (!existing) return res.status(404).json({ success: false, error: 'الإسناد غير موجود' });
+
+    await prisma.dentalCaseAssignment.delete({ where: { id: assignmentId } });
+
+    await recordDentalLabStatusHistory(prisma, {
+      companyId,
+      caseId: id,
+      dimension: 'STAGE',
+      status: 'ASSIGNMENT_REMOVED',
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: adminDisplayName(req),
+      reason: `تم إلغاء إسناد الفني ${existing.technician?.name || ''}`,
+    }).catch(() => null);
+
+    const dentalCase = await prisma.dentalLabCase.findFirst({ where: { id, companyId }, include: CASE_DETAIL_INCLUDE });
+    res.json({ success: true, data: serializeDentalCaseDetail(dentalCase), message: 'تم إلغاء إسناد الفني بنجاح' });
+  } catch (error) {
+    console.error('Error removing case assignment:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في إلغاء إسناد الفني' });
   }
 };
 
@@ -4813,6 +4908,7 @@ module.exports = {
   permanentDeleteCase,
   advanceCaseStatus,
   assignTechnician,
+  removeCaseAssignment,
   addStageAssignee,
   removeStageAssignee,
   uploadCaseAttachment,

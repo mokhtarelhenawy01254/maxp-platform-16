@@ -813,6 +813,12 @@ export const fetchCases = async (params?: {
   trash?: boolean;
   isDeleted?: boolean;
   overdueOnly?: boolean;
+  workTypeId?: string;
+  priority?: string;
+  paymentStatus?: string;
+  technicianId?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
   page?: number;
   limit?: number;
 }): Promise<CasesListResult> => {
@@ -870,6 +876,9 @@ export const advanceCase = async (id: string, body: { to?: string; status?: stri
 
 export const assignCase = async (id: string, body: { technicianId: string; role: DentalTechnicianRole }): Promise<DentalLabCase> =>
   unwrapEnvelope<DentalLabCase>(await apiClient.post(`/dental-lab/cases/${id}/assign`, body));
+
+export const removeCaseAssignment = async (caseId: string, assignmentId: string): Promise<DentalLabCase> =>
+  unwrapEnvelope<DentalLabCase>(await apiClient.delete(`/dental-lab/cases/${caseId}/assignments/${assignmentId}`));
 
 // Infer attachment kind from filename. Used as default when the user
 // doesn't pick one explicitly. Matches the ATTACHMENT_KINDS enum in the
