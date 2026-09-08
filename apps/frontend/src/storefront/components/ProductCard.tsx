@@ -196,11 +196,24 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     product.trackInventory === false ||
     Boolean(product.isPreOrder);
   const isStockTracked = product.trackInventory !== false;
-  const isStrictlyOutOfStock =
-    isStockTracked &&
-    stockQuantity !== null &&
-    stockQuantity <= 0 &&
-    !isBackorderAllowed;
+
+  const hasInStockVariant = hasVariantChoices
+    ? (product.productVariants || []).some(
+        (v) =>
+          v.trackInventory === false ||
+          v.allowBackorders === true ||
+          (v.metadata as any)?.allowBackorders === true ||
+          (typeof v.stock === 'number' ? v.stock > 0 : true),
+      )
+    : true;
+
+  const isStrictlyOutOfStock = hasVariantChoices
+    ? !hasInStockVariant && !isBackorderAllowed
+    : isStockTracked &&
+      stockQuantity !== null &&
+      stockQuantity <= 0 &&
+      !isBackorderAllowed;
+
   const isLowStock =
     !isStrictlyOutOfStock &&
     stockQuantity !== null &&

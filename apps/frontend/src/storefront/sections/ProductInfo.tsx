@@ -894,14 +894,22 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     product?.trackInventory === false ||
     Boolean(product?.isPreOrder);
 
-  const isStockTracked =
-    selectedVariant?.trackInventory !== false && product?.trackInventory !== false;
+  const hasVariantChoices = Boolean(product?.productVariants?.length);
+  const hasInStockVariant = hasVariantChoices
+    ? (product.productVariants || []).some(
+        (v) =>
+          v.trackInventory === false ||
+          v.allowBackorders === true ||
+          (v.metadata as any)?.allowBackorders === true ||
+          (typeof v.stock === 'number' ? v.stock > 0 : true),
+      )
+    : true;
 
-  const isStrictlyOutOfStock =
-    isStockTracked &&
-    typeof activeStock === 'number' &&
-    activeStock <= 0 &&
-    !isBackorderAllowed;
+  const isStrictlyOutOfStock = selectedVariant
+    ? isStockTracked && typeof activeStock === 'number' && activeStock <= 0 && !isBackorderAllowed
+    : hasVariantChoices
+      ? !hasInStockVariant && !isBackorderAllowed
+      : isStockTracked && typeof activeStock === 'number' && activeStock <= 0 && !isBackorderAllowed;
 
   const autoSelectVariants = pdpQuickOrderSettings.autoSelectVariants ?? true;
 
