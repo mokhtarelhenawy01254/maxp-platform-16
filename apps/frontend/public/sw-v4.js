@@ -62,13 +62,20 @@ self.addEventListener('push', (event) => {
       }
 
       const title = payload.title || 'إشعار جديد';
+      const isOrder =
+        payload.typeId === 'order_created' ||
+        payload.data?.typeId === 'order_created' ||
+        payload.tag?.includes('order');
+
       await self.registration.showNotification(title, {
         body: payload.body || '',
         icon: payload.icon || '/favicon.ico',
         badge: payload.badge || '/favicon.ico',
         tag: payload.tag || 'maxp-browser-push',
         data: payload.data || { url: payload.url || '/' },
-        requireInteraction: payload.requireInteraction === true,
+        requireInteraction:
+          payload.requireInteraction === true || isOrder === true,
+        vibrate: [200, 100, 200],
       });
     })(),
   );
@@ -92,6 +99,10 @@ self.addEventListener('notificationclick', (event) => {
       for (const client of clients) {
         if ('focus' in client) {
           await client.focus();
+          client.postMessage({
+            type: 'play-order-sound',
+            data: event.notification.data,
+          });
           if ('navigate' in client && targetUrl) {
             try {
               await client.navigate(targetUrl);

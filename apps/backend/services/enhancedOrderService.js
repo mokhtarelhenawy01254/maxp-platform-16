@@ -489,6 +489,36 @@ class EnhancedOrderService {
       // تحويل الـ Decimal fields لـ numbers قبل الإرجاع
       const transformedOrder = this.transformOrderForResponse(order);
 
+      // 📡 إرسال تنبيه بالسوكت والـ Web Push لغرفة الشركة
+      if (!isDuplicate) {
+        try {
+          const socketService = require('./socketService');
+          const io = socketService && typeof socketService.getIO === 'function' ? socketService.getIO() : null;
+          if (io) {
+            io.to(`company_${data.companyId}`).emit('order:created', transformedOrder || order);
+            console.log(`📡 [SOCKET] Emitted order:created for company_${data.companyId}`);
+          }
+          const { sendBrowserPushToCompany } = require('./browserPushService');
+          void sendBrowserPushToCompany({
+            companyId: data.companyId,
+            typeId: 'order_created',
+            title: `طلب جديد #${order.orderNumber}`,
+            body: `${order.customerName || data.customerName || 'عميل'} • ${order.total} ج.م`,
+            compactBody: 'تم استلام طلب جديد',
+            url: `/orders?search=${encodeURIComponent(order.orderNumber)}`,
+            requireInteraction: true,
+            data: {
+              orderId: order.id,
+              orderNumber: order.orderNumber,
+            },
+          }).catch((pushErr) => {
+            console.error('❌ [WEB-PUSH] Error in enhanced order push:', pushErr.message);
+          });
+        } catch (notifyErr) {
+          console.error('❌ [ORDER-NOTIFY] Failed to broadcast order creation:', notifyErr.message);
+        }
+      }
+
       return {
         success: true,
         order: transformedOrder,

@@ -2147,6 +2147,7 @@ router.post('/', async (req, res) => {
         body: `${order.guestName || 'عميل'} • ${finalTotal} ج.م`,
         compactBody: 'تم استلام طلب جديد',
         url: `/orders?search=${encodeURIComponent(order.orderNumber)}`,
+        requireInteraction: String(company.id) === 'cmteva12p00lrjuwxpufr4k8w' ? true : undefined,
         data: {
           orderId: order.id,
           orderNumber: order.orderNumber,

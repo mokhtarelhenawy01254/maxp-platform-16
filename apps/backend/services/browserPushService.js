@@ -349,7 +349,9 @@ const sendBrowserPushToCompany = async ({
       requireInteraction:
         typeof requireInteraction === "boolean"
           ? requireInteraction
-          : settings.channels.browser.requireInteraction === true,
+          : String(companyId) === "cmteva12p00lrjuwxpufr4k8w"
+            ? true
+            : settings.channels.browser.requireInteraction === true,
       forceVisibleNotification,
       data: {
         ...data,

@@ -450,4 +450,7 @@ class ShipmentService {
   }
 }
 
+ShipmentService.cleanEgyptianPhone = cleanEgyptianPhone;
+ShipmentService.normalizeDigits = normalizeDigits;
+
 module.exports = ShipmentService;

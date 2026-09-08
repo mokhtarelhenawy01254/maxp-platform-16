@@ -539,7 +539,12 @@
 - **WhatsApp Workspace Dropdown Display Fix (FIX)**: Fixed selected WhatsApp session showing as database CUID ID instead of its friendly name in the select trigger after choosing a session on `/whatsapp`.
 - **WhatsApp Workspace Session RBAC Access Fix (FIX)**: Fixed `/whatsapp` session selection list exposing all company numbers to moderators; it now filters the dropdown to only show the sessions assigned to the active moderator.
 
-## 2026-06-30 / 2026-03-09
-- **WhatsApp Template Broadcast UI Fix (FIX)**: Resolved the bug where the WhatsApp Session dropdown displayed the raw database CUID instead of the friendly name or display phone number for Meta Cloud sessions.
-- **Project Break-Even Translation Fix (FIX)**: Resolved raw translation keys (like `projectBreakEven.title`) showing on the break-even page by creating dedicated locale section files (`projectBreakEven.json`) for Arabic and English to prevent them from being overwritten during i18n merge operations.
-- **Documentation Sync**: Created the backend synchronization docs (`Bugs.md`, `Structure.md`, `TEAM_SYNC.md`) to comply with CI/CD rules and documented the fix.
+## 2026-09-08
+- **Ameerelle Company Pleasant Order Notifications & Background Web Push (NEW FEATURE/CUSTOMIZATION)**:
+  1. **VAPID Keys & Push Infrastructure**: Generated and configured production Web Push VAPID keys (`WEB_PUSH_PUBLIC_KEY`, `WEB_PUSH_PRIVATE_KEY`, `WEB_PUSH_SUBJECT`) in server `/var/www/backend2/.env` and reloaded PM2 backend service.
+  2. **Pleasant Non-Intrusive Sound**: Enhanced `socketService.ts` to support `loop: false` and customized `NotificationDropdown.tsx` specifically for company `cmteva12p00lrjuwxpufr4k8w` (`ahmedfares61994@gmail.com`) to play a clear, crisp cash-register chime (`pattern: cash`, `volume: 0.85`, `loop: false`) instead of harsh repeating siren tones.
+  3. **Persistent Browser Notifications**: Configured `requireInteraction: true` for orders of this company so notifications stay pinned on screen until interacted with.
+  4. **Automatic Push Subscription**: Added auto-registration logic for `ahmedfares61994@gmail.com` so the browser push subscription is registered upon dashboard access without requiring manual settings configuration.
+  5. **Service Worker Audio Trigger on Click**: Enhanced `public/sw-v4.js` so clicking a push notification wakes/focuses the window and signals `NotificationDropdown` to play the pleasant sound chime immediately.
+  6. **Multi-Source Order Coverage**: Integrated real-time socket event emission (`order:created`) and web push delivery in `enhancedOrderService.js` to ensure manual, AI-conversation, and storefront orders all trigger notifications.
+  7. **Testing**: Added unit test in `NotificationDropdown.test.tsx` verifying company-specific pleasant sound and persistent browser notification execution.

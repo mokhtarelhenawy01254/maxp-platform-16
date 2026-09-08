@@ -259,6 +259,7 @@ class SocketService {
     volume?: number;
     durationMs?: number;
     pattern?: OrderSoundPattern;
+    loop?: boolean;
   }) {
     const audioContext = this.getAudioContext();
     if (!audioContext) {
@@ -272,6 +273,7 @@ class SocketService {
       const volume = Math.min(1, Math.max(0, options?.volume ?? 1));
       const durationMs = options?.durationMs ?? 7000;
       const pattern = options?.pattern ?? "alarm";
+      const loop = options?.loop ?? true;
       const audioUrl = getOrderSoundAudioUrl(pattern);
 
       const masterGain = audioContext.createGain();
@@ -302,13 +304,14 @@ class SocketService {
       this.alarmSources.push({ stop: stopAll });
 
       if (audioUrl) {
-        // نغمة مبنية على ملف صوت حقيقي (كاشير / عملات) — بتلعب بحلقة
+        // نغمة مبنية على ملف صوت حقيقي (كاشير / عملات)
         this.playOrderSoundFile(audioUrl, {
           audioContext,
           masterGain,
           volume,
           durationMs,
           pattern,
+          loop,
           registerSource: (stop) => activeSources.push({ stop }),
         });
       } else {
@@ -324,10 +327,11 @@ class SocketService {
       }
 
       this.alarmStopTimer = setTimeout(stopAll, durationMs + 300);
-      console.log("🚨 [SOUND] Order alarm played (loud)", {
+      console.log("🚨 [SOUND] Order alarm played", {
         pattern,
         volume,
         durationMs,
+        loop,
         audioFile: audioUrl ?? null,
       });
     };
@@ -344,7 +348,7 @@ class SocketService {
     }
   }
 
-  // تشغيل نغمة من ملف صوتي حقيقي بحلقة مع Fade-in/Fade-out
+  // تشغيل نغمة من ملف صوتي حقيقي مع Fade-in/Fade-out
   private playOrderSoundFile(
     url: string,
     options: {
@@ -354,6 +358,7 @@ class SocketService {
       durationMs: number;
       pattern: OrderSoundPattern;
       registerSource: (stop: () => void) => void;
+      loop?: boolean;
     },
   ) {
     const {
@@ -363,6 +368,7 @@ class SocketService {
       durationMs,
       pattern,
       registerSource,
+      loop = true,
     } = options;
     const startTime = audioContext.currentTime;
 
@@ -375,7 +381,7 @@ class SocketService {
     sourceGain.connect(masterGain);
 
     const source = audioContext.createBufferSource();
-    source.loop = true;
+    source.loop = loop;
     source.connect(sourceGain);
 
     const stopSource = () => {

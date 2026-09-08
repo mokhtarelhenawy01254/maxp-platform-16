@@ -13,7 +13,7 @@ const createShipment = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
     const prisma = getSharedPrismaClient();
     let order = await findOrderByNumber(orderId, companyId);
-    if (!order) order = await safeQuery(async () => prisma.order.findUnique({ where: { id: orderId }, include: { customer: true, orderItems: { include: { product: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true, turboAutoCreate: true } } } }), 3);
+    if (!order) order = await safeQuery(async () => prisma.order.findUnique({ where: { id: orderId }, include: { customer: true, orderItems: { include: { product: true, productVariant: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true, turboAutoCreate: true } } } }), 3);
     if (!order) return res.status(404).json({ success: false, error: 'Order not found', searchedValue: orderId });
     if (order.companyId !== companyId) return res.status(403).json({ success: false, error: 'Unauthorized access to this order' });
     let turboApiKey = order.company?.turboApiKey;
@@ -85,7 +85,7 @@ const bulkCreateShipments = async (req, res) => {
       }
     }
     if (!turboEnabled || !turboApiKey) return res.status(400).json({ success: false, error: 'خدمة شحن تربو غير مفعلة في إعدادات الشركة أو لم يتم إدخال مفتاح API' });
-    const orders = await safeQuery(() => prisma.order.findMany({ where: { OR: [{ orderNumber: { in: orderIds } }, { id: { in: orderIds } }], companyId, turboShipmentId: null }, include: { customer: true, orderItems: { include: { product: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true } } }, take: 100 }), 3);
+    const orders = await safeQuery(() => prisma.order.findMany({ where: { OR: [{ orderNumber: { in: orderIds } }, { id: { in: orderIds } }], companyId, turboShipmentId: null }, include: { customer: true, orderItems: { include: { product: true, productVariant: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true } } }, take: 100 }), 3);
     if (orders.length === 0) return res.status(404).json({ success: false, error: 'لم يتم العثور على أي طلبات غير مشحونة بحاجة للإرسال لتربو' });
     const turboService = new TurboService(turboApiKey, companyId);
     const results = { success: [], failed: [], skipped: [] };
@@ -172,7 +172,7 @@ const updateShipment = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'Company ID is required' });
     const prisma = getSharedPrismaClient();
     let order = await findOrderByNumber(orderId, companyId);
-    if (!order) order = await safeQuery(() => prisma.order.findUnique({ where: { id: orderId }, include: { customer: true, orderItems: { include: { product: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true } } } }), 3);
+    if (!order) order = await safeQuery(() => prisma.order.findUnique({ where: { id: orderId }, include: { customer: true, orderItems: { include: { product: true, productVariant: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true } } } }), 3);
     if (!order) return res.status(404).json({ success: false, error: 'Order not found', searchedValue: orderId });
     if (order.companyId !== companyId) return res.status(403).json({ success: false, error: 'Unauthorized access to this order' });
     const shipmentCode = order.turboShipmentId || order.turboTrackingNumber;

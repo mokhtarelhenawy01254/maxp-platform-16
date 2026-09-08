@@ -1278,7 +1278,7 @@ class OrderService {
           },
           include: {
             customer: true,
-            orderItems: { include: { product: true } },
+            orderItems: { include: { product: true, productVariant: true } },
             company: {
               select: {
                 id: true,
@@ -1855,7 +1855,8 @@ class OrderService {
             customer: true,
             orderItems: {
               include: {
-                product: true
+                product: true,
+                productVariant: true
               }
             },
             company: {

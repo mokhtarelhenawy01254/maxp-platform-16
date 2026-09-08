@@ -16,8 +16,15 @@ function calculateTotalWeight(items) {
   }, 0);
 }
 
+function normalizeDigits(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+    .replace(/[\u06F0-\u06F9]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48));
+}
+
 function getNumericInvoiceNumber(orderNumber, fallbackValue = '') {
-  const numericText = String(orderNumber || fallbackValue || '').replace(/\D/g, '');
+  const numericText = normalizeDigits(String(orderNumber || fallbackValue || '')).replace(/\D/g, '');
   return numericText ? Number(numericText) : 0;
 }
 
@@ -56,7 +63,7 @@ function formatOrderForTurbo(order, customer, items) {
     ''
   ).trim();
 
-  const customerPhone = (
+  const customerPhone = normalizeDigits((
     order.customerPhone ||
     order.guestPhone ||
     customer?.phone ||
@@ -64,7 +71,7 @@ function formatOrderForTurbo(order, customer, items) {
     addressFields.parsedAddress?.phone ||
     addressFields.parsedAddress?.mobile ||
     ''
-  ).trim();
+  ).trim());
 
   const totalValue = parseFloat(order.total || order.finalTotal || order.totalAmount || order.grandTotal || 0);
   const shippingFee = parseFloat(order.shipping || order.shippingCost || order.deliveryFee || 0);
@@ -82,9 +89,17 @@ function formatOrderForTurbo(order, customer, items) {
     if (typeof attributes === 'string') {
       try { attributes = JSON.parse(attributes); } catch (e) {}
     }
-    const color = item.productColor || item.color || attributes?.Color || attributes?.['اللون'] || attributes?.color || parsedMeta?.color || null;
-    const size = item.productSize || item.size || attributes?.Size || attributes?.['المقاس'] || attributes?.size || parsedMeta?.size || null;
-    const variantName = item.variantName || item.variant?.name || null;
+    let color = item.productColor || item.color || attributes?.Color || attributes?.['اللون'] || attributes?.color || parsedMeta?.color || item.productVariant?.color || null;
+    let size = item.productSize || item.size || attributes?.Size || attributes?.['المقاس'] || attributes?.size || parsedMeta?.size || item.productVariant?.size || null;
+    const variantName = item.variantName || item.variant?.name || item.productVariant?.name || parsedMeta?.variantName || null;
+
+    if ((!color || !size) && variantName) {
+      const parts = String(variantName).split(/\s*[-–/]\s*/);
+      if (parts.length >= 2) {
+        if (!color) color = parts[0].trim();
+        if (!size) size = parts.slice(1).join(' - ').trim();
+      }
+    }
 
     return {
       productName: item.productName || item.name || item.product?.name || 'منتج',
@@ -114,6 +129,9 @@ function formatOrderForTurbo(order, customer, items) {
     if (noteMatch && noteMatch[1]) {
       resolvedPhone2 = noteMatch[1];
     }
+  }
+  if (resolvedPhone2) {
+    resolvedPhone2 = normalizeDigits(resolvedPhone2);
   }
 
   return {
@@ -159,5 +177,6 @@ module.exports = {
   calculateTotalWeight,
   getNumericInvoiceNumber,
   normalizeShipmentSearchKeys,
+  normalizeDigits,
   formatOrderForTurbo
 };

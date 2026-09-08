@@ -13,7 +13,7 @@ async function findOrderByNumber(orderNumber, companyId) {
       where: { orderNumber, companyId },
       include: {
         customer: true,
-        orderItems: { include: { product: true } },
+        orderItems: { include: { product: true, productVariant: true } },
         company: { select: { id: true, turboApiKey: true, turboEnabled: true, turboAutoCreate: true } }
       }
     });

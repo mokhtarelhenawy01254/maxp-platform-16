@@ -214,4 +214,63 @@ describe("NotificationDropdown browser order notifications", () => {
       expect(mockShowBrowserNotification).not.toHaveBeenCalled();
     });
   });
+
+  it("plays pleasant acceptable sound (pattern: cash, loop: false) and persistent browser notification for Ameerelle company", async () => {
+    const ameerelleSettings = createSettings({
+      companyId: "cmteva12p00lrjuwxpufr4k8w",
+    });
+
+    mockUseAuth.mockReturnValue({
+      user: {
+        id: "cmteva13700ltjuwxhtqyu2pa",
+        email: "ahmedfares61994@gmail.com",
+        firstName: "Ahmed",
+        lastName: "Fares",
+        role: "OWNER",
+        companyId: "cmteva12p00lrjuwxpufr4k8w",
+      },
+      isAuthenticated: true,
+    });
+
+    mockApiGet.mockResolvedValue({
+      data: {
+        success: true,
+        data: ameerelleSettings,
+      },
+    });
+
+    render(<NotificationDropdown />);
+
+    await waitFor(() => {
+      expect(socketHandlers["order:created"]).toEqual(expect.any(Function));
+    });
+
+    const { socketService } = require("../../../services/socketService");
+
+    act(() => {
+      socketHandlers["order:created"]({
+        id: "order-ameerelle-1",
+        orderNumber: "ORD-9999",
+        guestName: "عميل أميريل",
+        total: 1200,
+      });
+    });
+
+    await waitFor(() => {
+      expect(socketService.playOrderAlarm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          volume: 0.85,
+          pattern: "cash",
+          loop: false,
+        }),
+      );
+      expect(mockShowBrowserNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "طلب جديد #ORD-9999",
+          requireInteraction: true,
+        }),
+      );
+    });
+  });
 });
+

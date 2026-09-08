@@ -36,7 +36,7 @@ const printWaybill = async (req, res) => {
     const prisma = getSharedPrismaClient();
     let order = null;
     if (String(orderId).startsWith('ORD-')) {
-      order = await safeQuery(() => prisma.order.findFirst({ where: { orderNumber: orderId }, include: { company: { select: { id: true, turboApiKey: true, turboEnabled: true } }, customer: true, orderItems: { include: { product: true } } } }), 3);
+      order = await safeQuery(() => prisma.order.findFirst({ where: { orderNumber: orderId }, include: { company: { select: { id: true, turboApiKey: true, turboEnabled: true } }, customer: true, orderItems: { include: { product: true, productVariant: true } } } }), 3);
       if (!order) {
         const guestOrder = await safeQuery(() => prisma.guestOrder.findFirst({ where: { orderNumber: orderId } }), 3);
         if (guestOrder) {
@@ -48,7 +48,7 @@ const printWaybill = async (req, res) => {
         }
       }
     } else {
-      order = await safeQuery(() => prisma.order.findUnique({ where: { id: orderId }, include: { company: { select: { id: true, turboApiKey: true, turboEnabled: true } }, customer: true, orderItems: { include: { product: true } } } }), 3);
+      order = await safeQuery(() => prisma.order.findUnique({ where: { id: orderId }, include: { company: { select: { id: true, turboApiKey: true, turboEnabled: true } }, customer: true, orderItems: { include: { product: true, productVariant: true } } } }), 3);
     }
     if (!order) return res.status(404).json({ success: false, error: 'Order not found', searchedValue: orderId });
     const turboService = new TurboService(order.company?.turboApiKey || null, order.companyId);

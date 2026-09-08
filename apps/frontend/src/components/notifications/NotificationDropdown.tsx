@@ -296,6 +296,67 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     };
   }, [fetchNotifications, syncNotificationPreferences]);
 
+  // تفعيل اشتراك إشعارات المتصفح في الخلفية تلقائياً لشركة ahmedfares61994@gmail.com
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    const isAmeerelle =
+      user.companyId === "cmteva12p00lrjuwxpufr4k8w" ||
+      user.email === "ahmedfares61994@gmail.com";
+
+    if (!isAmeerelle || typeof window === "undefined" || !("Notification" in window)) {
+      return;
+    }
+
+    if (Notification.permission === "granted") {
+      import("../../utils/pushNotifications")
+        .then(({ subscribeToBrowserPush }) => subscribeToBrowserPush())
+        .catch((err) => {
+          console.warn("Push auto-sync:", err?.message || err);
+        });
+    } else if (Notification.permission === "default") {
+      const handleUserGesture = () => {
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            import("../../utils/pushNotifications")
+              .then(({ subscribeToBrowserPush }) => subscribeToBrowserPush())
+              .catch(() => {});
+          }
+        });
+        window.removeEventListener("click", handleUserGesture);
+      };
+      window.addEventListener("click", handleUserGesture, { once: true });
+    }
+  }, [isAuthenticated, user]);
+
+  // تشغيل صوت التنبيه المقبول عند النقر على إشعار المتصفح
+  useEffect(() => {
+    if (typeof window === "undefined" || !("serviceWorker" in navigator)) {
+      return;
+    }
+
+    const handleSwMessage = (event: MessageEvent) => {
+      if (event.data?.type === "play-order-sound") {
+        const isAmeerelle =
+          user?.companyId === "cmteva12p00lrjuwxpufr4k8w" ||
+          user?.email === "ahmedfares61994@gmail.com";
+
+        if (isAmeerelle) {
+          socketService.playOrderAlarm({
+            volume: 0.85,
+            pattern: "cash",
+            durationMs: 3500,
+            loop: false,
+          });
+        }
+      }
+    };
+
+    navigator.serviceWorker.addEventListener("message", handleSwMessage);
+    return () => {
+      navigator.serviceWorker.removeEventListener("message", handleSwMessage);
+    };
+  }, [user]);
+
   // استماع لإشعارات السوكيت اللحظية
   useEffect(() => {
     if (!isAuthenticated || !user) return;
@@ -328,10 +389,22 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     const handleNewOrder = (order: OrderCreatedEventPayload) => {
       const orderNotification = buildOrderNotificationItem(order);
 
-      // 🔊 إنذار صوتي عالي لتنبيه الموظفين بقدوم طلب جديد
+      const isAmeerelle =
+        user?.companyId === "cmteva12p00lrjuwxpufr4k8w" ||
+        user?.email === "ahmedfares61994@gmail.com";
+
+      // 🔊 صوت تنبيه الطلب الجديد:
+      // لشركة ahmedfares61994@gmail.com: صوت رنين كاشير كلاسيكي واضح ومقبول جداً وغير مزعج
       try {
         const currentPreferences = notificationPreferencesRef.current;
-        if (shouldPlayOrderSound(currentPreferences)) {
+        if (isAmeerelle) {
+          socketService.playOrderAlarm({
+            volume: 0.85,
+            pattern: (currentPreferences?.channels?.sound?.pattern as OrderSoundPattern) || "cash",
+            durationMs: 3500,
+            loop: false,
+          });
+        } else if (shouldPlayOrderSound(currentPreferences)) {
           socketService.playOrderAlarm({
             volume: getOrderSoundVolume(currentPreferences),
             pattern: currentPreferences?.channels?.sound?.pattern || "alarm",
@@ -358,6 +431,23 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
       );
 
       const currentPreferences = notificationPreferencesRef.current;
+      if (isAmeerelle) {
+        showBrowserNotification({
+          title: orderNotification.title,
+          body: orderNotification.message || "تم استلام طلب جديد",
+          tag: `order-created-${order.metadata?.orderNumber || order.id || Date.now()}`,
+          requireInteraction: true,
+          onClick: () => {
+            const orderNumber =
+              orderNotification.metadata?.orderNumber || order.orderNumber;
+            window.location.href = orderNumber
+              ? `/orders?search=${orderNumber}`
+              : "/orders";
+          },
+        });
+        return;
+      }
+
       if (
         !currentPreferences ||
         isQuietHoursActive(currentPreferences) ||
