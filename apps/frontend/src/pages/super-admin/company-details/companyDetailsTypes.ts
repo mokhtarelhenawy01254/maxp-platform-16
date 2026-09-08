@@ -8,6 +8,7 @@ export interface CompanyData {
   currency: string;
   isActive: boolean;
   slug?: string;
+  customDomain?: string;
   createdAt?: string;
   businessSpecialtyId?: string | null;
   businessSpecialty?: {

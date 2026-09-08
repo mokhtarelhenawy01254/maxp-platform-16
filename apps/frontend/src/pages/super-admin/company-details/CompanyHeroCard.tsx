@@ -1,5 +1,5 @@
 import type { CompanyData, CompanyReview, CompanyUser } from "./companyDetailsTypes";
-import { Building2, CalendarClock, Globe, Mail, Phone, ShieldCheck } from "lucide-react";
+import { Building2, CalendarClock, Globe, Mail, Phone, ShieldCheck, Store, ExternalLink } from "lucide-react";
 import { Badge } from "../../../components/ui/badge";
 import { Card, CardContent } from "../../../components/ui/card";
 import { StatusBadge } from "./StatusBadge";
@@ -11,6 +11,12 @@ export function CompanyHeroCard({ company, review, ownerUser }: {
   review?: CompanyReview | null;
   ownerUser?: CompanyUser | null;
 }) {
+  const storefrontUrl = company.customDomain
+    ? `https://${company.customDomain}`
+    : company.slug
+    ? `https://${company.slug}.maxp.online`
+    : null;
+
   return (
     <Card className="app-panel-theme rounded-2xl border">
       <CardContent className="space-y-5 p-5 sm:p-6">
@@ -48,7 +54,20 @@ export function CompanyHeroCard({ company, review, ownerUser }: {
                 {ownerUser ? `${ownerUser.firstName} ${ownerUser.lastName}` : "لا يوجد مالك محدد"}
               </InfoLine>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {storefrontUrl ? (
+                <a
+                  href={storefrontUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-black text-primary hover:bg-primary/20 transition-colors shadow-2xs"
+                  title="فتح المتجر المباشر في تبويب جديد"
+                >
+                  <Store className="size-3.5" />
+                  معاينة المتجر: {company.customDomain || `${company.slug}.maxp.online`}
+                  <ExternalLink className="size-3 opacity-60" />
+                </a>
+              ) : null}
               <Badge variant="outline" className="rounded-full border-border/50 bg-muted/30 px-3 py-1.5 text-xs">
                 العملة: {company.currency || "EGP"}
               </Badge>

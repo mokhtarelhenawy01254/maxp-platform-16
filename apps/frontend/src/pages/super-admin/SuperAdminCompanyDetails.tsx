@@ -1,4 +1,4 @@
-import { AlertTriangle, ArrowLeft, ArrowLeftRight, CheckCircle2, Loader2, LogIn, MessageSquare, RefreshCw, Sparkles, Timer, UserPlus, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowLeftRight, CheckCircle2, Loader2, LogIn, MessageSquare, RefreshCw, Sparkles, Timer, UserPlus, Wallet, KeyRound, Store, ExternalLink } from "lucide-react";
 import { useCallback, useEffect, useState, type ChangeEvent } from "react";
 import { cn } from "../../lib/utils";
 import i18n from "../../i18n";
@@ -115,42 +115,56 @@ const SuperAdminCompanyDetails = () => {
     <div className="space-y-4" dir={i18n.dir()}>
       <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
         <div className="space-y-4">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2.5">
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={() => navigate(-1)}>
+                <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={() => navigate(-1)}>
                   <ArrowLeft className="size-4" /> رجوع
                 </Button>
-                <Button type="button" variant="outline" className="h-11 rounded-2xl"
+                <Button type="button" variant="outline" className="h-10 rounded-xl"
                   onClick={() => void refreshCompanyWorkspace({ background: true })} disabled={refreshing || loading}
                 >
                   {refreshing ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
                   تحديث
                 </Button>
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openLinkDialog} disabled={!company}>
+                {company?.slug || company?.customDomain ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-10 rounded-xl gap-1.5 text-primary border-primary/30 hover:bg-primary/5 font-bold"
+                    onClick={() => {
+                      const url = company.customDomain ? `https://${company.customDomain}` : `https://${company.slug}.maxp.online`;
+                      window.open(url, "_blank");
+                    }}
+                  >
+                    <Store className="size-4" /> المتجر الحي
+                    <ExternalLink className="size-3 opacity-60" />
+                  </Button>
+                ) : null}
+                <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={openLinkDialog} disabled={!company}>
                   <Percent className="size-4" /> اربط بوكيل
                 </Button>
               </div>
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" variant="outline" className="h-11 rounded-2xl" onClick={openEditModal} disabled={!company}>
+                {/* High-priority Impersonation button */}
+                <Button
+                  type="button"
+                  className="h-10 rounded-xl bg-primary text-primary-foreground font-black shadow-2xs gap-1.5 px-4"
+                  onClick={() => void handleLoginAsAdmin()}
+                  disabled={!company}
+                >
+                  <KeyRound className="size-4" /> دخول كأدمن
+                </Button>
+                <Button type="button" variant="outline" className="h-10 rounded-xl" onClick={openEditModal} disabled={!company}>
                   <Sparkles className="size-4" /> تعديل الشركة
                 </Button>
-                <Button type="button" variant={trialActive ? "outline" : "default"} className="h-11 rounded-2xl" onClick={openTrialModal} disabled={!company}>
+                <Button type="button" variant={trialActive ? "outline" : "default"} className="h-10 rounded-xl" onClick={openTrialModal} disabled={!company}>
                   <Timer className="size-4" /> {trialActive ? "الفترة التجريبية" : "تفعيل تجريبي"}
                 </Button>
-                <Button type="button" className="h-11 rounded-2xl" onClick={openTopUpModal} disabled={!company}>
+                <Button type="button" variant="outline" className="h-10 rounded-xl border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 font-bold" onClick={openTopUpModal} disabled={!company}>
                   <Wallet className="size-4" /> شحن المحفظة
                 </Button>
               </div>
             </div>
-            <div className="flex justify-end">
-              <Button type="button" variant="ghost" size="sm" className="h-8 rounded-lg text-xs font-bold text-muted-foreground hover:text-primary"
-                onClick={() => void handleLoginAsAdmin()} disabled={!company}
-              >
-                <LogIn className="ml-1 size-3.5" /> دخول كأدمن
-              </Button>
-            </div>
-          </div>
 
           {loading ? (
             <Skeleton className="h-72 rounded-2xl" />

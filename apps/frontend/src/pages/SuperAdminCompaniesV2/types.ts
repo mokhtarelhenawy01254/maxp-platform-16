@@ -3,6 +3,8 @@ export interface CompanyCount {
   customers: number;
   facebookPages: number;
   installedApps: number;
+  products?: number;
+  orders?: number;
 }
 
 export interface CompanyInstalledApp {
@@ -28,9 +30,16 @@ export interface Company {
   email: string;
   phone: string | null;
   website: string | null;
+  slug?: string | null;
+  customDomain?: string | null;
   currency: "EGP" | "USD" | "EUR";
   isActive: boolean;
   createdAt: string;
+  trialModeEnabled?: boolean;
+  trialEndsAt?: string | null;
+  trialStartedAt?: string | null;
+  wallet?: { balance: number; currency: string } | null;
+  platformSubscription?: { status: string; plan?: string | null; currentPeriodEnd?: string | null } | null;
   businessSpecialtyId?: string | null;
   businessSpecialty?: CompanySpecialty | null;
   _count?: CompanyCount;
@@ -115,6 +124,9 @@ export interface QuickStats {
   urgentEscalationDue: number;
   stale72h: number;
   myDueToday: number;
+  trialCompanies?: number;
+  onboardingStuck?: number;
+  activeStores?: number;
 }
 
 export interface FilterState {

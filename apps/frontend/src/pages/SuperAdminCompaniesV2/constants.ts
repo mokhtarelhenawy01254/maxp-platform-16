@@ -12,6 +12,15 @@ export const FOLLOW_UP_SAVED_VIEWS = [
   { value: "STALE_72H", label: "متوقف 72 ساعة+" },
 ] as const;
 
+export const LIFECYCLE_SAVED_VIEWS = [
+  { value: "ALL", label: "كل الشركات" },
+  { value: "TRIAL", label: "فترة تجريبية" },
+  { value: "ACTIVE_STORES", label: "متاجر نشطة" },
+  { value: "ONBOARDING_STUCK", label: "تحتاج إعداد (بدون منتجات)" },
+  { value: "FOLLOW_UP_NOW", label: "تحتاج متابعة" },
+  { value: "STALE_72H", label: "متوقفة 72س+" },
+] as const;
+
 export const CURRENCY_OPTIONS = [
   { value: "EGP", label: "جنيه مصري" },
   { value: "USD", label: "دولار أمريكي" },

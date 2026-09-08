@@ -463,6 +463,9 @@ const getAllCompanies = async (req, res) => {
             if (view === 'MY_TODAY') return { followUp: { status: { in: ACTIONABLE }, assigned_owner_id: req.user.id, OR: [{ next_action_at: { lte: now } }, { next_action_at: null }] } };
             if (view === 'ESCALATION_DUE') return { followUp: { status: { in: ACTIONABLE }, next_action_at: { lte: new Date(now.getTime() - 24 * 60 * 60 * 1000) } } };
             if (view === 'STALE_72H') return { followUp: null, createdAt: { lte: new Date(now.getTime() - 72 * 60 * 60 * 1000) } };
+            if (view === 'TRIAL') return { OR: [{ trialModeEnabled: true }, { platformSubscription: { status: 'trialing' } }] };
+            if (view === 'ONBOARDING_STUCK') return { products: { none: {} } };
+            if (view === 'ACTIVE_STORES') return { orders: { some: {} } };
             return {};
         };
 
@@ -513,6 +516,8 @@ const getAllCompanies = async (req, res) => {
                             customers: true,
                             facebookPages: true,
                             installedApps: true,
+                            products: true,
+                            orders: true,
                         }
                     },
                     businessSpecialty: {
@@ -522,6 +527,19 @@ const getAllCompanies = async (req, res) => {
                             nameEn: true,
                             slug: true,
                             icon: true,
+                        }
+                    },
+                    wallet: {
+                        select: {
+                            balance: true,
+                            currency: true,
+                        }
+                    },
+                    platformSubscription: {
+                        select: {
+                            status: true,
+                            plan: true,
+                            currentPeriodEnd: true,
                         }
                     }
                 },
@@ -556,7 +574,18 @@ const getAllCompanies = async (req, res) => {
             });
         }
 
-        const [totalCompanies, activeCompanies, connectedFacebookPages, followUpNow, myDueToday, escalationDue, stale72h] = await Promise.all([
+        const [
+            totalCompanies,
+            activeCompanies,
+            connectedFacebookPages,
+            followUpNow,
+            myDueToday,
+            escalationDue,
+            stale72h,
+            trialCompanies,
+            onboardingStuck,
+            activeStores,
+        ] = await Promise.all([
             prisma.company.count(),
             prisma.company.count({ where: { isActive: true } }),
             prisma.facebookPage.count(),
@@ -564,6 +593,9 @@ const getAllCompanies = async (req, res) => {
             prisma.company.count({ where: buildSavedViewWhere('MY_TODAY') }),
             prisma.company.count({ where: buildSavedViewWhere('ESCALATION_DUE') }),
             prisma.company.count({ where: buildSavedViewWhere('STALE_72H') }),
+            prisma.company.count({ where: buildSavedViewWhere('TRIAL') }),
+            prisma.company.count({ where: buildSavedViewWhere('ONBOARDING_STUCK') }),
+            prisma.company.count({ where: buildSavedViewWhere('ACTIVE_STORES') }),
         ]);
 
         const finalPageSize = prismaTake ?? total;
@@ -583,6 +615,9 @@ const getAllCompanies = async (req, res) => {
                     escalationDue,
                     urgentEscalationDue: 0,
                     stale72h,
+                    trialCompanies,
+                    onboardingStuck,
+                    activeStores,
                 },
             },
         });

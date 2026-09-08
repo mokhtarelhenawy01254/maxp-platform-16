@@ -134,6 +134,48 @@ export function enrichCompanies(companies: Company[], currentAdminId: string | n
   });
 }
 
+export function getStorefrontUrl(company: Company): string | null {
+  if (company.customDomain) return `https://${company.customDomain}`;
+  if (company.slug) return `https://${company.slug}.maxp.online`;
+  return null;
+}
+
+export function getStorefrontDisplay(company: Company): string | null {
+  if (company.customDomain) return company.customDomain;
+  if (company.slug) return `${company.slug}.maxp.online`;
+  return null;
+}
+
+export function getSubscriptionBadge(company: Company): { label: string; tone: string; sub?: string } {
+  if (company.trialModeEnabled || company.platformSubscription?.status === "trialing") {
+    if (company.trialEndsAt) {
+      const remainingMs = new Date(company.trialEndsAt).getTime() - Date.now();
+      const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+      if (remainingDays <= 0) {
+        return { label: "تجربة منتهية", tone: "border-rose-300 bg-rose-50 text-rose-700 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-300", sub: "يحتاج اشتراك" };
+      }
+      return {
+        label: `تجريبي (${remainingDays} يوم)`,
+        tone: remainingDays <= 2
+          ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300"
+          : "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800/50 dark:bg-purple-950/30 dark:text-purple-300",
+        sub: "فترة تجريبية",
+      };
+    }
+    return { label: "تجريبي", tone: "border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-800/50 dark:bg-purple-950/30 dark:text-purple-300" };
+  }
+
+  if (company.platformSubscription?.status === "active") {
+    return {
+      label: company.platformSubscription.plan || "اشتراك نشط",
+      tone: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-400",
+      sub: "مدفوع",
+    };
+  }
+
+  return { label: "غير مشترك", tone: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400" };
+}
+
 export function computeQuickStats(companies: Company[], serverStats?: QuickStats | null): QuickStats {
   // Prefer server-provided stats when available — the API already counts against
   // the full database, not just the currently paginated slice.
@@ -147,6 +189,9 @@ export function computeQuickStats(companies: Company[], serverStats?: QuickStats
       urgentEscalationDue: serverStats.urgentEscalationDue,
       stale72h: serverStats.stale72h,
       myDueToday: serverStats.myDueToday,
+      trialCompanies: serverStats.trialCompanies,
+      onboardingStuck: serverStats.onboardingStuck,
+      activeStores: serverStats.activeStores,
     };
   }
   const activeCompanies = companies.filter((c) => c.isActive).length;

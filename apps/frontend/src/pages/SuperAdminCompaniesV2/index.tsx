@@ -6,6 +6,7 @@ import {
   Building2, Sparkles, Download, RefreshCw, Plus, Loader2,
   AlertTriangle, CheckCircle2, UserPlus, ArrowLeftRight,
   Pencil, Eye, LogIn, Trash2, Facebook, Users, X, Filter, Clock, BadgeCheck,
+  ShoppingBag, Package,
 } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { Badge } from "../../components/ui/badge";
@@ -793,105 +794,133 @@ export default function SuperAdminCompaniesV2() {
               </div>
             )}
 
-            {/* Stats cards */}
-            <div className="grid grid-cols-2 gap-2 lg:grid-cols-4">
+            {/* Cockpit Lifecycle Cards */}
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
               <button
                 type="button"
                 onClick={handleClearFilters}
                 className={cn(
-                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
+                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
                   savedView === "ALL"
-                    ? "border-primary/60 bg-primary/[0.04] ring-2 ring-primary/40 shadow-sm"
+                    ? "border-primary/60 bg-primary/[0.04] ring-2 ring-primary/40"
                     : "border-border/40 bg-white hover:border-primary/40 hover:bg-primary/[0.02]"
                 )}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Building2 className="size-5" />
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                    <Building2 className="size-4" />
                   </div>
                   {savedView === "ALL" ? (
-                    <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-[10px] font-black text-primary px-2 py-0.5">
+                    <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-[9px] font-black text-primary px-2 py-0.2">
                       العرض الحالي
                     </Badge>
                   ) : (
-                    <BadgeCheck className="size-4 text-emerald-500/60 transition-opacity group-hover:text-emerald-600" aria-hidden="true" />
+                    <BadgeCheck className="size-3.5 text-emerald-500/60" aria-hidden="true" />
                   )}
                 </div>
-                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.totalCompanies}</p>
-                <p className="mt-0.5 text-xs font-bold text-muted-foreground">إجمالي الشركات</p>
-                <p className="mt-1 text-[11px] font-bold text-emerald-600">{quickStats.activeCompanies} نشطة من الإجمالي</p>
+                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.totalCompanies}</p>
+                <p className="text-xs font-bold text-muted-foreground">كل الشركات</p>
+                <p className="mt-0.5 text-[10px] font-bold text-emerald-600">{quickStats.activeCompanies} نشطة</p>
               </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenView("TRIAL")}
+                className={cn(
+                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
+                  savedView === "TRIAL"
+                    ? "border-purple-400 bg-purple-50/50 ring-2 ring-purple-400/50"
+                    : "border-border/40 bg-white hover:border-purple-400/60 hover:bg-purple-50/25"
+                )}
+              >
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-purple-100 text-purple-600 dark:bg-purple-950/40 dark:text-purple-300">
+                    <Clock className="size-4" />
+                  </div>
+                  {savedView === "TRIAL" ? (
+                    <Badge variant="outline" className="rounded-full border-purple-300 bg-purple-100/70 text-[9px] font-black text-purple-700 px-2 py-0.2">
+                      محدد
+                    </Badge>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.trialCompanies ?? 0}</p>
+                <p className="text-xs font-bold text-muted-foreground">فترة تجريبية</p>
+                <p className="mt-0.5 text-[10px] font-bold text-purple-600 dark:text-purple-400">تحت التجربة المجانية</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenView("ACTIVE_STORES")}
+                className={cn(
+                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
+                  savedView === "ACTIVE_STORES"
+                    ? "border-emerald-400 bg-emerald-50/50 ring-2 ring-emerald-400/50"
+                    : "border-border/40 bg-white hover:border-emerald-400/60 hover:bg-emerald-50/25"
+                )}
+              >
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-100 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <ShoppingBag className="size-4" />
+                  </div>
+                  {savedView === "ACTIVE_STORES" ? (
+                    <Badge variant="outline" className="rounded-full border-emerald-300 bg-emerald-100/70 text-[9px] font-black text-emerald-700 px-2 py-0.2">
+                      محدد
+                    </Badge>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.activeStores ?? 0}</p>
+                <p className="text-xs font-bold text-muted-foreground">متاجر نشطة</p>
+                <p className="mt-0.5 text-[10px] font-bold text-emerald-600">لديها طلبات بيع</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleOpenView("ONBOARDING_STUCK")}
+                className={cn(
+                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
+                  savedView === "ONBOARDING_STUCK"
+                    ? "border-sky-400 bg-sky-50/50 ring-2 ring-sky-400/50"
+                    : "border-border/40 bg-white hover:border-sky-400/60 hover:bg-sky-50/25"
+                )}
+              >
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-sky-100 text-sky-600 dark:bg-sky-950/40 dark:text-sky-300">
+                    <Package className="size-4" />
+                  </div>
+                  {savedView === "ONBOARDING_STUCK" ? (
+                    <Badge variant="outline" className="rounded-full border-sky-300 bg-sky-100/70 text-[9px] font-black text-sky-700 px-2 py-0.2">
+                      محدد
+                    </Badge>
+                  ) : null}
+                </div>
+                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.onboardingStuck ?? 0}</p>
+                <p className="text-xs font-bold text-muted-foreground">تحتاج إعداد</p>
+                <p className="mt-0.5 text-[10px] font-bold text-sky-600">لم تضف منتجات بعد</p>
+              </button>
+
               <button
                 type="button"
                 onClick={() => handleOpenView("FOLLOW_UP_NOW")}
                 className={cn(
-                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
+                  "group rounded-xl border p-3.5 text-right shadow-2xs transition-all hover:shadow-sm dark:bg-card relative",
                   savedView === "FOLLOW_UP_NOW"
-                    ? "border-amber-400 bg-amber-50/50 ring-2 ring-amber-400/50 shadow-sm"
-                    : "border-border/40 bg-white hover:border-amber-400/60 hover:bg-amber-50/30"
+                    ? "border-amber-400 bg-amber-50/50 ring-2 ring-amber-400/50"
+                    : "border-border/40 bg-white hover:border-amber-400/60 hover:bg-amber-50/25"
                 )}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600">
-                    <AlertTriangle className="size-5" />
+                <div className="flex items-start justify-between gap-1.5">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-950/40 dark:text-amber-300">
+                    <AlertTriangle className="size-4" />
                   </div>
                   {savedView === "FOLLOW_UP_NOW" ? (
-                    <Badge variant="outline" className="rounded-full border-amber-300 bg-amber-100/70 text-[10px] font-black text-amber-700 px-2 py-0.5">
+                    <Badge variant="outline" className="rounded-full border-amber-300 bg-amber-100/70 text-[9px] font-black text-amber-700 px-2 py-0.2">
                       محدد
                     </Badge>
                   ) : null}
                 </div>
-                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}</p>
-                <p className="mt-0.5 text-xs font-bold text-muted-foreground">محتاجة متابعة</p>
-                <p className="mt-1 text-[11px] font-bold text-amber-600">تحتاج تدخل أو تصعيد</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOpenView("STALE_72H")}
-                className={cn(
-                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
-                  savedView === "STALE_72H"
-                    ? "border-rose-400 bg-rose-50/50 ring-2 ring-rose-400/50 shadow-sm"
-                    : "border-border/40 bg-white hover:border-rose-400/60 hover:bg-rose-50/30"
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-rose-100 text-rose-600">
-                    <Clock className="size-5" />
-                  </div>
-                  {savedView === "STALE_72H" ? (
-                    <Badge variant="outline" className="rounded-full border-rose-300 bg-rose-100/70 text-[10px] font-black text-rose-700 px-2 py-0.5">
-                      محدد
-                    </Badge>
-                  ) : null}
-                </div>
-                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.stale72h}</p>
-                <p className="mt-0.5 text-xs font-bold text-muted-foreground">متوقفة 72 ساعة+</p>
-                <p className="mt-1 text-[11px] font-bold text-rose-600">حرجة: تحتاج تدخلًا فوريًا</p>
-              </button>
-              <button
-                type="button"
-                onClick={() => handleOpenView("MY_TODAY")}
-                className={cn(
-                  "group rounded-xl border p-4 text-right shadow-sm transition-all hover:shadow-md dark:bg-card relative",
-                  savedView === "MY_TODAY"
-                    ? "border-sky-400 bg-sky-50/50 ring-2 ring-sky-400/50 shadow-sm"
-                    : "border-border/40 bg-white hover:border-sky-400/60 hover:bg-sky-50/30"
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex size-10 items-center justify-center rounded-lg bg-sky-100 text-sky-600">
-                    <Users className="size-5" />
-                  </div>
-                  {savedView === "MY_TODAY" ? (
-                    <Badge variant="outline" className="rounded-full border-sky-300 bg-sky-100/70 text-[10px] font-black text-sky-700 px-2 py-0.5">
-                      محدد
-                    </Badge>
-                  ) : null}
-                </div>
-                <p className="mt-3 text-2xl font-black tabular-nums text-foreground">{quickStats.myDueToday}</p>
-                <p className="mt-0.5 text-xs font-bold text-muted-foreground">متابعاتي اليوم</p>
-                <p className="mt-1 text-[11px] font-bold text-sky-600">المسندة لك شخصيًا</p>
+                <p className="mt-2 text-xl font-black tabular-nums text-foreground">{quickStats.followUpNow + quickStats.escalationDue + quickStats.urgentEscalationDue}</p>
+                <p className="text-xs font-bold text-muted-foreground">متابعة وتصعيد</p>
+                <p className="mt-0.5 text-[10px] font-bold text-amber-600">تحتاج تدخلاً فوريًا</p>
               </button>
             </div>
 
