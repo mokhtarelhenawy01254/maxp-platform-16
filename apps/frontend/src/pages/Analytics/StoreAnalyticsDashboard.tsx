@@ -15,10 +15,45 @@ import {
   InformationCircleIcon,
   ShoppingCartIcon,
   UserGroupIcon,
+  SparklesIcon,
+  ArrowTrendingUpIcon,
+  BoltIcon,
+  TruckIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
+import { Link, useInRouterContext } from "react-router-dom";
+
+interface SafeActionLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
+  to: string;
+  className?: string;
+  children: React.ReactNode;
+}
+
+const SafeActionLink: React.FC<SafeActionLinkProps> = ({
+  to,
+  className,
+  children,
+  ...props
+}) => {
+  const inRouter = useInRouterContext();
+  if (inRouter) {
+    return (
+      <Link to={to} className={className} {...props}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <a href={to} className={className} {...props}>
+      {children}
+    </a>
+  );
+};
 import {
   AreaChart,
   Area,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -35,6 +70,7 @@ import {
   buildDataHealthStatus,
   buildFunnelMetrics,
   coerceNumber,
+  generateExecutiveBriefing,
   getConversionTone,
   getTopProductImage,
   getTopProductPurchases,
@@ -228,6 +264,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(
     document.documentElement.classList.contains("dark"),
   );
+  const [chartView, setChartView] = useState<"volume" | "conversion">("volume");
   const hasDataRef = useRef(false);
   const analyticsRef = useRef<AnalyticsData | null>(null);
   const customStartDateInputRef = useRef<HTMLInputElement | null>(null);
@@ -389,13 +426,28 @@ const StoreAnalyticsDashboard: React.FC = () => {
   );
 
   const chartData = useMemo(
-    () => dailyData.map((point) => ({
-      date: formatDateLabel(point.date),
-      visits: coerceNumber(point.totalVisits),
-      revenue: coerceNumber(point.totalRevenue),
-    })),
+    () =>
+      dailyData.map((point) => {
+        const visits = coerceNumber(point.totalVisits);
+        const purchases = coerceNumber(point.totalPurchases);
+        const rate = visits > 0 ? parseFloat(((purchases / visits) * 100).toFixed(2)) : 0;
+        return {
+          date: formatDateLabel(point.date),
+          visits,
+          purchases,
+          revenue: coerceNumber(point.totalRevenue),
+          rate,
+        };
+      }),
     [dailyData],
   );
+
+  const executiveBriefing = useMemo(
+    () => generateExecutiveBriefing(analytics, topProducts, dataHealth),
+    [analytics, topProducts, dataHealth],
+  );
+
+  const activeVisitors = coerceNumber(analytics?.activeVisitors);
 
   const strokeColor = isDarkMode ? "#93abc7" : "#647991";
   const gridColor = isDarkMode ? "rgba(147, 171, 199, 0.14)" : "rgba(100, 121, 145, 0.14)";
@@ -515,6 +567,20 @@ const StoreAnalyticsDashboard: React.FC = () => {
                 >
                   {formatRangeLabel(appliedFilters)}
                 </Badge>
+                <div
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium"
+                  style={buildTintStyle("var(--color-success)", 10)}
+                >
+                  <span className="relative flex size-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
+                  </span>
+                  <span>
+                    {activeVisitors > 0
+                      ? `${formatCount(activeVisitors)} نشط الآن`
+                      : "النبض الحي متصل"}
+                  </span>
+                </div>
                 {isRefreshing && (
                   <Badge
                     variant="outline"
@@ -670,6 +736,63 @@ const StoreAnalyticsDashboard: React.FC = () => {
           </div>
         </section>
 
+        {/* 2026 AI Executive Briefing Banner */}
+        <section
+          className="relative overflow-hidden rounded-[28px] p-5 sm:p-6 transition-all"
+          style={buildPanelStyle(
+            executiveBriefing.tone === "positive"
+              ? "var(--color-success)"
+              : executiveBriefing.tone === "attention"
+                ? "var(--color-warning)"
+                : "var(--color-primary)",
+          )}
+        >
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <SparklesIcon className="size-5 text-primary animate-pulse" />
+                <Badge
+                  variant="outline"
+                  className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wider"
+                  style={buildTintStyle(
+                    executiveBriefing.tone === "positive"
+                      ? "var(--color-success)"
+                      : executiveBriefing.tone === "attention"
+                        ? "var(--color-warning)"
+                        : "var(--color-primary)",
+                    14,
+                  )}
+                >
+                  الموجز التنفيذي الذكي
+                </Badge>
+                <span className="text-xs text-[var(--color-muted-foreground)]">
+                  {executiveBriefing.metricsSnapshot}
+                </span>
+              </div>
+              <h3
+                className="text-lg sm:text-xl font-bold text-[var(--color-foreground)]"
+                style={{ fontFamily: "var(--theme-font-heading)" }}
+              >
+                {executiveBriefing.headline}
+              </h3>
+              <p className="max-w-[78ch] text-xs sm:text-sm leading-6 text-[var(--color-muted-foreground)]">
+                {executiveBriefing.summary}
+              </p>
+            </div>
+
+            {executiveBriefing.actionSuggestion && (
+              <SafeActionLink
+                to={executiveBriefing.actionSuggestion.path}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-4 py-3 text-xs sm:text-sm font-semibold text-primary-foreground shadow-sm hover:opacity-95 transition-all min-h-[44px]"
+              >
+                <BoltIcon className="size-4" />
+                <span>{executiveBriefing.actionSuggestion.label}</span>
+                <ArrowTopRightOnSquareIcon className="size-3.5" />
+              </SafeActionLink>
+            )}
+          </div>
+        </section>
+
         {(error || warnings.length > 0 || dataHealth.issues.length > 0) && (
           <div className="grid gap-3 xl:grid-cols-3">
             {error && (
@@ -779,40 +902,78 @@ const StoreAnalyticsDashboard: React.FC = () => {
             className="rounded-[30px] p-5 sm:p-6"
             style={buildPanelStyle("var(--color-primary)")}
           >
-            <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-muted-foreground)]">
-                  الإيقاع اليومي
+                  الإيقاع الزمني الذكي
                 </p>
                 <h2
                   className="mt-1 text-xl font-semibold text-[var(--color-foreground)]"
                   style={{ fontFamily: "var(--theme-font-heading)" }}
                 >
-                  الزيارات والإيرادات عبر الفترة
+                  {chartView === "volume"
+                    ? "الزيارات والإيرادات عبر الفترة"
+                    : "تطور معدل التحويل اليومي %"}
                 </h2>
               </div>
-              <div className="text-sm text-[var(--color-muted-foreground)]">
-                {dailyData.length > 0
-                  ? `${formatCount(dailyData.length)} نقطة يومية`
-                  : "لا توجد سلسلة يومية مكتملة"}
+              <div className="flex items-center gap-2">
+                <div className="inline-flex rounded-2xl border border-gray-200/80 bg-white/60 p-1 dark:border-gray-800 dark:bg-gray-900/60">
+                  <button
+                    type="button"
+                    onClick={() => setChartView("volume")}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                      chartView === "volume"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                    }`}
+                  >
+                    الزيارات والإيراد
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setChartView("conversion")}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                      chartView === "conversion"
+                        ? "bg-primary text-primary-foreground shadow-sm"
+                        : "text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+                    }`}
+                  >
+                    معدل التحويل %
+                  </button>
+                </div>
               </div>
             </div>
 
             <div className="mt-5">
               {dailyData.length > 0 ? (
                 <div className="h-[360px]">
-                  <ResponsiveContainer width="100%" height={360}>
-                    <AreaChart data={chartData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
-                      <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} />
-                      <YAxis yAxisId="left" orientation="right" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الزيارات", angle: -90, position: "insideRight", fill: strokeColor, style: { fontSize: 12 } }} />
-                      <YAxis yAxisId="right" orientation="left" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الإيراد", angle: 90, position: "insideLeft", fill: strokeColor, style: { fontSize: 12 } }} />
-                      <Tooltip contentStyle={{ backgroundColor: tooltipBg, color: tooltipText, border: `1px solid ${isDarkMode ? "#24384f" : "#d7e4f4"}`, borderRadius: 8 }} />
-                      <Legend wrapperStyle={{ color: strokeColor }} />
-                      <Area yAxisId="left" type="monotone" dataKey="visits" name="الزيارات" stroke="#2f6bff" fill="rgba(47, 107, 255, 0.12)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                      <Area yAxisId="right" type="monotone" dataKey="revenue" name="الإيراد" stroke="#14b87a" fill="rgba(20, 184, 122, 0.1)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
-                    </AreaChart>
-                  </ResponsiveContainer>
+                  {chartView === "volume" ? (
+                    <ResponsiveContainer width="100%" height={360}>
+                      <AreaChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} />
+                        <YAxis yAxisId="left" orientation="right" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الزيارات", angle: -90, position: "insideRight", fill: strokeColor, style: { fontSize: 12 } }} />
+                        <YAxis yAxisId="right" orientation="left" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} label={{ value: "الإيراد", angle: 90, position: "insideLeft", fill: strokeColor, style: { fontSize: 12 } }} />
+                        <Tooltip contentStyle={{ backgroundColor: tooltipBg, color: tooltipText, border: `1px solid ${isDarkMode ? "#24384f" : "#d7e4f4"}`, borderRadius: 8 }} />
+                        <Legend wrapperStyle={{ color: strokeColor }} />
+                        <Area yAxisId="left" type="monotone" dataKey="visits" name="الزيارات" stroke="#2f6bff" fill="rgba(47, 107, 255, 0.12)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                        <Area yAxisId="right" type="monotone" dataKey="revenue" name="الإيراد" stroke="#14b87a" fill="rgba(20, 184, 122, 0.1)" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  ) : (
+                    <ResponsiveContainer width="100%" height={360}>
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke={gridColor} vertical={false} />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} />
+                        <YAxis axisLine={false} tickLine={false} tick={{ fill: strokeColor, fontSize: 12 }} unit="%" />
+                        <Tooltip
+                          formatter={(val: any) => [`${val}%`, "معدل التحويل"]}
+                          contentStyle={{ backgroundColor: tooltipBg, color: tooltipText, border: `1px solid ${isDarkMode ? "#24384f" : "#d7e4f4"}`, borderRadius: 8 }}
+                        />
+                        <Line type="monotone" dataKey="rate" name="معدل التحويل %" stroke="#2f6bff" strokeWidth={2.5} dot={{ r: 3, fill: "#2f6bff" }} activeDot={{ r: 5 }} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               ) : (
                 <EmptyPanel
@@ -912,6 +1073,107 @@ const StoreAnalyticsDashboard: React.FC = () => {
                 </div>
               </div>
             )}
+          </div>
+        </section>
+
+        {/* 2026 1-Click Growth Action Hub (مركز إجراءات النمو والتنشيط الفوري) */}
+        <section
+          className="rounded-[30px] p-5 sm:p-6"
+          style={buildPanelStyle("var(--color-primary)")}
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <BoltIcon className="size-5 text-primary" />
+                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-muted-foreground)]">
+                  إجراءات النمو الفورية (1-Click Actions)
+                </p>
+              </div>
+              <h2
+                className="mt-1 text-xl font-semibold text-[var(--color-foreground)]"
+                style={{ fontFamily: "var(--theme-font-heading)" }}
+              >
+                توصيات مباشرة لتحسين التحويل ومضاعفة المبيعات
+              </h2>
+            </div>
+            <Badge
+              variant="outline"
+              className="rounded-full px-3 py-1 text-[11px]"
+              style={buildTintStyle("var(--color-primary)", 10)}
+            >
+              جاهزة للتنفيذ
+            </Badge>
+          </div>
+
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <SafeActionLink
+              to="/analytics/orders/abandoned-cart"
+              className="group flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-gray-800 dark:bg-gray-900/40 dark:hover:bg-gray-900"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <ShoppingCartIcon className="size-5" />
+                  </span>
+                  <ArrowTopRightOnSquareIcon className="size-4 text-gray-400 group-hover:text-primary transition" />
+                </div>
+                <h4 className="mt-3 text-sm font-bold text-gray-900 dark:text-white">
+                  استرجاع السلات المتروكة
+                </h4>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-5">
+                  أرسل تنبيهات واسترجع العملاء الذين أضافوا منتجات وخرجوا قبل إتمام الشراء.
+                </p>
+              </div>
+              <span className="mt-4 inline-flex items-center text-xs font-semibold text-primary">
+                فتح تقرير السلات ⬅️
+              </span>
+            </SafeActionLink>
+
+            <SafeActionLink
+              to="/settings/store/tools"
+              className="group flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-gray-800 dark:bg-gray-900/40 dark:hover:bg-gray-900"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    <BoltIcon className="size-5" />
+                  </span>
+                  <ArrowTopRightOnSquareIcon className="size-4 text-gray-400 group-hover:text-primary transition" />
+                </div>
+                <h4 className="mt-3 text-sm font-bold text-gray-900 dark:text-white">
+                  أدوات تسريع الشراء والتحويل
+                </h4>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-5">
+                  فعّل زر الشراء الفوري (Sticky Buy Now)، شارات الثقة، وعدادات الخصم في صفحة المنتج.
+                </p>
+              </div>
+              <span className="mt-4 inline-flex items-center text-xs font-semibold text-primary">
+                إعداد أدوات التحويل ⬅️
+              </span>
+            </SafeActionLink>
+
+            <SafeActionLink
+              to="/analytics/orders/campaign-attribution"
+              className="group flex flex-col justify-between rounded-2xl border border-gray-200/60 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-md dark:border-gray-800 dark:bg-gray-900/40 dark:hover:bg-gray-900"
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="p-2 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    <ArrowTrendingUpIcon className="size-5" />
+                  </span>
+                  <ArrowTopRightOnSquareIcon className="size-4 text-gray-400 group-hover:text-primary transition" />
+                </div>
+                <h4 className="mt-3 text-sm font-bold text-gray-900 dark:text-white">
+                  إسناد الحملات الإعلانية
+                </h4>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400 leading-5">
+                  قارن عوائد إعلانات فيسبوك وتيك توك لمعرفة الإعلانات التي تحقق أعلى معدل تحويل.
+                </p>
+              </div>
+              <span className="mt-4 inline-flex items-center text-xs font-semibold text-primary">
+                فحص مصادر الإعلانات ⬅️
+              </span>
+            </SafeActionLink>
           </div>
         </section>
       </div>

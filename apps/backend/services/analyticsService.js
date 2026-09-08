@@ -977,7 +977,8 @@ class AnalyticsService {
       totalProductViews,
       conversionEvents,
       orderSummary,
-      orderBreakdown
+      orderBreakdown,
+      activeVisitors
     ] = await Promise.all([
       getSharedPrismaClient().storeVisit.count({
         where: { companyId, visitedAt: { gte: startDate, lte: endDate } }
@@ -995,13 +996,21 @@ class AnalyticsService {
         _count: true
       }),
       this.getOrderSummary(companyId, startDate, endDate),
-      this.getOrderBreakdown(companyId, startDate, endDate, comparisonType)
+      this.getOrderBreakdown(companyId, startDate, endDate, comparisonType),
+      getSharedPrismaClient().storeVisit.count({
+        where: {
+          companyId,
+          visitedAt: { gte: new Date(Date.now() - 15 * 60 * 1000) }
+        }
+      })
     ]);
 
     const addToCarts = conversionEvents.find(e => e.eventType === 'add_to_cart')?._count || 0;
     const checkouts = conversionEvents.find(e => e.eventType === 'checkout')?._count || 0;
     const purchases = orderSummary.count;
     const totalRevenue = orderSummary.revenue;
+    const deliveredOrders = orderBreakdown?.ordersByStatus?.delivered || 0;
+    const deliveryRate = purchases > 0 ? parseFloat(((deliveredOrders / purchases) * 100).toFixed(2)) : 0;
 
     // Calculate average order value from purchase events
     const avgOrderValue = purchases > 0 ? (totalRevenue / purchases).toFixed(2) : 0;
@@ -1025,10 +1034,13 @@ class AnalyticsService {
     return {
       totalVisits,
       uniqueVisitors: uniqueVisitors.length,
+      activeVisitors: typeof activeVisitors === 'number' ? activeVisitors : 0,
       totalProductViews,
       addToCarts,
       checkouts,
       purchases,
+      deliveredOrders,
+      deliveryRate,
       totalRevenue,
       conversionRate: parseFloat(storeConversionRate),
       productConversionRate: parseFloat(productConversionRate),

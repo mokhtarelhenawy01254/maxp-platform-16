@@ -1,10 +1,13 @@
 export interface AnalyticsData {
   totalVisits: number;
   uniqueVisitors: number;
+  activeVisitors?: number;
   totalProductViews: number;
   addToCarts: number;
   checkouts: number;
   purchases: number;
+  deliveredOrders?: number;
+  deliveryRate?: number;
   totalRevenue: number;
   conversionRate: number;
   productConversionRate?: number;
@@ -342,4 +345,108 @@ export const buildAnalyticsNotes = (
   }
 
   return notes.slice(0, 3);
+};
+
+export interface ExecutiveBriefing {
+  headline: string;
+  summary: string;
+  tone: "positive" | "steady" | "attention";
+  metricsSnapshot: string;
+  actionSuggestion: {
+    label: string;
+    description: string;
+    path: string;
+  } | null;
+}
+
+export const generateExecutiveBriefing = (
+  analytics: AnalyticsData | null,
+  topProducts: TopProduct[],
+  dataHealth: DataHealthStatus,
+): ExecutiveBriefing => {
+  if (!analytics) {
+    return {
+      headline: "جاري قراءة نبض المتجر...",
+      summary: "بانتظار اكتمال جلب بيانات الزيارات والطلبات لتقديم القراءة التنفيذية الذكية.",
+      tone: "steady",
+      metricsSnapshot: "--",
+      actionSuggestion: null,
+    };
+  }
+
+  const visits = coerceNumber(analytics.totalVisits);
+  const purchases = coerceNumber(analytics.purchases);
+  const rate = coerceNumber(analytics.conversionRate);
+  const revenue = coerceNumber(analytics.totalRevenue);
+
+  if (dataHealth.tone === "critical") {
+    return {
+      headline: "تنبيه في مزامنة بيانات التتبع",
+      summary: "تم رصد عمليات شراء أو تصفح منتجات مع وجود نقص في تسجيل الزيارات المرجعية. يُنصح بمراجعة إعدادات بكسل التتبع والسكربت لضمان دقة نسب التحويل.",
+      tone: "attention",
+      metricsSnapshot: `${purchases} طلب / بيانات زيارات غير مكتملة`,
+      actionSuggestion: {
+        label: "فحص إعدادات التتبع والـ Clarity",
+        description: "تأكد من تفعيل سكربت التتبع وتوافقه مع كافة المتصفحات.",
+        path: "/settings/clarity",
+      },
+    };
+  }
+
+  const starProduct = topProducts[0] ?? null;
+  const starName = starProduct?.name || "المنتجات المميزة";
+
+  if (rate >= 3.0 && purchases > 0) {
+    return {
+      headline: "أداء تحويلي ممتاز يفوق المعدل المعتاد",
+      summary: `حقق المتجر معدل تحويل قوي (${rate.toFixed(1)}%) بإجمالي ${purchases} طلب وإيراد ${revenue.toLocaleString()} ج.م. يعتبر منتج "${starName}" هو القوة الدافعة الكبرى للطلبات.`,
+      tone: "positive",
+      metricsSnapshot: `${rate.toFixed(1)}% تحويل • ${purchases} طلب • ${visits.toLocaleString()} زيارة`,
+      actionSuggestion: {
+        label: "تعزيز الحملات الإعلانية على المنتج البطل",
+        description: "زيادة الميزانية على المنتجات الأعلى تحويلاً يحقق أعلى عائد على الإنفاق.",
+        path: "/analytics/orders/campaign-attribution",
+      },
+    };
+  }
+
+  if (rate >= 1.2 && purchases > 0) {
+    return {
+      headline: "أداء متزن مع فرص واعدة لمضاعفة الإيرادات",
+      summary: `المتجر يسجل نشاطاً جيداً بمعدل تحويل (${rate.toFixed(1)}%). هناك زوار يترددون عند مرحلة السلة أو الطلب، ويمكنك استرجاع طلبات مؤكدة بتفعيل أدوات التسريع أو متابعة السلات.`,
+      tone: "steady",
+      metricsSnapshot: `${rate.toFixed(1)}% تحويل • ${purchases} طلب • ${visits.toLocaleString()} زيارة`,
+      actionSuggestion: {
+        label: "متابعة وتنشيط السلات المتروكة",
+        description: "استرجع العملاء الذين أضافوا للسلة ولم يكملوا الطلب.",
+        path: "/analytics/orders/abandoned-cart",
+      },
+    };
+  }
+
+  if (visits > 20 && purchases === 0) {
+    return {
+      headline: "حركة زيارات جيدة لكن التحويل يحتاج إلى دفعة فورية",
+      summary: `سجل المتجر ${visits.toLocaleString()} زيارة دون إتمام طلبات بعد. قد يكون السبب في تكلفة الشحن، أو عدم وضوح زر الشراء، أو الحاجة لزر "شراء الآن بضغطة واحدة".`,
+      tone: "attention",
+      metricsSnapshot: `${visits.toLocaleString()} زيارة • 0 طلب`,
+      actionSuggestion: {
+        label: "تفعيل أدوات زيادة التحويل (شراء سريع / عداد الخصم)",
+        description: "فعّل زر الشراء الفوري وشارات الثقة لتقليل تردد المشترين.",
+        path: "/settings/store/tools",
+      },
+    };
+  }
+
+  return {
+    headline: "نشاط المتجر في بداية الفترة",
+    summary: `تم تسجيل ${visits} زيارة و ${purchases} طلب حتى الآن. يستمر المحرك في تجميع الحركة لتقديم رؤى أعمق مع استمرار الزيارات.`,
+    tone: "steady",
+    metricsSnapshot: `${visits} زيارة • ${purchases} طلب`,
+    actionSuggestion: {
+      label: "استكشاف مصادر وحملات الزيارات",
+      description: "راقب مصادر الزيارات القادمة من فيسبوك وتيك توك لمعرفة الأفضل.",
+      path: "/analytics/orders/campaign-attribution",
+    },
+  };
 };

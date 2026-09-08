@@ -5,6 +5,7 @@ import {
   getTopProductPurchases,
   getTopProductImage,
   parseProductImages,
+  generateExecutiveBriefing,
 } from "../storeAnalyticsDashboard.utils";
 
 describe("storeAnalyticsDashboard utils", () => {
@@ -198,4 +199,80 @@ describe("storeAnalyticsDashboard utils", () => {
     expect(notes[0]?.tone).toBe("attention");
     expect(notes[0]?.title).toContain("جودة البيانات");
   });
+
+  test("generateExecutiveBriefing generates positive briefing for high conversion rate", () => {
+    const briefing = generateExecutiveBriefing(
+      {
+        totalVisits: 100,
+        uniqueVisitors: 85,
+        totalProductViews: 250,
+        addToCarts: 20,
+        checkouts: 10,
+        purchases: 4,
+        totalRevenue: 5000,
+        conversionRate: 4.0,
+        avgOrderValue: 1250,
+        addToCartRate: 8,
+        checkoutRate: 50,
+        purchaseRate: 40,
+      },
+      [
+        {
+          id: "prod-1",
+          name: "Star Perfume",
+          price: 1250,
+          views: 120,
+          addToCarts: 15,
+          purchases: 3,
+          conversionRate: 2.5,
+        },
+      ],
+      {
+        tone: "healthy",
+        label: "سليمة",
+        title: "البيانات متناسقة",
+        description: "",
+        issues: [],
+      },
+    );
+
+    expect(briefing.tone).toBe("positive");
+    expect(briefing.headline).toContain("أداء تحويلي ممتاز");
+    expect(briefing.summary).toContain("Star Perfume");
+    expect(briefing.actionSuggestion?.path).toBe(
+      "/analytics/orders/campaign-attribution",
+    );
+  });
+
+  test("generateExecutiveBriefing flags tracking issues when data health is critical", () => {
+    const briefing = generateExecutiveBriefing(
+      {
+        totalVisits: 0,
+        uniqueVisitors: 0,
+        totalProductViews: 20,
+        addToCarts: 5,
+        checkouts: 3,
+        purchases: 2,
+        totalRevenue: 2000,
+        conversionRate: 0,
+        avgOrderValue: 1000,
+        addToCartRate: 0,
+        checkoutRate: 0,
+        purchaseRate: 0,
+      },
+      [],
+      {
+        tone: "critical",
+        label: "غير مكتملة",
+        title: "خلل في التتبع",
+        description: "مشتريات بدون زيارات",
+        issues: ["توجد مشتريات بدون زيارات"],
+      },
+    );
+
+    expect(briefing.tone).toBe("attention");
+    expect(briefing.headline).toContain("تنبيه في مزامنة بيانات التتبع");
+    expect(briefing.actionSuggestion?.path).toBe("/settings/clarity");
+  });
 });
+

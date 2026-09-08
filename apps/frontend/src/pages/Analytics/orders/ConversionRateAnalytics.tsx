@@ -8,7 +8,9 @@ import {
   ShoppingCartIcon,
   CreditCardIcon,
   CheckCircleIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { Link } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -103,6 +105,21 @@ const ConversionRateAnalytics: React.FC = () => {
       <StoreAnalyticsTabs />
 
       {header}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-primary/20 bg-primary/5 p-3.5 text-xs sm:text-sm text-primary dark:border-primary/30 dark:bg-primary/10">
+        <div className="flex items-center gap-2">
+          <SparklesIcon className="size-4.5 shrink-0" />
+          <span>
+            تتوفر تجربة الاستخبارات الموحدة لعام 2026 مع النبض الحي ومسار الـ COD الكامل في مركز أداء المتجر.
+          </span>
+        </div>
+        <Link
+          to="/analytics/store"
+          className="shrink-0 font-bold underline hover:opacity-80"
+        >
+          الانتقال للمركز الموحد ⬅️
+        </Link>
+      </div>
 
       {loading ? (
         <div className="flex items-center justify-center min-h-[350px] rounded-2xl border border-gray-100 bg-white/50 dark:border-gray-800 dark:bg-gray-900/50">
