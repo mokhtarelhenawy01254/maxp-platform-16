@@ -89,7 +89,7 @@ jobs:
           retention-days: 30
 
       - name: Setup SSH Key for Server Deployment
-        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
         uses: ./.github/actions/setup-ssh
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -97,7 +97,7 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
 
       - name: Deploy APK to Production Server
-        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        if: ${{ github.event.inputs.deploy_to_server != 'false' }}
         shell: bash
         env:
           SERVER_HOST: ${{ secrets.SERVER_HOST }}
