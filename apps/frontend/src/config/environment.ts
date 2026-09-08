@@ -55,9 +55,28 @@ const toWebSocketOrigin = (value: string): string => {
 };
 
 /**
- * كشف البيئة الحالية بناءً على hostname
+ * فحص ما إذا كان التطبيق يعمل داخل بيئة تطبيق الموبايل الأصلي (Capacitor)
+ */
+export const isCapacitorNative = (): boolean => {
+  if (typeof window === "undefined") return false;
+  const win = window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } };
+  if (win.Capacitor?.isNativePlatform?.()) return true;
+  return (
+    window.location.protocol === "capacitor:" ||
+    (window.location.hostname === "localhost" &&
+      !window.location.port &&
+      /Android|iPhone|iPad|iPod/i.test(window.navigator?.userAgent || ""))
+  );
+};
+
+/**
+ * كشف البيئة الحالية بناءً على hostname وبيئة التشغيل
  */
 const detectEnvironment = (): "development" | "production" => {
+  if (isCapacitorNative()) {
+    return "production";
+  }
+
   const hostname = window.location.hostname;
 
   if (
@@ -114,7 +133,14 @@ const createEnvironmentConfig = (): EnvironmentConfig => {
   let appUrl: string;
   let backendUrl: string;
 
-  if (isDevelopment) {
+  if (isCapacitorNative()) {
+    // 📱 بيئة تطبيق الموبايل الأصلي (Capacitor) - الاتصال المباشر بخادم المنصة السحابي
+    const prodTarget = "https://maxp.online";
+    apiUrl = envApiUrl || `${prodTarget}/api/v1`;
+    backendUrl = envBackendUrl || prodTarget;
+    wsUrl = envWsUrl || "wss://maxp.online";
+    appUrl = prodTarget;
+  } else if (isDevelopment) {
     const directBackendTarget =
       envBackendUrl ||
       (isAbsoluteHttpUrl(envProxyTarget) && envProxyTarget

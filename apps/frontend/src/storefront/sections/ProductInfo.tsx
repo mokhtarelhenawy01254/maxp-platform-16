@@ -880,6 +880,29 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     getPrimaryProductImage(product) ||
     '';
 
+  const activeStock =
+    typeof selectedVariant?.stock === 'number' && Number.isFinite(selectedVariant.stock)
+      ? selectedVariant.stock
+      : typeof product.stock === 'number' && Number.isFinite(product.stock)
+        ? product.stock
+        : null;
+
+  const isBackorderAllowed =
+    Boolean(selectedVariant?.allowBackorders ?? product?.allowBackorders) ||
+    (selectedVariant?.metadata as any)?.allowBackorders === true ||
+    (product?.metadata as any)?.allowBackorders === true ||
+    product?.trackInventory === false ||
+    Boolean(product?.isPreOrder);
+
+  const isStockTracked =
+    selectedVariant?.trackInventory !== false && product?.trackInventory !== false;
+
+  const isStrictlyOutOfStock =
+    isStockTracked &&
+    typeof activeStock === 'number' &&
+    activeStock <= 0 &&
+    !isBackorderAllowed;
+
   const autoSelectVariants = pdpQuickOrderSettings.autoSelectVariants ?? true;
 
   useEffect(() => {
@@ -997,6 +1020,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       return false;
     }
 
+    if (isStrictlyOutOfStock) {
+      toast.error(
+        prefersArabicCopy
+          ? 'عذرًا، نفدت كمية هذا المنتج حاليًا وغير متاح للطلب.'
+          : 'Sorry, this product is currently out of stock.',
+      );
+      return false;
+    }
+
     if (product.productVariants?.length && !selectedVariant) {
       toast.error(
         prefersArabicCopy
@@ -1079,6 +1111,15 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   };
 
   const handleBuyNow = () => {
+    if (isStrictlyOutOfStock) {
+      toast.error(
+        prefersArabicCopy
+          ? 'عذرًا، نفدت كمية هذا المنتج حاليًا وغير متاح للطلب.'
+          : 'Sorry, this product is currently out of stock.',
+      );
+      return;
+    }
+
     if (hasEmbeddedPdpCheckout) {
       if (product?.productVariants?.length && !selectedVariant) {
         toast.error(
@@ -1494,10 +1535,16 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       requiresVariantSelection: Boolean(product.productVariants?.length),
       isSelectionReady:
         !product.productVariants?.length || Boolean(selectedVariant),
+      stock: activeStock,
+      allowBackorders: isBackorderAllowed,
+      isOutOfStock: isStrictlyOutOfStock,
     });
   }, [
+    activeStock,
     id,
     initialCartSelectionAttributes,
+    isBackorderAllowed,
+    isStrictlyOutOfStock,
     product,
     selectedPrimaryImage,
     selectedVariant,
@@ -1927,28 +1974,31 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       </div>
     );
   }
-  const activeStock =
-    typeof selectedVariant?.stock === 'number' && Number.isFinite(selectedVariant.stock)
-      ? selectedVariant.stock
-      : typeof product.stock === 'number' && Number.isFinite(product.stock)
-        ? product.stock
-        : null;
+
   const stockStatusLabel =
-    typeof activeStock === 'number'
-      ? activeStock <= 0
-        ? prefersArabicCopy
+    isStrictlyOutOfStock
+      ? prefersArabicCopy
+        ? 'نفدت الكمية'
+        : 'Out of stock'
+      : typeof activeStock === 'number'
+        ? activeStock <= 0
+          ? product.isPreOrder
+            ? prefersArabicCopy
+              ? 'حجز مسبق'
+              : 'Pre-order'
+            : prefersArabicCopy
+              ? 'متوفر بالطلب'
+              : 'Available on backorder'
+          : activeStock <= 10
+            ? prefersArabicCopy
+              ? `متبقي ${activeStock}`
+              : `${activeStock} left`
+            : prefersArabicCopy
+              ? 'متاح الآن'
+              : 'Available now'
+        : prefersArabicCopy
           ? 'متاح للطلب'
-          : 'Available to order'
-        : activeStock <= 10
-          ? prefersArabicCopy
-            ? `متبقي ${activeStock}`
-            : `${activeStock} left`
-          : prefersArabicCopy
-            ? 'متاح الآن'
-            : 'Available now'
-      : prefersArabicCopy
-        ? 'متاح للطلب'
-        : 'Available to order';
+          : 'Available to order';
   const selectedOptionSummary = Object.values(selectedAttributes)
     .map((value) => String(value).trim())
     .filter(Boolean)
@@ -2332,9 +2382,10 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
     },
   ];
 
-  const addToCartText =
-    sectionSettings?.addToCartText ||
-    (prefersArabicCopy ? 'أضف إلى السلة' : 'Add to Cart');
+  const addToCartText = isStrictlyOutOfStock
+    ? (prefersArabicCopy ? 'نفدت الكمية' : 'Out of Stock')
+    : sectionSettings?.addToCartText ||
+      (prefersArabicCopy ? 'أضف إلى السلة' : 'Add to Cart');
   const descriptionTitle =
     sectionSettings?.descriptionTitle || (prefersArabicCopy ? 'وصف المنتج' : 'Description');
   const shippingTitle =
@@ -3750,8 +3801,9 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
       {cashbackPreviewBadge}
     </div>
   ) : commonPrice;
-  const buyNowText =
-    typeof sectionSettings?.buyNowText === 'string' && sectionSettings.buyNowText.trim()
+  const buyNowText = isStrictlyOutOfStock
+    ? (prefersArabicCopy ? 'غير متوفر' : 'Unavailable')
+    : typeof sectionSettings?.buyNowText === 'string' && sectionSettings.buyNowText.trim()
       ? sectionSettings.buyNowText.trim()
       : prefersArabicCopy
         ? '\u0627\u0634\u062A\u0631\u0650 \u0627\u0644\u0622\u0646'
