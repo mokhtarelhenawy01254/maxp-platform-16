@@ -71,13 +71,32 @@ function formatOrderForTurbo(order, customer, items) {
   const subtotalValue = parseFloat(order.subtotal || order.subTotal || (totalValue > 0 ? (totalValue - shippingFee) : 0));
 
   const rawItems = items || order.orderItems || order.items || [];
-  const formattedItems = Array.isArray(rawItems) ? rawItems.map(item => ({
-    productName: item.productName || item.name || item.product?.name || 'منتج',
-    quantity: item.quantity || 1,
-    price: parseFloat(item.price || item.unitPrice || 0),
-    total: parseFloat(item.total || ((item.price || 0) * (item.quantity || 1))),
-    weight: item.weight || 0.5
-  })) : [];
+  const formattedItems = Array.isArray(rawItems) ? rawItems.map(item => {
+    let parsedMeta = {};
+    if (typeof item.metadata === 'string') {
+      try { parsedMeta = JSON.parse(item.metadata); } catch (e) {}
+    } else if (item.metadata && typeof item.metadata === 'object') {
+      parsedMeta = item.metadata;
+    }
+    let attributes = item.attributes || parsedMeta?.attributeValues || parsedMeta?.attributes || {};
+    if (typeof attributes === 'string') {
+      try { attributes = JSON.parse(attributes); } catch (e) {}
+    }
+    const color = item.productColor || item.color || attributes?.Color || attributes?.['اللون'] || attributes?.color || parsedMeta?.color || null;
+    const size = item.productSize || item.size || attributes?.Size || attributes?.['المقاس'] || attributes?.size || parsedMeta?.size || null;
+    const variantName = item.variantName || item.variant?.name || null;
+
+    return {
+      productName: item.productName || item.name || item.product?.name || 'منتج',
+      color: color ? String(color).trim() : null,
+      size: size ? String(size).trim() : null,
+      variantName: variantName ? String(variantName).trim() : null,
+      quantity: item.quantity || 1,
+      price: parseFloat(item.price || item.unitPrice || 0),
+      total: parseFloat(item.total || ((item.price || 0) * (item.quantity || 1))),
+      weight: item.weight || 0.5
+    };
+  }) : [];
 
   let parsedMetadata = {};
   if (typeof order.metadata === 'string') {
@@ -87,6 +106,15 @@ function formatOrderForTurbo(order, customer, items) {
   }
 
   const requestType = order.requestType || parsedMetadata.requestType || order.orderType || order.type || null;
+
+  // Resolve alternative phone from order, address, or embedded in notes
+  let resolvedPhone2 = order.phone2 || order.alternativePhone || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.alternativePhone || addressFields.parsedAddress?.secondPhone || null;
+  if (!resolvedPhone2 && order.notes) {
+    const noteMatch = String(order.notes).match(/(?:هاتف\s*بديل|رقم\s*بديل|بديل|phone2|alt(?:ernative)?\s*phone)[\s:]*([0-9\u0660-\u0669]{11})/i);
+    if (noteMatch && noteMatch[1]) {
+      resolvedPhone2 = noteMatch[1];
+    }
+  }
 
   return {
     orderId: order.id,
@@ -109,7 +137,8 @@ function formatOrderForTurbo(order, customer, items) {
     paymentMethod: order.paymentMethod || 'CASH',
     notes: order.notes || '',
     createdAt: order.createdAt || new Date().toISOString(),
-    alternativePhone: order.alternativePhone || addressFields.parsedAddress?.phone2 || null,
+    phone2: resolvedPhone2,
+    alternativePhone: resolvedPhone2,
     turboShipmentStatus: order.turboShipmentStatus || null,
     returnAmount: (() => {
       const metaRetAmt = parsedMetadata.returnAmount || order.returnAmount || null;

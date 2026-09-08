@@ -6,6 +6,8 @@ const { handleError } = require('../../utils/turbo/errorHandler');
 
 function normalizeTextForMatching(text) {
   return String(text || '').toLowerCase().trim()
+    .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+    .replace(/[\u06F0-\u06F9]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48))
     .replace(/[أإآ]/g, 'ا')
     .replace(/ة/g, 'ه')
     .replace(/ى/g, 'ي')
@@ -13,6 +15,23 @@ function normalizeTextForMatching(text) {
     .replace(/ئ/g, 'ي')
     .replace(/[^a-z0-9\u0600-\u06FF\s]/gi, ' ')
     .replace(/\s+/g, ' ');
+}
+
+function normalizeDigits(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+    .replace(/[\u06F0-\u06F9]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x06F0 + 48));
+}
+
+function cleanEgyptianPhone(raw) {
+  if (!raw) return null;
+  let digits = normalizeDigits(raw).replace(/\D/g, '');
+  if (digits.startsWith('0020')) digits = digits.slice(4);
+  else if (digits.startsWith('002')) digits = digits.slice(3);
+  else if (digits.startsWith('20') && digits.length === 12) digits = digits.slice(2);
+  else if (digits.startsWith('1') && digits.length === 10) digits = '0' + digits;
+  return (digits.startsWith('01') && digits.length === 11) ? digits : null;
 }
 
 function matchBestAreaFromTurboList(areas, candidateArea, fullAddressText, govName) {
@@ -136,9 +155,20 @@ class ShipmentService {
         } catch (e) { console.warn('⚠️ [TURBO] Failed area matching:', e.message); }
       }
 
-      const secondPhone = orderData.phone2 || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.secondPhone || addressFields.secondaryAddressPhone || null;
+      const rawSecondPhone = orderData.phone2 || orderData.alternativePhone || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.alternativePhone || addressFields.parsedAddress?.secondPhone || addressFields.secondaryAddressPhone || null;
+      const secondPhone = cleanEgyptianPhone(rawSecondPhone);
+
       const formattedSummary = Array.isArray(items) && items.length > 0
-        ? items.map(item => `[${item.quantity || 1} ${item.productName || item.name || 'منتج'}]`).join(' - ')
+        ? items.map(item => {
+            const qty = item.quantity || 1;
+            const name = item.productName || item.name || 'منتج';
+            const details = [];
+            if (item.color) details.push(`اللون: ${item.color}`);
+            if (item.size) details.push(`المقاس: ${item.size}`);
+            if (details.length === 0 && item.variantName) details.push(item.variantName);
+            const variantSuffix = details.length > 0 ? ` (${details.join(' - ')})` : '';
+            return `[${qty} ${name}${variantSuffix}]`;
+          }).join(' - ')
         : (notes || `طلب #${orderNumber}`);
 
       const rawReqType = String(orderData.requestType || orderData.orderType || orderData.type || '').trim().toLowerCase();
@@ -156,12 +186,9 @@ class ShipmentService {
       }
 
       const finalReceiver = (customerName || `عميل طلب #${orderNumber}`).trim();
-      let rawPhoneDigits = String(customerPhone || addressFields.parsedAddress?.phone || '').replace(/\D/g, '');
-      let validPhone = rawPhoneDigits;
-      if (validPhone.startsWith('00')) validPhone = validPhone.slice(2);
-      if (validPhone.startsWith('20') && validPhone.length === 12) validPhone = validPhone.slice(2);
-      if (validPhone.startsWith('1') && validPhone.length === 10) validPhone = '0' + validPhone;
-      if (!validPhone || !validPhone.startsWith('01') || validPhone.length !== 11) {
+      const validPhone = cleanEgyptianPhone(customerPhone || addressFields.parsedAddress?.phone);
+      if (!validPhone) {
+        const rawPhoneDigits = normalizeDigits(customerPhone || addressFields.parsedAddress?.phone || '').replace(/\D/g, '');
         const errMsg = rawPhoneDigits.length > 0 ? `رقم هاتف العميل غير صحيح: الرقم مكون من ${rawPhoneDigits.length} أرقام بدلاً من 11 رقماً` : 'رقم هاتف العميل غير صحيح أو مفقود';
         throw new Error(errMsg);
       }
@@ -170,7 +197,7 @@ class ShipmentService {
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3) ? cleanAddress.trim() : `${cleanArea || cleanGovernorate} - ${cleanGovernorate}`;
       const shipmentData = {
         authentication_key: apiKey, main_client_code: mainClientCode || 37321, remote_order_id: orderNumber || `Order ${orderNumber}`,
-        remote_shipment_id: String(orderId || ''), receiver: finalReceiver, phone1: validPhone, phone2: secondPhone,
+        remote_shipment_id: String(orderId || ''), receiver: finalReceiver, phone1: validPhone, phone2: secondPhone || null,
         api_followup_phone: senderNumber || validPhone, government: cleanGovernorate, area: cleanArea || cleanGovernorate || 'المركز الرئيسي',
         address: finalAddress, notes: notes || `Order #${orderNumber}`, order_summary: formattedSummary,
         return_summary: orderData.returnSummary || defaultReturnSummary,

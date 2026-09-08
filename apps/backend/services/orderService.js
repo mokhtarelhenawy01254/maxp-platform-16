@@ -1302,24 +1302,39 @@ class OrderService {
           // 🚚 Turbo Integration
 
           if (status === 'CONFIRMED' && order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey && !order.turboShipmentId) {
-            const TurboService = require('./turboService');
-            const turboService = new TurboService(order.company.turboApiKey, order.companyId);
-            const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
+            const existingActiveShipment = await this.checkDuplicateActiveTurboShipment(order.companyId, order);
+            if (existingActiveShipment) {
+              console.warn(`⚠️ [TURBO] Skipping automatic shipment creation for order ${order.orderNumber}: Customer already has active Turbo shipment ${existingActiveShipment.turboShipmentId} on order ${existingActiveShipment.orderNumber}`);
+              try {
+                const prisma = this.getPrisma();
+                const skipNote = `[تم تخطي الشحن التلقائي: شحنة تربو نشطة للعميل #${existingActiveShipment.turboShipmentId} بالطلب ${existingActiveShipment.orderNumber}]`;
+                await prisma.order.update({
+                  where: { id: order.id },
+                  data: {
+                    notes: order.notes ? `${order.notes}\n${skipNote}` : skipNote
+                  }
+                });
+              } catch (e) {}
+            } else {
+              const TurboService = require('./turboService');
+              const turboService = new TurboService(order.company.turboApiKey, order.companyId);
+              const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
 
-            const shipmentResult = await turboService.createShipment(orderData);
+              const shipmentResult = await turboService.createShipment(orderData);
 
-            if (shipmentResult.success) {
-              const prisma = this.getPrisma();
-              await prisma.order.update({
-                where: { id: order.id },
-                data: {
-                  turboShipmentId: String(shipmentResult.shipmentId || ''),
-                  turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
-                  turboShipmentStatus: shipmentResult.status,
-                  turboLabelUrl: shipmentResult.labelUrl,
-                  turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
-                }
-              });
+              if (shipmentResult.success) {
+                const prisma = this.getPrisma();
+                await prisma.order.update({
+                  where: { id: order.id },
+                  data: {
+                    turboShipmentId: String(shipmentResult.shipmentId || ''),
+                    turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
+                    turboShipmentStatus: shipmentResult.status,
+                    turboLabelUrl: shipmentResult.labelUrl,
+                    turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
+                  }
+                });
+              }
             }
           }
 
@@ -1856,32 +1871,46 @@ class OrderService {
       }, 5);
 
       // 🚚 Turbo Integration: إنشاء شحنة تلقائياً إذا كان مفعّل
-      if (order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey) {
+      if (order.company?.turboEnabled && order.company?.turboAutoCreate && order.company?.turboApiKey && !order.turboShipmentId) {
         try {
-          const TurboService = require('./turboService');
-          const turboService = new TurboService(order.company.turboApiKey, order.companyId);
+          const existingActiveShipment = await this.checkDuplicateActiveTurboShipment(order.companyId, order);
+          if (existingActiveShipment) {
+            console.warn(`⚠️ [TURBO] Skipping automatic shipment creation in confirmOrder for order ${order.orderNumber}: Customer already has active Turbo shipment ${existingActiveShipment.turboShipmentId} on order ${existingActiveShipment.orderNumber}`);
+            try {
+              const prisma = this.getPrisma();
+              const skipNote = `[تم تخطي الشحن التلقائي: شحنة تربو نشطة للعميل #${existingActiveShipment.turboShipmentId} بالطلب ${existingActiveShipment.orderNumber}]`;
+              await prisma.order.update({
+                where: { id: order.id },
+                data: {
+                  notes: order.notes ? `${order.notes}\n${skipNote}` : skipNote
+                }
+              });
+            } catch (e) {}
+          } else {
+            const TurboService = require('./turboService');
+            const turboService = new TurboService(order.company.turboApiKey, order.companyId);
 
-          // تحضير بيانات الطلب
-          const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
+            // تحضير بيانات الطلب
+            const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
 
-          // إنشاء الشحنة
-          const shipmentResult = await turboService.createShipment(orderData);
+            // إنشاء الشحنة
+            const shipmentResult = await turboService.createShipment(orderData);
 
-          // حفظ معلومات الشحنة في قاعدة البيانات
-          await safeQuery(async () => {
-            const prisma = this.getPrisma();
-            return await prisma.order.update({
-              where: { id: order.id },
-              data: {
-                turboShipmentId: String(shipmentResult.shipmentId || ''),
-                turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
-                turboShipmentStatus: shipmentResult.status,
-                turboLabelUrl: shipmentResult.labelUrl,
-                turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
-              }
-            });
-          }, 3);
-
+            // حفظ معلومات الشحنة في قاعدة البيانات
+            await safeQuery(async () => {
+              const prisma = this.getPrisma();
+              return await prisma.order.update({
+                where: { id: order.id },
+                data: {
+                  turboShipmentId: String(shipmentResult.shipmentId || ''),
+                  turboTrackingNumber: String(shipmentResult.trackingNumber || ''),
+                  turboShipmentStatus: shipmentResult.status,
+                  turboLabelUrl: shipmentResult.labelUrl,
+                  turboMetadata: serializeTurboMetadata(order.turboMetadata, shipmentResult.data)
+                }
+              });
+            }, 3);
+          }
         } catch (turboError) {
           // لا نوقف العملية إذا فشل Turbo - فقط نسجل الخطأ
           console.error(`❌ [TURBO] Failed to create shipment for order ${orderNumber}:`, turboError.message);
@@ -1941,6 +1970,39 @@ class OrderService {
         averageOrderValue: 0,
         period: `${days} days`
       };
+    }
+  }
+
+  async checkDuplicateActiveTurboShipment(companyId, order) {
+    try {
+      const prisma = this.getPrisma();
+      const rawPhone = order.customerPhone || order.customer?.phone || (order.shippingAddress && typeof order.shippingAddress === 'object' ? order.shippingAddress.phone : null);
+      if (!rawPhone) return null;
+
+      const cleanPhone = String(rawPhone)
+        .replace(/[\u0660-\u0669]/g, d => String.fromCharCode(d.charCodeAt(0) - 0x0660 + 48))
+        .replace(/\D/g, '')
+        .slice(-10);
+
+      if (!cleanPhone || cleanPhone.length < 8) return null;
+
+      // Check if there is another recent order (within last 48 hours) with an active Turbo shipment for this customer
+      const existing = await prisma.order.findFirst({
+        where: {
+          companyId,
+          id: { not: order.id },
+          turboShipmentId: { not: null },
+          customerPhone: { contains: cleanPhone },
+          createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
+          status: { notIn: ['CANCELLED', 'RETURNED', 'REFUNDED', 'DELETED', 'TRASH'] }
+        },
+        select: { id: true, orderNumber: true, turboShipmentId: true, createdAt: true }
+      });
+
+      return existing || null;
+    } catch (err) {
+      console.warn('⚠️ [TURBO] Error checking duplicate active shipment:', err.message);
+      return null;
     }
   }
 }

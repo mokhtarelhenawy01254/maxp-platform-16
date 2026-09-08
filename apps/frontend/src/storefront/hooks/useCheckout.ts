@@ -14,8 +14,11 @@ export interface CheckoutData {
   customerName: string;
   email: string;
   phone: string;
+  phone2?: string;
+  alternativePhone?: string;
   address: string;
   city: string;
+  area?: string;
   governorate: string;
   notes?: string;
   paymentMethod: 'cod' | 'card' | 'wallet';
@@ -40,12 +43,15 @@ export interface CheckoutOrderPayload {
   guestName: string;
   guestEmail: string;
   guestPhone: string;
+  guestPhone2?: string;
   shippingAddress: {
     address: string;
     addressLine1: string;
     street: string;
     city: string;
+    area?: string;
     governorate: string;
+    phone2?: string;
   };
   paymentMethod: 'cod' | 'card' | 'wallet';
   couponCode?: string;
@@ -143,12 +149,15 @@ export const buildCheckoutOrderPayload = (
     guestName: data.customerName,
     guestEmail: data.email,
     guestPhone: data.phone,
+    ...(data.phone2 || data.alternativePhone ? { guestPhone2: data.phone2 || data.alternativePhone } : {}),
     shippingAddress: {
       address: data.address,
       addressLine1: data.address,
       street: data.address,
       city: data.city,
+      ...(data.area ? { area: data.area } : {}),
       governorate: data.governorate,
+      ...(data.phone2 || data.alternativePhone ? { phone2: data.phone2 || data.alternativePhone } : {}),
     },
     paymentMethod: data.paymentMethod,
     ...(data.couponCode ? { couponCode: data.couponCode } : {}),

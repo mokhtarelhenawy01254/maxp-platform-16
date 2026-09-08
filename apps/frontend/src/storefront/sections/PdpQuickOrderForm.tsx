@@ -306,6 +306,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   const [shippingMethodLabel, setShippingMethodLabel] = useState("");
   const [isShippingLoading, setIsShippingLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isStickySubmitVisible, setIsStickySubmitVisible] = useState(false);
   const trackedCheckoutFingerprintRef = useRef("");
@@ -830,12 +831,12 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
     if (
       effectiveAddressField.enabled &&
       effectiveAddressField.required &&
-      !resolvedAddress
+      (!resolvedAddress || resolvedAddress.trim().length < 5)
     ) {
       errors.push(
         prefersArabicCopy
-          ? "يرجى إدخال العنوان بالتفصيل."
-          : "Please enter the detailed address.",
+          ? "يرجى إدخال العنوان بالتفصيل (5 أحرف على الأقل)."
+          : "Please enter the detailed address (at least 5 characters).",
       );
     }
 
@@ -847,6 +848,10 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   };
 
   const handleSubmit = async () => {
+    if (isSubmittingRef.current || isSubmitting) {
+      return;
+    }
+
     const errors = validateForm();
     if (errors.length > 0) {
       setValidationErrors(errors);
@@ -856,6 +861,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       return;
     }
 
+    isSubmittingRef.current = true;
     setValidationErrors([]);
     setIsSubmitting(true);
 
@@ -867,6 +873,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
               ? "جارٍ رفع صورة الإيصال، انتظر قليلًا."
               : "Uploading the receipt, please wait.",
           ]);
+          isSubmittingRef.current = false;
           setIsSubmitting(false);
           return;
         }
@@ -876,12 +883,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
               ? "يرجى رفع صورة إيصال التحويل لإتمام الدفع بالمحفظة."
               : "Please upload the transfer receipt to pay by wallet.",
           ]);
+          isSubmittingRef.current = false;
           setIsSubmitting(false);
           return;
         }
       }
       const quickOrderItems = buildQuickOrderCartItemsForSubmit();
       if (!quickOrderItems?.length) {
+        isSubmittingRef.current = false;
         setIsSubmitting(false);
         return;
       }
@@ -915,6 +924,10 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
           customerName: resolvedFullName || fallbackCustomerName,
           email: "",
           phone: contactPhone,
+          phone2:
+            effectiveAlternatePhoneField.enabled && resolvedAlternatePhone
+              ? resolvedAlternatePhone
+              : undefined,
           address: resolvedAddress,
           city: resolvedGovernorate,
           governorate: resolvedGovernorate,
@@ -954,6 +967,10 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                 guestName: resolvedFullName || fallbackCustomerName,
                 guestEmail: "",
                 guestPhone: contactPhone,
+                guestPhone2:
+                  effectiveAlternatePhoneField.enabled && resolvedAlternatePhone
+                    ? resolvedAlternatePhone
+                    : undefined,
                 paymentMethod,
                 notes: payload.notes,
                 shippingAddress: {
@@ -962,6 +979,10 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                   street: resolvedAddress || undefined,
                   address: resolvedAddress || undefined,
                   addressLine1: resolvedAddress || undefined,
+                  phone2:
+                    effectiveAlternatePhoneField.enabled && resolvedAlternatePhone
+                      ? resolvedAlternatePhone
+                      : undefined,
                 },
                 items: quickOrderItems.map((item) => ({
                   productId: item.productId,
@@ -1058,6 +1079,8 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         },
       });
     } catch (error) {
+      isSubmittingRef.current = false;
+      setIsSubmitting(false);
       const message =
         error instanceof Error
           ? error.message
@@ -1065,8 +1088,6 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
             ? "حدث خطأ أثناء إرسال الطلب."
             : "An error occurred while submitting the order.";
       toast.error(message);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
