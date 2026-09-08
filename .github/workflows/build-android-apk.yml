@@ -11,6 +11,11 @@ on:
         options:
           - debug
           - release
+      deploy_to_server:
+        description: 'نشر تلقائي للسيرفر لرابط التحميل المباشر (Deploy to maxp.online/download/maxp.apk)'
+        required: false
+        default: true
+        type: boolean
 
 permissions:
   contents: read
@@ -82,3 +87,37 @@ jobs:
           name: MaxP-Mobile-Android-${{ github.event.inputs.build_type || 'debug' }}-${{ github.run_number }}
           path: ${{ steps.apk-finder.outputs.apk_path }}
           retention-days: 30
+
+      - name: Setup SSH Key for Server Deployment
+        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        uses: ./.github/actions/setup-ssh
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          port: ${{ secrets.SERVER_PORT || '22' }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+
+      - name: Deploy APK to Production Server
+        if: ${{ github.event.inputs.deploy_to_server != 'false' && secrets.SERVER_HOST != '' && secrets.SERVER_SSH_KEY != '' }}
+        shell: bash
+        env:
+          SERVER_HOST: ${{ secrets.SERVER_HOST }}
+          SERVER_USER: ${{ secrets.SERVER_USER }}
+          SERVER_PORT: ${{ secrets.SERVER_PORT || '22' }}
+          APK_FILE: ${{ steps.apk-finder.outputs.apk_path }}
+        run: |
+          echo "🚀 Deploying APK to production server..."
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new -o ConnectTimeout=20 \
+            "$SERVER_USER@$SERVER_HOST" \
+            "mkdir -p /var/www/frontend2/dist/download /var/www/frontend2/dist/downloads"
+
+          scp -4 -i "$HOME/.ssh/maxp_deploy_key" -P "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            "$APK_FILE" "$SERVER_USER@$SERVER_HOST:/var/www/frontend2/dist/download/maxp.apk"
+
+          ssh -4 -i "$HOME/.ssh/maxp_deploy_key" -p "$SERVER_PORT" \
+            -o StrictHostKeyChecking=accept-new \
+            "$SERVER_USER@$SERVER_HOST" \
+            "cp -f /var/www/frontend2/dist/download/maxp.apk /var/www/frontend2/dist/downloads/maxp.apk"
+
+          echo "✅ APK successfully published to https://maxp.online/download/maxp.apk"
