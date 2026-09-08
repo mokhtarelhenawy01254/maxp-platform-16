@@ -125,7 +125,7 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
                     selectedConversationId === conv.id
                       ? {
                           background:
-                            "color-mix(in srgb, var(--color-primary) 10%, white)",
+                            "color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff))",
                           borderColor:
                             "color-mix(in srgb, var(--color-primary) 18%, transparent)",
                         }
@@ -146,7 +146,7 @@ const ForwardModal: React.FC<ForwardModalProps> = ({
                       className="flex h-10 w-10 items-center justify-center rounded-full"
                       style={{
                         background:
-                          "color-mix(in srgb, var(--color-border) 24%, white)",
+                          "color-mix(in srgb, var(--color-border) 24%, var(--color-card, #ffffff))",
                         color: "var(--color-muted-foreground)",
                       }}
                     >

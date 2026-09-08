@@ -63,7 +63,7 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
 
   const triggerStyle: React.CSSProperties = currentAssignee
     ? {
-        background: "color-mix(in srgb, var(--color-secondary) 10%, white)",
+        background: "color-mix(in srgb, var(--color-secondary) 10%, var(--color-card, #ffffff))",
         borderColor:
           "color-mix(in srgb, var(--color-secondary) 18%, transparent)",
         color: "var(--color-secondary)",
@@ -75,7 +75,7 @@ const AssignmentDropdown: React.FC<AssignmentDropdownProps> = ({
       };
 
   const mutedAvatarStyle: React.CSSProperties = {
-    background: "color-mix(in srgb, var(--color-border) 24%, white)",
+    background: "color-mix(in srgb, var(--color-border) 24%, var(--color-card, #ffffff))",
     color: "var(--color-muted-foreground)",
   };
 

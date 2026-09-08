@@ -512,7 +512,7 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
                 className="business-chip-button w-full px-4 py-2 disabled:cursor-not-allowed"
                 style={{
                   background:
-                    "linear-gradient(135deg, var(--business-success) 0%, color-mix(in srgb, var(--color-secondary) 82%, white) 100%)",
+                    "linear-gradient(135deg, var(--business-success) 0%, var(--color-secondary) 100%)",
                   borderColor: "transparent",
                   color: "white",
                 }}

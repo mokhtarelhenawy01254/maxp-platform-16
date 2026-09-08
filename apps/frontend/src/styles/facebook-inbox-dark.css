@@ -417,3 +417,30 @@
 .dark [data-theme="business-os-enterprise"] .business-inbox-empty {
   color: rgba(255, 255, 255, 0.5) !important;
 }
+
+/* ── Modals & Text Gallery in Dark Mode ── */
+.dark .business-page-panel {
+  background: var(--business-surface-panel) !important;
+  color: #f1f5f9;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .business-page-panel h3,
+.dark .business-page-panel h4 {
+  color: #ffffff !important;
+}
+
+.dark .business-page-panel textarea,
+.dark .business-page-panel input[type="text"],
+.dark .business-page-panel input[type="number"],
+.dark .business-page-panel select {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #ffffff !important;
+}
+
+.dark .business-page-panel textarea::placeholder,
+.dark .business-page-panel input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+

@@ -1072,7 +1072,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                         style={{
                           color: "var(--color-primary)",
                           background:
-                            "color-mix(in srgb, var(--color-primary) 8%, white)",
+                            "color-mix(in srgb, var(--color-primary) 8%, var(--color-card, #ffffff))",
                         }}
                       >
                         <ExternalLink size={14} />
@@ -1099,17 +1099,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                       className="absolute -right-[29px] top-1 w-3 h-3 rounded-full border-2"
                       style={{
                         background: "var(--business-success)",
-                        borderColor:
-                          "color-mix(in srgb, white 76%, var(--color-background) 24%)",
+                        borderColor: "var(--business-card-border)",
                         boxShadow:
-                          "0 0 0 4px color-mix(in srgb, var(--business-success) 10%, white)",
+                          "0 0 0 4px color-mix(in srgb, var(--business-success) 10%, var(--color-card, #ffffff))",
                       }}
                     ></div>
                     <div
                       className="rounded-lg p-3"
                       style={{
                         background:
-                          "color-mix(in srgb, var(--business-success) 8%, white)",
+                          "color-mix(in srgb, var(--business-success) 8%, var(--color-card, #ffffff))",
                         border:
                           "1px solid color-mix(in srgb, var(--business-success) 18%, transparent)",
                       }}
@@ -1149,7 +1148,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                             syncingMessages
                               ? {
                                   background:
-                                    "color-mix(in srgb, var(--business-success) 16%, white)",
+                                    "color-mix(in srgb, var(--business-success) 16%, var(--color-card, #ffffff))",
                                   color: "var(--business-success)",
                                 }
                               : {
@@ -1177,17 +1176,16 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                       className="absolute -right-[29px] top-1 w-3 h-3 rounded-full border-2"
                       style={{
                         background: "var(--color-secondary)",
-                        borderColor:
-                          "color-mix(in srgb, white 76%, var(--color-background) 24%)",
+                        borderColor: "var(--business-card-border)",
                         boxShadow:
-                          "0 0 0 4px color-mix(in srgb, var(--color-secondary) 10%, white)",
+                          "0 0 0 4px color-mix(in srgb, var(--color-secondary) 10%, var(--color-card, #ffffff))",
                       }}
                     ></div>
                     <div
                       className="rounded-lg p-3"
                       style={{
                         background:
-                          "color-mix(in srgb, var(--color-secondary) 8%, white)",
+                          "color-mix(in srgb, var(--color-secondary) 8%, var(--color-card, #ffffff))",
                         border:
                           "1px solid color-mix(in srgb, var(--color-secondary) 18%, transparent)",
                       }}
@@ -1280,7 +1278,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                                     className="w-12 h-12 rounded flex items-center justify-center text-xs font-medium"
                                     style={{
                                       background:
-                                        "color-mix(in srgb, var(--color-secondary) 10%, white)",
+                                        "color-mix(in srgb, var(--color-secondary) 10%, var(--color-card, #ffffff))",
                                       border:
                                         "1px solid color-mix(in srgb, var(--color-secondary) 18%, transparent)",
                                       color: "var(--color-secondary)",
@@ -1321,10 +1319,9 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                           className="absolute -right-[29px] top-1 w-3 h-3 rounded-full border-2"
                           style={{
                             background: "var(--color-primary)",
-                            borderColor:
-                              "color-mix(in srgb, white 76%, var(--color-background) 24%)",
+                            borderColor: "var(--business-card-border)",
                             boxShadow:
-                              "0 0 0 4px color-mix(in srgb, var(--color-primary) 10%, white)",
+                              "0 0 0 4px color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff))",
                           }}
                         ></div>
                         <div>

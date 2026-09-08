@@ -79,7 +79,7 @@ const ConversationActionsBar: React.FC<ConversationActionsBarProps> = ({
             : isPriority
               ? {
                   background:
-                    "color-mix(in srgb, var(--business-warning) 10%, white)",
+                    "color-mix(in srgb, var(--business-warning) 10%, var(--color-card, #ffffff))",
                   color: "var(--business-warning)",
                 }
               : undefined
@@ -111,7 +111,7 @@ const ConversationActionsBar: React.FC<ConversationActionsBarProps> = ({
           className="business-chip-button p-2 rounded-lg transition-colors disabled:opacity-50"
           style={{
             color: "var(--business-danger)",
-            background: "color-mix(in srgb, var(--business-danger) 8%, white)",
+            background: "color-mix(in srgb, var(--business-danger) 8%, var(--color-card, #ffffff))",
             borderColor:
               "color-mix(in srgb, var(--business-danger) 18%, transparent)",
           }}

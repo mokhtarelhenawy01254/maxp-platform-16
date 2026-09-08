@@ -49,10 +49,10 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           className="business-chip-button px-3 py-1.5 text-xs font-medium"
           style={{
             background:
-              "color-mix(in srgb, var(--business-success) 10%, white)",
+              "color-mix(in srgb, var(--business-success) 10%, var(--color-card, #ffffff))",
             borderColor:
               "color-mix(in srgb, var(--business-success) 18%, transparent)",
-            color: "color-mix(in srgb, var(--business-success) 74%, black)",
+            color: "var(--business-success)",
           }}
         >
           <CheckCircleIcon className="w-4 h-4" />
@@ -63,7 +63,7 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           onClick={onAssign}
           className="business-chip-button px-3 py-1.5 text-xs font-medium"
           style={{
-            background: "color-mix(in srgb, var(--color-primary) 10%, white)",
+            background: "color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff))",
             borderColor:
               "color-mix(in srgb, var(--color-primary) 18%, transparent)",
             color: "var(--color-primary)",
@@ -77,7 +77,7 @@ const BulkActionsBar: React.FC<BulkActionsBarProps> = ({
           onClick={onAddTags}
           className="business-chip-button px-3 py-1.5 text-xs font-medium"
           style={{
-            background: "color-mix(in srgb, var(--color-secondary) 10%, white)",
+            background: "color-mix(in srgb, var(--color-secondary) 10%, var(--color-card, #ffffff))",
             borderColor:
               "color-mix(in srgb, var(--color-secondary) 18%, transparent)",
             color: "var(--color-secondary)",
