@@ -2179,11 +2179,11 @@ const UnifiedInbox: React.FC = () => {
                       <button
                         key={reply.id}
                         onClick={() => handleQuickReplySelect(reply)}
-                        className={`w-full rounded-2xl border px-3 py-2 flex flex-col items-start gap-1 ${isRtl ? "text-right" : "text-left"} transition-colors`}
+                        className={`w-full rounded-2xl border px-3 py-2 flex flex-col items-start gap-1 ${isRtl ? "text-right" : "text-left"} transition-colors hover:border-primary/40 hover:bg-primary/5`}
                         style={{
                           borderColor: "var(--business-card-border)",
                           background:
-                            "color-mix(in srgb, white 74%, var(--color-background) 26%)",
+                            "var(--business-surface-panel, color-mix(in srgb, var(--color-foreground) 4%, var(--color-background)))",
                         }}
                       >
                         <span
@@ -2212,7 +2212,7 @@ const UnifiedInbox: React.FC = () => {
                       {att.type === 'image' ? (
                         <img src={att.url} alt={att.name} className="w-10 h-10 rounded-lg object-cover" />
                       ) : (
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, white)' }}>
+                        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ background: 'color-mix(in srgb, var(--color-primary) 15%, var(--color-background))' }}>
                           <PaperClipIcon className="w-5 h-5" style={{ color: 'var(--color-primary)' }} />
                         </div>
                       )}

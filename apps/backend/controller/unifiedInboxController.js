@@ -1134,8 +1134,11 @@ const getCustomerProfile = async (req, res) => {
  */
 const getQuickReplies = async (req, res) => {
     try {
-        const companyId = req.user?.companyId;
+        const companyId = req.user?.companyId || req.headers['x-company-id'] || req.query?.companyId;
         if (!companyId) {
+            if (req.user?.role === 'SUPER_ADMIN') {
+                return res.json({ success: true, data: [] });
+            }
             return res.status(403).json({ success: false, message: 'Company ID is required' });
         }
 

@@ -106,7 +106,6 @@ router.post('/conversations/:id/snooze',
 // Get quick replies
 router.get('/quick-replies',
     verifyToken.authenticateToken,
-    checkAppAccess('unified-inbox'),
     unifiedInboxController.getQuickReplies
 );
 

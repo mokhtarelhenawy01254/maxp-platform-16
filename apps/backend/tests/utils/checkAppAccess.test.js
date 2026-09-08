@@ -81,6 +81,69 @@ describe("checkAppAccess middleware", () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it("expands unified-inbox to messaging apps like whatsapp-business and facebook-pages-connect", async () => {
+    const req = {
+      user: {
+        companyId: "company-1",
+      },
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    mockPrisma.marketplaceApp.findMany.mockResolvedValue([
+      {
+        id: "app-wa",
+        slug: "whatsapp-business",
+        name: "WhatsApp Business",
+      },
+    ]);
+    mockPrisma.companyApp.findUnique.mockResolvedValue({
+      id: "company-app-wa",
+      status: "ACTIVE",
+    });
+
+    await checkAppAccess("unified-inbox")(req, res, next);
+
+    expect(getCandidateAppSlugs("unified-inbox")).toEqual([
+      "unified-inbox",
+      "whatsapp-business",
+      "whatsapp-integration",
+      "whatsapp-inbox",
+      "facebook-pages-connect",
+      "instagram-business",
+      "tiktok-integrations",
+      "telegram-business",
+      "telegram-integration",
+      "crm-lite",
+      "crm-basic",
+    ]);
+    expect(mockPrisma.marketplaceApp.findMany).toHaveBeenCalledWith({
+      where: {
+        slug: {
+          in: [
+            "unified-inbox",
+            "whatsapp-business",
+            "whatsapp-integration",
+            "whatsapp-inbox",
+            "facebook-pages-connect",
+            "instagram-business",
+            "tiktok-integrations",
+            "telegram-business",
+            "telegram-integration",
+            "crm-lite",
+            "crm-basic",
+          ],
+        },
+      },
+    });
+    expect(req.marketplaceApp).toEqual(
+      expect.objectContaining({
+        slug: "whatsapp-business",
+      }),
+    );
+    expect(next).toHaveBeenCalled();
+  });
+
   it("keeps returning 404 when neither the requested slug nor its aliases exist", async () => {
     const req = {
       user: {

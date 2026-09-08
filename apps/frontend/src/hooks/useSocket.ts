@@ -130,7 +130,8 @@ const useSocket = (
           );
           newSocket.emit("user_join", userJoinData);
 
-          // Add main listener for new messages
+          // Add main listener for new messages (clean up previous to avoid duplicates on reconnect)
+          newSocket.off("new_message");
           newSocket.on("new_message", (data) => {
             console.log("📨 [NEW-MESSAGE] Received new message:", data);
             console.log(

@@ -215,8 +215,9 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
   // Filter replies based on input and category
   const filteredReplies = useMemo(() => {
     let term = inputValue.trim();
-    if (term.startsWith("/")) {
-      term = term.slice(1).trim().toLowerCase();
+    const lastSlash = term.lastIndexOf("/");
+    if (lastSlash !== -1) {
+      term = term.slice(lastSlash + 1).trim().toLowerCase();
     } else {
       term = term.toLowerCase();
     }
@@ -316,7 +317,7 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
       <div
         ref={dropdownRef}
         dir="rtl"
-        className="fixed inset-x-2 bottom-[62px] z-40 max-h-[58vh] sm:absolute sm:inset-x-auto sm:start-0 sm:end-auto sm:bottom-full sm:mb-2 sm:w-[480px] sm:max-h-[420px] flex flex-col rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-all text-foreground"
+        className="absolute bottom-full mb-1.5 inset-x-1 sm:inset-x-auto sm:start-0 sm:end-auto sm:w-[480px] sm:mb-2 z-40 max-h-[55vh] sm:max-h-[420px] flex flex-col rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-all text-foreground"
         style={{
           boxShadow:
             "0 20px 45px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05)",

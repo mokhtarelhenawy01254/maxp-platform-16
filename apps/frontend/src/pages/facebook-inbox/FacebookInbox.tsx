@@ -1093,6 +1093,22 @@ const getApiError = (error: unknown): ApiErrorLike => {
     ],
   );
 
+  // Handle direct quick reply send (including images if attached)
+  const handleSendQuickReply = useCallback(
+    async (reply: any) => {
+      if (!selectedConversation || !companyId) return;
+      if (reply.imageUrls && reply.imageUrls.length > 0) {
+        await handleSelectTextFromGallery({
+          content: reply.content,
+          imageUrls: reply.imageUrls,
+        });
+      } else {
+        await handleSendMessage(reply.content);
+      }
+    },
+    [selectedConversation, companyId, handleSelectTextFromGallery, handleSendMessage],
+  );
+
   // Handle single image selection from gallery
   const handleSelectImageFromGallery = useCallback(
     async (imageUrl: string, filename: string) => {
@@ -2785,6 +2801,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 <MessageInput
                   onSendMessage={handleSendMessage}
                   onSendFile={handleSendFile}
+                  onSendQuickReply={handleSendQuickReply}
                   sending={sending}
                   uploadingFile={uploadingFile}
                   conversation={selectedConversation}

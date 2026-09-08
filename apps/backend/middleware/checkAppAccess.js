@@ -30,6 +30,19 @@ const LEGACY_APP_SLUG_ALIASES = {
   'crm-basic': ['crm-lite', 'crm'],
   'marketing-agency-pro': ['marketing-agency', 'marketing-sales'],
   'facebook-pages-connect': ['facebook-ads-pro', 'crm-basic', 'crm-lite'],
+  // Unified Inbox aliases & backwards compatibility:
+  'unified-inbox': [
+    'whatsapp-business',
+    'whatsapp-integration',
+    'whatsapp-inbox',
+    'facebook-pages-connect',
+    'instagram-business',
+    'tiktok-integrations',
+    'telegram-business',
+    'telegram-integration',
+    'crm-lite',
+    'crm-basic'
+  ],
   // Analytics aliases:
   'orders-analytics': ['analytics-basic', 'analytics-advanced', 'analytics'],
   'analytics-basic': ['orders-analytics', 'analytics-advanced', 'analytics'],

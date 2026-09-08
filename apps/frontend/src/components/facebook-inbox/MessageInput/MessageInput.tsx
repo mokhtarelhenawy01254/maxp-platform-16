@@ -37,6 +37,7 @@ interface MessageInputProps {
   platform?: string;
   draftMessage?: string;
   onDraftMessageHandled?: () => void;
+  onSendQuickReply?: (reply: QuickReply) => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -55,6 +56,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   isSending = false,
   draftMessage,
   onDraftMessageHandled,
+  onSendQuickReply,
 }) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -164,7 +166,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
     const value = e.target.value;
     setMessage(value);
 
-    if (value.startsWith("/")) {
+    // Trigger quick replies if starting with / or preceded by space
+    if (value.startsWith("/") || /(?:^|\s)\/([^\s]*)$/.test(value)) {
       setShowQuickReplies(true);
     } else {
       setShowQuickReplies(false);
@@ -179,7 +182,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
     const contextVars = getContextVariables(conversation, user);
     const processedContent = replaceVariables(reply.content, contextVars);
 
-    setMessage(processedContent);
+    // If message contains slash command, replace the slash portion or append cleanly
+    const lastSlashIndex = message.lastIndexOf("/");
+    if (lastSlashIndex > 0) {
+      const preceding = message.slice(0, lastSlashIndex).trim();
+      setMessage(preceding ? `${preceding}\n${processedContent}` : processedContent);
+    } else {
+      setMessage(processedContent);
+    }
+
     setShowQuickReplies(false);
     setShowMobileTools(false);
     if (messageInputRef.current) {
@@ -204,6 +215,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
     if (messageInputRef.current) {
       messageInputRef.current.style.height = "auto";
+    }
+
+    if (onSendQuickReply) {
+      onSendQuickReply({
+        ...reply,
+        content: processedContent,
+      });
+      return;
     }
 
     if (processedContent.trim() && !isBusy && handleSendAction) {
@@ -502,6 +521,32 @@ const MessageInput: React.FC<MessageInputProps> = ({
               </button>
             </div>
           )}
+
+          {/* Quick Replies Button (Desktop) */}
+          <div className="relative flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => {
+                setShowQuickReplies((prev) => {
+                  const nextState = !prev;
+                  if (nextState) {
+                    setMessage((current) => (current.startsWith("/") ? current : "/" + current));
+                    setTimeout(() => messageInputRef.current?.focus(), 50);
+                  }
+                  return nextState;
+                });
+              }}
+              className={`business-icon-button rounded-xl p-1.5 transition-colors sm:p-2 ${
+                showQuickReplies
+                  ? "text-primary bg-primary/10 border-primary/30"
+                  : ""
+              }`}
+              title="الردود السريعة (/)"
+              aria-label="الردود السريعة"
+            >
+              <BoltIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            </button>
+          </div>
 
           {/* Desktop Emoji Picker Button */}
           <div className="relative flex-shrink-0">
