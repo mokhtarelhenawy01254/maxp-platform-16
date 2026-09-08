@@ -317,10 +317,12 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
   # We only switch/reload at the very end to minimize production downtime.
   
   # Save uploads folder if it exists in backend2 (preserve user uploads)
+  UPLOADS_BACKUP_DIR=""
   if [ -d "/var/www/backend2/uploads" ]; then
     echo "💾 Saving uploads folder from backend2..."
-    sudo rm -rf /tmp/backend_uploads_backup
-    sudo cp -r /var/www/backend2/uploads /tmp/backend_uploads_backup
+    sudo rm -rf /tmp/backend_uploads_backup 2>/dev/null || true
+    UPLOADS_BACKUP_DIR=$(mktemp -d /tmp/backend_uploads_backup.XXXXXX 2>/dev/null || echo "/tmp/backend_uploads_backup_$$")
+    sudo cp -r /var/www/backend2/uploads "$UPLOADS_BACKUP_DIR/uploads" 2>/dev/null || true
   fi
 
   # Save .env if it exists in backend2
@@ -374,10 +376,13 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     echo "⚠️ Could not find token in any ai-service .env — tools may fail to auth"
   fi
 
-              # Restore uploads
-  if [ -d "/tmp/backend_uploads_backup" ]; then
-    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
-    sudo rm -rf /tmp/backend_uploads_backup
+  # Restore uploads
+  if [ -n "$UPLOADS_BACKUP_DIR" ] && [ -d "$UPLOADS_BACKUP_DIR/uploads" ]; then
+    sudo rsync -a "$UPLOADS_BACKUP_DIR/uploads/" /var/www/backend2/uploads/ 2>/dev/null || true
+    sudo rm -rf "$UPLOADS_BACKUP_DIR" 2>/dev/null || true
+  elif [ -d "/tmp/backend_uploads_backup" ]; then
+    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/ 2>/dev/null || true
+    sudo rm -rf /tmp/backend_uploads_backup 2>/dev/null || true
   fi
   
   echo "✅ Backend extracted and restored successfully"
@@ -385,9 +390,12 @@ elif [ -d "$DEPLOY_STAGING/backend" ]; then
   echo "📦 Moving backend files from staging directory..."
   
   # Save uploads folder if it exists in backend2 (preserve user uploads)
+  UPLOADS_BACKUP_DIR=""
   if [ -d "/var/www/backend2/uploads" ]; then
     echo "💾 Saving uploads folder from backend2..."
-    sudo cp -r /var/www/backend2/uploads /tmp/backend_uploads_backup
+    sudo rm -rf /tmp/backend_uploads_backup 2>/dev/null || true
+    UPLOADS_BACKUP_DIR=$(mktemp -d /tmp/backend_uploads_backup.XXXXXX 2>/dev/null || echo "/tmp/backend_uploads_backup_$$")
+    sudo cp -r /var/www/backend2/uploads "$UPLOADS_BACKUP_DIR/uploads" 2>/dev/null || true
   fi
 
   # Save .env if it exists in backend2
@@ -443,10 +451,13 @@ elif [ -d "$DEPLOY_STAGING/backend" ]; then
     echo "⚠️ Could not find token in any ai-service .env — tools may fail to auth"
   fi
 
-              # Restore uploads
-  if [ -d "/tmp/backend_uploads_backup" ]; then
-    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/
-    sudo rm -rf /tmp/backend_uploads_backup
+  # Restore uploads
+  if [ -n "$UPLOADS_BACKUP_DIR" ] && [ -d "$UPLOADS_BACKUP_DIR/uploads" ]; then
+    sudo rsync -a "$UPLOADS_BACKUP_DIR/uploads/" /var/www/backend2/uploads/ 2>/dev/null || true
+    sudo rm -rf "$UPLOADS_BACKUP_DIR" 2>/dev/null || true
+  elif [ -d "/tmp/backend_uploads_backup" ]; then
+    sudo rsync -a /tmp/backend_uploads_backup/ /var/www/backend2/uploads/ 2>/dev/null || true
+    sudo rm -rf /tmp/backend_uploads_backup 2>/dev/null || true
   fi
   
   echo "✅ Backend moved successfully from staging"
