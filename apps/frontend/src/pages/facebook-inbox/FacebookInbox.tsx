@@ -1907,24 +1907,41 @@ const getApiError = (error: unknown): ApiErrorLike => {
     return repliedSet;
   }, [messages]);
 
-  // Ø¥Ø²Ø§Ù„Ø© padding Ùˆ overflow Ù…Ù† parent main element ÙÙŠ Layout
+  const messagesById = useMemo(() => {
+    const map = new Map<string, Message>();
+    messages.forEach((msg) => map.set(msg.id, msg));
+    return map;
+  }, [messages]);
+
+  const handleScrollToMessage = useCallback((messageId: string) => {
+    const el = document.getElementById(`inbox-message-${messageId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("ring-2", "ring-primary", "rounded-2xl", "transition-all", "duration-500");
+      setTimeout(() => {
+        el.classList.remove("ring-2", "ring-primary");
+      }, 2500);
+    }
+  }, []);
+
+  // إزالة padding و overflow من parent main element في Layout
   useEffect(() => {
     const mainElement = document.querySelector("main");
     if (mainElement) {
-      // Ø­ÙØ¸ Ø§Ù„Ù€ classes Ø§Ù„Ø£ØµÙ„ÙŠØ©
+      // حفظ الـ classes الأصلية
       const originalClasses = mainElement.className;
-      // Ø¥Ø²Ø§Ù„Ø© padding Ùˆ overflow ÙˆØ¥Ø¶Ø§ÙØ© overflow-hidden Ùˆ h-full
-      mainElement.classList.remove("p-6", "overflow-y-auto");
-      mainElement.classList.add("p-0", "overflow-hidden", "flex-1", "h-full");
+      // إزالة padding و overflow وإضافة overflow-hidden و h-full
+      mainElement.classList.remove("p-4", "p-6", "overflow-y-auto");
+      mainElement.classList.add("p-0", "overflow-hidden", "flex-1", "h-full", "max-h-full");
 
       return () => {
-        // Ø§Ø³ØªØ¹Ø§Ø¯Ø© Ø§Ù„Ù€ classes Ø§Ù„Ø£ØµÙ„ÙŠØ© Ø¹Ù†Ø¯ Ø¥ØºÙ„Ø§Ù‚ Ø§Ù„ØµÙØ­Ø©
+        // استعادة الـ classes الأصلية عند إغلاق الصفحة
         mainElement.className = originalClasses;
       };
     }
 
-    // ðŸ†• New apps layout (no <main>, uses app-shell-content instead)
-    const appContent = document.querySelector(".app-shell-content");
+    // New apps layout (no <main>, uses app-shell-content instead)
+    const appContent = document.querySelector(".app-shell-content") as HTMLElement | null;
     if (appContent) {
       const origContentOverflow = appContent.style.overflow;
       appContent.style.overflow = "hidden";
@@ -1933,7 +1950,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       const inboxShell = appContent.querySelector(".business-inbox-shell");
       if (inboxShell && inboxShell.parentElement) {
         const wrapper = inboxShell.parentElement;
-        wrapper.classList.add("h-full");
+        wrapper.classList.add("h-full", "flex-1", "flex", "flex-col", "min-h-0");
       }
 
       return () => {
@@ -2100,7 +2117,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
   return (
     <div
-      className={`business-inbox-shell${selectedConversation ? " business-inbox-shell--conversation-active" : ""}`}
+      className={`business-inbox-shell h-full w-full flex flex-col flex-1 min-h-0 overflow-hidden${selectedConversation ? " business-inbox-shell--conversation-active" : ""}`}
     >
       <div className={selectedConversation ? "hidden md:block" : ""}>
         <InboxTabs
@@ -2134,7 +2151,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         onSnooze={handleSnoozeConfirm}
       />
 
-      <div className="business-inbox-stage relative">
+      <div className="business-inbox-stage flex-1 h-full min-h-0 relative overflow-hidden">
         {/* Notes Panel Overlay */}
         {showNotesOverlay && (
           <>
@@ -2264,7 +2281,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         </div>
 
         {/* Center: Chat */}
-        <div className="business-inbox-column flex-1 relative">
+        <div className="business-inbox-column flex-1 h-full min-h-0 flex flex-col relative overflow-hidden">
           {selectedConversation ? (
             <>
               {/* Chat Header - simplified, Status & Assignment moved to sidebar */}
@@ -2658,7 +2675,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
               {/* Messages Container - scrollable area, messages directly above input */}
               <div
-                className="business-chat-stage flex-1 overflow-y-auto p-2 sm:p-4 pb-4"
+                className="business-chat-stage flex-1 min-h-0 overflow-y-auto p-2 sm:p-4 pb-4"
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
               >
@@ -2695,21 +2712,35 @@ const getApiError = (error: unknown): ApiErrorLike => {
                       const hasBeenReplied = msg.isFromCustomer
                         ? repliedMessages.has(msg.id)
                         : undefined;
+                      const parentId =
+                        msg.metadata?.replyToResolvedMessageId ||
+                        msg.metadata?.replyTo?.messageId;
+                      const parentMessage = parentId
+                        ? messagesById.get(parentId)
+                        : undefined;
+
                       return (
-                        <MessageBubble
+                        <div
                           key={msg.id}
-                          message={msg}
-                          {...(hasBeenReplied !== undefined && {
-                            hasBeenReplied,
-                          })}
-                          onDelete={handleDeleteMessage}
-                          onForward={handleForwardRequest}
-                          onStar={handleStarMessage}
-                          onReaction={handleMessageReaction}
-                          onReply={handleReplyToMessage}
-                          onCorrect={() => selectedConversation && loadMessages(selectedConversation.id)}
-                          currentUserId={user?.id || ""}
-                        />
+                          id={`inbox-message-${msg.id}`}
+                          className="w-full transition-all duration-300"
+                        >
+                          <MessageBubble
+                            message={msg}
+                            parentMessage={parentMessage}
+                            {...(hasBeenReplied !== undefined && {
+                              hasBeenReplied,
+                            })}
+                            onDelete={handleDeleteMessage}
+                            onForward={handleForwardRequest}
+                            onStar={handleStarMessage}
+                            onReaction={handleMessageReaction}
+                            onReply={handleReplyToMessage}
+                            onScrollToMessage={handleScrollToMessage}
+                            onCorrect={() => selectedConversation && loadMessages(selectedConversation.id)}
+                            currentUserId={user?.id || ""}
+                          />
+                        </div>
                       );
                     })}
 
@@ -2718,7 +2749,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
               </div>
 
               {/* Bottom composer */}
-              <div>
+              <div className="flex-shrink-0 mt-auto">
                 <MessageInput
                   onSendMessage={handleSendMessage}
                   onSendFile={handleSendFile}

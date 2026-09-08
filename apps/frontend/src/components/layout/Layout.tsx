@@ -213,7 +213,12 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     fullWidth ||
     location.pathname.startsWith("/profile") ||
     location.pathname.startsWith("/whatsapp") ||
-    location.pathname.startsWith("/whatsapp-chat");
+    location.pathname.startsWith("/whatsapp-chat") ||
+    location.pathname.startsWith("/facebook-inbox") ||
+    location.pathname.startsWith("/instagram-inbox") ||
+    location.pathname.startsWith("/tiktok-inbox") ||
+    location.pathname.startsWith("/unified-inbox") ||
+    location.pathname.startsWith("/conversations");
   const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);
   const currentLayout = resolvedUserLayout || "three-tier";
   const companyScopeKey = user?.companyId || user?.company?.id || "no-company";
@@ -369,12 +374,24 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
   const sidebarBadges = useSidebarBadges();
 
+  const assignedApps = useMemo(() => {
+    const settings = (user as { settings?: string | Record<string, unknown> | null } | null)?.settings;
+    if (!settings) return undefined;
+    try {
+      const parsed = typeof settings === "string" ? JSON.parse(settings) : settings;
+      const apps = parsed?.assignedApps;
+      return Array.isArray(apps) ? (apps as string[]) : undefined;
+    } catch {
+      return undefined;
+    }
+  }, [user]);
+
   const menuSections = useMemo(() => {
     if (!isI18nReady || useSuperAdminShell) {
       return [];
     }
 
-    const config = getSidebarConfig(t, user ?? {}, sidebarSettings ?? undefined, userSettings);
+    const config = getSidebarConfig(t, user ?? {}, sidebarSettings ?? undefined, userSettings, assignedApps);
 
     return config.map((section) => ({
       ...section,
@@ -385,7 +402,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         badge: item.to === "/orders" ? sidebarBadges.newOrders : item.badge,
       })),
     }));
-  }, [isI18nReady, renderSidebarIcon, t, useSuperAdminShell, user, sidebarSettings, userSettings, sidebarBadges]);
+  }, [isI18nReady, renderSidebarIcon, t, useSuperAdminShell, user, sidebarSettings, userSettings, sidebarBadges, assignedApps]);
 
   const filteredSections = useMemo(() => {
     if (!searchQuery.trim()) return menuSections;
@@ -809,7 +826,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
       data-template={templateId}
     >
       {isHorizontalLayout ? (
-        <div className="flex flex-col h-screen w-full overflow-hidden">
+        <div className="flex flex-col h-screen h-[100dvh] w-full overflow-hidden">
           <div className="hidden lg:block">
             <TemplateSlot
               name="sidebar"
@@ -924,7 +941,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             </div>
          </div>
        ) : (
-         <div className="flex w-full h-screen overflow-hidden">
+         <div className="flex w-full h-screen h-[100dvh] overflow-hidden">
           <div className="hidden lg:block h-full">
               <TemplateSlot
                 name="sidebar"

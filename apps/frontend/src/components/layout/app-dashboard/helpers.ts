@@ -12,15 +12,19 @@ export const sectionHasVisibleItems = (section: SidebarSection): boolean =>
 // hidden on the conversations LIST too — we want it visible there and hidden
 // only once a conversation is actually open (handled by the markers + CSS).
 const STRICT_CHAT_PATHS = new Set([
+  '/facebook-inbox',
+  '/apps/facebook-inbox',
+  '/whatsapp',
   '/apps/whatsapp',
   '/apps/whatsapp/chat',
   '/apps/whatsapp/inbox',
-  '/apps/facebook-inbox',
   '/instagram-inbox',
   '/apps/instagram-inbox',
   '/tiktok-inbox',
   '/apps/tiktok-inbox',
+  '/unified-inbox',
   '/apps/unified-inbox',
+  '/conversations',
   '/conversations/messenger',
   '/apps/messenger',
   '/apps/facebook/inbox',
@@ -28,11 +32,15 @@ const STRICT_CHAT_PATHS = new Set([
 ]);
 
 const CHAT_PREFIX_PATHS = [
+  '/facebook-inbox/',
+  '/apps/facebook-inbox/',
   '/whatsapp-chat/',
   '/whatsapp/routing',
   '/apps/whatsapp/routing',
   '/instagram-inbox/',
   '/tiktok-inbox/',
+  '/unified-inbox/',
+  '/conversations/',
 ];
 
 const NON_CHAT_SUBPATHS = [
