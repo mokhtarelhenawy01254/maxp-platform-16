@@ -3606,7 +3606,7 @@ const verifyCompanyDNS = async (req, res) => {
 const getUsersStatistics = async (req, res) => {
   try {
     const { companyId } = req.params;
-    const { startDate, endDate } = req.query;
+    const { startDate, endDate, channel } = req.query;
 
     // Validate companyId
     if (!companyId || companyId === "null" || companyId === "undefined") {
@@ -3618,38 +3618,40 @@ const getUsersStatistics = async (req, res) => {
 
     const prisma = getSharedPrismaClient();
 
-    // Parse dates
-    let dateFilter = {};
+    // 1. Fetch company timezone to ensure accurate day boundaries
+    const company = await prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true, timezone: true },
+    });
+
+    const timezone = company?.timezone || "Africa/Cairo";
+
+    // 2. Compute startUtc and endUtc cleanly using dateUtils
+    const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require("../utils/dateUtils");
+    let startUtc = null;
+    let endUtc = null;
     const hasStartDate = startDate && startDate !== "undefined" && startDate !== "null" && startDate.trim() !== "";
     const hasEndDate = endDate && endDate !== "undefined" && endDate !== "null" && endDate.trim() !== "";
 
     if (hasStartDate || hasEndDate) {
-      dateFilter.createdAt = {};
       if (hasStartDate) {
-        const start = new Date(startDate.trim());
-        start.setHours(0, 0, 0, 0);
-        if (!isNaN(start.getTime())) {
-          const startUtc = new Date(startDate.trim() + "T00:00:00.000Z");
-          const minStart = new Date(Math.min(start.getTime(), startUtc.getTime() - 4 * 3600000));
-          dateFilter.createdAt.gte = minStart;
-        }
+        startUtc = getStartOfDayInTimezone(new Date(startDate.trim()), timezone);
       }
       if (hasEndDate) {
-        const end = new Date(endDate.trim());
-        end.setHours(23, 59, 59, 999);
-        if (!isNaN(end.getTime())) {
-          const endUtc = new Date(endDate.trim() + "T23:59:59.999Z");
-          const maxEnd = new Date(Math.max(end.getTime(), endUtc.getTime() + 4 * 3600000));
-          dateFilter.createdAt.lte = maxEnd;
-        }
+        endUtc = getEndOfDayInTimezone(new Date(endDate.trim()), timezone);
       }
+    } else {
+      const now = new Date();
+      startUtc = getStartOfDayInTimezone(now, timezone);
+      endUtc = getEndOfDayInTimezone(now, timezone);
     }
 
-    // 1. Get users from UserCompany
+    // 3. Get authorized users for this company from UserCompany (multi-tenant safe)
     const userCompanies = await prisma.userCompany.findMany({
       where: {
         companyId: companyId,
         isActive: true,
+        user: { isActive: true },
       },
       select: {
         role: true,
@@ -3659,26 +3661,33 @@ const getUsersStatistics = async (req, res) => {
             firstName: true,
             lastName: true,
             email: true,
+            avatar: true,
           },
         },
       },
     });
 
     const usersMap = new Map();
-
     userCompanies.forEach((uc) => {
       if (uc.user && uc.user.id) {
         usersMap.set(uc.user.id, {
-          id: uc.user.id,
+          userId: uc.user.id,
           firstName: uc.user.firstName || "",
           lastName: uc.user.lastName || "",
           email: uc.user.email || "",
+          avatar: uc.user.avatar || null,
           role: uc.role || "AGENT",
+          conversationsCount: 0,
+          messagesCount: 0,
+          ordersCount: 0,
+          convertedConversations: 0,
+          totalRevenue: 0,
+          conversionRate: 0,
         });
       }
     });
 
-    // 2. Also fetch direct company users from User table
+    // Also include direct company users from User table if any
     const directUsers = await prisma.user.findMany({
       where: {
         companyId: companyId,
@@ -3689,6 +3698,7 @@ const getUsersStatistics = async (req, res) => {
         firstName: true,
         lastName: true,
         email: true,
+        avatar: true,
         role: true,
       },
     });
@@ -3696,177 +3706,151 @@ const getUsersStatistics = async (req, res) => {
     directUsers.forEach((u) => {
       if (!usersMap.has(u.id)) {
         usersMap.set(u.id, {
-          id: u.id,
+          userId: u.id,
           firstName: u.firstName || "",
           lastName: u.lastName || "",
           email: u.email || "",
+          avatar: u.avatar || null,
           role: u.role || "AGENT",
+          conversationsCount: 0,
+          messagesCount: 0,
+          ordersCount: 0,
+          convertedConversations: 0,
+          totalRevenue: 0,
+          conversionRate: 0,
         });
       }
     });
 
-    // 3. Batch fetch all employee messages for this company within date range
-    const messages = await prisma.message.findMany({
+    // 4. Load Prisma SQL builder
+    let PrismaModule;
+    try {
+      PrismaModule = require("../prisma/generated/postgresql_v2").Prisma;
+    } catch (e) {
+      try {
+        PrismaModule = require("@prisma/client").Prisma;
+      } catch (err) {
+        PrismaModule = null;
+      }
+    }
+
+    const normalizedChannel = channel && channel !== "all" ? channel.trim().toUpperCase() : null;
+
+    // 5. Database-level aggregation: Messages
+    const messageStats = await prisma.$queryRaw`
+      SELECT 
+        m."senderId" AS "userId",
+        COUNT(DISTINCT m."conversationId")::int AS "conversationsCount",
+        COUNT(m.id)::int AS "messagesCount"
+      FROM "messages" m
+      JOIN "conversations" c ON c.id = m."conversationId"
+      WHERE c."companyId" = ${companyId}
+        AND m."isFromCustomer" = false
+        AND m."senderId" IS NOT NULL
+        ${startUtc ? PrismaModule.sql`AND m."createdAt" >= ${startUtc}` : PrismaModule.empty}
+        ${endUtc ? PrismaModule.sql`AND m."createdAt" <= ${endUtc}` : PrismaModule.empty}
+        ${normalizedChannel ? PrismaModule.sql`AND c."channel" = ${normalizedChannel}` : PrismaModule.empty}
+      GROUP BY m."senderId"
+    `;
+
+    // 6. Database-level aggregation: Orders
+    const orderStats = await prisma.$queryRaw`
+      SELECT 
+        COALESCE(o."createdBy", c."assignedUserId") AS "userId",
+        COUNT(o.id)::int AS "ordersCount",
+        COUNT(DISTINCT o."conversationId")::int AS "convertedConversations",
+        COALESCE(SUM(o.total), 0)::float AS "totalRevenue"
+      FROM "orders" o
+      LEFT JOIN "conversations" c ON c.id = o."conversationId"
+      WHERE o."companyId" = ${companyId}
+        AND o.status NOT IN ('CANCELLED', 'REJECTED', 'FAILED', 'DUPLICATE_ORDER')
+        ${startUtc ? PrismaModule.sql`AND o."createdAt" >= ${startUtc}` : PrismaModule.empty}
+        ${endUtc ? PrismaModule.sql`AND o."createdAt" <= ${endUtc}` : PrismaModule.empty}
+        ${normalizedChannel ? PrismaModule.sql`AND (c."channel" = ${normalizedChannel} OR c."channel" IS NULL)` : PrismaModule.empty}
+        AND (o."createdBy" IS NOT NULL OR c."assignedUserId" IS NOT NULL)
+      GROUP BY COALESCE(o."createdBy", c."assignedUserId")
+    `;
+
+    // 7. Merge aggregation results into usersMap
+    (messageStats || []).forEach((row) => {
+      if (row.userId && usersMap.has(row.userId)) {
+        const u = usersMap.get(row.userId);
+        u.conversationsCount = row.conversationsCount || 0;
+        u.messagesCount = row.messagesCount || 0;
+      }
+    });
+
+    (orderStats || []).forEach((row) => {
+      if (row.userId && usersMap.has(row.userId)) {
+        const u = usersMap.get(row.userId);
+        u.ordersCount = row.ordersCount || 0;
+        u.convertedConversations = row.convertedConversations || 0;
+        u.totalRevenue = Math.round((row.totalRevenue || 0) * 100) / 100;
+      }
+    });
+
+    // 8. Compute accurate conversion rate & build array
+    let statistics = Array.from(usersMap.values()).map((st) => {
+      const convCount = st.conversationsCount;
+      const convConverted = st.convertedConversations;
+      let rate = 0;
+      if (convCount > 0) {
+        rate = parseFloat(((convConverted / convCount) * 100).toFixed(1));
+        if (rate > 100) rate = 100;
+      }
+
+      return {
+        ...st,
+        conversionRate: rate,
+      };
+    });
+
+    // 9. Role-based privacy: if requester is regular AGENT, they only see their own row
+    const requesterId = req.user?.userId || req.user?.id;
+    const requesterRole = (req.user?.role || "").toUpperCase();
+    const isPrivileged = ["OWNER", "COMPANY_ADMIN", "MANAGER", "SUPER_ADMIN", "MODERATOR"].includes(requesterRole);
+
+    if (!isPrivileged && requesterId) {
+      statistics = statistics.filter((st) => st.userId === requesterId);
+    }
+
+    // Sort by conversationsCount desc, then messagesCount desc, then ordersCount desc
+    statistics.sort(
+      (a, b) =>
+        b.conversationsCount - a.conversationsCount ||
+        b.messagesCount - a.messagesCount ||
+        b.ordersCount - a.ordersCount ||
+        b.totalRevenue - a.totalRevenue
+    );
+
+    // Calculate unique total conversations for the company in date range
+    const totalCompanyConversations = await prisma.conversation.count({
       where: {
-        conversation: {
-          companyId: companyId,
-        },
-        isFromCustomer: false, // Employee/Page replies
-        ...dateFilter,
-      },
-      select: {
-        id: true,
-        conversationId: true,
-        senderId: true,
-        metadata: true,
-        createdAt: true,
-        conversation: {
-          select: {
-            assignedUserId: true,
-            channel: true,
+        companyId: companyId,
+        ...(normalizedChannel ? { channel: normalizedChannel } : {}),
+        messages: {
+          some: {
+            isFromCustomer: false,
+            senderId: { not: null },
+            ...(startUtc ? { createdAt: { gte: startUtc } } : {}),
+            ...(endUtc ? { createdAt: { lte: endUtc } } : {}),
           },
         },
       },
     });
 
-    // Find any sender IDs present in messages that are not yet in usersMap
-    const unknownSenderIds = new Set();
-    messages.forEach((msg) => {
-      let candidateId = msg.senderId;
-      if (!candidateId && msg.metadata) {
-        try {
-          const meta = typeof msg.metadata === "string" ? JSON.parse(msg.metadata) : msg.metadata;
-          candidateId = meta.employeeId || meta.lastSenderId || null;
-        } catch (e) {}
-      }
-      if (!candidateId && msg.conversation?.assignedUserId) {
-        candidateId = msg.conversation.assignedUserId;
-      }
-      if (candidateId && !usersMap.has(candidateId)) {
-        unknownSenderIds.add(candidateId);
-      }
-    });
-
-    if (unknownSenderIds.size > 0) {
-      const extraUsers = await prisma.user.findMany({
-        where: {
-          id: { in: Array.from(unknownSenderIds) },
-        },
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-          email: true,
-          role: true,
-        },
-      });
-
-      extraUsers.forEach((u) => {
-        usersMap.set(u.id, {
-          id: u.id,
-          firstName: u.firstName || "",
-          lastName: u.lastName || "",
-          email: u.email || "",
-          role: u.role || "AGENT",
-        });
-      });
-    }
-
-    // 4. Batch fetch orders created in this company within date range
-    const orders = await prisma.order.findMany({
-      where: {
-        companyId: companyId,
-        ...dateFilter,
-      },
-      select: {
-        id: true,
-        createdBy: true,
-        conversationId: true,
-      },
-    });
-
-    // Initialize stats containers for each user
-    const userStats = new Map();
-    usersMap.forEach((u) => {
-      userStats.set(u.id, {
-        userId: u.id,
-        firstName: u.firstName,
-        lastName: u.lastName,
-        email: u.email,
-        role: u.role,
-        conversationsSet: new Set(),
-        messagesCount: 0,
-        ordersCount: 0,
-      });
-    });
-
-    // Process messages
-    messages.forEach((msg) => {
-      let resolvedEmployeeId = msg.senderId;
-
-      // Fallback 1: check metadata
-      if (!resolvedEmployeeId && msg.metadata) {
-        try {
-          const meta = typeof msg.metadata === "string" ? JSON.parse(msg.metadata) : msg.metadata;
-          resolvedEmployeeId = meta.employeeId || meta.lastSenderId || null;
-        } catch (e) {}
-      }
-
-      // Fallback 2: check conversation assigned user
-      if (!resolvedEmployeeId && msg.conversation?.assignedUserId) {
-        resolvedEmployeeId = msg.conversation.assignedUserId;
-      }
-
-      if (resolvedEmployeeId && userStats.has(resolvedEmployeeId)) {
-        const stats = userStats.get(resolvedEmployeeId);
-        stats.messagesCount += 1;
-        if (msg.conversationId) {
-          stats.conversationsSet.add(msg.conversationId);
-        }
-      }
-    });
-
-    // Process orders
-    orders.forEach((order) => {
-      if (order.createdBy && userStats.has(order.createdBy)) {
-        userStats.get(order.createdBy).ordersCount += 1;
-      }
-    });
-
-    // Format statistics array
-    const statistics = Array.from(userStats.values()).map((st) => {
-      const convCount = st.conversationsSet.size;
-      const ordersCount = st.ordersCount;
-      const conversionRate = convCount > 0
-        ? parseFloat(((ordersCount / convCount) * 100).toFixed(2))
-        : 0;
-
-      return {
-        userId: st.userId,
-        firstName: st.firstName,
-        lastName: st.lastName,
-        email: st.email,
-        role: st.role,
-        conversationsCount: convCount,
-        messagesCount: st.messagesCount,
-        ordersCount: ordersCount,
-        conversionRate: conversionRate,
-      };
-    });
-
-    // Sort by conversationsCount descending, then messagesCount descending
-    statistics.sort((a, b) => b.conversationsCount - a.conversationsCount || b.messagesCount - a.messagesCount);
-
     res.json({
       success: true,
       message: "تم جلب إحصائيات المستخدمين بنجاح",
       data: {
-        statistics: statistics,
+        statistics,
         totalUsers: statistics.length,
+        totalUniqueConversations: totalCompanyConversations,
         dateRange: {
           startDate: startDate || null,
           endDate: endDate || null,
         },
+        channel: normalizedChannel || "ALL",
       },
     });
   } catch (error) {
