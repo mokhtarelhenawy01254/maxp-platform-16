@@ -177,9 +177,11 @@
       letter-spacing: 0;
     }
 
-    /* Storefront initial skeleton styles */
+    /* Storefront initial loading styles - clean, seamless, zero-flicker */
     #initial-loading.storefront-loading {
-      display: block;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       background-color: #ffffff;
       color: #111827;
       height: 100vh;
@@ -187,130 +189,16 @@
       overflow: hidden;
       padding: 0;
       margin: 0;
+      transition: opacity 0.2s ease-out, visibility 0.2s ease-out;
     }
 
-    .storefront-loading .skeleton-pulse {
-      animation: skeleton-pulse-anim 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-      background-color: #f3f4f6;
-    }
-
-    @keyframes skeleton-pulse-anim {
-      0%, 100% {
-        opacity: 1;
-      }
-      50% {
-        opacity: .4;
-      }
-    }
-
-    .storefront-loading .skeleton-header {
-      height: 80px;
-      width: 100%;
-      border-bottom: 1px solid rgba(229, 231, 235, 0.5);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      box-sizing: border-box;
-    }
-
-    .storefront-loading .skeleton-logo {
-      height: 32px;
-      width: 120px;
-      border-radius: 4px;
-    }
-
-    .storefront-loading .skeleton-nav {
-      display: none;
-      gap: 16px;
-    }
-
-    @media (min-width: 768px) {
-      .storefront-loading .skeleton-nav {
-        display: flex;
-      }
-    }
-
-    .storefront-loading .skeleton-nav-item {
-      height: 16px;
-      width: 64px;
-      border-radius: 4px;
-    }
-
-    .storefront-loading .skeleton-actions {
-      display: flex;
-      gap: 16px;
-    }
-
-    .storefront-loading .skeleton-icon {
-      height: 32px;
+    .storefront-loading .storefront-spinner {
       width: 32px;
+      height: 32px;
+      border: 2.5px solid #e5e7eb;
+      border-top-color: #111827;
       border-radius: 50%;
-    }
-
-    .storefront-loading .skeleton-main {
-      display: flex;
-      flex-direction: column;
-      height: calc(100vh - 80px);
-      overflow: hidden;
-    }
-
-    .storefront-loading .skeleton-hero {
-      height: 35vh;
-      min-height: 250px;
-      width: 100%;
-    }
-
-    .storefront-loading .skeleton-container {
-      padding: 32px 24px;
-      max-width: 1280px;
-      width: 100%;
-      margin: 0 auto;
-      box-sizing: border-box;
-    }
-
-    .storefront-loading .skeleton-title {
-      height: 24px;
-      width: 180px;
-      border-radius: 4px;
-      margin-bottom: 24px;
-    }
-
-    .storefront-loading .skeleton-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 16px;
-    }
-
-    @media (min-width: 768px) {
-      .storefront-loading .skeleton-grid {
-        grid-template-columns: repeat(4, 1fr);
-        gap: 24px;
-      }
-    }
-
-    .storefront-loading .skeleton-card {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .storefront-loading .skeleton-card-media {
-      aspect-ratio: 3/4;
-      width: 100%;
-      border-radius: 8px;
-    }
-
-    .storefront-loading .skeleton-card-title {
-      height: 16px;
-      width: 75%;
-      border-radius: 4px;
-    }
-
-    .storefront-loading .skeleton-card-price {
-      height: 16px;
-      width: 50%;
-      border-radius: 4px;
+      animation: spin 0.8s cubic-bezier(0.55, 0.055, 0.675, 0.19) infinite;
     }
   </style>
 </head>

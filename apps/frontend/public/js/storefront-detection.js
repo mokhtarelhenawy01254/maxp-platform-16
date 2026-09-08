@@ -38,48 +38,7 @@
     var loadingEl = document.getElementById("initial-loading");
     if (loadingEl) {
       loadingEl.className = "storefront-loading";
-      loadingEl.innerHTML = [
-        '<header class="skeleton-header">',
-        '  <div class="skeleton-logo skeleton-pulse"></div>',
-        '  <div class="skeleton-nav">',
-        '    <div class="skeleton-nav-item skeleton-pulse"></div>',
-        '    <div class="skeleton-nav-item skeleton-pulse"></div>',
-        '    <div class="skeleton-nav-item skeleton-pulse"></div>',
-        '  </div>',
-        '  <div class="skeleton-actions">',
-        '    <div class="skeleton-icon skeleton-pulse"></div>',
-        '    <div class="skeleton-icon skeleton-pulse"></div>',
-        '  </div>',
-        '</header>',
-        '<main class="skeleton-main">',
-        '  <div class="skeleton-hero skeleton-pulse"></div>',
-        '  <div class="skeleton-container">',
-        '    <div class="skeleton-title skeleton-pulse"></div>',
-        '    <div class="skeleton-grid">',
-        '      <div class="skeleton-card">',
-        '        <div class="skeleton-card-media skeleton-pulse"></div>',
-        '        <div class="skeleton-card-title skeleton-pulse"></div>',
-        '        <div class="skeleton-card-price skeleton-pulse"></div>',
-        '      </div>',
-        '      <div class="skeleton-card">',
-        '        <div class="skeleton-card-media skeleton-pulse"></div>',
-        '        <div class="skeleton-card-title skeleton-pulse"></div>',
-        '        <div class="skeleton-card-price skeleton-pulse"></div>',
-        '      </div>',
-        '      <div class="skeleton-card">',
-        '        <div class="skeleton-card-media skeleton-pulse"></div>',
-        '        <div class="skeleton-card-title skeleton-pulse"></div>',
-        '        <div class="skeleton-card-price skeleton-pulse"></div>',
-        '      </div>',
-        '      <div class="skeleton-card">',
-        '        <div class="skeleton-card-media skeleton-pulse"></div>',
-        '        <div class="skeleton-card-title skeleton-pulse"></div>',
-        '        <div class="skeleton-card-price skeleton-pulse"></div>',
-        '      </div>',
-        '    </div>',
-        '  </div>',
-        '</main>'
-      ].join("");
+      loadingEl.innerHTML = '<div class="storefront-spinner"></div>';
     }
   }
 })();
