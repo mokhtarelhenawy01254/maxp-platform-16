@@ -200,49 +200,78 @@ const SmartRepliesSettings: React.FC = () => {
       <div className="space-y-6">
         {/* Toggle Card */}
         <div
-          className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm border-2 p-6 transition-colors ${
+          className={`rounded-xl shadow-sm border-2 p-6 transition-all duration-200 ${
             settings.enabled
-              ? "border-green-200 dark:border-green-800"
-              : "border-gray-200 dark:border-gray-700"
+              ? "bg-emerald-50/40 dark:bg-emerald-950/20 border-emerald-300 dark:border-emerald-600/60 shadow-emerald-500/5"
+              : "bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
           }`}
         >
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-4">
               <div
-                className={`p-3 rounded-full ${
+                className={`p-3 rounded-xl transition-colors ${
                   settings.enabled
-                    ? "bg-green-100 dark:bg-green-900"
-                    : "bg-gray-100 dark:bg-gray-700"
+                    ? "bg-emerald-100 text-emerald-600 dark:bg-emerald-900/60 dark:text-emerald-400"
+                    : "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
                 }`}
               >
-                <SparklesIcon
-                  className={`h-6 w-6 ${
-                    settings.enabled
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-gray-400 dark:text-gray-500"
-                  }`}
-                />
+                <SparklesIcon className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-white">
+                <h3 className="font-semibold text-gray-900 dark:text-white text-base">
                   {t("smartReplies.enableTitle")}
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {settings.enabled ? t("smartReplies.enableDesc") : t("smartReplies.disabledDesc")}
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5">
+                  {settings.enabled
+                    ? t("smartReplies.enableDesc")
+                    : t("smartReplies.disabledDesc")}
                 </p>
               </div>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={settings.enabled}
-                onChange={(e) =>
-                  setSettings({ ...settings, enabled: e.target.checked })
+
+            <div className="flex items-center gap-3 self-end sm:self-auto">
+              <span
+                className={`text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 transition-colors ${
+                  settings.enabled
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800"
+                    : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600"
+                }`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full transition-colors ${
+                    settings.enabled
+                      ? "bg-emerald-500 animate-pulse"
+                      : "bg-gray-400 dark:bg-gray-500"
+                  }`}
+                />
+                {settings.enabled
+                  ? t("smartReplies.active")
+                  : t("smartReplies.inactive")}
+              </span>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={settings.enabled}
+                onClick={() =>
+                  setSettings((prev) => ({ ...prev, enabled: !prev.enabled }))
                 }
-                className="sr-only peer"
-              />
-              <div className="w-14 h-7 bg-gray-200 dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
-            </label>
+                dir="ltr"
+                className={`relative inline-flex h-7 w-14 shrink-0 cursor-pointer items-center rounded-full p-0.5 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 dark:focus:ring-offset-gray-900 ${
+                  settings.enabled
+                    ? "bg-emerald-600 dark:bg-emerald-500 shadow-sm"
+                    : "bg-gray-300 dark:bg-gray-700"
+                }`}
+              >
+                <span className="sr-only">{t("smartReplies.enableTitle")}</span>
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block h-6 w-6 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                    settings.enabled ? "translate-x-7" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -262,7 +291,13 @@ const SmartRepliesSettings: React.FC = () => {
           </div>
 
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {settings.templates.map((template) => (
+            {settings.templates.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                <p className="font-medium text-gray-700 dark:text-gray-300">{t("smartReplies.noRules")}</p>
+                <p className="text-sm mt-1">{t("smartReplies.noRulesDesc")}</p>
+              </div>
+            ) : (
+              settings.templates.map((template) => (
               <div key={template.id} className="p-4">
                 {editingId === template.id && editingTemplate ? (
                   // Edit Mode
@@ -416,7 +451,8 @@ const SmartRepliesSettings: React.FC = () => {
                   </div>
                 )}
               </div>
-            ))}
+            ))
+          )}
           </div>
         </div>
 
