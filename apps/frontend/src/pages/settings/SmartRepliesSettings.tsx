@@ -67,13 +67,16 @@ const SmartRepliesSettings: React.FC = () => {
     }
   };
 
-  const handleSave = async () => {
+  const persistTemplates = async (
+    templates: AutoReplyTemplate[],
+    enabled: boolean,
+  ) => {
     try {
       setSaving(true);
       await apiClient.put("/smart-replies/rule-responses", {
-        enableRuleResponses: settings.enabled,
+        enableRuleResponses: enabled,
         customRuleResponses: {
-          templates: settings.templates,
+          templates,
         },
       });
       toast.success(t("smartReplies.ruleSaved"));
@@ -84,21 +87,35 @@ const SmartRepliesSettings: React.FC = () => {
     }
   };
 
+  const handleSave = async () => {
+    // If an edit form is still open, commit it into the templates list
+    // before persisting, so unsaved changes aren't silently dropped.
+    let templatesToSave = settings.templates;
+    if (editingId && editingTemplate) {
+      templatesToSave = settings.templates.map((t) =>
+        t.id === editingId ? editingTemplate : t,
+      );
+      setSettings((prev) => ({ ...prev, templates: templatesToSave }));
+      setEditingId(null);
+      setEditingTemplate(null);
+    }
+    await persistTemplates(templatesToSave, settings.enabled);
+  };
+
   const handleEditStart = (template: AutoReplyTemplate) => {
     setEditingId(template.id);
     setEditingTemplate({ ...template });
   };
 
-  const handleEditSave = () => {
+  const handleEditSave = async () => {
     if (!editingTemplate) return;
-    setSettings((prev) => ({
-      ...prev,
-      templates: prev.templates.map((t) =>
-        t.id === editingId ? editingTemplate : t,
-      ),
-    }));
+    const updated = settings.templates.map((t) =>
+      t.id === editingId ? editingTemplate : t,
+    );
+    setSettings((prev) => ({ ...prev, templates: updated }));
     setEditingId(null);
     setEditingTemplate(null);
+    await persistTemplates(updated, settings.enabled);
   };
 
   const handleEditCancel = () => {
