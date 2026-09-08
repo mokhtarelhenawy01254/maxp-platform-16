@@ -286,6 +286,7 @@ export const useConversationActions = () => {
       try {
         await apiClient.post(`/conversations/${conversationId}/snooze`, {
           snoozeUntil: until.toISOString(),
+          companyId,
         });
       } catch (error) {
         console.error("Error snoozing conversation:", error);

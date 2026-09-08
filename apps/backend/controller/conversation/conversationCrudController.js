@@ -343,12 +343,14 @@ const getConversations = async (req, res) => {
             // Extract pageName and pageId
             let pageName = null;
             let pageId = null;
+            let snoozedUntil = null;
 
             if (conv.metadata) {
                 try {
                     const metadata = JSON.parse(conv.metadata);
                     pageName = metadata.pageName || null;
                     pageId = metadata.pageId || null;
+                    snoozedUntil = metadata.snoozedUntil || null;
                 } catch (e) {
                     // ignore parse errors
                 }
@@ -402,6 +404,7 @@ const getConversations = async (req, res) => {
                 assignedToName: conv.user ? `${conv.user.firstName || ''} ${conv.user.lastName || ''}`.trim() : null,
                 priority: conv.priority > 1,
                 metadata: conv.metadata,
+                snoozedUntil: snoozedUntil,
                 pageName: pageName,
                 pageId: pageId
             };
@@ -477,6 +480,7 @@ const getConversation = async (req, res) => {
                 customerId: conversation.customerId,
                 customerName: conversation.customer ? `${conversation.customer.firstName || ''} ${conversation.customer.lastName || ''}`.trim() : 'Unknown',
                 customerAvatar: getProxiedCustomerAvatar(conversation.customer),
+                snoozedUntil: metadata.snoozedUntil || null,
                 pageId: metadata.pageId,
                 postId: metadata.postId
             }
@@ -1096,7 +1100,7 @@ const snoozeConversation = async (req, res) => {
     try {
         const { id } = req.params;
         const { snoozeUntil } = req.body;
-        const companyId = req.user.companyId;
+        const companyId = req.user?.companyId || req.user?.effectiveCompanyId || req.body?.companyId;
 
         if (!snoozeUntil) {
             return res.status(400).json({ error: 'Snooze date is required' });
@@ -1104,9 +1108,12 @@ const snoozeConversation = async (req, res) => {
 
         const conversation = await executeWithRetry(async () => {
             const prismaClient = getSharedPrismaClient();
-            return await prismaClient.conversation.findUnique({
-                where: { id: id },
-                select: { metadata: true, companyId: true }
+            return await prismaClient.conversation.findFirst({
+                where: {
+                    id: id,
+                    ...(req.user?.role === 'SUPER_ADMIN' ? {} : (companyId ? { companyId } : {}))
+                },
+                select: { id: true, metadata: true, companyId: true, status: true }
             });
         }, 3);
 
@@ -1114,30 +1121,50 @@ const snoozeConversation = async (req, res) => {
             return res.status(404).json({ error: 'Conversation not found' });
         }
 
-        if (conversation.companyId !== companyId) {
+        if (companyId && conversation.companyId !== companyId && req.user?.role !== 'SUPER_ADMIN') {
             return res.status(403).json({ error: 'Unauthorized' });
         }
 
         let metadata = {};
-        try {
-            metadata = JSON.parse(conversation.metadata || '{}');
-        } catch (e) {
-            metadata = {};
+        if (typeof conversation.metadata === 'object' && conversation.metadata !== null) {
+            metadata = { ...conversation.metadata };
+        } else if (typeof conversation.metadata === 'string') {
+            try {
+                metadata = JSON.parse(conversation.metadata);
+            } catch (e) {
+                metadata = {};
+            }
         }
 
         metadata.snoozedUntil = snoozeUntil;
 
-        const updated = await getSharedPrismaClient().conversation.update({
-            where: { id: id },
-            data: {
-                metadata: JSON.stringify(metadata),
-            }
-        });
+        const updated = await executeWithRetry(async () => {
+            const prismaClient = getSharedPrismaClient();
+            return await prismaClient.conversation.update({
+                where: { id: id },
+                data: {
+                    metadata: JSON.stringify(metadata),
+                    updatedAt: new Date()
+                }
+            });
+        }, 3);
 
-        res.json({ message: 'Conversation snoozed', snoozedUntil });
+        // Invalidate cache for updated conversation
+        try {
+            conversationCache.invalidate(id);
+        } catch (e) {
+            // Ignore cache errors
+        }
+
+        res.json({
+            success: true,
+            message: 'Conversation snoozed',
+            snoozeUntil,
+            snoozedUntil: snoozeUntil
+        });
     } catch (error) {
         console.error('Error snoozing conversation:', error);
-        res.status(500).json({ error: 'Failed to snooze conversation' });
+        res.status(500).json({ error: 'Failed to snooze conversation', details: error.message });
     }
 };
 

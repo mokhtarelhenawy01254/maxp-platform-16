@@ -63,6 +63,7 @@ import {
   XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { apiClient } from "../../services/apiClient";
+import { toast } from "sonner";
 import { useDebounce } from "../../hooks/useDebounce";
 import { apiService } from "../../services/apiService";
 import { socketService } from "../../services/socketService";
@@ -361,7 +362,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
           priority: convData.priority || false,
           snoozedUntil: convData.snoozedUntil
             ? new Date(convData.snoozedUntil)
-            : null,
+            : metadata?.snoozedUntil
+              ? new Date(metadata.snoozedUntil as string)
+              : null,
           archived: convData.archived || false,
           muted: convData.muted || false,
           lastStatusChange: new Date(
@@ -1531,9 +1534,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
         await snoozeConversation(selectedConversation.id, until, companyId);
         setSnoozeModalOpen(false);
         debouncedLoadConversations(activeTab);
-        alert(t("conversations.snoozeConversationSuccess"));
+        toast.success(t("conversations.snoozeConversationSuccess"));
       } catch (error) {
-        alert(t("conversations.snoozeConversationFailed"));
+        toast.error(t("conversations.snoozeConversationFailed"));
       }
     },
     [

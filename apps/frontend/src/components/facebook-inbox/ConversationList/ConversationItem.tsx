@@ -182,6 +182,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                 </span>
               )}
 
+              {conversation.snoozedUntil && new Date(conversation.snoozedUntil).getTime() > Date.now() && (
+                <span
+                  className="rounded px-1.5 py-0.5 text-[11px]"
+                  style={{
+                    color: "var(--color-warning, #f59e0b)",
+                    background: "color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent)",
+                  }}
+                  title="محادثة مؤجلة"
+                >
+                  ⏰ مؤجلة
+                </span>
+              )}
+
               {conversation.tags.length > 0 && (
                 <span
                   className="text-[11px]"
@@ -209,6 +222,8 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
       prevProps.conversation.status === nextProps.conversation.status &&
       prevProps.conversation.assignedTo === nextProps.conversation.assignedTo &&
       prevProps.conversation.priority === nextProps.conversation.priority &&
+      (prevProps.conversation.snoozedUntil?.getTime() || 0) ===
+        (nextProps.conversation.snoozedUntil?.getTime() || 0) &&
       prevProps.conversation.tags.length ===
         nextProps.conversation.tags.length &&
       prevProps.isSelected === nextProps.isSelected &&

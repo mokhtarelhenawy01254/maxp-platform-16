@@ -253,7 +253,9 @@ export const useInboxConversations = () => {
               priority: conv.priority || false,
               snoozedUntil: conv.snoozedUntil
                 ? safeDate(conv.snoozedUntil)
-                : null,
+                : metadata?.snoozedUntil
+                  ? safeDate(metadata.snoozedUntil)
+                  : null,
               archived: conv.archived || false,
               muted: conv.muted || false,
               lastStatusChange: safeDate(
