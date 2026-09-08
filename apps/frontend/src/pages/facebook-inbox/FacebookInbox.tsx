@@ -1966,12 +1966,18 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
     if (selectedConversation) {
       document.body.classList.add("app-shell-chat-active");
+      document.body.classList.add("wa-mobile-chat-active");
+      document.documentElement.classList.add("app-shell-chat-active");
     } else {
       document.body.classList.remove("app-shell-chat-active");
+      document.body.classList.remove("wa-mobile-chat-active");
+      document.documentElement.classList.remove("app-shell-chat-active");
     }
 
     return () => {
       document.body.classList.remove("app-shell-chat-active");
+      document.body.classList.remove("wa-mobile-chat-active");
+      document.documentElement.classList.remove("app-shell-chat-active");
     };
   }, [selectedConversation]);
 
@@ -2151,7 +2157,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
         onSnooze={handleSnoozeConfirm}
       />
 
-      <div className="business-inbox-stage flex-1 h-full min-h-0 relative overflow-hidden">
+      <div
+        className="business-inbox-stage flex-1 h-full min-h-0 relative overflow-hidden flex flex-col md:flex-row"
+        style={{ height: "100%", minHeight: 0, flex: "1 1 0%" }}
+      >
         {/* Notes Panel Overlay */}
         {showNotesOverlay && (
           <>
@@ -2281,7 +2290,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
         </div>
 
         {/* Center: Chat */}
-        <div className="business-inbox-column flex-1 h-full min-h-0 flex flex-col relative overflow-hidden">
+        <div
+          className="business-inbox-column flex-1 h-full min-h-0 flex flex-col relative overflow-hidden"
+          style={{ height: "100%", minHeight: 0, flex: "1 1 0%", display: "flex", flexDirection: "column" }}
+        >
           {selectedConversation ? (
             <>
               {/* Chat Header - simplified, Status & Assignment moved to sidebar */}
@@ -2676,6 +2688,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
               {/* Messages Container - scrollable area, messages directly above input */}
               <div
                 className="business-chat-stage flex-1 min-h-0 overflow-y-auto p-2 sm:p-4 pb-4"
+                style={{ flex: "1 1 0%", minHeight: 0 }}
                 ref={messagesContainerRef}
                 onScroll={handleScroll}
               >
@@ -2749,7 +2762,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
               </div>
 
               {/* Bottom composer */}
-              <div className="flex-shrink-0 mt-auto">
+              <div className="flex-shrink-0 mt-auto" style={{ flexShrink: 0, marginTop: "auto" }}>
                 <MessageInput
                   onSendMessage={handleSendMessage}
                   onSendFile={handleSendFile}

@@ -820,10 +820,10 @@
 }
 
 /* -------------------------------------------
-   FACEBOOK INBOX — Mobile responsive under Template 2
+   FACEBOOK INBOX -- Mobile responsive under Template 2
    ------------------------------------------- */
 
-/* Inbox shell — full height with proper background */
+/* Inbox shell -- full height with proper background */
 [data-template="template-2"] .business-inbox-shell {
   background: var(--color-background);
   height: 100%;
@@ -831,7 +831,7 @@
   flex-direction: column;
 }
 
-/* Stage — the main three-column area */
+/* Stage -- the main three-column area */
 [data-template="template-2"] .business-inbox-stage {
   flex: 1;
   display: grid;
@@ -991,37 +991,60 @@
 
 /* --- MOBILE: max-width 767px --- */
 @media (max-width: 767px) {
-  [data-template="template-2"] .business-inbox-shell--conversation-active .business-inbox-stage {
-    grid-template-columns: var(--inbox-conversation-active-col, 1fr 0px 0px);
-  }
-
+  [data-template="template-2"] .business-inbox-shell--conversation-active .business-inbox-stage,
   [data-template="template-2"] .business-inbox-stage {
-    gap: 0;
-    padding: 0;
+    display: flex !important;
+    flex-direction: column !important;
+    grid-template-columns: none !important;
+    grid-template-rows: none !important;
+    gap: 0 !important;
+    padding: 0 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    flex: 1 1 0% !important;
   }
 
-  [data-template="template-2"] .business-inbox-column {
-    width: 100%;
-    min-width: 100%;
-    max-width: 100%;
-    border-radius: 0;
-    border-inline-width: 0;
-    border-block-end-width: 0;
+  [data-template="template-2"] .business-inbox-column,
+  [data-template="template-2"] .business-inbox-shell--conversation-active .business-inbox-column {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    flex: 1 1 0% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    border-radius: 0 !important;
+    border-inline-width: 0 !important;
+    border-block-end-width: 0 !important;
   }
 
   [data-template="template-2"] .business-inbox-column--list,
   [data-template="template-2"] .business-inbox-column--profile {
-    width: 100%;
-    min-width: 100%;
-    max-width: 100%;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    min-height: 0 !important;
+    flex: 1 1 0% !important;
   }
 
   [data-template="template-2"] .business-inbox-header {
     padding: 0.7rem 0.75rem;
+    flex-shrink: 0;
   }
 
   [data-template="template-2"] .business-chat-stage {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    overflow-y: auto !important;
     padding: 0.35rem 0.5rem;
+  }
+
+  [data-template="template-2"] .business-chat-composer {
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
+    padding-bottom: calc(0.35rem + env(safe-area-inset-bottom, 0px)) !important;
   }
 
   [data-template="template-2"] .business-conversation-card {

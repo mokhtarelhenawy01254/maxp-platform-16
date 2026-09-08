@@ -820,7 +820,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
 
   return (
     <div
-      className="business-shell-root"
+      className="business-shell-root h-full h-[100dvh] w-full"
+      style={{ height: '100dvh', minHeight: '100dvh' }}
       data-theme={BUSINESS_THEME_ID}
       data-visual-theme={shellThemeId}
       data-template={templateId}
@@ -914,14 +915,15 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             </div>
           ) : null}
 
-          <div className="flex-1 w-full flex flex-col overflow-hidden">
+          <div className="flex-1 w-full flex flex-col overflow-hidden h-full min-h-0">
             <TemplateSlot name="header">{headerBlock}</TemplateSlot>
 
              <main
-                 className={`business-shell-main flex-1 flex flex-col ${
-                   shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0"
-                 } hr-theme`}
-               >
+                  className={`business-shell-main flex-1 flex flex-col ${
+                    shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0"
+                  } hr-theme`}
+                  style={shouldRemovePadding ? { height: '100%', minHeight: 0, flex: '1 1 0%' } : undefined}
+                >
 
                  {location.pathname === '/apps' ? (
                    <React.Suspense fallback={<ContentSkeleton />}>
@@ -1032,13 +1034,14 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               </div>
             ) : null}
 
-            <div className="flex-1 w-full flex flex-col overflow-hidden">
+            <div className="flex-1 w-full flex flex-col overflow-hidden h-full min-h-0">
               <TemplateSlot name="header">{headerBlock}</TemplateSlot>
 
                <main
                   className={`business-shell-main flex-1 flex flex-col ${
                     shouldRemovePadding ? "p-0 overflow-hidden min-h-0 h-full max-h-full" : "p-4 md:p-6 overflow-y-auto min-h-0"
                   } hr-theme`}
+                  style={shouldRemovePadding ? { height: '100%', minHeight: 0, flex: '1 1 0%' } : undefined}
               >
                  {location.pathname === '/apps' ? (
                    <React.Suspense fallback={<ContentSkeleton />}>
