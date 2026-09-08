@@ -260,6 +260,7 @@ class SocketService {
     durationMs?: number;
     pattern?: OrderSoundPattern;
     loop?: boolean;
+    boost?: boolean;
   }) {
     const audioContext = this.getAudioContext();
     if (!audioContext) {
@@ -270,19 +271,41 @@ class SocketService {
     const runAlarm = () => {
       this.stopOrderAlarm();
 
-      const volume = Math.min(1, Math.max(0, options?.volume ?? 1));
+      const boost = options?.boost ?? false;
+      const volume = Math.min(2, Math.max(0, options?.volume ?? 1));
       const durationMs = options?.durationMs ?? 7000;
       const pattern = options?.pattern ?? "alarm";
       const loop = options?.loop ?? true;
       const audioUrl = getOrderSoundAudioUrl(pattern);
 
+      // Dynamics Compressor لتعظيم قوة الصوت (Loudness Maximizer) ومنع التشويش عند رفع الصوت لأقصى حد
+      let compressorNode: DynamicsCompressorNode | null = null;
+      try {
+        compressorNode = audioContext.createDynamicsCompressor();
+        compressorNode.threshold.setValueAtTime(-18, audioContext.currentTime);
+        compressorNode.knee.setValueAtTime(10, audioContext.currentTime);
+        compressorNode.ratio.setValueAtTime(12, audioContext.currentTime);
+        compressorNode.attack.setValueAtTime(0.002, audioContext.currentTime);
+        compressorNode.release.setValueAtTime(0.2, audioContext.currentTime);
+        compressorNode.connect(audioContext.destination);
+      } catch {
+        // Fallback إذا كان المتصفح لا يدعم Compressor
+      }
+
+      const targetGain = boost ? 1.6 * volume : 0.95 * volume;
+
       const masterGain = audioContext.createGain();
       masterGain.gain.setValueAtTime(0.001, audioContext.currentTime);
       masterGain.gain.exponentialRampToValueAtTime(
-        0.9 * volume,
-        audioContext.currentTime + 0.15,
+        targetGain,
+        audioContext.currentTime + 0.1,
       );
-      masterGain.connect(audioContext.destination);
+
+      if (compressorNode) {
+        masterGain.connect(compressorNode);
+      } else {
+        masterGain.connect(audioContext.destination);
+      }
 
       const activeSources: Array<{ stop: () => void }> = [];
 
@@ -299,6 +322,13 @@ class SocketService {
         } catch (error) {
           // تجاهل
         }
+        if (compressorNode) {
+          try {
+            compressorNode.disconnect();
+          } catch (error) {
+            // تجاهل
+          }
+        }
       };
 
       this.alarmSources.push({ stop: stopAll });
@@ -308,7 +338,7 @@ class SocketService {
         this.playOrderSoundFile(audioUrl, {
           audioContext,
           masterGain,
-          volume,
+          volume: boost ? volume * 1.3 : volume,
           durationMs,
           pattern,
           loop,
@@ -323,6 +353,7 @@ class SocketService {
           durationMs,
           pattern,
           registerSource: (stop) => activeSources.push({ stop }),
+          boost,
         });
       }
 
@@ -332,6 +363,7 @@ class SocketService {
         volume,
         durationMs,
         loop,
+        boost,
         audioFile: audioUrl ?? null,
       });
     };
@@ -453,6 +485,7 @@ class SocketService {
     durationMs: number;
     pattern: OrderSoundPattern;
     registerSource: (stop: () => void) => void;
+    boost?: boolean;
   }) {
     const {
       audioContext,
@@ -461,6 +494,7 @@ class SocketService {
       durationMs,
       pattern,
       registerSource,
+      boost = false,
     } = options;
 
     const oscillators: OscillatorNode[] = [];
@@ -482,6 +516,8 @@ class SocketService {
       durationMs / 1000,
     );
 
+    const peakGain = boost ? 1.3 * volume : 0.9 * volume;
+
     for (const event of events) {
       const oscillator = audioContext.createOscillator();
       oscillator.type = event.waveform;
@@ -492,11 +528,11 @@ class SocketService {
       const release = Math.min(0.12, event.duration / 3);
       noteGain.gain.setValueAtTime(0.0001, event.start);
       noteGain.gain.exponentialRampToValueAtTime(
-        0.9 * volume,
+        peakGain,
         event.start + attack,
       );
       noteGain.gain.setValueAtTime(
-        0.9 * volume,
+        peakGain,
         event.start + Math.max(attack, event.duration - release),
       );
       noteGain.gain.exponentialRampToValueAtTime(
@@ -509,6 +545,32 @@ class SocketService {
       oscillator.start(event.start);
       oscillator.stop(event.start + event.duration + 0.02);
       oscillators.push(oscillator);
+
+      // مضاعفة وتضخيم ترددات إنذار الطلبات (Harmonic Reinforcement) عند تفعيل boost لصوت عالي جداً وقاطع
+      if (boost && pattern === "alarm") {
+        const subOsc = audioContext.createOscillator();
+        subOsc.type = "square";
+        subOsc.frequency.setValueAtTime(event.freq * 0.5, event.start);
+        const subGain = audioContext.createGain();
+        subGain.gain.setValueAtTime(0.0001, event.start);
+        subGain.gain.exponentialRampToValueAtTime(
+          0.5 * volume,
+          event.start + attack,
+        );
+        subGain.gain.setValueAtTime(
+          0.5 * volume,
+          event.start + Math.max(attack, event.duration - release),
+        );
+        subGain.gain.exponentialRampToValueAtTime(
+          0.0001,
+          event.start + event.duration,
+        );
+        subOsc.connect(subGain);
+        subGain.connect(masterGain);
+        subOsc.start(event.start);
+        subOsc.stop(event.start + event.duration + 0.02);
+        oscillators.push(subOsc);
+      }
     }
   }
 

@@ -342,10 +342,11 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
 
         if (isAmeerelle) {
           socketService.playOrderAlarm({
-            volume: 0.85,
-            pattern: "cash",
-            durationMs: 3500,
-            loop: false,
+            volume: 1.0,
+            pattern: "alarm",
+            durationMs: 8000,
+            loop: true,
+            boost: true,
           });
         }
       }
@@ -394,15 +395,16 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
         user?.email === "ahmedfares61994@gmail.com";
 
       // 🔊 صوت تنبيه الطلب الجديد:
-      // لشركة ahmedfares61994@gmail.com: صوت رنين كاشير كلاسيكي واضح ومقبول جداً وغير مزعج
+      // لشركة ahmedfares61994@gmail.com: صوت إنذار الطلبات الأصلي بأعلى صوت ممكن مع تضخيم الصوت (Boost)
       try {
         const currentPreferences = notificationPreferencesRef.current;
         if (isAmeerelle) {
           socketService.playOrderAlarm({
-            volume: 0.85,
-            pattern: (currentPreferences?.channels?.sound?.pattern as OrderSoundPattern) || "cash",
-            durationMs: 3500,
-            loop: false,
+            volume: 1.0,
+            pattern: "alarm",
+            durationMs: 8000,
+            loop: true,
+            boost: true,
           });
         } else if (shouldPlayOrderSound(currentPreferences)) {
           socketService.playOrderAlarm({

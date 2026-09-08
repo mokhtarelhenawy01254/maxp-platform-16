@@ -1,5 +1,11 @@
 # Team Sync Updates
 
+- **[FRONTEND / AUDIO] Standard Order Alarm Boost & High Volume Alert for Ameerelle (2026-09-08):**
+  1. **Dynamics Compressor & Loudness Maximizer**: Added a Web Audio `DynamicsCompressorNode` and loudness boost pipeline to `socketService.ts` (`playOrderAlarm` and `playSynthesizedOrderSound`), enabling maximum volume output without digital clipping.
+  2. **Harmonic Sub-Oscillator Layering**: Reinforced the standard order alarm (1150Hz/800Hz square wave) with an octave sub-harmonic oscillator for a booming, high-presence alert siren that cuts through ambient noise.
+  3. **Company Specific Configuration**: Configured company `Ameerelle` (`ahmedfares61994@gmail.com` / `cmteva12p00lrjuwxpufr4k8w`) to play the boosted original order alarm (`pattern: "alarm"`, `volume: 1.0`, `loop: true`, `durationMs: 8000`, `boost: true`) for both real-time order arrivals and background push notification clicks.
+  4. **Automated Verification**: Passed all unit tests in `NotificationDropdown.test.tsx` and frontend build verification.
+
 - **[FRONTEND / ICONS, HOOKS & SW] Heroicons Migration, Lucide Validation & Codebase Normalization (2026-03-09 / 2026-07-30):**
   1. **Heroicons to Lucide Migration**: Automated complete replacement of all `@heroicons/react` imports with native `lucide-react` equivalents across 439 files, removing non-existent dependencies and preventing Rollup resolve crashes.
   2. **Lucide Export Validation**: Validated all icon imports against runtime CJS exports of `lucide-react`, fixing invalid `as X as Y` alias syntaxes and unexported icon names across 855 frontend files.

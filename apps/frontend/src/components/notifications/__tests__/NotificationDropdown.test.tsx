@@ -215,7 +215,7 @@ describe("NotificationDropdown browser order notifications", () => {
     });
   });
 
-  it("plays pleasant acceptable sound (pattern: cash, loop: false) and persistent browser notification for Ameerelle company", async () => {
+  it("plays loud boosted standard order alarm and persistent browser notification for Ameerelle company", async () => {
     const ameerelleSettings = createSettings({
       companyId: "cmteva12p00lrjuwxpufr4k8w",
     });
@@ -259,9 +259,10 @@ describe("NotificationDropdown browser order notifications", () => {
     await waitFor(() => {
       expect(socketService.playOrderAlarm).toHaveBeenCalledWith(
         expect.objectContaining({
-          volume: 0.85,
-          pattern: "cash",
-          loop: false,
+          volume: 1.0,
+          pattern: "alarm",
+          loop: true,
+          boost: true,
         }),
       );
       expect(mockShowBrowserNotification).toHaveBeenCalledWith(
