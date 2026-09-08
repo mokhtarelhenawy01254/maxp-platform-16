@@ -8539,6 +8539,7 @@
     "saveFailed": "فشل الحفظ",
     "loadFailed": "فشل تحميل الإعدادات",
     "nameRequired": "اسم القاعدة مطلوب",
+    "keywordRequired": "يجب إضافة كلمة مفتاحية واحدة على الأقل",
     "templateRequired": "قالب الرد مطلوب",
     "templatePlaceholder": "الرد التلقائي...",
     "keywordPlaceholder": "مثال: السعر، متوفر، الشحن",

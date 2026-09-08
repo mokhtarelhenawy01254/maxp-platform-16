@@ -43,6 +43,7 @@ const SmartRepliesSettings: React.FC = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingTemplate, setEditingTemplate] =
     useState<AutoReplyTemplate | null>(null);
+  const [isNewTemplate, setIsNewTemplate] = useState(false);
   const [newKeyword, setNewKeyword] = useState("");
 
   useEffect(() => {
@@ -73,84 +74,194 @@ const SmartRepliesSettings: React.FC = () => {
   ) => {
     try {
       setSaving(true);
-      await apiClient.put("/smart-replies/rule-responses", {
+      const response = await apiClient.put("/smart-replies/rule-responses", {
         enableRuleResponses: enabled,
         customRuleResponses: {
           templates,
         },
       });
+      if (response.data?.data?.customRuleResponses?.templates) {
+        setSettings({
+          enabled: response.data.data.enableRuleResponses === true,
+          templates: response.data.data.customRuleResponses.templates,
+        });
+      }
       toast.success(t("smartReplies.ruleSaved"));
-    } catch (error) {
-      toast.error(t("smartReplies.saveFailed"));
+    } catch (error: any) {
+      const serverMsg =
+        error?.response?.data?.error ||
+        error?.response?.data?.message ||
+        t("smartReplies.saveFailed");
+      toast.error(serverMsg);
     } finally {
       setSaving(false);
     }
   };
 
+  const finalizeAndValidateTemplate = (
+    template: AutoReplyTemplate,
+    currentNewKeyword: string,
+  ): { template: AutoReplyTemplate; error?: string } => {
+    const name = (template.name || "").trim();
+    if (!name) {
+      return { template, error: t("smartReplies.nameRequired") };
+    }
+
+    let keywords = [...(template.keywords || [])];
+    const pending = currentNewKeyword.trim();
+    if (pending) {
+      const parts = pending
+        .split(/[,،]/)
+        .map((k) => k.trim())
+        .filter(Boolean);
+      for (const p of parts) {
+        if (!keywords.includes(p)) {
+          keywords.push(p);
+        }
+      }
+    }
+    keywords = keywords.map((k) => k.trim()).filter(Boolean);
+    if (keywords.length === 0) {
+      return {
+        template,
+        error: t("smartReplies.keywordRequired") || t("smartReplies.keywords"),
+      };
+    }
+
+    const responses = (template.responses || [])
+      .map((r) => r.trim())
+      .filter(Boolean);
+    if (responses.length === 0) {
+      return { template, error: t("smartReplies.templateRequired") };
+    }
+
+    return {
+      template: {
+        ...template,
+        name,
+        keywords,
+        responses,
+      },
+    };
+  };
+
   const handleSave = async () => {
-    // If an edit form is still open, commit it into the templates list
-    // before persisting, so unsaved changes aren't silently dropped.
     let templatesToSave = settings.templates;
     if (editingId && editingTemplate) {
+      const { template: finalized, error } = finalizeAndValidateTemplate(
+        editingTemplate,
+        newKeyword,
+      );
+      if (error) {
+        toast.error(error);
+        return;
+      }
       templatesToSave = settings.templates.map((t) =>
-        t.id === editingId ? editingTemplate : t,
+        t.id === editingId ? finalized : t,
       );
       setSettings((prev) => ({ ...prev, templates: templatesToSave }));
       setEditingId(null);
       setEditingTemplate(null);
+      setNewKeyword("");
+      setIsNewTemplate(false);
+    } else {
+      for (const t of templatesToSave) {
+        const { error } = finalizeAndValidateTemplate(t, "");
+        if (error) {
+          toast.error(`${t.name || t("smartReplies.custom")}: ${error}`);
+          return;
+        }
+      }
     }
     await persistTemplates(templatesToSave, settings.enabled);
   };
 
   const handleEditStart = (template: AutoReplyTemplate) => {
+    setIsNewTemplate(false);
     setEditingId(template.id);
-    setEditingTemplate({ ...template });
+    setEditingTemplate({
+      ...template,
+      responses: template.responses.length > 0 ? [...template.responses] : [""],
+    });
+    setNewKeyword("");
   };
 
   const handleEditSave = async () => {
     if (!editingTemplate) return;
+
+    const { template: finalized, error } = finalizeAndValidateTemplate(
+      editingTemplate,
+      newKeyword,
+    );
+    if (error) {
+      toast.error(error);
+      return;
+    }
+
     const updated = settings.templates.map((t) =>
-      t.id === editingId ? editingTemplate : t,
+      t.id === editingId ? finalized : t,
     );
     setSettings((prev) => ({ ...prev, templates: updated }));
     setEditingId(null);
     setEditingTemplate(null);
+    setNewKeyword("");
+    setIsNewTemplate(false);
     await persistTemplates(updated, settings.enabled);
   };
 
   const handleEditCancel = () => {
+    if (isNewTemplate && editingId) {
+      setSettings((prev) => ({
+        ...prev,
+        templates: prev.templates.filter((t) => t.id !== editingId),
+      }));
+    }
+    setIsNewTemplate(false);
     setEditingId(null);
     setEditingTemplate(null);
+    setNewKeyword("");
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    const updated = settings.templates.filter((t) => t.id !== id);
     setSettings((prev) => ({
       ...prev,
-      templates: prev.templates.filter((t) => t.id !== id),
+      templates: updated,
     }));
+    await persistTemplates(updated, settings.enabled);
   };
 
   const handleAddTemplate = () => {
     const newTemplate: AutoReplyTemplate = {
       id: `custom_${Date.now()}`,
-      name: t("smartReplies.custom"),
+      name: "",
       type: "custom",
       keywords: [],
-      responses: [],
+      responses: [""],
     };
+    setIsNewTemplate(true);
     setSettings((prev) => ({
       ...prev,
       templates: [...prev.templates, newTemplate],
     }));
-    handleEditStart(newTemplate);
+    setEditingId(newTemplate.id);
+    setEditingTemplate(newTemplate);
+    setNewKeyword("");
   };
 
   const handleAddKeyword = () => {
     if (!newKeyword.trim() || !editingTemplate) return;
-    setEditingTemplate({
-      ...editingTemplate,
-      keywords: [...editingTemplate.keywords, newKeyword.trim()],
-    });
+    const parts = newKeyword
+      .split(/[,،]/)
+      .map((k) => k.trim())
+      .filter((k) => k.length > 0 && !editingTemplate.keywords.includes(k));
+
+    if (parts.length > 0) {
+      setEditingTemplate({
+        ...editingTemplate,
+        keywords: [...editingTemplate.keywords, ...parts],
+      });
+    }
     setNewKeyword("");
   };
 
@@ -253,9 +364,13 @@ const SmartRepliesSettings: React.FC = () => {
               <input
                 type="checkbox"
                 checked={settings.enabled}
-                onChange={(e) =>
-                  setSettings({ ...settings, enabled: e.target.checked })
-                }
+                onChange={async (e) => {
+                  const newEnabled = e.target.checked;
+                  setSettings((prev) => ({ ...prev, enabled: newEnabled }));
+                  if (!editingId) {
+                    await persistTemplates(settings.templates, newEnabled);
+                  }
+                }}
                 className="sr-only peer"
               />
               <div className="w-14 h-7 bg-gray-200 dark:bg-gray-700 peer-focus:ring-4 peer-focus:ring-indigo-300 dark:peer-focus:ring-indigo-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:right-[2px] after:bg-white after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
@@ -323,9 +438,12 @@ const SmartRepliesSettings: React.FC = () => {
                           type="text"
                           value={newKeyword}
                           onChange={(e) => setNewKeyword(e.target.value)}
-                          onKeyPress={(e) =>
-                            e.key === "Enter" && handleAddKeyword()
-                          }
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === "," || e.key === "،") {
+                              e.preventDefault();
+                              handleAddKeyword();
+                            }
+                          }}
                           className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                           placeholder={t("smartReplies.keywordPlaceholder")}
                         />
