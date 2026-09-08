@@ -30,6 +30,7 @@ const {
 const { safeJsonParse } = require('../utils/jsonUtils');
 const { sanitizeOrderAttribution } = require('../utils/orderAttribution');
 const { isPreOrderEligible } = require('../utils/preOrderUtils');
+const { isBackorderPermitted } = require('../utils/inventoryPolicyUtils');
 const {
   getConversionSuiteFreeShippingPromotion,
 } = require('../utils/storefrontFreeShipping');
@@ -894,6 +895,22 @@ router.post('/', async (req, res) => {
     const shippingClassCounts = {};
     const preOrderItems = [];
 
+    let companyStoreSettings = {};
+    try {
+      const sfSettingsRow = await prisma.storefrontSettings.findUnique({
+        where: { companyId: company.id },
+        select: { designTokens: true }
+      });
+      const designTokens = typeof sfSettingsRow?.designTokens === 'string'
+        ? JSON.parse(sfSettingsRow.designTokens)
+        : sfSettingsRow?.designTokens || {};
+      if (designTokens?.inventorySettings) {
+        companyStoreSettings = { ...designTokens.inventorySettings };
+      }
+    } catch (e) {
+      console.warn('⚠️ [CREATE-ORDER] Failed to parse storefront inventory settings:', e.message);
+    }
+
     // Verify stock again
     for (const item of cartItems) {
       console.log('🔍 [CREATE-ORDER] Checking product:', item.productId, 'variantId:', item.variantId, 'quantity:', item.quantity);
@@ -917,12 +934,6 @@ router.post('/', async (req, res) => {
         });
       }
 
-      // الطلب المسبق: إذا كان المنتج pre-order وتاريخ التوفر مستقبلي (أو غير محدد)،
-      // يُسمح بالطلب حتى لو المخزون صفر — لا يتم رفض فحص المخزون.
-      // كما نسمح بالطلب إذا كان المنتج الأم لا يتتبع المخزون (trackInventory=false)
-      // أو كان pre-order — وهذه الإعدادات تُورَّث لكل المتغيرات (الأبناء).
-      const productAllowsNoStock =
-        product.trackInventory === false || isPreOrderEligible(product);
       const preOrderEligible = isPreOrderEligible(product);
 
       if (product.isDropshipped) {
@@ -963,16 +974,23 @@ router.post('/', async (req, res) => {
           });
         }
 
-        // السماح بالطلب إذا كان المنتج الأم لا يتتبع المخزون أو كان طلباً مسبقاً
-        // (وراثة الإعدادات للمتغيرات)، أو إذا كان المتغير نفسه لا يتتبع المخزون.
+        // السماح بالطلب إذا كان المنتج أو المتغير يسمح بالـ Backorder أو كان طلباً مسبقاً أو غير متتبع للمخزون
         const variantTracksStock = variant.trackInventory !== false;
-        if (variantTracksStock && variant.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
-          console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
-          saveCheckoutError(cartId, company.id, 'stock_insufficient', `المخزون غير كافي: ${variant.name}. المتوفر: ${variant.stock}`, { productId: product.id, variantId: item.variantId, requested: item.quantity, available: variant.stock });
-          return res.status(400).json({
-            success: false,
-            error: `المخزون غير كافي للاختيار: ${variant.name}. المتوفر: ${variant.stock}`
-          });
+        const isVariantBackorderPermitted = isBackorderPermitted(product, variant, companyStoreSettings);
+
+        if (variantTracksStock && variant.stock < item.quantity && !req.headers['x-admin-convert']) {
+          if (isVariantBackorderPermitted) {
+            console.log(`ℹ️ [CREATE-ORDER] Backorder permitted for variant: ${variant.name} (stock: ${variant.stock}, requested: ${item.quantity})`);
+            item.isBackorder = true;
+            item.shortageQuantity = item.quantity - Math.max(0, variant.stock);
+          } else {
+            console.log('❌ [CREATE-ORDER] Insufficient variant stock:', variant.stock, 'requested:', item.quantity);
+            saveCheckoutError(cartId, company.id, 'stock_insufficient', `المخزون غير كافي: ${variant.name}. المتوفر: ${variant.stock}`, { productId: product.id, variantId: item.variantId, requested: item.quantity, available: variant.stock });
+            return res.status(400).json({
+              success: false,
+              error: `المخزون غير كافي للاختيار: ${variant.name}. المتوفر: ${variant.stock}`
+            });
+          }
         }
 
         selectedVariant = variant;
@@ -1076,14 +1094,20 @@ router.post('/', async (req, res) => {
         console.log(`✅ [CREATE-ORDER] Enriched item ${item.productId}: Color=${item.productColor}, Size=${item.productSize}, Image=${image ? 'Yes' : 'No'}`);
       } else {
         // Check main product stock if no variant and tracking is enabled
-        // السماح بالطلب إذا كان المنتج لا يتتبع المخزون (trackInventory=false) أو كان طلباً مسبقاً.
-        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert'] && !productAllowsNoStock) {
-          console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
-          saveCheckoutError(cartId, company.id, 'stock_insufficient', `المخزون غير كافي: ${item.name || product.name}. المتوفر: ${product.stock}`, { productId: product.id, requested: item.quantity, available: product.stock });
-          return res.status(400).json({
-            success: false,
-            error: `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`
-          });
+        const isProductBackorderPermitted = isBackorderPermitted(product, null, companyStoreSettings);
+        if (product.trackInventory !== false && product.stock < item.quantity && !req.headers['x-admin-convert']) {
+          if (isProductBackorderPermitted) {
+            console.log(`ℹ️ [CREATE-ORDER] Backorder permitted for product: ${item.name || product.name} (stock: ${product.stock}, requested: ${item.quantity})`);
+            item.isBackorder = true;
+            item.shortageQuantity = item.quantity - Math.max(0, product.stock);
+          } else {
+            console.log('❌ [CREATE-ORDER] Insufficient stock:', product.stock, 'requested:', item.quantity);
+            saveCheckoutError(cartId, company.id, 'stock_insufficient', `المخزون غير كافي: ${item.name || product.name}. المتوفر: ${product.stock}`, { productId: product.id, requested: item.quantity, available: product.stock });
+            return res.status(400).json({
+              success: false,
+              error: `المخزون غير كافي للمنتج: ${item.name || product.name}. المتوفر: ${product.stock}`
+            });
+          }
         }
       }
 
@@ -1805,6 +1829,21 @@ router.post('/', async (req, res) => {
       if (preOrderItems.length > 0) {
         orderMetadata.preOrder = {
           items: preOrderItems,
+          orderedAt: new Date().toISOString(),
+        };
+      }
+
+      const backorderItems = cartItems.filter((item) => item.isBackorder === true);
+      if (backorderItems.length > 0) {
+        orderMetadata.backorder = {
+          hasBackorder: true,
+          items: backorderItems.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId || null,
+            name: item.name,
+            quantity: item.quantity,
+            shortageQuantity: item.shortageQuantity || item.quantity,
+          })),
           orderedAt: new Date().toISOString(),
         };
       }

@@ -136,6 +136,7 @@ export const useProductApi = () => {
         category: formData.category,
         stock: formData.trackInventory ? formData.stock : 0,
         trackInventory: formData.trackInventory,
+        allowBackorders: Boolean(formData.allowBackorders),
         lowStockThreshold: formData.lowStockThreshold || 5,
         isActive: formData.isActive,
         isFeatured: formData.isFeatured || false,
@@ -181,6 +182,7 @@ export const useProductApi = () => {
           shippingClass: formData.shippingClass || "standard",
           excludeFromFreeShipping: formData.excludeFromFreeShipping || false,
           // Inventory extras stored in metadata
+          allowBackorders: Boolean(formData.allowBackorders),
           barcode: formData.barcode || null,
           isPreOrder: formData.isPreOrder || false,
           preOrderDate: formData.preOrderDate || null,

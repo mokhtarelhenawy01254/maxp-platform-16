@@ -34,6 +34,7 @@ const initialFormData: ProductFormData = {
   affiliateVisibility: "ALL",
   affiliateVisibleAffiliateIds: [],
   mainImage: "",
+  allowBackorders: false,
   barcode: "",
   isPreOrder: false,
   preOrderDate: "",

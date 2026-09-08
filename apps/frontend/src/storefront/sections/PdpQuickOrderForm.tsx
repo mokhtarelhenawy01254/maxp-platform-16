@@ -264,6 +264,24 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
 
   const activeSelection =
     selection && selection.productId === product.id ? selection : null;
+  const isOutOfStock = useMemo(() => {
+    if (activeSelection?.isOutOfStock !== undefined) {
+      return activeSelection.isOutOfStock;
+    }
+    const isBackorderAllowed =
+      Boolean(product.allowBackorders) ||
+      (product.metadata as any)?.allowBackorders === true ||
+      product.trackInventory === false ||
+      Boolean(product.isPreOrder);
+    if (product.trackInventory === false || isBackorderAllowed) {
+      return false;
+    }
+    const rawStock =
+      typeof product.stock === "number" && Number.isFinite(product.stock)
+        ? product.stock
+        : null;
+    return typeof rawStock === "number" && rawStock <= 0;
+  }, [activeSelection?.isOutOfStock, product]);
   const activeQuantityOffer =
     quantityOfferSelection && quantityOfferSelection.productId === product.id
       ? quantityOfferSelection
@@ -844,11 +862,28 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       errors.push(minimumOrder.message);
     }
 
+    if (isOutOfStock) {
+      errors.push(
+        prefersArabicCopy
+          ? "عذرًا، هذا المنتج نفد من المخزون حاليًا."
+          : "Sorry, this product is currently out of stock.",
+      );
+    }
+
     return errors;
   };
 
   const handleSubmit = async () => {
     if (isSubmittingRef.current || isSubmitting) {
+      return;
+    }
+
+    if (isOutOfStock) {
+      toast.error(
+        prefersArabicCopy
+          ? "عذرًا، نفدت كمية هذا المنتج حاليًا وغير متاح للطلب."
+          : "Sorry, this product is currently out of stock.",
+      );
       return;
     }
 
@@ -1092,6 +1127,15 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
   };
 
   const handleAddToCart = () => {
+    if (isOutOfStock) {
+      toast.error(
+        prefersArabicCopy
+          ? "عذرًا، نفدت كمية هذا المنتج حاليًا وغير متاح للطلب."
+          : "Sorry, this product is currently out of stock.",
+      );
+      return;
+    }
+
     const quickOrderItems = buildQuickOrderCartItemsForSubmit();
     if (!quickOrderItems?.length) {
       return;
@@ -1212,28 +1256,32 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
       ? `طريقة الشحن: ${cleanShippingMethodTitle}`
       : `Shipping method: ${cleanShippingMethodTitle}`
     : "";
-  const addToCartLabel =
-    configuredAddToCartButtonText ||
-    (isSoleaFemmeQuickOrder && prefersArabicCopy
-      ? "أضيفي للسلة"
-      : prefersArabicCopy
-        ? "أضف للسلة"
-        : "Add to cart");
-  const submitLabel =
-    configuredSubmitButtonText ||
-    (isSoleaFemmeQuickOrder && prefersArabicCopy
-      ? "تأكيد الطلب"
-      : isKhemetLuxeQuickOrder && prefersArabicCopy
+  const addToCartLabel = isOutOfStock
+    ? (prefersArabicCopy ? "نفدت الكمية" : "Out of stock")
+    : configuredAddToCartButtonText ||
+      (isSoleaFemmeQuickOrder && prefersArabicCopy
+        ? "أضيفي للسلة"
+        : prefersArabicCopy
+          ? "أضف للسلة"
+          : "Add to cart");
+  const submitLabel = isOutOfStock
+    ? (prefersArabicCopy ? "نفدت الكمية" : "Out of stock")
+    : configuredSubmitButtonText ||
+      (isSoleaFemmeQuickOrder && prefersArabicCopy
         ? "تأكيد الطلب"
-      : prefersArabicCopy
-        ? "اشتر الآن"
-        : "Buy now");
-  const minimumOrderSubmitLabel = minimumOrder.blocked
-    ? `${prefersArabicCopy ? "متبقي" : "Remaining"} ${formatStorefrontCurrency(
-        minimumOrder.remaining,
-        currency,
-      )}`
-    : submitLabel;
+        : isKhemetLuxeQuickOrder && prefersArabicCopy
+          ? "تأكيد الطلب"
+        : prefersArabicCopy
+          ? "اشتر الآن"
+          : "Buy now");
+  const minimumOrderSubmitLabel = isOutOfStock
+    ? (prefersArabicCopy ? "نفدت الكمية" : "Out of stock")
+    : minimumOrder.blocked
+      ? `${prefersArabicCopy ? "متبقي" : "Remaining"} ${formatStorefrontCurrency(
+          minimumOrder.remaining,
+          currency,
+        )}`
+      : submitLabel;
   const showAddToCartButton =
     product?.showAddToCartButton === false
       ? false
@@ -1849,6 +1897,14 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
               </div>
             ) : null}
 
+            {isOutOfStock ? (
+              <div className="mb-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-center text-xs font-bold text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/40 dark:text-rose-300">
+                {prefersArabicCopy
+                  ? "⚠️ نفدت كمية هذا المنتج حاليًا وغير متاح للطلب الآن."
+                  : "⚠️ This product is currently out of stock."}
+              </div>
+            ) : null}
+
             {shouldRenderActionArea ? (
               <div
                 className={`${
@@ -1865,7 +1921,10 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                   <button
                     type="button"
                     onClick={handleAddToCart}
-                    className={addToCartButtonClassName}
+                    disabled={isOutOfStock || isSubmitting}
+                    className={`${addToCartButtonClassName} ${
+                      isOutOfStock ? "opacity-50 cursor-not-allowed" : ""
+                    }`}
                   >
                     {addToCartLabel}
                   </button>
@@ -1876,7 +1935,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                     onClick={() => {
                       void handleSubmit();
                     }}
-                    disabled={isSubmitting || minimumOrder.blocked}
+                    disabled={isSubmitting || minimumOrder.blocked || isOutOfStock}
                     className={submitButtonClassName}
                   >
                     {isSubmitting
@@ -1943,7 +2002,7 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
                       onClick={() => {
                         void handleSubmit();
                       }}
-                      disabled={isSubmitting || minimumOrder.blocked}
+                      disabled={isSubmitting || minimumOrder.blocked || isOutOfStock}
                       className={`${submitButtonClassName} min-h-[3.15rem] min-w-[9.75rem] px-5`}
                     >
                       {isSubmitting

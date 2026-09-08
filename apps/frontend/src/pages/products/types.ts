@@ -35,6 +35,7 @@ export interface ProductFormData {
   affiliateVisibleAffiliateIds: string[];
   mainImage?: string;
   // Inventory extras
+  allowBackorders?: boolean;
   barcode?: string;
   isPreOrder?: boolean;
   preOrderDate?: string;

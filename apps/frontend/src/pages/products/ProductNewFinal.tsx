@@ -722,6 +722,7 @@ export const ProductNewFinal: React.FC = () => {
           metaDescription: product.metaDescription || "",
           canonicalUrl: product.canonicalUrl || "",
           // Ghost fields from metadata
+          allowBackorders: parsedMetadata.allowBackorders || product.allowBackorders || false,
           barcode: parsedMetadata.barcode || product.barcode || "",
           isPreOrder: parsedMetadata.isPreOrder || false,
           preOrderDate: parsedMetadata.preOrderDate || "",

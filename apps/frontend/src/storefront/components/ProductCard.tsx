@@ -6,6 +6,7 @@ import { Product } from '../hooks/useProducts';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
 import { useStorefrontTheme } from '../engine/ThemeProvider';
 import { ShoppingCart, Heart, Eye, Plus, Sparkles, ArrowUpRight, Star, Zap } from 'lucide-react';
+import { toast } from 'sonner';
 import QuickViewModal from './QuickViewModal';
 import StorefrontProductImage from './StorefrontProductImage';
 import { formatStorefrontCurrency } from '../utils/currency';
@@ -179,7 +180,33 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     `${productRouteBase}/${slug || id}`,
     location.search,
   );
+  const isRtl = theme?.direction === 'rtl';
   const hasVariantChoices = Boolean(product.productVariants?.length);
+  const stockQuantity =
+    typeof product.stock === 'number'
+      ? product.stock
+      : typeof product.inventory === 'number'
+        ? product.inventory
+        : typeof product.quantity === 'number'
+          ? product.quantity
+          : null;
+  const isBackorderAllowed =
+    product.allowBackorders === true ||
+    (product.metadata as any)?.allowBackorders === true ||
+    product.trackInventory === false ||
+    Boolean(product.isPreOrder);
+  const isStockTracked = product.trackInventory !== false;
+  const isStrictlyOutOfStock =
+    isStockTracked &&
+    stockQuantity !== null &&
+    stockQuantity <= 0 &&
+    !isBackorderAllowed;
+  const isLowStock =
+    !isStrictlyOutOfStock &&
+    stockQuantity !== null &&
+    stockQuantity > 0 &&
+    stockQuantity <= 5;
+
   const openProductPath = () => {
     if (shouldForceDocumentNavigation) {
       navigateStorefrontDocument(productPath);
@@ -192,6 +219,15 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isStrictlyOutOfStock) {
+      toast.error(
+        isRtl
+          ? 'عذرًا، نفدت كمية هذا المنتج حاليًا.'
+          : 'Sorry, this product is currently out of stock.',
+      );
+      return;
+    }
 
     if (hasVariantChoices) {
       setIsQuickViewOpen(true);
@@ -221,6 +257,15 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const handleQuickBuy = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (isStrictlyOutOfStock) {
+      toast.error(
+        isRtl
+          ? 'عذرًا، نفدت كمية هذا المنتج حاليًا.'
+          : 'Sorry, this product is currently out of stock.',
+      );
+      return;
+    }
 
     if (hasVariantChoices) {
       setIsQuickViewOpen(true);
@@ -332,21 +377,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     savingsAmount && savingsAmount > 0
       ? formatStorefrontCurrency(savingsAmount, currency)
       : null;
-  const stockQuantity =
-    typeof product.stock === 'number'
-      ? product.stock
-      : typeof product.inventory === 'number'
-        ? product.inventory
-        : typeof product.quantity === 'number'
-          ? product.quantity
-          : null;
-  const isLowStock =
-    stockQuantity !== null &&
-    stockQuantity > 0 &&
-    stockQuantity <= 5;
 
   const imageCandidates = getProductImageCandidates(product);
-  const isRtl = theme?.direction === 'rtl';
   const prefersArabicCopy =
     isRtl ||
     isZenOrganic ||
@@ -402,7 +434,9 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
       : isAirlume || isZenOrganic || isRtl
         ? 'شاهد التفاصيل'
         : 'View details';
-  const actionLabel = isVelaFashion
+  const actionLabel = isStrictlyOutOfStock
+    ? (isRtl ? 'نفدت الكمية' : 'Sold out')
+    : isVelaFashion
     ? 'Add to cart'
     : hasVariantChoices
       ? isBiteRush
@@ -676,6 +710,17 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     className?: string;
     showSavings?: boolean;
   }) => {
+    if (isStrictlyOutOfStock) {
+      return (
+        <span
+          style={productCardBadgeStyles}
+          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-black shadow-sm bg-rose-600/95 text-white ${className}`}
+        >
+          {isRtl ? 'نفدت الكمية' : 'Sold out'}
+        </span>
+      );
+    }
+
     if (!discountPercentage) return null;
 
     const shouldShowMonetarySavings =

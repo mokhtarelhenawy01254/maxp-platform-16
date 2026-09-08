@@ -13,6 +13,9 @@ export interface PdpProductSelection {
   volumeDiscounts: VolumeDiscountTier[];
   requiresVariantSelection: boolean;
   isSelectionReady: boolean;
+  stock?: number | null;
+  allowBackorders?: boolean;
+  isOutOfStock?: boolean;
 }
 
 interface PdpSelectionStore {
@@ -44,7 +47,10 @@ export const arePdpSelectionsEqual = (
     a.unitPrice !== b.unitPrice ||
     a.basePrice !== b.basePrice ||
     a.requiresVariantSelection !== b.requiresVariantSelection ||
-    a.isSelectionReady !== b.isSelectionReady
+    a.isSelectionReady !== b.isSelectionReady ||
+    a.stock !== b.stock ||
+    a.allowBackorders !== b.allowBackorders ||
+    a.isOutOfStock !== b.isOutOfStock
   ) {
     return false;
   }

@@ -794,6 +794,7 @@ function formatPublicVariantResponse(variant, wooCommerceUrl) {
     trackInventory: variant.trackInventory,
     isActive: variant.isActive,
     sortOrder: variant.sortOrder,
+    allowBackorders: Boolean(variant.allowBackorders || variantMetadata.allowBackorders),
     attributes,
     attributeValues: attributes,
     image: normalizedVariantImage,
@@ -835,6 +836,8 @@ function formatProductResponse(product, options = {}) {
   const description = isSummary
     ? truncateProductDescription(product.description)
     : (product.description || '');
+  const productMetadata = parseJsonRecord(product.metadata);
+  const allowBackorders = Boolean(product.allowBackorders || productMetadata.allowBackorders);
 
   const response = {
     id: product.id,
@@ -850,6 +853,7 @@ function formatProductResponse(product, options = {}) {
     isFeatured: product.isFeatured,
     stock: product.stock,
     trackInventory: product.trackInventory,
+    allowBackorders,
     tags: product.tags,
     companyId: product.companyId,
     createdAt: product.createdAt,

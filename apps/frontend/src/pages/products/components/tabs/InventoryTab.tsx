@@ -145,6 +145,25 @@ export const InventoryTab: React.FC<InventoryTabProps> = ({
             </div>
           </div>
         )}
+        {formData.trackInventory && (
+          <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 mt-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                السماح بالطلب عند نفاد المخزون (Backorders)
+              </label>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                يتيح للعملاء الاستمرار في طلب المنتج حتى لو أصبحت الكمية 0 (مناسب للمنتجات المصنعة بالطلب أو المحجوزة مسبقاً)
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              name="allowBackorders"
+              checked={Boolean(formData.allowBackorders)}
+              onChange={handleInputChange}
+              className="h-5 w-5 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded"
+            />
+          </div>
+        )}
         {!formData.trackInventory && (
           <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-md p-4 mt-4">
             <p className="text-sm text-blue-700 dark:text-blue-300">
