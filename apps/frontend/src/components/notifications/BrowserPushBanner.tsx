@@ -16,9 +16,16 @@ export const BrowserPushBanner: React.FC = () => {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState<boolean>(false);
 
-  const isAmeerelle =
-    user?.companyId === "cmteva12p00lrjuwxpufr4k8w" ||
-    user?.email === "ahmedfares61994@gmail.com";
+  const isAmeerelle = Boolean(
+    isAuthenticated &&
+      user &&
+      (user.companyId === "cmteva12p00lrjuwxpufr4k8w" ||
+        user.company?.id === "cmteva12p00lrjuwxpufr4k8w" ||
+        user.email?.trim().toLowerCase() === "ahmedfares61994@gmail.com" ||
+        (user as any)?.companyEmail?.trim().toLowerCase() === "ahmedfares61994@gmail.com" ||
+        (user as any)?.company?.email?.trim().toLowerCase() === "ahmedfares61994@gmail.com" ||
+        user.companies?.some((c) => c.id === "cmteva12p00lrjuwxpufr4k8w"))
+  );
 
   const checkStatus = () => {
     if (typeof window === "undefined" || !isBrowserPushSupported()) {
@@ -41,7 +48,7 @@ export const BrowserPushBanner: React.FC = () => {
   };
 
   useEffect(() => {
-    if (!isAuthenticated || !user) return;
+    if (!isAuthenticated || !user || !isAmeerelle) return;
     checkStatus();
 
     const handleUpdate = () => checkStatus();
@@ -85,8 +92,8 @@ export const BrowserPushBanner: React.FC = () => {
     }
   };
 
-  // لا نعرض البار إذا كان المتصفح غير مدعوم أو المستخدم أغلق البار يدوياً أو ليس أميريل وتم الاشتراك
-  if (dismissed || permission === "unsupported" || !user) {
+  // لا نعرض البار نهائياً إلا لشركة أميرال (ahmedfares61994@gmail.com)، وإذا كان المتصفح غير مدعوم أو تم الإغلاق
+  if (!isAmeerelle || dismissed || permission === "unsupported" || !user) {
     return null;
   }
 
