@@ -1141,7 +1141,7 @@ const getQuickReplies = async (req, res) => {
 
         const prisma = getSharedPrismaClient();
 
-        // Get WhatsApp quick replies
+        // 1. Get WhatsApp quick replies
         const waReplies = await prisma.whatsAppQuickReply.findMany({
             where: { companyId, isActive: true },
             orderBy: [
@@ -1159,21 +1159,134 @@ const getQuickReplies = async (req, res) => {
             }
         });
 
-        // Normalize
-        const quickReplies = waReplies.map(r => ({
+        // 2. Also get company text gallery items (حافظة النصوص المحفوظة)
+        let galleryReplies = [];
+        try {
+            const textItems = await prisma.textGallery.findMany({
+                where: { companyId },
+                orderBy: [
+                    { isPinned: 'desc' },
+                    { createdAt: 'desc' }
+                ],
+                take: 50
+            });
+
+            galleryReplies = textItems.map(t => {
+                const cleanTitle = (t.title || 'رد_محفوظ').trim().replace(/[\s\/\\]+/g, '_');
+                const shortcut = `/${cleanTitle}`;
+                let parsedImages = [];
+                try {
+                    if (t.imageUrls) {
+                        parsedImages = typeof t.imageUrls === 'string' ? JSON.parse(t.imageUrls) : t.imageUrls;
+                    }
+                } catch (e) {}
+
+                return {
+                    id: `gallery-${t.id}`,
+                    title: t.title || 'نص محفوظ',
+                    shortcut: shortcut,
+                    content: t.content,
+                    category: 'نصوص محفوظة',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram'],
+                    mediaUrl: parsedImages[0] || null,
+                    mediaType: parsedImages.length > 0 ? 'image' : null,
+                    imageUrls: parsedImages,
+                    isPinned: !!t.isPinned
+                };
+            });
+        } catch (err) {
+            console.warn('⚠️ [UNIFIED] Could not fetch textGallery items:', err.message);
+        }
+
+        // Normalize WA replies
+        const formattedWaReplies = waReplies.map(r => ({
             id: r.id,
             title: r.title,
-            shortcut: r.shortcut,
+            shortcut: r.shortcut.startsWith('/') ? r.shortcut : `/${r.shortcut}`,
             content: r.content,
-            category: r.category,
+            category: r.category || 'عام',
             platforms: ['whatsapp', 'facebook', 'instagram', 'telegram'],
             mediaUrl: r.mediaUrl,
-            mediaType: r.mediaType
+            mediaType: r.mediaType,
+            isPinned: false
         }));
+
+        let combined = [...formattedWaReplies, ...galleryReplies];
+
+        // 3. Fallback defaults if no quick replies or text gallery items exist
+        if (combined.length === 0) {
+            // Retrieve company details for custom defaults
+            const company = await prisma.company.findUnique({
+                where: { id: companyId },
+                select: { name: true, slug: true, domain: true }
+            }).catch(() => null);
+
+            const cName = company?.name || 'شركتنا';
+            const cDomain = company?.domain || (company?.slug ? `${company.slug}.maxp.online/shop` : 'maxp.online');
+
+            combined = [
+                {
+                    id: 'default-welcome',
+                    title: 'ترحيب بالعميل',
+                    shortcut: '/ترحيب',
+                    content: `🌸 أهلاً وسهلاً بحضرتك يا فندم ❤️\nمنورانا وشرف لينا تواصلك مع ${cName} ✨\nكيف نقدر نساعدك اليوم؟`,
+                    category: 'عام',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram']
+                },
+                {
+                    id: 'default-thanks',
+                    title: 'شكر وتقدير',
+                    shortcut: '/شكر',
+                    content: `شكراً جزيلاً لتواصلك مع ${cName}! نقدر ثقتك الغالية ونتمنى لك يوماً سعيداً 🙏❤️`,
+                    category: 'عام',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram']
+                },
+                {
+                    id: 'default-order-confirm',
+                    title: 'تأكيد بيانات الطلب',
+                    shortcut: '/تأكيد_الطلب',
+                    content: 'تمام يا فندم، لتأكيد طلبك أرجو تزويدنا بالبيانات التالية:\n▫️ الاسم ثلاثي:\n▫️ رقم الهاتف:\n▫️ رقم بديل (إن وجد):\n▫️ العنوان بالتفصيل (المحافظة - المنطقة - الشارع):',
+                    category: 'طلبات',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram']
+                },
+                {
+                    id: 'default-order-status',
+                    title: 'حالة الطلب والتوصيل',
+                    shortcut: '/متابعة_الطلب',
+                    content: 'طلبك رقم #{{order_id}} قيد المتابعة مع شركة الشحن 📦\nالوصول المتوقع خلال 2 إلى 4 أيام عمل بإذن الله 🚚',
+                    category: 'طلبات',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram']
+                },
+                {
+                    id: 'default-shipping',
+                    title: 'تفاصيل الشحن',
+                    shortcut: '/الشحن',
+                    content: 'نقوم بالشحن والتوصيل لجميع المحافظات خلال 2-4 أيام عمل، مع إمكانية المعاينة قبل الاستلام 🚚📦',
+                    category: 'شحن',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram']
+                },
+                {
+                    id: 'default-payment',
+                    title: 'طرق الدفع',
+                    shortcut: '/طرق_الدفع',
+                    content: 'متاح لدينا:\n▫️ الدفع عند الاستلام بعد المعاينة 💵\n▫️ الدفع الإلكتروني عبر المحافظ الإلكترونية والبطاقات البنكية 💳',
+                    category: 'دفع',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram']
+                },
+                {
+                    id: 'default-store-link',
+                    title: 'رابط المتجر والمنتجات',
+                    shortcut: '/المتجر',
+                    content: `تفضل بزيارة متجرنا للاطلاع على كامل الكتالوج وأحدث العروض:\n🌐 https://${cDomain}`,
+                    category: 'مبيعات',
+                    platforms: ['whatsapp', 'facebook', 'instagram', 'telegram']
+                }
+            ];
+        }
 
         res.json({
             success: true,
-            data: quickReplies
+            data: combined
         });
 
     } catch (error) {

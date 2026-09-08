@@ -337,12 +337,26 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
     }
 
     const handleSwMessage = (event: MessageEvent) => {
-      if (event.data?.type === "play-order-sound") {
-        const isAmeerelle =
-          user?.companyId === "cmteva12p00lrjuwxpufr4k8w" ||
-          user?.email === "ahmedfares61994@gmail.com";
+      const isAmeerelle =
+        user?.companyId === "cmteva12p00lrjuwxpufr4k8w" ||
+        user?.email === "ahmedfares61994@gmail.com";
 
+      if (event.data?.type === "play-order-sound") {
         if (isAmeerelle) {
+          socketService.playOrderAlarm({
+            volume: 1.0,
+            pattern: "alarm",
+            durationMs: 8000,
+            loop: true,
+            boost: true,
+          });
+        }
+      } else if (event.data?.type === "browser-push-received") {
+        const payload = event.data?.payload;
+        const isOrder =
+          payload?.typeId === "order_created" ||
+          payload?.data?.typeId === "order_created";
+        if (isOrder && isAmeerelle) {
           socketService.playOrderAlarm({
             volume: 1.0,
             pattern: "alarm",

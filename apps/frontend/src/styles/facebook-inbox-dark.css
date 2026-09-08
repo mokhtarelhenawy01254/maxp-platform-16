@@ -1,0 +1,419 @@
+/* ============================================================
+   Facebook Inbox - Dark Mode Stylesheet (Mobile & Desktop)
+   ============================================================
+   Provides premium contrast, removes bright white clashing elements,
+   and ensures optimal mobile responsiveness and readability.
+   ============================================================ */
+
+/* ── Mobile Top Header (App Shell) in Dark Mode ── */
+.dark .app-shell-mobile-header {
+  background-color: var(--color-card, oklch(0.217 0.042 257.8));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark .app-shell-mobile-header-title {
+  color: #ffffff;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.dark .app-shell-mobile-header-button {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.625rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.18s ease;
+}
+
+.dark .app-shell-mobile-header-button:hover,
+.dark .app-shell-mobile-header-button:focus-visible {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.dark .app-shell-mobile-header-button:active {
+  transform: scale(0.94);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Inbox Shell & Header Area ── */
+.dark .business-inbox-shell {
+  background-color: var(--color-background, oklch(0.177 0.035 257.7));
+}
+
+.dark .business-inbox-header {
+  background-color: var(--color-card, oklch(0.217 0.042 257.8));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* ── Tabs Navigation ── */
+.dark .business-inbox-tabs {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 0.25rem;
+  border-radius: 16px;
+}
+
+.dark .business-inbox-tab {
+  color: rgba(255, 255, 255, 0.72);
+  transition: all 0.18s ease;
+  font-weight: 600;
+}
+
+.dark .business-inbox-tab:hover {
+  color: #ffffff;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Active tab - vivid blue gradient with crisp white text */
+.dark .business-inbox-tab[data-active="true"] {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+}
+
+/* Tab Count Badge: Remove stark white pill in dark mode */
+.dark .business-inbox-tab-count {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-weight: 700;
+}
+
+.dark .business-inbox-tab[data-active="true"] .business-inbox-tab-count {
+  background: rgba(255, 255, 255, 0.25) !important;
+  color: #ffffff !important;
+}
+
+/* ── Toolbar: Buttons (Filter, Stats, Action Chips) ── */
+/* Fix the glaring white buttons flanking the search input on mobile */
+.dark .business-chip-button,
+.dark [data-theme="business-os-enterprise"] .business-chip-button {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: rgba(255, 255, 255, 0.85) !important;
+  box-shadow: none !important;
+  transition: all 0.18s ease;
+}
+
+.dark .business-chip-button:hover,
+.dark [data-theme="business-os-enterprise"] .business-chip-button:hover,
+.dark .business-chip-button:focus-visible,
+.dark [data-theme="business-os-enterprise"] .business-chip-button:focus-visible {
+  background: rgba(255, 255, 255, 0.14) !important;
+  border-color: rgba(255, 255, 255, 0.22) !important;
+  color: #ffffff !important;
+}
+
+.dark .business-chip-button:active,
+.dark [data-theme="business-os-enterprise"] .business-chip-button:active {
+  transform: scale(0.95);
+  background: rgba(255, 255, 255, 0.18) !important;
+}
+
+.dark .business-chip-button[data-active="true"],
+.dark [data-theme="business-os-enterprise"] .business-chip-button[data-active="true"] {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* ── Toolbar: Search Bar ── */
+.dark .business-inbox-search-wrap {
+  position: relative;
+}
+
+.dark .business-inbox-search,
+.dark [data-theme="business-os-enterprise"] .business-inbox-search {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+  border-radius: 14px;
+}
+
+.dark .business-inbox-search::placeholder,
+.dark [data-theme="business-os-enterprise"] .business-inbox-search::placeholder {
+  color: rgba(255, 255, 255, 0.45) !important;
+}
+
+.dark .business-inbox-search:focus,
+.dark [data-theme="business-os-enterprise"] .business-inbox-search:focus {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25) !important;
+}
+
+.dark .business-inbox-search-icon,
+.dark [data-theme="business-os-enterprise"] .business-inbox-search-icon {
+  color: rgba(255, 255, 255, 0.5) !important;
+}
+
+/* ── Conversations List & Cards ── */
+.dark .business-inbox-column--list,
+.dark [data-theme="business-os-enterprise"] .business-inbox-column--list {
+  background: var(--color-background, oklch(0.177 0.035 257.7));
+  border-inline-end: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark .business-conversation-card,
+.dark [data-theme="business-os-enterprise"] .business-conversation-card {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07) !important;
+  background: transparent;
+  transition: background-color 0.18s ease;
+}
+
+@media (max-width: 767px) {
+  .dark .business-conversation-card,
+  .dark [data-theme="business-os-enterprise"] .business-conversation-card {
+    padding: 0.7rem 0.85rem;
+  }
+}
+
+.dark .business-conversation-card:hover,
+.dark [data-theme="business-os-enterprise"] .business-conversation-card:hover {
+  background: rgba(255, 255, 255, 0.04) !important;
+}
+
+.dark .business-conversation-card:active {
+  background: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Unread / Attention Card State */
+.dark .business-conversation-card[data-state="attention"],
+.dark [data-theme="business-os-enterprise"] .business-conversation-card[data-state="attention"] {
+  background: rgba(239, 68, 68, 0.08) !important;
+  border-inline-start: 3px solid #ef4444 !important;
+}
+
+.dark .business-conversation-card[data-state="attention"]:hover {
+  background: rgba(239, 68, 68, 0.12) !important;
+}
+
+/* Selected Card State */
+.dark .business-conversation-card[data-state="selected"],
+.dark [data-theme="business-os-enterprise"] .business-conversation-card[data-state="selected"] {
+  background: rgba(59, 130, 246, 0.14) !important;
+  border-inline-start: 3px solid #3b82f6 !important;
+}
+
+.dark .business-conversation-card[data-state="selected"]:hover {
+  background: rgba(59, 130, 246, 0.18) !important;
+}
+
+/* Conversation Item Details */
+.dark .business-conversation-card h4 {
+  color: #ffffff !important;
+  font-weight: 700;
+}
+
+.dark .business-conversation-card p {
+  color: rgba(255, 255, 255, 0.58) !important;
+}
+
+.dark .business-conversation-card[data-state="attention"] p {
+  color: rgba(255, 255, 255, 0.85) !important;
+}
+
+.dark .business-conversation-card .text-sm {
+  color: #ffffff;
+}
+
+/* Timestamp in conversation card */
+.dark .business-conversation-card span[style*="var(--color-muted-foreground)"] {
+  color: rgba(255, 255, 255, 0.48) !important;
+}
+
+/* Unread Indicator: "رسائل جديدة" */
+.dark .business-conversation-unread-badge,
+.dark .business-conversation-card [style*="var(--business-danger)"] {
+  color: #f87171 !important;
+}
+
+.dark .business-conversation-unread-dot {
+  background-color: #ef4444 !important;
+}
+
+/* Assigned Badge ("👤 معين"): remove bright white tag */
+.dark .business-conversation-assigned-badge,
+.dark .business-conversation-card span[style*="var(--color-secondary)"] {
+  background: rgba(20, 184, 166, 0.18) !important;
+  color: #2dd4bf !important;
+  border: 1px solid rgba(20, 184, 166, 0.28) !important;
+}
+
+/* Priority Star */
+.dark .business-conversation-card [style*="var(--business-warning)"] {
+  color: #fbbf24 !important;
+}
+
+/* Unread Message Count Badge */
+.dark .business-conversation-card span[style*="var(--color-primary)"] {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* Checkbox overlay */
+.dark .business-conversation-checkbox-overlay {
+  background: rgba(15, 23, 42, 0.85) !important;
+}
+
+/* ── Chat Stage & Header ── */
+.dark .business-chat-stage,
+.dark [data-theme="business-os-enterprise"] .business-chat-stage {
+  background: color-mix(in srgb, var(--color-background, oklch(0.177 0.035 257.7)) 92%, black 8%) !important;
+}
+
+.dark .business-inbox-chat-header,
+.dark [data-theme="business-os-enterprise"] .business-inbox-chat-header {
+  background-color: var(--color-card, oklch(0.217 0.042 257.8)) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .business-inbox-chat-header h2 {
+  color: #ffffff !important;
+}
+
+.dark .business-inbox-chat-header p {
+  color: rgba(255, 255, 255, 0.55) !important;
+}
+
+/* ── Icon Buttons in Chat Header & Modals ── */
+.dark .business-icon-button,
+.dark [data-theme="business-os-enterprise"] .business-icon-button {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.85);
+  transition: all 0.18s ease;
+}
+
+.dark .business-icon-button:hover,
+.dark [data-theme="business-os-enterprise"] .business-icon-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.dark .business-icon-button[data-tone="primary"],
+.dark [data-theme="business-os-enterprise"] .business-icon-button[data-tone="primary"] {
+  background: rgba(59, 130, 246, 0.2) !important;
+  color: #60a5fa !important;
+  border-color: rgba(59, 130, 246, 0.35) !important;
+}
+
+.dark .business-icon-button[data-tone="success"],
+.dark [data-theme="business-os-enterprise"] .business-icon-button[data-tone="success"] {
+  background: rgba(34, 197, 94, 0.2) !important;
+  color: #4ade80 !important;
+  border-color: rgba(34, 197, 94, 0.35) !important;
+}
+
+.dark .business-icon-button[data-tone="warning"],
+.dark [data-theme="business-os-enterprise"] .business-icon-button[data-tone="warning"] {
+  background: rgba(245, 158, 11, 0.2) !important;
+  color: #fcd34d !important;
+  border-color: rgba(245, 158, 11, 0.35) !important;
+}
+
+/* ── Message Bubbles in Dark Mode ── */
+/* Customer Incoming Message */
+.dark .business-chat-stage div[style*="var(--business-message-incoming-bg)"] {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: #f1f5f9 !important;
+}
+
+/* Agent Outgoing Message */
+.dark .business-chat-stage div[style*="linear-gradient(135deg, var(--color-primary)"] {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+}
+
+/* Message Bubble Action Buttons */
+.dark .business-bubble-action-btn,
+.dark .business-chat-stage button[style*="color-mix(in srgb, var(--color-primary) 6%, white)"] {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+/* ── Composer (Input Bar) in Dark Mode ── */
+.dark .business-chat-composer,
+.dark [data-theme="business-os-enterprise"] .business-chat-composer {
+  background: var(--color-card, oklch(0.217 0.042 257.8)) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .business-chat-input,
+.dark [data-theme="business-os-enterprise"] .business-chat-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.dark .business-chat-input::placeholder,
+.dark [data-theme="business-os-enterprise"] .business-chat-input::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+
+.dark .business-chat-input:focus,
+.dark [data-theme="business-os-enterprise"] .business-chat-input:focus {
+  background: rgba(255, 255, 255, 0.09) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25) !important;
+}
+
+/* Send Button */
+.dark .business-chat-send-button {
+  background: #2563eb !important;
+  color: #ffffff !important;
+}
+
+/* ── Dropdowns, Popups, and Overlays ── */
+.dark .business-inbox-mobile-action-menu,
+.dark .business-dropdown-surface,
+.dark [data-theme="business-os-enterprise"] .business-dropdown-surface {
+  background: rgba(15, 23, 42, 0.97) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+.dark .business-dropdown-option,
+.dark [data-theme="business-os-enterprise"] .business-dropdown-option {
+  color: #e2e8f0 !important;
+}
+
+.dark .business-dropdown-option:hover,
+.dark [data-theme="business-os-enterprise"] .business-dropdown-option:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+}
+
+/* ── Filter Panel & Control Inputs ── */
+.dark .business-modal-surface,
+.dark [data-theme="business-os-enterprise"] .business-modal-surface {
+  background: rgba(15, 23, 42, 0.98) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .business-control-input,
+.dark [data-theme="business-os-enterprise"] .business-control-input {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+
+.dark .business-control-input option {
+  background: #0f172a;
+  color: #ffffff;
+}
+
+/* ── Empty State ── */
+.dark .business-inbox-empty,
+.dark [data-theme="business-os-enterprise"] .business-inbox-empty {
+  color: rgba(255, 255, 255, 0.5) !important;
+}

@@ -20,20 +20,20 @@ const primaryStyle: React.CSSProperties = {
 };
 
 const successStyle: React.CSSProperties = {
-  color: "color-mix(in srgb, var(--business-success) 74%, black)",
+  color: "var(--business-success)",
 };
 
 const warningStyle: React.CSSProperties = {
-  color: "color-mix(in srgb, var(--business-warning) 74%, black)",
+  color: "var(--business-warning)",
 };
 
 const dangerStyle: React.CSSProperties = {
-  color: "color-mix(in srgb, var(--business-danger) 74%, black)",
+  color: "var(--business-danger)",
 };
 
 const selectedToneStyle: React.CSSProperties = {
-  background: "color-mix(in srgb, var(--color-primary) 10%, white)",
-  borderColor: "color-mix(in srgb, var(--color-primary) 20%, transparent)",
+  background: "color-mix(in srgb, var(--color-primary) 12%, var(--color-background))",
+  borderColor: "color-mix(in srgb, var(--color-primary) 35%, transparent)",
   color: "var(--color-primary)",
 };
 
@@ -50,12 +50,14 @@ interface TextGalleryModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSelectText: (text: { content: string; imageUrls?: string[] }) => void;
+  onInsertText?: (content: string) => void;
 }
 
 const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
   isOpen,
   onClose,
   onSelectText,
+  onInsertText,
 }) => {
   // States
   const [savedTexts, setSavedTexts] = useState<SavedText[]>([]);
@@ -577,10 +579,15 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
                   style={editingId === text.id ? selectedToneStyle : undefined}
                   onClick={() => {
                     if (editingId !== text.id) {
-                      onSelectText({
-                        content: text.content,
-                        ...(text.imageUrls && { imageUrls: text.imageUrls }),
-                      });
+                      if (onInsertText && text.content) {
+                        onInsertText(text.content);
+                        onClose();
+                      } else {
+                        onSelectText({
+                          content: text.content,
+                          ...(text.imageUrls && { imageUrls: text.imageUrls }),
+                        });
+                      }
                     }
                   }}
                 >
@@ -808,10 +815,10 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
                             ))}
                             {text.imageUrls.length > 4 && (
                               <div
-                                className="flex h-12 w-12 items-center justify-center rounded border text-xs"
+                                className="flex h-12 w-12 items-center justify-center rounded border text-xs font-semibold"
                                 style={{
                                   background:
-                                    "color-mix(in srgb, var(--color-border) 18%, white)",
+                                    "color-mix(in srgb, var(--color-foreground) 10%, var(--color-background))",
                                   borderColor: "var(--business-card-border)",
                                   color: "var(--color-muted-foreground)",
                                 }}
@@ -821,6 +828,91 @@ const TextGalleryModal: React.FC<TextGalleryModalProps> = ({
                             )}
                           </div>
                         )}
+
+                        {/* Action buttons: Insert & Direct Send */}
+                        <div
+                          className="mt-3 pt-2.5 flex items-center justify-between gap-2 border-t flex-wrap"
+                          style={{ borderColor: "var(--business-card-border)" }}
+                        >
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {onInsertText && text.content && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onInsertText(text.content);
+                                  onClose();
+                                }}
+                                className="business-chip-button px-3 py-1.5 text-xs flex items-center gap-1.5 font-medium transition-all hover:scale-[1.02]"
+                                style={{
+                                  background:
+                                    "color-mix(in srgb, var(--color-primary) 14%, var(--color-background))",
+                                  borderColor:
+                                    "color-mix(in srgb, var(--color-primary) 28%, transparent)",
+                                  color: "var(--color-primary)",
+                                }}
+                                title="إدراج النص في صندوق الكتابة لتخصيصه قبل الإرسال"
+                              >
+                                <svg
+                                  className="w-3.5 h-3.5"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                  />
+                                </svg>
+                                <span>إدراج في الرسالة</span>
+                              </button>
+                            )}
+
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectText({
+                                  content: text.content,
+                                  ...(text.imageUrls && {
+                                    imageUrls: text.imageUrls,
+                                  }),
+                                });
+                              }}
+                              className="business-chip-button px-3 py-1.5 text-xs flex items-center gap-1.5 font-medium transition-all hover:scale-[1.02]"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                                borderColor: "transparent",
+                                color: "white",
+                              }}
+                              title="إرسال مباشر للعميل الآن"
+                            >
+                              <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                                />
+                              </svg>
+                              <span>إرسال مباشر</span>
+                            </button>
+                          </div>
+
+                          <span className="text-[11px]" style={mutedStyle}>
+                            {text.imageUrls && text.imageUrls.length > 0
+                              ? `نص + ${text.imageUrls.length} صور`
+                              : "نص فقط"}
+                          </span>
+                        </div>
                       </div>
                       <div className="mr-2 flex items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                         <button

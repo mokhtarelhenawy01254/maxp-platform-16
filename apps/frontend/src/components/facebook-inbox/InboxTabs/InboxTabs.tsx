@@ -93,7 +93,7 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
           {onShowStats && (
             <button
               onClick={onShowStats}
-              className="business-chip-button"
+              className="business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20"
               title={String(t("inbox.statistics"))}
             >
               <BarChart3 className="w-5 h-5" />
@@ -102,19 +102,19 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
 
           {/* Search */}
           <div className="business-inbox-search-wrap">
-            <Search className="business-inbox-search-icon right-3 left-auto w-5 h-5" />
+            <Search className="business-inbox-search-icon right-3 left-auto w-5 h-5 dark:text-slate-400" />
             <input
               type="text"
               placeholder={String(t("inbox.searchPlaceholder"))}
               onChange={(e) => onSearch(e.target.value)}
-              className="business-inbox-search w-full pr-10 pl-4 md:w-64"
+              className="business-inbox-search w-full pr-10 pl-4 md:w-64 dark:bg-white/5 dark:text-white dark:border-white/15 dark:placeholder-slate-400"
             />
           </div>
 
           {/* Filters Toggle */}
           <button
             onClick={onToggleFilters}
-            className="business-chip-button"
+            className="business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20"
             title={String(t("inbox.advancedFilters"))}
           >
             <SlidersHorizontal className="w-5 h-5" />

@@ -57,8 +57,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({
         <div
           className="p-4 border-b flex justify-between items-center sticky top-0 z-10"
           style={{
-            background:
-              "linear-gradient(180deg, color-mix(in srgb, white 92%, var(--color-background) 8%) 0%, color-mix(in srgb, white 80%, var(--color-background) 20%) 100%)",
+            background: "var(--business-surface-panel)",
             borderColor: "var(--business-muted-line)",
           }}
         >
@@ -68,7 +67,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({
           >
             📊 إحصائيات المحادثات
           </h2>
-          <button onClick={onClose} className="business-chip-button">
+          <button onClick={onClose} className="business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20">
             <XMarkIcon className="w-6 h-6" />
           </button>
         </div>
@@ -145,7 +144,7 @@ const StatsDashboard: React.FC<StatsDashboardProps> = ({
                     className="flex items-center justify-between p-4 rounded-lg transition-colors"
                     style={{
                       background:
-                        "color-mix(in srgb, white 72%, var(--color-background) 28%)",
+                        "var(--business-surface-subtle, rgba(255, 255, 255, 0.05))",
                     }}
                   >
                     <div className="flex items-center gap-3">

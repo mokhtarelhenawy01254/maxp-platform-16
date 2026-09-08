@@ -225,6 +225,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
   // Text Gallery State
   const [showTextGallery, setShowTextGallery] = useState(false);
+  const [composerDraft, setComposerDraft] = useState<string>("");
 
   // Image Gallery State
   const [showImageGallery, setShowImageGallery] = useState(false);
@@ -993,13 +994,22 @@ const getApiError = (error: unknown): ApiErrorLike => {
             selectedConversation.id,
             messageContent,
             companyId,
+            replyToMessage,
+            handleOptimisticMessage,
+            handleMessageSent,
+            handleMessageError,
           );
           updateSelectedConversation({
             lastMessageIsFromCustomer: false,
             lastMessage: messageContent,
             lastMessageTime: new Date(),
           });
-          loadMessages(selectedConversation.id);
+          if (!isConnected) {
+            loadMessages(selectedConversation.id);
+          }
+          if (activeTab === "unreplied") {
+            debouncedLoadConversations("unreplied");
+          }
           return;
         }
 
@@ -1009,6 +1019,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
             selectedConversation.id,
             messageContent,
             companyId,
+            replyToMessage,
+            handleOptimisticMessage,
+            handleMessageSent,
+            handleMessageError,
           );
           await new Promise((resolve) => setTimeout(resolve, 300));
         }
@@ -1046,7 +1060,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
           lastMessageTime: new Date(),
         });
 
-        // ðŸ”§ OPTIMIZED: Don't reload messages if socket will handle it
+        // 🔧 OPTIMIZED: Don't reload messages if socket will handle it
         if (!isConnected) {
           setTimeout(() => {
             loadMessages(selectedConversation.id);
@@ -1066,11 +1080,16 @@ const getApiError = (error: unknown): ApiErrorLike => {
       selectedConversation,
       companyId,
       sendTextMessage,
+      replyToMessage,
+      handleOptimisticMessage,
+      handleMessageSent,
+      handleMessageError,
       loadMessages,
       updateSelectedConversation,
       activeTab,
       isConnected,
       debouncedLoadConversations,
+      t,
     ],
   );
 
@@ -2302,7 +2321,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   {/* Ø²Ø± Ø§Ù„Ø±Ø¬ÙˆØ¹ Ù„Ù„Ù…ÙˆØ¨Ø§ÙŠÙ„ */}
                   <button
                     onClick={handleBackToConversationList}
-                    className="md:hidden business-chip-button p-2 rounded-lg transition-colors"
+                    className="md:hidden business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20 p-2 rounded-lg transition-colors"
                     title={t("facebookInbox.backToConversations")}
                   >
                     <ArrowRight size={20} />
@@ -2775,6 +2794,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
                   onOpenTextGallery={() => setShowTextGallery(true)}
                   onOpenImageGallery={() => setShowImageGallery(true)}
                   onOpenProductPicker={() => setShowProductPicker(true)}
+                  draftMessage={composerDraft}
+                  onDraftMessageHandled={() => setComposerDraft("")}
                 />
               </div>
             </>
@@ -2948,10 +2969,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
           className="fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg business-page-panel"
           style={{
             background:
-              "color-mix(in srgb, var(--business-warning) 12%, white)",
+              "color-mix(in srgb, var(--business-warning) 12%, var(--color-card, #ffffff))",
             borderColor:
               "color-mix(in srgb, var(--business-warning) 24%, transparent)",
-            color: "color-mix(in srgb, var(--business-warning) 78%, black)",
+            color: "var(--business-warning)",
           }}
         >
               {t("facebookInbox.disconnected")}
@@ -2963,6 +2984,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
         isOpen={showTextGallery}
         onClose={() => setShowTextGallery(false)}
         onSelectText={handleSelectTextFromGallery}
+        onInsertText={(content) => {
+          setComposerDraft(content);
+          setShowTextGallery(false);
+        }}
       />
 
       {/* Image Gallery Modal */}
@@ -2973,14 +2998,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
         onSelectMultipleImages={handleSelectMultipleImagesFromGallery}
       />
 
-      {/* ðŸ†• Product Image Picker Modal */}
+      {/* 🆕 Product Image Picker Modal */}
       <ProductImagePickerModal
         isOpen={showProductPicker}
         onClose={() => setShowProductPicker(false)}
         onSendProduct={handleSendProductImages}
       />
 
-      {/* ðŸ†• Block Customer Modal */}
+      {/* 🆕 Block Customer Modal */}
       {showBlockModal && selectedConversation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="business-modal-surface p-6 w-full max-w-md">
@@ -3040,12 +3065,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
         </div>
       )}
 
-      {/* ðŸ†• Blocked Customer Alert */}
+      {/* 🆕 Blocked Customer Alert */}
       {isBlocked && selectedConversation && (
         <div
           className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 rounded-lg p-4 shadow-lg max-w-md business-page-panel"
           style={{
-            background: "color-mix(in srgb, var(--business-danger) 8%, white)",
+            background:
+              "color-mix(in srgb, var(--business-danger) 12%, var(--color-card, #ffffff))",
             borderColor:
               "color-mix(in srgb, var(--business-danger) 22%, transparent)",
           }}

@@ -568,7 +568,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
       minWidth: "1.75rem",
       minHeight: "1.75rem",
       padding: 0,
-      background: "color-mix(in srgb, var(--color-primary) 6%, white)",
+      background: "var(--business-bubble-action-bg, rgba(255, 255, 255, 0.08))",
     };
 
     return (
@@ -703,7 +703,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                     ...actionButtonBaseStyle,
                     color: "var(--business-danger)",
                     background:
-                      "color-mix(in srgb, var(--business-danger) 8%, white)",
+                      "var(--business-bubble-danger-bg, rgba(239, 68, 68, 0.15))",
                   }}
                   title="حذف الرسالة"
                 >
@@ -880,7 +880,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                             className="p-2"
                             style={{
                               background: isCustomer
-                                ? "color-mix(in srgb, white 72%, var(--color-background) 28%)"
+                                ? "var(--business-bubble-card-bg, rgba(255, 255, 255, 0.06))"
                                 : "rgba(0,0,0,0.12)",
                             }}
                           >
@@ -914,7 +914,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                                     className="block text-center py-1.5 px-3 rounded text-xs transition-colors truncate"
                                     style={{
                                       background: isCustomer
-                                        ? "color-mix(in srgb, var(--color-primary) 10%, white)"
+                                        ? "var(--business-bubble-link-bg, rgba(59, 130, 246, 0.15))"
                                         : "rgba(255,255,255,0.2)",
                                       color: isCustomer
                                         ? "var(--color-primary)"
@@ -950,7 +950,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                                 className="block text-center py-1.5 px-3 rounded text-xs transition-colors truncate"
                                 style={{
                                   background: isCustomer
-                                    ? "color-mix(in srgb, var(--color-primary) 10%, white)"
+                                    ? "var(--business-bubble-link-bg, rgba(59, 130, 246, 0.15))"
                                     : "rgba(255,255,255,0.2)",
                                   color: isCustomer
                                     ? "var(--color-primary)"
@@ -1021,10 +1021,9 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
             {/* Reactions Display */}
             {Object.keys(reactionCounts).length > 0 && (
               <div
-                className={`absolute -bottom-3 ${isCustomer ? "right-2" : "left-2"} rounded-full shadow-md border flex items-center px-1.5 py-0.5 gap-1`}
+                className={`business-reaction-pill absolute -bottom-3 ${isCustomer ? "right-2" : "left-2"} rounded-full shadow-md border flex items-center px-1.5 py-0.5 gap-1`}
                 style={{
-                  background:
-                    "linear-gradient(180deg, color-mix(in srgb, white 90%, var(--color-background) 10%) 0%, color-mix(in srgb, white 78%, var(--color-background) 22%) 100%)",
+                  background: "var(--business-floating-surface)",
                   borderColor: "var(--business-card-border)",
                 }}
               >

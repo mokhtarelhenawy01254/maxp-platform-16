@@ -35,6 +35,8 @@ interface MessageInputProps {
   onSend?: (content: string) => void;
   isSending?: boolean;
   platform?: string;
+  draftMessage?: string;
+  onDraftMessageHandled?: () => void;
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -51,6 +53,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onOpenProductPicker,
   onSend,
   isSending = false,
+  draftMessage,
+  onDraftMessageHandled,
 }) => {
   const [message, setMessage] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -63,6 +67,24 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const isBusy = sending || isSending;
   const handleSendAction = onSendMessage || onSend;
+
+  // Insert draft text when provided from TextGallery or QuickReplies
+  React.useEffect(() => {
+    if (draftMessage !== undefined && draftMessage !== null && draftMessage !== "") {
+      setMessage((prev) => (prev ? `${prev}\n${draftMessage}` : draftMessage));
+      if (onDraftMessageHandled) {
+        onDraftMessageHandled();
+      }
+      setTimeout(() => {
+        if (messageInputRef.current) {
+          messageInputRef.current.focus();
+          messageInputRef.current.style.height = "auto";
+          messageInputRef.current.style.height =
+            Math.min(messageInputRef.current.scrollHeight, 120) + "px";
+        }
+      }, 50);
+    }
+  }, [draftMessage, onDraftMessageHandled]);
 
   // Focus input on mount and after sending message
   React.useEffect(() => {
@@ -162,8 +184,30 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setShowMobileTools(false);
     if (messageInputRef.current) {
       setTimeout(() => {
-        messageInputRef.current?.focus();
+        if (messageInputRef.current) {
+          messageInputRef.current.style.height = "auto";
+          messageInputRef.current.style.height =
+            Math.min(messageInputRef.current.scrollHeight, 120) + "px";
+          messageInputRef.current.focus();
+        }
       }, 50);
+    }
+  };
+
+  const handleDirectSendQuickReply = (reply: QuickReply) => {
+    const contextVars = getContextVariables(conversation, user);
+    const processedContent = replaceVariables(reply.content, contextVars);
+
+    setShowQuickReplies(false);
+    setShowMobileTools(false);
+    setMessage("");
+
+    if (messageInputRef.current) {
+      messageInputRef.current.style.height = "auto";
+    }
+
+    if (processedContent.trim() && !isBusy && handleSendAction) {
+      handleSendAction(processedContent);
     }
   };
 
@@ -189,7 +233,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <QuickReplyDropdown
           inputValue={message}
           onSelectReply={handleSelectQuickReply}
+          onDirectSend={handleDirectSendQuickReply}
           onClose={() => setShowQuickReplies(false)}
+          conversation={conversation}
+          user={user}
         />
       )}
 
@@ -199,7 +246,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           className="flex justify-between items-center text-xs sm:text-sm px-2.5 sm:px-3 md:px-4 py-1.5 sm:py-2"
           style={{
             background:
-              "color-mix(in srgb, white 74%, var(--color-background) 26%)",
+              "var(--business-surface-subtle, color-mix(in srgb, var(--color-foreground) 8%, var(--color-background)))",
             borderBottom: "1px solid var(--business-muted-line)",
           }}
         >
@@ -492,7 +539,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
               ...(isBusy || uploadingFile
                 ? {
                     background:
-                      "color-mix(in srgb, white 70%, var(--color-background) 30%)",
+                      "var(--business-chat-input-disabled-bg, rgba(255, 255, 255, 0.05))",
                   }
                 : {}),
             }}
@@ -566,11 +613,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
       {/* Helper Text */}
       {message.startsWith("/") && (
         <div
-          className="mt-1 text-xs flex items-center gap-1 px-2.5 sm:px-3 md:px-4 pb-1.5"
+          className="mt-1 text-xs flex items-center gap-1.5 px-2.5 sm:px-3 md:px-4 pb-1.5"
           style={{ color: "var(--color-muted-foreground)" }}
         >
           <span>💡</span>
-          <span>اضغط Tab أو Enter لاختيار رد سريع</span>
+          <span className="hidden sm:inline">اضغط Tab أو Enter أو انقر لاختيار الرد السريع</span>
+          <span className="sm:hidden">اضغط على أي رد لاختياره أو إرساله مباشرة</span>
         </div>
       )}
     </div>

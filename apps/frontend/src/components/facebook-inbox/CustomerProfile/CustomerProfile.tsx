@@ -264,7 +264,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
     const colorName = colorMatch ? colorMatch[1] : 'gray';
     const color = colorMap[colorName] || '#6b7280';
     return {
-      background: `color-mix(in srgb, ${color} 12%, white)`,
+      background: `color-mix(in srgb, ${color} 12%, var(--color-card, #ffffff))`,
       color,
     };
   };
@@ -435,7 +435,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                     ? {
                         color: "var(--color-primary)",
                         background:
-                          "color-mix(in srgb, var(--color-primary) 10%, white)",
+                          "color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff))",
                       }
                     : undefined
                 }
@@ -455,7 +455,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                     ? {
                         color: "var(--color-primary)",
                         background:
-                          "color-mix(in srgb, var(--color-primary) 10%, white)",
+                          "color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff))",
                       }
                     : undefined
                 }
@@ -485,7 +485,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                 style={{
                   color: "var(--business-warning)",
                   background:
-                    "color-mix(in srgb, var(--business-warning) 10%, white)",
+                    "color-mix(in srgb, var(--business-warning) 10%, var(--color-card, #ffffff))",
                   borderColor:
                     "color-mix(in srgb, var(--business-warning) 20%, transparent)",
                 }}
@@ -522,7 +522,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                   style={{
                     color: "var(--business-success)",
                     background:
-                      "color-mix(in srgb, var(--business-success) 10%, white)",
+                      "color-mix(in srgb, var(--business-success) 10%, var(--color-card, #ffffff))",
                     borderColor:
                       "color-mix(in srgb, var(--business-success) 20%, transparent)",
                   }}
@@ -543,7 +543,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                   style={{
                     color: "var(--business-danger)",
                     background:
-                      "color-mix(in srgb, var(--business-danger) 10%, white)",
+                      "color-mix(in srgb, var(--business-danger) 10%, var(--color-card, #ffffff))",
                     borderColor:
                       "color-mix(in srgb, var(--business-danger) 20%, transparent)",
                   }}
@@ -682,7 +682,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                             style={{
                               color: "var(--business-danger)",
                               background:
-                                "color-mix(in srgb, var(--business-danger) 12%, white)",
+                                "color-mix(in srgb, var(--business-danger) 12%, var(--color-card, #ffffff))",
                               borderColor:
                                 "color-mix(in srgb, var(--business-danger) 30%, transparent)",
                             }}
@@ -699,7 +699,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                           style={{
                             color: "var(--color-primary)",
                             background:
-                              "color-mix(in srgb, var(--color-primary) 12%, white)",
+                              "color-mix(in srgb, var(--color-primary) 12%, var(--color-card, #ffffff))",
                             borderColor:
                               "color-mix(in srgb, var(--color-primary) 30%, transparent)",
                           }}
@@ -812,7 +812,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                   className="p-3 rounded-lg"
                   style={{
                     background:
-                      "color-mix(in srgb, var(--color-primary) 7%, white)",
+                      "color-mix(in srgb, var(--color-primary) 7%, var(--color-card, #ffffff))",
                     border:
                       "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
                   }}
@@ -897,7 +897,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                           style={{
                             color: "var(--business-danger)",
                             background:
-                              "color-mix(in srgb, var(--business-danger) 12%, white)",
+                              "color-mix(in srgb, var(--business-danger) 12%, var(--color-card, #ffffff))",
                             borderColor:
                               "color-mix(in srgb, var(--business-danger) 30%, transparent)",
                           }}
@@ -914,7 +914,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                         style={{
                           color: "var(--color-primary)",
                           background:
-                            "color-mix(in srgb, var(--color-primary) 12%, white)",
+                            "color-mix(in srgb, var(--color-primary) 12%, var(--color-card, #ffffff))",
                           borderColor:
                             "color-mix(in srgb, var(--color-primary) 30%, transparent)",
                         }}
@@ -964,7 +964,7 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                     className="p-3 rounded-lg"
                     style={{
                       background:
-                        "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, white) 0%, color-mix(in srgb, var(--color-secondary) 8%, white) 100%)",
+                        "linear-gradient(135deg, color-mix(in srgb, var(--color-primary) 10%, var(--color-card, #ffffff)) 0%, color-mix(in srgb, var(--color-secondary) 8%, var(--color-card, #ffffff)) 100%)",
                       border:
                         "1px solid color-mix(in srgb, var(--color-primary) 18%, transparent)",
                     }}

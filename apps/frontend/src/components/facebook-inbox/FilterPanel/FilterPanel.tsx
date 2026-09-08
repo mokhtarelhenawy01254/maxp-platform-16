@@ -53,7 +53,7 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
             تصفية المحادثات
           </h3>
         </div>
-        <button onClick={onClose} className="business-chip-button">
+        <button onClick={onClose} className="business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20">
           <XMarkIcon className="w-5 h-5" />
         </button>
       </div>

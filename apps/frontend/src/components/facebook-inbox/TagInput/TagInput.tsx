@@ -89,36 +89,36 @@ const TagInput: React.FC<TagInputProps> = ({
   ): React.CSSProperties => {
     if (tone === "success") {
       return {
-        background: "color-mix(in srgb, var(--business-success) 10%, white)",
+        background: "color-mix(in srgb, var(--business-success) 14%, transparent)",
         borderColor:
-          "color-mix(in srgb, var(--business-success) 18%, transparent)",
-        color: "color-mix(in srgb, var(--business-success) 74%, black)",
+          "color-mix(in srgb, var(--business-success) 28%, transparent)",
+        color: "var(--business-success)",
       };
     }
 
     if (tone === "danger") {
       return {
-        background: "color-mix(in srgb, var(--business-danger) 10%, white)",
+        background: "color-mix(in srgb, var(--business-danger) 14%, transparent)",
         borderColor:
-          "color-mix(in srgb, var(--business-danger) 18%, transparent)",
-        color: "color-mix(in srgb, var(--business-danger) 74%, black)",
+          "color-mix(in srgb, var(--business-danger) 28%, transparent)",
+        color: "var(--business-danger)",
       };
     }
 
     if (tone === "warning") {
       return {
-        background: "color-mix(in srgb, var(--business-warning) 10%, white)",
+        background: "color-mix(in srgb, var(--business-warning) 14%, transparent)",
         borderColor:
-          "color-mix(in srgb, var(--business-warning) 18%, transparent)",
-        color: "color-mix(in srgb, var(--business-warning) 74%, black)",
+          "color-mix(in srgb, var(--business-warning) 28%, transparent)",
+        color: "var(--business-warning)",
       };
     }
 
     if (tone === "secondary") {
       return {
-        background: "color-mix(in srgb, var(--color-secondary) 10%, white)",
+        background: "color-mix(in srgb, var(--color-secondary) 14%, transparent)",
         borderColor:
-          "color-mix(in srgb, var(--color-secondary) 18%, transparent)",
+          "color-mix(in srgb, var(--color-secondary) 28%, transparent)",
         color: "var(--color-secondary)",
       };
     }
@@ -132,8 +132,8 @@ const TagInput: React.FC<TagInputProps> = ({
     }
 
     return {
-      background: "color-mix(in srgb, var(--color-primary) 10%, white)",
-      borderColor: "color-mix(in srgb, var(--color-primary) 18%, transparent)",
+      background: "color-mix(in srgb, var(--color-primary) 14%, transparent)",
+      borderColor: "color-mix(in srgb, var(--color-primary) 28%, transparent)",
       color: "var(--color-primary)",
     };
   };

@@ -60,15 +60,11 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
             {/* Checkbox overlay - visible on hover or when selected */}
             {onToggleSelection && (isMultiSelected || true) && (
               <div
-                className={`absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-200 ${
+                className={`business-conversation-checkbox-overlay absolute inset-0 z-10 flex items-center justify-center transition-opacity duration-200 bg-white/80 dark:bg-slate-900/80 backdrop-blur-[2px] ${
                   isMultiSelected
                     ? "opacity-100"
                     : "opacity-0 group-hover:opacity-100"
                 }`}
-                style={{
-                  background:
-                    "color-mix(in srgb, white 76%, var(--color-background) 24%)",
-                }}
                 onClick={onToggleSelection}
               >
                 <input
@@ -98,12 +94,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
             {conversation.platform === "facebook" && (
               <div className="relative -mt-2.5 -mr-0.5 float-left">
                 <div
-                  className="h-2.5 w-2.5 rounded-full border-2"
-                  style={{
-                    background: "var(--business-success)",
-                    borderColor:
-                      "color-mix(in srgb, white 78%, var(--color-background) 22%)",
-                  }}
+                  className="h-2.5 w-2.5 rounded-full border-2 border-white dark:border-slate-900 bg-emerald-500"
                 />
               </div>
             )}
@@ -114,12 +105,10 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
             {conversation.unreadCount > 0 && (
               <div className="mb-0.5 flex items-center gap-1">
                 <span
-                  className="h-1.5 w-1.5 rounded-full animate-pulse"
-                  style={{ background: "var(--business-danger)" }}
+                  className="business-conversation-unread-dot h-1.5 w-1.5 rounded-full animate-pulse bg-red-500"
                 ></span>
                 <span
-                  className="text-[11px] font-semibold"
-                  style={{ color: "var(--business-danger)" }}
+                  className="business-conversation-unread-badge text-[11px] font-semibold text-red-600 dark:text-rose-400"
                 >
                   رسائل جديدة
                 </span>
@@ -128,14 +117,12 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
 
             <div className="mb-0.5 flex items-center justify-between gap-2">
               <h4
-                className="truncate text-sm font-bold"
-                style={{ color: "var(--color-foreground)" }}
+                className="truncate text-sm font-bold text-gray-900 dark:text-white"
               >
                 {conversation.customerName}
               </h4>
               <span
-                className="mr-1 flex-shrink-0 text-[11px]"
-                style={{ color: "var(--color-muted-foreground)" }}
+                className="ms-2 me-1 flex-shrink-0 text-[11px] text-gray-500 dark:text-slate-400"
               >
                 {formatTime(conversation.lastMessageTime)}
               </span>
@@ -143,12 +130,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
 
             {/* Last message */}
             <p
-              className={`truncate text-[12px] ${conversation.unreadCount > 0 ? "font-medium" : "font-normal"}`}
-              style={{
-                color: conversation.unreadCount > 0
-                  ? "var(--color-muted-foreground)"
-                  : "color-mix(in srgb, var(--color-muted-foreground) 70%, transparent)",
-              }}
+              className={`truncate text-[12px] ${conversation.unreadCount > 0 ? "font-medium text-gray-800 dark:text-slate-200" : "font-normal text-gray-500 dark:text-slate-400"}`}
             >
               {conversation.lastMessageIsFromCustomer ? "" : "أنت: "}
               {conversation.lastMessage}
@@ -158,25 +140,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
             <div className="mt-1.5 flex items-center gap-1.5">
               {conversation.unreadCount > 0 && (
                 <span
-                  className="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold text-white"
-                  style={{ background: "var(--color-primary)" }}
+                  className="inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[11px] font-bold text-white bg-blue-600 dark:bg-blue-500"
                 >
                   {conversation.unreadCount}
                 </span>
               )}
 
               {conversation.priority && (
-                <span style={{ color: "var(--business-warning)" }}>⭐</span>
+                <span className="text-amber-500 dark:text-amber-400">⭐</span>
               )}
 
               {conversation.assignedTo && (
                 <span
-                  className="rounded px-1.5 py-0.5 text-[11px]"
-                  style={{
-                    color: "var(--color-secondary)",
-                    background:
-                      "color-mix(in srgb, var(--color-secondary) 10%, white)",
-                  }}
+                  className="business-conversation-assigned-badge rounded px-1.5 py-0.5 text-[11px] font-medium bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 dark:border dark:border-teal-500/25"
                 >
                   👤 معين
                 </span>
@@ -184,11 +160,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
 
               {conversation.snoozedUntil && new Date(conversation.snoozedUntil).getTime() > Date.now() && (
                 <span
-                  className="rounded px-1.5 py-0.5 text-[11px]"
-                  style={{
-                    color: "var(--color-warning, #f59e0b)",
-                    background: "color-mix(in srgb, var(--color-warning, #f59e0b) 12%, transparent)",
-                  }}
+                  className="rounded px-1.5 py-0.5 text-[11px] font-medium bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 dark:border dark:border-amber-500/25"
                   title="محادثة مؤجلة"
                 >
                   ⏰ مؤجلة
@@ -197,8 +169,7 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
 
               {conversation.tags.length > 0 && (
                 <span
-                  className="text-[11px]"
-                  style={{ color: "var(--color-muted-foreground)" }}
+                  className="rounded px-1.5 py-0.5 text-[11px] bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                 >
                   🏷️ {conversation.tags.length}
                 </span>

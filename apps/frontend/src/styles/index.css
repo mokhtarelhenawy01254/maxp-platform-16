@@ -5,6 +5,7 @@
 @import "./whatsapp-dark.css";
 @import "./whatsapp-responsive.css";
 @import "./marketplace-premium.css";
+@import "./facebook-inbox-dark.css";
 /* @import "shadcn/tailwind.css"; */
 
 /* Geist Variable — self-hosted via /assets/files/ */
@@ -2220,13 +2221,9 @@ select {
 [data-theme="business-os-enterprise"] .business-page-panel {
   position: relative;
   border-radius: calc(var(--theme-radius) + 4px);
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 84%, var(--color-background) 16%) 0%,
-    color-mix(in srgb, white 72%, var(--color-background) 28%) 100%
-  );
+  background: var(--business-surface-panel);
   border: 1px solid var(--business-card-border);
-  box-shadow: 0 28px 72px -54px rgba(7, 17, 32, 0.38);
+  box-shadow: var(--business-card-shadow, 0 28px 72px -54px rgba(7, 17, 32, 0.38));
   overflow: hidden;
 }
 
@@ -2235,13 +2232,9 @@ select {
   gap: 0.9rem;
   padding: 1rem 1.05rem;
   border-radius: 20px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, white 84%, var(--color-background) 16%) 0%,
-    color-mix(in srgb, white 72%, var(--color-background) 28%) 100%
-  );
+  background: var(--business-surface-panel);
   border: 1px solid var(--business-card-border);
-  box-shadow: 0 18px 48px -38px rgba(7, 17, 32, 0.34);
+  box-shadow: var(--business-card-shadow, 0 18px 48px -38px rgba(7, 17, 32, 0.34));
 }
 
 [data-theme="business-os-enterprise"]
@@ -4649,8 +4642,16 @@ select {
 
 [data-theme="business-os-enterprise"]
   .business-dropdown-option[data-active="true"] {
-  background: color-mix(in srgb, var(--color-primary) 8%, white);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--shell-control-hover));
   color: var(--color-primary);
+}
+
+.dark [data-theme="business-os-enterprise"] .business-dropdown-option[data-active="true"],
+[data-theme="business-os-enterprise"].dark .business-dropdown-option[data-active="true"],
+[data-theme="dark"] [data-theme="business-os-enterprise"] .business-dropdown-option[data-active="true"],
+.dark .business-dropdown-option[data-active="true"] {
+  background: color-mix(in srgb, var(--color-primary) 22%, rgba(255, 255, 255, 0.05));
+  color: #93c5fd;
 }
 
 [data-theme="business-os-enterprise"]
@@ -4663,15 +4664,25 @@ select {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 1.9rem;
-  padding: 0.25rem 0.55rem;
-  border-radius: 12px;
+  min-height: 1.65rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 8px;
   border: 1px solid var(--business-card-border);
-  background: color-mix(in srgb, white 88%, var(--color-background) 12%);
-  color: var(--color-foreground);
-  font-size: 0.72rem;
+  background: var(--shell-control-bg);
+  color: var(--color-primary);
+  font-size: 0.75rem;
   font-family: var(--font-family-mono, "IBM Plex Mono", monospace);
-  font-weight: 700;
+  font-weight: 600;
+  direction: ltr !important;
+  unicode-bidi: isolate !important;
+}
+
+.dark [data-theme="business-os-enterprise"] .business-inline-code-chip,
+[data-theme="business-os-enterprise"].dark .business-inline-code-chip,
+.dark .business-inline-code-chip {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #93c5fd;
 }
 
 [data-theme="business-os-enterprise"] .business-note-card {
@@ -4992,7 +5003,7 @@ select {
   padding: 0.75rem 1rem;
   border: 2px dashed var(--business-card-border);
   border-radius: 18px;
-  background: color-mix(in srgb, white 86%, var(--color-background) 14%);
+  background: color-mix(in srgb, var(--color-foreground) 4%, var(--color-background));
   color: var(--color-muted-foreground);
   transition:
     border-color 0.18s ease,
@@ -5002,16 +5013,32 @@ select {
 
 [data-theme="business-os-enterprise"]
   .business-upload-dropzone[data-tone="primary"]:hover {
-  border-color: color-mix(in srgb, var(--color-primary) 28%, transparent);
-  background: color-mix(in srgb, var(--color-primary) 6%, white);
+  border-color: color-mix(in srgb, var(--color-primary) 35%, transparent);
+  background: color-mix(in srgb, var(--color-primary) 12%, var(--color-background));
   color: var(--color-primary);
 }
 
 [data-theme="business-os-enterprise"]
   .business-upload-dropzone[data-tone="success"]:hover {
-  border-color: color-mix(in srgb, var(--business-success) 28%, transparent);
-  background: color-mix(in srgb, var(--business-success) 6%, white);
-  color: color-mix(in srgb, var(--business-success) 72%, black);
+  border-color: color-mix(in srgb, var(--business-success) 35%, transparent);
+  background: color-mix(in srgb, var(--business-success) 12%, var(--color-background));
+  color: var(--business-success);
+}
+
+.dark .business-page-panel,
+.dark[data-theme="business-os-enterprise"] .business-page-panel,
+.dark [data-theme="business-os-enterprise"] .business-page-panel {
+  background: var(--business-surface-panel) !important;
+  border-color: var(--business-card-border) !important;
+  box-shadow: var(--business-card-shadow, 0 34px 96px -56px rgba(2, 8, 18, 0.72)) !important;
+}
+
+.dark .business-upload-dropzone,
+.dark[data-theme="business-os-enterprise"] .business-upload-dropzone,
+.dark [data-theme="business-os-enterprise"] .business-upload-dropzone {
+  background: color-mix(in srgb, var(--color-foreground) 5%, var(--color-background)) !important;
+  border-color: var(--business-card-border) !important;
+  color: var(--color-muted-foreground) !important;
 }
 
 [data-theme="business-os-enterprise"]
