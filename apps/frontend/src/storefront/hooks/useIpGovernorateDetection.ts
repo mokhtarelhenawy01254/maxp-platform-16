@@ -34,12 +34,8 @@ export const useIpGovernorateDetection = (): void => {
       });
     };
 
-    // Defer detection to idle so it never competes with initial page render
-    if (typeof window !== "undefined" && "requestIdleCallback" in window) {
-      window.requestIdleCallback(runDetection, { timeout: 3000 });
-    } else {
-      setTimeout(runDetection, 1500);
-    }
+    // Run detection immediately so governorate is pre-selected when user views the checkout form
+    runDetection();
 
     return () => {
       active = false;

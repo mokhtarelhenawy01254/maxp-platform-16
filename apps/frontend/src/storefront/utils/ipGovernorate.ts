@@ -124,7 +124,6 @@ const hasWindow = typeof window !== "undefined";
 const readCache = (): {
   ip: string;
   result: IpGovernorateResult;
-  retryAfter?: number;
 } | null => {
   if (!hasWindow) return null;
   try {
@@ -134,16 +133,13 @@ const readCache = (): {
       ip?: string;
       result?: IpGovernorateResult;
       expired?: boolean;
-      retryAfter?: number;
     } | null;
-    if (parsed?.retryAfter && Date.now() < parsed.retryAfter) {
-      return {
-        ip: parsed.ip || "unknown",
-        result: { governorate: null, city: null },
-        retryAfter: parsed.retryAfter,
-      };
+    // Discard any poisoned negative cache or cache entry without a valid governorate
+    if (!parsed?.result?.governorate) {
+      window.localStorage.removeItem(CACHE_KEY);
+      return null;
     }
-    if (parsed?.ip && parsed?.result && !parsed.expired) {
+    if (parsed?.ip && !parsed.expired) {
       return { ip: parsed.ip, result: parsed.result };
     }
     return null;
@@ -153,7 +149,7 @@ const readCache = (): {
 };
 
 const writeCache = (ip: string, result: IpGovernorateResult) => {
-  if (!hasWindow) return;
+  if (!hasWindow || !result.governorate) return;
   try {
     window.localStorage.setItem(
       CACHE_KEY,
@@ -162,22 +158,6 @@ const writeCache = (ip: string, result: IpGovernorateResult) => {
         result,
         expired: false,
         ttl: Date.now() + 30 * 24 * 60 * 60 * 1000,
-      }),
-    );
-  } catch {
-    // Ignore storage failures.
-  }
-};
-
-const writeNegativeCache = (ttlMs = 24 * 60 * 60 * 1000) => {
-  if (!hasWindow) return;
-  try {
-    window.localStorage.setItem(
-      CACHE_KEY,
-      JSON.stringify({
-        ip: "failed",
-        result: { governorate: null, city: null },
-        retryAfter: Date.now() + ttlMs,
       }),
     );
   } catch {
@@ -246,10 +226,7 @@ export const detectGovernorateByIp = async (): Promise<IpGovernorateResult> => {
   if (!hasWindow) return { governorate: null, city: null };
 
   const cached = readCache();
-  if (cached?.retryAfter && Date.now() < cached.retryAfter) {
-    return { governorate: null, city: null };
-  }
-  // Reuse the cached result only for the same IP across sessions.
+  // Reuse the cached result only for the same IP across sessions when valid governorate exists.
   if (cached?.result?.governorate) {
     return cached.result;
   }
@@ -260,29 +237,30 @@ export const detectGovernorateByIp = async (): Promise<IpGovernorateResult> => {
 
   inFlight = (async (): Promise<IpGovernorateResult> => {
     // 1. Try zero-latency Cloudflare-native backend endpoint first
-    let geo = await fetchBackendGeo();
+    const backendGeo = await fetchBackendGeo();
+    let governorate = backendGeo ? mapGeoToGovernorate(backendGeo) : null;
+    let city = backendGeo?.city?.trim() || null;
+    let ip = backendGeo?.ip || "unknown";
 
-    // 2. If backend geo didn't provide region, try fallback
-    if (!geo) {
-      geo = await fetchGeo();
+    // 2. If backend geo didn't resolve a valid Egyptian governorate, fall back to ipwho.is
+    if (!governorate) {
+      const fallbackGeo = await fetchGeo();
+      if (fallbackGeo) {
+        // Only autofill for Egypt — the storefront ships within Egypt only.
+        if ((fallbackGeo.country_code || "").toUpperCase() === "EG") {
+          governorate = mapGeoToGovernorate(fallbackGeo);
+          city = fallbackGeo.city?.trim() || city;
+          ip = fallbackGeo.ip || ip;
+        }
+      }
     }
 
-    if (!geo) {
-      writeNegativeCache();
+    if (!governorate) {
       return { governorate: null, city: null };
     }
-
-    // Only autofill for Egypt — the storefront ships within Egypt only.
-    if ((geo.country_code || "").toUpperCase() !== "EG") {
-      writeCache(geo.ip || "unknown", { governorate: null, city: null });
-      return { governorate: null, city: null };
-    }
-
-    const governorate = mapGeoToGovernorate(geo);
-    const city = geo.city?.trim() ? geo.city.trim() : null;
 
     const result: IpGovernorateResult = { governorate, city };
-    writeCache(geo.ip || "unknown", result);
+    writeCache(ip, result);
     return result;
   })();
 

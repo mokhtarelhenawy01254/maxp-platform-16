@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { CheckCircle2, ClipboardList, Loader2, RefreshCw, Wallet, ArrowUpCircle } from "lucide-react";
+import { CheckCircle2, ClipboardList, Loader2, RefreshCw, Wallet, ArrowUpCircle, ExternalLink } from "lucide-react";
 import {
   fetchMyCases, fetchMyWage, MyCase, MyWage, advanceCase, fmtDate, fmtMoney, MODAL_INPUT_CLS,
   CASE_STATUS_MAP, nextStatusOf,
@@ -128,7 +129,16 @@ export default function DentalTechnicianPortal() {
                 const next = nextStatusOf(c.status || "");
                 return (
                   <tr key={c.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700">
-                    <td className="py-3 px-3 font-medium">{c.caseNumber || "—"}</td>
+                    <td className="py-3 px-3 font-medium">
+                      <Link
+                        to={`/dental-lab/cases/${c.id}`}
+                        className="inline-flex items-center gap-1 font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                        title="عرض تفاصيل ومرفقات الحالة"
+                      >
+                        {c.caseNumber || "—"}
+                        <ExternalLink className="w-3 h-3 opacity-60" />
+                      </Link>
+                    </td>
                     <td className="py-3 px-3">{c.patientName || "—"}</td>
                     <td className="py-3 px-3">{c.workTypeName || "—"}</td>
                     <td className="py-3 px-3" dir="ltr">{c.teeth || "—"}</td>
