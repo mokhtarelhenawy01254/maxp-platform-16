@@ -246,7 +246,7 @@ const notificationController = {
 };
 
 router.get("/types", verifyToken.authenticateToken, notificationController.getTypes);
-router.get("/push/public-key", verifyToken.authenticateToken, notificationController.getBrowserPushPublicKey);
+router.get("/push/public-key", notificationController.getBrowserPushPublicKey);
 router.post("/push/subscriptions", verifyToken.authenticateToken, notificationController.subscribeBrowserPush);
 router.delete("/push/subscriptions", verifyToken.authenticateToken, notificationController.unsubscribeBrowserPush);
 router.get("/settings/:userId", verifyToken.authenticateToken, notificationController.getSettings);

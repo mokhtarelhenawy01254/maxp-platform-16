@@ -314,8 +314,8 @@ export const apiService = {
       });
       return response.data;
     } catch (error) {
-      console.error("Error checking block status:", error);
-      throw error;
+      console.warn("Could not check block status:", error);
+      return { isBlocked: false };
     }
   },
 };

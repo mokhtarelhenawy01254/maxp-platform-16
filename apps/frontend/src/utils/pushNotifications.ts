@@ -278,22 +278,41 @@ const getOrCreateBrowserPushSubscription = async () => {
     throw new Error("push_not_supported");
   }
 
-  const existingSubscription = await registration.pushManager.getSubscription();
-  if (existingSubscription) {
-    return existingSubscription;
-  }
-
-  const publicKeyResponse = await api.get("/notifications/push/public-key");
-  const publicKey = publicKeyResponse.data?.data?.publicKey;
+  const publicKeyResponse = (await api.get("/notifications/push/public-key")) as any;
+  const publicKey = publicKeyResponse?.data?.data?.publicKey;
 
   if (!publicKey) {
     throw new Error("missing_public_key");
   }
 
-  return registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: urlBase64ToUint8Array(publicKey),
-  });
+  const applicationServerKey = urlBase64ToUint8Array(publicKey);
+
+  try {
+    const existingSubscription = await registration.pushManager.getSubscription();
+    if (existingSubscription) {
+      return existingSubscription;
+    }
+
+    return await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey,
+    });
+  } catch (error) {
+    console.warn("Retrying push subscription with fresh credentials:", error);
+    try {
+      const staleSub = await registration.pushManager.getSubscription();
+      if (staleSub) {
+        await staleSub.unsubscribe();
+      }
+      return await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey,
+      });
+    } catch (retryError) {
+      console.error("Failed to acquire push subscription:", retryError);
+      throw retryError;
+    }
+  }
 };
 
 export const subscribeToBrowserPush = async () => {

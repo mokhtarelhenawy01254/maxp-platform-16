@@ -2037,7 +2037,7 @@ class OrderService {
           turboShipmentId: { not: null },
           customerPhone: { contains: cleanPhone },
           createdAt: { gte: new Date(Date.now() - 48 * 60 * 60 * 1000) },
-          status: { notIn: ['CANCELLED', 'RETURNED', 'REFUNDED', 'DELETED', 'TRASH'] }
+          status: { notIn: ['CANCELLED', 'RETURNED', 'REFUNDED', 'TRASH', 'LOST'] }
         },
         select: { id: true, orderNumber: true, turboShipmentId: true, createdAt: true }
       });

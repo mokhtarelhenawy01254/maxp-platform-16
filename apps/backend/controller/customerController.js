@@ -681,10 +681,11 @@ const checkCustomerBlockStatus = async (req, res) => {
     });
 
     if (!facebookPage) {
-      console.warn(`⚠️ [BLOCK-CHECK] Page not found: ${pageId}`);
-      return res.status(404).json({
-        success: false,
-        message: 'صفحة الفيس بوك غير موجودة'
+      console.warn(`⚠️ [BLOCK-CHECK] Page not found in database: ${pageId}`);
+      return res.status(200).json({
+        success: true,
+        isBlocked: false,
+        message: 'صفحة الفيس بوك غير مسجلة'
       });
     }
 

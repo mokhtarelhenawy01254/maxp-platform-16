@@ -2831,6 +2831,26 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
         if (isNewConversation) {
           io.to(`company_${companyId}`).emit('new_conversation', { ...socketPayload, conversation });
         }
+
+        try {
+          const { sendBrowserPushToCompany } = require('../services/browserPushService');
+          void sendBrowserPushToCompany({
+            companyId,
+            typeId: 'customer_message',
+            title: `رسالة انستجرام من ${customer.firstName || 'عميل'}`,
+            body: messageText || 'أرسل العميل رسالة جديدة على انستجرام',
+            compactBody: 'رسالة انستجرام جديدة',
+            url: `/facebook-inbox?conversationId=${encodeURIComponent(conversation.id)}`,
+            requireInteraction: true,
+            data: {
+              conversationId: conversation.id,
+              customerId: customer.id,
+              channel: 'INSTAGRAM',
+            },
+          }).catch((pushError) => {
+            console.warn('⚠️ [IG-PUSH] Error:', pushError.message || pushError);
+          });
+        } catch (_) {}
       }
     } catch (socketErr) {
       console.error('⚠️ [IG-MSG] Socket emit error:', socketErr.message);

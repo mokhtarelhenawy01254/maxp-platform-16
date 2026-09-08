@@ -66,16 +66,20 @@ self.addEventListener('push', (event) => {
         payload.typeId === 'order_created' ||
         payload.data?.typeId === 'order_created' ||
         payload.tag?.includes('order');
+      const isMessage =
+        payload.typeId === 'customer_message' ||
+        payload.data?.typeId === 'customer_message' ||
+        payload.tag?.includes('message');
 
       await self.registration.showNotification(title, {
         body: payload.body || '',
         icon: payload.icon || '/favicon.ico',
         badge: payload.badge || '/favicon.ico',
-        tag: payload.tag || 'maxp-browser-push',
+        tag: payload.tag || (isOrder ? `order-${Date.now()}` : isMessage ? `msg-${Date.now()}` : 'maxp-browser-push'),
         data: payload.data || { url: payload.url || '/' },
         requireInteraction:
-          payload.requireInteraction === true || isOrder === true,
-        vibrate: [200, 100, 200],
+          payload.requireInteraction === true || isOrder === true || isMessage === true,
+        vibrate: [250, 100, 250, 100, 250],
       });
     })(),
   );

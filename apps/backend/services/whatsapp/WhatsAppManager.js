@@ -3181,12 +3181,31 @@ async function handleIncomingMessages(sessionId, companyId, m, sock, options = {
                         fallbackToCompany: true
                     });
 
-                    // console.log(`🔔 [NOTIFICATION] Sent WhatsApp message notification for company ${companyId}`, {
-                    //     contactName,
-                    //     messageType: messageContent.type,
-                    //     notificationsEnabled,
-                    //     soundEnabled
-                    // });
+                    // 📱 إرسال إشعار المتصفح (Web Push) للرسائل الواردة ليعمل حتى والمتصفح مغلق
+                    try {
+                        const { sendBrowserPushToCompany } = require('../browserPushService');
+                        void sendBrowserPushToCompany({
+                            companyId,
+                            typeId: 'customer_message',
+                            title: `رسالة واتساب من ${contactName || 'عميل'}`,
+                            body: notificationContent || 'أرسل العميل رسالة واتساب جديدة',
+                            compactBody: 'رسالة واتساب جديدة',
+                            url: syncedConversation?.id
+                                ? `/whatsapp-inbox?conversationId=${encodeURIComponent(syncedConversation.id)}`
+                                : '/whatsapp-inbox',
+                            requireInteraction: true,
+                            data: {
+                                source: 'whatsapp_message',
+                                sessionId,
+                                conversationId: syncedConversation?.id || null,
+                                remoteJid,
+                            },
+                        }).catch((pushErr) => {
+                            console.warn('⚠️ [WEB-PUSH-WHATSAPP] Error:', pushErr?.message || pushErr);
+                        });
+                    } catch (pushImportErr) {
+                        console.warn('⚠️ [WEB-PUSH-WHATSAPP] Failed to bootstrap:', pushImportErr?.message || pushImportErr);
+                    }
                 } catch (notifError) {
                     console.error('❌ [NOTIFICATION] Error creating WhatsApp message notification:', notifError);
                 }

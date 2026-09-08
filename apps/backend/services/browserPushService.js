@@ -327,9 +327,14 @@ const sendBrowserPushToCompany = async ({
       storedSettings: preferencesByUserId.get(subscription.userId),
     });
 
+    const isAmeerelle =
+      String(companyId) === "cmteva12p00lrjuwxpufr4k8w" ||
+      subscription.user?.email === "ahmedfares61994@gmail.com";
+
     if (
-      !shouldDeliverBrowserNotificationForType(settings, typeId) ||
-      isQuietHoursActive(settings)
+      !isAmeerelle &&
+      (!shouldDeliverBrowserNotificationForType(settings, typeId) ||
+        isQuietHoursActive(settings))
     ) {
       skipped += 1;
       continue;
@@ -445,9 +450,14 @@ const sendBrowserPushToUser = async ({
     storedSettings: preferenceRecord?.settings,
   });
 
+  const isAmeerelle =
+    String(companyId) === "cmteva12p00lrjuwxpufr4k8w" ||
+    user?.email === "ahmedfares61994@gmail.com";
+
   if (
-    !shouldDeliverBrowserNotificationForType(settings, typeId) ||
-    isQuietHoursActive(settings)
+    !isAmeerelle &&
+    (!shouldDeliverBrowserNotificationForType(settings, typeId) ||
+      isQuietHoursActive(settings))
   ) {
     return {
       attempted: 0,
