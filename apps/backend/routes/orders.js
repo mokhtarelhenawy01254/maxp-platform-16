@@ -1359,6 +1359,24 @@ const updateAnyOrderStatus = async ({
       { skipTransitionValidation }
     );
 
+    // 🛡️ CRITICAL FIX: Synchronize status to twin guest order if it exists (especially for TRASH / RESTORE)
+    if (order?.orderNumber) {
+      const prisma = getSharedPrismaClient();
+      await prisma.guestOrder.updateMany({
+        where: {
+          companyId,
+          orderNumber: order.orderNumber
+        },
+        data: {
+          status: normalizedStatus,
+          notes: notes || undefined,
+          updatedAt: new Date()
+        }
+      }).catch((err) => {
+        console.warn('⚠️ [ORDERS] Failed to sync status to twin guestOrder:', err?.message);
+      });
+    }
+
     return { orderType: 'regular', order };
   } catch (regularOrderError) {
     if (regularOrderError?.statusCode !== 404) {
@@ -1377,6 +1395,24 @@ const updateAnyOrderStatus = async ({
       null,
       { skipTransitionValidation }
     );
+
+    // 🛡️ CRITICAL FIX: Synchronize status to twin regular order if it exists
+    if (guestOrder?.orderNumber) {
+      const prisma = getSharedPrismaClient();
+      await prisma.order.updateMany({
+        where: {
+          companyId,
+          orderNumber: guestOrder.orderNumber
+        },
+        data: {
+          status: normalizedStatus,
+          notes: notes || undefined,
+          updatedAt: new Date()
+        }
+      }).catch((err) => {
+        console.warn('⚠️ [ORDERS] Failed to sync status to twin regular order:', err?.message);
+      });
+    }
 
     return { orderType: 'guest', order: guestOrder };
   } catch (guestOrderError) {
@@ -1455,6 +1491,28 @@ const permanentlyDeleteRegularOrder = async ({ orderIdentifier, companyId }) => 
     });
 
     await tx.order.delete({ where: { id: order.id } });
+
+    // 🛡️ CRITICAL FIX: If this regular order has a twin row in guest_orders (e.g. from storefront checkout),
+    // delete the guest_orders twin and its notes as well so it never resurfaces in the orders list.
+    if (order.orderNumber) {
+      const matchingGuestOrders = await tx.guestOrder.findMany({
+        where: {
+          companyId,
+          orderNumber: order.orderNumber
+        },
+        select: { id: true }
+      });
+
+      if (matchingGuestOrders.length > 0) {
+        const guestIds = matchingGuestOrders.map((g) => g.id);
+        await tx.orderNote.deleteMany({
+          where: { guestOrderId: { in: guestIds } }
+        });
+        await tx.guestOrder.deleteMany({
+          where: { id: { in: guestIds } }
+        });
+      }
+    }
   });
 
   return { orderType: 'regular', order };
@@ -1481,13 +1539,59 @@ const permanentlyDeleteGuestOrder = async ({ orderIdentifier, companyId }) => {
     return null;
   }
 
+  // 🛡️ If the guest order itself isn't explicitly marked as TRASH, check if its twin regular order is in TRASH
   if (!isTrashOrderStatus(guestOrder.status)) {
-    throw createBulkOrderError('Order must be in trash before permanent deletion');
+    const twinRegularOrder = guestOrder.orderNumber ? await prisma.order.findFirst({
+      where: {
+        companyId,
+        orderNumber: guestOrder.orderNumber
+      },
+      select: { id: true, status: true }
+    }) : null;
+
+    if (!twinRegularOrder || !isTrashOrderStatus(twinRegularOrder.status)) {
+      throw createBulkOrderError('Order must be in trash before permanent deletion');
+    }
   }
 
   await prisma.$transaction(async (tx) => {
     await tx.orderNote.deleteMany({ where: { guestOrderId: guestOrder.id } });
     await tx.guestOrder.delete({ where: { id: guestOrder.id } });
+
+    // 🛡️ CRITICAL FIX: If this guest order has a twin row in regular orders, delete it too!
+    if (guestOrder.orderNumber) {
+      const matchingRegularOrders = await tx.order.findMany({
+        where: {
+          companyId,
+          orderNumber: guestOrder.orderNumber
+        },
+        select: { id: true }
+      });
+
+      if (matchingRegularOrders.length > 0) {
+        const regularIds = matchingRegularOrders.map((o) => o.id);
+        await tx.orderNote.deleteMany({ where: { orderId: { in: regularIds } } });
+        await tx.affiliateReferral.updateMany({
+          where: { orderId: { in: regularIds } },
+          data: { orderId: null }
+        });
+        await tx.whatsAppNotificationLog.updateMany({
+          where: { orderId: { in: regularIds } },
+          data: { orderId: null }
+        });
+        await tx.walletTransaction.updateMany({
+          where: { orderId: { in: regularIds } },
+          data: { orderId: null }
+        });
+        await tx.customerJourney.updateMany({
+          where: { orderId: { in: regularIds } },
+          data: { orderId: null }
+        });
+        await tx.order.deleteMany({
+          where: { id: { in: regularIds } }
+        });
+      }
+    }
   });
 
   return { orderType: 'guest', order: guestOrder };

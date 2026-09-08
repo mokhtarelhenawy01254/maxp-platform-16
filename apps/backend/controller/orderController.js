@@ -198,19 +198,33 @@ const deleteAllOrders = async (req, res) => {
       });
     }
 
-    // حذف جميع الطلبات للشركة
-    const deleteResult = await getSharedPrismaClient().order.deleteMany({
+    // حذف جميع الطلبات العادية وطلبات الزوار للشركة
+    const prisma = getSharedPrismaClient();
+    await prisma.orderNote.deleteMany({
       where: {
-        companyId: companyId
+        OR: [
+          { order: { companyId } },
+          { guestOrder: { companyId } }
+        ]
       }
-    });
+    }).catch(() => {});
 
-    console.log(`✅ [ORDERS] Deleted ${deleteResult.count} orders for company ${companyId}`);
+    const [deleteResult, guestDeleteResult] = await Promise.all([
+      prisma.order.deleteMany({
+        where: { companyId }
+      }),
+      prisma.guestOrder.deleteMany({
+        where: { companyId }
+      })
+    ]);
+
+    const totalDeleted = (deleteResult?.count || 0) + (guestDeleteResult?.count || 0);
+    console.log(`✅ [ORDERS] Deleted ${totalDeleted} orders (${deleteResult?.count || 0} regular, ${guestDeleteResult?.count || 0} guest) for company ${companyId}`);
 
     res.json({
       success: true,
-      message: `تم حذف ${deleteResult.count} طلب بنجاح`,
-      deletedCount: deleteResult.count
+      message: `تم حذف ${totalDeleted} طلب بنجاح`,
+      deletedCount: totalDeleted
     });
 
   } catch (error) {

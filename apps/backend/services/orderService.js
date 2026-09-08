@@ -1260,7 +1260,9 @@ class OrderService {
             status: status,
             // 🛡️ PRODUCTION-FIX (custom-status-persist): الكود المخصص بيتخزن جنب الـ enum،
             // وبيتمسح لما التاجر يرجّع لحالة نظامية مباشرة (مش مخصصة).
-            customStatusCode: isRequestedCustom ? originalRequestedStatus : null,
+            ...(prisma._dmmf?.modelMap?.Order?.fields?.some((f) => f.name === 'customStatusCode')
+              ? { customStatusCode: isRequestedCustom ? originalRequestedStatus : null }
+              : {}),
             notes: notes || undefined,
             ...(nextMetadata ? { metadata: nextMetadata } : {}),
             ...confirmationData,
@@ -1293,6 +1295,26 @@ class OrderService {
 
       if (workflowAuditLog) {
         await this.logWorkflowAuditIfNeeded(companyId, order.id, workflowAuditLog, userId, notes || null);
+      }
+
+      // 🛡️ CRITICAL FIX: Synchronize status to twin guest order if it exists
+      if (order.orderNumber) {
+        try {
+          const prisma = this.getPrisma();
+          await prisma.guestOrder.updateMany({
+            where: {
+              companyId: order.companyId,
+              orderNumber: order.orderNumber
+            },
+            data: {
+              status: status,
+              notes: notes || undefined,
+              updatedAt: new Date()
+            }
+          });
+        } catch (syncErr) {
+          console.warn(`⚠️ [ORDER-SERVICE] Failed to sync status to twin guestOrder for #${order.orderNumber}:`, syncErr.message);
+        }
       }
 
       // 🚀 SPEED: Return result immediately to the user
@@ -1631,6 +1653,26 @@ class OrderService {
           }
         });
       }, 5);
+
+      // 🛡️ CRITICAL FIX: Synchronize status to twin regular order if it exists
+      if (guestOrder.orderNumber) {
+        try {
+          const prisma = this.getPrisma();
+          await prisma.order.updateMany({
+            where: {
+              companyId: guestOrder.companyId,
+              orderNumber: guestOrder.orderNumber
+            },
+            data: {
+              status: status,
+              notes: notes || undefined,
+              updatedAt: new Date()
+            }
+          });
+        } catch (syncErr) {
+          console.warn(`⚠️ [ORDER-SERVICE] Failed to sync status to twin regular order for #${guestOrder.orderNumber}:`, syncErr.message);
+        }
+      }
 
       await (async () => {
         try {
