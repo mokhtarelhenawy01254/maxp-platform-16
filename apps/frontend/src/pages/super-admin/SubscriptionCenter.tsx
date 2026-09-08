@@ -38,6 +38,7 @@ import AppPricingSheet from "../subscription/AppPricingSheet";
 import {
   Check, X, Plus, Pencil, Trash2, Download, Upload, RefreshCw, Save, Search, Eye, Archive, Star, DollarSign, ShoppingBag, Package, Building2, Store, CreditCard, Loader2, ArrowRight, Info, Image as ImageIcon, ListChecks, Route, Tags,
   Boxes, BarChart3, MessageSquare, Megaphone, Users, Shield, Truck, Database, Wrench, Settings2, Layers, Wallet, Heart, Briefcase, Calendar, Headphones, Zap,
+  LayoutGrid, Columns3, List, CheckCircle2, XCircle, Copy, ExternalLink, ChevronDown, ChevronUp, Sparkles, Filter,
 } from "lucide-react";
 
 type SubscriptionCenterProps = {
@@ -816,13 +817,67 @@ const MarketplaceAppsTab = ({
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState<
+    "ALL" | "ACTIVE" | "INACTIVE" | "FEATURED" | "PAID" | "FREE"
+  >("ALL");
   const [sortBy, setSortBy] = useState("installations");
+  const [viewMode, setViewMode] = useState<
+    "grid" | "compact" | "table" | "grouped"
+  >(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("super_admin_apps_view_mode");
+      if (
+        saved === "grid" ||
+        saved === "compact" ||
+        saved === "table" ||
+        saved === "grouped"
+      ) {
+        return saved;
+      }
+    }
+    return "grid";
+  });
+  const [collapsedCategories, setCollapsedCategories] = useState<
+    Record<string, boolean>
+  >({});
+  const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [expandedApp, setExpandedApp] = useState<string | null>(null);
   const [showCatalogDiffDetails, setShowCatalogDiffDetails] = useState(false);
   const [showCatalogTools, setShowCatalogTools] = useState(false);
   const [editingApp, setEditingApp] = useState<{
     item: MarketplaceManagementItem | null;
   } | null>(null);
+
+  const handleCopySlug = (slug?: string) => {
+    if (!slug) return;
+    navigator.clipboard.writeText(slug);
+    setCopiedSlug(slug);
+    toast.success(`تم نسخ المعرف: ${slug}`);
+    setTimeout(() => setCopiedSlug(null), 2000);
+  };
+
+  const handleViewModeChange = (
+    mode: "grid" | "compact" | "table" | "grouped",
+  ) => {
+    setViewMode(mode);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("super_admin_apps_view_mode", mode);
+    }
+  };
+
+  const toggleCategoryCollapse = (category: string) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [category]: !prev[category],
+    }));
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setCategoryFilter("ALL");
+    setStatusFilter("ALL");
+    setSortBy("installations");
+  };
 
   useEffect(() => {
     const editing = !!editingApp;
@@ -854,33 +909,97 @@ const MarketplaceAppsTab = ({
     ),
   ];
 
+  // Status counts
+  const statusCounts = useMemo(() => {
+    let active = 0;
+    let inactive = 0;
+    let featured = 0;
+    let paid = 0;
+    let free = 0;
+    for (const app of apps) {
+      if (app.isActive) active++;
+      else inactive++;
+      if (app.isFeatured) featured++;
+      const isPaid =
+        (app.monthlyPrice || 0) > 0 ||
+        (app.yearlyPrice || 0) > 0 ||
+        app.pricingModel === "PAY_PER_USE";
+      if (isPaid) paid++;
+      else free++;
+    }
+    return {
+      ALL: apps.length,
+      ACTIVE: active,
+      INACTIVE: inactive,
+      FEATURED: featured,
+      PAID: paid,
+      FREE: free,
+    };
+  }, [apps]);
+
   // Filter and sort apps
-  const filteredApps = apps
-    .filter((app) => {
-      const matchesSearch =
-        app.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        app.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory =
-        categoryFilter === "ALL" || app.category === categoryFilter;
-      return matchesSearch && matchesCategory;
-    })
-    .sort((a, b) => {
-      switch (sortBy) {
-        case "price":
-          return (b.monthlyPrice || 0) - (a.monthlyPrice || 0);
-        case "rating":
-          return (b.rating || 0) - (a.rating || 0);
-        case "installations":
-          return (
-            (b._count?.installations || b.installCount || 0) -
-            (a._count?.installations || a.installCount || 0)
-          );
-        case "name":
-          return (a.name || "").localeCompare(b.name || "");
-        default:
-          return 0;
-      }
-    });
+  const filteredApps = useMemo(() => {
+    return apps
+      .filter((app) => {
+        const q = searchQuery.toLowerCase().trim();
+        const matchesSearch =
+          !q ||
+          (app.name && app.name.toLowerCase().includes(q)) ||
+          (app.slug && app.slug.toLowerCase().includes(q)) ||
+          (app.description && app.description.toLowerCase().includes(q)) ||
+          (app.category && app.category.toLowerCase().includes(q)) ||
+          (app.mainRoute && app.mainRoute.toLowerCase().includes(q));
+
+        const matchesCategory =
+          categoryFilter === "ALL" || app.category === categoryFilter;
+
+        let matchesStatus = true;
+        if (statusFilter === "ACTIVE") matchesStatus = !!app.isActive;
+        else if (statusFilter === "INACTIVE") matchesStatus = !app.isActive;
+        else if (statusFilter === "FEATURED") matchesStatus = !!app.isFeatured;
+        else if (statusFilter === "PAID") {
+          matchesStatus =
+            (app.monthlyPrice || 0) > 0 ||
+            (app.yearlyPrice || 0) > 0 ||
+            app.pricingModel === "PAY_PER_USE";
+        } else if (statusFilter === "FREE") {
+          matchesStatus =
+            (app.monthlyPrice || 0) <= 0 &&
+            (app.yearlyPrice || 0) <= 0 &&
+            app.pricingModel !== "PAY_PER_USE";
+        }
+
+        return matchesSearch && matchesCategory && matchesStatus;
+      })
+      .sort((a, b) => {
+        switch (sortBy) {
+          case "price":
+            return (b.monthlyPrice || 0) - (a.monthlyPrice || 0);
+          case "rating":
+            return (b.rating || 0) - (a.rating || 0);
+          case "installations":
+            return (
+              (b._count?.installations || b.installCount || 0) -
+              (a._count?.installations || a.installCount || 0)
+            );
+          case "name":
+            return (a.name || "").localeCompare(b.name || "");
+          default:
+            return 0;
+        }
+      });
+  }, [apps, searchQuery, categoryFilter, statusFilter, sortBy]);
+
+  // Group apps by category for grouped view
+  const appsByCategory = useMemo(() => {
+    const groups: Record<string, MarketplaceManagementItem[]> = {};
+    for (const app of filteredApps) {
+      const cat = app.category || "OTHER";
+      if (!groups[cat]) groups[cat] = [];
+      groups[cat].push(app);
+    }
+    return groups;
+  }, [filteredApps]);
 
   // Calculate statistics
   const totalInstallations = apps.reduce(
@@ -1319,104 +1438,273 @@ const MarketplaceAppsTab = ({
       </div>
       )}
 
-      {/* Filters and Search */}
-      <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-4">
-        <div className="grid grid-cols-12 gap-3 items-end">
-          <div className="col-span-12 md:col-span-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="apps-search">البحث</Label>
-              <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input id="apps-search" className="w-full pr-10" placeholder="البحث في التطبيقات..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-              </div>
+      {/* Filters, Search & View Controls */}
+      <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-4 space-y-3.5">
+        {/* Row 1: Search, Sort, View Switcher & Actions */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          {/* Search & Sort */}
+          <div className="flex flex-1 flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
+            <div className="relative flex-1 min-w-[220px]">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="apps-search"
+                className="w-full pr-9 pl-8"
+                placeholder="البحث بالاسم، المعرّف (slug)، الفئة، أو المسار..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
-          </div>
-          <div className="col-span-12 md:col-span-3">
-            <div className="space-y-1.5">
-              <Label>الترتيب</Label>
+
+            <div className="w-full sm:w-[170px] shrink-0">
               <Select value={sortBy} onValueChange={(v) => setSortBy(v ?? "installations")}>
-                <SelectTrigger><SelectValue placeholder={sortBy === "installations" ? "الأكثر تثبيتاً" : sortBy === "price" ? "الأعلى سعراً" : sortBy === "rating" ? "الأعلى تقييماً" : "الاسم"} /></SelectTrigger>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder={sortBy === "installations" ? "الأكثر تثبيتاً" : sortBy === "price" ? "الأعلى سعراً" : sortBy === "rating" ? "الأعلى تقييماً" : "الاسم"} />
+                </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="installations">الأكثر تثبيتاً</SelectItem>
                   <SelectItem value="price">الأعلى سعراً</SelectItem>
                   <SelectItem value="rating">الأعلى تقييماً</SelectItem>
-                  <SelectItem value="name">الاسم</SelectItem>
+                  <SelectItem value="name">الاسم أبجدياً</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div className="col-span-12 md:col-span-5">
-            <div className="flex gap-2 justify-end">
-              <Button className="flex-1 md:flex-none" variant="default" onClick={() => setEditingApp({ item: null })}>
-                <Plus className="h-4 w-4 ml-1" />إضافة
+
+          {/* View Mode Switcher & Actions */}
+          <div className="flex flex-wrap items-center justify-between sm:justify-end gap-2">
+            {/* View Mode Segmented Control */}
+            <div className="inline-flex items-center rounded-xl border border-border bg-muted/60 p-1 shadow-inner">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange("grid")}
+                      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                        viewMode === "grid"
+                          ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                      }`}
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">مفصلة</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>شبكة بطاقات مفصلة</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange("compact")}
+                      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                        viewMode === "compact"
+                          ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                      }`}
+                    >
+                      <Columns3 className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">مدمجة</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>بطاقات مدمجة خفيفة</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange("table")}
+                      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                        viewMode === "table"
+                          ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                      }`}
+                    >
+                      <List className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">جدول</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>جدول بيانات إداري متكامل</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={() => handleViewModeChange("grouped")}
+                      className={`inline-flex items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                        viewMode === "grouped"
+                          ? "bg-background text-primary shadow-sm ring-1 ring-border"
+                          : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+                      }`}
+                    >
+                      <Layers className="h-3.5 w-3.5" />
+                      <span className="hidden sm:inline">فئات</span>
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>تجميع حسب الفئات</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex items-center gap-1.5">
+              <Button size="sm" variant="default" onClick={() => setEditingApp({ item: null })}>
+                <Plus className="h-4 w-4 ml-1" />
+                إضافة
               </Button>
-              <Button variant="outline" onClick={handleExport} className="flex-1 md:flex-none">
-                <Download className="h-4 w-4 ml-1" />تصدير
+              <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 ml-1" />
+                تصدير
               </Button>
-              <label className="inline-flex items-center gap-1 cursor-pointer flex-1 md:flex-none">
-                <Button variant="outline" className="w-full" render={<span />}>
-                  <Upload className="h-4 w-4 ml-1" />استيراد
+              <label className="inline-flex items-center gap-1 cursor-pointer">
+                <Button variant="outline" size="sm" render={<span />}>
+                  <Upload className="h-4 w-4 ml-1" />
+                  استيراد
                 </Button>
                 <input type="file" hidden accept=".json" onChange={handleImport} />
               </label>
-            </div>
-          </div>
-        </div>
-        {filteredApps.length !== apps.length && (
-          <span className="text-xs text-muted-foreground block mt-2">عرض {filteredApps.length} من {apps.length} تطبيق</span>
-        )}
-      </div>
-
-      {/* Developer tools toggle */}
-      <div className="flex justify-end">
-        <Button variant="ghost" size="sm" onClick={() => setShowCatalogTools((prev) => !prev)} className="text-muted-foreground hover:bg-muted">
-          <Wrench className="h-4 w-4 ml-1" />
-          {showCatalogTools ? "إخفاء أدوات المطور" : "أدوات المطور (فحص الكاتالوج)"}
-        </Button>
-      </div>
-
-      {/* Category Tabs + Apps Grid Layout */}
-      <div className="grid grid-cols-12 gap-4">
-        {/* Side Category Tabs */}
-        <div className="col-span-12 md:col-span-2">
-          <div className="rounded-2xl border bg-card text-card-foreground shadow-sm p-2" style={{ minHeight: 400 }}>
-            <p className="px-3 pt-1.5 pb-2 text-xs font-bold text-muted-foreground">الفئات</p>
-            <div className="flex flex-col gap-0.5">
-              {categories.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setCategoryFilter(cat)}
-                  className={`flex items-center gap-2 w-full text-right px-3 py-2 text-sm transition-all rounded-xl ${categoryFilter === cat ? "bg-primary/10 text-primary font-semibold shadow-sm" : "text-muted-foreground hover:bg-accent/60"}`}
-                >
-                  <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: cat === "ALL" ? "var(--muted-foreground)" : getCategoryColor(cat) }} />
-                  <span className="flex-1 text-right text-sm">{categoryLabels[cat] || cat}</span>
-                  <Badge variant={categoryFilter === cat ? "default" : "secondary"} className={`h-5 text-[0.7rem] ${categoryFilter === cat ? "bg-primary text-primary-foreground" : ""}`}>
-                    {cat === "ALL" ? apps.length : apps.filter((a) => a.category === cat).length}
-                  </Badge>
-                </button>
-              ))}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowCatalogTools((prev) => !prev)}
+                className="text-muted-foreground hover:bg-muted"
+                title="أدوات المطور"
+              >
+                <Wrench className="h-4 w-4" />
+              </Button>
             </div>
           </div>
         </div>
 
-        {/* Apps Grid */}
-        <div className="col-span-12 md:col-span-10">
-          <div className="grid grid-cols-12 gap-4">
-            {filteredApps.map((app) => {
-              const monthlyRevenue = calculateAppRevenue(app);
-              const isExpanded = expandedApp === app.id;
-              const monthlyPrice = app.monthlyPrice || 0;
-              const yearlyPrice = app.yearlyPrice || 0;
-              const yearlySavings =
-                monthlyPrice > 0 && yearlyPrice > 0
-                  ? Math.max(0, Math.round((1 - yearlyPrice / (monthlyPrice * 12)) * 100))
-                  : 0;
-              const installs = app._count?.installations || app.installCount || 0;
-
+        {/* Row 2: Status Quick Filters & Counter */}
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-border/50">
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-xs font-medium text-muted-foreground ml-1 hidden sm:inline">الحالة:</span>
+            {[
+              { id: "ALL", label: "الكل", count: statusCounts.ALL },
+              { id: "ACTIVE", label: "النشطة", count: statusCounts.ACTIVE },
+              { id: "INACTIVE", label: "المعطلة", count: statusCounts.INACTIVE },
+              { id: "FEATURED", label: "المميزة", count: statusCounts.FEATURED },
+              { id: "PAID", label: "المدفوعة", count: statusCounts.PAID },
+              { id: "FREE", label: "المجانية", count: statusCounts.FREE },
+            ].map((st) => {
+              const active = statusFilter === st.id;
               return (
-                <div key={app.id} className="col-span-12 sm:col-span-6 lg:col-span-4">
-                  <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
-                    {/* Header */}
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => setStatusFilter(st.id as typeof statusFilter)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition-all ${
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span>{st.label}</span>
+                  <span
+                    className={`rounded-full px-1.5 py-0.2 text-[0.65rem] font-bold ${
+                      active ? "bg-primary-foreground/20 text-primary-foreground" : "bg-background/80 text-foreground/70"
+                    }`}
+                  >
+                    {st.count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mr-auto sm:mr-0">
+            <span>
+              عرض <strong className="text-foreground">{filteredApps.length}</strong> من {apps.length} تطبيق
+            </span>
+            {(searchQuery || categoryFilter !== "ALL" || statusFilter !== "ALL") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleResetFilters}
+                className="h-6 px-2 text-xs text-primary hover:bg-primary/10"
+              >
+                إعادة ضبط
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {/* Row 3: Horizontal Scrollable Category Bar */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pt-1 pb-0.5 scrollbar-none">
+          {categories.map((cat) => {
+            const count = cat === "ALL" ? apps.length : apps.filter((a) => a.category === cat).length;
+            const isSelected = categoryFilter === cat;
+            const color = cat === "ALL" ? "var(--muted-foreground)" : getCategoryColor(cat);
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setCategoryFilter(cat)}
+                className={`inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3 py-1.5 text-xs font-semibold transition-all shrink-0 ${
+                  isSelected
+                    ? "bg-primary text-primary-foreground shadow-sm ring-2 ring-primary/30"
+                    : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                <span
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: isSelected ? "#ffffff" : color }}
+                />
+                <span>{categoryLabels[cat] || cat}</span>
+                <span
+                  className={`rounded-full px-1.5 py-0.2 text-[0.68rem] ${
+                    isSelected
+                      ? "bg-primary-foreground/20 text-primary-foreground"
+                      : "bg-background/80 text-foreground/70"
+                  }`}
+                >
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Main Apps View: 4 Display Modes */}
+      {filteredApps.length > 0 ? (
+        <>
+          {/* 1. DETAILED GRID VIEW */}
+          {viewMode === "grid" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredApps.map((app) => {
+                const monthlyRevenue = calculateAppRevenue(app);
+                const isExpanded = expandedApp === app.id;
+                const monthlyPrice = app.monthlyPrice || 0;
+                const yearlyPrice = app.yearlyPrice || 0;
+                const yearlySavings =
+                  monthlyPrice > 0 && yearlyPrice > 0
+                    ? Math.max(0, Math.round((1 - yearlyPrice / (monthlyPrice * 12)) * 100))
+                    : 0;
+                const installs = app._count?.installations || app.installCount || 0;
+
+                return (
+                  <div key={app.id} className="group flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-card-foreground shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5">
+                    {/* Card Header */}
                     <div className="relative overflow-hidden border-b border-border/60 p-4 pb-3">
                       <div
                         className="absolute -left-10 -top-12 h-28 w-28 rounded-full opacity-20 blur-2xl transition-opacity duration-300 group-hover:opacity-40"
@@ -1428,8 +1716,24 @@ const MarketplaceAppsTab = ({
                             {getAppIcon(app)}
                           </div>
                           <div className="min-w-0">
-                            <h3 className="truncate text-base font-bold leading-tight">{app.name}</h3>
-                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                            <h3
+                              onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                              className="truncate text-base font-bold leading-tight cursor-pointer hover:text-primary transition-colors"
+                            >
+                              {app.name}
+                            </h3>
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                              {app.slug && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopySlug(app.slug)}
+                                  className="inline-flex items-center gap-1 font-mono text-[0.68rem] text-muted-foreground hover:text-foreground bg-muted/60 px-1.5 py-0.5 rounded"
+                                  title="نسخ المعرف"
+                                >
+                                  <span>{app.slug}</span>
+                                  <Copy className="h-2.5 w-2.5 opacity-60" />
+                                </button>
+                              )}
                               {app.category && (
                                 <span
                                   className="inline-flex items-center rounded-full px-2 py-0.5 text-[0.65rem] font-semibold text-white"
@@ -1438,30 +1742,36 @@ const MarketplaceAppsTab = ({
                                   {categoryLabels[app.category] || app.category}
                                 </span>
                               )}
-                              {app.isPopular && (
-                                <span className="inline-flex items-center rounded-full bg-sky-500 px-2 py-0.5 text-[0.65rem] font-semibold text-white">شائع</span>
-                              )}
                             </div>
                           </div>
                         </div>
-                        {app.isFeatured && (
-                          <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-1 text-[0.65rem] font-bold text-white shadow-sm">
-                            <Star className="h-3 w-3 fill-current" />مميز
-                          </span>
-                        )}
+
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          {app.isFeatured && (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-2 py-0.5 text-[0.65rem] font-bold text-white shadow-sm">
+                              <Star className="h-3 w-3 fill-current" />
+                              مميز
+                            </span>
+                          )}
+                          {app.isPopular && (
+                            <span className="inline-flex items-center rounded-full bg-sky-500 px-2 py-0.5 text-[0.65rem] font-semibold text-white">
+                              شائع
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
 
                     <CardContent className="flex flex-grow flex-col gap-3 p-4 pt-3">
                       {/* Description */}
-                      <p className="line-clamp-2 text-sm text-muted-foreground">
-                        {app.description || "لا يوجد وصف"}
+                      <p className="line-clamp-2 text-sm text-muted-foreground min-h-[2.5rem]">
+                        {app.description || "لا يوجد وصف متوفر لهذا التطبيق"}
                       </p>
 
                       {/* Stats Row */}
                       <div className="grid grid-cols-3 gap-2">
                         <div className="rounded-xl bg-muted/50 p-2 text-center">
-                          <p className="text-sm font-bold text-primary">{installs}</p>
+                          <p className="text-sm font-bold text-primary">{installs.toLocaleString("ar-EG")}</p>
                           <span className="text-[0.65rem] text-muted-foreground">تثبيت</span>
                         </div>
                         <div className="rounded-xl bg-muted/50 p-2 text-center">
@@ -1469,7 +1779,7 @@ const MarketplaceAppsTab = ({
                             <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
                             {app.rating?.toFixed(1) || "0.0"}
                           </p>
-                          <span className="text-[0.65rem] text-muted-foreground">({app.reviewCount || 0} تقييم)</span>
+                          <span className="text-[0.65rem] text-muted-foreground">({app.reviewCount || 0})</span>
                         </div>
                         <div className="rounded-xl bg-muted/50 p-2 text-center">
                           <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{monthlyRevenue.toLocaleString("ar-EG")}</p>
@@ -1477,11 +1787,11 @@ const MarketplaceAppsTab = ({
                         </div>
                       </div>
 
-                      {/* Price */}
+                      {/* Price Pill */}
                       <div className="flex items-center justify-between gap-2 rounded-xl border border-primary/15 bg-primary/5 px-3 py-2">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-lg font-extrabold text-primary">
-                            {monthlyPrice ? monthlyPrice.toLocaleString("ar-EG") : "مجاني"}
+                          <span className="text-base font-extrabold text-primary">
+                            {monthlyPrice ? `${monthlyPrice.toLocaleString("ar-EG")} ج.م` : "مجاني"}
                           </span>
                           {monthlyPrice ? <span className="text-xs text-muted-foreground">/ شهر</span> : null}
                         </div>
@@ -1494,79 +1804,601 @@ const MarketplaceAppsTab = ({
 
                       {/* Expanded Details */}
                       {isExpanded && (
-                        <div>
-                          <Separator className="my-1.5" />
-                          <div className="mb-1.5 space-y-0.5">
-                            <span className="text-xs text-muted-foreground block">أيام التجربة: {app.trialDays || 14} يوم</span>
-                            <span className="text-xs text-muted-foreground block">الإيرادات المتوقعة: {((app.monthlyPrice || 0) * installs * 12).toLocaleString("ar-EG")} ج.م/سنة</span>
-                            {app.mainRoute && <span className="text-xs text-muted-foreground block">المسار: {app.mainRoute}</span>}
+                        <div className="rounded-xl bg-muted/30 p-2.5 space-y-1 text-xs text-muted-foreground border border-border/40">
+                          <div className="flex justify-between">
+                            <span>فترة التجربة:</span>
+                            <span className="font-semibold text-foreground">{app.trialDays || 14} يوم</span>
                           </div>
+                          <div className="flex justify-between">
+                            <span>الإيراد السنوي المتوقع:</span>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                              {((app.monthlyPrice || 0) * installs * 12).toLocaleString("ar-EG")} ج.م
+                            </span>
+                          </div>
+                          {app.mainRoute && (
+                            <div className="flex justify-between items-center">
+                              <span>المسار:</span>
+                              <span className="font-mono text-[0.7rem] text-foreground bg-muted px-1.5 py-0.5 rounded">
+                                {app.mainRoute}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       )}
 
-                      {/* Toggle Switches */}
-                      <div className="mt-auto flex flex-wrap gap-3 border-t border-border/60 pt-3">
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <Checkbox checked={!!app.isActive} onCheckedChange={(checked) => handleQuickToggle(app, "isActive", checked === true)} />
-                          <span className="text-xs">نشط</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <Checkbox checked={!!app.isPublic} onCheckedChange={(checked) => handleQuickToggle(app, "isPublic", checked === true)} />
-                          <span className="text-xs">عام</span>
-                        </label>
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <Checkbox checked={!!app.isFeatured} onCheckedChange={(checked) => handleQuickToggle(app, "isFeatured", checked === true)} />
-                          <span className="text-xs">مميز</span>
-                        </label>
+                      {/* Quick Switches */}
+                      <div className="mt-auto flex flex-wrap items-center justify-between gap-2 border-t border-border/60 pt-3 text-xs">
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <Checkbox
+                              checked={!!app.isActive}
+                              onCheckedChange={(checked) => handleQuickToggle(app, "isActive", checked === true)}
+                            />
+                            <span>نشط</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <Checkbox
+                              checked={!!app.isPublic}
+                              onCheckedChange={(checked) => handleQuickToggle(app, "isPublic", checked === true)}
+                            />
+                            <span>عام</span>
+                          </label>
+                          <label className="flex items-center gap-1.5 cursor-pointer">
+                            <Checkbox
+                              checked={!!app.isFeatured}
+                              onCheckedChange={(checked) => handleQuickToggle(app, "isFeatured", checked === true)}
+                            />
+                            <span>مميز</span>
+                          </label>
+                        </div>
                       </div>
 
                       {/* Actions */}
-                      <div className="flex justify-between items-center">
+                      <div className="flex justify-between items-center pt-1">
                         <div className="flex items-center gap-1">
-                          <Button size="sm" onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)} variant="ghost" className="text-primary hover:bg-primary/10 hover:text-primary">
+                          <Button
+                            size="sm"
+                            onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                            variant="ghost"
+                            className="text-primary hover:bg-primary/10 hover:text-primary font-semibold"
+                          >
                             إدارة التطبيق
+                            <ArrowRight className="h-3.5 w-3.5 mr-1" />
                           </Button>
-                          <Button size="sm" variant="ghost" onClick={() => setExpandedApp(isExpanded ? null : (app.id ?? null))} className="text-muted-foreground hover:bg-muted">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setExpandedApp(isExpanded ? null : (app.id ?? null))}
+                            className="text-muted-foreground hover:bg-muted text-xs"
+                          >
                             {isExpanded ? "أقل" : "المزيد"}
                           </Button>
                         </div>
-                        <div>
+                        <div className="flex items-center gap-1">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="تعديل التطبيق" onClick={() => setEditingApp({ item: app })} className="hover:bg-primary/10 hover:text-primary"><Pencil className="h-4 w-4" /></Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="تعديل التطبيق"
+                                  onClick={() => setEditingApp({ item: app })}
+                                  className="h-8 w-8 hover:bg-primary/10 hover:text-primary"
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
                               </TooltipTrigger>
-                              <TooltipContent>تعديل</TooltipContent>
+                              <TooltipContent>تعديل التطبيق</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
+
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <Button variant="ghost" size="icon" aria-label="حذف التطبيق" onClick={() => app.id && onDelete(app.id, "apps")} className="hover:bg-red-500/10 hover:text-red-500"><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  aria-label="حذف التطبيق"
+                                  onClick={() => app.id && onDelete(app.id, "apps")}
+                                  className="h-8 w-8 hover:bg-red-500/10 hover:text-red-500"
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                </Button>
                               </TooltipTrigger>
-                              <TooltipContent>حذف</TooltipContent>
+                              <TooltipContent>حذف التطبيق</TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
                         </div>
                       </div>
                     </CardContent>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {filteredApps.length === 0 && (
-            <div className="rounded-2xl border border-dashed bg-card text-card-foreground p-10 text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-                <Search className="h-8 w-8 text-muted-foreground/50" />
-              </div>
-              <p className="text-base font-semibold text-muted-foreground mt-4">لا توجد تطبيقات مطابقة للبحث</p>
-              <p className="text-sm text-muted-foreground mt-1">جرّب تعديل كلمات البحث أو اختيار فئة أخرى</p>
+                );
+              })}
             </div>
           )}
+
+          {/* 2. COMPACT GRID VIEW */}
+          {viewMode === "compact" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+              {filteredApps.map((app) => {
+                const monthlyRevenue = calculateAppRevenue(app);
+                const installs = app._count?.installations || app.installCount || 0;
+                const monthlyPrice = app.monthlyPrice || 0;
+
+                return (
+                  <div
+                    key={app.id}
+                    className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-3.5 shadow-sm transition-all duration-200 hover:border-primary/40 hover:shadow-md"
+                  >
+                    {/* Header */}
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white shadow-sm ${getAppGradient(app.category)}`}>
+                            {getAppIcon(app)}
+                          </div>
+                          <div className="min-w-0">
+                            <h4
+                              onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                              className="font-bold text-sm truncate cursor-pointer hover:text-primary transition-colors"
+                            >
+                              {app.name}
+                            </h4>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              {app.category && (
+                                <span
+                                  className="inline-block px-1.5 py-0.2 rounded-full text-[0.62rem] font-semibold text-white"
+                                  style={{ backgroundColor: getCategoryColor(app.category) }}
+                                >
+                                  {categoryLabels[app.category] || app.category}
+                                </span>
+                              )}
+                              {app.slug && (
+                                <button
+                                  type="button"
+                                  onClick={() => handleCopySlug(app.slug)}
+                                  className="font-mono text-[0.62rem] text-muted-foreground hover:text-foreground truncate max-w-[90px]"
+                                  title={`نسخ المعرف: ${app.slug}`}
+                                >
+                                  {app.slug}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {app.isFeatured && (
+                          <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500 shrink-0" />
+                        )}
+                      </div>
+
+                      {/* Performance Bar */}
+                      <div className="flex items-center justify-between rounded-xl bg-muted/50 px-2.5 py-1.5 text-xs mb-2.5">
+                        <span className="font-semibold text-primary">
+                          {monthlyPrice > 0 ? `${monthlyPrice.toLocaleString("ar-EG")} ج/ش` : "مجاني"}
+                        </span>
+                        <span className="text-muted-foreground">
+                          {installs} تثبيت
+                        </span>
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                          {monthlyRevenue > 0 ? `${monthlyRevenue.toLocaleString("ar-EG")} ج` : "-"}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Footer Controls */}
+                    <div className="flex items-center justify-between pt-2 border-t border-border/50 text-xs">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <Switch
+                          checked={!!app.isActive}
+                          onCheckedChange={(checked) => handleQuickToggle(app, "isActive", checked)}
+                          className="scale-75 origin-right"
+                        />
+                        <span className={app.isActive ? "text-foreground font-medium" : "text-muted-foreground"}>
+                          {app.isActive ? "نشط" : "معطل"}
+                        </span>
+                      </label>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                          className="h-7 px-2 text-xs text-primary hover:bg-primary/10"
+                        >
+                          إدارة
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setEditingApp({ item: app })}
+                          className="h-7 w-7 text-muted-foreground hover:text-primary"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => app.id && onDelete(app.id, "apps")}
+                          className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* 3. ADMINISTRATIVE DATA TABLE VIEW */}
+          {viewMode === "table" && (
+            <div className="rounded-2xl border bg-card text-card-foreground shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-muted/60">
+                    <TableRow className="hover:bg-transparent">
+                      <TableHead className="w-[280px]">التطبيق والمعرّف</TableHead>
+                      <TableHead className="w-[140px]">الفئة</TableHead>
+                      <TableHead className="w-[140px]">التسعير</TableHead>
+                      <TableHead className="w-[170px]">التثبيتات والإيراد</TableHead>
+                      <TableHead className="w-[210px]">حالة التشغيل والظهور</TableHead>
+                      <TableHead className="w-[150px]">المسار</TableHead>
+                      <TableHead className="w-[120px] text-left">الإجراءات</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredApps.map((app) => {
+                      const monthlyRevenue = calculateAppRevenue(app);
+                      const installs = app._count?.installations || app.installCount || 0;
+                      const monthlyPrice = app.monthlyPrice || 0;
+
+                      return (
+                        <TableRow key={app.id} className="hover:bg-muted/40 transition-colors">
+                          {/* App & Slug */}
+                          <TableCell>
+                            <div className="flex items-center gap-2.5">
+                              <div className={`flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-xl text-white shadow-sm ${getAppGradient(app.category)}`}>
+                                {getAppIcon(app)}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                                    className="font-bold text-sm cursor-pointer hover:text-primary transition-colors truncate"
+                                  >
+                                    {app.name}
+                                  </span>
+                                  {app.isFeatured && (
+                                    <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-500 shrink-0" />
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-1 mt-0.5">
+                                  {app.slug && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleCopySlug(app.slug)}
+                                      className="font-mono text-[0.7rem] text-muted-foreground hover:text-foreground inline-flex items-center gap-1 bg-muted/60 px-1.5 py-0.2 rounded"
+                                      title="نسخ المعرف"
+                                    >
+                                      <span>{app.slug}</span>
+                                      <Copy className="h-2.5 w-2.5 opacity-60" />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </TableCell>
+
+                          {/* Category */}
+                          <TableCell>
+                            {app.category ? (
+                              <span
+                                className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold text-white whitespace-nowrap"
+                                style={{ backgroundColor: getCategoryColor(app.category) }}
+                              >
+                                {categoryLabels[app.category] || app.category}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+
+                          {/* Pricing */}
+                          <TableCell>
+                            <div className="space-y-0.5">
+                              <p className="font-bold text-sm text-primary">
+                                {monthlyPrice > 0 ? `${monthlyPrice.toLocaleString("ar-EG")} ج/شهر` : "مجاني"}
+                              </p>
+                              {app.yearlyPrice ? (
+                                <p className="text-[0.7rem] text-muted-foreground">
+                                  سنوي: {app.yearlyPrice.toLocaleString("ar-EG")} ج
+                                </p>
+                              ) : null}
+                            </div>
+                          </TableCell>
+
+                          {/* Stats */}
+                          <TableCell>
+                            <div className="space-y-0.5 text-xs">
+                              <div className="flex items-center gap-1 font-semibold text-foreground">
+                                <Download className="h-3.5 w-3.5 text-muted-foreground" />
+                                <span>{installs.toLocaleString("ar-EG")} تثبيت</span>
+                              </div>
+                              <div className="text-emerald-600 dark:text-emerald-400 font-bold">
+                                {monthlyRevenue > 0 ? `${monthlyRevenue.toLocaleString("ar-EG")} ج/ش` : "0 ج/ش"}
+                              </div>
+                            </div>
+                          </TableCell>
+
+                          {/* Status Toggles */}
+                          <TableCell>
+                            <div className="flex items-center gap-3 text-xs">
+                              <label className="flex items-center gap-1 cursor-pointer" title="تفعيل / تعطيل">
+                                <Switch
+                                  checked={!!app.isActive}
+                                  onCheckedChange={(checked) => handleQuickToggle(app, "isActive", checked)}
+                                  className="scale-75 origin-right"
+                                />
+                                <span className={app.isActive ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-muted-foreground"}>
+                                  نشط
+                                </span>
+                              </label>
+
+                              <label className="flex items-center gap-1 cursor-pointer" title="الظهور في المتجر">
+                                <Switch
+                                  checked={!!app.isPublic}
+                                  onCheckedChange={(checked) => handleQuickToggle(app, "isPublic", checked)}
+                                  className="scale-75 origin-right"
+                                />
+                                <span className={app.isPublic ? "text-blue-600 dark:text-blue-400 font-medium" : "text-muted-foreground"}>
+                                  عام
+                                </span>
+                              </label>
+
+                              <label className="flex items-center gap-1 cursor-pointer" title="تطبيق مميز">
+                                <Switch
+                                  checked={!!app.isFeatured}
+                                  onCheckedChange={(checked) => handleQuickToggle(app, "isFeatured", checked)}
+                                  className="scale-75 origin-right"
+                                />
+                                <span className={app.isFeatured ? "text-amber-500 font-medium" : "text-muted-foreground"}>
+                                  مميز
+                                </span>
+                              </label>
+                            </div>
+                          </TableCell>
+
+                          {/* Route */}
+                          <TableCell>
+                            {app.mainRoute ? (
+                              <span className="font-mono text-xs text-muted-foreground bg-muted/60 px-2 py-0.5 rounded truncate max-w-[140px] inline-block" title={app.mainRoute}>
+                                {app.mainRoute}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">-</span>
+                            )}
+                          </TableCell>
+
+                          {/* Actions */}
+                          <TableCell className="text-left">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                                className="h-8 px-2.5 text-xs text-primary border-primary/20 hover:bg-primary/10 font-semibold"
+                              >
+                                إدارة
+                              </Button>
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setEditingApp({ item: app })}
+                                      className="h-8 w-8 text-muted-foreground hover:text-primary"
+                                    >
+                                      <Pencil className="h-3.5 w-3.5" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>تعديل</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => app.id && onDelete(app.id, "apps")}
+                                      className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5 text-red-500" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>حذف</TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {/* 4. GROUPED BY CATEGORY VIEW */}
+          {viewMode === "grouped" && (
+            <div className="space-y-4">
+              {Object.entries(appsByCategory).map(([catKey, catApps]) => {
+                const isCollapsed = collapsedCategories[catKey];
+                const catInstalls = catApps.reduce(
+                  (sum, a) => sum + (a._count?.installations || a.installCount || 0),
+                  0,
+                );
+                const catRevenue = catApps.reduce((sum, a) => {
+                  const p = a.monthlyPrice || 0;
+                  const inst = a._count?.installations || a.installCount || 0;
+                  return sum + p * inst;
+                }, 0);
+                const catActiveCount = catApps.filter((a) => a.isActive).length;
+                const catColor = getCategoryColor(catKey);
+
+                return (
+                  <div key={catKey} className="rounded-2xl border bg-card text-card-foreground shadow-sm overflow-hidden">
+                    {/* Category Header Banner */}
+                    <div
+                      onClick={() => toggleCategoryCollapse(catKey)}
+                      className="flex flex-wrap items-center justify-between gap-3 p-4 cursor-pointer hover:bg-muted/40 transition-colors border-b border-border/40"
+                    >
+                      <div className="flex items-center gap-3">
+                        <span className="h-4 w-1.5 rounded-full" style={{ backgroundColor: catColor }} />
+                        <h3 className="font-bold text-base text-foreground">
+                          {categoryLabels[catKey] || catKey}
+                        </h3>
+                        <Badge variant="secondary" className="text-xs font-semibold">
+                          {catApps.length} تطبيق
+                        </Badge>
+                      </div>
+
+                      <div className="flex items-center gap-4 text-xs">
+                        <div className="hidden sm:flex items-center gap-3 text-muted-foreground">
+                          <span>
+                            نشط: <strong className="text-foreground">{catActiveCount}</strong>
+                          </span>
+                          <span>•</span>
+                          <span>
+                            التثبيتات: <strong className="text-foreground">{catInstalls.toLocaleString("ar-EG")}</strong>
+                          </span>
+                          <span>•</span>
+                          <span>
+                            الإيراد: <strong className="text-emerald-600 dark:text-emerald-400">{catRevenue.toLocaleString("ar-EG")} ج.م</strong>
+                          </span>
+                        </div>
+
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
+                          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Category Apps */}
+                    {!isCollapsed && (
+                      <div className="p-4 bg-muted/20">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {catApps.map((app) => {
+                            const monthlyRevenue = calculateAppRevenue(app);
+                            const installs = app._count?.installations || app.installCount || 0;
+                            const monthlyPrice = app.monthlyPrice || 0;
+
+                            return (
+                              <div
+                                key={app.id}
+                                className="flex flex-col justify-between rounded-xl border border-border bg-card p-3 shadow-xs hover:border-primary/40 hover:shadow-sm transition-all"
+                              >
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex items-center gap-2 min-w-0">
+                                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-lg text-white shadow-xs ${getAppGradient(app.category)}`}>
+                                      {getAppIcon(app)}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <h4
+                                        onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                                        className="font-bold text-xs truncate cursor-pointer hover:text-primary"
+                                      >
+                                        {app.name}
+                                      </h4>
+                                      <p className="font-mono text-[0.62rem] text-muted-foreground truncate">
+                                        {app.slug}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  {app.isFeatured && (
+                                    <Star className="h-3 w-3 fill-amber-400 text-amber-500 shrink-0" />
+                                  )}
+                                </div>
+
+                                <div className="flex items-center justify-between text-[0.7rem] bg-muted/50 px-2 py-1 rounded-md mb-2">
+                                  <span className="font-bold text-primary">
+                                    {monthlyPrice > 0 ? `${monthlyPrice} ج` : "مجاني"}
+                                  </span>
+                                  <span className="text-muted-foreground">{installs} تثبيت</span>
+                                  <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                                    {monthlyRevenue > 0 ? `${monthlyRevenue} ج` : "-"}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center justify-between pt-1.5 border-t border-border/40 text-xs">
+                                  <label className="flex items-center gap-1 cursor-pointer">
+                                    <Switch
+                                      checked={!!app.isActive}
+                                      onCheckedChange={(checked) => handleQuickToggle(app, "isActive", checked)}
+                                      className="scale-60 origin-right"
+                                    />
+                                    <span className="text-[0.65rem] text-muted-foreground">
+                                      {app.isActive ? "نشط" : "معطل"}
+                                    </span>
+                                  </label>
+
+                                  <div className="flex items-center gap-0.5">
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      onClick={() => app.id && navigate(`/super-admin/apps/${app.id}`)}
+                                      className="h-6 px-1.5 text-[0.65rem] text-primary"
+                                    >
+                                      إدارة
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => setEditingApp({ item: app })}
+                                      className="h-6 w-6 text-muted-foreground hover:text-primary"
+                                    >
+                                      <Pencil className="h-2.5 w-2.5" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => app.id && onDelete(app.id, "apps")}
+                                      className="h-6 w-6 text-muted-foreground hover:text-red-500"
+                                    >
+                                      <Trash2 className="h-2.5 w-2.5" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="rounded-2xl border border-dashed bg-card text-card-foreground p-12 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
+            <Search className="h-8 w-8 text-muted-foreground/50" />
+          </div>
+          <p className="text-base font-semibold text-foreground mt-4">لا توجد تطبيقات مطابقة للبحث أو الفلتر المختار</p>
+          <p className="text-sm text-muted-foreground mt-1">جرّب تعديل كلمات البحث، الفئة، أو خيارات التصفية السريعة</p>
+          <Button variant="outline" size="sm" onClick={handleResetFilters} className="mt-4">
+            <RefreshCw className="h-4 w-4 ml-1.5" />
+            إعادة ضبط الفلاتر
+          </Button>
         </div>
-      </div>
+      )}
       </>
       )}
     </div>
