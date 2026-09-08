@@ -990,6 +990,11 @@ class EmployeeService {
         ]
       };
 
+      const activeEmployeeWhere = {
+        ...baseEmployeeWhere,
+        isActive: true
+      };
+
       const [
         totalEmployees,
         activeEmployees,
@@ -1004,16 +1009,12 @@ class EmployeeService {
             where: baseEmployeeWhere
           }),
           this.prisma.user.count({
-            where: {
-              ...baseEmployeeWhere,
-              isActive: true
-            }
+            where: activeEmployeeWhere
           }),
           // Group by departmentId
           this.prisma.user.findMany({
             where: {
-              ...baseEmployeeWhere,
-              isActive: true,
+              ...activeEmployeeWhere,
               departmentId: { not: null }
             },
             select: { departmentId: true, departmentRelation: { select: { name: true } } }
@@ -1021,24 +1022,19 @@ class EmployeeService {
           // Group by contractType
           this.prisma.user.findMany({
             where: {
-              ...baseEmployeeWhere,
-              isActive: true,
+              ...activeEmployeeWhere,
               contractType: { not: null }
             },
             select: { contractType: true }
           }),
           // Status grouping (active vs inactive)
           this.prisma.user.count({
-            where: {
-              ...baseEmployeeWhere,
-              isActive: true
-            }
+            where: activeEmployeeWhere
           }),
           // Recent hires
           this.prisma.user.findMany({
             where: {
-              ...baseEmployeeWhere,
-              isActive: true,
+              ...activeEmployeeWhere,
               hireDate: { not: null }
             },
             orderBy: { hireDate: 'desc' },

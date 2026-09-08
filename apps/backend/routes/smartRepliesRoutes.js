@@ -28,40 +28,6 @@ function normalizeSmartReplyTemplates(customRuleResponses) {
   };
 }
 
-function validateSmartReplyTemplates(customRuleResponses) {
-  if (!customRuleResponses || typeof customRuleResponses !== 'object') return null;
-  const templates = customRuleResponses.templates;
-  if (!templates) return null;
-  if (!Array.isArray(templates)) {
-    return 'قائمة القوالب يجب أن تكون مصفوفة صالحة';
-  }
-
-  for (let i = 0; i < templates.length; i++) {
-    const template = templates[i];
-    if (!template || typeof template !== 'object') {
-      return `القالب رقم ${i + 1} غير صالح`;
-    }
-    const name = String(template.name || '').trim();
-    if (!name) {
-      return `القالب رقم ${i + 1} يتطلب اسماً`;
-    }
-    const keywords = Array.isArray(template.keywords)
-      ? template.keywords.map((k) => String(k || '').trim()).filter(Boolean)
-      : [];
-    if (keywords.length === 0) {
-      return `القالب "${name}" يتطلب كلمة مفتاحية واحدة على الأقل`;
-    }
-    const responses = Array.isArray(template.responses)
-      ? template.responses.map((r) => String(r || '').trim()).filter(Boolean)
-      : [];
-    if (responses.length === 0) {
-      return `القالب "${name}" يتطلب قالباً أو رداً واحداً على الأقل`;
-    }
-  }
-
-  return null;
-}
-
 function parseRuleResponseSettings(aiSetting) {
   const defaults = {
     enableRuleResponses: false,
@@ -126,14 +92,6 @@ router.put('/rule-responses', verifyToken.authenticateToken, async (req, res) =>
       });
     }
 
-    const validationError = validateSmartReplyTemplates(req.body?.customRuleResponses);
-    if (validationError) {
-      return res.status(400).json({
-        success: false,
-        error: validationError,
-      });
-    }
-
     const existing = await getSharedPrismaClient().aiSetting.findUnique({
       where: { companyId },
       select: { modelSettings: true },
@@ -158,7 +116,7 @@ router.put('/rule-responses', verifyToken.authenticateToken, async (req, res) =>
       updatedAt: new Date().toISOString(),
     };
 
-    const updatedSetting = await getSharedPrismaClient().aiSetting.upsert({
+    await getSharedPrismaClient().aiSetting.upsert({
       where: { companyId },
       update: {
         modelSettings: JSON.stringify(modelSettings),
@@ -174,7 +132,6 @@ router.put('/rule-responses', verifyToken.authenticateToken, async (req, res) =>
     return res.json({
       success: true,
       message: 'Smart replies saved successfully',
-      data: parseRuleResponseSettings(updatedSetting),
     });
   } catch (error) {
     console.error('Error saving smart replies:', error);

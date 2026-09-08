@@ -8532,7 +8532,6 @@ declare module 'react-i18next' {
         saveFailed: string;
         loadFailed: string;
         nameRequired: string;
-        keywordRequired: string;
         templateRequired: string;
         templatePlaceholder: string;
         keywordPlaceholder: string;

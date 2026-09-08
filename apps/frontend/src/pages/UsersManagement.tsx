@@ -102,6 +102,7 @@ import tokenManager from "../utils/tokenManager";
 import { buildApiUrl } from "../utils/urlHelper";
 import { DefaultPageSelector } from "../components/settings/DefaultPageSelector";
 import { saveDefaultPagePreference } from "../utils/postAuthRouting";
+import { APP_REGISTRY } from "../config/appRegistry";
 
 type RoleRecord = Record<string, { name: string }>;
 
@@ -129,6 +130,8 @@ type UserRecord = {
     department?: { id: string; name: string; color?: string | null } | null;
     position?: { id: string; title: string } | null;
   } | null;
+  defaultPage?: string;
+  assignedApps?: string[];
 };
 
 type InvitationRecord = {
@@ -163,6 +166,7 @@ type UserFormState = {
   contractType: string;
   baseSalary: string;
   defaultPage: string;
+  assignedApps: string[];
 };
 
 type InviteFormState = {
@@ -225,7 +229,36 @@ const createInitialUserForm = (): UserFormState => ({
   contractType: "FULL_TIME",
   baseSalary: "",
   defaultPage: "/apps",
+  assignedApps: [],
 });
+
+// Build the list of apps the current company has active, using the app registry
+// so each entry exposes its slug + display name for the assignment picker.
+const getCompanyAvailableApps = (
+  activeApps?: string[],
+  t?: (key: string) => string,
+): Array<{ slug: string; label: string }> => {
+  if (!Array.isArray(activeApps) || activeApps.length === 0) return [];
+  const seen = new Set<string>();
+  const result: Array<{ slug: string; label: string }> = [];
+  for (const slug of activeApps) {
+    const normalized = slug.trim().toLowerCase();
+    if (!normalized || seen.has(normalized)) continue;
+    seen.add(normalized);
+    const registryApp = APP_REGISTRY.find((app) =>
+      app.requiredApps?.some((r) => r.toLowerCase() === normalized),
+    );
+    if (registryApp) {
+      result.push({
+        slug: normalized,
+        label: t?.(registryApp.nameKey) ?? registryApp.nameKey,
+      });
+    } else {
+      result.push({ slug: normalized, label: normalized });
+    }
+  }
+  return result;
+};
 
 const createInitialInviteForm = (): InviteFormState => ({
   firstName: "",
@@ -369,6 +402,15 @@ const FormField: React.FC<FormFieldProps> = ({
 const UsersManagement: React.FC = () => {
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  const companyApps = useMemo(
+    () =>
+      getCompanyAvailableApps(
+        (user as { company?: { activeApps?: string[] } | null } | null)?.company?.activeApps,
+        t,
+      ),
+    [user, t],
+  );
 
   const [users, setUsers] = useState<UserRecord[]>([]);
   const [roles, setRoles] = useState<RoleRecord>({});
@@ -741,6 +783,7 @@ const UsersManagement: React.FC = () => {
           ? String(targetUser.employee.baseSalary)
           : "",
       defaultPage,
+      assignedApps: Array.isArray(targetUser.assignedApps) ? targetUser.assignedApps : [],
     });
     setFormErrors({});
     setShowPassword(false);
@@ -841,7 +884,7 @@ const UsersManagement: React.FC = () => {
 
   const updateUserForm = (
     field: keyof UserFormState,
-    value: string | boolean,
+    value: string | boolean | string[],
   ) => {
     setUserForm((current) => ({ ...current, [field]: value }));
     setFormErrors((current) => {
@@ -874,7 +917,7 @@ const UsersManagement: React.FC = () => {
         hireDate: userForm.hireDate || undefined,
         contractType: userForm.contractType,
         baseSalary: userForm.baseSalary || undefined,
-        ...(isEditMode && { settings: { defaultPage: userForm.defaultPage } }),
+        ...(isEditMode && { settings: { defaultPage: userForm.defaultPage, assignedApps: userForm.assignedApps } }),
       };
 
       if (userForm.password.trim()) {
@@ -1838,6 +1881,44 @@ const UsersManagement: React.FC = () => {
                       value={userForm.defaultPage}
                       onChange={(value) => updateUserForm("defaultPage", value)}
                     />
+
+                    <div className="mt-5 border-t border-border/60 pt-4">
+                      <p className="text-sm font-medium text-foreground">التطبيقات المتاحة لهذا المستخدم</p>
+                      <p className="text-xs text-muted-foreground">
+                        اختر التطبيقات المسموح له بفتحها. التطبيقات غير المحددة ستختفي تمامًا من صفحة التطبيقات والقائمة الجانبية.
+                      </p>
+                      {companyApps.length === 0 ? (
+                        <p className="mt-3 rounded-xl border border-dashed border-border/70 bg-card/60 p-3 text-xs text-muted-foreground">
+                          لا توجد تطبيقات مفعّلة في هذه الشركة لتحديدها.
+                        </p>
+                      ) : (
+                        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                          {companyApps.map((app) => {
+                            const checked = userForm.assignedApps.some(
+                              (a) => a.toLowerCase() === app.slug.toLowerCase(),
+                            );
+                            return (
+                              <label
+                                key={app.slug}
+                                className="flex cursor-pointer items-center gap-2 rounded-xl border border-border/70 bg-card/60 px-3 py-2 text-sm transition-colors hover:bg-muted/40"
+                              >
+                                <Checkbox
+                                  checked={checked}
+                                  onCheckedChange={(value) => {
+                                    const current = userForm.assignedApps.map((a) => a.toLowerCase());
+                                    const next = value === true
+                                      ? [...new Set([...current, app.slug.toLowerCase()])]
+                                      : current.filter((a) => a !== app.slug.toLowerCase());
+                                    updateUserForm("assignedApps", next);
+                                  }}
+                                />
+                                <span className="font-medium text-foreground">{app.label}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 

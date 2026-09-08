@@ -8539,7 +8539,6 @@
     "saveFailed": "Failed to save rule",
     "loadFailed": "Failed to load settings",
     "nameRequired": "Rule name is required",
-    "keywordRequired": "At least one keyword is required",
     "templateRequired": "Reply template is required",
     "templatePlaceholder": "Enter your auto-reply message...",
     "keywordPlaceholder": "e.g. price, available, shipping",

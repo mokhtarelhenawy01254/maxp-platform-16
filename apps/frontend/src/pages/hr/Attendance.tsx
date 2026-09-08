@@ -653,9 +653,8 @@ const Attendance: React.FC = () => {
       late: false,
       early: false,
     });
-    const isTempRecord = record.id.startsWith("temp-");
-    setEditingRecordId(isTempRecord ? null : record.id);
-    setIsEditMode(!isTempRecord);
+    setEditingRecordId(record.id);
+    setIsEditMode(true);
     setShowManualDialog(true);
   };
 
@@ -1047,7 +1046,7 @@ const Attendance: React.FC = () => {
                       {renderLocationInfo(record.checkInLocation, record.checkOutLocation, record.workMode)}
                     </TableCell>
                     <TableCell>
-                      {record.workHours && Number(record.workHours) > 0 && record.checkOut ? (
+                      {record.workHours !== null && record.workHours !== undefined && Number(record.workHours) > 0 ? (
                         <span className="font-bold text-gray-700">{Number(record.workHours).toFixed(1)} س</span>
                       ) : (
                         <span className="text-gray-300">-</span>

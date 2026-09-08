@@ -1,6 +1,7 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
 import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, Heart, Home, Dna, Image, Inbox, Key, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
+import { APP_REGISTRY } from './appRegistry';
 
 type SidebarCompany = {
     activeApps?: unknown[];
@@ -23,6 +24,7 @@ type SidebarUser = {
     id?: number | string | null;
     role?: string | null;
     permissions?: string[];
+    settings?: string | Record<string, unknown> | null;
 };
 
 const hasRoleAccess = (userRole: string | undefined | null, requiredRoles: string[] | undefined): boolean => {
@@ -199,6 +201,7 @@ export const getSidebarConfig = (
     user: SidebarUser,
     sidebarManagementData?: SidebarManagementData,
     userSidebarSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> },
+    assignedApps?: string[],
 ): SidebarSection[] => {
     const debugWindow =
         typeof window !== 'undefined'
@@ -1318,5 +1321,39 @@ export const getSidebarConfig = (
     ];
 
     // Apply dynamic sidebar management overrides (from DB settings + user settings)
-    return applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings, user);
+    let result = applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings, user);
+
+    // Strict per-user app assignment: when assignedApps is configured (non-empty),
+    // only the sections belonging to those apps remain. All other sections —
+    // including universal ones (settings/profile/company) — are hidden so the
+    // user sees exactly the apps they were assigned.
+    if (assignedApps && assignedApps.length > 0) {
+        const normalizedAssigned = assignedApps.map((a) => a.trim().toLowerCase()).filter(Boolean);
+        const isAssigned = (section: SidebarSection): boolean => {
+            const slugs = resolveSectionAppSlugs(section.id);
+            if (slugs.length === 0) return false;
+            return slugs.some((slug) => normalizedAssigned.includes(slug.toLowerCase()));
+        };
+        result = result.filter(isAssigned);
+    }
+
+    return result;
+};
+
+/**
+ * Resolve the marketplace app slugs that a sidebar section belongs to, based on
+ * the app registry section mapping. Returns an empty array for universal
+ * sections that are not tied to a specific marketplace app.
+ */
+const resolveSectionAppSlugs = (sectionId: string): string[] => {
+    const matching = APP_REGISTRY.filter(
+        (app) => app.sectionIds.includes(sectionId) || app.id === sectionId,
+    );
+    const slugs: string[] = [];
+    for (const app of matching) {
+        if (app.requiredApps && app.requiredApps.length > 0) {
+            slugs.push(...app.requiredApps);
+        }
+    }
+    return slugs;
 };

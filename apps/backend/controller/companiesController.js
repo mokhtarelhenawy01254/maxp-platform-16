@@ -1303,6 +1303,16 @@ const getCompanyUsers = async (req, res) => {
         } catch { /* ignore */ }
         return "/apps";
       })(),
+      // ✅ Parse settings for assignedApps (per-user app access restriction)
+      assignedApps: (() => {
+        try {
+          if (uc.user.settings) {
+            const parsed = JSON.parse(uc.user.settings);
+            return Array.isArray(parsed.assignedApps) ? parsed.assignedApps : [];
+          }
+        } catch { /* ignore */ }
+        return [];
+      })(),
       // ✅ Include Employee (HR) data from User fields
       employee: uc.user.employeeNumber
         ? {
@@ -1458,6 +1468,16 @@ const getSingleUser = async (req, res) => {
           }
         } catch { /* ignore */ }
         return "/apps";
+      })(),
+      // ✅ Parse settings for assignedApps (per-user app access restriction)
+      assignedApps: (() => {
+        try {
+          if (userCompany.user.settings) {
+            const parsed = JSON.parse(userCompany.user.settings);
+            return Array.isArray(parsed.assignedApps) ? parsed.assignedApps : [];
+          }
+        } catch { /* ignore */ }
+        return [];
       })(),
       // ✅ Include Employee (HR) data from User fields
       employee: userCompany.user.employeeNumber
@@ -2150,6 +2170,15 @@ const updateUser = async (req, res) => {
           }
         } catch { /* ignore */ }
         return "/apps";
+      })(),
+      assignedApps: (() => {
+        try {
+          if (userCompanyAfterUpdate.user.settings) {
+            const parsed = JSON.parse(userCompanyAfterUpdate.user.settings);
+            return Array.isArray(parsed.assignedApps) ? parsed.assignedApps : [];
+          }
+        } catch { /* ignore */ }
+        return [];
       })(),
       employee: userCompanyAfterUpdate.user.employeeNumber
         ? {

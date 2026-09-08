@@ -466,16 +466,8 @@ const HRDashboard: React.FC = () => {
                 <div className="h-px flex-1 bg-gray-100 dark:bg-gray-800 mx-4"></div>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {[...(data?.attendance.records || [])]
-                  .sort((a: AttendanceRecord, b: AttendanceRecord) => {
-                    if (a.checkIn && b.checkIn) {
-                      return new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime();
-                    }
-                    if (a.checkIn) return -1;
-                    if (b.checkIn) return 1;
-                    return 0;
-                  })
-                  .slice(0, 6)
+                {data?.attendance.records
+                  ?.slice(0, 6)
                   .map((record: AttendanceRecord, index: number) => (
                     <div
                       key={index}
@@ -509,7 +501,7 @@ const HRDashboard: React.FC = () => {
                             record.status === "PRESENT"
                               ? "bg-emerald-50 text-emerald-700 border-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20"
                               : record.status === "LATE"
-                              ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20"
+                              ? "bg-amber-50 text-amber-700 border-amber-100 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/20"
                               : "bg-rose-50 text-rose-700 border-rose-100 dark:bg-rose-500/10 dark:text-rose-400 dark:border-rose-500/20"
                           }`}
                         >

@@ -351,12 +351,7 @@ class AttendanceService {
       // Already normalized above
 
       // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل والتسجيل اليدوي من الإدارة)
-      if (
-        hrSettings &&
-        hrSettings.geofenceEnabled &&
-        data.workMode !== "HOME" &&
-        data.method !== "manual"
-      ) {
+      if (hrSettings && hrSettings.geofenceEnabled && data.workMode !== "HOME" && data.method !== "manual") {
         if (!data.location) {
           const error = new AttendanceError(
             "يجب السماح بالوصول للموقع لتسجيل الحضور من المكتب",
@@ -663,12 +658,7 @@ class AttendanceService {
       // Already normalized above
 
       // التحقق من النطاق الجغرافي إذا كان مفعلاً (يُستثنى العمل من المنزل والتسجيل اليدوي من الإدارة)
-      if (
-        hrSettings &&
-        hrSettings.geofenceEnabled &&
-        data.workMode !== "HOME" &&
-        data.method !== "manual"
-      ) {
+      if (hrSettings && hrSettings.geofenceEnabled && data.workMode !== "HOME" && data.method !== "manual") {
         if (!data.location) {
           const error = new AttendanceError(
             "يجب السماح بالوصول للموقع لتسجيل الانصراف من المكتب",
@@ -1191,14 +1181,7 @@ class AttendanceService {
             },
           }));
 
-        if (status === "ABSENT") {
-          mappedRecords = [
-            ...mappedRecords.filter((r) => r.status === "ABSENT"),
-            ...missingUserRecords,
-          ];
-        } else {
-          mappedRecords = [...mappedRecords, ...missingUserRecords];
-        }
+        mappedRecords = [...mappedRecords, ...missingUserRecords];
       }
 
       const autoCloseSummary = autoCloseAuditTableAvailable
@@ -1214,7 +1197,7 @@ class AttendanceService {
           )
         : this.getDefaultAutoCloseSummary();
 
-      const effectiveTotal = Math.max(total, mappedRecords.length);
+      const calculatedTotal = Math.max(total, mappedRecords.length);
 
       return {
         records: mappedRecords,
@@ -1223,8 +1206,8 @@ class AttendanceService {
         pagination: {
           page: pageNum,
           limit: limitNum,
-          total: effectiveTotal,
-          totalPages: Math.ceil(effectiveTotal / limitNum),
+          total: calculatedTotal,
+          totalPages: Math.ceil(calculatedTotal / limitNum),
         },
       };
     } catch (error) {
@@ -1383,7 +1366,11 @@ class AttendanceService {
       const uniqueAttendance = [];
       const userIdsSeen = new Set();
       attendance
-        .sort((a, b) => new Date(b.date) - new Date(a.date))
+        .sort(
+          (a, b) =>
+            new Date(b.checkIn || b.createdAt || b.date) -
+            new Date(a.checkIn || a.createdAt || a.date),
+        )
         .forEach((record) => {
           if (!userIdsSeen.has(record.userId)) {
             userIdsSeen.add(record.userId);

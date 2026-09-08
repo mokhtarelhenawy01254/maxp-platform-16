@@ -543,18 +543,10 @@
 }
 
 /* ── Mobile Responsive Overrides for QuickOrderModal ── */
-.quick-order-modal .quick-order-desktop-cart-sidebar,
-.quick-order-modal .business-side-panel {
-  display: none !important;
-}
-
-@media (min-width: 1024px) {
-  .quick-order-modal .quick-order-desktop-cart-sidebar {
-    display: flex !important;
+@media (max-width: 767px) {
+  .quick-order-modal .business-side-panel {
+    display: none !important;
   }
-}
-
-@media (max-width: 1023px) {
   .quick-order-modal .business-modal-surface {
     max-height: 95vh !important;
     height: 95vh !important;
