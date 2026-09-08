@@ -50,6 +50,70 @@ function isValidMessageContent(content) {
   return true;
 }
 
+const parseJsonSafely = (value, fallback = null) => {
+  if (typeof value !== 'string') return value ?? fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+};
+
+const extractMessageImageUrl = (msg) => {
+  if (!msg) return null;
+  const attachments = parseJsonSafely(msg.attachments);
+  if (Array.isArray(attachments)) {
+    for (const att of attachments) {
+      const url = att?.url || att?.file_url || att?.image_url || att?.image_data?.url || att?.payload?.url || att?.payload?.image_url;
+      const type = (att?.type || att?.mime_type || '').toLowerCase();
+      if (url && (type.includes('image') || /\.(jpe?g|png|webp|gif|bmp|avif)/i.test(url) || att?.image_data)) {
+        return url;
+      }
+      if (url && (msg.type === 'IMAGE' || msg.type === 'image')) {
+        return url;
+      }
+    }
+  }
+  if (msg.fileUrl && typeof msg.fileUrl === 'string') {
+    const fileUrl = msg.fileUrl.trim();
+    if (/\.(jpe?g|png|webp|gif|bmp|avif)/i.test(fileUrl) || msg.type === 'IMAGE' || msg.type === 'image') {
+      return fileUrl;
+    }
+  }
+  if (msg.content && typeof msg.content === 'string') {
+    const tokenMatch = msg.content.match(/\|IMAGE_URL\|([^\s|]+)/i);
+    if (tokenMatch?.[1]) return tokenMatch[1].trim();
+    const trimmed = msg.content.trim();
+    if (/^(https?:\/\/|\/uploads\/|assets\/|data:|blob:)/i.test(trimmed)) {
+      if (/\.(jpe?g|png|webp|gif|bmp|avif)/i.test(trimmed) || msg.type === 'IMAGE' || msg.type === 'image') {
+        return trimmed;
+      }
+    }
+  }
+  return null;
+};
+
+const extractMessageMediaUrl = (msg) => {
+  if (!msg) return null;
+  const imgUrl = extractMessageImageUrl(msg);
+  if (imgUrl) return imgUrl;
+
+  const attachments = parseJsonSafely(msg.attachments);
+  if (Array.isArray(attachments) && attachments.length > 0) {
+    for (const att of attachments) {
+      const url = att?.url || att?.file_url || att?.image_url || att?.payload?.url;
+      if (url && typeof url === 'string' && url.trim()) return url.trim();
+    }
+  }
+  if (msg.fileUrl && typeof msg.fileUrl === 'string' && msg.fileUrl.trim()) {
+    return msg.fileUrl.trim();
+  }
+  if (msg.content && typeof msg.content === 'string') {
+    const tokenMatch = msg.content.match(/\|(?:IMAGE|FILE|VIDEO|AUDIO)_URL\|([^\s|]+)/i);
+    if (tokenMatch?.[1]) return tokenMatch[1].trim();
+    if (/^(https?:\/\/|\/uploads\/|assets\/)/i.test(msg.content.trim())) {
+      return msg.content.trim();
+    }
+  }
+  return null;
+};
+
 // 📊 دالة لتسجيل زيارة البوست (تلقائي)
 async function trackPostVisit(postId, companyId) {
   if (!postId || !companyId) {
@@ -1745,15 +1809,20 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                 parentSenderName = 'موظف';
               }
             }
+            const parentImageUrl = extractMessageImageUrl(parentMsg);
+            const parentMediaUrl = parentImageUrl || extractMessageMediaUrl(parentMsg);
             replyMeta = {
               replyToResolvedMessageId: parentMsg.id,
               replyToContentSnippet: snippet,
               replyToSenderIsCustomer: !!parentMsg.isFromCustomer,
               replyToType: parentMsg.type,
               replyTo: {
+                messageId: parentMsg.id,
                 senderName: parentSenderName,
                 type: (parentMsg.type || 'text').toLowerCase(),
-                content: snippet
+                content: snippet,
+                ...(parentImageUrl ? { imageUrl: parentImageUrl } : {}),
+                ...(parentMediaUrl ? { mediaUrl: parentMediaUrl } : {})
               }
             };
           }

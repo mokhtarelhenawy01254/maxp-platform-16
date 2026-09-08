@@ -33,6 +33,65 @@ const normalizeMessageMediaForResponse = (message) => {
     };
 };
 
+const extractMessageImageUrl = (msg) => {
+    if (!msg) return null;
+    const attachments = parseJsonSafely(msg.attachments);
+    if (Array.isArray(attachments)) {
+        for (const att of attachments) {
+            const url = att?.url || att?.file_url || att?.image_url || att?.image_data?.url || att?.payload?.url || att?.payload?.image_url;
+            const type = (att?.type || att?.mime_type || '').toLowerCase();
+            if (url && (type.includes('image') || /\.(jpe?g|png|webp|gif|bmp|avif)/i.test(url) || att?.image_data)) {
+                return url;
+            }
+            if (url && (msg.type === 'IMAGE' || msg.type === 'image')) {
+                return url;
+            }
+        }
+    }
+    if (msg.fileUrl && typeof msg.fileUrl === 'string') {
+        const fileUrl = msg.fileUrl.trim();
+        if (/\.(jpe?g|png|webp|gif|bmp|avif)/i.test(fileUrl) || msg.type === 'IMAGE' || msg.type === 'image') {
+            return fileUrl;
+        }
+    }
+    if (msg.content && typeof msg.content === 'string') {
+        const tokenMatch = msg.content.match(/\|IMAGE_URL\|([^\s|]+)/i);
+        if (tokenMatch?.[1]) return tokenMatch[1].trim();
+        const trimmed = msg.content.trim();
+        if (/^(https?:\/\/|\/uploads\/|assets\/|data:|blob:)/i.test(trimmed)) {
+            if (/\.(jpe?g|png|webp|gif|bmp|avif)/i.test(trimmed) || msg.type === 'IMAGE' || msg.type === 'image') {
+                return trimmed;
+            }
+        }
+    }
+    return null;
+};
+
+const extractMessageMediaUrl = (msg) => {
+    if (!msg) return null;
+    const imgUrl = extractMessageImageUrl(msg);
+    if (imgUrl) return imgUrl;
+
+    const attachments = parseJsonSafely(msg.attachments);
+    if (Array.isArray(attachments) && attachments.length > 0) {
+        for (const att of attachments) {
+            const url = att?.url || att?.file_url || att?.image_url || att?.payload?.url;
+            if (url && typeof url === 'string' && url.trim()) return url.trim();
+        }
+    }
+    if (msg.fileUrl && typeof msg.fileUrl === 'string' && msg.fileUrl.trim()) {
+        return msg.fileUrl.trim();
+    }
+    if (msg.content && typeof msg.content === 'string') {
+        const tokenMatch = msg.content.match(/\|(?:IMAGE|FILE|VIDEO|AUDIO)_URL\|([^\s|]+)/i);
+        if (tokenMatch?.[1]) return tokenMatch[1].trim();
+        if (/^(https?:\/\/|\/uploads\/|assets\/)/i.test(msg.content.trim())) {
+            return msg.content.trim();
+        }
+    }
+    return null;
+};
+
 // 🆕 Get messages for a conversation
 const getMessages = async (req, res) => {
     try {
@@ -77,6 +136,38 @@ const getMessages = async (req, res) => {
             }, 3)
         ]);
 
+        // Build map of existing messages in this batch
+        const messagesMap = new Map();
+        messages.forEach(m => messagesMap.set(m.id, m));
+
+        // Find missing parent messages needed for replyTo enrichment
+        const neededParentIds = [];
+        messages.forEach(msg => {
+            const meta = parseJsonSafely(msg.metadata);
+            const parentId = meta?.replyToResolvedMessageId || meta?.replyTo?.messageId;
+            if (parentId && !messagesMap.has(parentId) && !neededParentIds.includes(parentId)) {
+                neededParentIds.push(parentId);
+            }
+        });
+
+        if (neededParentIds.length > 0) {
+            try {
+                const extraParents = await executeWithRetry(async () => {
+                    return await prisma.message.findMany({
+                        where: { id: { in: neededParentIds } },
+                        include: {
+                            user: {
+                                select: { id: true, firstName: true, lastName: true }
+                            }
+                        }
+                    });
+                }, 2);
+                extraParents.forEach(p => messagesMap.set(p.id, p));
+            } catch (err) {
+                console.warn('⚠️ [GET-MESSAGES] Error resolving extra parent messages:', err.message);
+            }
+        }
+
         res.json({
             success: true,
             data: messages.reverse().map(msg => {
@@ -91,6 +182,35 @@ const getMessages = async (req, res) => {
                     } catch (e) {
                         // Ignore parse errors
                         console.error('Error parsing message metadata:', e);
+                    }
+                }
+
+                // Enrich replyTo if present or if replyToResolvedMessageId is present
+                const parentId = metadata?.replyToResolvedMessageId || metadata?.replyTo?.messageId;
+                if (parentId && messagesMap.has(parentId)) {
+                    const parentMsg = messagesMap.get(parentId);
+                    const parentImg = extractMessageImageUrl(parentMsg);
+                    const parentMedia = parentImg || extractMessageMediaUrl(parentMsg);
+                    const parentSender = parentMsg.isFromCustomer
+                        ? 'العميل'
+                        : (parentMsg.user ? `${parentMsg.user.firstName} ${parentMsg.user.lastName}`.trim() : (parseJsonSafely(parentMsg.metadata)?.employeeName || 'موظف'));
+
+                    if (!metadata.replyTo || typeof metadata.replyTo !== 'object') {
+                        metadata.replyTo = {};
+                    }
+                    metadata.replyTo.messageId = parentMsg.id;
+                    if (!metadata.replyTo.senderName) {
+                        metadata.replyTo.senderName = parentSender;
+                    }
+                    if (!metadata.replyTo.type) {
+                        metadata.replyTo.type = (parentMsg.type || 'text').toLowerCase();
+                    }
+                    if (parentImg) {
+                        metadata.replyTo.imageUrl = proxyMessageMediaUrl(parentMsg.id, parentImg);
+                        metadata.replyTo.type = 'image';
+                    }
+                    if (parentMedia) {
+                        metadata.replyTo.mediaUrl = proxyMessageMediaUrl(parentMsg.id, parentMedia);
                     }
                 }
 

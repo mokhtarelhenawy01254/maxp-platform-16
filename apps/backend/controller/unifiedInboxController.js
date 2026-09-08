@@ -497,6 +497,16 @@ async function getStandardConversationMessages(req, res, companyId, id, skip, ta
             let metadata = {};
             try { metadata = msg.metadata ? JSON.parse(msg.metadata) : {}; } catch (e) { }
 
+            const replyTo = metadata.replyTo;
+            const quotedMessage = replyTo ? {
+                id: replyTo.messageId || metadata.replyToResolvedMessageId || null,
+                content: replyTo.content || '',
+                senderName: replyTo.senderName || '',
+                type: replyTo.type || 'text',
+                imageUrl: replyTo.imageUrl || null,
+                mediaUrl: replyTo.mediaUrl || null
+            } : null;
+
             return {
                 id: msg.id,
                 platform: conversation.channel?.toLowerCase() || 'facebook',
@@ -508,7 +518,7 @@ async function getStandardConversationMessages(req, res, companyId, id, skip, ta
                 mediaUrl: attachments[0]?.url || metadata.attachmentUrl || null,
                 mediaType: attachments[0]?.type || metadata.attachmentType || null,
                 mediaFileName: attachments[0]?.name || null,
-                quotedMessage: null,
+                quotedMessage: quotedMessage,
                 isAIResponse: metadata.isAIResponse || (!msg.isFromCustomer && !msg.senderId) || false,
                 sender: msg.isFromCustomer ? 'customer' : (msg.senderId && msg.user ? `${msg.user.firstName} ${msg.user.lastName}`.trim() : (metadata.isAIResponse || !msg.senderId ? 'ai' : 'agent')),
                 senderAvatar: msg.user?.avatar || null,

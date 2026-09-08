@@ -19,11 +19,18 @@ interface ReplyReference {
   senderName?: string;
   type?: string;
   content?: string;
+  imageUrl?: string;
+  mediaUrl?: string;
+  messageId?: string;
 }
 
 interface MessageMetadata {
   isStarred?: boolean;
   replyTo?: ReplyReference;
+  replyToResolvedMessageId?: string;
+  replyToContentSnippet?: string;
+  replyToType?: string;
+  replyToFacebookMessageId?: string;
   myReaction?: string;
   reactions?: Record<string, unknown>;
 }
@@ -92,11 +99,13 @@ interface Message {
 
 interface MessageBubbleProps {
   message: Message;
+  parentMessage?: Message;
   onDelete?: (messageId: string) => void;
   onForward?: (message: Message) => void;
   onStar?: (messageId: string, isStarred: boolean) => void;
   onReaction?: (messageId: string, reaction: string) => void;
   onReply?: (message: Message) => void;
+  onScrollToMessage?: (messageId: string) => void;
   currentUserId?: string;
   hasBeenReplied?: boolean; // جديد: هل تم الرد على هذه الرسالة
   onCorrect?: () => void; // جديد: عند تصحيح الرد
@@ -259,11 +268,13 @@ const getDisplayTextContent = (
 const MessageBubble: React.FC<MessageBubbleProps> = memo(
   ({
     message,
+    parentMessage,
     onDelete,
     onForward,
     onStar,
     onReaction,
     onReply,
+    onScrollToMessage,
     hasBeenReplied,
     onCorrect,
   }) => {
@@ -335,6 +346,35 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
 
     const isStarred = metadata?.isStarred || message.isStarred;
     const replyTo = metadata?.replyTo;
+    const replyToResolvedId =
+      metadata?.replyToResolvedMessageId ||
+      replyTo?.messageId ||
+      parentMessage?.id;
+
+    const rawReplyImageUrl =
+      replyTo?.imageUrl ||
+      replyTo?.mediaUrl ||
+      (parentMessage?.type?.toLowerCase() === "image"
+        ? parentMessage.fileUrl || parentMessage.content
+        : "") ||
+      parentMessage?.attachments?.find((att: any) =>
+        ["image", "animated_image", "sticker"].includes(normalizeAttachmentType(att?.type)) ||
+        (att?.mime_type && att.mime_type.startsWith("image/")) ||
+        att?.image_data?.url
+      )?.url;
+
+    const isQuotedImage =
+      Boolean(rawReplyImageUrl) ||
+      replyTo?.type?.toLowerCase() === "image" ||
+      metadata?.replyToType?.toLowerCase() === "image" ||
+      parentMessage?.type?.toLowerCase() === "image";
+
+    const replyImageUrl = rawReplyImageUrl
+      ? getInboxMessageMediaUrl(replyToResolvedId || message.id, rawReplyImageUrl)
+      : isQuotedImage && replyToResolvedId
+        ? getInboxMessageMediaUrl(replyToResolvedId, null)
+        : "";
+
     const myReaction = metadata?.myReaction;
     const reactionCounts = Object.entries(metadata?.reactions ?? {}).reduce<
       Record<string, number>
@@ -701,20 +741,76 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
             {/* Reply Context */}
             {replyTo && (
               <div
-                className="mb-2 text-xs border-l-2 pl-2"
-                style={{
-                  borderColor: isCustomer
-                    ? "var(--business-message-reply-accent)"
-                    : "rgba(255,255,255,0.5)",
-                  color: isCustomer
-                    ? "var(--color-muted-foreground)"
-                    : "rgba(255,255,255,0.8)",
+                onClick={() => {
+                  if (replyToResolvedId && onScrollToMessage) {
+                    onScrollToMessage(replyToResolvedId);
+                  }
                 }}
+                className={`mb-2 text-xs rounded-xl p-2 flex items-center justify-between gap-2.5 transition-all ${
+                  replyToResolvedId && onScrollToMessage
+                    ? "cursor-pointer hover:opacity-90 active:scale-[0.99]"
+                    : ""
+                }`}
+                style={{
+                  background: isCustomer
+                    ? "color-mix(in srgb, var(--color-foreground) 6%, transparent)"
+                    : "rgba(0, 0, 0, 0.2)",
+                  borderInlineStart: `3px solid ${
+                    isCustomer
+                      ? "var(--color-primary)"
+                      : "rgba(255, 255, 255, 0.9)"
+                  }`,
+                }}
+                title={
+                  replyToResolvedId && onScrollToMessage
+                    ? "اضغط للانتقال إلى الرسالة الأصلية"
+                    : undefined
+                }
               >
-                <div className="font-semibold">{replyTo.senderName}</div>
-                <div className="truncate opacity-80">
-                  {replyTo.type === "text" ? replyTo.content : "مرفق/صورة"}
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="font-bold truncate mb-0.5 text-[11px]"
+                    style={{
+                      color: isCustomer
+                        ? "var(--color-primary)"
+                        : "#ffffff",
+                    }}
+                  >
+                    {replyTo.senderName || "موظف"}
+                  </div>
+                  <div
+                    className="truncate text-[11px]"
+                    style={{
+                      color: isCustomer
+                        ? "var(--color-muted-foreground)"
+                        : "rgba(255, 255, 255, 0.85)",
+                    }}
+                  >
+                    {replyImageUrl
+                      ? replyTo.content &&
+                        replyTo.content !== "📷 صورة" &&
+                        replyTo.content !== "مرفق/صورة"
+                        ? replyTo.content
+                        : "📷 صورة"
+                      : replyTo.type === "text"
+                        ? replyTo.content
+                        : replyTo.content || "مرفق/صورة"}
+                  </div>
                 </div>
+
+                {replyImageUrl && (
+                  <div className="relative flex-shrink-0 w-11 h-11 rounded-lg overflow-hidden border border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/5 shadow-xs">
+                    <img
+                      src={replyImageUrl}
+                      alt="صورة مقتبسة"
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                    />
+                  </div>
+                )}
               </div>
             )}
 
@@ -1061,7 +1157,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
       prevProps.message.attachments === nextProps.message.attachments &&
       prevProps.message.metadata === nextProps.message.metadata &&
       prevProps.hasBeenReplied === nextProps.hasBeenReplied &&
-      prevProps.currentUserId === nextProps.currentUserId
+      prevProps.currentUserId === nextProps.currentUserId &&
+      prevProps.parentMessage?.id === nextProps.parentMessage?.id &&
+      prevProps.parentMessage?.content === nextProps.parentMessage?.content &&
+      prevProps.parentMessage?.fileUrl === nextProps.parentMessage?.fileUrl &&
+      prevProps.onScrollToMessage === nextProps.onScrollToMessage
     );
   },
 );

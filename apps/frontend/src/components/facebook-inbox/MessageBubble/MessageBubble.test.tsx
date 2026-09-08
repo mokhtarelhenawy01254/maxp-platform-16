@@ -2,6 +2,12 @@ import React from "react";
 import { render, screen } from "@testing-library/react";
 import MessageBubble from "./MessageBubble";
 
+jest.mock("../../../services/apiClient", () => ({
+  apiClient: {
+    post: jest.fn(),
+  },
+}));
+
 jest.mock("../../../utils/imageUrl", () => ({
   getInboxExternalImageUrl: (rawUrl: string) => rawUrl,
   getInboxMessageMediaUrl: (
@@ -96,5 +102,66 @@ describe("MessageBubble", () => {
     );
     expect(screen.getByText("دي الصورة")).toBeInTheDocument();
     expect(screen.queryByText(/\|IMAGE_URL\|/)).not.toBeInTheDocument();
+  });
+
+  it("renders quoted image thumbnail when replyTo contains imageUrl", () => {
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          content: "دي",
+          metadata: {
+            replyTo: {
+              senderName: "Ahmed Fares",
+              type: "image",
+              content: "📷 صورة",
+              imageUrl: "https://example.com/quoted-product.jpg",
+            },
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Ahmed Fares")).toBeInTheDocument();
+    expect(screen.getByText("دي")).toBeInTheDocument();
+    expect(screen.getByAltText("صورة مقتبسة")).toHaveAttribute(
+      "src",
+      "https://example.com/quoted-product.jpg",
+    );
+  });
+
+  it("resolves quoted image from parentMessage when replyTo has no imageUrl", () => {
+    const parent = {
+      ...baseMessage,
+      id: "parent-msg-123",
+      content: "/uploads/products/product-1.webp",
+      type: "image" as const,
+      isFromCustomer: false,
+    };
+
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          content: "دول ف عرض 300",
+          metadata: {
+            replyToResolvedMessageId: "parent-msg-123",
+            replyTo: {
+              senderName: "Ahmed Fares",
+              type: "image",
+              content: "📷 صورة",
+            },
+          },
+        }}
+        parentMessage={parent}
+      />,
+    );
+
+    expect(screen.getByText("Ahmed Fares")).toBeInTheDocument();
+    expect(screen.getByText("دول ف عرض 300")).toBeInTheDocument();
+    expect(screen.getByAltText("صورة مقتبسة")).toHaveAttribute(
+      "src",
+      "/uploads/products/product-1.webp",
+    );
   });
 });
