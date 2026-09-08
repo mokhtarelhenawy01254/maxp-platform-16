@@ -39,6 +39,7 @@ import {
   getTopProductImage,
   getTopProductPurchases,
 } from "./storeAnalyticsDashboard.utils";
+import StoreAnalyticsTabs from "./StoreAnalyticsTabs";
 
 
 
@@ -489,6 +490,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
       />
 
       <div className="mx-auto max-w-[1480px] space-y-6">
+        <StoreAnalyticsTabs />
         <section
           className="relative overflow-hidden rounded-[34px] px-5 py-6 sm:px-8 sm:py-8"
           style={heroSurfaceStyle}

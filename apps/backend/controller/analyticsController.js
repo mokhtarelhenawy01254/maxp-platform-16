@@ -3617,7 +3617,9 @@ const getFunnelAnalytics = async (req, res) => {
         key: 'purchases',
         step: 'إتمام الطلب',
         count: purchases,
-        rate: startedOrders > 0 ? ((purchases / startedOrders) * 100) : 0,
+        rate: startedOrders > 0
+          ? ((purchases / startedOrders) * 100)
+          : (productViews > 0 ? ((purchases / productViews) * 100) : (storeVisits > 0 ? ((purchases / storeVisits) * 100) : 0)),
       },
       {
         key: 'delivered',
@@ -3627,11 +3629,13 @@ const getFunnelAnalytics = async (req, res) => {
       },
     ];
 
-    const overallConversionRate = storeVisits > 0 ? ((deliveredOrders / storeVisits) * 100) : 0;
+    // Storefront conversion rate is based on orders placed vs visits
+    const overallConversionRate = storeVisits > 0 ? ((purchases / storeVisits) * 100) : 0;
+    const deliveryRate = purchases > 0 ? ((deliveredOrders / purchases) * 100) : 0;
 
-    // Find biggest drop-off
+    // Find biggest drop-off within the shopping funnel (visits -> views -> checkout -> purchase)
     let biggestDropOff = { from: '', to: '', dropRate: 0 };
-    for (let i = 0; i < funnelSteps.length - 1; i++) {
+    for (let i = 0; i < funnelSteps.length - 2; i++) {
       if (funnelSteps[i].count > 0) {
         const dropRate = 100 - ((funnelSteps[i + 1].count / funnelSteps[i].count) * 100);
         if (dropRate > biggestDropOff.dropRate) {
@@ -3655,6 +3659,9 @@ const getFunnelAnalytics = async (req, res) => {
           addToCarts,
         },
         overallConversionRate: parseFloat(overallConversionRate.toFixed(2)),
+        deliveryRate: parseFloat(deliveryRate.toFixed(2)),
+        deliveredOrders,
+        purchases,
         biggestDropOff: {
           ...biggestDropOff,
           dropRate: parseFloat(biggestDropOff.dropRate.toFixed(2))

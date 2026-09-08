@@ -607,6 +607,7 @@ export const getSidebarConfig = (
             icon: BarChart3,
             items: [
                 { to: '/analytics/orders', icon: BarChart3, label: t('dashboard.overview') },
+                { to: '/analytics/store', icon: LineChart, label: t('sidebar.storeAnalytics') },
                 { to: '/analytics/orders/orders', icon: Archive, label: t('sidebar.orderAnalytics') },
                 { to: '/analytics/orders/revenue', icon: Banknote, label: t('sidebar.revenueAnalytics') },
                 { to: '/analytics/orders/products', icon: ShoppingBag, label: t('sidebar.productAnalytics') },
@@ -691,6 +692,12 @@ export const getSidebarConfig = (
                     to: '/analytics/orders/coupons',
                     icon: Ticket,
                     label: t('sidebar.couponAnalytics'),
+                    hidden: !isAppActive('analytics-advanced')
+                },
+                {
+                    to: '/analytics/store',
+                    icon: LineChart,
+                    label: t('sidebar.storeAnalytics'),
                     hidden: !isAppActive('analytics-advanced')
                 },
                 {

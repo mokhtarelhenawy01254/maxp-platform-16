@@ -785,6 +785,9 @@ class AnalyticsService {
     return {
       visits,
       purchases,
+      addToCarts,
+      checkouts,
+      directOrders: purchases > checkouts ? purchases - checkouts : 0,
       conversionRate: parseFloat(conversionRate.toFixed(2)),
       overallRate: parseFloat(conversionRate.toFixed(2)),
       visitorToCart: visits > 0 ? parseFloat(((addToCarts / visits) * 100).toFixed(2)) : 0,
