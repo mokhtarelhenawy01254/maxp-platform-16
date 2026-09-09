@@ -8,6 +8,7 @@ import {
   shouldRedirectMerchantToPortal,
 } from "./utils/merchantAccess";
 import { saveLastPath } from "./utils/postAuthRouting";
+import { pushNotificationService } from "./services/pushNotificationService";
 // fallback for old deployed bundles that reference undefined getStatusText
 // (injected as inline script in index.html instead to avoid tree-shaking)
 
@@ -1726,6 +1727,17 @@ const AppContent = () => {
       saveLastPath(user, pathname);
     }
   }, [isAuthenticated, pathname, user]);
+
+  // Native Mobile Push Notifications (FCM)
+  useEffect(() => {
+    pushNotificationService.init();
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      pushNotificationService.syncTokenWithBackend();
+    }
+  }, [isAuthenticated, user]);
 
   // Subdomain Detection Logic
   const hostname = window.location.hostname;

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "265265318036",
+    "project_id": "maxp-platform",
+    "storage_bucket": "maxp-platform.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:265265318036:android:b48eb6b778e4c65a234c81",
+        "android_client_info": {
+          "package_name": "online.maxp.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyADNayMM9AO3F7sa8oHDzPn5l_HLhOyUuY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

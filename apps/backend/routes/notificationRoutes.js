@@ -243,12 +243,70 @@ const notificationController = {
       });
     }
   },
+
+  registerDeviceToken: async (req, res) => {
+    try {
+      const { userId, companyId } = getRequestUserContext(req);
+      const { token, platform, userAgent } = req.body || {};
+
+      if (!token) {
+        return res.status(400).json({
+          success: false,
+          error: "رمز الجهاز مطلوب (token is required)",
+        });
+      }
+
+      const { upsertDeviceToken } = require("../services/firebaseMessagingService");
+      const result = await upsertDeviceToken({
+        companyId,
+        userId,
+        token,
+        platform,
+        userAgent,
+      });
+
+      res.json({
+        success: true,
+        message: "تم تسجيل رمز الجهاز بنجاح",
+        data: { id: result.id, platform },
+      });
+    } catch (error) {
+      console.error("Error registering device token:", error);
+      res.status(500).json({
+        success: false,
+        error: "حدث خطأ أثناء تسجيل رمز الجهاز",
+      });
+    }
+  },
+
+  unregisterDeviceToken: async (req, res) => {
+    try {
+      const { userId } = getRequestUserContext(req);
+      const { token } = req.body || {};
+
+      const { removeDeviceToken } = require("../services/firebaseMessagingService");
+      await removeDeviceToken({ userId, token });
+
+      res.json({
+        success: true,
+        message: "تم إلغاء تسجيل رمز الجهاز بنجاح",
+      });
+    } catch (error) {
+      console.error("Error unregistering device token:", error);
+      res.status(500).json({
+        success: false,
+        error: "حدث خطأ أثناء إلغاء تسجيل رمز الجهاز",
+      });
+    }
+  },
 };
 
 router.get("/types", verifyToken.authenticateToken, notificationController.getTypes);
 router.get("/push/public-key", notificationController.getBrowserPushPublicKey);
 router.post("/push/subscriptions", verifyToken.authenticateToken, notificationController.subscribeBrowserPush);
 router.delete("/push/subscriptions", verifyToken.authenticateToken, notificationController.unsubscribeBrowserPush);
+router.post("/device-token", verifyToken.authenticateToken, notificationController.registerDeviceToken);
+router.delete("/device-token", verifyToken.authenticateToken, notificationController.unregisterDeviceToken);
 router.get("/settings/:userId", verifyToken.authenticateToken, notificationController.getSettings);
 router.put("/settings/:userId", verifyToken.authenticateToken, notificationController.updateSettings);
 router.get("/stats/:userId", verifyToken.authenticateToken, notificationController.getStats);

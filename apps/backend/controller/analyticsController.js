@@ -1940,129 +1940,272 @@ const getAbandonedCartAnalytics = async (req, res) => {
 
     const { startDate, endDate } = req.query;
     const prisma = getSharedPrismaClient();
+    const now = new Date();
 
-    // Smart date handling
-    let dateFilter = {};
-    if (startDate && endDate) {
-      try {
-        dateFilter = {
-          updatedAt: {
-            gte: new Date(startDate),
-            lte: new Date(endDate)
-          }
-        };
-      } catch (err) {
-        console.error('Date parsing error:', err);
+    // Smart date parsing (full day bounds to prevent date truncation)
+    let start = null;
+    let end = null;
+
+    if (startDate) {
+      const s = new Date(startDate);
+      if (!isNaN(s.getTime())) {
+        s.setHours(0, 0, 0, 0);
+        start = s;
+      }
+    }
+    if (endDate) {
+      const e = new Date(endDate);
+      if (!isNaN(e.getTime())) {
+        e.setHours(23, 59, 59, 999);
+        end = e;
       }
     }
 
-    // ✅ FIXED: Use GuestCart instead of Cart (Cart model doesn't exist)
-    const guestCarts = await prisma.guestCart.findMany({
-      where: {
-        companyId: String(companyId),
-        ...dateFilter
-      },
-      select: {
-        id: true,
-        cartId: true,
-        items: true,  // JSON string
-        total: true,
-        createdAt: true,
-        updatedAt: true,
-        expiresAt: true
+    // Default to last 30 days if no range provided
+    if (!start && !end) {
+      start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      end = new Date(now.getTime());
+    } else if (start && !end) {
+      end = new Date(now.getTime());
+    }
+
+    const cartDateFilter = {
+      updatedAt: {
+        ...(start ? { gte: start } : {}),
+        ...(end ? { lte: end } : {})
       }
-    });
+    };
 
-    // Get guest orders to identify converted carts
-    const guestOrders = await prisma.guestOrder.findMany({
-      where: {
-        companyId: String(companyId),
-        ...(startDate && endDate ? {
-          createdAt: {
-            gte: new Date(startDate),
-            lte: new Date(endDate)
-          }
-        } : {})
-      },
-      select: {
-        guestCartId: true,
-        createdAt: true
+    const convDateFilter = {
+      convertedAt: {
+        ...(start ? { gte: start } : {}),
+        ...(end ? { lte: end } : {})
       }
-    });
+    };
 
-    const convertedCartIds = new Set(guestOrders.map(o => o.guestCartId).filter(Boolean));
+    // Parallel fetch: current GuestCarts and converted carts from CartConversionLog
+    const [guestCarts, convertedLogs] = await Promise.all([
+      prisma.guestCart.findMany({
+        where: {
+          companyId: String(companyId),
+          ...cartDateFilter
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          cartId: true,
+          items: true,
+          total: true,
+          createdAt: true,
+          updatedAt: true,
+          expiresAt: true,
+          checkoutData: true,
+          checkoutStartedAt: true,
+          checkoutUpdatedAt: true
+        }
+      }),
+      prisma.cartConversionLog.findMany({
+        where: {
+          companyId: String(companyId),
+          ...convDateFilter
+        },
+        orderBy: { convertedAt: 'desc' },
+        select: {
+          id: true,
+          cartId: true,
+          orderId: true,
+          orderNumber: true,
+          cartValue: true,
+          convertedAt: true,
+          channel: true,
+          employeeName: true,
+          governorate: true
+        }
+      }).catch(err => {
+        console.warn('⚠️ [ANALYTICS] CartConversionLog fetch non-fatal error:', err.message);
+        return [];
+      })
+    ]);
 
-    // Calculate abandoned carts (carts without orders and expired)
-    const now = new Date();
-    const abandonedCarts = guestCarts.filter(cart => {
+    // Separate active carts vs abandoned (expired or inactive > 24 hours)
+    const activeCarts = [];
+    const abandonedCarts = [];
+
+    guestCarts.forEach(cart => {
       const isExpired = new Date(cart.expiresAt) < now;
-      const isNotConverted = !convertedCartIds.has(cart.cartId);
-      return isExpired && isNotConverted;
+      const hoursSinceUpdate = (now.getTime() - new Date(cart.updatedAt).getTime()) / (1000 * 60 * 60);
+      if (isExpired || hoursSinceUpdate >= 24) {
+        abandonedCarts.push(cart);
+      } else {
+        activeCarts.push(cart);
+      }
     });
 
-    // Parse cart items and calculate totals
-    let totalCartValue = 0;
-    const productMap = {};
+    // Aggregations
+    const totalAbandonedValue = abandonedCarts.reduce((sum, c) => sum + (parseFloat(c.total) || 0), 0);
+    const totalActiveValue = activeCarts.reduce((sum, c) => sum + (parseFloat(c.total) || 0), 0);
+    const totalRecoveredRevenue = convertedLogs.reduce((sum, log) => sum + (parseFloat(log.cartValue) || 0), 0);
 
+    const totalCarts = guestCarts.length + convertedLogs.length;
+    const abandonedCount = abandonedCarts.length;
+    const convertedCount = convertedLogs.length;
+    const activeCount = activeCarts.length;
+
+    const abandonmentRate = totalCarts > 0
+      ? parseFloat(((abandonedCount / totalCarts) * 100).toFixed(1))
+      : 0;
+
+    const recoveryRate = (abandonedCount + convertedCount) > 0
+      ? parseFloat(((convertedCount / (abandonedCount + convertedCount)) * 100).toFixed(1))
+      : 0;
+
+    const avgCartValue = abandonedCount > 0
+      ? parseFloat((totalAbandonedValue / abandonedCount).toFixed(2))
+      : 0;
+
+    // Parse items to extract top abandoned products
+    const productMap = {};
     abandonedCarts.forEach(cart => {
       try {
-        const cartValue = parseFloat(cart.total) || 0;
-        totalCartValue += cartValue;
+        let items = [];
+        if (typeof cart.items === 'string') {
+          items = JSON.parse(cart.items || '[]');
+        } else if (Array.isArray(cart.items)) {
+          items = cart.items;
+        }
 
-        // Parse items JSON
-        const items = JSON.parse(cart.items || '[]');
         items.forEach(item => {
-          const key = item.productName || item.name || 'غير معروف';
+          const name = item.productName || item.name || 'منتج غير محدد';
+          const price = parseFloat(item.price) || 0;
+          const qty = parseInt(item.quantity) || 1;
+          const key = item.productId || item.id || name;
+
           if (!productMap[key]) {
             productMap[key] = {
-              productName: key,
-              category: item.category || 'غير مصنف',
+              productId: item.productId || item.id || null,
+              productName: name,
+              category: item.category || 'عام',
+              image: item.image || item.imageUrl || null,
+              price,
               abandonedCount: 0,
               lostRevenue: 0
             };
           }
-          productMap[key].abandonedCount += parseInt(item.quantity) || 0;
-          productMap[key].lostRevenue += (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 0);
+          productMap[key].abandonedCount += qty;
+          productMap[key].lostRevenue += price * qty;
         });
       } catch (parseError) {
-        console.error('Error parsing cart items:', parseError);
+        // Safe JSON parsing ignore
       }
     });
 
     const topAbandonedProducts = Object.values(productMap)
       .sort((a, b) => b.lostRevenue - a.lostRevenue)
-      .slice(0, 10);
+      .slice(0, 10)
+      .map(p => ({
+        ...p,
+        lostRevenue: parseFloat(p.lostRevenue.toFixed(2))
+      }));
+
+    // Funnel stages
+    const reachedCheckoutCount = guestCarts.filter(c => !!c.checkoutData || !!c.checkoutStartedAt).length + convertedCount;
+    const funnel = [
+      { stage: 'carts_created', label: 'السلات المنشأة', count: totalCarts },
+      { stage: 'reached_checkout', label: 'بدء الدفع', count: reachedCheckoutCount },
+      { stage: 'abandoned', label: 'سلات مهجورة', count: abandonedCount },
+      { stage: 'recovered', label: 'تم الاسترجاع', count: convertedCount }
+    ];
+
+    // Format cart item with customer info and items preview
+    const formatCartItem = (cart) => {
+      let checkout = {};
+      try {
+        if (typeof cart.checkoutData === 'string') {
+          checkout = JSON.parse(cart.checkoutData || '{}');
+        } else if (cart.checkoutData && typeof cart.checkoutData === 'object') {
+          checkout = cart.checkoutData;
+        }
+      } catch (e) {}
+
+      let itemsList = [];
+      try {
+        if (typeof cart.items === 'string') {
+          itemsList = JSON.parse(cart.items || '[]');
+        } else if (Array.isArray(cart.items)) {
+          itemsList = cart.items;
+        }
+      } catch (e) {}
+
+      const customerName = checkout.guestName || checkout.fullName || checkout.customerName || checkout.name || null;
+      const customerPhone = checkout.guestPhone || checkout.phoneNumber || checkout.phone || checkout.mobile || null;
+      const governorate = checkout.governorate || checkout.gov || checkout.city || null;
+
+      const isExpired = new Date(cart.expiresAt) < now;
+      const ageHours = (now.getTime() - new Date(cart.updatedAt).getTime()) / (1000 * 60 * 60);
+
+      let urgencyTier = 'expired';
+      if (ageHours < 2 && !isExpired) {
+        urgencyTier = 'fresh'; // Golden Window (< 2h)
+      } else if (ageHours < 24 && !isExpired) {
+        urgencyTier = 'active'; // Incomplete / Active (< 24h)
+      }
+
+      return {
+        id: cart.id,
+        cartId: cart.cartId,
+        customerName,
+        customerPhone,
+        governorate,
+        itemsCount: itemsList.length,
+        items: itemsList.slice(0, 5).map(item => ({
+          name: item.productName || item.name || 'منتج',
+          quantity: parseInt(item.quantity) || 1,
+          price: parseFloat(item.price) || 0,
+          image: item.image || item.imageUrl || null
+        })),
+        cartValue: parseFloat(cart.total) || 0,
+        createdAt: cart.createdAt,
+        lastUpdated: cart.updatedAt,
+        expiresAt: cart.expiresAt,
+        hasPhone: Boolean(customerPhone && String(customerPhone).trim().length >= 8),
+        urgencyTier,
+        hasStartedCheckout: Boolean(cart.checkoutStartedAt || cart.checkoutData)
+      };
+    };
+
+    const formattedRecentCarts = [...abandonedCarts, ...activeCarts]
+      .slice(0, 30)
+      .map(formatCartItem);
+
+    const formattedConverted = convertedLogs.slice(0, 15).map(log => ({
+      id: log.id,
+      cartId: log.cartId,
+      orderId: log.orderId,
+      orderNumber: log.orderNumber,
+      cartValue: parseFloat(log.cartValue) || 0,
+      convertedAt: log.convertedAt,
+      channel: log.channel,
+      employeeName: log.employeeName,
+      governorate: log.governorate
+    }));
 
     res.json({
       success: true,
       data: {
-        totalCarts: guestCarts.length,
-        abandonedCarts: abandonedCarts.length,
-        convertedCarts: guestCarts.length - abandonedCarts.length,
-        abandonmentRate: guestCarts.length > 0 ? parseFloat(((abandonedCarts.length / guestCarts.length) * 100).toFixed(2)) : 0,
-        totalCartValue: parseFloat(totalCartValue.toFixed(2)),
-        avgCartValue: abandonedCarts.length > 0 ? parseFloat((totalCartValue / abandonedCarts.length).toFixed(2)) : 0,
-        topAbandonedProducts: topAbandonedProducts.map(p => ({
-          ...p,
-          lostRevenue: parseFloat(p.lostRevenue.toFixed(2))
-        })),
-        recentAbandonedCarts: abandonedCarts.slice(0, 20).map(cart => {
-          let itemsCount = 0;
-          try {
-            const items = JSON.parse(cart.items || '[]');
-            itemsCount = items.length;
-          } catch (e) {
-            console.error('Error parsing cart items for recent carts:', e);
-          }
-
-          return {
-            cartId: cart.cartId,
-            itemsCount,
-            cartValue: parseFloat(cart.total) || 0,
-            lastUpdated: cart.updatedAt,
-            expiresAt: cart.expiresAt
-          };
-        })
+        totalCarts,
+        abandonedCarts: abandonedCount,
+        activeCarts: activeCount,
+        convertedCarts: convertedCount,
+        abandonmentRate,
+        recoveryRate,
+        totalCartValue: parseFloat(totalAbandonedValue.toFixed(2)),
+        activeCartValue: parseFloat(totalActiveValue.toFixed(2)),
+        recoveredRevenue: parseFloat(totalRecoveredRevenue.toFixed(2)),
+        avgCartValue,
+        funnel,
+        topAbandonedProducts,
+        recentAbandonedCarts: formattedRecentCarts,
+        recentConverted: formattedConverted
       }
     });
   } catch (error) {
@@ -2074,18 +2217,23 @@ const getAbandonedCartAnalytics = async (req, res) => {
       dateParams: { startDate: req.query.startDate, endDate: req.query.endDate }
     });
 
-    // Return safe empty response instead of crashing
     res.status(200).json({
       success: true,
       data: {
         totalCarts: 0,
         abandonedCarts: 0,
+        activeCarts: 0,
         convertedCarts: 0,
         abandonmentRate: 0,
+        recoveryRate: 0,
         totalCartValue: 0,
+        activeCartValue: 0,
+        recoveredRevenue: 0,
         avgCartValue: 0,
+        funnel: [],
         topAbandonedProducts: [],
-        recentAbandonedCarts: []
+        recentAbandonedCarts: [],
+        recentConverted: []
       },
       error: error.message
     });

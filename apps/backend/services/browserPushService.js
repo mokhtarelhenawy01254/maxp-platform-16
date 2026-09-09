@@ -221,6 +221,47 @@ const markSubscriptionSuccess = async (subscriptionId) => {
 };
 
 const sendNotificationToSubscription = async (record, payload) => {
+  // 📱 Check if this is an FCM mobile push subscription
+  const isFcm =
+    record.endpoint?.startsWith("fcm:") ||
+    record.subscription?.provider === "fcm";
+
+  if (isFcm) {
+    try {
+      const { sendToFcmTokens } = require("./firebaseMessagingService");
+      const token =
+        record.subscription?.token || record.endpoint.replace("fcm:", "");
+
+      const fcmResult = await sendToFcmTokens({
+        tokens: [token],
+        title: payload.title,
+        body: payload.body,
+        data: payload.data || {},
+        imageUrl: payload.icon || null,
+      });
+
+      if (fcmResult.successCount > 0) {
+        await markSubscriptionSuccess(record.id);
+        return true;
+      } else {
+        await markSubscriptionFailure(
+          record.id,
+          new Error(fcmResult.error || "FCM delivery failed")
+        );
+        return false;
+      }
+    } catch (fcmError) {
+      console.error(`[FCM-PUSH] Failed for ${record.endpoint}:`, fcmError.message);
+      await markSubscriptionFailure(record.id, fcmError);
+      return false;
+    }
+  }
+
+  // 🌐 Standard browser Web Push (requires VAPID keys)
+  if (!getOptionalVapidConfiguration()) {
+    return false;
+  }
+
   ensureVapidConfiguration();
 
   try {
@@ -259,16 +300,6 @@ const sendBrowserPushToCompany = async ({
   data = {},
   forceVisibleNotification = false,
 }) => {
-  if (!getOptionalVapidConfiguration()) {
-    return {
-      attempted: 0,
-      sent: 0,
-      skipped: 0,
-      failed: 0,
-      disabled: true,
-      reason: "missing_vapid_keys",
-    };
-  }
 
   const prisma = getSharedPrismaClient();
   const subscriptions = await prisma.browserPushSubscription.findMany({
@@ -397,17 +428,6 @@ const sendBrowserPushToUser = async ({
   data = {},
   forceVisibleNotification = false,
 }) => {
-  if (!getOptionalVapidConfiguration()) {
-    return {
-      attempted: 0,
-      sent: 0,
-      skipped: 0,
-      failed: 0,
-      disabled: true,
-      reason: "missing_vapid_keys",
-    };
-  }
-
   const prisma = getSharedPrismaClient();
   const [user, preferenceRecord, subscriptions] = await Promise.all([
     prisma.user.findUnique({

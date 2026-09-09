@@ -827,17 +827,30 @@ class AnalyticsService {
     endDate?: string,
   ) {
     try {
-      const params: AnalyticsQueryParams = {};
+      const params: AnalyticsQueryParams & { period?: string } = {};
 
-      if (period && !startDate) {
-        const days = parseInt(period) || 30;
-        const start = new Date();
-        start.setDate(start.getDate() - days);
-        params.startDate = start.toISOString().split("T")[0];
-        params.endDate = new Date().toISOString().split("T")[0];
-      } else {
-        if (startDate) params.startDate = startDate;
-        if (endDate) params.endDate = endDate;
+      if (startDate) params.startDate = startDate;
+      if (endDate) params.endDate = endDate;
+      if (period) params.period = period;
+
+      if (!startDate && !endDate && period) {
+        if (period === "today") {
+          const today = new Date().toISOString().split("T")[0];
+          params.startDate = today;
+          params.endDate = today;
+        } else if (period === "yesterday") {
+          const y = new Date();
+          y.setDate(y.getDate() - 1);
+          const yDate = y.toISOString().split("T")[0];
+          params.startDate = yDate;
+          params.endDate = yDate;
+        } else {
+          const days = parseInt(period, 10) || 30;
+          const start = new Date();
+          start.setDate(start.getDate() - days);
+          params.startDate = start.toISOString().split("T")[0];
+          params.endDate = new Date().toISOString().split("T")[0];
+        }
       }
 
       const response = await apiClient.get("/analytics/abandoned-carts", {
