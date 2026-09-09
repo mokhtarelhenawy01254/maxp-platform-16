@@ -58,4 +58,22 @@ describe('environment corsOrigins', () => {
       expect(result.allowed).toBe(true);
     }
   });
+
+  test('allows mobile Capacitor and localhost app origins in production', async () => {
+    process.env.NODE_ENV = 'production';
+
+    const envConfig = require('../../config/environment');
+    const mobileOrigins = [
+      'https://localhost',
+      'capacitor://localhost',
+      'http://localhost',
+      'ionic://localhost'
+    ];
+
+    for (const origin of mobileOrigins) {
+      const result = await runCorsCheck(envConfig, origin);
+      expect(result.error).toBeNull();
+      expect(result.allowed).toBe(true);
+    }
+  });
 });

@@ -63,6 +63,9 @@ export const isCapacitorNative = (): boolean => {
   if (win.Capacitor?.isNativePlatform?.()) return true;
   return (
     window.location.protocol === "capacitor:" ||
+    window.location.origin === "https://localhost" ||
+    window.location.origin === "capacitor://localhost" ||
+    window.location.origin === "http://localhost" ||
     (window.location.hostname === "localhost" &&
       !window.location.port &&
       /Android|iPhone|iPad|iPod/i.test(window.navigator?.userAgent || ""))

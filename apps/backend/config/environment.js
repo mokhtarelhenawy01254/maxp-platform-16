@@ -194,7 +194,18 @@ const createEnvironmentConfig = () => {
     wsUrl = `wss://${MAIN_DOMAIN}`;
   }
 
+  // Mobile app origins (Capacitor Android & iOS native WebView)
+  const mobileAppOrigins = [
+    'https://localhost',
+    'http://localhost',
+    'capacitor://localhost',
+    'ionic://localhost',
+    'http://127.0.0.1',
+    'https://127.0.0.1'
+  ];
+
   const allowedOriginPatterns = [
+    ...mobileAppOrigins,
     ...localDevOriginPatterns,
     ...allowedDomains.flatMap((domain) => {
       const escapedDomain = domain.replace(/\./g, '\\.');
