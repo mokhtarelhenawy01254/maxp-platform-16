@@ -601,4 +601,12 @@ const optionalAuth = async (req, res, next) => {
   }
 };
 
-module.exports = { requireSuperAdmin, requireRole, requireCompanyAccess, authenticateToken, optionalAuth }
+// Support both callable middleware usage and named property destructuring
+authenticateToken.authenticateToken = authenticateToken;
+authenticateToken.verifyToken = authenticateToken;
+authenticateToken.requireSuperAdmin = requireSuperAdmin;
+authenticateToken.requireRole = requireRole;
+authenticateToken.requireCompanyAccess = requireCompanyAccess;
+authenticateToken.optionalAuth = optionalAuth;
+
+module.exports = authenticateToken;

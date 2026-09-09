@@ -1,38 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const controller = require('../controller/academyController');
-const verifyToken = require('../utils/verifyToken');
-
-// Optional auth helper: if token provided, decode user; otherwise proceed
-const optionalAuth = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return next();
-  }
-  verifyToken(req, res, next);
-};
+const { authenticateToken, optionalAuth } = require('../utils/verifyToken');
 
 // -------------------------------------------------------------
 // Instructor / Company Course Management (Protected)
 // -------------------------------------------------------------
-router.post('/courses', verifyToken, controller.createCourse);
-router.get('/courses', verifyToken, controller.getCourses);
-router.get('/courses/:id', verifyToken, controller.getCourseDetails);
-router.put('/courses/:id', verifyToken, controller.updateCourse);
-router.delete('/courses/:id', verifyToken, controller.deleteCourse);
+router.post('/courses', authenticateToken, controller.createCourse);
+router.get('/courses', authenticateToken, controller.getCourses);
+router.get('/courses/:id', authenticateToken, controller.getCourseDetails);
+router.put('/courses/:id', authenticateToken, controller.updateCourse);
+router.delete('/courses/:id', authenticateToken, controller.deleteCourse);
 
 // Modules & Lessons
-router.post('/courses/:courseId/modules', verifyToken, controller.addModule);
-router.put('/modules/:id', verifyToken, controller.updateModule);
-router.delete('/modules/:id', verifyToken, controller.deleteModule);
+router.post('/courses/:courseId/modules', authenticateToken, controller.addModule);
+router.put('/modules/:id', authenticateToken, controller.updateModule);
+router.delete('/modules/:id', authenticateToken, controller.deleteModule);
 
-router.post('/modules/:moduleId/lessons', verifyToken, controller.addLesson);
-router.put('/lessons/:id', verifyToken, controller.updateLesson);
-router.delete('/lessons/:id', verifyToken, controller.deleteLesson);
-router.post('/lessons/:id/quiz', verifyToken, controller.saveLessonQuiz);
+router.post('/modules/:moduleId/lessons', authenticateToken, controller.addLesson);
+router.put('/lessons/:id', authenticateToken, controller.updateLesson);
+router.delete('/lessons/:id', authenticateToken, controller.deleteLesson);
+router.post('/lessons/:id/quiz', authenticateToken, controller.saveLessonQuiz);
 
 // Progress & Analytics for Instructor
-router.get('/courses/:id/students', verifyToken, controller.getStudentsProgress);
+router.get('/courses/:id/students', authenticateToken, controller.getStudentsProgress);
 
 // -------------------------------------------------------------
 // Student Portal & Catalog (Public / Token Protected)
