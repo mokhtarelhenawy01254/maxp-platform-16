@@ -127,13 +127,48 @@ function withPublicActiveProductFilter(where = {}) {
   };
 }
 
+function buildProductLookupOrConditions(rawIdentifier) {
+  if (!rawIdentifier || typeof rawIdentifier !== 'string') {
+    return [];
+  }
+  const trimmed = rawIdentifier.trim();
+  let decoded = trimmed;
+  try {
+    decoded = decodeURIComponent(trimmed);
+  } catch {
+    // ignore
+  }
+
+  const conditions = [{ slug: trimmed }];
+  if (decoded !== trimmed) {
+    conditions.push({ slug: decoded });
+  }
+
+  if (trimmed.length > 20) {
+    conditions.unshift({ id: trimmed });
+  }
+  if (decoded.length > 20 && decoded !== trimmed) {
+    conditions.unshift({ id: decoded });
+  }
+
+  return conditions;
+}
+
 /**
  * يحمّل بيانات المنتج الأصلي لمنتج محوّل (تحويل مكرر لعرض تقديمي) ويرجّعها
  * كـ JSON مباشرة بدل الـ 301 (الـ CDN بيعيد توجيه الـ redirect لصفحة HTML
  * فبيتكسّر الـ SPA fetch). الـ frontend بياخد redirectedFrom ويعمل redirect بنفسه.
  */
 async function loadConvertedProductPayload(prisma, companyId, slugOrId, req) {
-  const resolved = await findConvertedPresentationBySlug(prisma, companyId, slugOrId);
+  let resolved = await findConvertedPresentationBySlug(prisma, companyId, slugOrId);
+  if (!resolved && typeof slugOrId === 'string') {
+    try {
+      const decoded = decodeURIComponent(slugOrId);
+      if (decoded !== slugOrId) {
+        resolved = await findConvertedPresentationBySlug(prisma, companyId, decoded);
+      }
+    } catch {}
+  }
   if (!resolved) {
     return null;
   }
@@ -1459,7 +1494,7 @@ async function getRecommendedProducts({
   const prisma = await getPrisma();
   const product = await prisma.product.findFirst({
     where: withPublicActiveProductFilter({
-      OR: [{ id: productId }, { slug: productId }],
+      OR: buildProductLookupOrConditions(productId),
       companyId,
     }),
     select: {
@@ -1749,11 +1784,7 @@ router.get('/:id/upsell', async (req, res) => {
 router.get('/:id/volume-discounts', async (req, res) => {
   try {
     const { id } = req.params;
-    const orConditions = [{ slug: id }];
-
-    if (id.length > 20) {
-      orConditions.unshift({ id });
-    }
+    const orConditions = buildProductLookupOrConditions(id);
 
     const prisma = await getPrisma();
     const product = await prisma.product.findFirst({
@@ -1813,11 +1844,7 @@ router.get('/:id/:presentationSlug', async (req, res) => {
     const { id, presentationSlug } = req.params;
     const isPreview =
       req.query.preview === '1' || req.query.productPreview === '1';
-    const orConditions = [{ slug: id }];
-
-    if (id.length > 20) {
-      orConditions.unshift({ id });
-    }
+    const orConditions = buildProductLookupOrConditions(id);
 
     const prisma = await getPrisma();
     const product = await prisma.product.findFirst({
@@ -1930,11 +1957,7 @@ router.get('/:id', async (req, res) => {
     const { id } = req.params;
     const isPreview =
       req.query.preview === '1' || req.query.productPreview === '1';
-    const orConditions = [{ slug: id }];
-
-    if (id.length > 20) {
-      orConditions.unshift({ id });
-    }
+    const orConditions = buildProductLookupOrConditions(id);
 
     const prisma = await getPrisma();
     const product = await prisma.product.findFirst({

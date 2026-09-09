@@ -883,7 +883,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
   const activeStock =
     typeof selectedVariant?.stock === 'number' && Number.isFinite(selectedVariant.stock)
       ? selectedVariant.stock
-      : typeof product.stock === 'number' && Number.isFinite(product.stock)
+      : typeof product?.stock === 'number' && Number.isFinite(product.stock)
         ? product.stock
         : null;
 
@@ -896,7 +896,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
 
   const hasVariantChoices = Boolean(product?.productVariants?.length);
   const hasInStockVariant = hasVariantChoices
-    ? (product.productVariants || []).some(
+    ? (product?.productVariants || []).some(
         (v) =>
           v.trackInventory === false ||
           v.allowBackorders === true ||
@@ -904,6 +904,8 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
           (typeof v.stock === 'number' ? v.stock > 0 : true),
       )
     : true;
+
+  const isStockTracked = product?.trackInventory !== false;
 
   const isStrictlyOutOfStock = selectedVariant
     ? isStockTracked && typeof activeStock === 'number' && activeStock <= 0 && !isBackorderAllowed

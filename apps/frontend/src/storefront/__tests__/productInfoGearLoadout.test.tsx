@@ -194,4 +194,50 @@ describe('ProductInfo gear-loadout variant selection', () => {
       expect(screen.getByText(/EGP\s*1,350\.00/)).toBeInTheDocument();
     });
   });
+
+  it('renders loading skeleton without throwing when product is null', () => {
+    mockUseProduct.mockReturnValue({
+      product: null,
+      isLoading: true,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    const { container } = render(
+      <MemoryRouter initialEntries={['/store/products/loading-prod?companyId=company123']}>
+        <Routes>
+          <Route
+            path="/store/products/:id"
+            element={<ProductInfo section={{ variant: 'standard' }} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
+  });
+
+  it('renders not available fallback gracefully when product is null (404)', () => {
+    mockUseProduct.mockReturnValue({
+      product: null,
+      isLoading: false,
+      error: new Error('Product not found'),
+      refetch: vi.fn(),
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/store/products/missing-prod?companyId=company123']}>
+        <Routes>
+          <Route
+            path="/store/products/:id"
+            element={<ProductInfo section={{ variant: 'standard' }} />}
+          />
+        </Routes>
+      </MemoryRouter>,
+    );
+
+    expect(
+      screen.getByText(/(?:المنتج غير متاح|Product Not Available)/i),
+    ).toBeInTheDocument();
+  });
 });

@@ -907,7 +907,7 @@ const QuantityOffersPanel: React.FC<QuantityOffersPanelProps> = ({
                                   Number.isFinite(slotVariant.stock)
                                   ? slotVariant.stock
                                   : null
-                                : typeof product.stock === "number" &&
+                                : typeof product?.stock === "number" &&
                                     Number.isFinite(product.stock)
                                   ? product.stock
                                   : null;
