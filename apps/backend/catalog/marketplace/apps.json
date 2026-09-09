@@ -2232,19 +2232,20 @@
   {
     "id": "cat-app-order-preparation-hold",
     "slug": "order-preparation-hold",
-    "name": "تجهيز الطلبات المعلقة",
-    "nameEn": "On-Hold Preparation Orders",
+    "name": "تجهيز الطلبات",
+    "nameEn": "Order Preparation",
     "description": "متابعة ومعالجة الطلبات المعلقة في مرحلة التجهيز ومشاكل النواقص والتوريد (عرض 96 طلب).",
+    "descriptionEn": "Monitor and resolve on-hold preparation orders and stock shortages directly (96 items per view).",
     "category": "ORDER_OPS",
-    "pricingModel": "SUBSCRIPTION",
+    "pricingModel": "FREE",
     "monthlyPrice": 0,
     "yearlyPrice": 0,
     "unitPrice": null,
     "unitName": null,
-    "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "trialDays": 0,
+    "requiredApps": [],
+    "mainRoute": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
+    "adminRoute": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
     "positioning": {
       "audience": "فرق التجهيز والمستودعات والعمليات المسؤولة عن معالجة الطلبات المعلقة.",
       "surface": "داخل صفحة تجهيز الطلبات المعلقة مباشرة.",
@@ -2256,12 +2257,18 @@
         "name": "طابور التجهيز المعلق",
         "description": "عرض 96 طلب معلق في مرحلة التجهيز لمتابعتها بنقرة واحدة.",
         "access": "FREE"
+      },
+      "fastResolution": {
+        "enabled": true,
+        "name": "معالجة النواقص والتوريد",
+        "description": "تحديث حالات التجهيز ومتابعة أسباب التعليق لتسريع الشحن والتسليم.",
+        "access": "FREE"
       }
     },
     "isActive": true,
     "isPublic": true,
-    "isFeatured": false,
-    "isPopular": false,
+    "isFeatured": true,
+    "isPopular": true,
     "icon": "clock",
     "logo": null,
     "coverImage": null,

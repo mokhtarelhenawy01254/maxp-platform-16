@@ -136,6 +136,14 @@ const FEATURE_COPY: Record<string, FeatureCatalogEntry> = {
     name: "مسارات بيع خاصة",
     description: "تجهيز تدفقات بيع أو تنفيذ غير تقليدية.",
   },
+  onHoldQueue: {
+    name: "طابور التجهيز المعلق",
+    description: "عرض 96 طلب معلق في مرحلة التجهيز لمتابعتها بنقرة واحدة.",
+  },
+  fastResolution: {
+    name: "معالجة النواقص والتوريد",
+    description: "تحديث حالات التجهيز ومتابعة أسباب التعليق لتسريع الشحن.",
+  },
 };
 
 const POSITIONING_COPY: Record<string, PositioningDisplayItem> = {
@@ -183,6 +191,11 @@ const POSITIONING_COPY: Record<string, PositioningDisplayItem> = {
     audience: "المتاجر التي تحتاج سيناريوهات بيع أكثر مرونة.",
     surface: "داخل المنتج والمخزون والتنفيذ للحالات الخاصة.",
     outcome: "مرونة أعلى في البيع للحالات غير التقليدية.",
+  },
+  "order-preparation-hold": {
+    audience: "فرق التجهيز والمستودعات والعمليات المسؤولة عن معالجة الطلبات المعلقة.",
+    surface: "داخل صفحة تجهيز الطلبات المعلقة مباشرة.",
+    outcome: "حل مشاكل التجهيز المعلق وسرعة شحن الطلبات المتوقفة.",
   },
 };
 

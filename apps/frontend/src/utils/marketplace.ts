@@ -123,6 +123,74 @@ export function formatInstallCount(count: number): string {
   return String(count);
 }
 
+export const APP_ROUTE_MAP: Record<string, string> = {
+  "store": "/products",
+  "store-basic": "/products",
+  "store-pro": "/products",
+  "quantity-offers-pro": "/products",
+  "conversion-suite": "/my-apps/conversion-suite/settings",
+  "ugc-reviews-pro": "/my-apps/ugc-reviews-pro/settings",
+  "commerce-advanced": "/my-apps/commerce-advanced/settings",
+  "order-core": "/orders",
+  "inventory-pro": "/inventory",
+  "facebook-pages-connect": "/marketing/facebook",
+  "facebook-post": "/marketing/facebook-post",
+  "facebook-ads-pro": "/advertising/facebook-ads",
+  "instagram-business": "/instagram-inbox",
+  "telegram-business": "/telegram",
+  "telegram-integration": "/telegram",
+  "tiktok-integrations": "/tiktok-inbox",
+  "whatsapp-business": "/whatsapp",
+  "whatsapp-cloud-api": "/whatsapp",
+  "ai-chat-pro": "/admin/ai-hub",
+  "ai-chat-basic": "/admin/ai-hub",
+  "voice-agent-ai": "/ai-agent",
+  "invoicing-pro": "/invoices",
+  "orders-analytics": "/analytics/orders",
+  "analytics-basic": "/analytics/orders",
+  "pixel-tracker-pro": "/settings/pixels",
+  "snapchat-pixel-pro": "/settings/pixels",
+  "tiktok-pixel-pro": "/settings/pixels",
+  "google-ads-pro": "/settings/pixels",
+  "marketing-hub": "/marketing",
+  "campaign-manager-pro": "/marketing",
+  "ad-auto-rules": "/marketing",
+  "blog-pro": "/articles",
+  "order-shipping-turbo": "/shipping",
+  "procurement-pro": "/procurement",
+  "hr-basic": "/hr",
+  "unified-inbox": "/unified-inbox",
+  "abandoned-cart-recovery": "/orders",
+  "order-automation": "/orders/automation",
+  "bulk-search": "/bulk-search",
+  "customer-blocks": "/settings/customer-blocks",
+  "customer-loyalty-pro": "/customers",
+  "crm-lite": "/customers",
+  "crm-basic": "/customers",
+  "pos-pro": "/pos",
+  "coupons-pro": "/coupons",
+  "wholesale-pro": "/wholesale",
+  "affiliate-pro": "/affiliates/dashboard",
+  "amazon-affiliate-pro": "/amazon-affiliate",
+  "medical-system": "/doctor/dashboard",
+  "dental-lab-app": "/dental-lab",
+  "booking-app": "/appointments",
+  "notification-automation": "/notifications/settings",
+  "executable-mindmap": "/mindmap",
+  "order-preparation": "/orders/preparation",
+  "order-preparation-hold": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
+};
+
+export function getAppDestination(app: { slug: string; mainRoute?: string | null }): string {
+  if (app.mainRoute && typeof app.mainRoute === "string" && app.mainRoute.trim()) {
+    return app.mainRoute.trim();
+  }
+  if (APP_ROUTE_MAP[app.slug]) {
+    return APP_ROUTE_MAP[app.slug];
+  }
+  return `/my-apps/${app.slug}/settings`;
+}
+
 const sectionIcons: Record<string, LucideIcon> = {
   FEATURED: Star,
   POPULAR: Flame,

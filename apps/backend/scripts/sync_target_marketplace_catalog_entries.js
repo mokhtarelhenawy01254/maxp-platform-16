@@ -100,8 +100,8 @@ function buildDbAppPayloadFromCatalog(catalogApp) {
     isFeatured: catalogApp?.isFeatured === true,
     requiredApps: normalizeStringArray(catalogApp?.requiredApps),
     trialDays: Math.max(0, Math.floor(toSafeNumber(catalogApp?.trialDays, 0))),
-    mainRoute: null,
-    adminRoute: null,
+    mainRoute: catalogApp?.mainRoute || null,
+    adminRoute: catalogApp?.adminRoute || null,
     category: String(catalogApp?.category || "general").trim() || "general",
     rating: toSafeNumber(catalogApp?.rating, 0),
     reviewCount: Math.max(0, Math.floor(toSafeNumber(catalogApp?.reviewCount, 0))),
@@ -362,6 +362,27 @@ async function syncMissingMarketplaceCatalogEntries(options = {}) {
 
       if (appIdBySlug.has(slug)) {
         summary.apps.existing.push(slug);
+        if (!dryRun) {
+          const updateData = {};
+          if (catalogApp?.name) updateData.name = catalogApp.name;
+          if (catalogApp?.description) updateData.description = catalogApp.description;
+          if (catalogApp?.features) updateData.features = normalizeJsonObject(catalogApp.features, {});
+          if (catalogApp?.mainRoute !== undefined) updateData.mainRoute = catalogApp.mainRoute || null;
+          if (catalogApp?.adminRoute !== undefined) updateData.adminRoute = catalogApp.adminRoute || null;
+          if (catalogApp?.pricingModel) updateData.pricingModel = catalogApp.pricingModel;
+          if (Array.isArray(catalogApp?.requiredApps)) updateData.requiredApps = catalogApp.requiredApps;
+          if (catalogApp?.isFeatured !== undefined) updateData.isFeatured = catalogApp.isFeatured;
+          if (catalogApp?.isPopular !== undefined) updateData.isPopular = catalogApp.isPopular;
+          if (Object.keys(updateData).length > 0) {
+            await runDbOperation(
+              () => prisma.marketplaceApp.updateMany({
+                where: { slug },
+                data: updateData
+              }),
+              executeDbOperation
+            );
+          }
+        }
         continue;
       }
 

@@ -117,6 +117,8 @@ class MarketplaceCatalogService {
       logo: app.logo || null,
       coverImage: app.coverImage || null,
       engineCompatibility: app.engineCompatibility || null,
+      mainRoute: app.mainRoute || null,
+      adminRoute: app.adminRoute || null,
       createdAt: normalizeDateIso(app.createdAt),
       updatedAt: normalizeDateIso(app.updatedAt),
       installCount: Number(app.installCount || 0),

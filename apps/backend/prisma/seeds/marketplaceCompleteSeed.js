@@ -44,6 +44,28 @@ async function seedMarketplace() {
       isPopular: true
     },
     {
+      slug: 'order-preparation-hold',
+      name: 'تجهيز الطلبات',
+      category: 'ORDER_OPS',
+      description: 'متابعة ومعالجة الطلبات المعلقة في مرحلة التجهيز ومشاكل النواقص والتوريد (عرض 96 طلب).',
+      pricingModel: 'FREE',
+      monthlyPrice: 0,
+      yearlyPrice: 0,
+      mainRoute: '/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP',
+      adminRoute: '/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP',
+      trialDays: 0,
+      icon: 'clock',
+      features: JSON.stringify([
+        'طابور التجهيز المعلق',
+        'عرض 96 طلب بنقرة واحدة',
+        'معالجة مشاكل النواقص والتوريد',
+        'تحديث حالات الطلبات المتوقفة'
+      ]),
+      isActive: true,
+      isFeatured: true,
+      isPopular: true
+    },
+    {
       slug: 'store-pro',
       name: 'متجر ماكس',
       category: 'ECOMMERCE',

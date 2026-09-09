@@ -10,7 +10,7 @@ import {
   ChevronLeft,
   FileText, Clock,
   HelpCircle, Headphones,
-  RefreshCw,
+  RefreshCw, ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -29,7 +29,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { MarketplaceApp as MPA } from "@/types/marketplace";
 import { getMarketplaceFeatureItems, getFeatureAccessKind, getFeatureAccessLabel } from "./featureCatalog";
-import { appIconsBySlug, categoryIcons, appIcons, categoryCssClass, shouldUseTextIcon, getPrice, formatInstallCount } from "@/utils/marketplace";
+import { appIconsBySlug, categoryIcons, appIcons, categoryCssClass, shouldUseTextIcon, getPrice, formatInstallCount, getAppDestination } from "@/utils/marketplace";
 
 const numberFormatter = new Intl.NumberFormat("ar-EG");
 
@@ -124,7 +124,7 @@ export default function AppDetails() {
     try {
       const isPpu = planToInstall === "PAY_PER_USE";
       const payload: { pricingModel: string; billingCycle?: string } = {
-        pricingModel: isPpu ? "PAY_PER_USE" : "SUBSCRIPTION",
+        pricingModel: isFree ? "FREE" : isPpu ? "PAY_PER_USE" : "SUBSCRIPTION",
       };
       if (planToInstall === "YEARLY") {
         payload.billingCycle = "yearly";
@@ -133,7 +133,19 @@ export default function AppDetails() {
       }
 
       await apiClient.post(`/marketplace/apps/${app.slug}/install`, payload);
-      toast.success("تم تفعيل التطبيق بنجاح");
+      const targetDestination = app.mainRoute || getAppDestination(app);
+      toast.success("تم تفعيل التطبيق بنجاح", {
+        action: targetDestination ? {
+          label: "فتح التطبيق",
+          onClick: () => {
+            if (targetDestination.startsWith("http://") || targetDestination.startsWith("https://")) {
+              window.location.href = targetDestination;
+            } else {
+              navigate(targetDestination);
+            }
+          }
+        } : undefined
+      });
       setIsInstalled(true);
       await Promise.allSettled([
         fetchAppDetails(),
@@ -473,13 +485,30 @@ export default function AppDetails() {
               <div className="pt-1 space-y-2">
                 {isInstalled ? (
                   <>
+                    <Button
+                      onClick={() => {
+                        const dest = app.mainRoute || getAppDestination(app);
+                        if (dest) {
+                          if (dest.startsWith("http://") || dest.startsWith("https://")) {
+                            window.location.href = dest;
+                          } else {
+                            navigate(dest);
+                          }
+                        }
+                      }}
+                      className="w-full gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold"
+                      size="sm"
+                    >
+                      <ExternalLink size={14} /> فتح التطبيق
+                    </Button>
+
                     {isCurrentPlanActive ? (
-                      <Button disabled className="w-full gap-2" size="sm">
+                      <Button disabled variant="outline" className="w-full gap-2 text-xs" size="sm">
                         <Check size={14} /> مفعل حالياً ({planTitles[selectedPlan]})
                       </Button>
                     ) : (
                       <Button
-                        className="w-full gap-2 bg-primary hover:bg-primary/90 font-bold"
+                        className="w-full gap-2 bg-primary hover:bg-primary/90 font-bold text-xs"
                         size="sm"
                         disabled={installing}
                         onClick={() => handleInstall(selectedPlan)}
@@ -489,9 +518,9 @@ export default function AppDetails() {
                       </Button>
                     )}
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="sm"
-                      className="w-full gap-2 text-destructive hover:bg-destructive/10"
+                      className="w-full gap-2 text-xs text-destructive hover:bg-destructive/10"
                       disabled={installing}
                       onClick={handleUninstall}
                     >
@@ -500,15 +529,37 @@ export default function AppDetails() {
                     </Button>
                   </>
                 ) : (
-                  <Button
-                    className="w-full gap-2 font-bold"
-                    size="sm"
-                    disabled={installing}
-                    onClick={() => handleInstall(selectedPlan)}
-                  >
-                    {installing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                    تفعيل {isFree ? "التطبيق" : `${planTitles[selectedPlan]} (${planPrices[selectedPlan]})`}
-                  </Button>
+                  <>
+                    <Button
+                      className="w-full gap-2 font-bold"
+                      size="sm"
+                      disabled={installing}
+                      onClick={() => handleInstall(selectedPlan)}
+                    >
+                      {installing ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                      تفعيل {isFree ? "التطبيق" : `${planTitles[selectedPlan]} (${planPrices[selectedPlan]})`}
+                    </Button>
+
+                    {(app.mainRoute || getAppDestination(app)) && (
+                      <Button
+                        variant="outline"
+                        className="w-full gap-2 text-xs font-semibold"
+                        size="sm"
+                        onClick={() => {
+                          const dest = app.mainRoute || getAppDestination(app);
+                          if (dest) {
+                            if (dest.startsWith("http://") || dest.startsWith("https://")) {
+                              window.location.href = dest;
+                            } else {
+                              navigate(dest);
+                            }
+                          }
+                        }}
+                      >
+                        <ExternalLink size={14} /> الانتقال إلى الصفحة مباشرة
+                      </Button>
+                    )}
+                  </>
                 )}
               </div>
             </aside>

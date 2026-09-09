@@ -2,7 +2,7 @@ import { useState, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Star, CheckCircle2, Clock, Shield, BadgeCheck, Brain, Package,
+  Star, CheckCircle2, Clock, Shield, BadgeCheck, Brain, Package, ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import {
 import type { MarketplaceApp } from "@/types/marketplace";
 import {
   categoryIcons, appIcons, appIconsBySlug, categoryCssClass,
-  shouldUseTextIcon, getPrice, getAvailableBadges,
+  shouldUseTextIcon, getPrice, getAvailableBadges, getAppDestination,
 } from "@/utils/marketplace";
 import { getMarketplaceFeatureItems } from "@/pages/marketplace/featureCatalog";
 
@@ -267,6 +267,15 @@ export function AppCard({
                 <span className="mr-2 text-xs font-bold text-emerald-600 dark:text-emerald-400">{t('marketplace.trialDays', { count: app.trialDays })}</span>
               )}
             </div>
+            {(app.isInstalled || app.pricingModel === "FREE") && (app.mainRoute || getAppDestination(app)) && (
+              <Link
+                to={app.mainRoute || getAppDestination(app)}
+                className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600 hover:text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-1 rounded-md transition-colors"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ExternalLink size={11} /> {app.isInstalled ? "فتح" : "تشغيل"}
+              </Link>
+            )}
           </div>
         </PopoverContent>
       </div>
