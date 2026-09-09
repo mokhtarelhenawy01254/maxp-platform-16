@@ -58,6 +58,9 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=8192
           VITE_DISABLE_COMPRESSION: "true"
+          VITE_API_URL: "https://maxp.online/api/v1"
+          VITE_BACKEND_URL: "https://maxp.online"
+          VITE_WS_URL: "wss://maxp.online"
         run: npm run build
 
       - name: Sync Web Assets to Android Project

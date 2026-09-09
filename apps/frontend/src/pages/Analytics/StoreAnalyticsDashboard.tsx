@@ -493,46 +493,47 @@ const StoreAnalyticsDashboard: React.FC = () => {
   }
 
   return (
-    <div className="relative min-h-screen px-3 py-4 sm:px-6 sm:py-6 lg:px-8 bg-gray-50/60 dark:bg-gray-950 text-gray-900 dark:text-gray-100" dir="rtl">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <div className="relative min-h-screen px-3 py-3 sm:px-6 sm:py-6 lg:px-8 pb-32 sm:pb-12 bg-gray-50/60 dark:bg-gray-950 text-gray-900 dark:text-gray-100" dir="rtl">
+      <div className="mx-auto max-w-7xl space-y-4 sm:space-y-6">
 
         {/* 1. Header & Navigation Hub (2026 Master Header) */}
-        <header className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 p-5 sm:p-7 shadow-sm backdrop-blur-xl">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <header className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 p-3.5 sm:p-7 shadow-sm backdrop-blur-xl">
+          <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="flex flex-wrap items-center gap-2 mb-2">
-                <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary font-bold text-xs px-3 py-1">
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
+                <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary font-bold text-[10px] sm:text-xs px-2.5 py-0.5 sm:px-3 sm:py-1">
                   STORE INTELLIGENCE 2026
                 </Badge>
-                <Badge variant="outline" className="rounded-full border-gray-300 dark:border-gray-700 bg-gray-100/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 text-xs px-3 py-1">
+                <Badge variant="outline" className="rounded-full border-gray-300 dark:border-gray-700 bg-gray-100/80 dark:bg-gray-800/80 text-gray-700 dark:text-gray-300 text-[10px] sm:text-xs px-2.5 py-0.5 sm:px-3 sm:py-1">
                   {formatRangeLabel(appliedFilters)}
                 </Badge>
                 {/* Live Pulse */}
-                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                   <span className="relative flex size-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75"></span>
                     <span className="relative inline-flex size-2 rounded-full bg-emerald-500"></span>
                   </span>
-                  <span>{activeVisitors > 0 ? `${formatCount(activeVisitors)} نشط الآن في المتجر` : "النبض الحي متصل"}</span>
+                  <span>{activeVisitors > 0 ? `${formatCount(activeVisitors)} نشط الآن` : "النبض الحي"}</span>
                 </div>
                 {isRefreshing && (
-                  <Badge variant="outline" className="rounded-full border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-xs px-3 py-1 animate-pulse">
+                  <Badge variant="outline" className="rounded-full border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400 text-[10px] sm:text-xs px-2.5 py-0.5 sm:px-3 sm:py-1 animate-pulse">
                     جارٍ التحديث...
                   </Badge>
                 )}
               </div>
 
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+              <h1 className="text-xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">
                 لوحة أداء المتجر
               </h1>
-              <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-2xl leading-relaxed">
+              <p className="mt-1 text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-2xl leading-relaxed hidden sm:block">
                 مركز الاستخبارات الشامل والحي لمتابعة الزيارات، مسار التحويل الكامل، كفاءة الشحن، والمنتجات الأعلى إيراداً لعام 2026.
               </p>
             </div>
 
             {/* Quick Period Buttons & Actions */}
             <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1 overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/60 p-1">
+              {/* Desktop quick pill selector */}
+              <div className="hidden sm:flex items-center gap-1 overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/60 p-1">
                 {PERIOD_OPTIONS.slice(0, 5).map((opt) => {
                   const isActive = filterDraft.period === opt.value;
                   return (
@@ -540,7 +541,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
                       key={opt.value}
                       type="button"
                       onClick={() => handlePeriodChange(opt.value)}
-                      className={`rounded-xl px-3 py-2 text-xs font-semibold transition-all whitespace-nowrap ${
+                      className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap ${
                         isActive
                           ? "bg-white dark:bg-gray-900 text-primary shadow-sm"
                           : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
@@ -552,12 +553,13 @@ const StoreAnalyticsDashboard: React.FC = () => {
                 })}
               </div>
 
-              <div className="flex items-center gap-2">
+              {/* Accessible Dropdown + Refresh Button */}
+              <div className="flex items-center gap-2 w-full sm:w-auto">
                 <select
                   aria-label="الفترة"
                   value={filterDraft.period}
                   onChange={(e) => handlePeriodChange(e.target.value)}
-                  className="h-10 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 text-xs font-medium text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-primary/20"
+                  className="h-9 sm:h-10 flex-1 sm:flex-initial rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 px-3 text-xs font-semibold text-gray-700 dark:text-gray-300 outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   {PERIOD_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
@@ -570,7 +572,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setAppliedFilters({ ...appliedFilters })}
-                  className="h-10 rounded-2xl gap-1 px-3.5 border-gray-200 dark:border-gray-800 text-xs font-semibold"
+                  className="h-9 sm:h-10 rounded-xl sm:rounded-2xl gap-1 px-3 sm:px-3.5 border-gray-200 dark:border-gray-800 text-xs font-semibold shrink-0"
                 >
                   <ArrowPathIcon className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
                   <span>تحديث</span>
@@ -633,116 +635,116 @@ const StoreAnalyticsDashboard: React.FC = () => {
         )}
 
         {/* 2. Top Row - The 4 Core Business Pillars */}
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
           {/* Card 1: Revenue */}
-          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">إجمالي الإيرادات</span>
-              <span className="p-2 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                <CreditCardIcon className="size-5" />
+          <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">إجمالي الإيرادات</span>
+              <span className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
+                <CreditCardIcon className="size-4 sm:size-5" />
               </span>
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white">
+            <div className="mt-2.5 sm:mt-3">
+              <h3 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white truncate">
                 {analytics ? formatCurrency(totalRevenue) : "--"}
               </h3>
-              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+              <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
                 مبيعات الفترة المحددة بالكامل
               </p>
             </div>
           </div>
 
           {/* Card 2: Orders & AOV */}
-          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">الطلبات المؤكدة</span>
-              <span className="p-2 rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
-                <ShoppingBagIcon className="size-5" />
+          <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">الطلبات المؤكدة</span>
+              <span className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                <ShoppingBagIcon className="size-4 sm:size-5" />
               </span>
             </div>
-            <div className="mt-3">
-              <h3 className="text-2xl font-black text-gray-900 dark:text-white">
-                {analytics ? formatCount(totalPurchases) : "--"} <span className="text-xs font-normal text-gray-400">طلب</span>
+            <div className="mt-2.5 sm:mt-3">
+              <h3 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white truncate">
+                {analytics ? formatCount(totalPurchases) : "--"} <span className="text-[10px] sm:text-xs font-normal text-gray-400">طلب</span>
               </h3>
-              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+              <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
                 متوسط الطلب: {avgOrderValue > 0 ? formatCurrency(avgOrderValue) : "--"}
               </p>
             </div>
           </div>
 
           {/* Card 3: 3-Tier Conversion Rate */}
-          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">معدل التحويل المحقق</span>
-              <span className="p-2 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                <ChartBarIcon className="size-5" />
+          <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">التحويل المحقق</span>
+              <span className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+                <ChartBarIcon className="size-4 sm:size-5" />
               </span>
             </div>
-            <div className="mt-3">
-              <div className="flex items-baseline gap-2 flex-wrap">
-                <h3 className="text-2xl font-black text-purple-600 dark:text-purple-400">
+            <div className="mt-2.5 sm:mt-3">
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <h3 className="text-lg sm:text-2xl font-black text-purple-600 dark:text-purple-400">
                   {analytics ? formatPercent(realizedConversionRate) : "--"}
                 </h3>
                 {conversionLift > 0 ? (
-                  <Badge variant="outline" className="text-[10px] font-bold rounded-full px-2 py-0.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                    +{formatPercent(conversionLift)} استرداد
+                  <Badge variant="outline" className="text-[9px] sm:text-[10px] font-bold rounded-full px-1.5 sm:px-2 py-0.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    +{formatPercent(conversionLift)}
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[10px] rounded-full px-2 py-0.5 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  <Badge variant="outline" className="text-[9px] sm:text-[10px] rounded-full px-1.5 sm:px-2 py-0.5 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
                     {realizedConversionRate >= 3 ? "استثنائي" : realizedConversionRate >= 1.2 ? "متزن" : "يحتاج دفع"}
                   </Badge>
                 )}
               </div>
-              <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+              <div className="mt-1.5 pt-1.5 sm:mt-2 sm:pt-2 border-t border-gray-100 dark:border-gray-800 flex flex-wrap items-center justify-between gap-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400">
                 <span>طبيعي: {analytics ? formatPercent(organicConversionRate) : "--"}</span>
-                <span className="text-gray-300 dark:text-gray-700">•</span>
+                <span className="hidden sm:inline text-gray-300 dark:text-gray-700">•</span>
                 <span>النية: {analytics ? formatPercent(potentialConversionRate) : "--"}</span>
               </div>
             </div>
           </div>
 
           {/* Card 4: Delivery Rate (Fulfillment) */}
-          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">نسبة تسليم الشحنات</span>
-              <span className="p-2 rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                <TruckIcon className="size-5" />
+          <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
+            <div className="flex items-center justify-between gap-1">
+              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">تسليم الشحنات</span>
+              <span className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
+                <TruckIcon className="size-4 sm:size-5" />
               </span>
             </div>
-            <div className="mt-3">
-              <div className="flex items-baseline gap-2">
-                <h3 className="text-2xl font-black text-amber-600 dark:text-amber-400">
+            <div className="mt-2.5 sm:mt-3">
+              <div className="flex items-baseline gap-1.5 flex-wrap">
+                <h3 className="text-lg sm:text-2xl font-black text-amber-600 dark:text-amber-400">
                   {deliveryRate > 0 ? formatPercent(deliveryRate) : "--"}
                 </h3>
-                <span className="text-xs text-gray-400">({formatCount(deliveredOrders)} مسلم)</span>
+                <span className="text-[10px] sm:text-xs text-gray-400">({formatCount(deliveredOrders)} مسلم)</span>
               </div>
-              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                نسبة الشحنات المسلمة بنجاح (COD)
+              <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                نسبة الشحنات المسلمة (COD)
               </p>
             </div>
           </div>
         </section>
 
         {/* 3. AI Executive Diagnostic Briefing */}
-        <section className={`rounded-3xl border p-5 sm:p-6 transition-all shadow-sm ${
+        <section className={`rounded-2xl sm:rounded-3xl border p-4 sm:p-6 transition-all shadow-sm ${
           executiveBriefing.tone === "positive"
             ? "border-emerald-500/30 bg-gradient-to-l from-emerald-500/10 via-emerald-500/5 to-transparent"
             : executiveBriefing.tone === "attention"
             ? "border-amber-500/30 bg-gradient-to-l from-amber-500/10 via-amber-500/5 to-transparent"
             : "border-primary/30 bg-gradient-to-l from-primary/10 via-primary/5 to-transparent"
         }`}>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-2">
+          <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-1.5 sm:space-y-2">
               <div className="flex flex-wrap items-center gap-2">
-                <SparklesIcon className="size-5 text-primary animate-pulse" />
-                <Badge variant="outline" className="rounded-full px-3 py-0.5 text-xs font-bold border-primary/40 bg-primary/10 text-primary">
+                <SparklesIcon className="size-4 sm:size-5 text-primary animate-pulse" />
+                <Badge variant="outline" className="rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-bold border-primary/40 bg-primary/10 text-primary">
                   الموجز التنفيذي الذكي
                 </Badge>
                 <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
                   {executiveBriefing.metricsSnapshot}
                 </span>
               </div>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+              <h3 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
                 {executiveBriefing.headline}
               </h3>
               <p className="max-w-3xl text-xs sm:text-sm leading-relaxed text-gray-600 dark:text-gray-300">
@@ -753,7 +755,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             {executiveBriefing.actionSuggestion && (
               <SafeActionLink
                 to={executiveBriefing.actionSuggestion.path}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-primary/90 transition-all min-h-[44px]"
+                className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-primary px-4 sm:px-5 py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-primary/90 transition-all min-h-[44px]"
               >
                 <BoltIcon className="size-4" />
                 <span>{executiveBriefing.actionSuggestion.label}</span>
@@ -764,16 +766,16 @@ const StoreAnalyticsDashboard: React.FC = () => {
         </section>
 
         {/* 4. Complete Unified Sales & Conversion Funnel (قمع التحويل الشامل) */}
-        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4 sm:mb-6">
             <div>
               <div className="flex items-center gap-2">
                 <ChartBarIcon className="size-5 text-primary" />
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
                   قمع التحويل ومسار رحلة العميل (Full Funnel)
                 </h2>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-0.5 sm:mt-1 text-xs text-gray-500 dark:text-gray-400">
                 رصد حركة العميل خطوة بخطوة من الزيارة الأولى وحتى استلام الشحنة.
               </p>
             </div>
@@ -786,7 +788,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
           </div>
 
           {/* Funnel Visual Pipeline (Desktop & Mobile) */}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
             {/* Step 1: Visits */}
             <div className="relative rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-4 flex flex-col justify-between">
               <div>
@@ -892,7 +894,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
 
           {/* Drop-off Diagnosis Box */}
           {dropOffAnalysis && (
-            <div className="mt-5 rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="mt-3.5 sm:mt-5 rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div className="flex items-start gap-3">
                 <span className="p-2 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 shrink-0">
                   <InformationCircleIcon className="size-5" />
@@ -920,25 +922,25 @@ const StoreAnalyticsDashboard: React.FC = () => {
         </section>
 
         {/* 4.5 3-Tier Conversion Benchmark & Recovery Intelligence */}
-        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+        <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
             <div>
               <div className="flex items-center gap-2">
                 <span className="p-2 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
                   <ChartBarIcon className="size-5" />
                 </span>
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
                   تحليل معدلات التحويل الثلاثية وأثر استرداد السلات
                 </h2>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-0.5 sm:mt-1 text-xs text-gray-500 dark:text-gray-400">
                 مقارنة دقيقة تقيس التحويل الطبيعي للمتجر، والتحويل الفعلي بعد مكالمات التأكيد، والنية الكلية للشراء.
               </p>
             </div>
 
             <SafeActionLink
               to="/orders/incomplete"
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
+              className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl border border-primary/30 bg-primary/10 px-3.5 sm:px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-all min-h-[40px]"
             >
               <PhoneIcon className="size-4" />
               <span>إدارة الطلبات غير المكتملة ({formatCount(incompleteCarts)})</span>
@@ -947,9 +949,9 @@ const StoreAnalyticsDashboard: React.FC = () => {
           </div>
 
           {/* 3 Benchmark Cards */}
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
             {/* Card 1: Organic */}
-            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-5 flex flex-col justify-between">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-3.5 sm:p-5 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">1. التحويل الطبيعي (مباشر)</span>
@@ -958,7 +960,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
                   </Badge>
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-gray-900 dark:text-white">
+                  <span className="text-2xl sm:text-3xl font-black text-gray-900 dark:text-white">
                     {formatPercent(organicConversionRate)}
                   </span>
                   <span className="text-xs text-gray-400">({formatCount(organicPurchases)} طلب)</span>
@@ -982,7 +984,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </div>
 
             {/* Card 2: Realized (With Recovery) */}
-            <div className="relative rounded-2xl border-2 border-purple-500/30 dark:border-purple-500/40 bg-gradient-to-b from-purple-500/5 via-purple-500/10 to-transparent p-5 flex flex-col justify-between shadow-sm">
+            <div className="relative rounded-xl sm:rounded-2xl border-2 border-purple-500/30 dark:border-purple-500/40 bg-gradient-to-b from-purple-500/5 via-purple-500/10 to-transparent p-3.5 sm:p-5 flex flex-col justify-between shadow-sm">
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-purple-700 dark:text-purple-300">2. التحويل الفعلي بعد الاسترداد</span>
@@ -997,7 +999,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
                   )}
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-purple-600 dark:text-purple-400">
+                  <span className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400">
                     {formatPercent(realizedConversionRate)}
                   </span>
                   <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
@@ -1023,7 +1025,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </div>
 
             {/* Card 3: Potential / Gross Intent */}
-            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-5 flex flex-col justify-between">
+            <div className="rounded-xl sm:rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-3.5 sm:p-5 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">3. نية الشراء الكلية (الفرصة)</span>
@@ -1032,7 +1034,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
                   </Badge>
                 </div>
                 <div className="mt-3 flex items-baseline gap-2">
-                  <span className="text-3xl font-black text-amber-600 dark:text-amber-400">
+                  <span className="text-2xl sm:text-3xl font-black text-amber-600 dark:text-amber-400">
                     {formatPercent(potentialConversionRate)}
                   </span>
                   <span className="text-xs text-gray-400">({formatCount(grossIntentOrders)} مشتري محتمل)</span>
@@ -1057,9 +1059,9 @@ const StoreAnalyticsDashboard: React.FC = () => {
           </div>
 
           {/* Recovery Performance Highlight Box */}
-          <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 p-4 sm:p-5">
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
+          <div className="mt-3 sm:mt-4 rounded-xl sm:rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 p-3.5 sm:p-5">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3.5 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 flex-1">
                 <div>
                   <span className="text-[11px] text-gray-500 dark:text-gray-400">الطلبات المستردة بنجاح</span>
                   <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
@@ -1093,7 +1095,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
               <div className="shrink-0 flex items-center">
                 <SafeActionLink
                   to="/orders/incomplete"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all min-h-[40px]"
                 >
                   <PhoneIcon className="size-4" />
                   <span>متابعة وتأكيد السلات الآن</span>
@@ -1104,16 +1106,16 @@ const StoreAnalyticsDashboard: React.FC = () => {
         </section>
 
         {/* 5. Dual-Mode Interactive Chart (Volume vs Daily Conversion Rate) */}
-        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+        <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div>
               <div className="flex items-center gap-2">
                 <ArrowTrendingUpIcon className="size-5 text-primary" />
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
                   {chartMode === "volume" ? "مسار الزيارات والإيرادات اليومي" : "تطور معدل التحويل اليومي %"}
                 </h2>
               </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <p className="mt-0.5 sm:mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {chartMode === "volume"
                   ? "تتبع العلاقة بين نمو الزيارات وحجم الإيرادات المحققة يوماً بيوم."
                   : "مراقبة ثبات أو تقلبات نسبة التحويل عبر الأيام لاكتشاف أفضل الأيام أداءً."}
@@ -1121,7 +1123,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </div>
 
             {/* Toggle Switch */}
-            <div className="inline-flex rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 p-1">
+            <div className="inline-flex w-full sm:w-auto rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 p-1">
               <button
                 type="button"
                 onClick={() => setChartMode("volume")}
@@ -1147,7 +1149,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="h-80 w-full" data-testid="analytics-chart">
+          <div className="h-64 sm:h-80 w-full" data-testid="analytics-chart">
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 {chartMode === "volume" ? (
@@ -1207,9 +1209,9 @@ const StoreAnalyticsDashboard: React.FC = () => {
         </section>
 
         {/* 6. Top Converting Products & Growth Actions (2 Columns) */}
-        <section className="grid gap-6 lg:grid-cols-3">
+        <section className="grid gap-4 sm:gap-6 lg:grid-cols-3">
           {/* Star Product Card */}
-          <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+          <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary text-xs font-bold px-3 py-1">
@@ -1269,7 +1271,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
           </div>
 
           {/* Leaderboard Table (Top 5) */}
-          <div className="lg:col-span-2 rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-6 shadow-sm flex flex-col justify-between">
+          <div className="lg:col-span-2 rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-6 shadow-sm flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h3 className="font-bold text-base text-gray-900 dark:text-white">
@@ -1332,8 +1334,8 @@ const StoreAnalyticsDashboard: React.FC = () => {
         </section>
 
         {/* 7. 1-Click Growth Action Hub (مركز إجراءات النمو والتنشيط الفوري) */}
-        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
+        <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 mb-4 sm:mb-6">
             <div>
               <div className="flex items-center gap-2">
                 <BoltIcon className="size-5 text-primary" />
@@ -1350,7 +1352,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </Badge>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {/* Action 1: Abandoned Carts */}
             <SafeActionLink
               to="/analytics/orders/abandoned-cart"

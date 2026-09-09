@@ -66,8 +66,8 @@ export const isCapacitorNative = (): boolean => {
     window.location.origin === "https://localhost" ||
     window.location.origin === "capacitor://localhost" ||
     window.location.origin === "http://localhost" ||
+    (window.location.hostname === "localhost" && !window.location.port) ||
     (window.location.hostname === "localhost" &&
-      !window.location.port &&
       /Android|iPhone|iPad|iPod/i.test(window.navigator?.userAgent || ""))
   );
 };
