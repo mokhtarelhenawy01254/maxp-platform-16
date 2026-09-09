@@ -212,6 +212,14 @@ export default function AcademyCoursesPage() {
                         </span>
                       )}
 
+                      {/* Global Platform Course Badge */}
+                      {course.isGlobal && (
+                        <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/25 flex items-center gap-1">
+                          <Globe className="w-3 h-3" />
+                          <span>كورس عام على المنصة</span>
+                        </span>
+                      )}
+
                       <span className="text-xs font-mono font-bold bg-muted text-foreground px-2 py-0.5 rounded-md">
                         {course.price > 0 ? `${course.price} EGP` : "مجاني"}
                       </span>

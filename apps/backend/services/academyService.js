@@ -29,6 +29,7 @@ class AcademyService {
     visibility = 'PUBLIC',
     allowedTags = [],
     enableWatermark = true,
+    isGlobal = false,
   }) {
     const db = this.getDb();
     if (!companyId) throw new Error('companyId is required');
@@ -47,6 +48,7 @@ class AcademyService {
         visibility: ['PUBLIC', 'UNLISTED', 'INVITE_ONLY', 'TAG_GATED'].includes(visibility) ? visibility : 'PUBLIC',
         allowedTags: Array.isArray(allowedTags) ? allowedTags : [],
         enableWatermark: Boolean(enableWatermark),
+        isGlobal: Boolean(isGlobal),
         isPublished: false,
       },
     });
@@ -95,6 +97,7 @@ class AcademyService {
         visibility: data.visibility !== undefined ? (['PUBLIC', 'UNLISTED', 'INVITE_ONLY', 'TAG_GATED'].includes(data.visibility) ? data.visibility : 'PUBLIC') : undefined,
         allowedTags: data.allowedTags !== undefined ? (Array.isArray(data.allowedTags) ? data.allowedTags : []) : undefined,
         enableWatermark: data.enableWatermark !== undefined ? Boolean(data.enableWatermark) : undefined,
+        isGlobal: data.isGlobal !== undefined ? Boolean(data.isGlobal) : undefined,
       },
     });
 
@@ -331,7 +334,6 @@ class AcademyService {
     if (studentUserId || customerId || studentPhone) {
       const enrollments = await db.academyEnrollment.findMany({
         where: {
-          companyId,
           status: { in: ['ACTIVE', 'COMPLETED'] },
           OR: [
             ...(studentUserId ? [{ studentUserId }] : []),
@@ -344,9 +346,15 @@ class AcademyService {
       enrolledCourseIds = new Set(enrollments.map((e) => e.courseId));
     }
 
-    // 2. Fetch all published courses for the company
+    // 2. Fetch published courses: company's own + global platform courses
     const courses = await db.academyCourse.findMany({
-      where: { companyId, isPublished: true },
+      where: {
+        isPublished: true,
+        OR: [
+          { companyId },           // Company's own courses
+          { isGlobal: true },      // MaxP platform-wide global courses
+        ],
+      },
       include: {
         modules: {
           orderBy: { sortOrder: 'asc' },
@@ -388,6 +396,7 @@ class AcademyService {
     return filtered.map((c) => ({
       ...c,
       isEnrolled: enrolledCourseIds.has(c.id),
+      isGlobal: Boolean(c.isGlobal),
     }));
   }
 
@@ -475,7 +484,13 @@ class AcademyService {
   }) {
     const db = this.getDb();
     const course = await db.academyCourse.findFirst({
-      where: { id: courseId, companyId },
+      where: {
+        id: courseId,
+        OR: [
+          { companyId },
+          { isGlobal: true },
+        ],
+      },
     });
     if (!course) throw new Error('Course not found');
 
@@ -542,7 +557,13 @@ class AcademyService {
   async getCourseOutlineWithProgress({ courseId, companyId, studentUserId, customerId, studentPhone }) {
     const db = this.getDb();
     const course = await db.academyCourse.findFirst({
-      where: { id: courseId, companyId },
+      where: {
+        id: courseId,
+        OR: [
+          { companyId },
+          { isGlobal: true },
+        ],
+      },
       include: {
         modules: {
           orderBy: { sortOrder: 'asc' },
@@ -561,11 +582,11 @@ class AcademyService {
     });
     if (!course) throw new Error('Course not found');
 
-    // Check enrollment
+    // Check enrollment (for global courses, enrollment companyId may differ)
     const enrollment = await db.academyEnrollment.findFirst({
       where: {
         courseId,
-        companyId,
+        ...(course.isGlobal ? {} : { companyId }),
         status: { in: ['ACTIVE', 'COMPLETED'] },
         OR: [
           ...(studentUserId ? [{ studentUserId }] : []),

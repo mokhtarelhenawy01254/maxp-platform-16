@@ -153,7 +153,13 @@ export default function AcademyCatalogPage() {
                   >
                     <div className="p-5 sm:p-6 space-y-4">
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {course.isGlobal && (
+                            <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
+                              <ShieldCheck className="w-3.5 h-3.5" />
+                              <span>كورس رسمي من MaxP</span>
+                            </span>
+                          )}
                           <span className="text-xs font-bold px-3 py-1 rounded-full bg-primary/10 text-primary border border-primary/20">
                             {course.freePreviewLessons > 0 ? `أول ${course.freePreviewLessons} دروس مجاناً` : "دورة متقدمة"}
                           </span>

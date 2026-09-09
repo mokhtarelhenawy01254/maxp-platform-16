@@ -37,6 +37,7 @@ export default function AcademyCourseEditorPage() {
   const [editVisibility, setEditVisibility] = useState<"PUBLIC" | "UNLISTED" | "INVITE_ONLY" | "TAG_GATED">("PUBLIC");
   const [editAllowedTags, setEditAllowedTags] = useState("");
   const [editEnableWatermark, setEditEnableWatermark] = useState(true);
+  const [editIsGlobal, setEditIsGlobal] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
 
   // Module modal
@@ -92,6 +93,7 @@ export default function AcademyCourseEditorPage() {
     setEditVisibility(course.visibility || "PUBLIC");
     setEditAllowedTags(course.allowedTags?.join(", ") || "");
     setEditEnableWatermark(course.enableWatermark !== false);
+    setEditIsGlobal(course.isGlobal || false);
     setIsSettingsModalOpen(true);
   };
 
@@ -114,6 +116,7 @@ export default function AcademyCourseEditorPage() {
         visibility: editVisibility,
         allowedTags: editVisibility === "TAG_GATED" ? tagsArray : [],
         enableWatermark: editEnableWatermark,
+        isGlobal: editIsGlobal,
       });
       setIsSettingsModalOpen(false);
       loadCourse();
@@ -912,6 +915,25 @@ export default function AcademyCourseEditorPage() {
                     <span className="font-semibold text-foreground">تفعيل العلامة المائية ضد التسريب (Anti-Leak Watermark)</span>
                     <p className="text-[11px] text-muted-foreground mt-0.5">
                       تعرض اسم ورقم هاتف وتوقيت دخول الطالب متحركاً على الفيديو لمنع تصوير الشاشة وتحديد مسرب الكورس فوراً.
+                    </p>
+                  </div>
+                </label>
+
+                {/* Global Platform Course toggle */}
+                <label className="flex items-start gap-2.5 pt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editIsGlobal}
+                    onChange={(e) => setEditIsGlobal(e.target.checked)}
+                    className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary border-input"
+                  />
+                  <div className="text-xs">
+                    <span className="font-semibold text-foreground flex items-center gap-1.5">
+                      <Globe className="w-3.5 h-3.5 text-amber-500" />
+                      كورس عام على مستوى المنصة (Global)
+                    </span>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      عند التفعيل، يظهر هذا الكورس تلقائياً في كتالوج جميع الشركات والتجار على MaxP، وليس فقط داخل شركتك. (صلاحية الـ Super Admin فقط)
                     </p>
                   </div>
                 </label>

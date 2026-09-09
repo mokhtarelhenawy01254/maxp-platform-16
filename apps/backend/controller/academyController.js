@@ -19,9 +19,13 @@ exports.createCourse = async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'Company ID is required' });
 
+    // Only SUPER_ADMIN can create global (platform-wide) courses
+    const isGlobal = req.body.isGlobal && req.user?.role === 'SUPER_ADMIN' ? true : false;
+
     const course = await academyService.createCourse({
       companyId,
       ...req.body,
+      isGlobal,
     });
 
     res.status(201).json({ success: true, course });
@@ -34,7 +38,14 @@ exports.updateCourse = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     const { id } = req.params;
-    const course = await academyService.updateCourse(id, companyId, req.body);
+
+    // Only SUPER_ADMIN can toggle isGlobal flag
+    const data = { ...req.body };
+    if (data.isGlobal !== undefined && req.user?.role !== 'SUPER_ADMIN') {
+      delete data.isGlobal;
+    }
+
+    const course = await academyService.updateCourse(id, companyId, data);
     res.json({ success: true, course });
   } catch (err) {
     res.status(400).json({ success: false, error: err.message });

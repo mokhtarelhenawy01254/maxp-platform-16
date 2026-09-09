@@ -57,6 +57,7 @@ export interface Course {
   price: number;
   thumbnailUrl?: string | null;
   isPublished: boolean;
+  isGlobal?: boolean;
   freePreviewLessons: number;
   storeProductId?: string | null;
   visibility?: "PUBLIC" | "UNLISTED" | "INVITE_ONLY" | "TAG_GATED";

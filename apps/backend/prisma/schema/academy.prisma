@@ -9,6 +9,7 @@ model AcademyCourse {
   price              Float    @default(0)
   thumbnailUrl       String?
   isPublished        Boolean  @default(false)
+  isGlobal           Boolean  @default(false)
   freePreviewLessons Int      @default(2)
   storeProductId     String?
   visibility         String   @default("PUBLIC") // PUBLIC | UNLISTED | INVITE_ONLY | TAG_GATED
@@ -21,6 +22,7 @@ model AcademyCourse {
   enrollments AcademyEnrollment[]
 
   @@index([companyId])
+  @@index([isGlobal])
   @@index([storeProductId])
   @@map("academy_courses")
 }
