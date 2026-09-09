@@ -287,7 +287,7 @@ const FeaturesBar: React.FC<FeaturesBarProps> = ({ section, settings }) => {
             {title ? (
               <h2 className={`font-heading text-3xl md:text-4xl ${
                 isSystemAssurance
-                  ? 'font-black tracking-tight text-[#1f242c]'
+                  ? 'font-black tracking-tight text-foreground'
                   : isPastelAdvantages
                     ? 'font-black tracking-tight text-[#3f2432]'
                   : isSmartBazaar

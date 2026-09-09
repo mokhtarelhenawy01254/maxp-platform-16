@@ -440,13 +440,18 @@ const ServicesGrid: React.FC<ServicesGridProps> = ({ section, settings }) => {
 
             /* ── standard precise icon card ── */
             let bgClass = '';
-            // Map colors specifically for Zen Organic design reference
-            if (idx === 0) bgClass = 'bg-[#89a877]';
-            else if (idx === 1) bgClass = 'bg-[#684c3c]';
-            else if (idx === 2) bgClass = 'bg-[#ab855c]';
-            else if (idx === 4) bgClass = 'bg-[#5b3f2e]';
-            else if (idx === 5) bgClass = 'bg-[#ceab88]';
-            else bgClass = resolveColor(item.color, idx).bg;
+            if (item.color) {
+              bgClass = resolveColor(item.color, idx).bg;
+            } else if (isZenOrganic) {
+              if (idx === 0) bgClass = 'bg-[#89a877]';
+              else if (idx === 1) bgClass = 'bg-[#684c3c]';
+              else if (idx === 2) bgClass = 'bg-[#ab855c]';
+              else if (idx === 4) bgClass = 'bg-[#5b3f2e]';
+              else if (idx === 5) bgClass = 'bg-[#ceab88]';
+              else bgClass = resolveColor(item.color, idx).bg;
+            } else {
+              bgClass = resolveColor(item.color, idx).bg;
+            }
 
             const IconComponent = ICON_MAP[item.icon || ''] || ICON_MAP[ICON_KEYS[idx % ICON_KEYS.length]!]!;
 

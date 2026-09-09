@@ -80,6 +80,7 @@ interface ReviewsSectionProps {
     mediaDescription?: string;
     listTitle?: string;
     showMediaFeed?: boolean | string;
+    showWriteReview?: boolean;
     reviewLimit?: number | string;
     mobileReviewLimit?: number | string;
     galleryStyle?: string;
@@ -377,6 +378,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ section, settings }) =>
       ? settings.cardStyle.trim()
       : String(ugcUi['cardStyle'] || 'elevated');
   const showMediaFeed = parseBooleanSetting(settings?.showMediaFeed, true);
+  const showWriteReviewButton = parseBooleanSetting(settings?.showWriteReview, Boolean(productId));
   const [activeTab, setActiveTab] = React.useState<
     'description' | 'additional' | 'reviews'
   >('reviews');
@@ -857,7 +859,7 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ section, settings }) =>
                     </div>
                   ) : null}
                 </div>
-                {shouldShowLoading || totalCount > 0 ? (
+                {(shouldShowLoading || totalCount > 0) && showWriteReviewButton ? (
                   <button
                     type="button"
                     onClick={() => setIsReviewDialogOpen(true)}
@@ -1237,17 +1239,19 @@ const ReviewsSection: React.FC<ReviewsSectionProps> = ({ section, settings }) =>
                   ))}
                 </div>
               ) : null}
-              <button
-                type="button"
-                onClick={() => setIsReviewDialogOpen(true)}
-                className={
-                  shouldUseCompactEmptyReviews
-                    ? 'mt-4 rounded-full bg-primary px-4 py-2 text-sm font-black text-primary-foreground transition-opacity hover:opacity-90'
-                    : 'mt-5 rounded-[var(--radius)] bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90'
-                }
-              >
-                {writeReviewText}
-              </button>
+              {showWriteReviewButton ? (
+                <button
+                  type="button"
+                  onClick={() => setIsReviewDialogOpen(true)}
+                  className={
+                    shouldUseCompactEmptyReviews
+                      ? 'mt-4 rounded-full bg-primary px-4 py-2 text-sm font-black text-primary-foreground transition-opacity hover:opacity-90'
+                      : 'mt-5 rounded-[var(--radius)] bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90'
+                  }
+                >
+                  {writeReviewText}
+                </button>
+              ) : null}
             </div>
           ) : null}
 

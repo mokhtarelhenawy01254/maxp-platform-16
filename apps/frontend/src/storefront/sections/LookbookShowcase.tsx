@@ -18,6 +18,7 @@ interface LookbookShowcaseProps {
     subtitle?: string;
     ctaText?: string;
     ctaLink?: string;
+    cardCtaText?: string;
     limit?: number;
     categoryCards?: string;
     variant?: string;
@@ -100,6 +101,7 @@ const LookbookShowcase: React.FC<LookbookShowcaseProps> = ({ section, settings }
     settings?.subtitle ||
     'أفكار سريعة لتنسيق الأحذية حسب المناسبة حتى يتحول التصفح إلى قرار شراء أسرع.';
   const ctaText = settings?.ctaText || 'تسوقي التشكيلة';
+  const cardCtaText = settings?.cardCtaText;
   const ctaLink =
     typeof settings?.ctaLink === 'string' && settings.ctaLink.trim()
       ? settings.ctaLink.trim()
@@ -266,11 +268,13 @@ const LookbookShowcase: React.FC<LookbookShowcaseProps> = ({ section, settings }
                     </p>
                   </div>
                   <span className={`${cardCtaClassName} mt-4`}>
-                    {isBoutiqueStoryboard
+                    {cardCtaText || (isBoutiqueStoryboard
                       ? isRtl
                         ? 'شاهدي التنسيق'
                         : 'See the edit'
-                      : 'تسوقي هذا الستايل'}
+                      : isRtl
+                        ? 'تسوقي هذا الستايل'
+                        : 'Shop this style')}
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       width="16"

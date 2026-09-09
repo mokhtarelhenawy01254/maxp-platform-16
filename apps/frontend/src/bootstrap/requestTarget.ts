@@ -31,16 +31,20 @@ const ADMIN_PRODUCT_EDIT_PATTERN = /\/products\/[^/]+\/edit$/;
 export const shouldBootstrapStorefront = (
   hostnameInput: string,
   pathnameInput: string,
+  searchInput: string = "",
 ): boolean => {
   const hostname = normalizeHostname(hostnameInput);
   const pathname = normalizePathname(pathnameInput);
   const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  const hasStorefrontPreviewParam =
+    searchInput.includes("previewTheme=") ||
+    searchInput.includes("storefrontSubdomain=");
 
   // Storefront detection on pure localhost is driven solely by subdomain
-  // (tenant.localhost), never by path alone. Admin routes such as
-  // /products/…, /settings/store/… or /cart MUST NOT bootstrap the
-  // storefront rendering engine on localhost.
-  if (isLocalhost) {
+  // (tenant.localhost) or explicit preview query params (?previewTheme=...).
+  // Admin routes such as /products/…, /settings/store/… or /cart MUST NOT
+  // bootstrap the storefront rendering engine on localhost without preview query.
+  if (isLocalhost && !hasStorefrontPreviewParam) {
     return false;
   }
 
@@ -80,6 +84,10 @@ export const shouldBootstrapStorefront = (
 
   if (isPublicSubdomainBypassPath(pathname)) {
     return false;
+  }
+
+  if (hasStorefrontPreviewParam) {
+    return true;
   }
 
   if (hostname.endsWith(".localhost")) {

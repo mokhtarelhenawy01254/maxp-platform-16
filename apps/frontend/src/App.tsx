@@ -1772,10 +1772,16 @@ const AppContent = () => {
         tenantSubdomain = firstPart;
       }
     }
+  } else {
+    const searchParams = new URLSearchParams(window.location.search);
+    if (searchParams.has("previewTheme") || searchParams.has("storefrontSubdomain")) {
+      tenantSubdomain = searchParams.get("storefrontSubdomain") || "demo";
+    }
   }
 
   const shouldRenderTenantStorefront =
-    Boolean(tenantSubdomain) && shouldBootstrapStorefront(hostname, pathname);
+    Boolean(tenantSubdomain) &&
+    shouldBootstrapStorefront(hostname, pathname, window.location.search);
 
   // If a tenant subdomain is detected for a storefront route, we strictly render
   // the Storefront. Public affiliate/merchant registration paths are handled by
