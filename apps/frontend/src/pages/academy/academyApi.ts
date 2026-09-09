@@ -59,12 +59,28 @@ export interface Course {
   isPublished: boolean;
   freePreviewLessons: number;
   storeProductId?: string | null;
+  visibility?: "PUBLIC" | "UNLISTED" | "INVITE_ONLY" | "TAG_GATED";
+  allowedTags?: string[];
+  enableWatermark?: boolean;
+  isEnrolled?: boolean;
   createdAt?: string;
   updatedAt?: string;
   modules?: Module[];
   _count?: {
     enrollments?: number;
   };
+}
+
+export interface MyEnrollment {
+  enrollmentId: string;
+  status: string;
+  enrolledAt: string;
+  completedAt?: string | null;
+  progressPercent: number;
+  completedCount: number;
+  totalLessons: number;
+  certificate?: any;
+  course: Course & { modulesCount?: number; lessonsCount?: number };
 }
 
 export interface StudentProgressRow {
@@ -148,9 +164,14 @@ export const academyApi = {
   },
 
   // Student Portal
-  async getCatalog(): Promise<Course[]> {
-    const res = await apiClient.get("/api/v1/academy/catalog");
+  async getCatalog(params?: { customerId?: string; phone?: string; tags?: string }): Promise<Course[]> {
+    const res = await apiClient.get("/api/v1/academy/catalog", { params });
     return res.data.courses || [];
+  },
+
+  async getMyCourses(): Promise<MyEnrollment[]> {
+    const res = await apiClient.get("/api/v1/academy/my-courses");
+    return res.data.enrollments || [];
   },
 
   async getCourseOutline(courseId: string, params?: { customerId?: string; phone?: string }): Promise<{
@@ -169,6 +190,13 @@ export const academyApi = {
     quiz: Quiz | null;
     progress: any;
     isEnrolled: boolean;
+    enableWatermark?: boolean;
+    studentInfo?: {
+      name: string;
+      phone: string;
+      email: string;
+      id: string;
+    };
   }> {
     const res = await apiClient.get(`/api/v1/academy/lessons/${lessonId}/content`, { params });
     return res.data;

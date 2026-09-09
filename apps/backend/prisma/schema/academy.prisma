@@ -11,6 +11,9 @@ model AcademyCourse {
   isPublished        Boolean  @default(false)
   freePreviewLessons Int      @default(2)
   storeProductId     String?
+  visibility         String   @default("PUBLIC") // PUBLIC | UNLISTED | INVITE_ONLY | TAG_GATED
+  allowedTags        String[] @default([])
+  enableWatermark    Boolean  @default(true)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 

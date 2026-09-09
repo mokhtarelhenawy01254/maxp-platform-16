@@ -17,7 +17,19 @@ class AcademyService {
   // Course Management (Company Admin / Instructor)
   // -------------------------------------------------------------
 
-  async createCourse({ companyId, title, slug, description, price = 0, thumbnailUrl, freePreviewLessons = 2, storeProductId }) {
+  async createCourse({
+    companyId,
+    title,
+    slug,
+    description,
+    price = 0,
+    thumbnailUrl,
+    freePreviewLessons = 2,
+    storeProductId,
+    visibility = 'PUBLIC',
+    allowedTags = [],
+    enableWatermark = true,
+  }) {
     const db = this.getDb();
     if (!companyId) throw new Error('companyId is required');
     if (!title || !title.trim()) throw new Error('title is required');
@@ -32,6 +44,9 @@ class AcademyService {
         thumbnailUrl: thumbnailUrl || null,
         freePreviewLessons: Number(freePreviewLessons) >= 0 ? Number(freePreviewLessons) : 2,
         storeProductId: storeProductId || null,
+        visibility: ['PUBLIC', 'UNLISTED', 'INVITE_ONLY', 'TAG_GATED'].includes(visibility) ? visibility : 'PUBLIC',
+        allowedTags: Array.isArray(allowedTags) ? allowedTags : [],
+        enableWatermark: Boolean(enableWatermark),
         isPublished: false,
       },
     });
@@ -77,6 +92,9 @@ class AcademyService {
         isPublished: data.isPublished !== undefined ? Boolean(data.isPublished) : undefined,
         freePreviewLessons: data.freePreviewLessons !== undefined ? Number(data.freePreviewLessons) : undefined,
         storeProductId: data.storeProductId !== undefined ? data.storeProductId : undefined,
+        visibility: data.visibility !== undefined ? (['PUBLIC', 'UNLISTED', 'INVITE_ONLY', 'TAG_GATED'].includes(data.visibility) ? data.visibility : 'PUBLIC') : undefined,
+        allowedTags: data.allowedTags !== undefined ? (Array.isArray(data.allowedTags) ? data.allowedTags : []) : undefined,
+        enableWatermark: data.enableWatermark !== undefined ? Boolean(data.enableWatermark) : undefined,
       },
     });
 
@@ -299,8 +317,34 @@ class AcademyService {
   // Student Portal & Sequential Progression
   // -------------------------------------------------------------
 
-  async getPublishedCatalog(companyId) {
+  async getPublishedCatalog(params) {
     const db = this.getDb();
+    // Handle both legacy signature (companyId string) and new object params
+    const companyId = typeof params === 'string' ? params : params?.companyId;
+    const studentUserId = typeof params === 'object' ? params?.studentUserId : null;
+    const customerId = typeof params === 'object' ? params?.customerId : null;
+    const studentPhone = typeof params === 'object' ? params?.studentPhone : null;
+    const customerTags = (typeof params === 'object' && Array.isArray(params?.customerTags)) ? params.customerTags : [];
+
+    // 1. Fetch active enrollments if user identity is available
+    let enrolledCourseIds = new Set();
+    if (studentUserId || customerId || studentPhone) {
+      const enrollments = await db.academyEnrollment.findMany({
+        where: {
+          companyId,
+          status: { in: ['ACTIVE', 'COMPLETED'] },
+          OR: [
+            ...(studentUserId ? [{ studentUserId }] : []),
+            ...(customerId ? [{ customerId }] : []),
+            ...(studentPhone ? [{ studentPhone }] : []),
+          ],
+        },
+        select: { courseId: true },
+      });
+      enrolledCourseIds = new Set(enrollments.map((e) => e.courseId));
+    }
+
+    // 2. Fetch all published courses for the company
     const courses = await db.academyCourse.findMany({
       where: { companyId, isPublished: true },
       include: {
@@ -324,7 +368,98 @@ class AcademyService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return courses;
+    // 3. Visibility filtering:
+    // - Always show if already enrolled
+    // - PUBLIC: visible to everyone
+    // - TAG_GATED: visible if student has any matching tag
+    // - UNLISTED / INVITE_ONLY: hidden from general catalog
+    const filtered = courses.filter((course) => {
+      if (enrolledCourseIds.has(course.id)) return true;
+
+      const vis = course.visibility || 'PUBLIC';
+      if (vis === 'PUBLIC') return true;
+      if (vis === 'TAG_GATED') {
+        if (!Array.isArray(course.allowedTags) || course.allowedTags.length === 0) return true;
+        return course.allowedTags.some((tag) => customerTags.includes(tag));
+      }
+      return false;
+    });
+
+    return filtered.map((c) => ({
+      ...c,
+      isEnrolled: enrolledCourseIds.has(c.id),
+    }));
+  }
+
+  async getMyEnrolledCourses({ companyId, studentUserId, customerId, studentPhone }) {
+    const db = this.getDb();
+    if (!studentUserId && !customerId && !studentPhone) {
+      return [];
+    }
+
+    const enrollments = await db.academyEnrollment.findMany({
+      where: {
+        ...(companyId ? { companyId } : {}),
+        status: { in: ['ACTIVE', 'COMPLETED'] },
+        OR: [
+          ...(studentUserId ? [{ studentUserId }] : []),
+          ...(customerId ? [{ customerId }] : []),
+          ...(studentPhone ? [{ studentPhone }] : []),
+        ],
+      },
+      include: {
+        course: {
+          include: {
+            modules: {
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                lessons: {
+                  orderBy: { sortOrder: 'asc' },
+                  select: {
+                    id: true,
+                    title: true,
+                    durationMin: true,
+                    isFreePreview: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        progress: true,
+        certificate: true,
+      },
+      orderBy: { enrolledAt: 'desc' },
+    });
+
+    return enrollments.map((enr) => {
+      const allLessons = enr.course.modules.flatMap((m) => m.lessons);
+      const totalLessons = allLessons.length;
+      const completedCount = enr.progress.filter((p) => p.status === 'DONE').length;
+      const progressPercent = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+      return {
+        enrollmentId: enr.id,
+        status: enr.status,
+        enrolledAt: enr.enrolledAt,
+        completedAt: enr.completedAt,
+        progressPercent,
+        completedCount,
+        totalLessons,
+        certificate: enr.certificate,
+        course: {
+          id: enr.course.id,
+          title: enr.course.title,
+          slug: enr.course.slug,
+          description: enr.course.description,
+          thumbnailUrl: enr.course.thumbnailUrl,
+          price: enr.course.price,
+          visibility: enr.course.visibility,
+          modulesCount: enr.course.modules.length,
+          lessonsCount: totalLessons,
+        },
+      };
+    });
   }
 
   async enrollStudent({
@@ -600,6 +735,13 @@ class AcademyService {
       quiz: sanitizedQuiz,
       progress,
       isEnrolled,
+      enableWatermark: course.enableWatermark ?? true,
+      studentInfo: {
+        name: enrollment?.studentName || 'طالب ماكس بي',
+        phone: enrollment?.studentPhone || studentPhone || '',
+        email: enrollment?.studentEmail || '',
+        id: studentUserId || customerId || enrollment?.id || '',
+      },
     };
   }
 

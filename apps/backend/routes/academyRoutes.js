@@ -29,6 +29,7 @@ router.get('/courses/:id/students', authenticateToken, controller.getStudentsPro
 // Student Portal & Catalog (Public / Token Protected)
 // -------------------------------------------------------------
 router.get('/catalog', optionalAuth, controller.getPublishedCatalog);
+router.get('/my-courses', optionalAuth, controller.getMyCourses);
 router.get('/courses/:id/outline', optionalAuth, controller.getCourseOutline);
 router.get('/lessons/:id/content', optionalAuth, controller.getLessonContent);
 router.post('/courses/:courseId/enroll', optionalAuth, controller.enrollStudent);

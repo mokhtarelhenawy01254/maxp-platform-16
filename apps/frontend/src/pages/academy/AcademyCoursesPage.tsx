@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
-import { BookOpen, Plus, PlayCircle, Edit3, Trash2, CheckCircle2, AlertCircle, Eye, ShoppingCart } from "lucide-react";
+import { BookOpen, Plus, PlayCircle, Edit3, Trash2, CheckCircle2, AlertCircle, Eye, ShoppingCart, Shield, Lock, Tag, Globe } from "lucide-react";
 import { academyApi, Course } from "./academyApi";
 
 export default function AcademyCoursesPage() {
@@ -15,6 +15,9 @@ export default function AcademyCoursesPage() {
   const [newPrice, setNewPrice] = useState("1499");
   const [newPreviewCount, setNewPreviewCount] = useState("2");
   const [newStoreProductId, setNewStoreProductId] = useState("");
+  const [newVisibility, setNewVisibility] = useState<"PUBLIC" | "UNLISTED" | "INVITE_ONLY" | "TAG_GATED">("PUBLIC");
+  const [newAllowedTags, setNewAllowedTags] = useState("");
+  const [newEnableWatermark, setNewEnableWatermark] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -40,16 +43,25 @@ export default function AcademyCoursesPage() {
 
     try {
       setSubmitting(true);
+      const tagsArray = newAllowedTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+
       await academyApi.createCourse({
         title: newTitle.trim(),
         description: newDesc.trim() || undefined,
         price: Number(newPrice) || 0,
         freePreviewLessons: Number(newPreviewCount) || 2,
         storeProductId: newStoreProductId.trim() || undefined,
+        visibility: newVisibility,
+        allowedTags: newVisibility === "TAG_GATED" ? tagsArray : [],
+        enableWatermark: newEnableWatermark,
       });
       setIsModalOpen(false);
       setNewTitle("");
       setNewDesc("");
+      setNewAllowedTags("");
       loadCourses();
     } catch (err: any) {
       alert(err?.response?.data?.error || "فشل إنشاء الدورة");
@@ -146,6 +158,41 @@ export default function AcademyCoursesPage() {
                       >
                         {course.isPublished ? "منشور ونشط" : "مسودة (غير معروض للطلاب)"}
                       </span>
+
+                      {/* Visibility Badge */}
+                      {course.visibility === "UNLISTED" && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
+                          <span>غير مدرج (رابط مباشر)</span>
+                        </span>
+                      )}
+                      {course.visibility === "INVITE_ONLY" && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-300 border border-orange-500/20 flex items-center gap-1">
+                          <Lock className="w-3 h-3" />
+                          <span>خاص (دعوة فقط)</span>
+                        </span>
+                      )}
+                      {course.visibility === "TAG_GATED" && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
+                          <Tag className="w-3 h-3" />
+                          <span>مخصص لوسوم: {course.allowedTags?.join(", ") || "بدون تحديد"}</span>
+                        </span>
+                      )}
+                      {(!course.visibility || course.visibility === "PUBLIC") && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/20 flex items-center gap-1">
+                          <Globe className="w-3 h-3" />
+                          <span>عام بالكتالوج</span>
+                        </span>
+                      )}
+
+                      {/* Watermark Badge */}
+                      {course.enableWatermark !== false && (
+                        <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
+                          <Shield className="w-3 h-3" />
+                          <span>علامة مائية ضد التسريب</span>
+                        </span>
+                      )}
+
                       <span className="text-xs text-slate-400 font-mono bg-slate-800 px-2 py-0.5 rounded-md">
                         {course.price > 0 ? `${course.price} EGP` : "مجاني"}
                       </span>
@@ -274,6 +321,59 @@ export default function AcademyCoursesPage() {
                   placeholder="ID المنتج في المتجر للاشتراك التلقائي فور الدفع"
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
                 />
+              </div>
+
+              {/* Privacy & Visibility */}
+              <div className="p-3.5 rounded-xl bg-slate-950/60 border border-slate-800 space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    نطاق ظهور الدورة (الخصوصية والوصول)
+                  </label>
+                  <select
+                    value={newVisibility}
+                    onChange={(e: any) => setNewVisibility(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  >
+                    <option value="PUBLIC">عام (معروض للجميع في كتالوج الأكاديمية)</option>
+                    <option value="UNLISTED">غير مدرج (مخفي من الكتالوج ومتاح برابط مباشر فقط)</option>
+                    <option value="INVITE_ONLY">خاص / دعوة فقط (لا يظهر إلا للمشتركين المسجلين)</option>
+                    <option value="TAG_GATED">مخصص لوسوم معينة (يظهر فقط لعملاء بوسوم CRM محددة)</option>
+                  </select>
+                </div>
+
+                {newVisibility === "TAG_GATED" && (
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      الوسوم المصرح لها برؤية الكورس (مفصولة بفواصل)
+                    </label>
+                    <input
+                      type="text"
+                      value={newAllowedTags}
+                      onChange={(e) => setNewAllowedTags(e.target.value)}
+                      placeholder="مثال: vip, agency, media_buyer"
+                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                    />
+                    <p className="text-[11px] text-slate-400 mt-1">
+                      سيظهر الكورس في الكتالوج فقط للعملاء الذين يمتلكون واحداً على الأقل من هذه الوسوم.
+                    </p>
+                  </div>
+                )}
+
+                {/* Watermark toggle */}
+                <label className="flex items-center gap-2.5 pt-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={newEnableWatermark}
+                    onChange={(e) => setNewEnableWatermark(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-500 bg-slate-900 border-slate-700 focus:ring-emerald-500"
+                  />
+                  <div className="text-xs">
+                    <span className="font-semibold text-white">تفعيل العلامة المائية ضد التسريب (Anti-Leak Watermark)</span>
+                    <p className="text-[11px] text-slate-400">
+                      تعرض اسم ورقم هاتف وتوقيت دخول الطالب متحركاً على الفيديو لمنع تصوير الشاشة وتحديد المسرب.
+                    </p>
+                  </div>
+                </label>
               </div>
 
               <div className="flex items-center justify-end gap-3 pt-2">

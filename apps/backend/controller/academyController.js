@@ -173,8 +173,48 @@ exports.getPublishedCatalog = async (req, res) => {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ error: 'Company ID is required' });
 
-    const courses = await academyService.getPublishedCatalog(companyId);
+    const studentUserId = req.user?.id || null;
+    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
+    const studentPhone = req.query.phone || req.user?.phone || null;
+
+    let customerTags = [];
+    if (req.user?.tags && Array.isArray(req.user.tags)) {
+      customerTags = req.user.tags;
+    } else if (req.query.tags) {
+      customerTags = String(req.query.tags)
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean);
+    }
+
+    const courses = await academyService.getPublishedCatalog({
+      companyId,
+      studentUserId,
+      customerId,
+      studentPhone,
+      customerTags,
+    });
     res.json({ success: true, courses });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+exports.getMyCourses = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    const studentUserId = req.user?.id || null;
+    const customerId = req.query.customerId || req.headers['x-customer-id'] || null;
+    const studentPhone = req.query.phone || req.user?.phone || null;
+
+    const enrollments = await academyService.getMyEnrolledCourses({
+      companyId,
+      studentUserId,
+      customerId,
+      studentPhone,
+    });
+
+    res.json({ success: true, enrollments });
   } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }

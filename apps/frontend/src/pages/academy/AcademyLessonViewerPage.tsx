@@ -17,6 +17,7 @@ import {
   Check,
   RotateCcw,
   ArrowRight,
+  Shield,
 } from "lucide-react";
 import { academyApi, Course, Module, Lesson, Quiz } from "./academyApi";
 
@@ -27,6 +28,10 @@ export default function AcademyLessonViewerPage() {
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Watermark state
+  const [watermarkEnabled, setWatermarkEnabled] = useState(true);
+  const [studentInfo, setStudentInfo] = useState<{ name?: string; phone?: string; email?: string; id?: string } | null>(null);
 
   // Active tab under video: 'script' | 'exercise' | 'quiz'
   const [activeTab, setActiveTab] = useState<"script" | "exercise" | "quiz">("script");
@@ -83,6 +88,12 @@ export default function AcademyLessonViewerPage() {
       setCurrentQuiz(data.quiz);
       setQuizAnswers([]);
       setQuizResult(null);
+
+      // Watermark settings
+      setWatermarkEnabled(data.enableWatermark !== false);
+      if (data.studentInfo) {
+        setStudentInfo(data.studentInfo);
+      }
 
       // Reset AI coach with welcoming lesson message
       setCoachMessages([
@@ -259,6 +270,14 @@ export default function AcademyLessonViewerPage() {
                 />
                 {/* Overlay Barrier at top to prevent accidental header link clicking */}
                 <div className="absolute top-0 inset-x-0 h-10 pointer-events-auto bg-transparent" />
+
+                {/* Dynamic Anti-Leak Floating Watermark */}
+                {watermarkEnabled && (
+                  <DynamicVideoWatermark
+                    name={studentInfo?.name}
+                    phone={studentInfo?.phone}
+                  />
+                )}
               </>
             ) : (
               <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
@@ -626,5 +645,58 @@ export default function AcademyLessonViewerPage() {
         </div>
       )}
     </div>
+  );
+}
+
+function DynamicVideoWatermark({ name, phone }: { name?: string; phone?: string }) {
+  const [posIdx, setPosIdx] = useState(0);
+  const [currentTime, setCurrentTime] = useState(() =>
+    new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })
+  );
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setPosIdx((prev) => (prev + 1) % 6);
+      setCurrentTime(new Date().toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" }));
+    }, 9000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Diverse quadrants across the video viewport to make cropping impossible
+  const positions = [
+    "top-6 right-6 text-right",
+    "bottom-12 left-6 text-left",
+    "top-1/3 left-1/4 text-center",
+    "bottom-16 right-8 text-right",
+    "top-10 left-10 text-left",
+    "bottom-1/3 right-1/4 text-center",
+  ];
+
+  const pos = positions[posIdx] || positions[0];
+
+  return (
+    <>
+      {/* Floating dynamic drifting badge */}
+      <div
+        className={`absolute ${pos} pointer-events-none z-30 transition-all duration-1000 ease-in-out select-none`}
+      >
+        <div className="bg-black/40 backdrop-blur-[2px] border border-white/10 px-3 py-1.5 rounded-lg text-white/50 font-mono text-[11px] leading-tight shadow-lg space-y-0.5">
+          <div className="font-bold tracking-wider flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 animate-pulse inline-block" />
+            <span>{name || "طالب ماكس بي"}</span>
+          </div>
+          {phone && <div className="text-[10px] text-white/40 font-mono">{phone}</div>}
+          <div className="text-[9px] text-white/30 font-sans">MaxP Academy • {currentTime}</div>
+        </div>
+      </div>
+
+      {/* Subtle faint diagonal watermark in the center */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 select-none overflow-hidden opacity-10">
+        <div className="transform -rotate-12 text-center text-white/40 font-mono text-sm tracking-widest uppercase">
+          <div>{name || "MaxP Student"}</div>
+          {phone && <div>{phone}</div>}
+        </div>
+      </div>
+    </>
   );
 }
