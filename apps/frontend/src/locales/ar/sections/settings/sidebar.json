@@ -706,5 +706,11 @@
   "orderAutomation": "أتمتة الطلبات",
   "codDeposit": "الدفعة المقدمة COD",
   "orderStatusTemplates": "قوالب الواتساب للحالات",
-  "upsellManagement": "عروض الـ Upsell"
+  "upsellManagement": "عروض الـ Upsell",
+  "academyModule": "أكاديمية ماكس بي",
+  "academyDashboard": "لوحة الأكاديمية",
+  "academyCourses": "إدارة الكورسات",
+  "academyCatalog": "بوابة الطلاب والكتالوج",
+  "academyStudents": "الطلاب والتقدم",
+  "academySection": "أكاديمية ماكس بي"
 }

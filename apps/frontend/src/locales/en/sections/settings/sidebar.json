@@ -704,5 +704,11 @@
   "orderAutomation": "Order Automation",
   "codDeposit": "COD Deposit",
   "orderStatusTemplates": "WhatsApp Status Templates",
-  "upsellManagement": "Upsell Management"
+  "upsellManagement": "Upsell Management",
+  "academyModule": "MaxP Academy",
+  "academyDashboard": "Academy Dashboard",
+  "academyCourses": "Course Management",
+  "academyCatalog": "Student Portal & Catalog",
+  "academyStudents": "Students & Progress",
+  "academySection": "MaxP Academy"
 }

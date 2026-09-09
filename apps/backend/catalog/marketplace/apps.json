@@ -1774,6 +1774,63 @@
     "updatedAt": "2026-08-27T00:00:00Z"
   },
   {
+    "id": "cat-app-academy-app",
+    "slug": "academy-app",
+    "name": "أكاديمية ماكس بي",
+    "nameEn": "MaxP Academy",
+    "description": "نظام متكامل لبيع ومتابعة الكورسات التعليمية — وحدات ودروس، مشغل فيديو ترتيبي، كوتش ذكاء اصطناعي مقيد بالمحتوى، اختبارات، وشهادات إتمام.",
+    "descriptionEn": "Comprehensive video course LMS — sequential video player, strictly grounded AI coach, quizzes, and automated completion certificates.",
+    "category": "PRODUCTIVITY",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 199,
+    "yearlyPrice": 1990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [],
+    "positioning": {
+      "audience": "الأكاديميات، المدربون، صناع المحتوى، والشركات لتدريب عملائها وموظفيها.",
+      "surface": "داخل قسم الأكاديمية — إدارة الكورسات والدروس، وبوابة الطلاب التفاعلية.",
+      "outcome": "بيع الكورسات وتأهيل الطلاب مع كوتش ذكي يجاوب تلقائياً من محتوى المحاضرات."
+    },
+    "features": {
+      "courses": {
+        "enabled": true,
+        "name": "إدارة الكورسات والدروس",
+        "description": "هيكلة الوحدات والدروس ورفع الفيديوهات وكتابة السكريبتات.",
+        "access": "PAID"
+      },
+      "aiCoach": {
+        "enabled": true,
+        "name": "كوتش الذكاء الاصطناعي",
+        "description": "مساعد ذكي للطلاب مقيد بسكريبت الدرس الحالي دون هلوسة.",
+        "access": "PAID"
+      },
+      "quizzes": {
+        "enabled": true,
+        "name": "الاختبارات والشهادات",
+        "description": "كويزات تفاعلية بعد كل درس وإصدار شهادات إتمام تلقائية.",
+        "access": "PAID"
+      },
+      "storeIntegration": {
+        "enabled": true,
+        "name": "الدفع التلقائي عبر المتجر",
+        "description": "ربط الكورس بمنتج في المتجر للاشتراك التلقائي فور السداد.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "academic-cap",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-09T00:00:00Z",
+    "updatedAt": "2026-09-09T00:00:00Z"
+  },
+  {
     "id": "cat-app-inventory-pro",
     "slug": "inventory-pro",
     "name": "المخزون والمستودعات",

@@ -1,0 +1,341 @@
+{
+  "id": "creative-portfolio",
+  "name": "Creative Studio & Portfolio",
+  "tokens": {
+    "colors": {
+      "primary": "258 90% 66%",
+      "primaryForeground": "0 0% 100%",
+      "secondary": "240 6% 14%",
+      "secondaryForeground": "240 5% 85%",
+      "accent": "165 82% 48%",
+      "accentForeground": "0 0% 100%",
+      "background": "240 8% 7%",
+      "foreground": "240 10% 96%",
+      "muted": "240 7% 12%",
+      "mutedForeground": "240 5% 65%",
+      "border": "240 6% 18%",
+      "card": "240 7% 10%",
+      "cardForeground": "240 10% 96%",
+      "ring": "258 90% 66%"
+    },
+    "typography": {
+      "headingFont": "\"Space Grotesk\", \"IBM Plex Sans Arabic\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.25rem",
+      "buttonRadius": "999px"
+    },
+    "productCard": {
+      "borderRadius": "1.25rem",
+      "boxShadow": "0 20px 50px -20px rgba(0, 0, 0, 0.5)",
+      "hoverShadow": "0 30px 60px -15px rgba(124, 58, 237, 0.25)",
+      "badgeRadius": "999px",
+      "buttonRadius": "999px",
+      "surfaceOpacity": "0.95"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | استوديو الأعمال والإبداع",
+    "description": "بورتفوليو احترافي واستوديو إبداعي — نصمم ونبني هويات بصرية، مواقع، وتجارب رقمية استثنائية تحقق نتائج ملموسة."
+  },
+  "header": {
+    "brandName": "Creative Studio ✨",
+    "showSearch": false,
+    "showCart": false,
+    "announcementText": "🟢 متاح الآن لاستقبال مشاريع الربع القادم والتطوير المخصص.",
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "أعمالنا والمشاريع", "to": "/shop" },
+      { "label": "الخدمات والباقات", "to": "/collections" },
+      { "label": "تواصل معنا", "to": "/contact" }
+    ],
+    "actions": [
+      { "label": "ابدأ مشروعك 🚀", "to": "/contact", "style": "primary" }
+    ]
+  },
+  "footer": {
+    "description": "Creative Studio — استوديو إبداعي وتطويري متكامل. شراكة رقمية تحوّل الأفكار إلى منتجات وواجهات تفاعلية مبهرة.",
+    "copyrightText": "© 2026 Creative Studio. جميع الحقوق محفوظة.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "استكشف",
+        "links": [
+          { "label": "أبرز الأعمال", "to": "/shop" },
+          { "label": "الخدمات والباقات", "to": "/collections" },
+          { "label": "تواصل معنا", "to": "/contact" }
+        ]
+      },
+      {
+        "title": "الدعم والمساعدة",
+        "links": [
+          { "label": "الأسئلة الشائعة", "to": "/faq" },
+          { "label": "سياسة الخصوصية", "to": "/privacy" },
+          { "label": "الشروط والأحكام", "to": "/terms" }
+        ]
+      }
+    ],
+    "legalLinks": [
+      { "label": "الخصوصية", "to": "/privacy" },
+      { "label": "الشروط", "to": "/terms" }
+    ]
+  },
+  "pages": {
+    "home": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "متاح لمشاريع جديدة 🟢",
+            "message": "نستقبل الآن حجوزات الربع القادم لتطوير الهويات والواجهات وتطبيقات الويب.",
+            "saleLabel": "استشارة أولى مجانية",
+            "shippingLabel": "تسليم دقيق في الموعد",
+            "returnLabel": "دعم وضمان 60 يوماً",
+            "ctaText": "احجز استشارتك",
+            "ctaLink": "/contact"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "neon-dark",
+          "settings": {
+            "eyebrow": "Creative Studio & Digital Product Design ✦",
+            "title": "نصمم هويات ومنتجات رقمية تترك أثراً وتصنع الفارق",
+            "subtitle": "استوديو تصميم وتطوير متكامل للمشاريع الناشئة والشركات الرائدة — نحول الرؤية المعقدة إلى تجربة بصرية وواجهات سلسة تزيد مبيعاتك وتثبت علامتك.",
+            "ctaText": "طلب عرض سعر ومشروع",
+            "ctaLink": "/contact",
+            "secondaryCtaText": "تصفح المشاريع والأعمال",
+            "secondaryCtaLink": "/shop"
+          }
+        },
+        {
+          "type": "features-bar",
+          "settings": {
+            "title": "أرقام وإنجازات نفتخر بها",
+            "subtitle": "شراكات نجاح مستمرة مع براندات في مصر والخليج والعالم العربي.",
+            "items": [
+              {
+                "icon": "target",
+                "title": "+180 مشروع منجز",
+                "description": "تم تسليمه بأعلى معايير الجودة والاهتمام بالتفاصيل."
+              },
+              {
+                "icon": "shield",
+                "title": "99% نسبة الرضا",
+                "description": "عملاء مستمرون يثقون في استمرار شراكتنا الإبداعية."
+              },
+              {
+                "icon": "document",
+                "title": "+8 سنوات خبرة",
+                "description": "في بناء الهويات والواجهات والمنتجات الرقمية الناجحة."
+              },
+              {
+                "icon": "flower",
+                "title": "التزام صارم بالمواعيد",
+                "description": "خطة إطلاق محددة ومتابعة دورية بكل شفافية."
+              }
+            ]
+          }
+        },
+        {
+          "type": "lookbook-showcase",
+          "settings": {
+            "badge": "معرض الأعمال المختارة",
+            "title": "مشاريع وتجارب سابقة أحدثت فارقاً حقيقياً",
+            "subtitle": "نماذج حية لمشاريع قمنا بتصميمها وتطويرها حققت نمواً سريعاً لعملائنا.",
+            "ctaText": "اطلب مشروعاً مماثلاً",
+            "ctaLink": "/contact"
+          }
+        },
+        {
+          "type": "services-grid",
+          "settings": {
+            "title": "مجالات العمل والخدمات الرئيسية",
+            "subtitle": "حلول إبداعية وتقنية مصممة خصيصاً لنمو شركتك وتميزها في السوق.",
+            "items": [
+              {
+                "icon": "leaf",
+                "title": "تصميم الهوية البصرية (Branding)",
+                "description": "بناء أنظمة بصرية متكاملة تشمل الشعار، لوحة الألوان، الخطوط، وأدلة الهوية لعلامتك.",
+                "ctaText": "طلب هوية"
+              },
+              {
+                "icon": "grid",
+                "title": "تصميم واجهات وتجربة المستخدم (UI/UX)",
+                "description": "أبحاث مستخدمين ونماذج تفاعلية عالية الدقة للمواقع وتطبيقات الموبايل.",
+                "ctaText": "طلب تصميم واجهة"
+              },
+              {
+                "icon": "target",
+                "title": "تطوير وبرمجة المتاجر والمواقع",
+                "description": "بناء مواقع وتطبيقات سريعة وفائقة الأداء متوافقة مع محركات البحث وكافة الشاشات.",
+                "ctaText": "طلب تطوير موقع"
+              },
+              {
+                "icon": "shield",
+                "title": "الإنتاج المرئي والمحتوى الإعلاني",
+                "description": "فيديوهات موشن جرافيك وتصوير إعلاني يوصل رسالتك بوضوح وجاذبية واحتراف.",
+                "ctaText": "طلب إنتاج مرئي"
+              }
+            ]
+          }
+        },
+        {
+          "type": "before-after",
+          "settings": {
+            "badge": "التحول الملموس",
+            "title": "نتائج حقيقية قبل وبعد التدخل الإبداعي",
+            "subtitle": "شاهد كيف تحولت هوية وواجهة المتجر من تجربة تقليدية إلى علامة بريميوم رفعت معدل التحويل والمبيعات."
+          }
+        },
+        {
+          "type": "reviews",
+          "settings": {
+            "title": "ماذا يقول شركاء النجاح عنا؟",
+            "subtitle": "آراء وتجارب واقعية لعملاء بنينا معهم قصص نجاح مستمرة."
+          }
+        },
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "جاهز لإطلاق مشروعك؟",
+            "message": "دعنا نناقش فكرتك ونحولها إلى خطة عمل وتنفيذ فوري. تواصل معنا الآن.",
+            "saleLabel": "استجابة سريعة",
+            "shippingLabel": "تخطيط فوري",
+            "ctaText": "تواصل عبر واتساب 💬",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "sections": [
+        {
+          "type": "hero-banner",
+          "variant": "neon-dark",
+          "settings": {
+            "eyebrow": "معرض الأعمال والخدمات",
+            "title": "كل المشاريع والباقات المتاحة",
+            "subtitle": "استعرض سابقة أعمالنا وتعرف على الباقات المناسبة لنمو مشروعك.",
+            "ctaText": "تواصل معنا",
+            "ctaLink": "/contact"
+          }
+        },
+        {
+          "type": "shop-command-bar",
+          "settings": {
+            "title": "تصفح المشاريع والخدمات",
+            "searchPlaceholder": "ابحث عن خدمة أو مشروع...",
+            "allCategoriesLabel": "كل الأقسام",
+            "resultsLabel": "مشروع / خدمة",
+            "clearButtonText": "مسح الفلاتر",
+            "chipLimit": 6
+          }
+        },
+        "filters-sidebar",
+        {
+          "type": "product-grid",
+          "variant": "glass-card",
+          "settings": {
+            "title": "الأعمال والخدمات المتاحة",
+            "limit": 12
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "sections": [
+        { "type": "product-gallery", "variant": "grid" },
+        {
+          "type": "product-info",
+          "variant": "bento-specs",
+          "settings": {
+            "descriptionTitle": "عن المشروع / تفاصيل الخدمة",
+            "shippingTitle": "مدة التنفيذ",
+            "shippingText": "التنفيذ يبدأ فور تأكيد المتطلبات ووفق جدول زمني متفق عليه.",
+            "guaranteesTitle": "ضمانات الجودة",
+            "guaranteeStyle": "grid",
+            "guaranteeItems": "تسليم متقن|أعلى جودة برمجية وتصميمية.\nمتابعة مستمرة|جلسات مراجعة وتحديثات منتظمة.\nدعم فني|ضمان استقرار ومساعدة بعد الإطلاق."
+          }
+        },
+        { "type": "conversion-stack", "variant": "balanced" },
+        {
+          "type": "related-products",
+          "variant": "compact",
+          "settings": { "title": "مشاريع وخدمات ذات صلة", "limit": 4 }
+        },
+        {
+          "type": "reviews",
+          "variant": "compact",
+          "settings": {
+            "title": "آراء وتقييمات العملاء",
+            "listTitle": "أحدث التقييمات",
+            "verifiedLabel": "عميل موثق",
+            "reviewLimit": 4
+          }
+        }
+      ]
+    },
+    "cart": {
+      "sections": [
+        {
+          "type": "cart-items",
+          "variant": "compact",
+          "settings": {
+            "title": "الخدمات المختارة",
+            "continueShoppingText": "تصفح المزيد من الخدمات"
+          }
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted",
+          "settings": {
+            "title": "ملخص الطلب",
+            "checkoutButtonText": "تأكيد طلب الخدمة",
+            "secureCheckoutText": "طلب موثق ومؤكد",
+            "showTrustRow": true
+          }
+        }
+      ]
+    },
+    "checkout": {
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "طلب خدمة معتمد",
+            "message": "سيتم التواصل معك فور تأكيد الطلب لمناقشة التفاصيل والبدء.",
+            "saleLabel": "متابعة مباشرة",
+            "shippingLabel": "تنفيذ فوري"
+          }
+        },
+        {
+          "type": "checkout-form",
+          "variant": "split",
+          "settings": {
+            "contactTitle": "بيانات التواصل",
+            "shippingTitle": "تفاصيل المشروع"
+          }
+        },
+        {
+          "type": "payment",
+          "variant": "cards",
+          "settings": {
+            "title": "طريقة الدفع أو التأكيد",
+            "confirmOrderText": "إرسال طلب المشروع الآن",
+            "codLabel": "تأكيد والتواصل على واتساب",
+            "cardLabel": "بطاقة بنكية",
+            "walletLabel": "محفظة إلكترونية"
+          }
+        }
+      ]
+    }
+  }
+}

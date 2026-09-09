@@ -1,0 +1,665 @@
+import { useEffect, useState, type FormEvent } from "react";
+import { useParams, Link } from "react-router-dom";
+import {
+  BookOpen,
+  Plus,
+  ArrowRight,
+  Video,
+  FileText,
+  HelpCircle,
+  Sparkles,
+  Trash2,
+  Edit2,
+  CheckCircle2,
+  AlertCircle,
+  Eye,
+} from "lucide-react";
+import { academyApi, Course, Module, Lesson, Quiz, Question } from "./academyApi";
+
+export default function AcademyCourseEditorPage() {
+  const { id } = useParams<{ id: string }>();
+  const [course, setCourse] = useState<Course | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Module modal
+  const [isModuleModalOpen, setIsModuleModalOpen] = useState(false);
+  const [moduleTitle, setModuleTitle] = useState("");
+  const [moduleDesc, setModuleDesc] = useState("");
+
+  // Lesson modal
+  const [isLessonModalOpen, setIsLessonModalOpen] = useState(false);
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
+  const [editingLesson, setEditingLesson] = useState<Lesson | null>(null);
+  const [lessonTitle, setLessonTitle] = useState("");
+  const [lessonVideo, setLessonVideo] = useState("");
+  const [lessonScript, setLessonScript] = useState("");
+  const [lessonExercise, setLessonExercise] = useState("");
+  const [lessonDuration, setLessonDuration] = useState("15");
+  const [lessonFreePreview, setLessonFreePreview] = useState(false);
+
+  // Quiz modal
+  const [isQuizModalOpen, setIsQuizModalOpen] = useState(false);
+  const [quizLessonId, setQuizLessonId] = useState<string | null>(null);
+  const [quizTitle, setQuizTitle] = useState("اختبار نهاية الدرس");
+  const [quizPassScore, setQuizPassScore] = useState(70);
+  const [questions, setQuestions] = useState<Question[]>([
+    { q: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" },
+  ]);
+
+  useEffect(() => {
+    if (id) loadCourse();
+  }, [id]);
+
+  const loadCourse = async () => {
+    if (!id) return;
+    try {
+      setLoading(true);
+      const data = await academyApi.getCourseDetails(id);
+      setCourse(data);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.response?.data?.error || "فشل تحميل تفاصيل الكورس");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Add Module
+  const handleAddModule = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!id || !moduleTitle.trim()) return;
+    try {
+      await academyApi.addModule(id, {
+        title: moduleTitle.trim(),
+        description: moduleDesc.trim() || undefined,
+        sortOrder: (course?.modules?.length || 0) + 1,
+      });
+      setIsModuleModalOpen(false);
+      setModuleTitle("");
+      setModuleDesc("");
+      loadCourse();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || "فشل إضافة الوحدة");
+    }
+  };
+
+  // Open Lesson Modal (New or Edit)
+  const openLessonModal = (moduleId: string, lesson?: Lesson) => {
+    setSelectedModuleId(moduleId);
+    if (lesson) {
+      setEditingLesson(lesson);
+      setLessonTitle(lesson.title);
+      setLessonVideo(lesson.videoUrl || "");
+      setLessonScript(lesson.scriptText || "");
+      setLessonExercise(lesson.exerciseText || "");
+      setLessonDuration(String(lesson.durationMin || 15));
+      setLessonFreePreview(lesson.isFreePreview);
+    } else {
+      setEditingLesson(null);
+      setLessonTitle("");
+      setLessonVideo("");
+      setLessonScript("");
+      setLessonExercise("");
+      setLessonDuration("15");
+      setLessonFreePreview(false);
+    }
+    setIsLessonModalOpen(true);
+  };
+
+  // Save Lesson
+  const handleSaveLesson = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!selectedModuleId || !lessonTitle.trim()) return;
+
+    try {
+      if (editingLesson) {
+        await academyApi.updateLesson(editingLesson.id, {
+          title: lessonTitle.trim(),
+          videoUrl: lessonVideo.trim() || null,
+          scriptText: lessonScript.trim() || null,
+          exerciseText: lessonExercise.trim() || null,
+          durationMin: Number(lessonDuration) || 15,
+          isFreePreview: lessonFreePreview,
+        });
+      } else {
+        await academyApi.addLesson(selectedModuleId, {
+          title: lessonTitle.trim(),
+          videoUrl: lessonVideo.trim() || null,
+          scriptText: lessonScript.trim() || null,
+          exerciseText: lessonExercise.trim() || null,
+          durationMin: Number(lessonDuration) || 15,
+          isFreePreview: lessonFreePreview,
+        });
+      }
+      setIsLessonModalOpen(false);
+      loadCourse();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || "فشل حفظ الدرس");
+    }
+  };
+
+  // Open Quiz Modal
+  const openQuizModal = (lesson: Lesson) => {
+    setQuizLessonId(lesson.id);
+    if (lesson.quiz) {
+      setQuizTitle(lesson.quiz.title || "اختبار نهاية الدرس");
+      setQuizPassScore(lesson.quiz.passScorePercent || 70);
+      setQuestions(
+        lesson.quiz.questions?.length
+          ? lesson.quiz.questions
+          : [{ q: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }]
+      );
+    } else {
+      setQuizTitle(`اختبار: ${lesson.title}`);
+      setQuizPassScore(70);
+      setQuestions([{ q: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" }]);
+    }
+    setIsQuizModalOpen(true);
+  };
+
+  // Save Quiz
+  const handleSaveQuiz = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!quizLessonId) return;
+    try {
+      await academyApi.saveLessonQuiz(quizLessonId, {
+        title: quizTitle,
+        passScorePercent: Number(quizPassScore) || 70,
+        questions,
+      });
+      setIsQuizModalOpen(false);
+      loadCourse();
+    } catch (err: any) {
+      alert(err?.response?.data?.error || "فشل حفظ الاختبار");
+    }
+  };
+
+  if (loading) {
+    return <div className="p-8 text-center text-slate-500 text-sm">جاري تحميل منهج الدورة...</div>;
+  }
+
+  if (!course) {
+    return <div className="p-8 text-center text-rose-400 text-sm">الدورة غير موجودة.</div>;
+  }
+
+  return (
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6" dir="rtl">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+        <div>
+          <Link
+            to="/academy/courses"
+            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white mb-2 transition"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+            <span>العودة لكل الدورات</span>
+          </Link>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-bold text-white">{course.title}</h1>
+            <span
+              className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
+                course.isPublished
+                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
+                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+              }`}
+            >
+              {course.isPublished ? "منشور" : "مسودة"}
+            </span>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link
+            to={`/academy/catalog/${course.id}`}
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
+          >
+            <Eye className="w-3.5 h-3.5 text-emerald-400" />
+            <span>معاينة كطالب</span>
+          </Link>
+          <button
+            onClick={() => setIsModuleModalOpen(true)}
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 transition flex items-center gap-1.5"
+          >
+            <Plus className="w-4 h-4" />
+            <span>إضافة وحدة جديدة</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Modules & Lessons Curriculum */}
+      <div className="mt-6 space-y-6">
+        {course.modules?.length === 0 ? (
+          <div className="p-12 rounded-2xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-3">
+            <BookOpen className="w-12 h-12 text-slate-600 mx-auto" />
+            <h3 className="text-base font-bold text-white">المنهج فارغ حالياً</h3>
+            <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
+              أضف الوحدة الأولى ثم أضف الدروس بداخلها مع الفيديوهات وسكريبتات الذكاء الاصطناعي.
+            </p>
+            <button
+              onClick={() => setIsModuleModalOpen(true)}
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+            >
+              إضافة أول وحدة
+            </button>
+          </div>
+        ) : (
+          course.modules?.map((mod, modIdx) => (
+            <div key={mod.id} className="rounded-2xl bg-slate-900/70 border border-slate-800 overflow-hidden">
+              {/* Module Header */}
+              <div className="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                      الوحدة {modIdx + 1}
+                    </span>
+                    <h3 className="font-bold text-white text-base">{mod.title}</h3>
+                  </div>
+                  {mod.description && <p className="text-xs text-slate-400">{mod.description}</p>}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => openLessonModal(mod.id)}
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>إضافة درس</span>
+                  </button>
+                  <button
+                    onClick={async () => {
+                      if (confirm("هل تريد حذف هذه الوحدة ودروسها؟")) {
+                        await academyApi.deleteModule(mod.id);
+                        loadCourse();
+                      }
+                    }}
+                    className="p-1.5 text-slate-500 hover:text-rose-400 transition"
+                    title="حذف الوحدة"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Lessons Inside Module */}
+              <div className="divide-y divide-slate-800/60">
+                {mod.lessons?.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-slate-500">لا توجد دروس في هذه الوحدة بعد.</div>
+                ) : (
+                  mod.lessons?.map((lesson, lessonIdx) => (
+                    <div
+                      key={lesson.id}
+                      className="p-3 sm:p-4 hover:bg-slate-800/30 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="flex items-start sm:items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-slate-800 text-slate-400 text-xs flex items-center justify-center font-mono flex-shrink-0">
+                          {lessonIdx + 1}
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-sm font-semibold text-white">{lesson.title}</h4>
+                            {lesson.isFreePreview && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                                معاينة مجانية
+                              </span>
+                            )}
+                            {lesson.quiz && (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center gap-0.5">
+                                <HelpCircle className="w-3 h-3" />
+                                <span>كويز</span>
+                              </span>
+                            )}
+                            {lesson.scriptText ? (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-0.5">
+                                <Sparkles className="w-3 h-3" />
+                                <span>سكريبت AI جاهز</span>
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                                سكريبت مفقود
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-[11px] text-slate-400 mt-0.5">
+                            المدة: {lesson.durationMin || 10} دقيقة • {lesson.videoUrl ? "فيديو مرفوع" : "بدون فيديو"}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1 self-end sm:self-center">
+                        <button
+                          onClick={() => openQuizModal(lesson)}
+                          className="px-2.5 py-1 rounded-lg text-xs text-purple-400 hover:bg-purple-500/10 border border-purple-500/20 transition flex items-center gap-1"
+                        >
+                          <HelpCircle className="w-3 h-3" />
+                          <span>{lesson.quiz ? "تعديل الكويز" : "+ إضافة كويز"}</span>
+                        </button>
+
+                        <button
+                          onClick={() => openLessonModal(mod.id, lesson)}
+                          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+                          title="تعديل الدرس"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+
+                        <button
+                          onClick={async () => {
+                            if (confirm("هل تريد حذف هذا الدرس؟")) {
+                              await academyApi.deleteLesson(lesson.id);
+                              loadCourse();
+                            }
+                          }}
+                          className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
+                          title="حذف الدرس"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Add Module Modal */}
+      {isModuleModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4">
+            <h2 className="text-base font-bold text-white">إضافة وحدة تدريبية جديدة</h2>
+            <form onSubmit={handleAddModule} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">عنوان الوحدة *</label>
+                <input
+                  type="text"
+                  required
+                  value={moduleTitle}
+                  onChange={(e) => setModuleTitle(e.target.value)}
+                  placeholder="مثال: الوحدة 1: التأسيس وسيكولوجية العرض"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">وصف مختصر للوحدة</label>
+                <textarea
+                  rows={2}
+                  value={moduleDesc}
+                  onChange={(e) => setModuleDesc(e.target.value)}
+                  placeholder="الأهداف التعليمية لهذه الوحدة..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none"
+                />
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsModuleModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:bg-slate-800"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                >
+                  إضافة الوحدة
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Lesson Modal */}
+      {isLessonModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4">
+            <h2 className="text-base sm:text-lg font-bold text-white">
+              {editingLesson ? "تعديل الدرس" : "إضافة درس جديد"}
+            </h2>
+            <form onSubmit={handleSaveLesson} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">عنوان الدرس *</label>
+                <input
+                  type="text"
+                  required
+                  value={lessonTitle}
+                  onChange={(e) => setLessonTitle(e.target.value)}
+                  placeholder="مثال: 1. مقدمة في شراء الوسائط الرقمية"
+                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">رابط الفيديو (YouTube Unlisted)</label>
+                  <input
+                    type="url"
+                    value={lessonVideo}
+                    onChange={(e) => setLessonVideo(e.target.value)}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">مدة الدرس (دقيقة)</label>
+                  <input
+                    type="number"
+                    value={lessonDuration}
+                    onChange={(e) => setLessonDuration(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+
+              {/* Script Text — Critical for AI Coach */}
+              <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>سكريبت الدرس (مصدر معرفة الـ AI Coach) *</span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  اكتب هنا ملخص الشرح الكامل والنقاط الأساسية للدرس. كوتش الذكاء الاصطناعي مقيد حرفياً بالإجابة على أسئلة الطالب من هذا السكريبت فقط!
+                </p>
+                <textarea
+                  rows={6}
+                  required
+                  value={lessonScript}
+                  onChange={(e) => setLessonScript(e.target.value)}
+                  placeholder="اكتب سكريبت الدرس بالتفصيل هنا..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 resize-y"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">التطبيق العملي والتمرين المطلوب</label>
+                <textarea
+                  rows={2}
+                  value={lessonExercise}
+                  onChange={(e) => setLessonExercise(e.target.value)}
+                  placeholder="المهمة التطبيقية التي يجب على المتدرب تنفيذها..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="previewCheckbox"
+                  checked={lessonFreePreview}
+                  onChange={(e) => setLessonFreePreview(e.target.checked)}
+                  className="w-4 h-4 rounded text-emerald-600 bg-slate-900 border-slate-700"
+                />
+                <label htmlFor="previewCheckbox" className="text-xs text-slate-300 cursor-pointer">
+                  إتاحة هذا الدرس كمعاينة مجانية لأي زائر قبل الاشتراك
+                </label>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsLessonModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:bg-slate-800"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                >
+                  حفظ الدرس
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Quiz Modal */}
+      {isQuizModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4">
+            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-purple-400" />
+              <span>إعداد اختبار الدرس (Quiz)</span>
+            </h2>
+
+            <form onSubmit={handleSaveQuiz} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">عنوان الاختبار</label>
+                  <input
+                    type="text"
+                    value={quizTitle}
+                    onChange={(e) => setQuizTitle(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">نسبة النجاح المطلوبة (%)</label>
+                  <input
+                    type="number"
+                    value={quizPassScore}
+                    onChange={(e) => setQuizPassScore(Number(e.target.value))}
+                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white"
+                  />
+                </div>
+              </div>
+
+              {/* Questions */}
+              <div className="space-y-4">
+                {questions.map((q, qIdx) => (
+                  <div key={qIdx} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-purple-400">السؤال {qIdx + 1}</span>
+                      {questions.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => setQuestions(questions.filter((_, i) => i !== qIdx))}
+                          className="text-xs text-rose-400 hover:underline"
+                        >
+                          حذف السؤال
+                        </button>
+                      )}
+                    </div>
+
+                    <input
+                      type="text"
+                      required
+                      placeholder="نص السؤال..."
+                      value={q.q}
+                      onChange={(e) => {
+                        const next = [...questions];
+                        next[qIdx].q = e.target.value;
+                        setQuestions(next);
+                      }}
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white"
+                    />
+
+                    <div className="space-y-1.5">
+                      <label className="block text-[11px] text-slate-400">الاختيارات (اختر الإجابة الصحيحة):</label>
+                      {q.options.map((opt, optIdx) => (
+                        <div key={optIdx} className="flex items-center gap-2">
+                          <input
+                            type="radio"
+                            name={`correct_${qIdx}`}
+                            checked={q.correctIndex === optIdx}
+                            onChange={() => {
+                              const next = [...questions];
+                              next[qIdx].correctIndex = optIdx;
+                              setQuestions(next);
+                            }}
+                            className="text-purple-600"
+                          />
+                          <input
+                            type="text"
+                            required
+                            placeholder={`خيار ${optIdx + 1}`}
+                            value={opt}
+                            onChange={(e) => {
+                              const next = [...questions];
+                              next[qIdx].options[optIdx] = e.target.value;
+                              setQuestions(next);
+                            }}
+                            className="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">شرح توضيحي للإجابة الصحيحة (اختياري):</label>
+                      <input
+                        type="text"
+                        placeholder="لماذا هذه هي الإجابة الصحيحة؟"
+                        value={q.explanation || ""}
+                        onChange={(e) => {
+                          const next = [...questions];
+                          next[qIdx].explanation = e.target.value;
+                          setQuestions(next);
+                        }}
+                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuestions([
+                      ...questions,
+                      { q: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" },
+                    ])
+                  }
+                  className="w-full py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-dashed border-slate-800 text-purple-400 hover:bg-purple-500/10 transition"
+                >
+                  + إضافة سؤال آخر
+                </button>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsQuizModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:bg-slate-800"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white"
+                >
+                  حفظ الاختبار
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -492,6 +492,12 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "fashion-store",
     "متجر أزياء",
   ),
+  "creative-portfolio": createThemeCategoryMeta(
+    "creative",
+    "إبداعي وبورتفوليو",
+    "portfolio-showcase",
+    "معرض أعمال وخدمات",
+  ),
 };
 
 const getStorefrontThemeCategoryMeta = (
@@ -501,6 +507,8 @@ const getStorefrontThemeCategoryMeta = (
   DEFAULT_STOREFRONT_THEME_CATEGORY;
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
+  "creative-portfolio":
+    "قالب بورتفوليو واستوديو إبداعي متكامل للمصممين، الوكالات، المستقلين، والشركات الخدمية: عرض مشاريع احترافي، مقارنة قبل وبعد، شبكة خدمات، وطلب تسعير مباشر بدون تعقيدات المتاجر التقليدية.",
   "soft-graceful":
     "Soft Graceful — قالب أزياء تحريري للعلامات العصرية بلمسة MaxP: مجموعات منسّقة، لوكات موسمية، اكتشاف ذكي بالـ Hotspot، سلّة منزلقة وQuick View، بألوان الرصيف الأصلي وأدوات Graceful.",
   "allure":

@@ -1106,6 +1106,20 @@ export const getSidebarConfig = (
             ]
         },
 
+        // 7️⃣.6️⃣.7️⃣ أكاديمية ماكس بي
+        {
+            id: 'academy',
+            title: t('sidebar.academyModule', 'أكاديمية ماكس بي'),
+            icon: GraduationCap,
+            hidden: !isAppActive('academy-app') && !isAppActive('academy'),
+            items: [
+                { to: '/academy/dashboard', icon: BarChart3, label: t('sidebar.academyDashboard', 'لوحة الأكاديمية') },
+                { to: '/academy/courses', icon: BookOpen, label: t('sidebar.academyCourses', 'إدارة الكورسات') },
+                { to: '/academy/catalog', icon: Store, label: t('sidebar.academyCatalog', 'بوابة الطلاب والكتالوج') },
+                { to: '/academy/students', icon: Users, label: t('sidebar.academyStudents', 'الطلاب والتقدم') },
+            ]
+        },
+
         // 7️⃣.6️⃣.5 نظام الأشعة
         {
             id: 'radiology',

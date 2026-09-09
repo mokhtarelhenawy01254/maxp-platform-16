@@ -1,0 +1,142 @@
+// MaxP Academy module - Courses, Modules, Lessons, Quizzes, Enrollments, Progress, Certificates
+
+model AcademyCourse {
+  id                 String   @id @default(cuid())
+  companyId          String
+  title              String
+  slug               String?
+  description        String?
+  price              Float    @default(0)
+  thumbnailUrl       String?
+  isPublished        Boolean  @default(false)
+  freePreviewLessons Int      @default(2)
+  storeProductId     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  modules     AcademyModule[]
+  enrollments AcademyEnrollment[]
+
+  @@index([companyId])
+  @@index([storeProductId])
+  @@map("academy_courses")
+}
+
+model AcademyModule {
+  id          String   @id @default(cuid())
+  companyId   String?
+  courseId    String
+  title       String
+  description String?
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  course  AcademyCourse   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons AcademyLesson[]
+
+  @@index([courseId])
+  @@index([companyId])
+  @@map("academy_modules")
+}
+
+model AcademyLesson {
+  id            String   @id @default(cuid())
+  companyId     String?
+  courseId      String?
+  moduleId      String
+  title         String
+  sortOrder     Int      @default(0)
+  videoUrl      String?  // unlisted YouTube or video URL
+  scriptText    String?  // Full script text - primary source for AI Coach
+  exerciseText  String?
+  durationMin   Int?     @default(10)
+  isFreePreview Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  module   AcademyModule     @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  quiz     AcademyQuiz?
+  progress AcademyProgress[]
+
+  @@index([moduleId])
+  @@index([courseId])
+  @@index([companyId])
+  @@map("academy_lessons")
+}
+
+model AcademyQuiz {
+  id               String   @id @default(cuid())
+  lessonId         String   @unique
+  title            String?
+  passScorePercent Int      @default(70)
+  questions        Json?    // [{ id, q, options: ["A", "B", "C", "D"], correctIndex: 0, explanation: "" }]
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  lesson AcademyLesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@map("academy_quizzes")
+}
+
+model AcademyEnrollment {
+  id               String    @id @default(cuid())
+  companyId        String
+  courseId         String
+  studentCompanyId String?
+  studentUserId    String?
+  customerId       String?
+  orderId          String?
+  studentName      String?
+  studentPhone     String?
+  studentEmail     String?
+  status           String    @default("ACTIVE") // ACTIVE | COMPLETED | CANCELLED | SUSPENDED
+  enrolledAt       DateTime  @default(now())
+  completedAt      DateTime?
+
+  course      AcademyCourse       @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  progress    AcademyProgress[]
+  certificate AcademyCertificate?
+
+  @@index([companyId])
+  @@index([courseId])
+  @@index([studentUserId])
+  @@index([customerId])
+  @@index([studentPhone])
+  @@map("academy_enrollments")
+}
+
+model AcademyProgress {
+  id             String    @id @default(cuid())
+  enrollmentId   String
+  lessonId       String
+  status         String    @default("NOT_STARTED") // NOT_STARTED | IN_PROGRESS | DONE
+  quizScore      Float?
+  attemptsCount  Int       @default(0)
+  lastWatchedSec Int       @default(0)
+  completedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  enrollment AcademyEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  lesson     AcademyLesson     @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, lessonId])
+  @@index([enrollmentId])
+  @@index([lessonId])
+  @@map("academy_progress")
+}
+
+model AcademyCertificate {
+  id                String   @id @default(cuid())
+  enrollmentId      String   @unique
+  certificateNumber String   @unique
+  studentName       String
+  courseTitle       String
+  pdfUrl            String?
+  issuedAt          DateTime @default(now())
+
+  enrollment AcademyEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@map("academy_certificates")
+}

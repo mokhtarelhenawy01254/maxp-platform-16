@@ -1,0 +1,21 @@
+{
+  "title": "MaxP Academy",
+  "subtitle": "Manage and monetize video courses with interactive AI coaching",
+  "dashboard": "Academy Dashboard",
+  "courses": "Courses",
+  "students": "Students & Progress",
+  "catalog": "Course Catalog",
+  "createCourse": "Create New Course",
+  "freePreview": "Free Preview",
+  "lessonsCount": "{{count}} lessons",
+  "modulesCount": "{{count}} modules",
+  "enrolledStudents": "{{count}} students",
+  "price": "Price",
+  "egp": "EGP",
+  "free": "Free",
+  "aiCoach": "AI Coach",
+  "quiz": "Lesson Quiz",
+  "certificate": "Certificate of Completion",
+  "completed": "Completed",
+  "inProgress": "In Progress"
+}

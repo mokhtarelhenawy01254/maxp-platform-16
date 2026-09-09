@@ -1,0 +1,21 @@
+{
+  "title": "أكاديمية ماكس بي",
+  "subtitle": "إدارة وبيع الكورسات التدريبية مع كوتش الذكاء الاصطناعي التفاعلي",
+  "dashboard": "لوحة الأكاديمية",
+  "courses": "الدورات التدريبية",
+  "students": "الطلاب والتقدم",
+  "catalog": "كتالوج الدورات",
+  "createCourse": "إنشاء دورة جديدة",
+  "freePreview": "معاينة مجانية",
+  "lessonsCount": "{{count}} درساً",
+  "modulesCount": "{{count}} وحدات",
+  "enrolledStudents": "{{count}} طالباً",
+  "price": "السعر",
+  "egp": "ج.م",
+  "free": "مجاناً",
+  "aiCoach": "كوتش الذكاء الاصطناعي",
+  "quiz": "اختبار الدرس",
+  "certificate": "شهادة الإتمام",
+  "completed": "مكتمل",
+  "inProgress": "قيد التقدم"
+}

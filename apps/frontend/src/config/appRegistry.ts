@@ -32,6 +32,7 @@ import {
   ArrowUturnLeftIcon,
   ArrowsRightLeftIcon,
   TagIcon,
+  AcademicCapIcon,
 } from '@heroicons/react/24/outline';
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
 
@@ -563,6 +564,19 @@ export const APP_REGISTRY: AppDefinition[] = [
     requiredApps: ['store', 'store-basic', 'store-pro'],
     displayName: 'Broadcast',
     displayDescription: 'حملات ورسائل جماعية للعملاء',
+  },
+  {
+    id: 'academy',
+    nameKey: 'sidebar.academySection',
+    descriptionKey: 'appDashboard.app.academy.description',
+    icon: AcademicCapIcon,
+    color: 'emerald',
+    bgGradient: 'from-emerald-500 to-teal-600',
+    sectionIds: ['academy'],
+    category: 'operations',
+    requiredApps: ['academy-app'],
+    displayName: 'أكاديمية ماكس بي',
+    displayDescription: 'نظام إدارة وبيع الكورسات مع كوتش الذكاء الاصطناعي واختبارات تفاعلية',
   },
 ];
 

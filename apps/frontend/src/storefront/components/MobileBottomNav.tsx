@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
+  Briefcase,
   Grid3X3,
   Home,
+  MessageCircle,
   Search,
   ShoppingBag,
   User,
@@ -95,7 +97,14 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
     return null;
   }
 
-  const items: NavItem[] = [
+  const isPortfolio =
+    theme.id === 'creative-portfolio' ||
+    theme.category?.primary?.id === 'creative' ||
+    theme.header?.showCart === false;
+  const showCart = theme.header?.showCart !== false;
+  const showSearch = theme.header?.showSearch !== false;
+
+  const rawItems: (NavItem | null)[] = [
     {
       key: 'home',
       labelAr: 'الرئيسية',
@@ -107,35 +116,54 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
     },
     {
       key: 'shop',
-      labelAr: isBiteRush ? 'المنيو' : 'التسوق',
-      labelEn: 'Shop',
-      icon: Grid3X3,
+      labelAr: isBiteRush ? 'المنيو' : isPortfolio ? 'أعمالنا' : 'التسوق',
+      labelEn: isPortfolio ? 'Works' : 'Shop',
+      icon: isPortfolio ? Briefcase : Grid3X3,
       active: isShop,
       href: shopPath,
-      ariaLabel: theme.direction === 'rtl' ? 'المتجر' : 'Shop',
-    },
-    {
-      key: 'search',
-      labelAr: 'بحث',
-      labelEn: 'Search',
-      icon: Search,
-      active: false,
-      onClick: handleSearchClick,
-      ariaLabel: theme.direction === 'rtl' ? 'بحث' : 'Search',
-    },
-    {
-      key: 'cart',
-      labelAr: 'السلة',
-      labelEn: 'Cart',
-      icon: ShoppingBag,
-      active: isCart,
-      emphasized: totalCartItems > 0,
-      onClick: handleCartClick,
       ariaLabel:
         theme.direction === 'rtl'
-          ? `سلة التسوق (${totalCartItems} منتجات)`
-          : `Shopping cart (${totalCartItems} items)`,
+          ? isPortfolio
+            ? 'أعمالنا'
+            : 'المتجر'
+          : isPortfolio
+            ? 'Works'
+            : 'Shop',
     },
+    showSearch
+      ? {
+          key: 'search',
+          labelAr: 'بحث',
+          labelEn: 'Search',
+          icon: Search,
+          active: false,
+          onClick: handleSearchClick,
+          ariaLabel: theme.direction === 'rtl' ? 'بحث' : 'Search',
+        }
+      : null,
+    showCart
+      ? {
+          key: 'cart',
+          labelAr: 'السلة',
+          labelEn: 'Cart',
+          icon: ShoppingBag,
+          active: isCart,
+          emphasized: totalCartItems > 0,
+          onClick: handleCartClick,
+          ariaLabel:
+            theme.direction === 'rtl'
+              ? `سلة التسوق (${totalCartItems} منتجات)`
+              : `Shopping cart (${totalCartItems} items)`,
+        }
+      : {
+          key: 'contact',
+          labelAr: 'تواصل',
+          labelEn: 'Contact',
+          icon: MessageCircle,
+          active: normalizedPath.includes('/contact'),
+          href: buildStorefrontPath(location.pathname, '/contact', location.search),
+          ariaLabel: theme.direction === 'rtl' ? 'تواصل معنا' : 'Contact Us',
+        },
     {
       key: 'account',
       labelAr: 'حسابي',
@@ -146,6 +174,8 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
       ariaLabel: theme.direction === 'rtl' ? 'حسابي' : 'My Account',
     },
   ];
+
+  const items: NavItem[] = rawItems.filter((item): item is NavItem => item !== null);
 
   const biteRushDockStyle = {
     paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.55rem)',

@@ -53,6 +53,7 @@ import mensGroomingProData from "./mens-grooming-pro.json";
 import softGracefulData from "./soft-graceful.json";
 import allureData from "./allure.json";
 import anjellaBoutiqueData from "./anjella-boutique.json";
+import creativePortfolioData from "./creative-portfolio.json";
 import { ELESSI_PACK_THEME_PRESETS } from "./elessiPack";
 import {
   StorefrontPageConfig,
@@ -715,6 +716,7 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "soft-graceful": asStorefrontTheme(softGracefulData),
   "allure": asStorefrontTheme(allureData),
   "anjella-boutique": asStorefrontTheme(anjellaBoutiqueData),
+  "creative-portfolio": asStorefrontTheme(creativePortfolioData),
   ...ELESSI_PACK_THEME_PRESETS,
 };
 

@@ -15,6 +15,27 @@ declare module 'react-i18next' {
         msg_e722: string;
         success_delete_414c: string;
       };
+      academy: {
+        title: string;
+        subtitle: string;
+        dashboard: string;
+        courses: string;
+        students: string;
+        catalog: string;
+        createCourse: string;
+        freePreview: string;
+        lessonsCount: string;
+        modulesCount: string;
+        enrolledStudents: string;
+        price: string;
+        egp: string;
+        free: string;
+        aiCoach: string;
+        quiz: string;
+        certificate: string;
+        completed: string;
+        inProgress: string;
+      };
       AdDetails: {
         success_update_b872: string;
         msg_39be: string;
@@ -17393,6 +17414,12 @@ declare module 'react-i18next' {
         codDeposit: string;
         orderStatusTemplates: string;
         upsellManagement: string;
+        academyModule: string;
+        academyDashboard: string;
+        academyCourses: string;
+        academyCatalog: string;
+        academyStudents: string;
+        academySection: string;
       };
       storeBranches: {
         branchesTitle: string;

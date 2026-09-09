@@ -1,0 +1,38 @@
+{
+  "slug": "course-coach-agent",
+  "name": "كوتش الدورة التعليمية الذكي",
+  "role": "COURSE_COACH",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "gemini-2.5-flash",
+    "fallback": "deepseek-v4-flash"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "standard",
+    "tone": "encouraging_educational",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "strictScriptGrounding": true,
+    "noExtraneousTopics": true
+  },
+  "allowedTools": [
+    "get_current_lesson_script",
+    "get_course_outline"
+  ],
+  "allowedSkills": [
+    "course-coaching"
+  ],
+  "channels": ["dashboard", "academy_viewer"],
+  "budget": {
+    "dailyUsd": 2,
+    "maxToolCallsPerRun": 5
+  }
+}

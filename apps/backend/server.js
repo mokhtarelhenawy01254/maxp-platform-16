@@ -225,6 +225,7 @@ const bookingPatientDocumentsRoutes = require("./routes/bookingPatientDocumentsR
 const labTestsRoutes = require("./routes/labTestsRoutes");
 const dentalLabRoutes = require("./routes/dentalLabRoutes");
 const dentalLabPortalRoutes = require("./routes/dentalLabPortalRoutes");
+const academyRoutes = require("./routes/academyRoutes");
 const labOrdersRoutes = require("./routes/labOrdersRoutes");
 const labCulturesRoutes = require("./routes/labCulturesRoutes");
 const labContractsRoutes = require("./routes/labContractsRoutes");
@@ -961,6 +962,7 @@ app.use("/api/v1/education/availability", educationTeacherAvailabilityRoutes);
 app.use("/api/v1/education/payments", educationTeacherPaymentsRoutes);
 app.use("/api/v1/education/teacher-portal", educationTeacherPortalRoutes);
 app.use("/api/v1/education/parent-portal", educationParentPortalRoutes);
+app.use("/api/v1/academy", academyRoutes);
 app.use("/api/v1/hotel", hotelRoutes);
 app.use("/api/v1/services", servicesRoutes);
 app.use("/api/v1/service-orders", serviceOrdersRoutes);

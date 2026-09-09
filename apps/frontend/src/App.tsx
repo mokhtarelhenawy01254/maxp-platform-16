@@ -1031,6 +1031,24 @@ const DentalDoctorDetailPage = React.lazy(
 const DentalPortalRoutes = React.lazy(
   () => import("./pages/dental-doctor/dentalPortalRoutes"),
 );
+const AcademyDashboardPage = React.lazy(
+  () => import("./pages/academy/AcademyDashboardPage"),
+);
+const AcademyCoursesPage = React.lazy(
+  () => import("./pages/academy/AcademyCoursesPage"),
+);
+const AcademyCourseEditorPage = React.lazy(
+  () => import("./pages/academy/AcademyCourseEditorPage"),
+);
+const AcademyCatalogPage = React.lazy(
+  () => import("./pages/academy/AcademyCatalogPage"),
+);
+const AcademyLessonViewerPage = React.lazy(
+  () => import("./pages/academy/AcademyLessonViewerPage"),
+);
+const AcademyStudentsPage = React.lazy(
+  () => import("./pages/academy/AcademyStudentsPage"),
+);
 const EducationTeacherSchedulePage = React.lazy(
   () => import("./pages/admin/EducationTeacherSchedulePage"),
 );
@@ -7594,6 +7612,72 @@ const AppContent = () => {
                   }
                 />
                 <Route path="/dental-portal/*" element={<DentalPortalRoutes />} />
+
+                {/* MaxP Academy Routes */}
+                <Route
+                  path="/academy/dashboard"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyDashboardPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/academy/courses"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyCoursesPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/academy/courses/:id"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyCourseEditorPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/academy/catalog"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyCatalogPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/academy/catalog/:courseId"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyLessonViewerPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/academy/catalog/:courseId/lessons/:lessonId"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyLessonViewerPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/academy/students"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyStudentsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/academy"
+                  element={
+                    <Layout fullWidth>
+                      <AcademyDashboardPage />
+                    </Layout>
+                  }
+                />
                 <Route
                   path="/admin/education/funnel"
                   element={
