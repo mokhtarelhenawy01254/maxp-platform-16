@@ -690,16 +690,32 @@ class SocketService {
     //console.log(`🚪 User ${userInfo.userName} left conversation ${conversationId}`);
   }
 
-  // قطع الاتصال (enhanced with company cleanup)
+  // قطع الاتصال (enhanced with company cleanup and multi-socket awareness)
   handleDisconnect(socket) {
     const userInfo = this.userSockets.get(socket.id);
 
     if (userInfo) {
       const { userId, userName, companyId } = userInfo;
 
-      // إزالة المستخدم من القوائم
-      this.connectedUsers.delete(userId);
+      // إزالة هذا المقبس المحدد
       this.userSockets.delete(socket.id);
+
+      // التحقق مما إذا كان للمستخدم أي مقابس أخرى نشطة (مثل تبويب آخر أو خدمة أخرى)
+      let remainingSocketId = null;
+      for (const [sId, info] of this.userSockets.entries()) {
+        if (info.userId === userId) {
+          remainingSocketId = sId;
+          break;
+        }
+      }
+
+      if (remainingSocketId) {
+        // المستخدم لا يزال متصلاً عبر مقبس آخر
+        this.connectedUsers.set(userId, remainingSocketId);
+      } else {
+        // انتهت جميع اتصالات المستخدم بالكامل
+        this.connectedUsers.delete(userId);
+      }
 
       // إزالة من غرفة الشركة
       if (this.companyRooms.has(companyId)) {
@@ -709,30 +725,31 @@ class SocketService {
         }
       }
 
-      // إزالة من جميع محادثات الكتابة
-      for (const [conversationId, typingSet] of this.typingUsers.entries()) {
-        if (typingSet.has(userId)) {
-          typingSet.delete(userId);
-          socket.to(`conversation_${conversationId}`).emit('user_stopped_typing', {
-            userId,
-            conversationId
-          });
+      // إشعار المستخدمين الآخرين في نفس الشركة فقط إذا لم يعد للمستخدم أي اتصال آخر
+      if (!remainingSocketId) {
+        // إزالة من جميع محادثات الكتابة
+        for (const [conversationId, typingSet] of this.typingUsers.entries()) {
+          if (typingSet.has(userId)) {
+            typingSet.delete(userId);
+            socket.to(`conversation_${conversationId}`).emit('user_stopped_typing', {
+              userId,
+              conversationId
+            });
+          }
         }
+
+        socket.to(`company_${companyId}`).emit('user_offline', {
+          userId,
+          userName,
+          timestamp: new Date()
+        });
       }
-
-      // إشعار المستخدمين الآخرين في نفس الشركة فقط
-      socket.to(`company_${companyId}`).emit('user_offline', {
-        userId,
-        userName,
-        timestamp: new Date()
-      });
-
-      //console.log(`👋 User ${userName} (${userId}) disconnected from company ${companyId}`);
 
       this.logSecurityEvent('user_disconnected', {
         socketId: socket.id,
         userId,
         companyId,
+        isFullyOffline: !remainingSocketId,
         timestamp: new Date()
       });
     } else {

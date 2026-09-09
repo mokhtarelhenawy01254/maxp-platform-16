@@ -118,6 +118,16 @@ const getApiError = (error: unknown): ApiErrorLike => {
   const { companyId } = useCompany();
   const { socket, isConnected } = useSocket();
 
+  // فترة سماح لبدء الاتصال الأولي (تمنع ظهور وميض "غير متصل" على أول ثانية عند فتح الصفحة)
+  const [hasConnectionGracePeriodPassed, setHasConnectionGracePeriodPassed] =
+    useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setHasConnectionGracePeriodPassed(true);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Conversations management
   const {
     conversations,
@@ -2981,7 +2991,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         )}
       </div>
 
-      {!isConnected && (
+      {!isConnected && hasConnectionGracePeriodPassed && (
         <div
           className="fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg business-page-panel"
           style={{

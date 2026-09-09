@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { io, Socket } from "socket.io-client";
+import { useState, useEffect, useCallback } from "react";
+import { Socket } from "socket.io-client";
 import { buildWsUrl } from "../utils/urlHelper";
-import { tokenManager } from "../utils/tokenManager";
+import { socketService } from "../services/socketService";
 
 export interface SocketEvents {
   // رسائل جديدة
@@ -54,227 +54,105 @@ export interface UseSocketReturn {
 }
 
 const useSocket = (
-  url: string = buildWsUrl(),
-  options: any = {},
+  _url: string = buildWsUrl(),
+  _options: any = {},
 ): UseSocketReturn => {
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(() => socketService.getSocket());
+  const [isConnected, setIsConnected] = useState<boolean>(() => socketService.isConnected());
   const [isReconnecting, setIsReconnecting] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const reconnectAttempts = useRef(0);
-  const maxReconnectAttempts = 5;
 
-  const defaultOptions = {
-    transports: ["websocket", "polling"],
-    autoConnect: true,
-    reconnection: true,
-    reconnectionAttempts: maxReconnectAttempts,
-    reconnectionDelay: 1000,
-    reconnectionDelayMax: 5000,
-    timeout: 20000,
-    forceNew: false,
-    ...options,
-  };
+  useEffect(() => {
+    const s = socketService.getSocket();
+    if (!s) return;
 
-  // إنشاء الاتصال
-  const connect = useCallback(() => {
-    if (socket?.connected) return;
+    setSocket(s);
+    setIsConnected(s.connected);
 
-    console.log("🔌 Connecting to Socket.IO server...");
-
-    const connectionOptions = {
-      ...defaultOptions,
-      auth: (cb: (data: { token: string | null }) => void) => {
-        const freshToken = tokenManager.getAccessToken();
-        console.log(
-          "🔑 [SOCKET-AUTH] Using token for connection:",
-          freshToken ? "Token present" : "No token",
-        );
-        cb({ token: freshToken });
-      },
-    };
-
-    const newSocket = io(url, connectionOptions);
-
-    // معالجات الأحداث الأساسية
-    newSocket.on("connect", () => {
-      console.log("✅ Socket.IO connected successfully");
+    const onConnect = () => {
       setIsConnected(true);
       setIsReconnecting(false);
       setConnectionError(null);
-      reconnectAttempts.current = 0;
+    };
 
-      // إرسال معلومات المستخدم عند الاتصال مع دعم عزل الشركات
-      const userData = localStorage.getItem("user");
-      if (userData) {
-        try {
-          const user = JSON.parse(userData);
-          if (!user) {
-            console.warn("⚠️ [SOCKET-JOIN] User data is null after parsing");
-            return;
-          }
-
-          const userJoinData = {
-            userId: user.id || user._id,
-            userName:
-              `${user.firstName || ""} ${user.lastName || ""}`.trim() ||
-              user.email ||
-              "مستخدم",
-            companyId: user.companyId,
-          };
-
-          console.log(
-            "🔌 [SOCKET-JOIN] Sending user_join with company isolation:",
-            userJoinData,
-          );
-          newSocket.emit("user_join", userJoinData);
-
-          // Add main listener for new messages (clean up previous to avoid duplicates on reconnect)
-          newSocket.off("new_message");
-          newSocket.on("new_message", (data) => {
-            console.log("📨 [NEW-MESSAGE] Received new message:", data);
-            console.log(
-              "📨 [NEW-MESSAGE] Message conversation:",
-              data.conversationId,
-            );
-            console.log("📨 [NEW-MESSAGE] Message type:", data.type);
-            console.log(
-              "📨 [NEW-MESSAGE] Is from customer:",
-              data.isFromCustomer,
-            );
-            // This will be handled by the conversation components
-          });
-        } catch (error) {
-          console.error("❌ [SOCKET-JOIN] Error parsing user data:", error);
-        }
-      } else {
-        console.warn(
-          "⚠️ [SOCKET-JOIN] No user data found for Socket.IO connection",
-        );
-      }
-    });
-
-    newSocket.on("disconnect", (reason) => {
-      console.log("❌ Socket.IO disconnected:", reason);
+    const onDisconnect = () => {
       setIsConnected(false);
+    };
 
-      if (reason === "io server disconnect") {
-        // الخادم قطع الاتصال، إعادة الاتصال يدوياً
-        newSocket.connect();
-      }
-    });
-
-    newSocket.on("connect_error", (error) => {
-      console.error("🔥 Socket.IO connection error:", error);
-      setConnectionError(error.message);
+    const onConnectError = (error: any) => {
+      setConnectionError(error?.message || "Connection error");
       setIsConnected(false);
+    };
 
-      reconnectAttempts.current++;
-      if (reconnectAttempts.current < maxReconnectAttempts) {
-        setIsReconnecting(true);
-        const delay = Math.min(
-          1000 * Math.pow(2, reconnectAttempts.current),
-          10000,
-        );
-
-        reconnectTimeoutRef.current = setTimeout(() => {
-          console.log(
-            `🔄 Reconnection attempt ${reconnectAttempts.current + 1}/${maxReconnectAttempts}`,
-          );
-          newSocket.connect();
-        }, delay);
-      } else {
-        setIsReconnecting(false);
-        setConnectionError("فشل في الاتصال بالخادم بعد عدة محاولات");
-      }
-    });
-
-    newSocket.on("reconnect", (attemptNumber) => {
-      console.log(`🔄 Socket.IO reconnected after ${attemptNumber} attempts`);
+    const onReconnect = () => {
+      setIsConnected(true);
       setIsReconnecting(false);
-      reconnectAttempts.current = 0;
-    });
+      setConnectionError(null);
+    };
 
-    newSocket.on("reconnect_attempt", (attemptNumber) => {
-      console.log(`🔄 Socket.IO reconnection attempt ${attemptNumber}`);
+    const onReconnectAttempt = () => {
       setIsReconnecting(true);
-    });
+    };
 
-    newSocket.on("reconnect_failed", () => {
-      console.error("💥 Socket.IO failed to reconnect");
-      setIsReconnecting(false);
-      setConnectionError("فشل في إعادة الاتصال بالخادم");
-    });
+    s.on("connect", onConnect);
+    s.on("disconnect", onDisconnect);
+    s.on("connect_error", onConnectError);
+    s.on("reconnect", onReconnect);
+    s.on("reconnect_attempt", onReconnectAttempt);
 
-    setSocket(newSocket);
-  }, [url, defaultOptions]);
+    if (!s.connected) {
+      socketService.connect();
+    }
 
-  // قطع الاتصال
+    return () => {
+      s.off("connect", onConnect);
+      s.off("disconnect", onDisconnect);
+      s.off("connect_error", onConnectError);
+      s.off("reconnect", onReconnect);
+      s.off("reconnect_attempt", onReconnectAttempt);
+    };
+  }, []);
+
+  const connect = useCallback(() => {
+    socketService.connect();
+  }, []);
+
   const disconnect = useCallback(() => {
-    if (socket) {
-      console.log("🔌 Disconnecting from Socket.IO server...");
-      socket.disconnect();
-      setSocket(null);
-      setIsConnected(false);
-      setIsReconnecting(false);
+    // Shared singleton socket — do not disconnect app-wide connection on individual hook unmount
+  }, []);
+
+  const emit = useCallback((event: string, data?: any) => {
+    const s = socketService.getSocket();
+    if (s?.connected) {
+      s.emit(event, data);
+    } else {
+      console.warn("⚠️ Cannot emit event: Socket not connected");
     }
+  }, []);
 
-    if (reconnectTimeoutRef.current) {
-      clearTimeout(reconnectTimeoutRef.current);
-      reconnectTimeoutRef.current = null;
-    }
-  }, [socket]);
-
-  // إرسال حدث
-  const emit = useCallback(
-    (event: string, data?: any) => {
-      if (socket?.connected) {
-        socket.emit(event, data);
-      } else {
-        console.warn("⚠️ Cannot emit event: Socket not connected");
-      }
-    },
-    [socket],
-  );
-
-  // الاستماع لحدث
   const on = useCallback(
     <K extends keyof SocketEvents>(event: K, handler: SocketEvents[K]) => {
-      if (socket) {
-        socket.on(event as string, handler as any);
+      const s = socketService.getSocket();
+      if (s) {
+        s.on(event as string, handler as any);
       }
     },
-    [socket],
+    [],
   );
 
-  // إلغاء الاستماع لحدث
   const off = useCallback(
     <K extends keyof SocketEvents>(event: K, handler?: SocketEvents[K]) => {
-      if (socket) {
+      const s = socketService.getSocket();
+      if (s) {
         if (handler) {
-          socket.off(event as string, handler as any);
+          s.off(event as string, handler as any);
         } else {
-          socket.off(event as string);
+          s.off(event as string);
         }
       }
     },
-    [socket],
+    [],
   );
-
-  // تنظيف عند إلغاء المكون
-  useEffect(() => {
-    return () => {
-      disconnect();
-    };
-  }, []); // إزالة disconnect من dependencies لتجنب الحلقة اللانهائية
-
-  // الاتصال التلقائي
-  useEffect(() => {
-    if (defaultOptions.autoConnect) {
-      connect();
-    }
-  }, []); // إزالة connect من dependencies لتجنب الحلقة اللانهائية
 
   return {
     socket,
