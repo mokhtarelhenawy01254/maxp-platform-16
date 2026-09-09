@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const { getSharedPrismaClient } = require("../services/sharedDatabase");
 const sharp = require("sharp");
 const { getMetaGraphApiVersion } = require("../config/metaApi");
@@ -13,6 +15,7 @@ const DEFAULT_USER_AGENT =
 const DEFAULT_ACCEPT_HEADER =
   "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8";
 const DIRECT_ALLOWED_URL_PATTERNS = [
+  /^https?:\/\/(?:www\.)?maxp\.online\//i,
   /^https:\/\/(?:www\.)?mokhtarelhenawy\.online\//i,
   /^http:\/\/mokhtarelhenawy\.online\//i,
   /^https:\/\/(?:[^/]+\.)?fbcdn\.net\//i,
@@ -156,6 +159,14 @@ const isAllowedDirectUrl = (targetUrl) => {
     return false;
   }
 
+  if (
+    targetUrl.includes("/uploads/") ||
+    targetUrl.startsWith("/uploads/") ||
+    targetUrl.startsWith("uploads/")
+  ) {
+    return true;
+  }
+
   if (DIRECT_ALLOWED_URL_PATTERNS.some((pattern) => pattern.test(targetUrl))) {
     return true;
   }
@@ -227,6 +238,127 @@ const getMetaGraphHeaders = (accessToken, accept = "application/json") => ({
   Accept: accept,
 });
 
+const uploadRoots = [
+  path.resolve(__dirname, "../uploads"),
+  path.resolve(__dirname, "../../uploads"),
+  path.resolve(__dirname, "uploads"),
+  path.resolve(process.cwd(), "uploads"),
+].filter((root, index, roots) => roots.indexOf(root) === index);
+
+const resolveLocalUploadFilePath = (targetUrl) => {
+  if (typeof targetUrl !== "string" || !targetUrl.trim()) {
+    return null;
+  }
+
+  let pathname = targetUrl.trim();
+  if (pathname.startsWith("http://") || pathname.startsWith("https://")) {
+    try {
+      pathname = new URL(pathname).pathname;
+    } catch {
+      return null;
+    }
+  }
+
+  let relative = "";
+  if (pathname.startsWith("/uploads/")) {
+    relative = pathname.substring("/uploads/".length);
+  } else if (pathname.startsWith("uploads/")) {
+    relative = pathname.substring("uploads/".length);
+  } else if (pathname.includes("/uploads/")) {
+    const idx = pathname.indexOf("/uploads/");
+    relative = pathname.substring(idx + "/uploads/".length);
+  } else {
+    return null;
+  }
+
+  try {
+    relative = decodeURIComponent(relative).replace(/^\/+/, "");
+  } catch {
+    relative = relative.replace(/^\/+/, "");
+  }
+
+  if (!relative) {
+    return null;
+  }
+
+  for (const root of uploadRoots) {
+    const candidatePath = path.resolve(root, relative);
+    if (
+      candidatePath !== root &&
+      !candidatePath.startsWith(`${root}${path.sep}`)
+    ) {
+      continue;
+    }
+
+    try {
+      if (fs.existsSync(candidatePath) && fs.statSync(candidatePath).isFile()) {
+        return candidatePath;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  return null;
+};
+
+const sendLocalFileResponse = async (req, res, filePath, transformOptions) => {
+  const ext = path.extname(filePath).toLowerCase();
+  const mimeMap = {
+    ".webp": "image/webp",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+    ".png": "image/png",
+    ".gif": "image/gif",
+    ".svg": "image/svg+xml",
+    ".avif": "image/avif",
+  };
+  const originalContentType = mimeMap[ext] || "application/octet-stream";
+  const shouldTransform =
+    transformOptions?.shouldTransform && isTransformableContentType(originalContentType);
+
+  res.setHeader(
+    "Content-Type",
+    shouldTransform ? `image/${transformOptions.format}` : originalContentType,
+  );
+  res.setHeader(
+    "Cache-Control",
+    shouldTransform
+      ? "public, max-age=604800, stale-while-revalidate=2592000"
+      : "public, max-age=3600, stale-while-revalidate=86400",
+  );
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+
+  if ((req.method || "").toUpperCase() === "HEAD") {
+    return res.status(200).end();
+  }
+
+  const responseBuffer = await fs.promises.readFile(filePath);
+
+  if (!shouldTransform) {
+    res.setHeader("Content-Length", String(responseBuffer.length));
+    return res.status(200).send(responseBuffer);
+  }
+
+  try {
+    const transformedBuffer = await transformImageBuffer(
+      responseBuffer,
+      transformOptions,
+    );
+    res.setHeader("Content-Length", String(transformedBuffer.length));
+    return res.status(200).send(transformedBuffer);
+  } catch (error) {
+    console.warn("⚠️ [IMAGE-PROXY] Local file transform failed, serving original:", {
+      filePath,
+      message: error?.message,
+    });
+    res.setHeader("Content-Type", originalContentType);
+    res.setHeader("Content-Length", String(responseBuffer.length));
+    return res.status(200).send(responseBuffer);
+  }
+};
+
 const sendRemoteResponse = async (req, res, response, transformOptions) => {
   const contentType = response.headers.get("content-type") || "image/jpeg";
   const contentLength = response.headers.get("content-length");
@@ -245,6 +377,7 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
       : cacheControl || "public, max-age=3600, stale-while-revalidate=86400",
   );
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
   if (contentLength && !shouldTransform) {
     res.setHeader("Content-Length", contentLength);
@@ -269,7 +402,7 @@ const sendRemoteResponse = async (req, res, response, transformOptions) => {
     res.setHeader("Content-Length", String(transformedBuffer.length));
     return res.status(200).send(transformedBuffer);
   } catch (error) {
-    console.warn("âš ï¸ [IMAGE-PROXY] Image transform failed, serving original:", {
+    console.warn("⚠️ [IMAGE-PROXY] Image transform failed, serving original:", {
       contentType,
       width: transformOptions.width,
       format: transformOptions.format,
@@ -292,6 +425,7 @@ const sendInlineAssetResponse = (req, res, { body, contentType, cacheControl }) 
     cacheControl || "public, max-age=3600, stale-while-revalidate=86400",
   );
   res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
 
   if ((req.method || "").toUpperCase() === "HEAD") {
     return res.status(200).end();
@@ -308,9 +442,14 @@ const sendCustomerAvatarFallback = (req, res) =>
   });
 
 const fetchRemoteAsset = async (targetUrl) => {
-  return fetch(targetUrl, {
+  let finalUrl = targetUrl;
+  if (typeof finalUrl === "string" && finalUrl.startsWith("/")) {
+    const localPort = process.env.PORT || 3007;
+    finalUrl = `http://127.0.0.1:${localPort}${finalUrl}`;
+  }
+  return fetch(finalUrl, {
     method: "GET",
-    headers: getFacebookFriendlyHeaders(targetUrl),
+    headers: getFacebookFriendlyHeaders(finalUrl),
     redirect: "follow",
   });
 };
@@ -568,13 +707,29 @@ const resolveFreshCustomerAvatarUrl = async (prisma, customerId) => {
     select: {
       id: true,
       companyId: true,
+      avatar: true,
       facebookId: true,
       metadata: true,
     },
   });
 
-  if (!customer?.facebookId || !customer.companyId) {
+  if (!customer) {
     return null;
+  }
+
+  if (customer.avatar) {
+    return customer.avatar;
+  }
+
+  const metadata = parseJsonSafely(customer.metadata, {});
+  const metadataAvatar =
+    metadata?.profilePicture ||
+    metadata?.facebookProfile?.profile_pic ||
+    metadata?.avatar ||
+    null;
+
+  if (!customer.facebookId || !customer.companyId) {
+    return metadataAvatar;
   }
 
   const latestConversation = await prisma.conversation.findFirst({
@@ -597,8 +752,7 @@ const resolveFreshCustomerAvatarUrl = async (prisma, customerId) => {
     : null;
 
   if (!pageAccessToken) {
-    const metadata = parseJsonSafely(customer.metadata, {});
-    return metadata?.profilePicture || metadata?.facebookProfile?.profile_pic || null;
+    return metadataAvatar;
   }
 
   const graphUrl =
@@ -621,12 +775,11 @@ const resolveFreshCustomerAvatarUrl = async (prisma, customerId) => {
       failureText,
     });
 
-    const metadata = parseJsonSafely(customer.metadata, {});
-    return metadata?.profilePicture || metadata?.facebookProfile?.profile_pic || null;
+    return metadataAvatar;
   }
 
   const graphPayload = await graphResponse.json();
-  return graphPayload?.profile_pic || null;
+  return graphPayload?.profile_pic || metadataAvatar;
 };
 
 const resolveWhatsAppMessageMedia = async (prisma, whatsAppMessageId) => {
@@ -846,6 +999,16 @@ const proxyImage = async (req, res) => {
     }
 
     for (const candidateUrl of candidateUrls) {
+      const localFilePath = resolveLocalUploadFilePath(candidateUrl);
+      if (localFilePath) {
+        return await sendLocalFileResponse(
+          req,
+          res,
+          localFilePath,
+          transformOptions,
+        );
+      }
+
       const response = await fetchRemoteAsset(candidateUrl);
       if (response.ok) {
         return sendRemoteResponse(req, res, response, transformOptions);

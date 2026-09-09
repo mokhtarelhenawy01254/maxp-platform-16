@@ -825,6 +825,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                     loading="lazy"
                     className="rounded-lg max-w-full h-auto"
                     style={{ maxHeight: "300px" }}
+                    onError={(e) => {
+                      const target = e.currentTarget as HTMLImageElement;
+                      if (target.dataset.retried) {
+                        return;
+                      }
+                      target.dataset.retried = "true";
+                      try {
+                        const parsed = new URL(target.src);
+                        const rawUrlParam = parsed.searchParams.get("url");
+                        if (rawUrlParam && rawUrlParam !== target.src) {
+                          target.src = rawUrlParam;
+                        }
+                      } catch {}
+                    }}
                   />
                 ))}
               </div>

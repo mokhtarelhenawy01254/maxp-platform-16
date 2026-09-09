@@ -400,7 +400,10 @@ const PUBLIC_ROUTES = [
   // Image proxy routes (للصور الخارجية)
   'GET /api/proxy-image',
   'GET /api/v1/proxy-image',
+  'HEAD /api/proxy-image',
+  'HEAD /api/v1/proxy-image',
   'GET /api/v1/proxy',
+  'HEAD /api/v1/proxy',
 
   // Uploads routes (للصور والملفات المرفوعة)
   'GET /uploads/*',

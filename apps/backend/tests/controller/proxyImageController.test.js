@@ -1,3 +1,5 @@
+const fs = require("fs");
+const path = require("path");
 const sharp = require("sharp");
 
 const mockGetSharedPrismaClient = jest.fn(() => ({}));
@@ -387,5 +389,46 @@ describe("proxyImageController image transforms", () => {
     expect(res.statusCode).toBe(200);
     expect(res.headers["Content-Type"]).toBe("image/jpeg");
     expect(Buffer.isBuffer(res.body)).toBe(true);
+  });
+
+  test("serves local uploaded images from disk without remote fetch and sets cross-origin CORP", async () => {
+    const sourceBuffer = await sharp({
+      create: {
+        width: 400,
+        height: 300,
+        channels: 3,
+        background: "#00ff00",
+      },
+    })
+      .webp()
+      .toBuffer();
+
+    const tempDir = path.resolve(__dirname, "../../uploads/products");
+    fs.mkdirSync(tempDir, { recursive: true });
+    const tempFile = path.join(tempDir, "test-local-img.webp");
+    fs.writeFileSync(tempFile, sourceBuffer);
+
+    try {
+      const req = {
+        method: "GET",
+        query: {
+          url: "/uploads/products/test-local-img.webp",
+        },
+      };
+      const res = createResponseMock();
+
+      await proxyImage(req, res);
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(res.statusCode).toBe(200);
+      expect(res.headers["Cross-Origin-Resource-Policy"]).toBe("cross-origin");
+      expect(res.headers["Access-Control-Allow-Origin"]).toBe("*");
+      expect(res.headers["Content-Type"]).toBe("image/webp");
+      expect(Buffer.isBuffer(res.body)).toBe(true);
+    } finally {
+      try {
+        fs.unlinkSync(tempFile);
+      } catch {}
+    }
   });
 });

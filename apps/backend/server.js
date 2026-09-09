@@ -552,7 +552,12 @@ const captureRawJsonBody = (req, res, buf, encoding) => {
 };
 
 // Body Parsers & Security
-app.use(helmet({ contentSecurityPolicy: false }));
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+  }),
+);
 app.use(express.json({ limit: "15mb", verify: captureRawJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 app.use(cookieParser());
@@ -721,6 +726,8 @@ const NO_CACHE_UPLOAD_PREFIXES = ['/conversations/', '/whatsapp/', '/companies/'
 
 app.use("/uploads", async (req, res, next) => {
   try {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
     const uploadPathname = req.path;
     const isPrivateUpload =
       PRIVATE_UPLOAD_PREFIXES.some((prefix) => uploadPathname.startsWith(prefix));

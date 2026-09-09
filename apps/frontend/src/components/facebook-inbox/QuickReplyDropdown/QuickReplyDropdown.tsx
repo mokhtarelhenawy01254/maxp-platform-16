@@ -17,15 +17,20 @@ export interface QuickReply {
   imageUrls?: string[];
   isPinned?: boolean;
   platforms?: string[];
+  text?: string;
 }
 
 interface QuickReplyDropdownProps {
-  inputValue: string;
-  onSelectReply: (reply: QuickReply) => void;
+  inputValue?: string;
+  onSelectReply?: (reply: QuickReply) => void;
   onDirectSend?: (reply: QuickReply) => void;
   onClose: () => void;
   conversation?: any;
   user?: any;
+  filter?: string;
+  searchQuery?: string;
+  onSelect?: (reply: QuickReply) => void;
+  isOpen?: boolean;
 }
 
 // Fallback default quick replies (Egyptian commerce tailored)
@@ -93,8 +98,11 @@ let cachedQuickReplies: QuickReply[] | null = null;
 let lastFetchTime = 0;
 
 const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
-  inputValue,
+  inputValue = "",
+  filter = "",
+  searchQuery = "",
   onSelectReply,
+  onSelect,
   onDirectSend,
   onClose,
 }) => {
@@ -112,28 +120,30 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
 
   const handleItemSelect = useCallback(
     (e: React.UIEvent, reply: QuickReply) => {
-      e.preventDefault();
       e.stopPropagation();
       if (isSelectingRef.current) return;
       isSelectingRef.current = true;
-      onSelectReply(reply);
+      if (onSelectReply) {
+        onSelectReply(reply);
+      } else if (onSelect) {
+        onSelect(reply);
+      }
       setTimeout(() => {
         isSelectingRef.current = false;
-      }, 400);
+      }, 300);
     },
-    [onSelectReply],
+    [onSelectReply, onSelect],
   );
 
   const handleDirectSendClick = useCallback(
     (e: React.UIEvent, reply: QuickReply) => {
-      e.preventDefault();
       e.stopPropagation();
       if (isSelectingRef.current) return;
       isSelectingRef.current = true;
       onDirectSend?.(reply);
       setTimeout(() => {
         isSelectingRef.current = false;
-      }, 400);
+      }, 300);
     },
     [onDirectSend],
   );
@@ -241,9 +251,10 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
     return Array.from(cats);
   }, [replies]);
 
-  // Filter replies based on input and category
+  // Filter replies based on input, filter prop, searchQuery and category
   const filteredReplies = useMemo(() => {
-    let term = inputValue.trim();
+    const rawSearch = (searchQuery || filter || inputValue || "").trim();
+    let term = rawSearch;
     const lastSlash = term.lastIndexOf("/");
     if (lastSlash !== -1) {
       term = term.slice(lastSlash + 1).trim().toLowerCase();
@@ -270,12 +281,12 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
         contentClean.includes(term)
       );
     });
-  }, [replies, inputValue, selectedCategory]);
+  }, [replies, inputValue, filter, searchQuery, selectedCategory]);
 
   // Reset selected index on filter changes
   useEffect(() => {
     setSelectedIndex(0);
-  }, [inputValue, selectedCategory]);
+  }, [inputValue, filter, searchQuery, selectedCategory]);
 
   // Auto-scroll selected item into view
   useEffect(() => {
@@ -338,14 +349,7 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
       {/* Backdrop overlay */}
       <div
         className="fixed inset-0 z-30"
-        onPointerDown={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
-        onClick={(e) => {
-          e.preventDefault();
-          onClose();
-        }}
+        onClick={onClose}
       />
 
       {/* Dropdown Floating Surface */}
@@ -380,10 +384,6 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
             )}
             <button
               type="button"
-              onPointerDown={(e) => {
-                e.preventDefault();
-                onClose();
-              }}
               onClick={onClose}
               className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
               title="إغلاق"
@@ -402,10 +402,6 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
                 <button
                   key={cat}
                   type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    setSelectedCategory(cat);
-                  }}
                   onClick={() => setSelectedCategory(cat)}
                   className={`flex-shrink-0 px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors ${
                     isActive
@@ -442,15 +438,13 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
                 <div
                   key={reply.id}
                   ref={isActive ? selectedItemRef : null}
-                  className={`group relative flex items-start justify-between gap-2.5 rounded-xl p-2.5 text-start transition-all cursor-pointer border ${
+                  role="button"
+                  tabIndex={0}
+                  className={`group relative flex items-start justify-between gap-2.5 rounded-xl p-2.5 text-start transition-all cursor-pointer border select-none ${
                     isActive
                       ? "bg-primary/10 dark:bg-primary/20 border-primary/40 dark:border-primary/50 shadow-sm"
                       : "bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100/90 dark:hover:bg-slate-800/80 border-slate-200/60 dark:border-slate-700/60"
                   }`}
-                  onPointerDown={(e) => {
-                    // Prevent blur of the input field on touch
-                    e.preventDefault();
-                  }}
                   onClick={(e) => handleItemSelect(e, reply)}
                 >
                   {/* Left content block */}
@@ -492,11 +486,10 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
                     {onDirectSend && (
                       <button
                         type="button"
-                        onPointerDown={(e) => {
-                          e.preventDefault();
+                        onClick={(e) => {
                           e.stopPropagation();
+                          handleDirectSendClick(e, reply);
                         }}
-                        onClick={(e) => handleDirectSendClick(e, reply)}
                         className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 hover:bg-primary text-primary hover:text-white dark:bg-primary/25 dark:hover:bg-primary dark:text-blue-300 dark:hover:text-white transition-colors shadow-xs"
                         title="إرسال مباشر للعميل فوراً"
                       >

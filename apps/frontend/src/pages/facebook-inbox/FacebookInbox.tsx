@@ -2359,12 +2359,19 @@ const getApiError = (error: unknown): ApiErrorLike => {
                         src={selectedConversationAvatarUrl}
                         alt={selectedConversation.customerName}
                         className="business-conversation-avatar !w-10 !h-10"
+                        onError={(e) => {
+                          (e.currentTarget as HTMLElement).style.display = "none";
+                          const fallback = e.currentTarget.nextElementSibling;
+                          if (fallback) (fallback as HTMLElement).style.display = "flex";
+                        }}
                       />
-                    ) : (
-                      <div className="business-conversation-fallback !w-10 !h-10">
-                        {selectedConversation.customerName.charAt(0)}
-                      </div>
-                    )}
+                    ) : null}
+                    <div
+                      className="business-conversation-fallback !w-10 !h-10"
+                      style={{ display: selectedConversationAvatarUrl ? "none" : "flex" }}
+                    >
+                      {selectedConversation.customerName?.charAt(0)?.toUpperCase() || "؟"}
+                    </div>
 
                     <div className="min-w-0">
                       <h2

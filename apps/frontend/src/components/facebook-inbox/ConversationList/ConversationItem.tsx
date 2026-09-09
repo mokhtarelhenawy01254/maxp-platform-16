@@ -83,12 +83,19 @@ const ConversationItem: React.FC<ConversationItemProps> = memo(
                 alt={conversation.customerName}
                 loading="lazy"
                 className="business-conversation-avatar"
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = "none";
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = "flex";
+                }}
               />
-            ) : (
-              <div className="business-conversation-fallback">
-                {conversation.customerName.charAt(0).toUpperCase()}
-              </div>
-            )}
+            ) : null}
+            <div
+              className="business-conversation-fallback"
+              style={{ display: customerAvatarUrl ? "none" : "flex" }}
+            >
+              {conversation.customerName?.charAt(0)?.toUpperCase() || "؟"}
+            </div>
 
             {/* Online indicator */}
             {conversation.platform === "facebook" && (

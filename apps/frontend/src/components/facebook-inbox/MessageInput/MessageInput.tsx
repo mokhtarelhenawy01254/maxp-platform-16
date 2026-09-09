@@ -444,9 +444,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
                   type="button"
                   onClick={() => {
                     setShowMobileTools(false);
-                    setMessage((prev) => (prev.startsWith("/") ? prev : "/" + prev));
+                    setQuickReplyFilter("");
                     setShowQuickReplies(true);
-                    messageInputRef.current?.focus();
+                    if (!isCompactMobile) {
+                      messageInputRef.current?.focus();
+                    }
                   }}
                   className="flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2 text-start text-xs font-medium text-foreground transition-colors hover:bg-white/10 active:bg-white/15"
                 >
@@ -540,8 +542,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 setShowQuickReplies((prev) => {
                   const nextState = !prev;
                   if (nextState) {
-                    setMessage((current) => (current.startsWith("/") ? current : "/" + current));
-                    setTimeout(() => messageInputRef.current?.focus(), 50);
+                    setQuickReplyFilter("");
+                    if (!isCompactMobile) {
+                      setTimeout(() => messageInputRef.current?.focus(), 50);
+                    }
                   }
                   return nextState;
                 });

@@ -349,18 +349,23 @@ const CustomerProfile: React.FC<CustomerProfileProps> = ({
                 alt={conversation.customerName}
                 className="h-12 w-12 shrink-0 rounded-full object-cover shadow-sm"
                 style={{ border: "1px solid var(--business-card-border)" }}
-              />
-            ) : (
-              <div
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
-                style={{
-                  background:
-                    "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+                onError={(e) => {
+                  (e.currentTarget as HTMLElement).style.display = "none";
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = "flex";
                 }}
-              >
-                {conversation.customerName.charAt(0)}
-              </div>
-            )}
+              />
+            ) : null}
+            <div
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-lg font-bold text-white shadow-sm"
+              style={{
+                display: customerAvatarUrl ? "none" : "flex",
+                background:
+                  "linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%)",
+              }}
+            >
+              {conversation.customerName?.charAt(0)?.toUpperCase() || "؟"}
+            </div>
 
             <div className="min-w-0 flex-1">
               <h3
