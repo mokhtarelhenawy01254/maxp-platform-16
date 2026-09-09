@@ -79,14 +79,16 @@ const MessageInput: React.FC<MessageInputProps> = ({
       }
       setTimeout(() => {
         if (messageInputRef.current) {
-          messageInputRef.current.focus();
+          if (!isCompactMobile) {
+            messageInputRef.current.focus();
+          }
           messageInputRef.current.style.height = "auto";
           messageInputRef.current.style.height =
             Math.min(messageInputRef.current.scrollHeight, 120) + "px";
         }
       }, 50);
     }
-  }, [draftMessage, onDraftMessageHandled]);
+  }, [draftMessage, onDraftMessageHandled, isCompactMobile]);
 
   // Focus input on mount (desktop only to prevent unwanted mobile keyboard popups)
   React.useEffect(() => {
@@ -149,9 +151,11 @@ const MessageInput: React.FC<MessageInputProps> = ({
       if (messageInputRef.current) {
         messageInputRef.current.style.height = "auto";
       }
-      setTimeout(() => {
-        messageInputRef.current?.focus();
-      }, 100);
+      if (!isCompactMobile) {
+        setTimeout(() => {
+          messageInputRef.current?.focus();
+        }, 100);
+      }
     }
   };
 
@@ -180,13 +184,18 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleSelectQuickReply = (reply: QuickReply) => {
     const contextVars = getContextVariables(conversation, user);
-    const processedContent = replaceVariables(reply.content, contextVars);
+    const rawText = reply.content || (reply as any).text || "";
+    const processedContent = replaceVariables(rawText, contextVars);
 
     // If message contains slash command, replace the slash portion or append cleanly
     const lastSlashIndex = message.lastIndexOf("/");
     if (lastSlashIndex > 0) {
       const preceding = message.slice(0, lastSlashIndex).trim();
       setMessage(preceding ? `${preceding}\n${processedContent}` : processedContent);
+    } else if (lastSlashIndex === 0) {
+      setMessage(processedContent);
+    } else if (message.trim()) {
+      setMessage(`${message.trim()}\n${processedContent}`);
     } else {
       setMessage(processedContent);
     }
@@ -210,7 +219,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
   const handleDirectSendQuickReply = (reply: QuickReply) => {
     const contextVars = getContextVariables(conversation, user);
-    const processedContent = replaceVariables(reply.content, contextVars);
+    const rawText = reply.content || (reply as any).text || "";
+    const processedContent = replaceVariables(rawText, contextVars);
 
     setShowQuickReplies(false);
     setShowMobileTools(false);
@@ -225,10 +235,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         ...reply,
         content: processedContent,
       });
-      return;
-    }
-
-    if (processedContent.trim() && !isBusy && handleSendAction) {
+    } else if (handleSendAction) {
       handleSendAction(processedContent);
     }
   };
