@@ -6,10 +6,19 @@ export interface AnalyticsData {
   addToCarts: number;
   checkouts: number;
   purchases: number;
+  naturalPurchases?: number;
+  recoveredPurchases?: number;
+  recoveredRevenue?: number;
+  incompleteCarts?: number;
   deliveredOrders?: number;
   deliveryRate?: number;
   totalRevenue: number;
   conversionRate: number;
+  organicConversionRate?: number;
+  realizedConversionRate?: number;
+  potentialConversionRate?: number;
+  conversionLift?: number;
+  recoveryRate?: number;
   productConversionRate?: number;
   avgOrderValue: number;
   addToCartRate: number;
@@ -395,11 +404,17 @@ export const generateExecutiveBriefing = (
 
   const starProduct = topProducts[0] ?? null;
   const starName = starProduct?.name || "المنتجات المميزة";
+  const recoveredPurchases = coerceNumber(analytics.recoveredPurchases);
+  const recoveredRevenue = coerceNumber(analytics.recoveredRevenue);
+  const conversionLift = coerceNumber(analytics.conversionLift);
+  const recoverySentence = recoveredPurchases > 0
+    ? ` كما ساهم فريق المبيعات في استرداد ${recoveredPurchases} طلب من السلات غير المكتملة بقيمة ${recoveredRevenue.toLocaleString()} ج.م (+${conversionLift.toFixed(1)}% رفع في التحويل).`
+    : "";
 
   if (rate >= 3.0 && purchases > 0) {
     return {
       headline: "أداء تحويلي ممتاز يفوق المعدل المعتاد",
-      summary: `حقق المتجر معدل تحويل قوي (${rate.toFixed(1)}%) بإجمالي ${purchases} طلب وإيراد ${revenue.toLocaleString()} ج.م. يعتبر منتج "${starName}" هو القوة الدافعة الكبرى للطلبات.`,
+      summary: `حقق المتجر معدل تحويل قوي (${rate.toFixed(1)}%) بإجمالي ${purchases} طلب وإيراد ${revenue.toLocaleString()} ج.م. يعتبر منتج "${starName}" هو القوة الدافعة الكبرى للطلبات.${recoverySentence}`,
       tone: "positive",
       metricsSnapshot: `${rate.toFixed(1)}% تحويل • ${purchases} طلب • ${visits.toLocaleString()} زيارة`,
       actionSuggestion: {
@@ -413,7 +428,7 @@ export const generateExecutiveBriefing = (
   if (rate >= 1.2 && purchases > 0) {
     return {
       headline: "أداء متزن مع فرص واعدة لمضاعفة الإيرادات",
-      summary: `المتجر يسجل نشاطاً جيداً بمعدل تحويل (${rate.toFixed(1)}%). هناك زوار يترددون عند مرحلة السلة أو الطلب، ويمكنك استرجاع طلبات مؤكدة بتفعيل أدوات التسريع أو متابعة السلات.`,
+      summary: `المتجر يسجل نشاطاً جيداً بمعدل تحويل (${rate.toFixed(1)}%). هناك زوار يترددون عند مرحلة السلة أو الطلب، ويمكنك استرجاع طلبات مؤكدة بتفعيل أدوات التسريع أو متابعة السلات.${recoverySentence}`,
       tone: "steady",
       metricsSnapshot: `${rate.toFixed(1)}% تحويل • ${purchases} طلب • ${visits.toLocaleString()} زيارة`,
       actionSuggestion: {

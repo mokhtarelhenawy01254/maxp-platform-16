@@ -978,7 +978,9 @@ class AnalyticsService {
       conversionEvents,
       orderSummary,
       orderBreakdown,
-      activeVisitors
+      activeVisitors,
+      recoveredConversions,
+      incompleteCartsCount
     ] = await Promise.all([
       getSharedPrismaClient().storeVisit.count({
         where: { companyId, visitedAt: { gte: startDate, lte: endDate } }
@@ -1002,7 +1004,21 @@ class AnalyticsService {
           companyId,
           visitedAt: { gte: new Date(Date.now() - 15 * 60 * 1000) }
         }
-      })
+      }),
+      getSharedPrismaClient().cartConversionLog.findMany({
+        where: {
+          companyId,
+          convertedAt: { gte: startDate, lte: endDate },
+          channel: 'admin-convert'
+        },
+        select: { cartValue: true }
+      }).catch(() => []),
+      getSharedPrismaClient().guestCart.count({
+        where: {
+          companyId,
+          createdAt: { gte: startDate, lte: endDate }
+        }
+      }).catch(() => 0)
     ]);
 
     const addToCarts = conversionEvents.find(e => e.eventType === 'add_to_cart')?._count || 0;
@@ -1012,12 +1028,34 @@ class AnalyticsService {
     const deliveredOrders = orderBreakdown?.ordersByStatus?.delivered || 0;
     const deliveryRate = purchases > 0 ? parseFloat(((deliveredOrders / purchases) * 100).toFixed(2)) : 0;
 
+    // Recovery metrics from incomplete orders
+    const recoveredPurchases = Array.isArray(recoveredConversions) ? recoveredConversions.length : 0;
+    const recoveredRevenue = Array.isArray(recoveredConversions)
+      ? parseFloat(recoveredConversions.reduce((s, c) => s + Number(c.cartValue || 0), 0).toFixed(2))
+      : 0;
+    const naturalPurchases = Math.max(0, purchases - recoveredPurchases);
+    const incompleteCarts = typeof incompleteCartsCount === 'number' ? incompleteCartsCount : 0;
+
     // Calculate average order value from purchase events
     const avgOrderValue = purchases > 0 ? (totalRevenue / purchases).toFixed(2) : 0;
 
-    // Calculate conversion rates with proper fallbacks
-    // Store-level conversion rate: purchases / total visits (overall store performance)
-    const storeConversionRate = totalVisits > 0 ? (purchases / totalVisits * 100).toFixed(2) : 0;
+    // Calculate 3-tier conversion rates
+    // 1. Organic/Natural: Orders completed directly without team recovery intervention
+    const organicConversionRate = totalVisits > 0 ? parseFloat(((naturalPurchases / totalVisits) * 100).toFixed(2)) : 0;
+
+    // 2. Realized/Total: Final conversion rate after recovering incomplete orders
+    const storeConversionRate = totalVisits > 0 ? parseFloat(((purchases / totalVisits) * 100).toFixed(2)) : 0;
+    const realizedConversionRate = storeConversionRate;
+
+    // 3. Gross Intent/Potential: All customers who reached checkout (natural + incomplete carts + recovered)
+    const grossIntentOrders = naturalPurchases + incompleteCarts + recoveredPurchases;
+    const potentialConversionRate = totalVisits > 0 ? parseFloat(((grossIntentOrders / totalVisits) * 100).toFixed(2)) : 0;
+
+    // Lift and recovery efficiency
+    const conversionLift = parseFloat(Math.max(0, realizedConversionRate - organicConversionRate).toFixed(2));
+    const recoveryRate = (incompleteCarts + recoveredPurchases) > 0
+      ? parseFloat(((recoveredPurchases / (incompleteCarts + recoveredPurchases)) * 100).toFixed(2))
+      : 0;
 
     // Product-level conversion rate: purchases / product views (product engagement)
     const productConversionRate = totalProductViews > 0 ? (purchases / totalProductViews * 100).toFixed(2) : 0;
@@ -1039,10 +1077,19 @@ class AnalyticsService {
       addToCarts,
       checkouts,
       purchases,
+      naturalPurchases,
+      recoveredPurchases,
+      recoveredRevenue,
+      incompleteCarts,
       deliveredOrders,
       deliveryRate,
       totalRevenue,
-      conversionRate: parseFloat(storeConversionRate),
+      conversionRate: storeConversionRate,
+      organicConversionRate,
+      realizedConversionRate,
+      potentialConversionRate,
+      conversionLift,
+      recoveryRate,
       productConversionRate: parseFloat(productConversionRate),
       avgOrderValue: parseFloat(avgOrderValue),
       addToCartRate: parseFloat(addToCartRate),
