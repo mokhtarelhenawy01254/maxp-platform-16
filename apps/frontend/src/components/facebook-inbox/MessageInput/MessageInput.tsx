@@ -88,21 +88,21 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [draftMessage, onDraftMessageHandled]);
 
-  // Focus input on mount and after sending message
+  // Focus input on mount (desktop only to prevent unwanted mobile keyboard popups)
   React.useEffect(() => {
-    if (messageInputRef.current && !isBusy && !uploadingFile) {
+    if (!isCompactMobile && messageInputRef.current && !isBusy && !uploadingFile) {
       messageInputRef.current.focus();
     }
-  }, []);
+  }, [isCompactMobile]);
 
-  // Keep input focused after sending message
+  // Keep input focused after sending message (desktop only)
   React.useEffect(() => {
-    if (!isBusy && messageInputRef.current) {
+    if (!isCompactMobile && !isBusy && messageInputRef.current) {
       setTimeout(() => {
         messageInputRef.current?.focus();
       }, 50);
     }
-  }, [isBusy]);
+  }, [isBusy, isCompactMobile]);
 
   React.useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -194,14 +194,17 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setShowQuickReplies(false);
     setShowMobileTools(false);
     if (messageInputRef.current) {
-      setTimeout(() => {
-        if (messageInputRef.current) {
-          messageInputRef.current.style.height = "auto";
-          messageInputRef.current.style.height =
-            Math.min(messageInputRef.current.scrollHeight, 120) + "px";
-          messageInputRef.current.focus();
-        }
-      }, 50);
+      messageInputRef.current.style.height = "auto";
+      messageInputRef.current.style.height =
+        Math.min(messageInputRef.current.scrollHeight, 120) + "px";
+
+      // On desktop, re-focus for continuous typing.
+      // On mobile, DO NOT force focus: prevents keyboard from closing and immediately re-opening (bouncing/jittering).
+      if (!isCompactMobile) {
+        setTimeout(() => {
+          messageInputRef.current?.focus();
+        }, 50);
+      }
     }
   };
 
@@ -574,7 +577,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
                 : "اكتب رسالة... (أو / للردود السريعة) - Shift+Enter لسطر جديد"
             }
             disabled={isBusy || uploadingFile}
-            autoFocus
+            autoFocus={!isCompactMobile}
             rows={1}
             className="business-chat-input w-full resize-none overflow-y-auto ps-3 pe-8 sm:pe-3 py-2 text-xs sm:text-sm md:text-base leading-relaxed disabled:opacity-50"
             style={{

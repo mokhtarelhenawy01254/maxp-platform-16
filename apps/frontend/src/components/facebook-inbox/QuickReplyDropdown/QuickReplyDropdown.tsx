@@ -108,6 +108,35 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLButtonElement>(null);
+  const isSelectingRef = useRef(false);
+
+  const handleItemSelect = useCallback(
+    (e: React.UIEvent, reply: QuickReply) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isSelectingRef.current) return;
+      isSelectingRef.current = true;
+      onSelectReply(reply);
+      setTimeout(() => {
+        isSelectingRef.current = false;
+      }, 400);
+    },
+    [onSelectReply],
+  );
+
+  const handleDirectSendClick = useCallback(
+    (e: React.UIEvent, reply: QuickReply) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isSelectingRef.current) return;
+      isSelectingRef.current = true;
+      onDirectSend?.(reply);
+      setTimeout(() => {
+        isSelectingRef.current = false;
+      }, 400);
+    },
+    [onDirectSend],
+  );
 
   // Fetch quick replies & saved texts from API
   useEffect(() => {
@@ -309,15 +338,21 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
       {/* Backdrop overlay */}
       <div
         className="fixed inset-0 z-30"
-        onPointerDown={onClose}
-        onClick={onClose}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
+        onClick={(e) => {
+          e.preventDefault();
+          onClose();
+        }}
       />
 
       {/* Dropdown Floating Surface */}
       <div
         ref={dropdownRef}
         dir="rtl"
-        className="absolute bottom-full mb-1.5 inset-x-1 sm:inset-x-auto sm:start-0 sm:end-auto sm:w-[480px] sm:mb-2 z-40 max-h-[55vh] sm:max-h-[420px] flex flex-col rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-all text-foreground"
+        className="absolute bottom-full mb-1.5 inset-x-1 sm:inset-x-auto sm:start-0 sm:end-auto sm:w-[480px] sm:mb-2 z-40 max-h-[42vh] sm:max-h-[420px] flex flex-col rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 shadow-2xl overflow-hidden transition-opacity duration-150 text-foreground"
         style={{
           boxShadow:
             "0 20px 45px -15px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05)",
@@ -413,16 +448,10 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
                       : "bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100/90 dark:hover:bg-slate-800/80 border-slate-200/60 dark:border-slate-700/60"
                   }`}
                   onPointerDown={(e) => {
-                    // Critical fix for mobile: prevent textarea blur so keyboard doesn't dismiss and cancel click
+                    // Prevent blur of the input field on touch
                     e.preventDefault();
-                    e.stopPropagation();
-                    onSelectReply(reply);
                   }}
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onSelectReply(reply);
-                  }}
+                  onClick={(e) => handleItemSelect(e, reply)}
                 >
                   {/* Left content block */}
                   <div className="flex-1 min-w-0">
@@ -466,13 +495,8 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
                         onPointerDown={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          onDirectSend(reply);
                         }}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          onDirectSend(reply);
-                        }}
+                        onClick={(e) => handleDirectSendClick(e, reply)}
                         className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/15 hover:bg-primary text-primary hover:text-white dark:bg-primary/25 dark:hover:bg-primary dark:text-blue-300 dark:hover:text-white transition-colors shadow-xs"
                         title="إرسال مباشر للعميل فوراً"
                       >
