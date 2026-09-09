@@ -3,6 +3,8 @@ const {
   matchesKeyword,
   matchBotRules,
   interpolateReply,
+  getSmartReplies,
+  matchSmartReplyTemplates,
   evaluateInboundBotReply,
 } = require('../../services/botRuleEngine');
 
@@ -10,6 +12,7 @@ jest.mock('../../services/sharedDatabase', () => {
   const prisma = {
     botAutomationSettings: { findUnique: jest.fn() },
     botAutomationRule: { findMany: jest.fn() },
+    aiSetting: { findUnique: jest.fn() },
   };
   return {
     getSharedPrismaClient: jest.fn(() => prisma),
@@ -121,6 +124,7 @@ describe('botRuleEngine evaluateInboundBotReply', () => {
   beforeEach(() => {
     prisma.botAutomationSettings.findUnique.mockReset();
     prisma.botAutomationRule.findMany.mockReset();
+    prisma.aiSetting.findUnique.mockReset();
   });
 
   test('returns welcome on first message when enabled', async () => {
@@ -206,9 +210,132 @@ describe('botRuleEngine evaluateInboundBotReply', () => {
     expect(result.kind).toBeNull();
   });
 
-  test('returns null when no settings', async () => {
+  test('returns null when no settings and no smart replies', async () => {
     prisma.botAutomationSettings.findUnique.mockResolvedValue(null);
+    prisma.aiSetting.findUnique.mockResolvedValue(null);
     const result = await evaluateInboundBotReply({ companyId: 'co-1', text: 'هلو', channel: 'WHATSAPP' });
     expect(result.kind).toBeNull();
+  });
+
+  test('matches smart replies from AiSetting even when botAutomationSettings is null', async () => {
+    prisma.botAutomationSettings.findUnique.mockResolvedValue(null);
+    prisma.aiSetting.findUnique.mockResolvedValue({
+      modelSettings: JSON.stringify({
+        ruleResponses: {
+          enableRuleResponses: true,
+          customRuleResponses: {
+            templates: [
+              {
+                id: 'tmpl-1',
+                name: 'التحية',
+                keywords: ['السلام عليكم'],
+                responses: ['وعليكم السلام ورحمة الله وبركاته 😊 تحت امرك اتفضل يافندم'],
+              },
+              {
+                id: 'tmpl-2',
+                name: 'مساء الخير',
+                keywords: ['مساء النور', 'مساء الخير', 'مساء الفل'],
+                responses: ['مساء الفل يافندم'],
+              },
+            ],
+          },
+        },
+      }),
+    });
+
+    const result1 = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'السلام عليكم ورحمة الله',
+      channel: 'FACEBOOK',
+    });
+    expect(result1.kind).toBe('smart_reply');
+    expect(result1.ruleId).toBe('tmpl-1');
+    expect(result1.replyText).toBe('وعليكم السلام ورحمة الله وبركاته 😊 تحت امرك اتفضل يافندم');
+    expect(result1.stopFurtherProcessing).toBe(true);
+
+    const result2 = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'مساء الفل يا باشا',
+      channel: 'FACEBOOK',
+    });
+    expect(result2.kind).toBe('smart_reply');
+    expect(result2.ruleId).toBe('tmpl-2');
+    expect(result2.replyText).toBe('مساء الفل يافندم');
+
+    const result3 = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'عايز مقاس لارج',
+      channel: 'FACEBOOK',
+    });
+    expect(result3.kind).toBeNull();
+  });
+
+  test('does not evaluate smart replies if enableRuleResponses is false', async () => {
+    prisma.botAutomationSettings.findUnique.mockResolvedValue(null);
+    prisma.aiSetting.findUnique.mockResolvedValue({
+      modelSettings: JSON.stringify({
+        ruleResponses: {
+          enableRuleResponses: false,
+          customRuleResponses: {
+            templates: [
+              {
+                id: 'tmpl-1',
+                name: 'التحية',
+                keywords: ['السلام عليكم'],
+                responses: ['وعليكم السلام'],
+              },
+            ],
+          },
+        },
+      }),
+    });
+
+    const result = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'السلام عليكم',
+      channel: 'FACEBOOK',
+    });
+    expect(result.kind).toBeNull();
+  });
+});
+
+describe('botRuleEngine matchSmartReplyTemplates', () => {
+  const templates = [
+    {
+      id: 't1',
+      name: 'ترحيب',
+      keywords: ['السلام عليكم', 'سلام'],
+      responses: ['أهلاً بحضرتك'],
+    },
+    {
+      id: 't2',
+      name: 'أسعار',
+      keywords: ['بكام', 'سعر'],
+      responses: ['الأسعار تبدأ من 250 جنيه'],
+    },
+  ];
+
+  test('matches keyword with Arabic text tolerance', () => {
+    const res = matchSmartReplyTemplates({ text: 'السلام عليكم ورحمة الله', templates });
+    expect(res).not.toBeNull();
+    expect(res.kind).toBe('smart_reply');
+    expect(res.ruleId).toBe('t1');
+    expect(res.replyText).toBe('أهلاً بحضرتك');
+  });
+
+  test('prefers longer matching keyword', () => {
+    const res = matchSmartReplyTemplates({ text: 'سلام عليكم', templates });
+    expect(res).not.toBeNull();
+    expect(res.matchedKeyword).toBe('سلام');
+  });
+
+  test('returns null when no keywords match', () => {
+    const res = matchSmartReplyTemplates({ text: 'شكراً جزيلاً', templates });
+    expect(res).toBeNull();
+  });
+
+  test('returns null for empty templates or text', () => {
+    expect(matchSmartReplyTemplates({ text: '', templates })).toBeNull();
+    expect(matchSmartReplyTemplates({ text: 'سلام', templates: [] })).toBeNull();
   });
 });

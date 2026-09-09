@@ -348,8 +348,10 @@ async function saveIncomingMessage(payload) {
               isFromCustomer: false,
               metadata: JSON.stringify({
                 platform: 'whatsapp',
-                source: evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'),
+                source: evaluation.kind === 'smart_reply' ? 'smart_reply' : (evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply')),
                 ruleId: evaluation.ruleId || null,
+                templateName: evaluation.templateName || null,
+                matchedKeyword: evaluation.matchedKeyword || null,
               }),
             },
           }).catch((e) => console.error('[BOT-RULES] Failed to save bot reply:', e.message));

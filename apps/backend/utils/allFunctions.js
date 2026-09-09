@@ -2131,7 +2131,13 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   pageData.pageAccessToken
                 );
             if (fbResult?.success) {
-              await prisma.message.create({
+              const replySource = evaluation.kind === 'smart_reply'
+                ? 'smart_reply'
+                : (evaluation.kind === 'rule'
+                  ? 'rule_reply'
+                  : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'));
+
+              const savedReply = await prisma.message.create({
                 data: {
                   conversationId: conversation.id,
                   content: evaluation.replyText,
@@ -2140,11 +2146,63 @@ async function handleFacebookMessage(webhookEvent, currentPageId = null) {
                   senderId: null,
                   metadata: JSON.stringify({
                     platform: 'facebook',
-                    source: evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'),
+                    source: replySource,
                     ruleId: evaluation.ruleId || null,
+                    templateName: evaluation.templateName || null,
+                    matchedKeyword: evaluation.matchedKeyword || null,
+                    isFacebookReply: true,
+                    timestamp: new Date(),
                   }),
                 },
-              }).catch((e) => console.error('[BOT-RULES] Failed to save FB bot reply:', e.message));
+              }).catch((e) => {
+                console.error('[BOT-RULES] Failed to save FB bot reply:', e.message);
+                return null;
+              });
+
+              if (savedReply) {
+                try {
+                  const socketService = require('../services/socketService');
+                  const io = socketService.getIO();
+                  if (io) {
+                    const socketData = proxySocketMessageData({
+                      id: savedReply.id,
+                      conversationId: savedReply.conversationId,
+                      content: savedReply.content,
+                      type: savedReply.type.toLowerCase(),
+                      isFromCustomer: false,
+                      timestamp: savedReply.createdAt,
+                      metadata: JSON.parse(savedReply.metadata || '{}'),
+                      senderId: null,
+                      senderName: evaluation.kind === 'smart_reply' ? 'الردود التلقائية' : 'البوت الآلي',
+                      lastMessageIsFromCustomer: false,
+                      lastCustomerMessageIsUnread: false,
+                      companyId: customer.companyId,
+                      platform: 'facebook',
+                      channel: 'FACEBOOK',
+                    }, {
+                      messageId: savedReply.id,
+                    });
+                    io.to(`company_${customer.companyId}`).emit('new_message', socketData);
+                  }
+                } catch (sockErr) {
+                  console.warn('⚠️ [BOT-RULES] Socket emit error:', sockErr.message);
+                }
+
+                safeQuery(async () => {
+                  const p = getPrisma();
+                  return await p.conversation.update({
+                    where: { id: conversation.id },
+                    data: {
+                      lastMessageAt: new Date(),
+                      lastMessagePreview: evaluation.replyText.length > 100 ? evaluation.replyText.substring(0, 100) + '...' : evaluation.replyText,
+                      lastMessageIsFromCustomer: false,
+                      unreadCount: 0,
+                      updatedAt: new Date(),
+                    },
+                  });
+                }, 2).catch(() => {});
+              }
+
               botHandledFb = true;
             }
           }
@@ -2856,6 +2914,113 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
       console.error('⚠️ [IG-MSG] Socket emit error:', socketErr.message);
     }
 
+    // ── 5.5 Bot / Smart Replies for Instagram ─────────────────────────────
+    let botHandledIg = false;
+    const igBotText = (messageText || (messageType === 'TEXT' ? content : '') || '').trim();
+    if (igBotText && companyId && facebookPage?.pageAccessToken) {
+      try {
+        const { evaluateInboundBotReply } = require('../services/botRuleEngine');
+        const pClient = getPrisma();
+        const firstContact = (await pClient.message.count({
+          where: { conversationId: conversation.id }
+        })) <= 1;
+
+        const evaluation = await evaluateInboundBotReply({
+          companyId,
+          text: igBotText,
+          channel: 'INSTAGRAM',
+          customer: {
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+          },
+          isFirstMessage: firstContact,
+        });
+
+        if (evaluation?.kind && evaluation.replyText) {
+          const igResult = await sendInstagramMessage({
+            recipientId: senderId,
+            messageText: evaluation.replyText,
+            igAccountId: facebookPage.instagramAccountId || facebookPage.pageId,
+            pageAccessToken: facebookPage.pageAccessToken,
+            companyId,
+          });
+
+          if (igResult?.success) {
+            const replySource = evaluation.kind === 'smart_reply'
+              ? 'smart_reply'
+              : (evaluation.kind === 'rule'
+                ? 'rule_reply'
+                : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'));
+
+            const savedReply = await pClient.message.create({
+              data: {
+                conversationId: conversation.id,
+                content: evaluation.replyText,
+                type: 'TEXT',
+                isFromCustomer: false,
+                senderId: null,
+                metadata: JSON.stringify({
+                  platform: 'instagram',
+                  source: replySource,
+                  ruleId: evaluation.ruleId || null,
+                  templateName: evaluation.templateName || null,
+                  matchedKeyword: evaluation.matchedKeyword || null,
+                  isInstagramReply: true,
+                  instagramMessageId: igResult.messageId || null,
+                  timestamp: new Date(),
+                }),
+              },
+            }).catch((e) => {
+              console.error('[BOT-RULES] Failed to save IG bot reply:', e.message);
+              return null;
+            });
+
+            if (savedReply) {
+              try {
+                const socketService = require('../services/socketService');
+                const io = socketService.getIO();
+                if (io) {
+                  const socketPayload = {
+                    id: savedReply.id,
+                    conversationId: conversation.id,
+                    content: savedReply.content,
+                    type: 'text',
+                    isFromCustomer: false,
+                    timestamp: savedReply.createdAt,
+                    companyId,
+                    platform: 'instagram',
+                    channel: 'INSTAGRAM',
+                    senderName: evaluation.kind === 'smart_reply' ? 'الردود التلقائية' : 'البوت الآلي',
+                  };
+                  io.to(`company_${companyId}`).emit('new_message', socketPayload);
+                }
+              } catch (sockErr) {
+                console.warn('⚠️ [BOT-RULES] IG Socket emit error:', sockErr.message);
+              }
+
+              safeQuery(async () => {
+                const p = getPrisma();
+                return await p.conversation.update({
+                  where: { id: conversation.id },
+                  data: {
+                    lastMessageAt: new Date(),
+                    lastMessagePreview: evaluation.replyText.length > 100 ? evaluation.replyText.substring(0, 100) + '...' : evaluation.replyText,
+                    lastMessageIsFromCustomer: false,
+                    unreadCount: 0,
+                    updatedAt: new Date(),
+                  },
+                });
+              }, 2).catch(() => {});
+            }
+
+            botHandledIg = true;
+          }
+        }
+      } catch (e) {
+        console.error('❌ [BOT-RULES] Error in Instagram bot automation:', e.message);
+      }
+    }
+
     // ── 6. AI Auto-Reply for Instagram─────────────────────────────────────
     const hasCustomerTextForAi = messageText && messageText.trim().length > 0;
     const hasCustomerAttachmentsForAi = attachments && attachments.length > 0;
@@ -2867,6 +3032,7 @@ async function handleInstagramMessage(webhookEvent, facebookPage) {
     ].filter(Boolean).join('\n\n').trim();
 
     const shouldRunInstagramAiAutoReply = Boolean(
+      !botHandledIg &&
       customer.companyId &&
       (hasCustomerTextForAi || hasCustomerAttachmentsForAi) &&
       aiCustomerContent

@@ -46,16 +46,16 @@ function getRuleChannelList(rule) {
 
 function matchesKeyword(text, keyword, matchMode) {
   if (!keyword) return false;
-  const kw = keyword.trim().toLowerCase();
-  if (!kw) return false;
-  if (matchMode === 'EXACT') return text === kw;
   if (matchMode === 'REGEX') {
     try {
-      return new RegExp(kw, 'i').test(text);
+      return new RegExp(String(keyword).trim(), 'i').test(text);
     } catch (e) {
       return false;
     }
   }
+  const kw = normalizeBotText(keyword);
+  if (!kw) return false;
+  if (matchMode === 'EXACT') return text === kw;
   return text.includes(kw);
 }
 
@@ -143,16 +143,118 @@ function shouldRunChannel(settings, channel) {
   return channels.includes(channel);
 }
 
+async function getSmartReplies(companyId) {
+  try {
+    const prisma = getSharedPrismaClient();
+    if (!prisma?.aiSetting?.findUnique) return null;
+    const aiSetting = await prisma.aiSetting.findUnique({
+      where: { companyId },
+      select: { modelSettings: true },
+    });
+    if (!aiSetting?.modelSettings) return null;
+
+    let modelSettings = {};
+    try {
+      modelSettings = JSON.parse(aiSetting.modelSettings);
+    } catch {
+      return null;
+    }
+
+    const ruleResponses = modelSettings?.ruleResponses;
+    if (!ruleResponses || ruleResponses.enableRuleResponses !== true) {
+      return null;
+    }
+
+    const templates = Array.isArray(ruleResponses.customRuleResponses?.templates)
+      ? ruleResponses.customRuleResponses.templates
+      : [];
+
+    return templates
+      .filter((t) => t && typeof t === 'object')
+      .map((t) => ({
+        id: String(t.id || ''),
+        name: String(t.name || ''),
+        type: String(t.type || 'custom'),
+        keywords: Array.isArray(t.keywords)
+          ? t.keywords.map((k) => String(k || '').trim()).filter(Boolean)
+          : [],
+        responses: Array.isArray(t.responses)
+          ? t.responses.map((r) => String(r || '').trim()).filter(Boolean)
+          : [],
+      }))
+      .filter((t) => t.keywords.length > 0 && t.responses.length > 0);
+  } catch (e) {
+    console.error('[BOT-RULES] Failed to load smart replies:', e.message);
+    return null;
+  }
+}
+
+function matchSmartReplyTemplates({ text, templates = [] }) {
+  if (!text || !Array.isArray(templates) || templates.length === 0) return null;
+
+  const normalized = normalizeBotText(text);
+  if (!normalized) return null;
+
+  let best = null;
+  for (const template of templates) {
+    if (!template || !Array.isArray(template.keywords) || template.keywords.length === 0) continue;
+
+    let matchedKeyword = null;
+    let bestKwLen = -1;
+
+    for (const rawKw of template.keywords) {
+      if (!rawKw) continue;
+      const normalizedKw = normalizeBotText(rawKw);
+      if (!normalizedKw) continue;
+
+      if (matchesKeyword(normalized, normalizedKw, 'CONTAINS')) {
+        const len = normalizedKw.length;
+        if (len > bestKwLen) {
+          bestKwLen = len;
+          matchedKeyword = rawKw;
+        }
+      }
+    }
+
+    if (!matchedKeyword) continue;
+
+    if (!best || bestKwLen > best.bestKwLen) {
+      best = {
+        template,
+        matchedKeyword,
+        bestKwLen,
+      };
+    }
+  }
+
+  if (!best) return null;
+
+  const responses = (best.template.responses || []).filter((r) => r && String(r).trim());
+  if (responses.length === 0) return null;
+
+  const selectedResponse = responses[Math.floor(Math.random() * responses.length)];
+
+  return {
+    kind: 'smart_reply',
+    ruleId: best.template.id,
+    templateName: best.template.name,
+    matchedKeyword: best.matchedKeyword,
+    replyText: selectedResponse,
+    replyType: 'TEXT',
+    mediaUrl: null,
+    buttons: null,
+    stopFurtherProcessing: true,
+  };
+}
+
 async function evaluateInboundBotReply({ companyId, text, channel, customer = {}, isFirstMessage = false }) {
   if (!companyId || !text) return { kind: null };
 
   const settings = await getBotAutomationSettings(companyId);
+  const isBotAutomationActive = settings && shouldRunChannel(settings, channel);
 
-  if (!settings || !shouldRunChannel(settings, channel)) {
-    return { kind: null };
-  }
-
-  if (settings.welcomeEnabled && settings.welcomeMessage && isFirstMessage) {
+  // 1. Welcome message on first contact (if bot automation configured and enabled)
+  if (isBotAutomationActive && settings.welcomeEnabled && settings.welcomeMessage && isFirstMessage) {
     return {
       kind: 'welcome',
       replyText: interpolateReply(settings.welcomeMessage, customer),
@@ -160,16 +262,24 @@ async function evaluateInboundBotReply({ companyId, text, channel, customer = {}
     };
   }
 
-  if (!settings.defaultReplyEnabled) {
+  // 2. Custom rules from Bot Automation (if active)
+  if (isBotAutomationActive) {
     const matched = await matchBotRulesFromDb(companyId, text, channel);
     if (matched) return matched;
-    return { kind: null };
   }
 
-  const matched = await matchBotRulesFromDb(companyId, text, channel);
-  if (matched) return matched;
+  // 3. Smart Replies from /settings/smart-replies (AiSetting)
+  const smartTemplates = await getSmartReplies(companyId);
+  if (smartTemplates && smartTemplates.length > 0) {
+    const matchedSmartReply = matchSmartReplyTemplates({ text, templates: smartTemplates });
+    if (matchedSmartReply) {
+      matchedSmartReply.replyText = interpolateReply(matchedSmartReply.replyText, customer);
+      return matchedSmartReply;
+    }
+  }
 
-  if (settings.defaultReply) {
+  // 4. Default reply from Bot Automation (if active and enabled)
+  if (isBotAutomationActive && settings.defaultReplyEnabled && settings.defaultReply) {
     return {
       kind: 'default',
       replyText: interpolateReply(settings.defaultReply, customer),
@@ -207,6 +317,8 @@ module.exports = {
   interpolateReply,
   getBotAutomationSettings,
   getBotRules,
+  getSmartReplies,
+  matchSmartReplyTemplates,
   shouldRunChannel,
   evaluateInboundBotReply,
 };
