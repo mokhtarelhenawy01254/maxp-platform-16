@@ -17,7 +17,10 @@ const addPublicCORS = (req, res, next) => {
     res.header('Access-Control-Allow-Credentials', 'true');
   }
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-cart-id, x-session-id, X-Company-Subdomain, X-Subdomain, x-subdomain, X-Company-Id, x-company-id, X-Company-Slug, x-company-slug, X-Request-ID, x-request-id');
+  const requestedHeaders = req.headers['access-control-request-headers'];
+  const defaultAllowedHeaders = 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-cart-id, x-session-id, X-Company-Subdomain, X-Subdomain, x-subdomain, X-Company-Id, x-company-id, X-Company-Slug, x-company-slug, X-Request-ID, x-request-id, baggage, sentry-trace, *';
+  res.header('Access-Control-Allow-Headers', requestedHeaders ? `${requestedHeaders}, ${defaultAllowedHeaders}` : defaultAllowedHeaders);
+  res.header('Access-Control-Max-Age', '86400');
 
   if (req.method === 'OPTIONS') return res.status(204).end();
   next();

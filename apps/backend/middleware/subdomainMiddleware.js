@@ -184,14 +184,19 @@ const extractSubdomainMiddleware = async (req, res, next) => {
       }
     }
 
-    // 2️⃣ إذا لم يتم العثور على الشركة من subdomain، جرب query parameter
-    if (!company && req.query.companyId) {
+    // 2️⃣ إذا لم يتم العثور على الشركة من subdomain، جرب query parameter أو header X-Company-Id
+    const fallbackCompanyId =
+      req.query.companyId ||
+      req.headers['x-company-id'] ||
+      req.headers['X-Company-Id'];
+
+    if (!company && fallbackCompanyId) {
       // محاولة البحث بالـ ID أولاً (UUID/CUID)
       try {
-        company = await companyCacheService.getCompanyLookup('id', req.query.companyId, async () => {
+        company = await companyCacheService.getCompanyLookup('id', fallbackCompanyId, async () => {
           const prisma = await getPrisma();
           return prisma.company.findUnique({
-            where: { id: req.query.companyId },
+            where: { id: fallbackCompanyId },
             select: COMPANY_SELECT,
           });
         });
@@ -201,10 +206,10 @@ const extractSubdomainMiddleware = async (req, res, next) => {
 
       // إذا لم ينجح، محاولة البحث كـ slug (مفيد جداً في بيئة التطوير)
       if (!company) {
-        company = await companyCacheService.getCompanyLookup('slug', req.query.companyId, async () => {
+        company = await companyCacheService.getCompanyLookup('slug', fallbackCompanyId, async () => {
           const prisma = await getPrisma();
           return prisma.company.findUnique({
-            where: { slug: req.query.companyId },
+            where: { slug: fallbackCompanyId },
             select: COMPANY_SELECT,
           });
         });

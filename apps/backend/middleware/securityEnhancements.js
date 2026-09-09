@@ -537,11 +537,21 @@ const enhancedCORS = (req, res, next) => {
     'Access-Control-Allow-Methods',
     'GET,POST,PUT,PATCH,DELETE,OPTIONS'
   );
+
+  const requestedHeaders = req.headers['access-control-request-headers'];
+  const defaultAllowedHeaders =
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Company-Id, x-company-id, X-Company-Slug, x-company-slug, X-Company-Subdomain, x-company-subdomain, X-Subdomain, x-subdomain, X-Request-ID, x-request-id, x-cart-id, x-session-id, x-client-version, baggage, sentry-trace, *';
+
   res.setHeader(
     'Access-Control-Allow-Headers',
-    'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Company-Id, x-company-id, X-Company-Slug, x-company-slug'
+    requestedHeaders ? `${requestedHeaders}, ${defaultAllowedHeaders}` : defaultAllowedHeaders
+  );
+  res.setHeader(
+    'Access-Control-Expose-Headers',
+    'Content-Length, Content-Range, Content-Disposition, X-Total-Count, X-Request-ID, x-request-id'
   );
   res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Max-Age', '86400');
   
   // Add additional security headers
   res.setHeader('X-Content-Type-Options', 'nosniff');

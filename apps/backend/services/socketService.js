@@ -54,7 +54,7 @@ class SocketService {
         },
         methods: ['GET', 'POST'],
         credentials: true,
-        allowedHeaders: ["Content-Type", "Authorization"]
+        allowedHeaders: ["*"]
       },
       transports: ['websocket', 'polling'],
       allowEIO3: true,
