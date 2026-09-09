@@ -18,6 +18,8 @@ import {
   RotateCcw,
   ArrowRight,
   Shield,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { academyApi, Course, Module, Lesson, Quiz } from "./academyApi";
 
@@ -28,6 +30,12 @@ export default function AcademyLessonViewerPage() {
   const [currentQuiz, setCurrentQuiz] = useState<Quiz | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Theater Mode / Cinema Mode toggle
+  const [isTheaterMode, setIsTheaterMode] = useState(false);
+
+  // Syllabus accordion state (expanded modules)
+  const [expandedModules, setExpandedModules] = useState<Record<string, boolean>>({});
 
   // Watermark state
   const [watermarkEnabled, setWatermarkEnabled] = useState(true);
@@ -56,6 +64,10 @@ export default function AcademyLessonViewerPage() {
     }
   }, [courseId, lessonId]);
 
+  const toggleModule = (modId: string) => {
+    setExpandedModules((prev) => ({ ...prev, [modId]: !prev[modId] }));
+  };
+
   const loadOutlineAndLesson = async (targetLessonId?: string) => {
     if (!courseId) return;
     try {
@@ -71,7 +83,15 @@ export default function AcademyLessonViewerPage() {
       }
 
       if (selected) {
-        await selectLesson(selected.id, outline.enrollmentId);
+        // Auto-expand the module containing the active lesson
+        const parentMod = outline.modules.find((m: Module) =>
+          m.lessons.some((l: Lesson) => l.id === selected!.id)
+        );
+        if (parentMod) {
+          setExpandedModules((prev) => ({ ...prev, [parentMod.id]: true }));
+        }
+
+        await selectLesson(selected.id, outline.enrollmentId, outline);
       }
       setError(null);
     } catch (err: any) {
@@ -81,13 +101,24 @@ export default function AcademyLessonViewerPage() {
     }
   };
 
-  const selectLesson = async (lId: string, enrollmentId?: string) => {
+  const selectLesson = async (lId: string, enrollmentId?: string, outlineRef?: any) => {
     try {
       const data = await academyApi.getLessonContent(lId);
       setCurrentLesson(data.lesson);
       setCurrentQuiz(data.quiz);
       setQuizAnswers([]);
       setQuizResult(null);
+
+      // Auto-expand module for this lesson
+      const activeOutline = outlineRef || courseOutline;
+      if (activeOutline) {
+        const parentMod = activeOutline.modules?.find((m: Module) =>
+          m.lessons.some((l: Lesson) => l.id === lId)
+        );
+        if (parentMod) {
+          setExpandedModules((prev) => ({ ...prev, [parentMod.id]: true }));
+        }
+      }
 
       // Watermark settings
       setWatermarkEnabled(data.enableWatermark !== false);
@@ -185,16 +216,27 @@ export default function AcademyLessonViewerPage() {
   };
 
   if (loading) {
-    return <div className="p-12 text-center text-slate-500 text-sm">جاري تجهيز مشغل الدروس...</div>;
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-8">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">جاري تجهيز مشغل الدروس...</p>
+        </div>
+      </div>
+    );
   }
 
   if (error || !courseOutline) {
     return (
-      <div className="p-8 text-center space-y-3">
-        <p className="text-rose-400 text-sm">{error || "تعذر العثور على الدورة"}</p>
-        <Link to="/academy/catalog" className="text-xs text-emerald-400 underline">
-          العودة لكتالوج الدورات
-        </Link>
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-8">
+        <div className="text-center space-y-3">
+          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+          <p className="text-sm text-rose-500 font-medium">{error || "تعذر العثور على الدورة"}</p>
+          <Link to="/academy/catalog" className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline">
+            <ArrowRight className="w-3.5 h-3.5" />
+            <span>العودة لكتالوج الدورات</span>
+          </Link>
+        </div>
       </div>
     );
   }
@@ -205,23 +247,23 @@ export default function AcademyLessonViewerPage() {
   const isLessonDone = allFlatLessons.find((l: Lesson) => l.id === currentLesson?.id)?.progress?.status === "DONE";
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-2 sm:p-5 flex flex-col" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground p-2 sm:p-5 flex flex-col" dir="rtl">
       {/* Top Bar */}
-      <div className="flex items-center justify-between gap-4 pb-4 border-b border-slate-800/80">
+      <div className="flex items-center justify-between gap-4 pb-4 border-b border-border/60">
         <div className="flex items-center gap-2">
           <Link
             to="/academy/catalog"
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-900 transition"
+            className="p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition"
             title="العودة للكتالوج"
           >
             <ArrowRight className="w-5 h-5" />
           </Link>
           <div>
-            <h1 className="text-sm sm:text-base font-bold text-white line-clamp-1">{courseOutline.course.title}</h1>
-            <p className="text-xs text-slate-400 flex items-center gap-1.5">
+            <h1 className="text-sm sm:text-base font-bold text-foreground line-clamp-1">{courseOutline.course.title}</h1>
+            <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <span>درس {currentIdx + 1} من {allFlatLessons.length}</span>
               {courseOutline.certificate && (
-                <span className="text-emerald-400 font-semibold inline-flex items-center gap-1 mr-2">
+                <span className="text-primary font-semibold inline-flex items-center gap-1 mr-2">
                   <Award className="w-3.5 h-3.5" />
                   <span>الشهادة متاحة!</span>
                 </span>
@@ -231,23 +273,33 @@ export default function AcademyLessonViewerPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Theater Mode Toggle */}
+          <button
+            onClick={() => setIsTheaterMode(!isTheaterMode)}
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-card hover:bg-muted text-foreground border border-border/60 transition flex items-center gap-1.5 shadow-xs"
+            title={isTheaterMode ? "خروج من وضع المسرح" : "تفعيل وضع المسرح"}
+          >
+            {isTheaterMode ? <Minimize2 className="w-3.5 h-3.5 text-primary" /> : <Maximize2 className="w-3.5 h-3.5 text-primary" />}
+            <span className="hidden sm:inline">{isTheaterMode ? "المشغل القياسي" : "وضع المسرح"}</span>
+          </button>
+
           {courseOutline.certificate && (
             <a
               href={`/api/v1/academy/certificates/${courseOutline.enrollmentId}/view`}
               target="_blank"
               rel="noreferrer"
-              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition flex items-center gap-1"
+              className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/30 hover:bg-amber-500/20 transition flex items-center gap-1"
             >
-              <Award className="w-4 h-4 text-amber-400" />
+              <Award className="w-4 h-4 text-amber-500" />
               <span className="hidden sm:inline">عرض الشهادة المعتمدة</span>
             </a>
           )}
 
           <button
             onClick={() => setIsCoachOpen(!isCoachOpen)}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-600/30 transition flex items-center gap-1.5 shadow-lg shadow-emerald-950/40"
+            className="px-3 py-1.5 rounded-xl text-xs font-bold bg-primary/10 text-primary border border-primary/25 hover:bg-primary/20 transition flex items-center gap-1.5 shadow-xs active:scale-[0.98]"
           >
-            <Sparkles className="w-4 h-4 text-emerald-400" />
+            <Sparkles className="w-4 h-4" />
             <span>كوتش الذكاء الاصطناعي</span>
           </button>
         </div>
@@ -255,10 +307,10 @@ export default function AcademyLessonViewerPage() {
 
       {/* Main Learning Workspace */}
       <div className="mt-4 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Left / Center (Video + Tabs Content): 8 cols */}
-        <div className="lg:col-span-8 space-y-4">
+        {/* Left / Center (Video + Tabs Content): 8 cols (or 12 in Theater Mode) */}
+        <div className={`${isTheaterMode ? "lg:col-span-12" : "lg:col-span-8"} space-y-4`}>
           {/* Cinema Video Box */}
-          <div className="relative rounded-2xl overflow-hidden bg-black aspect-video border border-slate-800 shadow-2xl shadow-black/80">
+          <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden bg-black aspect-video border border-border/80 shadow-2xl shadow-black/40">
             {currentLesson?.videoUrl ? (
               <>
                 <iframe
@@ -280,26 +332,26 @@ export default function AcademyLessonViewerPage() {
                 )}
               </>
             ) : (
-              <div className="w-full h-full flex flex-col items-center justify-center text-slate-500 space-y-2">
-                <PlayCircle className="w-12 h-12" />
+              <div className="w-full h-full flex flex-col items-center justify-center text-muted-foreground space-y-2">
+                <PlayCircle className="w-12 h-12 text-muted-foreground/60" />
                 <p className="text-xs">لم يتم رفع فيديو لهذا الدرس بعد</p>
               </div>
             )}
           </div>
 
           {/* Lesson Action Header */}
-          <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="p-4 rounded-2xl bg-card border border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-white">{currentLesson?.title}</h2>
+                <h2 className="text-base sm:text-lg font-bold text-foreground">{currentLesson?.title}</h2>
                 {isLessonDone && (
-                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                  <span className="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                     <CheckCircle2 className="w-3.5 h-3.5" />
                     <span>مكتمل</span>
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
+              <p className="text-xs text-muted-foreground mt-0.5">
                 المدة التقريبية: {currentLesson?.durationMin || 15} دقيقة
               </p>
             </div>
@@ -310,7 +362,7 @@ export default function AcademyLessonViewerPage() {
                 <button
                   onClick={handleCompleteManual}
                   disabled={completing}
-                  className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 transition disabled:opacity-50"
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition disabled:opacity-50 active:scale-[0.98]"
                 >
                   {completing ? "جاري الحفظ..." : "تأكيد إتمام الدرس"}
                 </button>
@@ -319,7 +371,7 @@ export default function AcademyLessonViewerPage() {
               {nextLesson && nextLesson.isUnlocked && (
                 <button
                   onClick={() => selectLesson(nextLesson.id, courseOutline.enrollmentId)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-card hover:bg-muted text-foreground border border-border/60 transition shadow-xs"
                 >
                   الدرس التالي ⬅
                 </button>
@@ -328,13 +380,13 @@ export default function AcademyLessonViewerPage() {
           </div>
 
           {/* Tabs Navigation */}
-          <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
+          <div className="flex items-center gap-2 border-b border-border/60 pb-2">
             <button
               onClick={() => setActiveTab("script")}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 activeTab === "script"
-                  ? "bg-slate-800 text-emerald-400 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-card text-primary border border-border/60 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <FileText className="w-4 h-4" />
@@ -345,8 +397,8 @@ export default function AcademyLessonViewerPage() {
               onClick={() => setActiveTab("exercise")}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                 activeTab === "exercise"
-                  ? "bg-slate-800 text-emerald-400 border border-slate-700"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-card text-primary border border-border/60 shadow-xs"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -358,8 +410,8 @@ export default function AcademyLessonViewerPage() {
                 onClick={() => setActiveTab("quiz")}
                 className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
                   activeTab === "quiz"
-                    ? "bg-purple-900/30 text-purple-300 border border-purple-500/40"
-                    : "text-slate-400 hover:text-purple-300"
+                    ? "bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/30 shadow-xs"
+                    : "text-muted-foreground hover:text-purple-600 dark:hover:text-purple-300"
                 }`}
               >
                 <HelpCircle className="w-4 h-4" />
@@ -370,16 +422,16 @@ export default function AcademyLessonViewerPage() {
 
           {/* Tab 1: Script Content */}
           {activeTab === "script" && (
-            <div className="p-5 sm:p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
+            <div className="p-5 sm:p-6 rounded-2xl bg-card border border-border/60 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
+                <span className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-primary" />
                   <span>نص الشرح الكامل والسكريبت المعتمد</span>
                 </span>
-                <span className="text-[11px] text-slate-500">مُراجع أكاديمياً</span>
+                <span className="text-[11px] text-muted-foreground font-medium">مُراجع أكاديمياً</span>
               </div>
 
-              <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap font-sans">
+              <div className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap font-sans">
                 {currentLesson?.scriptText || "لا يوجد نص سكريبت تفصيلي متاح لهذا الدرس."}
               </div>
             </div>
@@ -387,9 +439,9 @@ export default function AcademyLessonViewerPage() {
 
           {/* Tab 2: Exercise */}
           {activeTab === "exercise" && (
-            <div className="p-5 sm:p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-4">
-              <h3 className="text-sm font-bold text-emerald-400">التمرين التطبيقي المطلوب في هذا الدرس:</h3>
-              <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-sm text-slate-200 leading-relaxed">
+            <div className="p-5 sm:p-6 rounded-2xl bg-card border border-border/60 space-y-4 shadow-xs">
+              <h3 className="text-sm font-bold text-primary">التمرين التطبيقي المطلوب في هذا الدرس:</h3>
+              <div className="p-4 rounded-xl bg-muted/40 border border-border/60 text-sm text-foreground leading-relaxed">
                 {currentLesson?.exerciseText || "لا يوجد تمرين محدد لهذا الدرس، احرص على مشاهدة الفيديو جيداً."}
               </div>
             </div>
@@ -397,19 +449,19 @@ export default function AcademyLessonViewerPage() {
 
           {/* Tab 3: Quiz */}
           {activeTab === "quiz" && currentQuiz && (
-            <div className="p-5 sm:p-6 rounded-2xl bg-slate-900/60 border border-slate-800/80 space-y-5">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+            <div className="p-5 sm:p-6 rounded-2xl bg-card border border-border/60 space-y-5 shadow-xs">
+              <div className="flex items-center justify-between border-b border-border/60 pb-3">
                 <div>
-                  <h3 className="text-sm sm:text-base font-bold text-white">{currentQuiz.title}</h3>
-                  <p className="text-xs text-slate-400">نسبة النجاح المطلوبة لاجتياز الدرس: {currentQuiz.passScorePercent}%</p>
+                  <h3 className="text-sm sm:text-base font-bold text-foreground">{currentQuiz.title}</h3>
+                  <p className="text-xs text-muted-foreground">نسبة النجاح المطلوبة لاجتياز الدرس: {currentQuiz.passScorePercent}%</p>
                 </div>
 
                 {quizResult && (
                   <div
                     className={`px-3 py-1 rounded-xl text-xs font-bold border ${
                       quizResult.passed
-                        ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
-                        : "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                        : "bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30"
                     }`}
                   >
                     درجتك: {quizResult.scorePercent}% ({quizResult.passed ? "ناجح ومكتمل!" : "لم تجتز"})
@@ -427,23 +479,23 @@ export default function AcademyLessonViewerPage() {
                       className={`p-4 rounded-xl border ${
                         fb
                           ? fb.isCorrect
-                            ? "bg-emerald-950/20 border-emerald-500/30"
-                            : "bg-rose-950/20 border-rose-500/30"
-                          : "bg-slate-950 border-slate-800"
+                            ? "bg-emerald-500/5 border-emerald-500/30"
+                            : "bg-rose-500/5 border-rose-500/30"
+                          : "bg-muted/30 border-border/60"
                       } space-y-2.5`}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <h4 className="text-xs sm:text-sm font-semibold text-white">
+                        <h4 className="text-xs sm:text-sm font-semibold text-foreground">
                           {qIdx + 1}. {q.q}
                         </h4>
                         {fb && (
                           <span className="text-xs font-bold">
                             {fb.isCorrect ? (
-                              <span className="text-emerald-400 flex items-center gap-0.5">
+                              <span className="text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
                                 <Check className="w-3.5 h-3.5" /> صحيحة
                               </span>
                             ) : (
-                              <span className="text-rose-400">غير صحيحة</span>
+                              <span className="text-rose-600 dark:text-rose-400">غير صحيحة</span>
                             )}
                           </span>
                         )}
@@ -455,8 +507,8 @@ export default function AcademyLessonViewerPage() {
                             key={optIdx}
                             className={`flex items-center gap-2.5 p-2.5 rounded-lg border text-xs cursor-pointer transition ${
                               quizAnswers[qIdx] === optIdx
-                                ? "bg-purple-950/40 border-purple-500 text-purple-200"
-                                : "bg-slate-900/60 border-slate-800/80 text-slate-300 hover:bg-slate-800"
+                                ? "bg-purple-500/10 border-purple-500/40 text-purple-600 dark:text-purple-300 font-medium"
+                                : "bg-card border-border/60 text-muted-foreground hover:bg-muted"
                             }`}
                           >
                             <input
@@ -468,7 +520,7 @@ export default function AcademyLessonViewerPage() {
                                 next[qIdx] = optIdx;
                                 setQuizAnswers(next);
                               }}
-                              className="text-purple-600"
+                              className="text-purple-600 focus:ring-purple-500 w-4 h-4"
                             />
                             <span>{opt}</span>
                           </label>
@@ -476,7 +528,7 @@ export default function AcademyLessonViewerPage() {
                       </div>
 
                       {fb && !fb.isCorrect && fb.explanation && (
-                        <p className="text-[11px] text-amber-300/90 pt-1">
+                        <p className="text-[11px] text-amber-600 dark:text-amber-400 pt-1">
                           توضيح الإجابة: {fb.explanation}
                         </p>
                       )}
@@ -485,11 +537,11 @@ export default function AcademyLessonViewerPage() {
                 })}
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
                 <button
                   onClick={handleSubmitQuiz}
                   disabled={quizSubmitting || quizAnswers.length < currentQuiz.questions.length}
-                  className="px-6 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-900/30 transition disabled:opacity-50"
+                  className="px-6 py-2.5 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white shadow-sm transition disabled:opacity-50"
                 >
                   {quizSubmitting ? "جاري تصحيح الإجابات..." : "تسليم إجابات الاختبار"}
                 </button>
@@ -498,106 +550,139 @@ export default function AcademyLessonViewerPage() {
           )}
         </div>
 
-        {/* Right Syllabus Navigation (4 cols) */}
-        <div className="lg:col-span-4 rounded-2xl bg-slate-900/70 border border-slate-800 p-4 space-y-4 sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-            <h3 className="text-xs sm:text-sm font-bold text-white flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-emerald-400" />
+        {/* Right Syllabus Navigation (4 cols, or drops below in Theater Mode) */}
+        <div
+          className={`${
+            isTheaterMode ? "lg:col-span-12" : "lg:col-span-4"
+          } rounded-2xl sm:rounded-3xl bg-card border border-border/60 p-4 space-y-4 sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto shadow-xs`}
+        >
+          <div className="flex items-center justify-between border-b border-border/60 pb-3">
+            <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-primary" />
               <span>منهج وفهرس الدورة</span>
             </h3>
-            <span className="text-[11px] text-slate-500">
+            <span className="text-[11px] text-muted-foreground font-mono">
               {allFlatLessons.filter((l: Lesson) => l.progress?.status === "DONE").length} / {allFlatLessons.length} مكتمل
             </span>
           </div>
 
-          <div className="space-y-4">
-            {courseOutline.modules.map((mod: Module, mIdx: number) => (
-              <div key={mod.id} className="space-y-1.5">
-                <h4 className="text-xs font-bold text-slate-400 px-2 py-1">
-                  الوحدة {mIdx + 1}: {mod.title}
-                </h4>
+          <div className="space-y-3">
+            {courseOutline.modules.map((mod: Module, mIdx: number) => {
+              const isExpanded = expandedModules[mod.id] ?? true;
+              const completedInMod = mod.lessons.filter((l: Lesson) => l.progress?.status === "DONE").length;
 
-                <div className="space-y-1">
-                  {mod.lessons.map((lesson: Lesson, lIdx: number) => {
-                    const isSelected = lesson.id === currentLesson?.id;
-                    const isDone = lesson.progress?.status === "DONE";
-                    const isLocked = !lesson.isUnlocked;
+              return (
+                <div key={mod.id} className="rounded-xl border border-border/50 overflow-hidden bg-muted/20">
+                  {/* Collapsible Module Accordion Header */}
+                  <button
+                    type="button"
+                    onClick={() => toggleModule(mod.id)}
+                    className="w-full text-right p-3 flex items-center justify-between gap-2 hover:bg-muted/40 transition"
+                  >
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">
+                        الوحدة {mIdx + 1}
+                      </span>
+                      <h4 className="text-xs font-bold text-foreground line-clamp-1">{mod.title}</h4>
+                    </div>
 
-                    return (
-                      <button
-                        key={lesson.id}
-                        disabled={isLocked}
-                        onClick={() => selectLesson(lesson.id, courseOutline.enrollmentId)}
-                        className={`w-full text-right p-2.5 rounded-xl text-xs transition flex items-center justify-between gap-2 ${
-                          isSelected
-                            ? "bg-emerald-600/20 text-emerald-300 border border-emerald-500/40 font-bold"
-                            : isLocked
-                            ? "text-slate-600 bg-slate-950/40 cursor-not-allowed"
-                            : "text-slate-300 hover:bg-slate-800/60"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 line-clamp-1">
-                          {isDone ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                          ) : isLocked ? (
-                            <Lock className="w-3.5 h-3.5 text-slate-600 flex-shrink-0" />
-                          ) : (
-                            <PlayCircle className="w-4 h-4 text-slate-400 flex-shrink-0" />
-                          )}
-                          <span className="truncate">{lesson.title}</span>
-                        </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-[10px] text-muted-foreground font-mono">
+                        {completedInMod}/{mod.lessons.length}
+                      </span>
+                      {isExpanded ? (
+                        <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                      )}
+                    </div>
+                  </button>
 
-                        {lesson.isFreePreview && !courseOutline.isEnrolled && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20 flex-shrink-0">
-                            مجاناً
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
+                  {/* Lessons List in Module */}
+                  {isExpanded && (
+                    <div className="p-2 pt-0 space-y-1 divide-y divide-border/30">
+                      {mod.lessons.map((lesson: Lesson) => {
+                        const isSelected = lesson.id === currentLesson?.id;
+                        const isDone = lesson.progress?.status === "DONE";
+                        const isLocked = !lesson.isUnlocked;
+
+                        return (
+                          <button
+                            key={lesson.id}
+                            disabled={isLocked}
+                            onClick={() => selectLesson(lesson.id, courseOutline.enrollmentId)}
+                            className={`w-full text-right p-2.5 rounded-xl text-xs transition flex items-center justify-between gap-2 ${
+                              isSelected
+                                ? "bg-primary/10 text-primary border border-primary/30 font-bold shadow-xs"
+                                : isLocked
+                                ? "text-muted-foreground/60 bg-muted/10 cursor-not-allowed opacity-60"
+                                : "text-foreground hover:bg-muted/50"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 line-clamp-1">
+                              {isDone ? (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                              ) : isLocked ? (
+                                <Lock className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                              ) : (
+                                <PlayCircle className="w-4 h-4 text-primary/80 flex-shrink-0" />
+                              )}
+                              <span className="truncate">{lesson.title}</span>
+                            </div>
+
+                            {lesson.isFreePreview && !courseOutline.isEnrolled && (
+                              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20 flex-shrink-0 font-medium">
+                                مجاناً
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* Floating AI Coach Drawer */}
+      {/* Floating 2026 Glassmorphic AI Coach Drawer */}
       {isCoachOpen && (
         <div
-          className="fixed bottom-4 left-4 z-50 w-full sm:w-96 rounded-2xl bg-slate-900 border border-emerald-500/40 shadow-2xl shadow-black/80 flex flex-col overflow-hidden"
-          style={{ maxHeight: "550px" }}
+          className="fixed bottom-4 left-4 z-50 w-full sm:w-96 rounded-2xl sm:rounded-3xl bg-card/95 backdrop-blur-xl border border-primary/30 shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300"
+          style={{ maxHeight: "560px" }}
         >
           {/* Coach Header */}
-          <div className="p-3.5 bg-gradient-to-r from-emerald-950 to-slate-900 border-b border-slate-800 flex items-center justify-between">
+          <div className="p-3.5 bg-gradient-to-r from-primary/15 via-card to-card border-b border-border/60 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-emerald-500/20 text-emerald-400">
+              <span className="p-2 rounded-xl bg-primary/10 text-primary">
                 <Sparkles className="w-4 h-4" />
               </span>
               <div>
-                <h3 className="text-xs font-bold text-white">كوتش ماكس بي الذكي</h3>
-                <p className="text-[10px] text-emerald-400">مقيد بسكريبت: {currentLesson?.title}</p>
+                <h3 className="text-xs font-bold text-foreground">كوتش ماكس بي الذكي</h3>
+                <p className="text-[10px] text-muted-foreground line-clamp-1">مرتبط بسكريبت: {currentLesson?.title}</p>
               </div>
             </div>
             <button
               onClick={() => setIsCoachOpen(false)}
-              className="text-slate-400 hover:text-white text-xs p-1"
+              className="text-muted-foreground hover:text-foreground text-xs p-1.5 rounded-lg hover:bg-muted transition"
             >
               ✕
             </button>
           </div>
 
           {/* Quick Prompts */}
-          <div className="p-2 bg-slate-950/60 border-b border-slate-800 flex items-center gap-1.5 overflow-x-auto text-[11px]">
+          <div className="p-2 bg-muted/40 border-b border-border/60 flex items-center gap-1.5 overflow-x-auto text-[11px]">
             <button
               onClick={() => handleAskCoach("لخص لي محتوى هذا الدرس في 3 نقاط أساسية.")}
-              className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap"
+              className="px-2.5 py-1 rounded-full bg-card hover:bg-muted text-foreground border border-border/60 whitespace-nowrap shadow-xs"
             >
               📝 لخص الدرس
             </button>
             <button
               onClick={() => handleAskCoach("كيف أطبق هذا الدرس عملياً على متجري اليوم؟")}
-              className="px-2.5 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 whitespace-nowrap"
+              className="px-2.5 py-1 rounded-full bg-card hover:bg-muted text-foreground border border-border/60 whitespace-nowrap shadow-xs"
             >
               🎯 التطبيق العملي
             </button>
@@ -608,36 +693,36 @@ export default function AcademyLessonViewerPage() {
             {coachMessages.map((m, idx) => (
               <div
                 key={idx}
-                className={`p-3 rounded-xl leading-relaxed ${
+                className={`p-3 rounded-2xl leading-relaxed ${
                   m.role === "coach"
-                    ? "bg-slate-800/90 text-slate-200 border border-slate-700/60"
-                    : "bg-emerald-600 text-white self-end ml-4"
+                    ? "bg-muted/70 text-foreground border border-border/50"
+                    : "bg-primary text-primary-foreground self-end ml-4 shadow-xs"
                 }`}
               >
                 {m.text}
               </div>
             ))}
             {askingCoach && (
-              <div className="p-2.5 text-slate-400 text-[11px] animate-pulse">
+              <div className="p-3 rounded-2xl bg-muted/40 text-muted-foreground text-[11px] animate-pulse">
                 كوتش ماكس بي يراجع سكريبت الدرس ويكتب الرد...
               </div>
             )}
           </div>
 
           {/* Input */}
-          <div className="p-2.5 bg-slate-950 border-t border-slate-800 flex items-center gap-2">
+          <div className="p-2.5 bg-card border-t border-border/60 flex items-center gap-2">
             <input
               type="text"
               value={inputMsg}
               onChange={(e) => setInputMsg(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAskCoach()}
               placeholder="اسأل الكوتش عن أي نقطة في هذا الدرس..."
-              className="flex-1 px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white focus:outline-none focus:border-emerald-500"
+              className="flex-1 px-3.5 py-2 rounded-xl bg-background border border-input text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground"
             />
             <button
               onClick={() => handleAskCoach()}
               disabled={askingCoach || !inputMsg.trim()}
-              className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white disabled:opacity-50"
+              className="p-2 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 transition shadow-sm"
             >
               <Send className="w-3.5 h-3.5" />
             </button>
@@ -680,19 +765,19 @@ function DynamicVideoWatermark({ name, phone }: { name?: string; phone?: string 
       <div
         className={`absolute ${pos} pointer-events-none z-30 transition-all duration-1000 ease-in-out select-none`}
       >
-        <div className="bg-black/40 backdrop-blur-[2px] border border-white/10 px-3 py-1.5 rounded-lg text-white/50 font-mono text-[11px] leading-tight shadow-lg space-y-0.5">
-          <div className="font-bold tracking-wider flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400/70 animate-pulse inline-block" />
-            <span>{name || "طالب ماكس بي"}</span>
+        <div className="bg-black/50 backdrop-blur-[3px] border border-white/20 px-3 py-1.5 rounded-xl text-white/70 font-mono text-[11px] leading-tight shadow-lg space-y-0.5">
+          <div className="font-bold tracking-wider flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary/90 animate-pulse inline-block" />
+            <span className="text-white/90">{name || "طالب ماكس بي"}</span>
           </div>
-          {phone && <div className="text-[10px] text-white/40 font-mono">{phone}</div>}
-          <div className="text-[9px] text-white/30 font-sans">MaxP Academy • {currentTime}</div>
+          {phone && <div className="text-[10px] text-white/60 font-mono">{phone}</div>}
+          <div className="text-[9px] text-white/40 font-sans">MaxP Academy • {currentTime}</div>
         </div>
       </div>
 
       {/* Subtle faint diagonal watermark in the center */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20 select-none overflow-hidden opacity-10">
-        <div className="transform -rotate-12 text-center text-white/40 font-mono text-sm tracking-widest uppercase">
+        <div className="transform -rotate-12 text-center text-white font-mono text-sm tracking-widest uppercase">
           <div>{name || "MaxP Student"}</div>
           {phone && <div>{phone}</div>}
         </div>

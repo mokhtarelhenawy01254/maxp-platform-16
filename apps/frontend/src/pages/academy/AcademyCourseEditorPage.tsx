@@ -235,32 +235,53 @@ export default function AcademyCourseEditorPage() {
   };
 
   if (loading) {
-    return <div className="p-8 text-center text-slate-500 text-sm">جاري تحميل منهج الدورة...</div>;
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-8">
+        <div className="text-center space-y-2">
+          <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto" />
+          <p className="text-sm text-muted-foreground">جاري تحميل منهج الدورة...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!course) {
-    return <div className="p-8 text-center text-rose-400 text-sm">الدورة غير موجودة.</div>;
+    return (
+      <div className="min-h-screen bg-background text-foreground flex items-center justify-center p-8">
+        <div className="text-center space-y-3">
+          <AlertCircle className="w-10 h-10 text-rose-500 mx-auto" />
+          <p className="text-sm text-rose-500 font-medium">الدورة غير موجودة أو تم حذفها.</p>
+          <Link
+            to="/academy/courses"
+            className="inline-flex items-center gap-1.5 text-xs text-primary font-semibold hover:underline"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+            <span>العودة لقائمة الدورات</span>
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-6" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground p-3 sm:p-6" dir="rtl">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-border/60">
         <div>
           <Link
             to="/academy/courses"
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-white mb-2 transition"
+            className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground mb-2 transition"
           >
             <ArrowRight className="w-3.5 h-3.5" />
             <span>العودة لكل الدورات</span>
           </Link>
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-xl sm:text-2xl font-bold text-white">{course.title}</h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">{course.title}</h1>
             <span
               className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${
                 course.isPublished
-                  ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20"
-                  : "bg-amber-500/10 text-amber-400 border-amber-500/20"
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20"
+                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20"
               }`}
             >
               {course.isPublished ? "منشور" : "مسودة"}
@@ -268,32 +289,32 @@ export default function AcademyCourseEditorPage() {
 
             {/* Visibility Badge */}
             {course.visibility === "UNLISTED" && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-purple-500/10 text-purple-300 border border-purple-500/20 flex items-center gap-1">
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-300 border border-purple-500/20 flex items-center gap-1">
                 <Lock className="w-3 h-3" />
                 <span>غير مدرج (رابط مباشر)</span>
               </span>
             )}
             {course.visibility === "INVITE_ONLY" && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-orange-500/10 text-orange-300 border border-orange-500/20 flex items-center gap-1">
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-300 border border-orange-500/20 flex items-center gap-1">
                 <Lock className="w-3 h-3" />
                 <span>خاص (دعوة فقط)</span>
               </span>
             )}
             {course.visibility === "TAG_GATED" && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20 flex items-center gap-1">
                 <Tag className="w-3 h-3" />
                 <span>مخصص لوسوم: {course.allowedTags?.join(", ") || "بدون تحديد"}</span>
               </span>
             )}
             {(!course.visibility || course.visibility === "PUBLIC") && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-sky-500/10 text-sky-300 border border-sky-500/20 flex items-center gap-1">
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-300 border border-sky-500/20 flex items-center gap-1">
                 <Globe className="w-3 h-3" />
                 <span>عام بالكتالوج</span>
               </span>
             )}
 
             {course.enableWatermark !== false && (
-              <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
+              <span className="text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20 flex items-center gap-1">
                 <Shield className="w-3 h-3" />
                 <span>علامة مائية نشطة</span>
               </span>
@@ -304,23 +325,23 @@ export default function AcademyCourseEditorPage() {
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={openSettingsModal}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-card hover:bg-muted text-foreground border border-border/60 transition flex items-center gap-1.5 shadow-xs"
             title="تعديل تفاصيل الدورة، الخصوصية، الوسوم، والعلامة المائية"
           >
-            <Settings className="w-3.5 h-3.5 text-emerald-400" />
+            <Settings className="w-3.5 h-3.5 text-primary" />
             <span>إعدادات الدورة والخصوصية</span>
           </button>
 
           <Link
             to={`/academy/catalog/${course.id}`}
-            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 transition flex items-center gap-1.5"
+            className="px-3.5 py-2 rounded-xl text-xs font-semibold bg-card hover:bg-muted text-foreground border border-border/60 transition flex items-center gap-1.5 shadow-xs"
           >
-            <Eye className="w-3.5 h-3.5 text-emerald-400" />
+            <Eye className="w-3.5 h-3.5 text-primary" />
             <span>معاينة كطالب</span>
           </Link>
           <button
             onClick={() => setIsModuleModalOpen(true)}
-            className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 transition flex items-center gap-1.5"
+            className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition flex items-center gap-1.5 active:scale-[0.98]"
           >
             <Plus className="w-4 h-4" />
             <span>إضافة وحدة جديدة</span>
@@ -328,41 +349,46 @@ export default function AcademyCourseEditorPage() {
         </div>
       </div>
 
-      {/* Modules & Lessons Curriculum */}
-      <div className="mt-6 space-y-6">
+      {/* Modules & Lessons Curriculum (MOB-015: Single-depth surfaces on mobile) */}
+      <div className="mt-6 space-y-4 sm:space-y-6">
         {course.modules?.length === 0 ? (
-          <div className="p-12 rounded-2xl bg-slate-900/40 border border-dashed border-slate-800 text-center space-y-3">
-            <BookOpen className="w-12 h-12 text-slate-600 mx-auto" />
-            <h3 className="text-base font-bold text-white">المنهج فارغ حالياً</h3>
-            <p className="text-xs sm:text-sm text-slate-400 max-w-sm mx-auto">
+          <div className="p-10 sm:p-14 rounded-2xl sm:rounded-3xl bg-card border border-dashed border-border/80 text-center space-y-3">
+            <div className="w-12 h-12 rounded-2xl bg-muted/80 flex items-center justify-center mx-auto text-muted-foreground">
+              <BookOpen className="w-6 h-6" />
+            </div>
+            <h3 className="text-base font-bold text-foreground">المنهج فارغ حالياً</h3>
+            <p className="text-xs sm:text-sm text-muted-foreground max-w-sm mx-auto">
               أضف الوحدة الأولى ثم أضف الدروس بداخلها مع الفيديوهات وسكريبتات الذكاء الاصطناعي.
             </p>
             <button
               onClick={() => setIsModuleModalOpen(true)}
-              className="px-4 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+              className="px-4 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
             >
               إضافة أول وحدة
             </button>
           </div>
         ) : (
           course.modules?.map((mod, modIdx) => (
-            <div key={mod.id} className="rounded-2xl bg-slate-900/70 border border-slate-800 overflow-hidden">
+            <div
+              key={mod.id}
+              className="rounded-xl sm:rounded-2xl bg-card border border-border/60 overflow-hidden shadow-xs"
+            >
               {/* Module Header */}
-              <div className="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="p-3.5 sm:p-5 bg-muted/40 sm:bg-muted/60 border-b border-border/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-0.5 rounded-full border border-primary/20">
                       الوحدة {modIdx + 1}
                     </span>
-                    <h3 className="font-bold text-white text-base">{mod.title}</h3>
+                    <h3 className="font-bold text-foreground text-sm sm:text-base">{mod.title}</h3>
                   </div>
-                  {mod.description && <p className="text-xs text-slate-400">{mod.description}</p>}
+                  {mod.description && <p className="text-xs text-muted-foreground">{mod.description}</p>}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 self-end sm:self-center">
                   <button
                     onClick={() => openLessonModal(mod.id)}
-                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1"
+                    className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 transition flex items-center gap-1.5"
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>إضافة درس</span>
@@ -374,7 +400,7 @@ export default function AcademyCourseEditorPage() {
                         loadCourse();
                       }
                     }}
-                    className="p-1.5 text-slate-500 hover:text-rose-400 transition"
+                    className="p-1.5 text-muted-foreground hover:text-rose-500 transition rounded-lg hover:bg-rose-500/10"
                     title="حذف الوحدة"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -382,55 +408,57 @@ export default function AcademyCourseEditorPage() {
                 </div>
               </div>
 
-              {/* Lessons Inside Module */}
-              <div className="divide-y divide-slate-800/60">
+              {/* Lessons Inside Module - Clean single-depth list */}
+              <div className="divide-y divide-border/60">
                 {mod.lessons?.length === 0 ? (
-                  <div className="p-4 text-center text-xs text-slate-500">لا توجد دروس في هذه الوحدة بعد.</div>
+                  <div className="p-4 text-center text-xs text-muted-foreground">
+                    لا توجد دروس في هذه الوحدة بعد.
+                  </div>
                 ) : (
                   mod.lessons?.map((lesson, lessonIdx) => (
                     <div
                       key={lesson.id}
-                      className="p-3 sm:p-4 hover:bg-slate-800/30 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className="p-3 sm:p-4 hover:bg-muted/30 transition flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-start sm:items-center gap-3">
-                        <span className="w-6 h-6 rounded-full bg-slate-800 text-slate-400 text-xs flex items-center justify-center font-mono flex-shrink-0">
+                        <span className="w-6 h-6 rounded-full bg-muted text-muted-foreground text-xs flex items-center justify-center font-mono font-bold flex-shrink-0 border border-border/50">
                           {lessonIdx + 1}
                         </span>
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="text-sm font-semibold text-white">{lesson.title}</h4>
+                            <h4 className="text-xs sm:text-sm font-semibold text-foreground">{lesson.title}</h4>
                             {lesson.isFreePreview && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/20">
                                 معاينة مجانية
                               </span>
                             )}
                             {lesson.quiz && (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-400 border border-purple-500/20 flex items-center gap-0.5">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-500/20 flex items-center gap-1">
                                 <HelpCircle className="w-3 h-3" />
                                 <span>كويز</span>
                               </span>
                             )}
                             {lesson.scriptText ? (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center gap-0.5">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
                                 <Sparkles className="w-3 h-3" />
                                 <span>سكريبت AI جاهز</span>
                               </span>
                             ) : (
-                              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20">
                                 سكريبت مفقود
                               </span>
                             )}
                           </div>
-                          <p className="text-[11px] text-slate-400 mt-0.5">
+                          <p className="text-[11px] text-muted-foreground mt-1">
                             المدة: {lesson.durationMin || 10} دقيقة • {lesson.videoUrl ? "فيديو مرفوع" : "بدون فيديو"}
                           </p>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 self-end sm:self-center">
+                      <div className="flex items-center gap-1.5 self-end sm:self-center">
                         <button
                           onClick={() => openQuizModal(lesson)}
-                          className="px-2.5 py-1 rounded-lg text-xs text-purple-400 hover:bg-purple-500/10 border border-purple-500/20 transition flex items-center gap-1"
+                          className="px-2.5 py-1 rounded-lg text-xs font-medium text-purple-600 dark:text-purple-400 hover:bg-purple-500/10 border border-purple-500/20 transition flex items-center gap-1"
                         >
                           <HelpCircle className="w-3 h-3" />
                           <span>{lesson.quiz ? "تعديل الكويز" : "+ إضافة كويز"}</span>
@@ -438,7 +466,7 @@ export default function AcademyCourseEditorPage() {
 
                         <button
                           onClick={() => openLessonModal(mod.id, lesson)}
-                          className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+                          className="p-1.5 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition"
                           title="تعديل الدرس"
                         >
                           <Edit2 className="w-4 h-4" />
@@ -451,7 +479,7 @@ export default function AcademyCourseEditorPage() {
                               loadCourse();
                             }
                           }}
-                          className="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition"
+                          className="p-1.5 text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 rounded-lg transition"
                           title="حذف الدرس"
                         >
                           <Trash2 className="w-4 h-4" />
@@ -468,42 +496,42 @@ export default function AcademyCourseEditorPage() {
 
       {/* Add Module Modal */}
       {isModuleModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-5 space-y-4">
-            <h2 className="text-base font-bold text-white">إضافة وحدة تدريبية جديدة</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md" dir="rtl">
+          <div className="bg-card border border-border/80 rounded-2xl sm:rounded-3xl w-full max-w-md p-5 sm:p-6 space-y-4 shadow-2xl">
+            <h2 className="text-base font-bold text-foreground">إضافة وحدة تدريبية جديدة</h2>
             <form onSubmit={handleAddModule} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">عنوان الوحدة *</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">عنوان الوحدة *</label>
                 <input
                   type="text"
                   required
                   value={moduleTitle}
                   onChange={(e) => setModuleTitle(e.target.value)}
                   placeholder="مثال: الوحدة 1: التأسيس وسيكولوجية العرض"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">وصف مختصر للوحدة</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">وصف مختصر للوحدة</label>
                 <textarea
                   rows={2}
                   value={moduleDesc}
                   onChange={(e) => setModuleDesc(e.target.value)}
                   placeholder="الأهداف التعليمية لهذه الوحدة..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none placeholder:text-muted-foreground"
                 />
               </div>
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex items-center justify-end gap-2.5 pt-2">
                 <button
                   type="button"
                   onClick={() => setIsModuleModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition"
                 >
                   إضافة الوحدة
                 </button>
@@ -515,54 +543,54 @@ export default function AcademyCourseEditorPage() {
 
       {/* Lesson Modal */}
       {isLessonModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4">
-            <h2 className="text-base sm:text-lg font-bold text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md" dir="rtl">
+          <div className="bg-card border border-border/80 rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl">
+            <h2 className="text-base sm:text-lg font-bold text-foreground">
               {editingLesson ? "تعديل الدرس" : "إضافة درس جديد"}
             </h2>
             <form onSubmit={handleSaveLesson} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">عنوان الدرس *</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">عنوان الدرس *</label>
                 <input
                   type="text"
                   required
                   value={lessonTitle}
                   onChange={(e) => setLessonTitle(e.target.value)}
                   placeholder="مثال: 1. مقدمة في شراء الوسائط الرقمية"
-                  className="w-full px-3 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground"
                 />
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">رابط الفيديو (YouTube Unlisted)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">رابط الفيديو (YouTube Unlisted)</label>
                   <input
                     type="url"
                     value={lessonVideo}
                     onChange={(e) => setLessonVideo(e.target.value)}
                     placeholder="https://www.youtube.com/watch?v=..."
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono text-xs"
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono text-xs placeholder:text-muted-foreground"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">مدة الدرس (دقيقة)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">مدة الدرس (دقيقة)</label>
                   <input
                     type="number"
                     value={lessonDuration}
                     onChange={(e) => setLessonDuration(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary placeholder:text-muted-foreground"
                   />
                 </div>
               </div>
 
               {/* Script Text — Critical for AI Coach */}
-              <div className="p-3.5 rounded-xl bg-emerald-950/20 border border-emerald-500/30 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-400">
+              <div className="p-4 rounded-xl sm:rounded-2xl bg-primary/5 border border-primary/20 space-y-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-primary">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>سكريبت الدرس (مصدر معرفة الـ AI Coach) *</span>
                 </div>
-                <p className="text-[11px] text-slate-400 leading-relaxed">
+                <p className="text-[11px] text-muted-foreground leading-relaxed">
                   اكتب هنا ملخص الشرح الكامل والنقاط الأساسية للدرس. كوتش الذكاء الاصطناعي مقيد حرفياً بالإجابة على أسئلة الطالب من هذا السكريبت فقط!
                 </p>
                 <textarea
@@ -571,18 +599,18 @@ export default function AcademyCourseEditorPage() {
                   value={lessonScript}
                   onChange={(e) => setLessonScript(e.target.value)}
                   placeholder="اكتب سكريبت الدرس بالتفصيل هنا..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 resize-y"
+                  className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-y placeholder:text-muted-foreground"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">التطبيق العملي والتمرين المطلوب</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">التطبيق العملي والتمرين المطلوب</label>
                 <textarea
                   rows={2}
                   value={lessonExercise}
                   onChange={(e) => setLessonExercise(e.target.value)}
                   placeholder="المهمة التطبيقية التي يجب على المتدرب تنفيذها..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none placeholder:text-muted-foreground"
                 />
               </div>
 
@@ -592,24 +620,24 @@ export default function AcademyCourseEditorPage() {
                   id="previewCheckbox"
                   checked={lessonFreePreview}
                   onChange={(e) => setLessonFreePreview(e.target.checked)}
-                  className="w-4 h-4 rounded text-emerald-600 bg-slate-900 border-slate-700"
+                  className="w-4 h-4 rounded text-primary focus:ring-primary border-input"
                 />
-                <label htmlFor="previewCheckbox" className="text-xs text-slate-300 cursor-pointer">
+                <label htmlFor="previewCheckbox" className="text-xs text-foreground cursor-pointer font-medium">
                   إتاحة هذا الدرس كمعاينة مجانية لأي زائر قبل الاشتراك
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
                 <button
                   type="button"
                   onClick={() => setIsLessonModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition"
                 >
                   حفظ الدرس
                 </button>
@@ -621,31 +649,31 @@ export default function AcademyCourseEditorPage() {
 
       {/* Quiz Modal */}
       {isQuizModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4">
-            <h2 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-              <HelpCircle className="w-5 h-5 text-purple-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md" dir="rtl">
+          <div className="bg-card border border-border/80 rounded-2xl sm:rounded-3xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl">
+            <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+              <HelpCircle className="w-5 h-5 text-purple-500" />
               <span>إعداد اختبار الدرس (Quiz)</span>
             </h2>
 
             <form onSubmit={handleSaveQuiz} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">عنوان الاختبار</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">عنوان الاختبار</label>
                   <input
                     type="text"
                     value={quizTitle}
                     onChange={(e) => setQuizTitle(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white"
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">نسبة النجاح المطلوبة (%)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">نسبة النجاح المطلوبة (%)</label>
                   <input
                     type="number"
                     value={quizPassScore}
                     onChange={(e) => setQuizPassScore(Number(e.target.value))}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white"
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   />
                 </div>
               </div>
@@ -653,14 +681,14 @@ export default function AcademyCourseEditorPage() {
               {/* Questions */}
               <div className="space-y-4">
                 {questions.map((q, qIdx) => (
-                  <div key={qIdx} className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+                  <div key={qIdx} className="p-4 rounded-xl sm:rounded-2xl bg-muted/30 border border-border/60 space-y-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold text-purple-400">السؤال {qIdx + 1}</span>
+                      <span className="text-xs font-bold text-purple-600 dark:text-purple-400">السؤال {qIdx + 1}</span>
                       {questions.length > 1 && (
                         <button
                           type="button"
                           onClick={() => setQuestions(questions.filter((_, i) => i !== qIdx))}
-                          className="text-xs text-rose-400 hover:underline"
+                          className="text-xs text-rose-500 hover:underline font-medium"
                         >
                           حذف السؤال
                         </button>
@@ -677,11 +705,11 @@ export default function AcademyCourseEditorPage() {
                         next[qIdx].q = e.target.value;
                         setQuestions(next);
                       }}
-                      className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white"
+                      className="w-full px-3 py-2 rounded-xl bg-background border border-input text-xs sm:text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />
 
-                    <div className="space-y-1.5">
-                      <label className="block text-[11px] text-slate-400">الاختيارات (اختر الإجابة الصحيحة):</label>
+                    <div className="space-y-2">
+                      <label className="block text-[11px] text-muted-foreground font-medium">الاختيارات (اختر الإجابة الصحيحة):</label>
                       {q.options.map((opt, optIdx) => (
                         <div key={optIdx} className="flex items-center gap-2">
                           <input
@@ -693,7 +721,7 @@ export default function AcademyCourseEditorPage() {
                               next[qIdx].correctIndex = optIdx;
                               setQuestions(next);
                             }}
-                            className="text-purple-600"
+                            className="text-purple-600 focus:ring-purple-500 w-4 h-4"
                           />
                           <input
                             type="text"
@@ -705,14 +733,14 @@ export default function AcademyCourseEditorPage() {
                               next[qIdx].options[optIdx] = e.target.value;
                               setQuestions(next);
                             }}
-                            className="flex-1 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white"
+                            className="flex-1 px-3 py-1.5 rounded-lg bg-background border border-input text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                           />
                         </div>
                       ))}
                     </div>
 
                     <div>
-                      <label className="block text-[11px] text-slate-400 mb-1">شرح توضيحي للإجابة الصحيحة (اختياري):</label>
+                      <label className="block text-[11px] text-muted-foreground mb-1">شرح توضيحي للإجابة الصحيحة (اختياري):</label>
                       <input
                         type="text"
                         placeholder="لماذا هذه هي الإجابة الصحيحة؟"
@@ -722,7 +750,7 @@ export default function AcademyCourseEditorPage() {
                           next[qIdx].explanation = e.target.value;
                           setQuestions(next);
                         }}
-                        className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white"
+                        className="w-full px-3 py-1.5 rounded-lg bg-background border border-input text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                       />
                     </div>
                   </div>
@@ -736,23 +764,23 @@ export default function AcademyCourseEditorPage() {
                       { q: "", options: ["", "", "", ""], correctIndex: 0, explanation: "" },
                     ])
                   }
-                  className="w-full py-2 rounded-xl text-xs font-semibold bg-slate-900 border border-dashed border-slate-800 text-purple-400 hover:bg-purple-500/10 transition"
+                  className="w-full py-2.5 rounded-xl text-xs font-semibold bg-muted/50 border border-dashed border-border/80 text-purple-600 dark:text-purple-400 hover:bg-muted transition"
                 >
                   + إضافة سؤال آخر
                 </button>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
                 <button
                   type="button"
                   onClick={() => setIsQuizModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white"
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-purple-600 hover:bg-purple-500 text-white shadow-sm transition"
                 >
                   حفظ الاختبار
                 </button>
@@ -764,16 +792,16 @@ export default function AcademyCourseEditorPage() {
 
       {/* Course Settings & Privacy Modal */}
       {isSettingsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" dir="rtl">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-              <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                <Settings className="w-5 h-5 text-emerald-400" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-background/80 backdrop-blur-md" dir="rtl">
+          <div className="bg-card border border-border/80 rounded-2xl sm:rounded-3xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-5 sm:p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border/60">
+              <h2 className="text-base sm:text-lg font-bold text-foreground flex items-center gap-2">
+                <Settings className="w-5 h-5 text-primary" />
                 <span>إعدادات الدورة والخصوصية والعلامة المائية</span>
               </h2>
               <button
                 onClick={() => setIsSettingsModalOpen(false)}
-                className="text-slate-400 hover:text-white text-sm"
+                className="text-muted-foreground hover:text-foreground text-sm p-1"
               >
                 ✕
               </button>
@@ -781,50 +809,50 @@ export default function AcademyCourseEditorPage() {
 
             <form onSubmit={handleSaveSettings} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">اسم الدورة *</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">اسم الدورة *</label>
                 <input
                   type="text"
                   required
                   value={editCourseTitle}
                   onChange={(e) => setEditCourseTitle(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">وصف الدورة</label>
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">وصف الدورة</label>
                 <textarea
                   rows={3}
                   value={editCourseDesc}
                   onChange={(e) => setEditCourseDesc(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 resize-none"
+                  className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">سعر البيع (EGP)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">سعر البيع (EGP)</label>
                   <input
                     type="number"
                     value={editCoursePrice}
                     onChange={(e) => setEditCoursePrice(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">الدروس المجانية (معاينة)</label>
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">الدروس المجانية (معاينة)</label>
                   <input
                     type="number"
                     value={editFreePreviewCount}
                     onChange={(e) => setEditFreePreviewCount(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                   معرف منتج المتجر (Store Product ID للاشتراك التلقائي عند الشراء)
                 </label>
                 <input
@@ -832,20 +860,20 @@ export default function AcademyCourseEditorPage() {
                   value={editStoreProductId}
                   onChange={(e) => setEditStoreProductId(e.target.value)}
                   placeholder="ID المنتج في المتجر"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                  className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono placeholder:text-muted-foreground"
                 />
               </div>
 
               {/* Privacy & Visibility Settings */}
-              <div className="p-4 rounded-xl bg-slate-950/70 border border-slate-800 space-y-3">
+              <div className="p-4 rounded-xl sm:rounded-2xl bg-muted/30 border border-border/60 space-y-3">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                     نطاق ظهور الدورة (الخصوصية والتحكم في الوصول)
                   </label>
                   <select
                     value={editVisibility}
                     onChange={(e: any) => setEditVisibility(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                   >
                     <option value="PUBLIC">عام (معروض للجميع في كتالوج الأكاديمية)</option>
                     <option value="UNLISTED">غير مدرج (مخفي من الكتالوج ومتاح برابط مباشر فقط)</option>
@@ -856,7 +884,7 @@ export default function AcademyCourseEditorPage() {
 
                 {editVisibility === "TAG_GATED" && (
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                       الوسوم المصرح لها برؤية الكورس (مفصولة بفواصل)
                     </label>
                     <input
@@ -864,9 +892,9 @@ export default function AcademyCourseEditorPage() {
                       value={editAllowedTags}
                       onChange={(e) => setEditAllowedTags(e.target.value)}
                       placeholder="مثال: vip, agency, media_buyer"
-                      className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-500 font-mono"
+                      className="w-full px-3.5 py-2 rounded-xl bg-background border border-input text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-mono placeholder:text-muted-foreground"
                     />
-                    <p className="text-[11px] text-slate-400 mt-1">
+                    <p className="text-[11px] text-muted-foreground mt-1">
                       سيظهر الكورس في الكتالوج فقط للعملاء الذين يمتلكون واحداً على الأقل من هذه الوسوم.
                     </p>
                   </div>
@@ -878,29 +906,29 @@ export default function AcademyCourseEditorPage() {
                     type="checkbox"
                     checked={editEnableWatermark}
                     onChange={(e) => setEditEnableWatermark(e.target.checked)}
-                    className="w-4 h-4 mt-0.5 rounded text-emerald-500 bg-slate-900 border-slate-700 focus:ring-emerald-500"
+                    className="w-4 h-4 mt-0.5 rounded text-primary focus:ring-primary border-input"
                   />
                   <div className="text-xs">
-                    <span className="font-semibold text-white">تفعيل العلامة المائية ضد التسريب (Anti-Leak Watermark)</span>
-                    <p className="text-[11px] text-slate-400 mt-0.5">
+                    <span className="font-semibold text-foreground">تفعيل العلامة المائية ضد التسريب (Anti-Leak Watermark)</span>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
                       تعرض اسم ورقم هاتف وتوقيت دخول الطالب متحركاً على الفيديو لمنع تصوير الشاشة وتحديد مسرب الكورس فوراً.
                     </p>
                   </div>
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-border/60">
                 <button
                   type="button"
                   onClick={() => setIsSettingsModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:bg-slate-800"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-muted-foreground hover:bg-muted transition"
                 >
                   إلغاء
                 </button>
                 <button
                   type="submit"
                   disabled={savingSettings}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/30 disabled:opacity-50"
+                  className="px-5 py-2 rounded-xl text-xs font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm disabled:opacity-50 transition"
                 >
                   {savingSettings ? "جاري الحفظ..." : "حفظ التعديلات"}
                 </button>
