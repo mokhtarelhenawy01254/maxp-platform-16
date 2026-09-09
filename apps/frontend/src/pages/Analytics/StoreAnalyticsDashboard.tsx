@@ -25,6 +25,7 @@ import {
   CreditCardIcon,
   ShoppingBagIcon,
   ArrowDownIcon,
+  PhoneIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useInRouterContext } from "react-router-dom";
 import {
@@ -367,6 +368,18 @@ const StoreAnalyticsDashboard: React.FC = () => {
   const deliveryRate = coerceNumber(analytics?.deliveryRate);
   const activeVisitors = coerceNumber(analytics?.activeVisitors);
 
+  // 3-Tier Conversion & Recovery metrics
+  const organicPurchases = coerceNumber(analytics?.naturalPurchases ?? (analytics ? Math.max(0, totalPurchases - (analytics.recoveredPurchases || 0)) : 0));
+  const recoveredPurchases = coerceNumber(analytics?.recoveredPurchases);
+  const recoveredRevenue = coerceNumber(analytics?.recoveredRevenue);
+  const incompleteCarts = coerceNumber(analytics?.incompleteCarts);
+  const organicConversionRate = coerceNumber(analytics?.organicConversionRate ?? (totalVisits > 0 ? (organicPurchases / totalVisits) * 100 : 0));
+  const realizedConversionRate = coerceNumber(analytics?.realizedConversionRate ?? conversionRate);
+  const grossIntentOrders = organicPurchases + incompleteCarts + recoveredPurchases;
+  const potentialConversionRate = coerceNumber(analytics?.potentialConversionRate ?? (totalVisits > 0 ? (grossIntentOrders / totalVisits) * 100 : 0));
+  const conversionLift = coerceNumber(analytics?.conversionLift ?? Math.max(0, realizedConversionRate - organicConversionRate));
+  const recoveryRate = coerceNumber(analytics?.recoveryRate ?? ((incompleteCarts + recoveredPurchases) > 0 ? (recoveredPurchases / (incompleteCarts + recoveredPurchases)) * 100 : 0));
+
   // Step-by-step conversion ratios
   const visitorToCart = totalVisits > 0 ? ((totalCarts / totalVisits) * 100).toFixed(1) : "0.0";
   const cartToCheckout = totalCarts > 0 ? ((totalCheckouts / totalCarts) * 100).toFixed(1) : "0.0";
@@ -657,26 +670,34 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </div>
           </div>
 
-          {/* Card 3: Overall Conversion Rate */}
+          {/* Card 3: 3-Tier Conversion Rate */}
           <div className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 shadow-sm hover:shadow-md transition-all">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">معدل التحويل العام</span>
+              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">معدل التحويل المحقق</span>
               <span className="p-2 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
                 <ChartBarIcon className="size-5" />
               </span>
             </div>
             <div className="mt-3">
-              <div className="flex items-baseline gap-2">
+              <div className="flex items-baseline gap-2 flex-wrap">
                 <h3 className="text-2xl font-black text-purple-600 dark:text-purple-400">
-                  {analytics ? formatPercent(conversionRate) : "--"}
+                  {analytics ? formatPercent(realizedConversionRate) : "--"}
                 </h3>
-                <Badge variant="outline" className="text-[10px] rounded-full px-2 py-0.5 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
-                  {conversionRate >= 3 ? "استثنائي" : conversionRate >= 1.2 ? "متزن" : "يحتاج دفع"}
-                </Badge>
+                {conversionLift > 0 ? (
+                  <Badge variant="outline" className="text-[10px] font-bold rounded-full px-2 py-0.5 border-emerald-500/30 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    +{formatPercent(conversionLift)} استرداد
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-[10px] rounded-full px-2 py-0.5 border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    {realizedConversionRate >= 3 ? "استثنائي" : realizedConversionRate >= 1.2 ? "متزن" : "يحتاج دفع"}
+                  </Badge>
+                )}
               </div>
-              <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
-                {formatCount(totalVisits)} زيارة ➔ {formatCount(totalPurchases)} طلب
-              </p>
+              <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-[11px] text-gray-500 dark:text-gray-400">
+                <span>طبيعي: {analytics ? formatPercent(organicConversionRate) : "--"}</span>
+                <span className="text-gray-300 dark:text-gray-700">•</span>
+                <span>النية: {analytics ? formatPercent(potentialConversionRate) : "--"}</span>
+              </div>
             </div>
           </div>
 
@@ -821,7 +842,15 @@ const StoreAnalyticsDashboard: React.FC = () => {
                   {formatCount(totalCheckouts)}
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-gray-400">بدء إدخال البيانات</div>
+              <div className="mt-3 text-[11px] text-gray-400">
+                {incompleteCarts > 0 ? (
+                  <span className="text-amber-600 dark:text-amber-400 font-medium">
+                    منها {formatCount(incompleteCarts)} سلة غير مكتملة
+                  </span>
+                ) : (
+                  "بدء إدخال البيانات"
+                )}
+              </div>
             </div>
 
             {/* Step 5: Purchases */}
@@ -829,13 +858,21 @@ const StoreAnalyticsDashboard: React.FC = () => {
               <div>
                 <div className="flex items-center justify-between text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-1">
                   <span>5. إتمام الشراء</span>
-                  <span>{formatPercent(conversionRate)}</span>
+                  <span>{formatPercent(realizedConversionRate)}</span>
                 </div>
                 <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">
                   {formatCount(totalPurchases)}
                 </div>
               </div>
-              <div className="mt-3 text-[11px] text-emerald-600/80">الطلبات المؤكدة</div>
+              <div className="mt-3 text-[11px] text-emerald-600/80">
+                {recoveredPurchases > 0 ? (
+                  <span>
+                    {formatCount(organicPurchases)} مباشر + {formatCount(recoveredPurchases)} مسترد
+                  </span>
+                ) : (
+                  "الطلبات المؤكدة"
+                )}
+              </div>
             </div>
 
             {/* Step 6: Delivered */}
@@ -880,6 +917,190 @@ const StoreAnalyticsDashboard: React.FC = () => {
               </SafeActionLink>
             </div>
           )}
+        </section>
+
+        {/* 4.5 3-Tier Conversion Benchmark & Recovery Intelligence */}
+        <section className="rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-5 sm:p-7 shadow-sm">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-2 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                  <ChartBarIcon className="size-5" />
+                </span>
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                  تحليل معدلات التحويل الثلاثية وأثر استرداد السلات
+                </h2>
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                مقارنة دقيقة تقيس التحويل الطبيعي للمتجر، والتحويل الفعلي بعد مكالمات التأكيد، والنية الكلية للشراء.
+              </p>
+            </div>
+
+            <SafeActionLink
+              to="/orders/incomplete"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-all"
+            >
+              <PhoneIcon className="size-4" />
+              <span>إدارة الطلبات غير المكتملة ({formatCount(incompleteCarts)})</span>
+              <ArrowTopRightOnSquareIcon className="size-3.5" />
+            </SafeActionLink>
+          </div>
+
+          {/* 3 Benchmark Cards */}
+          <div className="grid gap-4 md:grid-cols-3">
+            {/* Card 1: Organic */}
+            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">1. التحويل الطبيعي (مباشر)</span>
+                  <Badge variant="outline" className="text-[10px] rounded-full border-blue-500/30 bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                    بدون تدخل
+                  </Badge>
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-gray-900 dark:text-white">
+                    {formatPercent(organicConversionRate)}
+                  </span>
+                  <span className="text-xs text-gray-400">({formatCount(organicPurchases)} طلب)</span>
+                </div>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  عملاء أتموا الشراء تلقائياً من أول مرة دون الحاجة لتواصل أو متابعة.
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-gray-200/60 dark:border-gray-700/60">
+                <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div
+                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(5, organicConversionRate * 10))}%` }}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-gray-400">
+                  <span>كفاءة المتجر التلقائية</span>
+                  <span>{formatCount(organicPurchases)} من {formatCount(totalVisits)} زيارة</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 2: Realized (With Recovery) */}
+            <div className="relative rounded-2xl border-2 border-purple-500/30 dark:border-purple-500/40 bg-gradient-to-b from-purple-500/5 via-purple-500/10 to-transparent p-5 flex flex-col justify-between shadow-sm">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-purple-700 dark:text-purple-300">2. التحويل الفعلي بعد الاسترداد</span>
+                  {conversionLift > 0 ? (
+                    <Badge variant="outline" className="text-[10px] font-bold rounded-full border-emerald-500/40 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+                      +{formatPercent(conversionLift)} زيادة بالمكالمات
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[10px] rounded-full border-purple-500/30 bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                      النتيجة النهائية
+                    </Badge>
+                  )}
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-purple-600 dark:text-purple-400">
+                    {formatPercent(realizedConversionRate)}
+                  </span>
+                  <span className="text-xs font-semibold text-gray-600 dark:text-gray-300">
+                    ({formatCount(totalPurchases)} طلب مؤكد)
+                  </span>
+                </div>
+                <p className="mt-2 text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
+                  معدل التحويل الحقيقي الذي دخل حسابك بعد أن اتصل فريقك بالسلات المتروكة وحوّلها لطلبات.
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-purple-200/60 dark:border-purple-800/60">
+                <div className="h-2 rounded-full bg-purple-200 dark:bg-purple-900/60 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-emerald-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(5, realizedConversionRate * 10))}%` }}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-purple-600 dark:text-purple-400 font-medium">
+                  <span>التحويل الفعلي الشامل</span>
+                  <span>{recoveredPurchases > 0 ? `${formatCount(recoveredPurchases)} طلب أنقذه الفريق` : "لا توجد مستردات"}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Card 3: Potential / Gross Intent */}
+            <div className="rounded-2xl border border-gray-100 dark:border-gray-800 bg-gray-50/70 dark:bg-gray-800/40 p-5 flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">3. نية الشراء الكلية (الفرصة)</span>
+                  <Badge variant="outline" className="text-[10px] rounded-full border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    الحد الأقصى الممكن
+                  </Badge>
+                </div>
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-amber-600 dark:text-amber-400">
+                    {formatPercent(potentialConversionRate)}
+                  </span>
+                  <span className="text-xs text-gray-400">({formatCount(grossIntentOrders)} مشتري محتمل)</span>
+                </div>
+                <p className="mt-2 text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  نسبة كل من أبدى رغبة شرائية وسجل بياناته بالشيك آوت (لو تم تأكيد كل السلات).
+                </p>
+              </div>
+              <div className="mt-4 pt-3 border-t border-gray-200/60 dark:border-gray-700/60">
+                <div className="h-2 rounded-full bg-gray-200 dark:bg-gray-700 overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 rounded-full transition-all duration-500"
+                    style={{ width: `${Math.min(100, Math.max(5, potentialConversionRate * 10))}%` }}
+                  />
+                </div>
+                <div className="mt-1 flex justify-between text-[10px] text-gray-400">
+                  <span>سقف الفرصة التسويقية</span>
+                  <span>{formatCount(incompleteCarts)} سلة غير مستردة بعد</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Recovery Performance Highlight Box */}
+          <div className="mt-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 dark:bg-emerald-500/10 p-4 sm:p-5">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 flex-1">
+                <div>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">الطلبات المستردة بنجاح</span>
+                  <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white flex items-center gap-1.5">
+                    <CheckCircleIcon className="size-4 text-emerald-500" />
+                    <span>{formatCount(recoveredPurchases)} طلب</span>
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">إيراد مضاف للخزينة</span>
+                  <div className="mt-1 text-lg font-bold text-emerald-600 dark:text-emerald-400">
+                    {formatCurrency(recoveredRevenue)}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">نسبة نجاح استرداد السلات</span>
+                  <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+                    {recoveryRate > 0 ? formatPercent(recoveryRate) : "--"}
+                  </div>
+                </div>
+
+                <div>
+                  <span className="text-[11px] text-gray-500 dark:text-gray-400">سلات متبقية تنتظر المكالمة</span>
+                  <div className="mt-1 text-lg font-bold text-amber-600 dark:text-amber-400">
+                    {formatCount(incompleteCarts)} سلة
+                  </div>
+                </div>
+              </div>
+
+              <div className="shrink-0 flex items-center">
+                <SafeActionLink
+                  to="/orders/incomplete"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all"
+                >
+                  <PhoneIcon className="size-4" />
+                  <span>متابعة وتأكيد السلات الآن</span>
+                </SafeActionLink>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* 5. Dual-Mode Interactive Chart (Volume vs Daily Conversion Rate) */}
