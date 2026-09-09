@@ -34,5 +34,14 @@
   "saving": "جاري الحفظ...",
   "loading": "جاري التحميل...",
   "custom": "مخصص",
-  "newResponse": "الرد التلقائي..."
+  "newResponse": "الرد التلقائي...",
+  "editTemplate": "تعديل القالب",
+  "saveChanges": "حفظ التعديلات",
+  "preview": "معاينة الرد كما سيصل للعميل",
+  "showMore": "عرض النص بالكامل",
+  "showLess": "عرض أقل",
+  "templateHelper": "اضغط Enter لكتابة أسطر جديدة تحت بعضها بحرية",
+  "keywordHelper": "اكتب الكلمة واضغط Enter (يمكنك كتابة عدة كلمات مفصولة بفاصلة)",
+  "addAlternativeResponse": "+ إضافة رد بديل آخر",
+  "replyContent": "نص الرد التلقائي"
 }
