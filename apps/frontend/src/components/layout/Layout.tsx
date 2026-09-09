@@ -467,6 +467,18 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     window.location.href = "/super-admin/companies-v2";
   };
 
+  const getSupportWhatsAppNumber = (): string => {
+    try {
+      if (typeof process !== "undefined" && process.env?.VITE_SUPPORT_WHATSAPP_NUMBER) {
+        return process.env.VITE_SUPPORT_WHATSAPP_NUMBER;
+      }
+      const runtimeEnv = (typeof window !== "undefined" && (window as any)?.__ENV__) || {};
+      return runtimeEnv.VITE_SUPPORT_WHATSAPP_NUMBER || "201123087745";
+    } catch {
+      return "201123087745";
+    }
+  };
+
   const profileMenu = (
     <div className="relative">
       <button
@@ -569,6 +581,30 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const headerBlock = (
     <>
       <BrowserPushBanner />
+      {isValidSuperAdminSession() ? (
+        <div
+          role="status"
+          aria-live="polite"
+          className="impersonation-top-banner w-full bg-amber-500/15 dark:bg-amber-950/80 border-b border-amber-500/30 text-amber-900 dark:text-amber-200 px-3 py-1.5 sm:px-4 sm:py-2 z-30 transition-all duration-200"
+        >
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 text-xs sm:text-sm font-medium">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="shrink-0 text-base select-none" role="img" aria-label="key">🔑</span>
+              <span className="truncate font-semibold">
+                {t("sidebar.superAdminLogin").replace(/🔑/g, "").trim()}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleBackToCompanies}
+              className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white transition-all shadow-sm active:scale-95 cursor-pointer"
+            >
+              <span>{t("sidebar.backToCompanies")}</span>
+              <span className="text-[10px] rtl:rotate-180">➜</span>
+            </button>
+          </div>
+        </div>
+      ) : null}
       <header
         className="app-header-theme business-shell-header"
         data-mobile={isMobile ? "true" : "false"}
@@ -591,19 +627,6 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
               </div>
             ) : null}
           </div>
-
-          {isValidSuperAdminSession() ? (
-            <div className="business-shell-chip" data-variant="warning">
-              <span>{t("sidebar.superAdminLogin")}</span>
-              <button
-                type="button"
-                onClick={handleBackToCompanies}
-                className="business-shell-chip-action"
-              >
-                {t("sidebar.backToCompanies")}
-              </button>
-            </div>
-          ) : null}
         </div>
 
         <div className="business-shell-actions">
@@ -680,7 +703,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
             />
             <NotificationDropdown className="business-shell-notification-slot" />
             <a
-              href={`https://wa.me/${import.meta.env.VITE_SUPPORT_WHATSAPP_NUMBER || "201123087745"}`}
+              href={`https://wa.me/${getSupportWhatsAppNumber()}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center w-9 h-9 bg-[#25D366] hover:bg-[#20BD5A] text-white rounded-full shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"

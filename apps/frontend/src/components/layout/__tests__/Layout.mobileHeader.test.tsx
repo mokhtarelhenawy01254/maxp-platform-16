@@ -9,6 +9,10 @@ const mockUseVisualTheme = jest.fn();
 jest.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string) => key,
+    i18n: {
+      language: "ar",
+      dir: () => "rtl",
+    },
   }),
 }));
 
@@ -29,8 +33,53 @@ jest.mock("../../../contexts/VisualThemeContext", () => ({
   useVisualTheme: () => mockUseVisualTheme(),
 }));
 
+jest.mock("../../../config/environment", () => ({
+  envConfig: {
+    apiUrl: "http://localhost:3000",
+    wsUrl: "ws://localhost:3000",
+    appUrl: "http://localhost:5173",
+    backendUrl: "http://localhost:3000",
+  },
+}));
+
+jest.mock("@/config/environment", () => ({
+  envConfig: {
+    apiUrl: "http://localhost:3000",
+    wsUrl: "ws://localhost:3000",
+    appUrl: "http://localhost:5173",
+    backendUrl: "http://localhost:3000",
+  },
+}));
+
 jest.mock("../../../config/sidebar", () => ({
   getSidebarConfig: () => [],
+}));
+
+jest.mock("../../../utils/storeUrl", () => ({
+  buildStoreUrl: jest.fn(() => "https://example.com/shop"),
+}));
+
+jest.mock("../../../services/socketService", () => ({
+  __esModule: true,
+  default: {
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+  },
+  socketService: {
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn(),
+    emit: jest.fn(),
+  },
+}));
+
+jest.mock("../../common/PageExplanations", () => ({
+  __esModule: true,
+  default: () => null,
 }));
 
 jest.mock("../sidebar/SidebarLayoutFactory", () => ({
@@ -84,7 +133,7 @@ jest.mock("../../ActiveUsersMonitor", () => ({
 
 jest.mock("../../../services/apiClient", () => ({
   apiClient: {
-    get: jest.fn(),
+    get: jest.fn(() => Promise.resolve({ status: 200, data: { success: true, data: {} } })),
   },
 }));
 
@@ -177,5 +226,46 @@ describe("Layout mobile account visibility", () => {
       "data-collapsed",
       "true",
     );
+  });
+
+  it("renders the super admin impersonation banner at the top without cluttering the primary header", async () => {
+    const futureExp = Math.floor(Date.now() / 1000) + 3600;
+    const fakeToken = `header.${btoa(JSON.stringify({ exp: futureExp }))}.signature`;
+    const storageStore: Record<string, string> = {
+      superAuth: fakeToken,
+      superUser: JSON.stringify({ id: "super-1", role: "SUPER_ADMIN" }),
+    };
+    jest
+      .spyOn(Storage.prototype, "getItem")
+      .mockImplementation((key: string) => storageStore[key] ?? null);
+    (localStorage.getItem as jest.Mock).mockImplementation(
+      (key: string) => storageStore[key] ?? null,
+    );
+
+    const { container } = render(
+      <MemoryRouter initialEntries={["/apps"]}>
+        <Layout>
+          <div>Apps dashboard</div>
+        </Layout>
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(
+        container.querySelector(".impersonation-top-banner"),
+      ).toBeInTheDocument();
+    });
+
+    // Verify the impersonation banner is at top and contains return button
+    expect(screen.getByText("sidebar.backToCompanies")).toBeInTheDocument();
+    expect(screen.getByText("sidebar.superAdminLogin")).toBeInTheDocument();
+
+    // Verify the header primary does NOT contain a cramped chip
+    expect(
+      container.querySelector(".business-shell-header-primary .business-shell-chip"),
+    ).not.toBeInTheDocument();
+
+    localStorage.removeItem("superAuth");
+    localStorage.removeItem("superUser");
   });
 });
