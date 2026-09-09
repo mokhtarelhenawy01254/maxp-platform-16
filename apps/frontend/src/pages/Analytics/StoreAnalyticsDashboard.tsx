@@ -499,7 +499,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
         {/* 1. Header & Navigation Hub (2026 Master Header) */}
         <header className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white/80 dark:bg-gray-900/80 p-3.5 sm:p-7 shadow-sm backdrop-blur-xl">
           <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1.5 sm:mb-2">
                 <Badge variant="outline" className="rounded-full border-primary/30 bg-primary/10 text-primary font-bold text-[10px] sm:text-xs px-2.5 py-0.5 sm:px-3 sm:py-1">
                   STORE INTELLIGENCE 2026
@@ -531,7 +531,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </div>
 
             {/* Quick Period Buttons & Actions */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               {/* Desktop quick pill selector */}
               <div className="hidden sm:flex items-center gap-1 overflow-x-auto rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100/80 dark:bg-gray-800/60 p-1">
                 {PERIOD_OPTIONS.slice(0, 5).map((opt) => {
@@ -734,7 +734,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             : "border-primary/30 bg-gradient-to-l from-primary/10 via-primary/5 to-transparent"
         }`}>
           <div className="flex flex-col gap-3.5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-1.5 sm:space-y-2">
+            <div className="space-y-1.5 sm:space-y-2 flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <SparklesIcon className="size-4 sm:size-5 text-primary animate-pulse" />
                 <Badge variant="outline" className="rounded-full px-2.5 py-0.5 text-[10px] sm:text-xs font-bold border-primary/40 bg-primary/10 text-primary">
@@ -768,7 +768,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
         {/* 4. Complete Unified Sales & Conversion Funnel (قمع التحويل الشامل) */}
         <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 sm:gap-3 mb-4 sm:mb-6">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <ChartBarIcon className="size-5 text-primary" />
                 <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
@@ -924,7 +924,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
         {/* 4.5 3-Tier Conversion Benchmark & Recovery Intelligence */}
         <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="p-2 rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400">
                   <ChartBarIcon className="size-5" />
@@ -1108,7 +1108,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
         {/* 5. Dual-Mode Interactive Chart (Volume vs Daily Conversion Rate) */}
         <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <ArrowTrendingUpIcon className="size-5 text-primary" />
                 <h2 className="text-base sm:text-xl font-bold text-gray-900 dark:text-white">
@@ -1336,7 +1336,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
         {/* 7. 1-Click Growth Action Hub (مركز إجراءات النمو والتنشيط الفوري) */}
         <section className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-7 shadow-sm">
           <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 mb-4 sm:mb-6">
-            <div>
+            <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <BoltIcon className="size-5 text-primary" />
                 <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
