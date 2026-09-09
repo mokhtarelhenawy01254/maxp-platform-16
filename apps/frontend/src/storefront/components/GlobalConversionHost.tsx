@@ -54,7 +54,10 @@ const SALE_POPUP_CITIES = [
 ];
 
 const INLINE_PDP_COUNTDOWN_THEME_IDS = new Set(["khemet-luxe-eg"]);
-const QUIET_DISCOVERY_CHROME_THEME_IDS = new Set(["khemet-luxe-eg"]);
+const QUIET_DISCOVERY_CHROME_THEME_IDS = new Set([
+  "khemet-luxe-eg",
+  "creative-portfolio",
+]);
 
 const hashSeed = (value: string): number =>
   value.split("").reduce((total, char) => total + char.charCodeAt(0), 0);
@@ -149,7 +152,9 @@ const GlobalConversionHost: React.FC = () => {
   const normalizedPath = location.pathname.replace(/\/+$/, "") || "/";
   const isHomePath =
     normalizedPath === "/" || normalizedPath.endsWith("/store");
-  const isQuietDiscoveryChrome = QUIET_DISCOVERY_CHROME_THEME_IDS.has(theme.id);
+  const isQuietDiscoveryChrome =
+    QUIET_DISCOVERY_CHROME_THEME_IDS.has(theme.id) ||
+    theme.header?.showCart === false;
   const isCompactMarketplacePreviewChrome = useMemo(() => {
     const params = new URLSearchParams(location.search);
 
