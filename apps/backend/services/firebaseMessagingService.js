@@ -36,6 +36,8 @@ function initFirebase() {
         process.env.FIREBASE_SERVICE_ACCOUNT_PATH,
         path.resolve(__dirname, "../config/firebase-service-account.json"),
         path.resolve(__dirname, "../../config/firebase-service-account.json"),
+        "/var/www/shared/firebase-service-account.json",
+        "/var/www/backend2/config/firebase-service-account.json",
       ].filter(Boolean);
 
       for (const candidate of candidates) {
@@ -156,12 +158,16 @@ async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null
     stringData[key] = typeof val === "string" ? val : JSON.stringify(val);
   }
 
+  const hasValidImageUrl =
+    typeof imageUrl === "string" &&
+    (imageUrl.startsWith("https://") || imageUrl.startsWith("http://"));
+
   const message = {
     tokens,
     notification: {
       title,
       body,
-      ...(imageUrl ? { imageUrl } : {}),
+      ...(hasValidImageUrl ? { imageUrl } : {}),
     },
     data: stringData,
     android: {
@@ -169,8 +175,8 @@ async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null
       notification: {
         sound: "default",
         channelId: "maxp_default_channel",
-        clickAction: "FLUTTER_NOTIFICATION_CLICK",
         defaultVibrateTimings: true,
+        defaultSound: true,
         priority: "max",
       },
     },

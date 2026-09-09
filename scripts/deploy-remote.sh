@@ -342,6 +342,7 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     --exclude node_modules \
     --exclude prisma/generated \
     --exclude data/facebook-oauth-config.json \
+    --exclude config/firebase-service-account.json \
     --exclude ".last_*" \
     "$DEPLOY_STAGING/backend_extract/backend/" /var/www/backend2/
   sudo mkdir -p /var/www/backend2/logs
@@ -352,6 +353,14 @@ if [ -f "$DEPLOY_STAGING/backend.tar.gz" ]; then
     sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
   elif [ -f "/var/www/backend2/.env.production" ]; then
     sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
+  fi
+
+  # 🔑 Restore Firebase Service Account Key from persistent /var/www/shared
+  if [ -f "/var/www/shared/firebase-service-account.json" ]; then
+    sudo mkdir -p /var/www/backend2/config
+    sudo cp /var/www/shared/firebase-service-account.json /var/www/backend2/config/firebase-service-account.json
+    sudo chmod 600 /var/www/backend2/config/firebase-service-account.json
+    echo "✅ Restored Firebase Service Account key"
   fi
 
   # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env
@@ -428,6 +437,14 @@ elif [ -d "$DEPLOY_STAGING/backend" ]; then
     sudo cp /tmp/backend_env_backup.env /var/www/backend2/.env
   elif [ -f "/var/www/backend2/.env.production" ]; then
     sudo cp /var/www/backend2/.env.production /var/www/backend2/.env
+  fi
+
+  # 🔑 Restore Firebase Service Account Key from persistent /var/www/shared
+  if [ -f "/var/www/shared/firebase-service-account.json" ]; then
+    sudo mkdir -p /var/www/backend2/config
+    sudo cp /var/www/shared/firebase-service-account.json /var/www/backend2/config/firebase-service-account.json
+    sudo chmod 600 /var/www/backend2/config/firebase-service-account.json
+    echo "✅ Restored Firebase Service Account key"
   fi
 
   # 🔑 Sync MAXP_SERVICE_TOKEN from ai-service .env (real token) to backend .env

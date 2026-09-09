@@ -177,6 +177,41 @@ const deactivateBrowserPushSubscription = async ({
 
 const getBrowserPushPublicKey = () => ensureVapidConfiguration().publicKey;
 
+const isFcmSubscription = (subscription) => {
+  return Boolean(
+    subscription?.endpoint?.startsWith("fcm:") ||
+    subscription?.subscription?.provider === "fcm"
+  );
+};
+
+const shouldDeliverSubscriptionNotification = ({
+  subscription,
+  settings,
+  typeId,
+}) => {
+  if (!settings?.globalEnabled) {
+    return false;
+  }
+
+  // 📱 Mobile native push via FCM
+  if (isFcmSubscription(subscription)) {
+    if (settings?.channels?.push && settings.channels.push.enabled === false) {
+      return false;
+    }
+    const typeSettings = settings.typeSettings?.[typeId];
+    if (typeSettings && typeSettings.enabled === false) {
+      return false;
+    }
+    if (Array.isArray(typeSettings?.channels) && !typeSettings.channels.includes("push")) {
+      return false;
+    }
+    return true;
+  }
+
+  // 🌐 Desktop / web browser push
+  return shouldDeliverBrowserNotificationForType(settings, typeId);
+};
+
 const buildSettingsForUser = ({ companyId, user, storedSettings }) => {
   const defaults = buildDefaultSettings({
     userId: user.id,
@@ -232,12 +267,18 @@ const sendNotificationToSubscription = async (record, payload) => {
       const token =
         record.subscription?.token || record.endpoint.replace("fcm:", "");
 
+      const validImageUrl =
+        typeof payload.icon === "string" &&
+        (payload.icon.startsWith("https://") || payload.icon.startsWith("http://"))
+          ? payload.icon
+          : null;
+
       const fcmResult = await sendToFcmTokens({
         tokens: [token],
         title: payload.title,
         body: payload.body,
         data: payload.data || {},
-        imageUrl: payload.icon || null,
+        imageUrl: validImageUrl,
       });
 
       if (fcmResult.successCount > 0) {
@@ -362,11 +403,15 @@ const sendBrowserPushToCompany = async ({
       String(companyId) === "cmteva12p00lrjuwxpufr4k8w" ||
       subscription.user?.email === "ahmedfares61994@gmail.com";
 
-    if (
-      !isAmeerelle &&
-      (!shouldDeliverBrowserNotificationForType(settings, typeId) ||
-        isQuietHoursActive(settings))
-    ) {
+    const shouldDeliver =
+      isAmeerelle ||
+      shouldDeliverSubscriptionNotification({
+        subscription,
+        settings,
+        typeId,
+      });
+
+    if (!shouldDeliver || isQuietHoursActive(settings)) {
       skipped += 1;
       continue;
     }
@@ -376,7 +421,7 @@ const sendBrowserPushToCompany = async ({
     const delivered = await sendNotificationToSubscription(subscription, {
       title,
       body:
-        settings.channels.browser.showPreview === false && compactBody
+        settings?.channels?.browser?.showPreview === false && compactBody
           ? compactBody
           : body,
       icon,
@@ -387,7 +432,7 @@ const sendBrowserPushToCompany = async ({
           ? requireInteraction
           : String(companyId) === "cmteva12p00lrjuwxpufr4k8w"
             ? true
-            : settings.channels.browser.requireInteraction === true,
+            : settings?.channels?.browser?.requireInteraction === true,
       forceVisibleNotification,
       data: {
         ...data,
@@ -474,11 +519,7 @@ const sendBrowserPushToUser = async ({
     String(companyId) === "cmteva12p00lrjuwxpufr4k8w" ||
     user?.email === "ahmedfares61994@gmail.com";
 
-  if (
-    !isAmeerelle &&
-    (!shouldDeliverBrowserNotificationForType(settings, typeId) ||
-      isQuietHoursActive(settings))
-  ) {
+  if (!isAmeerelle && isQuietHoursActive(settings)) {
     return {
       attempted: 0,
       sent: 0,
@@ -487,14 +528,30 @@ const sendBrowserPushToUser = async ({
     };
   }
 
+  let attempted = 0;
   let sent = 0;
+  let skipped = 0;
   let failed = 0;
 
   for (const subscription of subscriptions) {
+    const shouldDeliver =
+      isAmeerelle ||
+      shouldDeliverSubscriptionNotification({
+        subscription,
+        settings,
+        typeId,
+      });
+
+    if (!shouldDeliver) {
+      skipped += 1;
+      continue;
+    }
+
+    attempted += 1;
     const delivered = await sendNotificationToSubscription(subscription, {
       title,
       body:
-        settings.channels.browser.showPreview === false && compactBody
+        settings?.channels?.browser?.showPreview === false && compactBody
           ? compactBody
           : body,
       icon,
@@ -503,7 +560,7 @@ const sendBrowserPushToUser = async ({
       requireInteraction:
         typeof requireInteraction === "boolean"
           ? requireInteraction
-          : settings.channels.browser.requireInteraction === true,
+          : settings?.channels?.browser?.requireInteraction === true,
       forceVisibleNotification,
       data: {
         ...data,

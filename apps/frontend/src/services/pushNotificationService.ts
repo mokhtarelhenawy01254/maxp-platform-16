@@ -51,6 +51,23 @@ class PushNotificationService {
 
       await PushNotifications.register();
       console.log("✅ [PUSH] Registered with FCM service");
+
+      // إنشاء قناة الإشعارات لنظام أندرويد لضمان ظهور الإشعار مع الصوت والاهتزاز
+      try {
+        await PushNotifications.createChannel({
+          id: "maxp_default_channel",
+          name: "إشعارات MaxP",
+          description: "إشعارات الرسائل والطلبات الجديدة",
+          importance: 5,
+          visibility: 1,
+          sound: "default",
+          vibration: true,
+          lights: true,
+        });
+      } catch (channelError) {
+        console.warn("⚠️ [PUSH] Notification channel setup warning:", channelError);
+      }
+
       return true;
     } catch (error) {
       console.error("❌ [PUSH] Failed to request permissions:", error);
