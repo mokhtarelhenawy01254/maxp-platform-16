@@ -71,7 +71,8 @@ echo "🧹 Running automatic cleanup to free space..."
 # frontend/backend sync. Only remove staging dirs older than 6 hours; the build
 # job's staging-setup step already does the daily cleanup.
 find "$HOME" -maxdepth 1 -name "deploy_staging_*" -not -name "$(basename "$DEPLOY_STAGING")" -mmin +360 -exec rm -rf {} + 2>/dev/null || true
-sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak 2>/dev/null || true
+sudo rm -rf /tmp/deploy_staging_* /tmp/*.tar.gz /tmp/*.bak /tmp/maxp_deploy_expected_entry 2>/dev/null || true
+rm -f /tmp/maxp_deploy_expected_entry
 if [ -n "$PM2_BIN" ]; then
   "$PM2_BIN" flush || echo "⚠️ PM2 flush failed"
 fi
@@ -901,6 +902,7 @@ trap - ERR
 if [ -n "$ROLLBACK_FRONTEND_BACKUP" ] && [ -f "$ROLLBACK_FRONTEND_BACKUP" ]; then
   sudo rm -f "$ROLLBACK_FRONTEND_BACKUP" || true
 fi
+rm -f /tmp/maxp_deploy_expected_entry
 
 echo "✅ Deployment completed successfully with zero-downtime integrity!"
 rm -rf "$DEPLOY_STAGING"
