@@ -554,7 +554,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
               </div>
 
               {/* Accessible Dropdown + Refresh Button */}
-              <div className="flex items-center gap-2 w-full sm:w-auto">
+              <div className="flex items-center gap-2 shrink-0">
                 <select
                   aria-label="الفترة"
                   value={filterDraft.period}
@@ -755,7 +755,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             {executiveBriefing.actionSuggestion && (
               <SafeActionLink
                 to={executiveBriefing.actionSuggestion.path}
-                className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-primary px-4 sm:px-5 py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-primary/90 transition-all min-h-[44px]"
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl bg-primary px-4 sm:px-5 py-2.5 sm:py-3.5 text-xs sm:text-sm font-bold text-white shadow-md hover:bg-primary/90 transition-all min-h-[44px]"
               >
                 <BoltIcon className="size-4" />
                 <span>{executiveBriefing.actionSuggestion.label}</span>
@@ -940,7 +940,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
 
             <SafeActionLink
               to="/orders/incomplete"
-              className="inline-flex w-full sm:w-auto shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl border border-primary/30 bg-primary/10 px-3.5 sm:px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-all min-h-[40px]"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl sm:rounded-2xl border border-primary/30 bg-primary/10 px-3.5 sm:px-4 py-2 text-xs font-bold text-primary hover:bg-primary/20 transition-all min-h-[40px]"
             >
               <PhoneIcon className="size-4" />
               <span>إدارة الطلبات غير المكتملة ({formatCount(incompleteCarts)})</span>
@@ -1095,7 +1095,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
               <div className="shrink-0 flex items-center">
                 <SafeActionLink
                   to="/orders/incomplete"
-                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all min-h-[40px]"
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition-all min-h-[40px]"
                 >
                   <PhoneIcon className="size-4" />
                   <span>متابعة وتأكيد السلات الآن</span>
@@ -1123,7 +1123,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
             </div>
 
             {/* Toggle Switch */}
-            <div className="inline-flex w-full sm:w-auto rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 p-1">
+            <div className="inline-flex shrink-0 rounded-xl sm:rounded-2xl border border-gray-200 dark:border-gray-800 bg-gray-100 dark:bg-gray-800 p-1">
               <button
                 type="button"
                 onClick={() => setChartMode("volume")}

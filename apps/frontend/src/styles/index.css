@@ -6880,3 +6880,20 @@ select {
   margin: 1rem 0;
 }
 
+/* Responsive utility guards for flex children across desktop viewports */
+@media (min-width: 640px) {
+  .sm\:w-auto {
+    width: auto !important;
+  }
+  .sm\:w-fit {
+    width: fit-content !important;
+  }
+  .sm\:w-max {
+    width: max-content !important;
+  }
+  .sm\:self-auto {
+    align-self: auto !important;
+  }
+}
+
+
