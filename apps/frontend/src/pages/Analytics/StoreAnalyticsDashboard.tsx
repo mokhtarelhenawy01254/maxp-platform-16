@@ -26,6 +26,8 @@ import {
   ShoppingBagIcon,
   ArrowDownIcon,
   PhoneIcon,
+  ArrowTrendingDownIcon,
+  BanknotesIcon,
 } from "@heroicons/react/24/outline";
 import { Link, useInRouterContext } from "react-router-dom";
 import {
@@ -46,6 +48,9 @@ import {
   DailyAnalyticsPoint,
   FunnelMetric,
   TopProduct,
+  ProfitStats,
+  TrendMetric,
+  calculateTrend,
   buildDataHealthStatus,
   buildFunnelMetrics,
   coerceNumber,
@@ -180,6 +185,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [dailyData, setDailyData] = useState<DailyAnalyticsPoint[]>([]);
+  const [profitStats, setProfitStats] = useState<ProfitStats | null>(null);
   const [filterDraft, setFilterDraft] = useState<FilterState>({
     period: "1",
     startDate: "",
@@ -228,7 +234,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
       setPartialWarnings([]);
       setPageError(null);
 
-      const [storeResult, topProductsResult, dailyResult] =
+      const [storeResult, topProductsResult, dailyResult, profitResult] =
         await Promise.allSettled([
           analyticsService.getStoreAnalytics(
             appliedFilters.period,
@@ -248,6 +254,13 @@ const StoreAnalyticsDashboard: React.FC = () => {
             appliedFilters.endDate,
             abortController.signal,
           ),
+          typeof analyticsService.getProfitAnalytics === "function"
+            ? analyticsService.getProfitAnalytics(
+                appliedFilters.period,
+                appliedFilters.startDate,
+                appliedFilters.endDate,
+              )
+            : Promise.resolve({ data: null }),
         ]);
 
       if (abortController.signal.aborted) {
@@ -302,6 +315,13 @@ const StoreAnalyticsDashboard: React.FC = () => {
             "تعذر جلب الاتجاه اليومي للزيارات والإيرادات.",
           ),
         );
+      }
+
+      if (profitResult.status === "fulfilled") {
+        const data = unwrapResponseData<ProfitStats>(profitResult.value);
+        setProfitStats(data);
+      } else {
+        setProfitStats(null);
       }
 
       setPartialWarnings(warnings);
@@ -365,6 +385,7 @@ const StoreAnalyticsDashboard: React.FC = () => {
   const conversionRate = coerceNumber(analytics?.conversionRate);
   const avgOrderValue = coerceNumber(analytics?.avgOrderValue);
   const deliveredOrders = coerceNumber(analytics?.deliveredOrders);
+  const cancelledOrders = coerceNumber(analytics?.cancelledOrders);
   const deliveryRate = coerceNumber(analytics?.deliveryRate);
   const activeVisitors = coerceNumber(analytics?.activeVisitors);
 
@@ -379,6 +400,25 @@ const StoreAnalyticsDashboard: React.FC = () => {
   const potentialConversionRate = coerceNumber(analytics?.potentialConversionRate ?? (totalVisits > 0 ? (grossIntentOrders / totalVisits) * 100 : 0));
   const conversionLift = coerceNumber(analytics?.conversionLift ?? Math.max(0, realizedConversionRate - organicConversionRate));
   const recoveryRate = coerceNumber(analytics?.recoveryRate ?? ((incompleteCarts + recoveredPurchases) > 0 ? (recoveredPurchases / (incompleteCarts + recoveredPurchases)) * 100 : 0));
+
+  // Period-over-Period Trends (مقارنة مع الفترة السابقة)
+  const revenueTrend = useMemo(
+    () => calculateTrend(totalRevenue, analytics?.prevPeriod?.revenue),
+    [totalRevenue, analytics?.prevPeriod?.revenue]
+  );
+  const visitsTrend = useMemo(
+    () => calculateTrend(totalVisits, analytics?.prevPeriod?.visits),
+    [totalVisits, analytics?.prevPeriod?.visits]
+  );
+  const ordersTrend = useMemo(
+    () => calculateTrend(totalPurchases, analytics?.prevPeriod?.purchases ?? analytics?.prevPeriod?.totalOrders),
+    [totalPurchases, analytics?.prevPeriod?.purchases, analytics?.prevPeriod?.totalOrders]
+  );
+  const totalOrdersAllChannels = analytics?.totalOrders ?? totalPurchases;
+
+  // Profitability metrics (صافي الربح وهوامش الربح)
+  const netProfit = profitStats?.summary?.netProfit ?? 0;
+  const profitMargin = profitStats?.summary?.profitMargin ?? 0;
 
   // Step-by-step conversion ratios
   const visitorToCart = totalVisits > 0 ? ((totalCarts / totalVisits) * 100).toFixed(1) : "0.0";
@@ -636,10 +676,31 @@ const StoreAnalyticsDashboard: React.FC = () => {
 
         {/* 2. Top Row - The 4 Core Business Pillars */}
         <section className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3.5">
-          {/* Card 1: Revenue */}
+          {/* Card 1: Revenue & Profitability */}
           <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">إجمالي الإيرادات</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">إجمالي الإيرادات</span>
+                {revenueTrend && (
+                  <span
+                    className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                      revenueTrend.direction === "up"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60"
+                        : revenueTrend.direction === "down"
+                        ? "bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                    }`}
+                    title={revenueTrend.label}
+                  >
+                    {revenueTrend.direction === "up" ? (
+                      <ArrowTrendingUpIcon className="size-2.5 sm:size-3" />
+                    ) : revenueTrend.direction === "down" ? (
+                      <ArrowTrendingDownIcon className="size-2.5 sm:size-3" />
+                    ) : null}
+                    <span>{revenueTrend.formatted}</span>
+                  </span>
+                )}
+              </div>
               <span className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 shrink-0">
                 <CreditCardIcon className="size-4 sm:size-5" />
               </span>
@@ -648,34 +709,89 @@ const StoreAnalyticsDashboard: React.FC = () => {
               <h3 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white truncate">
                 {analytics ? formatCurrency(totalRevenue) : "--"}
               </h3>
-              <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                مبيعات الفترة المحددة بالكامل
-              </p>
+              <div className="mt-1.5 pt-1.5 sm:mt-2 sm:pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                <span>صافي الربح:</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  {netProfit > 0
+                    ? `${formatCurrency(netProfit)} (${profitMargin.toFixed(0)}%)`
+                    : totalRevenue > 0
+                    ? "يحسب مع التكلفة"
+                    : "--"}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Card 2: Orders & AOV */}
+          {/* Card 2: Orders & Channels */}
           <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">الطلبات المؤكدة</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">الطلبات المؤكدة</span>
+                {ordersTrend && (
+                  <span
+                    className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                      ordersTrend.direction === "up"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60"
+                        : ordersTrend.direction === "down"
+                        ? "bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                    }`}
+                    title={ordersTrend.label}
+                  >
+                    {ordersTrend.direction === "up" ? (
+                      <ArrowTrendingUpIcon className="size-2.5 sm:size-3" />
+                    ) : ordersTrend.direction === "down" ? (
+                      <ArrowTrendingDownIcon className="size-2.5 sm:size-3" />
+                    ) : null}
+                    <span>{ordersTrend.formatted}</span>
+                  </span>
+                )}
+              </div>
               <span className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
                 <ShoppingBagIcon className="size-4 sm:size-5" />
               </span>
             </div>
             <div className="mt-2.5 sm:mt-3">
               <h3 className="text-lg sm:text-2xl font-black text-gray-900 dark:text-white truncate">
-                {analytics ? formatCount(totalPurchases) : "--"} <span className="text-[10px] sm:text-xs font-normal text-gray-400">طلب</span>
+                {analytics ? formatCount(totalPurchases) : "--"}{" "}
+                <span className="text-[10px] sm:text-xs font-normal text-gray-400">طلب متجر</span>
               </h3>
-              <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                متوسط الطلب: {avgOrderValue > 0 ? formatCurrency(avgOrderValue) : "--"}
-              </p>
+              <div className="mt-1.5 pt-1.5 sm:mt-2 sm:pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
+                <span>متوسط: {avgOrderValue > 0 ? formatCurrency(avgOrderValue) : "--"}</span>
+                {totalOrdersAllChannels > totalPurchases && (
+                  <span className="text-gray-400 text-[9px] sm:text-[10px]" title="إجمالي كافة القنوات: المتجر + الواتساب + اليدوي">
+                    (الكل: {formatCount(totalOrdersAllChannels)})
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
           {/* Card 3: 3-Tier Conversion Rate */}
           <div className="rounded-2xl sm:rounded-3xl border border-gray-200/80 dark:border-gray-800 bg-white dark:bg-gray-900 p-3.5 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between">
             <div className="flex items-center justify-between gap-1">
-              <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">التحويل المحقق</span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="text-[11px] sm:text-xs font-semibold text-gray-500 dark:text-gray-400 truncate">التحويل المحقق</span>
+                {visitsTrend && (
+                  <span
+                    className={`inline-flex items-center gap-0.5 text-[9px] sm:text-[10px] font-bold px-1.5 py-0.5 rounded-full shrink-0 ${
+                      visitsTrend.direction === "up"
+                        ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60"
+                        : visitsTrend.direction === "down"
+                        ? "bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400 border border-rose-200 dark:border-rose-800/60"
+                        : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
+                    }`}
+                    title={`زيارات: ${visitsTrend.label}`}
+                  >
+                    {visitsTrend.direction === "up" ? (
+                      <ArrowTrendingUpIcon className="size-2.5 sm:size-3" />
+                    ) : visitsTrend.direction === "down" ? (
+                      <ArrowTrendingDownIcon className="size-2.5 sm:size-3" />
+                    ) : null}
+                    <span>{visitsTrend.formatted} زيارات</span>
+                  </span>
+                )}
+              </div>
               <span className="p-1.5 sm:p-2 rounded-xl sm:rounded-2xl bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
                 <ChartBarIcon className="size-4 sm:size-5" />
               </span>
@@ -718,9 +834,14 @@ const StoreAnalyticsDashboard: React.FC = () => {
                 </h3>
                 <span className="text-[10px] sm:text-xs text-gray-400">({formatCount(deliveredOrders)} مسلم)</span>
               </div>
-              <p className="mt-0.5 sm:mt-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400 truncate">
-                نسبة الشحنات المسلمة (COD)
-              </p>
+              <div className="mt-1.5 pt-1.5 sm:mt-2 sm:pt-2 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-1 text-[10px] sm:text-[11px] text-gray-500 dark:text-gray-400">
+                <span>نسبة التسليم (COD)</span>
+                {cancelledOrders > 0 && (
+                  <span className="text-rose-600 dark:text-rose-400 text-[9px] sm:text-[10px]">
+                    {formatCount(cancelledOrders)} ملغي
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </section>

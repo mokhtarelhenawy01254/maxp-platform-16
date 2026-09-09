@@ -1069,6 +1069,37 @@ class AnalyticsService {
       ? (purchases / checkouts * 100).toFixed(2)
       : (addToCarts > 0 ? (purchases / addToCarts * 100).toFixed(2) : 0);
 
+    // Calculate previous period visits and revenue for period-over-period trend analysis
+    let prevPeriodStats = null;
+    if (comparisonType !== 'none' && orderBreakdown?.prevPeriod && startDate && endDate) {
+      try {
+        const periodMs = endDate.getTime() - startDate.getTime();
+        let prevEnd = new Date(startDate.getTime() - 86400000);
+        let prevStart = new Date(prevEnd.getTime() - periodMs);
+        if (comparisonType === 'yoy') {
+          prevEnd = new Date(startDate.getTime() - 86400000);
+          prevStart = new Date(prevEnd.getTime() - periodMs);
+          prevEnd.setFullYear(prevEnd.getFullYear() - 1);
+          prevStart.setFullYear(prevStart.getFullYear() - 1);
+        }
+        const [prevVisitsCount, prevOrdersSum] = await Promise.all([
+          getSharedPrismaClient().storeVisit.count({
+            where: { companyId, visitedAt: { gte: prevStart, lte: prevEnd } }
+          }).catch(() => 0),
+          this.getOrderSummary(companyId, prevStart, prevEnd).catch(() => ({ count: 0, revenue: 0 }))
+        ]);
+        prevPeriodStats = {
+          ...orderBreakdown.prevPeriod,
+          visits: prevVisitsCount,
+          revenue: prevOrdersSum.revenue,
+          purchases: prevOrdersSum.count,
+          conversionRate: prevVisitsCount > 0 ? parseFloat(((prevOrdersSum.count / prevVisitsCount) * 100).toFixed(2)) : 0
+        };
+      } catch (err) {
+        prevPeriodStats = orderBreakdown.prevPeriod;
+      }
+    }
+
     return {
       totalVisits,
       uniqueVisitors: uniqueVisitors.length,
@@ -1096,6 +1127,7 @@ class AnalyticsService {
       checkoutRate: parseFloat(checkoutRate),
       purchaseRate: parseFloat(purchaseRate),
       ...orderBreakdown,
+      prevPeriod: prevPeriodStats || orderBreakdown?.prevPeriod || null,
     };
   }
 

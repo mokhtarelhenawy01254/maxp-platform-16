@@ -24,6 +24,7 @@ jest.mock("../../../services/analyticsService", () => ({
     getStoreAnalytics: jest.fn(),
     getTopProducts: jest.fn(),
     getDailyAnalytics: jest.fn(),
+    getProfitAnalytics: jest.fn(),
   },
 }));
 
@@ -45,10 +46,25 @@ describe("StoreAnalyticsDashboard", () => {
         addToCartRate: 20,
         checkoutRate: 10,
         purchaseRate: 5,
+        totalOrders: 3,
+        prevPeriod: {
+          visits: 10,
+          revenue: 1200,
+          purchases: 1,
+          totalOrders: 2,
+        },
       },
     });
     mockedAnalyticsService.getTopProducts.mockResolvedValue({ data: [] });
     mockedAnalyticsService.getDailyAnalytics.mockResolvedValue({ data: [] });
+    mockedAnalyticsService.getProfitAnalytics.mockResolvedValue({
+      data: {
+        summary: {
+          netProfit: 600,
+          profitMargin: 40,
+        },
+      },
+    });
   });
 
   afterEach(() => {

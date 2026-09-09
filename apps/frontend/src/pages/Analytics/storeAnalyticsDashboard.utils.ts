@@ -11,6 +11,7 @@ export interface AnalyticsData {
   recoveredRevenue?: number;
   incompleteCarts?: number;
   deliveredOrders?: number;
+  cancelledOrders?: number;
   deliveryRate?: number;
   totalRevenue: number;
   conversionRate: number;
@@ -24,6 +25,57 @@ export interface AnalyticsData {
   addToCartRate: number;
   checkoutRate: number;
   purchaseRate: number;
+  totalOrders?: number;
+  prevPeriod?: {
+    totalOrders?: number;
+    codOrders?: number;
+    prepaidOrders?: number;
+    cancelledOrders?: number;
+    visits?: number;
+    revenue?: number;
+    purchases?: number;
+    conversionRate?: number;
+  } | null;
+}
+
+export interface ProfitStats {
+  summary?: {
+    totalRevenue: number;
+    totalCOGS: number;
+    totalShipping: number;
+    grossProfit: number;
+    netProfit: number;
+    profitMargin: number;
+    totalOrders: number;
+    avgOrderProfit: number;
+  };
+}
+
+export interface TrendMetric {
+  value: number;
+  direction: "up" | "down" | "neutral";
+  formatted: string;
+  label: string;
+}
+
+export function calculateTrend(current: number, previous?: number | null): TrendMetric | null {
+  if (previous == null || previous <= 0) return null;
+  const change = ((current - previous) / previous) * 100;
+  const absChange = Math.abs(change);
+  if (absChange < 0.1) {
+    return {
+      value: 0,
+      direction: "neutral",
+      formatted: "0.0%",
+      label: "مستقر مقارنة بآخر فترة",
+    };
+  }
+  return {
+    value: parseFloat(absChange.toFixed(1)),
+    direction: change > 0 ? "up" : "down",
+    formatted: `${change > 0 ? "+" : "-"}${absChange.toFixed(1)}%`,
+    label: change > 0 ? "زيادة عن آخر فترة" : "نقص عن آخر فترة",
+  };
 }
 
 export interface TopProduct {

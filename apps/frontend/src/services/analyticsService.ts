@@ -1265,6 +1265,7 @@ class AnalyticsService {
       throw error;
     }
   }
+
 }
 
 export default new AnalyticsService();

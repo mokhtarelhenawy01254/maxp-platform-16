@@ -6,6 +6,7 @@ import {
   getTopProductImage,
   parseProductImages,
   generateExecutiveBriefing,
+  calculateTrend,
 } from "../storeAnalyticsDashboard.utils";
 
 describe("storeAnalyticsDashboard utils", () => {
@@ -273,6 +274,33 @@ describe("storeAnalyticsDashboard utils", () => {
     expect(briefing.tone).toBe("attention");
     expect(briefing.headline).toContain("تنبيه في مزامنة بيانات التتبع");
     expect(briefing.actionSuggestion?.path).toBe("/settings/clarity");
+  });
+
+  test("calculateTrend handles positive, negative, neutral and missing trends properly", () => {
+    expect(calculateTrend(120, 100)).toEqual({
+      value: 20,
+      direction: "up",
+      formatted: "+20.0%",
+      label: "زيادة عن آخر فترة",
+    });
+
+    expect(calculateTrend(80, 100)).toEqual({
+      value: 20,
+      direction: "down",
+      formatted: "-20.0%",
+      label: "نقص عن آخر فترة",
+    });
+
+    expect(calculateTrend(100, 100)).toEqual({
+      value: 0,
+      direction: "neutral",
+      formatted: "0.0%",
+      label: "مستقر مقارنة بآخر فترة",
+    });
+
+    expect(calculateTrend(100, null)).toBeNull();
+    expect(calculateTrend(100, 0)).toBeNull();
+    expect(calculateTrend(100, undefined)).toBeNull();
   });
 });
 
