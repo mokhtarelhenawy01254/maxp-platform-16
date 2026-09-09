@@ -41,6 +41,10 @@
     "titleTemplate": "%s | استوديو الأعمال والإبداع",
     "description": "بورتفوليو احترافي واستوديو إبداعي — نصمم ونبني هويات بصرية، مواقع، وتجارب رقمية استثنائية تحقق نتائج ملموسة."
   },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=1600",
+    "colors": ["258 90% 66%", "240 8% 7%", "165 82% 48%"]
+  },
   "header": {
     "brandName": "Creative Studio ✨",
     "showSearch": false,

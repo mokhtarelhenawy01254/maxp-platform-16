@@ -636,6 +636,8 @@ export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
 };
 
 const STOREFRONT_THEME_PREVIEW_IMAGES: Record<string, string> = {
+  "creative-portfolio":
+    "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?auto=format&fit=crop&q=80&w=1600",
   "atelier-nova":
     "/assets/themes/atelier-nova/preview.png",
   "elegant-luxe":
