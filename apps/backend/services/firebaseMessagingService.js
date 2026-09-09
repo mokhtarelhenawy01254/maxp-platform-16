@@ -41,7 +41,8 @@ function initFirebase() {
       for (const candidate of candidates) {
         if (fs.existsSync(candidate)) {
           try {
-            serviceAccount = JSON.parse(fs.readFileSync(candidate, "utf8"));
+            const raw = fs.readFileSync(candidate, "utf8");
+            serviceAccount = JSON.parse(raw.replace(/^\uFEFF/, "").trim());
             console.log("✅ [FCM] Loaded Firebase Service Account from:", candidate);
             break;
           } catch (e) {
@@ -270,6 +271,7 @@ async function sendPushToUser({ companyId, userId, title, body, data = {}, url =
 
 module.exports = {
   initFirebase,
+  isFirebaseInitialized: () => firebaseInitialized,
   upsertDeviceToken,
   removeDeviceToken,
   sendToFcmTokens,

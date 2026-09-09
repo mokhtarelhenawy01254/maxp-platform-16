@@ -386,3 +386,9 @@ dogfood-output/
 # local browser automation artifacts
 .playwright-cli/
 .playwright-shots/
+
+# Firebase & Google Cloud Service Account Keys
+*firebase-service-account*.json
+*service-account*.json
+serviceAccountKey.json
+
