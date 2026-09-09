@@ -162,18 +162,49 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
 
     const fetchReplies = async () => {
       try {
-        const [qrRes, galleryRes] = await Promise.all([
+        const [qrRes, galleryRes, smartRepliesRes] = await Promise.all([
           apiClient.get<{ success?: boolean; data?: any[] }>(
             "/unified-inbox/quick-replies",
           ).catch(() => null),
           apiClient.get<{ success?: boolean; texts?: any[] }>(
             "/user/text-gallery",
           ).catch(() => null),
+          apiClient.get<{ success?: boolean; data?: any }>(
+            "/smart-replies/rule-responses",
+          ).catch(() => null),
         ]);
 
         if (!isMounted) return;
 
         let combined: QuickReply[] = [];
+
+        // Add smart replies templates from /settings/smart-replies
+        if (
+          smartRepliesRes?.data?.success &&
+          Array.isArray(smartRepliesRes.data.data?.customRuleResponses?.templates)
+        ) {
+          const templates = smartRepliesRes.data.data.customRuleResponses.templates;
+          templates.forEach((t: any) => {
+            const templateName = t.name || "قالب رد";
+            const firstKw =
+              Array.isArray(t.keywords) && t.keywords.length > 0
+                ? t.keywords[0]
+                : templateName;
+            const cleanShortcut = `/${firstKw.trim().replace(/[\s\/\\]+/g, "_")}`;
+            const responses = Array.isArray(t.responses) ? t.responses : [];
+            responses.forEach((respText: string, rIdx: number) => {
+              if (!respText || !respText.trim()) return;
+              combined.push({
+                id: `smart-reply-${t.id}-${rIdx}`,
+                shortcut: cleanShortcut,
+                title: responses.length > 1 ? `${templateName} (${rIdx + 1})` : templateName,
+                content: respText.trim(),
+                category: "قوالب الردود",
+                isPinned: true,
+              });
+            });
+          });
+        }
 
         // Add unified/WA quick replies
         if (qrRes?.data?.success && Array.isArray(qrRes.data.data)) {
@@ -503,8 +534,8 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
           )}
         </div>
 
-        {/* Footer Hint */}
-        <div className="flex items-center justify-between px-3.5 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-[11px] text-slate-500 dark:text-slate-400">
+        {/* Footer Hint & Settings Link */}
+        <div className="flex items-center justify-between px-3.5 py-2 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 text-[11px] text-slate-500 dark:text-slate-400 gap-2">
           <div className="flex items-center gap-1.5 truncate">
             <span>💡</span>
             <span className="hidden sm:inline">
@@ -515,9 +546,20 @@ const QuickReplyDropdown: React.FC<QuickReplyDropdownProps> = ({
             </span>
           </div>
 
-          <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 flex-shrink-0">
-            / للردود السريعة
-          </span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <a
+              href="/settings/smart-replies"
+              onClick={() => onClose()}
+              className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1"
+              title="الانتقال إلى شاشة الردود التلقائية لتعديل القوالب"
+            >
+              <span>⚙️ تعديل القوالب</span>
+            </a>
+            <span className="text-slate-300 dark:text-slate-600">|</span>
+            <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+              / للردود
+            </span>
+          </div>
         </div>
       </div>
     </>

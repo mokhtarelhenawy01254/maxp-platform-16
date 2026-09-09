@@ -10,6 +10,7 @@ import {
 import ReactionSelector from "../Generic/ReactionSelector";
 import LinkifiedText from "../../common/LinkifiedText";
 import {
+  buildProxyImageUrl,
   getInboxExternalImageUrl,
   getInboxMessageMediaUrl,
 } from "../../../utils/imageUrl";
@@ -806,7 +807,13 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                       loading="lazy"
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        (e.target as HTMLElement).style.display = "none";
+                        const target = e.currentTarget as HTMLImageElement;
+                        if (!target.dataset.retried && replyToResolvedId) {
+                          target.dataset.retried = "true";
+                          target.src = buildProxyImageUrl(null, { messageId: replyToResolvedId });
+                          return;
+                        }
+                        target.style.display = "none";
                       }}
                     />
                   </div>
@@ -836,8 +843,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
                         const rawUrlParam = parsed.searchParams.get("url");
                         if (rawUrlParam && rawUrlParam !== target.src) {
                           target.src = rawUrlParam;
+                          return;
                         }
                       } catch {}
+                      if (message.id) {
+                        target.src = buildProxyImageUrl(null, { messageId: message.id });
+                      }
                     }}
                   />
                 ))}

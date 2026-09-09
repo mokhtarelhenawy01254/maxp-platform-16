@@ -340,8 +340,13 @@ export const getImageUrl = (
     ? trimmedPath.substring(1)
     : trimmedPath;
 
-  // بناء URL كامل
-  return `${envConfig.backendUrl}/${cleanPath}`;
+  // بناء URL كامل مع معلمة تحديث للـ uploads لتجاوز كاش Cloudflare القديم
+  const fullUrl = `${envConfig.backendUrl}/${cleanPath}`;
+  if (cleanPath.startsWith("uploads/") && !cleanPath.includes("?")) {
+    return `${fullUrl}?v=2`;
+  }
+
+  return fullUrl;
 };
 
 export const getInboxMessageMediaUrl = (
@@ -356,6 +361,10 @@ export const getInboxMessageMediaUrl = (
 
   if (!normalized && messageId) {
     return buildProxyImageUrl(null, { messageId });
+  }
+
+  if (normalized && normalized.includes("/uploads/") && !normalized.includes("?")) {
+    return `${normalized}?v=2`;
   }
 
   return normalized || rawUrl || "";
