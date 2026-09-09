@@ -5392,20 +5392,26 @@ select {
   }
 
   /* No conversation selected → hide chat + profile, show only list */
+  .business-inbox-shell:not(.business-inbox-shell--conversation-active)
+    .business-inbox-column.flex-1,
+  .business-inbox-shell:not(.business-inbox-shell--conversation-active)
+    .business-inbox-column--profile,
   [data-theme="business-os-enterprise"]
     .business-inbox-shell:not(.business-inbox-shell--conversation-active)
     .business-inbox-column.flex-1,
   [data-theme="business-os-enterprise"]
     .business-inbox-shell:not(.business-inbox-shell--conversation-active)
     .business-inbox-column--profile {
-    display: none;
+    display: none !important;
   }
 
   /* Conversation selected → hide list, keep chat + profile visible */
+  .business-inbox-shell--conversation-active
+    .business-inbox-column--list,
   [data-theme="business-os-enterprise"]
     .business-inbox-shell--conversation-active
     .business-inbox-column--list {
-    display: none;
+    display: none !important;
   }
 }
 

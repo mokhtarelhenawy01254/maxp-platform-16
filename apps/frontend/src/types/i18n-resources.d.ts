@@ -8560,6 +8560,15 @@ declare module 'react-i18next' {
         loading: string;
         custom: string;
         newResponse: string;
+        editTemplate: string;
+        saveChanges: string;
+        preview: string;
+        showMore: string;
+        showLess: string;
+        templateHelper: string;
+        keywordHelper: string;
+        addAlternativeResponse: string;
+        replyContent: string;
       };
       telegramAutoReply: {
         title: string;

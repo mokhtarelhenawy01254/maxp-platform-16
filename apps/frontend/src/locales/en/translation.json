@@ -8566,7 +8566,16 @@
     "saving": "Saving...",
     "loading": "Loading...",
     "custom": "Custom",
-    "newResponse": "Auto response..."
+    "newResponse": "Auto response...",
+    "editTemplate": "Edit Template",
+    "saveChanges": "Save Changes",
+    "preview": "Preview as customer sees it",
+    "showMore": "Show full text",
+    "showLess": "Show less",
+    "templateHelper": "Press Enter to create new lines and format text",
+    "keywordHelper": "Type a keyword and press Enter (or separate by comma)",
+    "addAlternativeResponse": "+ Add alternative response",
+    "replyContent": "Auto-Reply Content"
   },
   "telegramAutoReply": {
     "title": "🤖 Auto Reply",
