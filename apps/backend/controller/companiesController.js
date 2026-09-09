@@ -3763,7 +3763,7 @@ const getUsersStatistics = async (req, res) => {
       FROM "orders" o
       LEFT JOIN "conversations" c ON c.id = o."conversationId"
       WHERE o."companyId" = ${companyId}
-        AND o.status NOT IN ('CANCELLED', 'REJECTED', 'FAILED', 'DUPLICATE_ORDER')
+        AND o.status::text NOT IN ('CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED', 'TRASH', 'LOST')
         ${startUtc ? PrismaModule.sql`AND o."createdAt" >= ${startUtc}` : PrismaModule.empty}
         ${endUtc ? PrismaModule.sql`AND o."createdAt" <= ${endUtc}` : PrismaModule.empty}
         ${normalizedChannel ? PrismaModule.sql`AND (c."channel" = ${normalizedChannel} OR c."channel" IS NULL)` : PrismaModule.empty}
@@ -3824,20 +3824,18 @@ const getUsersStatistics = async (req, res) => {
     );
 
     // Calculate unique total conversations for the company in date range
-    const totalCompanyConversations = await prisma.conversation.count({
-      where: {
-        companyId: companyId,
-        ...(normalizedChannel ? { channel: normalizedChannel } : {}),
-        messages: {
-          some: {
-            isFromCustomer: false,
-            senderId: { not: null },
-            ...(startUtc ? { createdAt: { gte: startUtc } } : {}),
-            ...(endUtc ? { createdAt: { lte: endUtc } } : {}),
-          },
-        },
-      },
-    });
+    const totalUniqueResult = await prisma.$queryRaw`
+      SELECT COUNT(DISTINCT m."conversationId")::int AS "count"
+      FROM "messages" m
+      JOIN "conversations" c ON c.id = m."conversationId"
+      WHERE c."companyId" = ${companyId}
+        AND m."isFromCustomer" = false
+        AND m."senderId" IS NOT NULL
+        ${startUtc ? PrismaModule.sql`AND m."createdAt" >= ${startUtc}` : PrismaModule.empty}
+        ${endUtc ? PrismaModule.sql`AND m."createdAt" <= ${endUtc}` : PrismaModule.empty}
+        ${normalizedChannel ? PrismaModule.sql`AND c."channel" = ${normalizedChannel}` : PrismaModule.empty}
+    `;
+    const totalCompanyConversations = totalUniqueResult[0]?.count || 0;
 
     res.json({
       success: true,
