@@ -127,6 +127,7 @@ export const marketplaceFeatureMap: MarketplaceFeatureMapEntry[] = [
     routes: [
       { path: "/orders", label: "الطلبات" },
       { path: "/orders/preparation", label: "تجهيز الطلبات" },
+      { path: "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP", label: "تجهيز الطلبات المعلقة" },
       { path: "/orders/incomplete", label: "الطلبات الناقصة" },
       { path: "/pos", label: "نقطة البيع" },
       { path: "/orders/manual", label: "طلب يدوي" },

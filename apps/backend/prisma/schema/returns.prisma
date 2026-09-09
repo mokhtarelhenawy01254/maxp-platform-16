@@ -21,7 +21,7 @@ model ReturnRequest {
   orderId               String
   customerId            String
   companyId             String
-  reasonId              String
+  reasonId              String?
   status                ReturnRequestsStatus           @default(PENDING)
   adminNotes            String?
   customerNotes         String?
@@ -38,7 +38,7 @@ model ReturnRequest {
   productCondition      String?
   shippingReturnCost    Decimal?                       @db.Decimal(10, 2)
   settlementAmount      Decimal?                       @db.Decimal(10, 2)
-  responsibleParty      ReturnRequestsResponsibleParty @default(OTHER)
+  responsibleParty      ReturnRequestsResponsibleParty?
   returnTypeId          String?
   shippingCompanyId     String?
   reviewedAt            DateTime?
@@ -49,7 +49,7 @@ model ReturnRequest {
   company               Company                        @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customer              Customer                       @relation(fields: [customerId], references: [id], onDelete: Cascade)
   order                 Order                          @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  returnReason          ReturnReason                   @relation(fields: [reasonId], references: [id])
+  returnReason          ReturnReason?                  @relation(fields: [reasonId], references: [id])
   returnType            ReturnType?                    @relation(fields: [returnTypeId], references: [id], onDelete: SetNull)
   shippingCompany       ShippingCompany?               @relation(fields: [shippingCompanyId], references: [id], onDelete: SetNull)
 

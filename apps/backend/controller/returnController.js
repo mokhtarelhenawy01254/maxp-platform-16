@@ -214,30 +214,6 @@ async function ensureShippingReturnRequestsSynced(companyId) {
             select: { orderId: true, shippingCompanyId: true }
         });
         const orderShippingCompanyMap = new Map(shipments.map(s => [s.orderId, s.shippingCompanyId]));
-
-        let defaultReason = await prisma.returnReason.findFirst({
-            where: { companyId, isActive: true }
-        });
-
-        if (!defaultReason) {
-            let cat = await prisma.returnReasonCategory.findFirst({
-                where: { companyId }
-            });
-            if (!cat) {
-                cat = await prisma.returnReasonCategory.create({
-                    data: { companyId, name: 'مرتجعات الشحن', defaultRole: 'SHIPPING' }
-                });
-            }
-            defaultReason = await prisma.returnReason.create({
-                data: {
-                    companyId,
-                    categoryId: cat.id,
-                    reason: 'مرتجع شحن (شركة الشحن)',
-                    description: 'مرتجع تلقائي تم استلامه من شركة الشحن'
-                }
-            });
-        }
-
         let globalFallbackCustomerId = null;
         const records = [];
         for (const o of missingOrders) {
@@ -250,14 +226,14 @@ async function ensureShippingReturnRequestsSynced(companyId) {
                 customerId = globalFallbackCustomerId;
             }
 
-            if (customerId && defaultReason) {
+            if (customerId) {
                 records.push({
                     companyId,
                     orderId: o.id,
                     customerId,
-                    reasonId: defaultReason.id,
+                    reasonId: null,
                     status: 'PENDING',
-                    responsibleParty: 'SHIPPING',
+                    responsibleParty: null,
                     adminNotes: 'مرتجع تلقائي من شركة الشحن',
                     trackingNumber: o.turboTrackingNumber || null,
                     shippingCompanyId: orderShippingCompanyMap.get(o.id) || null,
@@ -455,11 +431,11 @@ exports.createReturnRequest = async (req, res) => {
                 orderId: finalOrderId,
                 orderItemId,
                 customerId: finalCustomerId,
-                reasonId,
+                reasonId: reasonId || null,
                 customerNotes,
                 adminNotes,
                 assignedTo,
-                responsibleParty: finalResponsibleParty || 'OTHER',
+                responsibleParty: finalResponsibleParty || null,
                 companyId: req.user.effectiveCompanyId || req.user.companyId,
                 status: 'PENDING',
                 refundAmount: refundAmount ? parseFloat(refundAmount) : undefined,
@@ -499,10 +475,10 @@ exports.updateReturnRequest = async (req, res) => {
         const data = {
             adminNotes,
             customerNotes,
-            reasonId,
+            reasonId: reasonId !== undefined ? (reasonId || null) : oldRequest.reasonId,
             refundAmount,
             assignedTo,
-            responsibleParty,
+            responsibleParty: responsibleParty !== undefined ? (responsibleParty || null) : oldRequest.responsibleParty,
             isReviewed,
             ...(returnTypeId !== undefined ? { returnTypeId: returnTypeId || null } : {}),
             ...(shippingCompanyId !== undefined ? { shippingCompanyId: shippingCompanyId || null } : {}),

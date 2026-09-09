@@ -177,6 +177,12 @@
     "orderWorkflow": {
       "description": "Customize order processing workflow"
     },
+    "orderPreparation": {
+      "description": "Manage order preparation queue, quality checks, and shipment packaging"
+    },
+    "orderPreparationHold": {
+      "description": "Manage and process on-hold orders in the preparation queue (96 orders view)"
+    },
     "facebookPost": {
       "description": "Create and publish Facebook posts"
     },

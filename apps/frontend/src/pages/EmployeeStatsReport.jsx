@@ -206,9 +206,12 @@ const EmployeeStatsReport = () => {
     const messages = statistics.reduce((s, st) => s + (st.messagesCount || 0), 0);
     const orders = statistics.reduce((s, st) => s + (st.ordersCount || 0), 0);
     const revenue = statistics.reduce((s, st) => s + (st.totalRevenue || 0), 0);
+    const converted = statistics.reduce((s, st) => s + (st.convertedConversations || 0), 0);
 
     const conversion =
-      conversations > 0 ? ((orders / conversations) * 100).toFixed(1) : "0.0";
+      conversations > 0
+        ? ((Math.min(converted > 0 ? converted : orders, conversations) / conversations) * 100).toFixed(1)
+        : "0.0";
 
     return {
       conversations,
@@ -290,7 +293,12 @@ const EmployeeStatsReport = () => {
 
   // Active employees for charts
   const activeEmployees = useMemo(() => {
-    return statistics.filter((st) => st.conversationsCount > 0);
+    return statistics.filter(
+      (st) =>
+        (st.conversationsCount || 0) > 0 ||
+        (st.messagesCount || 0) > 0 ||
+        (st.ordersCount || 0) > 0
+    );
   }, [statistics]);
 
   return (
@@ -778,10 +786,12 @@ const EmployeeStatsReport = () => {
               <ResponsiveContainer width="100%" height={300}>
                 <PieChart>
                   <Pie
-                    data={activeEmployees.map((st) => ({
-                      name: `${st.firstName || ""} ${st.lastName || ""}`.trim() || st.email,
-                      value: st.conversationsCount,
-                    }))}
+                    data={activeEmployees
+                      .filter((st) => (st.conversationsCount || 0) > 0)
+                      .map((st) => ({
+                        name: `${st.firstName || ""} ${st.lastName || ""}`.trim() || st.email,
+                        value: st.conversationsCount,
+                      }))}
                     cx="50%"
                     cy="50%"
                     labelLine={false}

@@ -3766,7 +3766,7 @@ const getUsersStatistics = async (req, res) => {
         AND o.status::text NOT IN ('CANCELLED', 'DUPLICATE_ORDER', 'REFUNDED', 'RETURNED', 'TRASH', 'LOST')
         ${startUtc ? PrismaModule.sql`AND o."createdAt" >= ${startUtc}` : PrismaModule.empty}
         ${endUtc ? PrismaModule.sql`AND o."createdAt" <= ${endUtc}` : PrismaModule.empty}
-        ${normalizedChannel ? PrismaModule.sql`AND (c."channel" = ${normalizedChannel} OR c."channel" IS NULL)` : PrismaModule.empty}
+        ${normalizedChannel ? PrismaModule.sql`AND c."channel" = ${normalizedChannel}` : PrismaModule.empty}
         AND (o."createdBy" IS NOT NULL OR c."assignedUserId" IS NOT NULL)
       GROUP BY COALESCE(o."createdBy", c."assignedUserId")
     `;
@@ -3843,7 +3843,7 @@ const getUsersStatistics = async (req, res) => {
       data: {
         statistics,
         totalUsers: statistics.length,
-        totalUniqueConversations: totalCompanyConversations,
+        totalUniqueConversations: !isPrivileged ? (statistics[0]?.conversationsCount || 0) : totalCompanyConversations,
         dateRange: {
           startDate: startDate || null,
           endDate: endDate || null,

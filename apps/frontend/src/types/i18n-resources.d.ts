@@ -12643,6 +12643,12 @@ declare module 'react-i18next' {
           orderWorkflow: {
             description: string;
           };
+          orderPreparation: {
+            description: string;
+          };
+          orderPreparationHold: {
+            description: string;
+          };
           facebookPost: {
             description: string;
           };
@@ -17036,6 +17042,7 @@ declare module 'react-i18next' {
         orders: string;
         orderConfirmations: string;
         orderPreparation: string;
+        orderPreparationHold: string;
         incompleteOrders: string;
         ordersSection: string;
         orderSearchByCode: string;

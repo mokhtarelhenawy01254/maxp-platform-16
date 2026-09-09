@@ -30,7 +30,7 @@ const ReturnManagementPage: React.FC = () => {
     categories.forEach((cat: any) => {
       if (!m[cat.defaultRole]) m[cat.defaultRole] = cat.name;
     });
-    return (role: string) => m[role] || role;
+    return (role?: string | null) => (role ? m[role] || role : "-");
   }, [categories]);
 
   // Filters & Search
@@ -396,25 +396,27 @@ const ReturnManagementPage: React.FC = () => {
                           </div>
                         </>
                       ) : (
-                        <span className="text-xs px-2 py-1 rounded-full bg-gray-200 dark:bg-gray-600 text-gray-500 dark:text-gray-300 flex items-center gap-1 w-fit">
-                          <Clock size={12} /> {t('returns.k_11')}
-                        </span>
+                        <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
                       )}
                     </td>
                   )}
                   {displayConfig?.showResponsiblePartyColumn !== false && (
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          request.responsibleParty === "CUSTOMER"
-                            ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
-                            : request.responsibleParty === "STORE"
-                              ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
-                              : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
-                        }`}
-                      >
-                        {responsiblePartyLabel(request.responsibleParty)}
-                      </span>
+                      {request.responsibleParty ? (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            request.responsibleParty === "CUSTOMER"
+                              ? "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400"
+                              : request.responsibleParty === "STORE"
+                                ? "bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400"
+                                : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                          }`}
+                        >
+                          {responsiblePartyLabel(request.responsibleParty)}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-400 dark:text-gray-500">-</span>
+                      )}
                     </td>
                   )}
                   {displayConfig?.showTrackingColumn !== false && (

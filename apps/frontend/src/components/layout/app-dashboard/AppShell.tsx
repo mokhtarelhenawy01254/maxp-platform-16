@@ -48,14 +48,15 @@ const AppShell: React.FC<AppShellProps> = ({ children, allSections, showMobileHe
   }, [app, allSections]);
 
   const firstVisibleItemPath = useMemo(() => getFirstVisibleItemPath(appSections), [appSections]);
+  const targetDestination = app?.route || firstVisibleItemPath;
   const appLandingPath = app ? `/apps/${app.id}` : null;
   const isOnLandingPath = Boolean(appLandingPath) && location.pathname === appLandingPath;
 
   useEffect(() => {
-    if (appLandingPath && location.pathname === appLandingPath && firstVisibleItemPath) {
-      navigate(firstVisibleItemPath, { replace: true });
+    if (appLandingPath && location.pathname === appLandingPath && targetDestination) {
+      navigate(targetDestination, { replace: true });
     }
-  }, [appLandingPath, firstVisibleItemPath, location.pathname, navigate]);
+  }, [appLandingPath, targetDestination, location.pathname, navigate]);
 
   useEffect(() => {
     if (!isSidebarOpen) {

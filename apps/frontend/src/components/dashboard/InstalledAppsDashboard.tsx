@@ -65,6 +65,8 @@ const APP_ROUTE_MAP: Record<string, string> = {
   'agent-workspace': '/orders',
   'cod-deposit': '/orders',
   'notification-automation': '/notifications/settings',
+  'order-preparation': '/orders/preparation',
+  'order-preparation-hold': '/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP',
 };
 
 const CATEGORY_COLORS: Record<string, { bg: string; text: string; border: string }> = {

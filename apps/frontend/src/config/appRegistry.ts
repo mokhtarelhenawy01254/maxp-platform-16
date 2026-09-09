@@ -33,6 +33,7 @@ import {
   ArrowsRightLeftIcon,
   TagIcon,
   AcademicCapIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
 
@@ -61,6 +62,7 @@ export interface AppDefinition {
   requiredRoles?: string[];
   requiredApps?: string[];
   isHidden?: boolean;
+  route?: string;
 }
 
 export const APP_CATEGORIES: Record<AppCategory, { nameKey: string; order: number }> = {
@@ -525,6 +527,34 @@ export const APP_REGISTRY: AppDefinition[] = [
     requiredApps: ['store', 'store-basic', 'store-pro'],
     displayName: 'Order Workflow',
     displayDescription: 'تخصيص مسار معالجة الطلبات',
+  },
+  {
+    id: 'order-preparation',
+    nameKey: 'sidebar.orderPreparation',
+    descriptionKey: 'appDashboard.app.orderPreparation.description',
+    icon: ClipboardDocumentCheckIcon,
+    color: 'indigo',
+    bgGradient: 'from-indigo-500 to-blue-600',
+    sectionIds: ['orders'],
+    category: 'operations',
+    requiredApps: ['store', 'store-basic', 'store-pro'],
+    displayName: 'تجهيز الطلبات',
+    displayDescription: 'إدارة طابور تجهيز الطلبات وفحص الجودة وإعداد الشحنات',
+    route: '/orders/preparation',
+  },
+  {
+    id: 'order-preparation-hold',
+    nameKey: 'sidebar.orderPreparationHold',
+    descriptionKey: 'appDashboard.app.orderPreparationHold.description',
+    icon: ClockIcon,
+    color: 'amber',
+    bgGradient: 'from-amber-500 to-orange-600',
+    sectionIds: ['orders'],
+    category: 'operations',
+    requiredApps: ['store', 'store-basic', 'store-pro'],
+    displayName: 'تجهيز الطلبات المعلقة',
+    displayDescription: 'متابعة ومعالجة الطلبات المعلقة في مرحلة التجهيز (عرض 96 طلب)',
+    route: '/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP',
   },
   {
     id: 'facebook-post',

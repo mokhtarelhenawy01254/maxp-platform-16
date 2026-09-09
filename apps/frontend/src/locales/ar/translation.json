@@ -12650,6 +12650,12 @@
       "orderWorkflow": {
         "description": "تخصيص مسار معالجة الطلبات"
       },
+      "orderPreparation": {
+        "description": "إدارة طابور تجهيز الطلبات وفحص الجودة وإعداد الشحنات"
+      },
+      "orderPreparationHold": {
+        "description": "متابعة ومعالجة الطلبات المعلقة في مرحلة التجهيز (عرض 96 طلب)"
+      },
       "facebookPost": {
         "description": "إنشاء ونشر منشورات فيسبوك"
       },
@@ -17044,6 +17050,7 @@
     "orders": "الطلبات",
     "orderConfirmations": "طلبات تحتاج تأكيد",
     "orderPreparation": "تجهيز الطلبات",
+    "orderPreparationHold": "تجهيز الطلبات المعلقة",
     "incompleteOrders": "الطلبات غير المكتملة",
     "ordersSection": "إدارة الطلبات",
     "orderSearchByCode": "بحث بكود الطلب",

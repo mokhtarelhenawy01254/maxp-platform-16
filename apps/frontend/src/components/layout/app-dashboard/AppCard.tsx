@@ -66,7 +66,7 @@ const AppCard: React.FC<AppCardProps> = ({ app, isFavorite, onToggleFavorite }) 
   return (
     <article className="relative">
       <Link
-        to={`/apps/${app.id}`}
+        to={app.route || `/apps/${app.id}`}
         aria-label={appName}
         className={`
         group relative w-full text-start p-4 rounded-xl cursor-pointer

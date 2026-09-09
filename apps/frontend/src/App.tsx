@@ -4659,6 +4659,22 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/orders/preparation-hold"
+                  element={<Navigate to="/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP" replace />}
+                />
+                <Route
+                  path="/orders/preparation/on-hold"
+                  element={<Navigate to="/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP" replace />}
+                />
+                <Route
+                  path="/apps/order-preparation-hold"
+                  element={<Navigate to="/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP" replace />}
+                />
+                <Route
+                  path="/apps/order-preparation"
+                  element={<Navigate to="/orders/preparation" replace />}
+                />
+                <Route
                   path="/orders/incomplete"
                   element={
                     <Layout>

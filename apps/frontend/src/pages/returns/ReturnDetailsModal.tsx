@@ -41,7 +41,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     request.customerNotes || "",
   );
   const [responsibleParty, setResponsibleParty] = useState(
-    request.responsibleParty,
+    request.responsibleParty || "",
   );
   const [adminNotes, setAdminNotes] = useState(request.adminNotes || "");
   const [shippingReturnCost, setShippingReturnCost] = useState(

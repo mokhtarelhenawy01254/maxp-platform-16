@@ -94,6 +94,8 @@ export const APP_ROUTE_MAP: Record<string, string> = {
   "booking-app": "/appointments",
   "notification-automation": "/notifications/settings",
   "executable-mindmap": "/mindmap",
+  "order-preparation": "/orders/preparation",
+  "order-preparation-hold": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
 };
 
 export function getAppDestination(app: { slug: string; mainRoute?: string | null }): string {

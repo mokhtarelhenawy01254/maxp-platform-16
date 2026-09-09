@@ -69,7 +69,7 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
 
   const visibleApps = useMemo(() => {
     const seen = new Set<string>();
-    return allSections
+    const sectionApps = allSections
       .filter(sectionHasVisibleItems)
       .filter((section) => {
         if (seen.has(section.id)) return false;
@@ -77,6 +77,23 @@ const AppDashboardPage: React.FC<AppDashboardPageProps> = ({
         return true;
       })
       .map((section, index) => buildAppFromSection(section, index, t));
+
+    const extraApps = APP_REGISTRY.filter((app) => {
+      if (seen.has(app.id)) return false;
+      if (!app.route) return false;
+      return app.sectionIds.some((sId) =>
+        allSections.some((sec) => sec.id === sId && sectionHasVisibleItems(sec))
+      );
+    }).map((app) => {
+      seen.add(app.id);
+      return {
+        ...app,
+        displayName: app.displayName ?? t(app.nameKey),
+        displayDescription: app.displayDescription ?? t(app.descriptionKey),
+      };
+    });
+
+    return [...sectionApps, ...extraApps];
   }, [allSections, t]);
 
   useEffect(() => {

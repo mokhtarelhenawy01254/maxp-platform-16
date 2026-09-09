@@ -1808,29 +1808,15 @@ class OrderService {
         return;
       }
 
-      let reason = await prisma.returnReason.findFirst({
-        where: { companyId: order.companyId, isActive: true }
-      });
-
-      if (!reason) {
-        reason = await prisma.returnReason.create({
-          data: {
-            reason: 'تغيير حالة تلقائي',
-            description: 'تم إنشاء هذا السبب تلقائياً من نظام إدارة الطلبات',
-            companyId: order.companyId
-          }
-        });
-      }
-
       const request = await prisma.returnRequest.create({
         data: {
           orderId: order.id,
           customerId: order.customerId,
           companyId: order.companyId,
-          reasonId: reason.id,
+          reasonId: null,
           status: 'PENDING',
           adminNotes: `تم إنشاء هذا الطلب تلقائياً عند تغيير حالة الطلب الأصلي إلى: ${status}`,
-          responsibleParty: 'OTHER',
+          responsibleParty: null,
           isReviewed: false,
           refundAmount: order.total ? parseFloat(order.total) : undefined,
         }

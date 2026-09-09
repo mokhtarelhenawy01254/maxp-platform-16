@@ -2230,6 +2230,46 @@
     "updatedAt": "2026-08-04T00:00:00.000Z"
   },
   {
+    "id": "cat-app-order-preparation-hold",
+    "slug": "order-preparation-hold",
+    "name": "تجهيز الطلبات المعلقة",
+    "nameEn": "On-Hold Preparation Orders",
+    "description": "متابعة ومعالجة الطلبات المعلقة في مرحلة التجهيز ومشاكل النواقص والتوريد (عرض 96 طلب).",
+    "category": "ORDER_OPS",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 0,
+    "yearlyPrice": 0,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "store-basic"
+    ],
+    "positioning": {
+      "audience": "فرق التجهيز والمستودعات والعمليات المسؤولة عن معالجة الطلبات المعلقة.",
+      "surface": "داخل صفحة تجهيز الطلبات المعلقة مباشرة.",
+      "outcome": "حل مشاكل التجهيز المعلق وسرعة شحن الطلبات المتوقفة."
+    },
+    "features": {
+      "onHoldQueue": {
+        "enabled": true,
+        "name": "طابور التجهيز المعلق",
+        "description": "عرض 96 طلب معلق في مرحلة التجهيز لمتابعتها بنقرة واحدة.",
+        "access": "FREE"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": false,
+    "isPopular": false,
+    "icon": "clock",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-09T00:00:00.000Z",
+    "updatedAt": "2026-09-09T00:00:00.000Z"
+  },
+  {
     "id": "cat-app-pos-pro",
     "slug": "pos-pro",
     "name": "نظام POS",

@@ -177,6 +177,12 @@
     "orderWorkflow": {
       "description": "تخصيص مسار معالجة الطلبات"
     },
+    "orderPreparation": {
+      "description": "إدارة طابور تجهيز الطلبات وفحص الجودة وإعداد الشحنات"
+    },
+    "orderPreparationHold": {
+      "description": "متابعة ومعالجة الطلبات المعلقة في مرحلة التجهيز (عرض 96 طلب)"
+    },
     "facebookPost": {
       "description": "إنشاء ونشر منشورات فيسبوك"
     },

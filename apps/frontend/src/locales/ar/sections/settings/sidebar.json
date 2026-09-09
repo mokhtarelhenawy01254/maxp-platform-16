@@ -326,6 +326,7 @@
   "orders": "الطلبات",
   "orderConfirmations": "طلبات تحتاج تأكيد",
   "orderPreparation": "تجهيز الطلبات",
+  "orderPreparationHold": "تجهيز الطلبات المعلقة",
   "incompleteOrders": "الطلبات غير المكتملة",
   "ordersSection": "إدارة الطلبات",
   "orderSearchByCode": "بحث بكود الطلب",

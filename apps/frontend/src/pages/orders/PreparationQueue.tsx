@@ -139,6 +139,32 @@ const PreparationQueue: React.FC = () => {
   const { state: uiState, actions: uiActions } = usePreparationQueueUiState(initialOverrides);
   const isMerchantUser = user?.role === "MERCHANT";
 
+  // Synchronize incoming searchParams when URL changes externally (e.g. from app/sidebar links)
+  const isSyncingFromUrlRef = useRef(false);
+  const lastObservedSearchRef = useRef(searchParams.toString());
+
+  useEffect(() => {
+    const currentSearch = searchParams.toString();
+    if (currentSearch === lastObservedSearchRef.current) return;
+    lastObservedSearchRef.current = currentSearch;
+
+    const parsed = getInitialPreparationState(searchParams);
+    isSyncingFromUrlRef.current = true;
+    if (parsed.activeStage && parsed.activeStage !== uiState.activeStage) {
+      uiActions.setActiveStage(parsed.activeStage);
+    }
+    if (parsed.pageSize && parsed.pageSize !== uiState.pageSize) {
+      uiActions.setPageSize(parsed.pageSize);
+    }
+    if (parsed.page && parsed.page !== uiState.page) {
+      uiActions.resetPage();
+    }
+    const timer = setTimeout(() => {
+      isSyncingFromUrlRef.current = false;
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [searchParams, uiActions, uiState.activeStage, uiState.pageSize, uiState.page]);
+
   const deferredSearch = useDeferredValue(uiState.search);
 
   const {
@@ -370,9 +396,10 @@ const PreparationQueue: React.FC = () => {
     if (nextState.noShippingCodeFilter !== "all") params.noShippingCode = String(nextState.noShippingCodeFilter);
     if (nextState.search) params.search = String(nextState.search);
     if (nextState.sortBy !== "createdAt") params.sortBy = String(nextState.sortBy);
-    if (nextState.sortOrder !== "desc") params.sortOrder = String(nextState.sortOrder);
-
-    setSearchParams(params, { replace: true });
+    if (!isSyncingFromUrlRef.current) {
+      lastObservedSearchRef.current = new URLSearchParams(params).toString();
+      setSearchParams(params, { replace: true });
+    }
 
     if (typeof window !== "undefined") {
       try {
@@ -491,6 +518,15 @@ const PreparationQueue: React.FC = () => {
       tabs.push({
         statusCode: shortageCode,
         name: statusLabelMap.get(shortageCode) || t('preparation.k_9'),
+      });
+    }
+
+    const problemHoldCode = toUpper(PROBLEM_HOLD_STATUS);
+    if (!seen.has(problemHoldCode)) {
+      seen.add(problemHoldCode);
+      tabs.push({
+        statusCode: problemHoldCode,
+        name: statusLabelMap.get(problemHoldCode) || t('orders.onHoldPrep') || 'تجهيز معلق',
       });
     }
 

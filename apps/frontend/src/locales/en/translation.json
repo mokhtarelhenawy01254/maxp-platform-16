@@ -12650,6 +12650,12 @@
       "orderWorkflow": {
         "description": "Customize order processing workflow"
       },
+      "orderPreparation": {
+        "description": "Manage order preparation queue, quality checks, and shipment packaging"
+      },
+      "orderPreparationHold": {
+        "description": "Manage and process on-hold orders in the preparation queue (96 orders view)"
+      },
       "facebookPost": {
         "description": "Create and publish Facebook posts"
       },
@@ -17043,6 +17049,7 @@
     "orders": "Orders",
     "orderConfirmations": "Orders Needing Confirmation",
     "orderPreparation": "Order Preparation",
+    "orderPreparationHold": "On-Hold Preparation",
     "incompleteOrders": "Incomplete Orders",
     "ordersSection": "Orders Management",
     "orderSearchByCode": "Search by Order Code",

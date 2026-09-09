@@ -36,7 +36,7 @@ export interface ReturnRequest {
   customerNotes?: string;
   refundAmount?: number;
   assignedTo?: string;
-  responsibleParty: "CUSTOMER" | "STORE" | "SHIPPING" | "OTHER";
+  responsibleParty?: "CUSTOMER" | "STORE" | "SHIPPING" | "OTHER" | null;
   isReviewed: boolean;
   reviewedAt?: string;
   reviewedBy?: string;

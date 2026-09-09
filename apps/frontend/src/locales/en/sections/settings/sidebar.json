@@ -326,6 +326,7 @@
   "orders": "Orders",
   "orderConfirmations": "Orders Needing Confirmation",
   "orderPreparation": "Order Preparation",
+  "orderPreparationHold": "On-Hold Preparation",
   "incompleteOrders": "Incomplete Orders",
   "ordersSection": "Orders Management",
   "orderSearchByCode": "Search by Order Code",
