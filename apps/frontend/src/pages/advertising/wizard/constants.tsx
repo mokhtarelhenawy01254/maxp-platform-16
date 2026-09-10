@@ -10,6 +10,9 @@ import {
   Globe,
   Sparkles,
   Zap,
+  Facebook,
+  Instagram,
+  MessageCircle,
 } from "lucide-react";
 import type { WizardStep } from "./types";
 

@@ -1,4 +1,5 @@
 import type { CarouselCard } from "../types";
+import type { CreateFullAdData } from "../../../../services/facebookAdsService";
 
 const humanizeProductSlug = (slug: string) =>
   slug
@@ -145,6 +146,13 @@ const getPrefilledCarouselCards = (
     ? storedCards
     : buildPrefilledCarouselCards(fallbackImageUrls, productTitle, productUrl);
 };
+
+const formatLaunchPrefillPrice = (
+  price?: number | string,
+  currency = "EGP",
+): string => (price ? `${price} ${currency}` : "");
+
+const buildStoredPrefillCarouselCards = getPrefilledCarouselCards;
 
 export {
   humanizeProductSlug,

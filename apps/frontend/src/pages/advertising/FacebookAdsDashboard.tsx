@@ -165,6 +165,11 @@ const FacebookAdsDashboard: React.FC = () => {
     writeStoredFacebookAdsFilters(FILTER_STORAGE_KEY, filters);
   }, [filters]);
 
+  const topGeoRows = useMemo(
+    () => geoPerformance?.rows?.slice(0, 6) || [],
+    [geoPerformance],
+  );
+
   const updateFilters = (patch: Partial<DashboardFilters>) => {
     setFilters((current) => ({ ...current, ...patch }));
   };

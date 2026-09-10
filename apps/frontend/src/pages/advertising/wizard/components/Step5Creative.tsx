@@ -11,6 +11,9 @@ import {
   Trash2,
   Eye,
   ExternalLink,
+  Layout,
+  X,
+  Instagram,
 } from "lucide-react";
 import type { FormData, CarouselCard } from "../types";
 import type {
@@ -18,7 +21,7 @@ import type {
   FacebookPage,
   FacebookPagesMeta,
 } from "../../../../services/facebookAdsService";
-import { CREATIVE_TYPES, CALL_TO_ACTIONS } from "../constants";
+import { CALL_TO_ACTIONS } from "../constants";
 
 interface Step5CreativeProps {
   formData: FormData;
@@ -57,6 +60,16 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
   isAiDraftPrefill,
   launchPrefillProductTitle,
 }) => {
+  const readyCompanyPages = facebookPages.filter(
+    (page) => page.status === "READY",
+  );
+  const accessibleUnlinkedPages = facebookPages.filter(
+    (page) => page.status === "ACCESSIBLE_BUT_NOT_CONNECTED",
+  );
+  const connectedButUnavailablePages = facebookPages.filter(
+    (page) => page.status === "CONNECTED_BUT_NOT_ACCESSIBLE",
+  );
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

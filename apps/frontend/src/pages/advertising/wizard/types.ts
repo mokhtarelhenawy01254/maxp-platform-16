@@ -7,14 +7,14 @@ import type {
   WizardTargetingSelections,
 } from "../CreateAdWizard.helpers";
 
-interface WizardStep {
+export interface WizardStep {
   id: number;
   title: string;
   description: string;
   icon: React.ReactNode;
 }
 
-interface CarouselCard {
+export interface CarouselCard {
   id: string;
   imageUrl: string;
   headline: string;
@@ -22,17 +22,17 @@ interface CarouselCard {
   linkUrl: string;
 }
 
-interface TextVariation {
+export interface TextVariation {
   id: string;
   text: string;
 }
 
-interface HeadlineVariation {
+export interface HeadlineVariation {
   id: string;
   text: string;
 }
 
-interface CreatedFullAdSummary {
+export interface CreatedFullAdSummary {
   localCampaignId?: string;
   localAdSetId?: string;
   localAdId?: string;
@@ -44,12 +44,12 @@ interface CreatedFullAdSummary {
   adAccountId: string;
 }
 
-const getResultEntityId = (entity: unknown) =>
+export const getResultEntityId = (entity: unknown) =>
   entity && typeof entity === "object" && "id" in entity
     ? String((entity as Record<string, unknown>)["id"])
     : undefined;
 
-interface FormData {
+export interface FormData {
   // Step 1: Campaign
   campaignName: string;
   adSetName: string;
@@ -58,42 +58,45 @@ interface FormData {
   specialAdCategories: string[];
 
   // Step 2: Ad Set Level
-  performanceGoal: string;
-  conversionEvent: string;
-  conversionLocation: string;
-  attributionWindow: string;
-  dynamicCreative: boolean;
-  pixelId: string;
-  budgetOptimization: boolean;
   budgetType: "DAILY" | "LIFETIME";
   budgetAmount: number;
   bidStrategy: string;
-  bidValue?: number;
+  bidAmount?: number;
+  billingEvent: string;
+  optimizationGoal: string;
   startTime: string;
   endTime: string;
-  frequencyCap?: number;
-  frequencyCapInterval?: "DAY" | "WEEK" | "MONTH";
+  attributionWindow: string;
 
-  // Step 3: Targeting
+  // Step 3: Audience & Placements
+  locations: string[];
+  geoLocations?: MetaGeoLocation[];
+  excludedGeoLocations?: MetaGeoLocation[];
+  locationSearchQuery?: string;
   ageMin: number;
   ageMax: number;
-  genders: string[];
-  locations: string[];
-  regions: MetaGeoLocation[];
-  cities: MetaGeoLocation[];
-  locationTypes: Array<"home" | "recent">;
+  genders: number[];
+  languages: string[];
   interests: string[];
+  behaviors: string[];
+  demographics: string[];
+  customAudiences: string[];
+  excludedCustomAudiences: string[];
   advantageAudience: boolean;
-
-  // Step 4: Placements
   placementType: "AUTOMATIC" | "MANUAL";
-  placements: string[];
+  publisherPlatforms: string[];
+  facebookPositions: string[];
+  instagramPositions: string[];
+  messengerPositions: string[];
+  audienceNetworkPositions: string[];
+  devicePlatforms: string[];
 
-  // Step 5: Ad Creative
+  // Step 4: Ad Creative
   pageId: string;
-  creativeType: "SINGLE_IMAGE" | "SINGLE_VIDEO" | "CAROUSEL" | "FLEXIBLE";
-  primaryText: string;
+  instagramActorId: string;
+  creativeType: "SINGLE_IMAGE" | "SINGLE_VIDEO" | "CAROUSEL" | "COLLECTION" | "FLEXIBLE";
   headline: string;
+  primaryText: string;
   description: string;
   callToAction: string;
   linkUrl: string;
@@ -119,13 +122,13 @@ interface FormData {
 }
 
 
-interface TargetingOption {
+export interface TargetingOption {
   id: string;
   name: string;
   audience_size?: number;
 }
 
-interface CreateAdWizardErrors {
+export interface CreateAdWizardErrors {
   adAccountId?: string;
   budgetAmount?: string;
   campaignName?: string;

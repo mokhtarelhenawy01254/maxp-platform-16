@@ -1,5 +1,5 @@
 import React from "react";
-import { Sparkles, Layout, Facebook, Instagram, MessageCircle, Globe } from "lucide-react";
+import { Sparkles, Layout, Facebook, Instagram, MessageCircle, Globe, AlertCircle } from "lucide-react";
 import type { FormData } from "../types";
 import { PLACEMENTS } from "../constants";
 
