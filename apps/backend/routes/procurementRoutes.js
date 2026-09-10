@@ -6,8 +6,10 @@ const purchaseOrderController = require('../controller/purchaseOrderController')
 const purchaseInvoiceController = require('../controller/purchaseInvoiceController');
 const supplierPaymentController = require('../controller/supplierPaymentController');
 const procurementReportsController = require('../controller/procurementReportsController');
+const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 router.use(verifyToken.authenticateToken);
+router.use(checkAppAccess('procurement-pro'));
 
 router.post('/suppliers', supplierController.createSupplier);
 router.get('/suppliers', supplierController.getAllSuppliers);

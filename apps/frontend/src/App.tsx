@@ -4921,10 +4921,16 @@ const AppContent = () => {
                 />
                 {/* Procurement/Purchasing Routes */}
                 <Route
+                  path="/procurement"
+                  element={<Navigate to="/procurement/dashboard" replace />}
+                />
+                <Route
                   path="/procurement/dashboard"
                   element={
                     <Layout>
-                      <ProcurementDashboard />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <ProcurementDashboard />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4932,7 +4938,9 @@ const AppContent = () => {
                   path="/procurement/suppliers"
                   element={
                     <Layout>
-                      <Suppliers />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <Suppliers />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4940,7 +4948,9 @@ const AppContent = () => {
                   path="/procurement/suppliers/:id"
                   element={
                     <Layout>
-                      <Suppliers />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <Suppliers />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4948,7 +4958,9 @@ const AppContent = () => {
                   path="/procurement/purchase-orders"
                   element={
                     <Layout>
-                      <PurchaseOrders />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseOrders />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4956,7 +4968,9 @@ const AppContent = () => {
                   path="/procurement/purchase-orders/new"
                   element={
                     <Layout>
-                      <PurchaseOrderForm />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseOrderForm />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4964,7 +4978,9 @@ const AppContent = () => {
                   path="/procurement/purchase-orders/:id/edit"
                   element={
                     <Layout>
-                      <PurchaseOrderForm />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseOrderForm />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4972,7 +4988,9 @@ const AppContent = () => {
                   path="/procurement/purchase-orders/:id"
                   element={
                     <Layout>
-                      <PurchaseOrders />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseOrders />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4980,7 +4998,9 @@ const AppContent = () => {
                   path="/procurement/purchase-invoices"
                   element={
                     <Layout>
-                      <PurchaseInvoices />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseInvoices />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4988,7 +5008,9 @@ const AppContent = () => {
                   path="/procurement/purchase-invoices/new"
                   element={
                     <Layout>
-                      <PurchaseInvoices />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseInvoices />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -4996,7 +5018,9 @@ const AppContent = () => {
                   path="/procurement/purchase-invoices/:id"
                   element={
                     <Layout>
-                      <PurchaseInvoices />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseInvoices />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5004,7 +5028,9 @@ const AppContent = () => {
                   path="/procurement/supplier-payments"
                   element={
                     <Layout>
-                      <SupplierPayments />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <SupplierPayments />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5012,7 +5038,9 @@ const AppContent = () => {
                   path="/procurement/supplier-payments/new"
                   element={
                     <Layout>
-                      <SupplierPayments />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <SupplierPayments />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5020,7 +5048,9 @@ const AppContent = () => {
                   path="/procurement/supplier-payments/:id"
                   element={
                     <Layout>
-                      <SupplierPayments />
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <SupplierPayments />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />

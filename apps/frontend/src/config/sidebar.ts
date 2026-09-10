@@ -387,6 +387,7 @@ export const getSidebarConfig = (
                     { to: '/procurement/purchase-invoices', icon: ClipboardCheck, label: t('sidebar.purchaseInvoices') },
                     { to: '/procurement/supplier-payments', icon: Banknote, label: t('sidebar.supplierPayments') },
                 ],
+                hidden: !isAnyAppActive(['procurement-pro', 'store-pro']),
             },
             {
                 id: 'orders',

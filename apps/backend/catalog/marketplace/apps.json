@@ -997,9 +997,9 @@
   {
     "id": "cat-app-procurement-pro",
     "slug": "procurement-pro",
-    "name": "Procurement Pro",
-    "nameEn": "Procurement Pro",
-    "description": "Supplier, purchase order, purchase invoice, and supplier payment workflows.",
+    "name": "المشتريات وإدارة الموردين",
+    "nameEn": "Procurement & Suppliers Pro",
+    "description": "إدارة الموردين، أوامر الشراء، فواتير المشتريات، ومدفوعات وحسابات الموردين مع الربط التلقائي بالمخزون.",
     "category": "PROCUREMENT",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
@@ -1007,9 +1007,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "فرق التشغيل التي تدير موردين ومشتريات بشكل يومي.",
       "surface": "داخل لوحة المشتريات والموردين وفواتير الشراء.",
@@ -1050,7 +1048,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-05-01T00:00:00Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-09-10T19:49:53.278Z"
   },
   {
     "id": "cat-app-affiliate-pro",

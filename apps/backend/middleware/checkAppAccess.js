@@ -9,6 +9,7 @@ const LEGACY_APP_SLUG_ALIASES = {
   'woocommerce-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
   'inventory-pro': ['multi-warehouse-pro', 'store-pro', 'store', 'store-basic', 'ecommerce-basic'],
   'multi-warehouse-pro': ['inventory-pro', 'store-pro'],
+  'procurement-pro': ['store-pro'],
   'order-accounting-sources': ['store-pro', 'order-source-tracking'],
   // Grandfathering only for monolithic apps that historically included manual orders.
   // order-core / ecommerce-basic / store-basic do NOT open manual orders anymore —

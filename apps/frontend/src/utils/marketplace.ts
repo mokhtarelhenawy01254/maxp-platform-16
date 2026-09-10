@@ -158,7 +158,7 @@ export const APP_ROUTE_MAP: Record<string, string> = {
   "ad-auto-rules": "/marketing",
   "blog-pro": "/articles",
   "order-shipping-turbo": "/shipping",
-  "procurement-pro": "/procurement",
+  "procurement-pro": "/procurement/dashboard",
   "hr-basic": "/hr",
   "unified-inbox": "/unified-inbox",
   "abandoned-cart-recovery": "/orders",
