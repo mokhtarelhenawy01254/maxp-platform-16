@@ -80,18 +80,23 @@ const formatNotificationTime = (date: Date): string => {
   const diffDays = Math.floor(diffHours / 24);
 
   if (diffMins < 1) return "الآن";
+  if (diffMins === 1) return "منذ دقيقة";
+  if (diffMins === 2) return "منذ دقيقتين";
+  if (diffMins >= 3 && diffMins <= 10) return `منذ ${diffMins} دقائق`;
   if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+  if (diffHours === 1) return "منذ ساعة";
+  if (diffHours === 2) return "منذ ساعتين";
+  if (diffHours >= 3 && diffHours <= 10) return `منذ ${diffHours} ساعات`;
   if (diffHours < 24) return `منذ ${diffHours} ساعة`;
   if (diffDays === 1) {
-    return `أمس، ${date.toLocaleTimeString("ar-EG", { hour: "numeric", minute: "2-digit" })}`;
+    return `أمس ${date.toLocaleTimeString("ar-EG", { hour: "numeric", minute: "2-digit" })}`;
   }
-  if (diffDays < 7) return `منذ ${diffDays} أيام`;
+  if (diffDays === 2) return "منذ يومين";
+  if (diffDays >= 3 && diffDays <= 10) return `منذ ${diffDays} أيام`;
 
   return date.toLocaleDateString("ar-EG", {
     month: "short",
     day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
   });
 };
 
@@ -350,85 +355,84 @@ const Notifications: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-6 pb-24 sm:pb-8">
-      {/* Header Container - Optimized for mobile Android viewports */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
-        <div className="flex items-center gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="p-2 -mr-1.5 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 transition-colors sm:hidden touch-manipulation"
-            aria-label="رجوع"
-            title="رجوع"
-          >
-            <ArrowRightIcon className="h-5 w-5" />
-          </button>
-          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-            <BellSolidIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
+    <div className="w-full max-w-5xl mx-auto space-y-2.5 sm:space-y-4 pb-20 sm:pb-8">
+      {/* Consolidated Compact Header Card - Highly space-efficient for mobile */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-200/70 dark:border-gray-700/60 p-2.5 sm:p-4 shadow-sm space-y-2 sm:space-y-2.5">
+        {/* Row 1: Back + Title + Unread Badge + Action Buttons */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              className="p-1.5 -mr-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 transition-colors sm:hidden touch-manipulation"
+              aria-label="رجوع"
+              title="رجوع"
+            >
+              <ArrowRightIcon className="h-4 w-4" />
+            </button>
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <BellSolidIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0">
+              <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
                 الإشعارات
               </h1>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                <span className="px-1.5 py-0.5 text-[10.5px] font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200 shrink-0">
                   {unreadCount} غير مقروء
                 </span>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
-              إجمالي {notifications.length} إشعار مسجل
-            </p>
+          </div>
+
+          {/* Actions: Mark all read + Refresh + Settings */}
+          <div className="flex items-center gap-1 shrink-0">
+            {unreadCount > 0 && (
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs touch-manipulation"
+                title="تحديد الكل كمقروء"
+              >
+                <CheckIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <span className="whitespace-nowrap">قراءة الكل</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => fetchNotifications(false)}
+              disabled={refreshing}
+              className="p-1 sm:px-2 sm:py-1 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-xs touch-manipulation disabled:opacity-50"
+              title="تحديث القائمة"
+              aria-label="تحديث"
+            >
+              <ArrowPathIcon className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
+              <span className="hidden sm:inline">تحديث</span>
+            </button>
+
+            <Link
+              to="/notification-settings"
+              className="p-1 sm:px-2 sm:py-1 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-xs touch-manipulation no-underline"
+              title="إعدادات الإشعارات"
+              aria-label="الإعدادات"
+            >
+              <Cog6ToothIcon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
+              <span className="hidden sm:inline">الإعدادات</span>
+            </Link>
           </div>
         </div>
 
-        {/* Action Buttons Toolbar */}
-        <div className="flex items-center gap-2 flex-wrap pt-2 sm:pt-0 border-t border-gray-100 dark:border-gray-700 sm:border-0">
-          <button
-            type="button"
-            onClick={() => fetchNotifications(false)}
-            disabled={refreshing}
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm touch-manipulation disabled:opacity-50"
-            title="تحديث القائمة"
-          >
-            <ArrowPathIcon className={`h-4 w-4 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
-            <span>تحديث</span>
-          </button>
-
-          <Link
-            to="/notification-settings"
-            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm touch-manipulation no-underline"
-          >
-            <Cog6ToothIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
-            <span>الإعدادات</span>
-          </Link>
-
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={markAllAsRead}
-              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm touch-manipulation"
-            >
-              <CheckIcon className="h-4 w-4" />
-              <span>تحديد الكل كمقروء</span>
-            </button>
-          )}
-        </div>
-      </div>
-
-      {/* Filter Tabs & Dropdowns */}
-      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-3 sm:p-4 shadow-sm">
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          {/* Read/Unread Filter Pills */}
-          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900 p-1 rounded-xl">
+        {/* Row 2: Filter Pills + Type Dropdown - Integrated Single Row */}
+        <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700/50">
+          <div className="flex items-center gap-1 bg-gray-100/90 dark:bg-gray-900/80 p-0.5 rounded-lg text-xs overflow-x-auto shrink-0">
             <button
               type="button"
               onClick={() => setFilter("all")}
-              className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all touch-manipulation ${
+              className={`px-2 py-0.5 text-[11px] sm:text-xs font-medium rounded-md transition-all touch-manipulation whitespace-nowrap ${
                 filter === "all"
-                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
               الكل ({notifications.length})
@@ -436,10 +440,10 @@ const Notifications: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilter("unread")}
-              className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all touch-manipulation ${
+              className={`px-2 py-0.5 text-[11px] sm:text-xs font-medium rounded-md transition-all touch-manipulation whitespace-nowrap ${
                 filter === "unread"
-                  ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                  ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs font-semibold"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
               غير مقروءة ({unreadCount})
@@ -447,30 +451,29 @@ const Notifications: React.FC = () => {
             <button
               type="button"
               onClick={() => setFilter("read")}
-              className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all touch-manipulation ${
+              className={`px-2 py-0.5 text-[11px] sm:text-xs font-medium rounded-md transition-all touch-manipulation whitespace-nowrap ${
                 filter === "read"
-                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
+                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
               }`}
             >
               مقروءة ({notifications.length - unreadCount})
             </button>
           </div>
 
-          {/* Type Filter Selector */}
-          <div className="flex items-center gap-2 self-end sm:self-center w-full sm:w-auto">
-            <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">تصنيف:</span>
+          <div className="flex items-center gap-1 min-w-0">
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="w-full sm:w-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 px-2 py-1 text-[11px] sm:text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 truncate max-w-[125px] sm:max-w-none"
+              aria-label="تصفية حسب نوع الإشعار"
             >
               <option value="all">جميع الأنواع</option>
               <option value="order">طلبات البيع</option>
-              <option value="info">معلومات ونظام</option>
-              <option value="warning">تنبيهات وتحذيرات</option>
+              <option value="info">معلومات</option>
+              <option value="warning">تنبيهات</option>
               <option value="error">أخطاء</option>
-              <option value="success">إشعارات النجاح</option>
+              <option value="success">نجاح</option>
             </select>
           </div>
         </div>
@@ -586,24 +589,24 @@ const Notifications: React.FC = () => {
                     </p>
 
                     {/* Footer Details: Relative Time + Target Link */}
-                    <div className="flex items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-100/80 dark:border-gray-700/40">
-                      <div className="flex items-center gap-1.5">
-                        <ClockIcon className="h-3.5 w-3.5" />
-                        <span title={notification.timestamp.toLocaleString("ar-EG")}>
+                    <div className="flex items-center justify-between gap-2 text-[10.5px] sm:text-[11px] text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-100/80 dark:border-gray-700/40">
+                      <div className="flex items-center gap-1">
+                        <ClockIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 text-gray-400/80 shrink-0" />
+                        <span className="leading-none" title={notification.timestamp.toLocaleString("ar-EG")}>
                           {formatNotificationTime(notification.timestamp)}
                         </span>
                         {notification.isRead && (
-                          <span className="inline-flex items-center gap-0.5 text-gray-400 mr-2">
-                            <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                          <span className="inline-flex items-center gap-0.5 text-gray-400 mr-1.5 text-[10px] sm:text-[11px]">
+                            <CheckIcon className="h-3 w-3 text-green-500 shrink-0" />
                             <span>مقروء</span>
                           </span>
                         )}
                       </div>
 
                       {targetUrl && (
-                        <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 group-hover:underline">
+                        <span className="inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium text-blue-600 dark:text-blue-400 group-hover:underline">
                           <span>عرض التفاصيل</span>
-                          <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                          <ArrowTopRightOnSquareIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
                         </span>
                       )}
                     </div>
