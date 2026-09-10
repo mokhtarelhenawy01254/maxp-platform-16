@@ -1,5 +1,6 @@
 import React, { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, Gauge } from "lucide-react";
 import {
   type FacebookAdsDecisionSummary,
@@ -23,6 +24,8 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
   selectedCurrency,
 }) => {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isEn = i18n.language?.startsWith("en") || localStorage.getItem("language") === "en";
 
   const topDecisionRows = useMemo(
     () => (decisionSummary?.rows || []).slice(0, 4),
@@ -39,14 +42,14 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                 <Gauge className="h-3.5 w-3.5" />
               </span>
               <h2 className="text-sm font-black text-slate-950 dark:text-white">
-                قرارات Media Buying السريعة
+                {isEn ? "Quick Media Buying Decisions" : "قرارات Media Buying السريعة"}
               </h2>
               <span className="rounded-full bg-slate-100/90 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800/90 dark:text-slate-300">
-                {formatNumber(decisionSummary?.totals.ads || 0)} إعلان
+                {formatNumber(decisionSummary?.totals.ads || 0)} {isEn ? "ad" : "إعلان"}
               </span>
             </div>
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              استرشادية: لا يتم إيقاف أو توسيع أي إعلان تلقائياً
+              {isEn ? "Advisory: No ads are paused or scaled automatically" : "استرشادية: لا يتم إيقاف أو توسيع أي إعلان تلقائياً"}
             </span>
           </div>
           <div className="grid gap-2.5 xl:grid-cols-4">
@@ -66,7 +69,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                     {row.decision.label}
                   </span>
                   <span className="shrink-0 rounded-md bg-black/5 px-1.5 py-0.5 text-[10px] font-black dark:bg-white/10">
-                    {formatNumber(row.decision.confidence.score)}% ثقة
+                    {formatNumber(row.decision.confidence.score)}% {isEn ? "conf." : "ثقة"}
                   </span>
                 </div>
                 <p className="mt-1.5 truncate text-[11px] font-bold opacity-90">
@@ -75,7 +78,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                 <div className="mt-2 grid grid-cols-3 gap-1 border-t border-current/10 pt-2 text-[10px] font-black">
                   <span>CPA: {formatCurrency(row.decision.metrics.cpa || 0, selectedCurrency)}</span>
                   <span>ROAS: {formatNumber(row.decision.metrics.roas || 0, 2)}x</span>
-                  <span>ربح: {formatCurrency(row.decision.metrics.estimatedProfit || 0, selectedCurrency)}</span>
+                  <span>{isEn ? "Profit" : "ربح"}: {formatCurrency(row.decision.metrics.estimatedProfit || 0, selectedCurrency)}</span>
                 </div>
               </button>
             ))}

@@ -3948,6 +3948,11 @@ const bulkUpdateStatus = async (req, res) => {
  * ============================================
  */
 
+const AD_ACCOUNTS_CACHE_TTL_MS = 60 * 1000;
+const adAccountsMemoryCache = new Map();
+const PERFORMANCE_CACHE_TTL_MS = 60 * 1000;
+const performanceSummaryMemoryCache = new Map();
+
 /**
  * GET /api/v1/facebook-ads/ad-accounts
  * جلب Ad Accounts المتاحة
@@ -3961,6 +3966,20 @@ const getAdAccounts = async (req, res) => {
         success: false,
         error: "Company ID is required",
       });
+    }
+
+    if (process.env.NODE_ENV !== "test" && req.query?.refresh !== "true") {
+      const cached = adAccountsMemoryCache.get(companyId);
+      if (cached && Date.now() < cached.expiresAt) {
+        return res.json({
+          success: true,
+          data: cached.data,
+          meta: {
+            ...cached.meta,
+            cached: true,
+          },
+        });
+      }
     }
 
     const savedAdAccounts = await getSharedPrismaClient().facebookAdAccount.findMany(
@@ -4046,9 +4065,18 @@ const getAdAccounts = async (req, res) => {
       "REMOTE_ACCOUNT_NOT_RETURNED",
     );
 
+    const finalAccounts = [...enrichedAdAccounts, ...savedFallbackAccounts];
+    adAccountsMemoryCache.set(companyId, {
+      data: finalAccounts,
+      meta: {
+        total: finalAccounts.length,
+      },
+      expiresAt: Date.now() + AD_ACCOUNTS_CACHE_TTL_MS,
+    });
+
     res.json({
       success: true,
-      data: [...enrichedAdAccounts, ...savedFallbackAccounts],
+      data: finalAccounts,
     });
   } catch (error) {
     console.error("❌ Error getting Ad Accounts:", error);
@@ -5684,6 +5712,19 @@ const getPerformanceSummary = async (req, res) => {
       });
     }
 
+    const perfCacheKey = `${companyId}:${adAccountScope.id}:${metaDateRange.since}:${metaDateRange.until}`;
+    if (process.env.NODE_ENV !== "test" && req.query?.refresh !== "true") {
+      const cached = performanceSummaryMemoryCache.get(perfCacheKey);
+      if (cached && Date.now() < cached.expiresAt) {
+        clearTimeout(timeoutHandle);
+        return res.json({
+          success: true,
+          data: cached.data,
+          meta: { cached: true },
+        });
+      }
+    }
+
     const campaigns = await prisma.facebookCampaign.findMany({
       where: {
         companyId,
@@ -5806,23 +5847,29 @@ const getPerformanceSummary = async (req, res) => {
     });
 
     const summary = withDerivedPerformance(totals);
+    const responsePayload = {
+      dateRange: {
+        startDate: rangeStart.toISOString().slice(0, 10),
+        endDate: rangeEnd.toISOString().slice(0, 10),
+      },
+      adAccount: sanitizeFacebookAdAccountForClient(adAccountScope),
+      totals: summary,
+      campaigns: campaignSummaries,
+      recommendations: buildPerformanceRecommendations(
+        summary,
+        campaignSummaries,
+      ),
+    };
+
+    performanceSummaryMemoryCache.set(perfCacheKey, {
+      data: responsePayload,
+      expiresAt: Date.now() + PERFORMANCE_CACHE_TTL_MS,
+    });
 
     clearTimeout(timeoutHandle);
     res.json({
       success: true,
-      data: {
-        dateRange: {
-          startDate: rangeStart.toISOString().slice(0, 10),
-          endDate: rangeEnd.toISOString().slice(0, 10),
-        },
-        adAccount: sanitizeFacebookAdAccountForClient(adAccountScope),
-        totals: summary,
-        campaigns: campaignSummaries,
-        recommendations: buildPerformanceRecommendations(
-          summary,
-          campaignSummaries,
-        ),
-      },
+      data: responsePayload,
     });
   } catch (error) {
     clearTimeout(timeoutHandle);
@@ -6178,6 +6225,16 @@ const syncFromFacebook = async (req, res) => {
     const { adAccountId, includeStructure = true, syncScope } = req.body;
     const shouldSyncStructure =
       includeStructure !== false && syncScope !== "campaigns";
+
+    // Invalidate caches for this company so subsequent reads are fresh
+    if (companyId) {
+      adAccountsMemoryCache.delete(companyId);
+      for (const key of performanceSummaryMemoryCache.keys()) {
+        if (key.startsWith(`${companyId}:`)) {
+          performanceSummaryMemoryCache.delete(key);
+        }
+      }
+    }
 
     const accessToken = await getCompanyAdsAccessToken(companyId);
     if (!accessToken) {

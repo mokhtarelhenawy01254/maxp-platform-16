@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
@@ -44,7 +45,7 @@ import {
   isCampaignDelivering,
 } from "../../utils/facebookAdsHelpers";
 import {
-  FACEBOOK_ADS_DATE_PRESETS,
+  getFacebookAdsDatePresets,
   type FacebookAdsDatePreset,
   readStoredFacebookAdsFilters,
   resolveFacebookAdsDateRange,
@@ -69,6 +70,13 @@ const defaultFilters: DashboardFilters = {
 };
 
 const FacebookAdsDashboard: React.FC = () => {
+  const { i18n } = useTranslation();
+  const isEn =
+    i18n.language === "en" ||
+    (typeof window !== "undefined" &&
+      (localStorage.getItem("language") === "en" ||
+        localStorage.getItem("i18nextLng")?.startsWith("en")));
+
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const accountContext = useFacebookAdsAccountContext();
@@ -261,12 +269,12 @@ const FacebookAdsDashboard: React.FC = () => {
     const groups = new Map<string, { label: string; accounts: typeof adAccounts }>();
     adAccounts.forEach((account) => {
       const key = account.business?.id || "unassigned";
-      const label = account.business?.name || "حسابات بدون Business ظاهر";
+      const label = account.business?.name || (isEn ? "Personal / Unassigned" : "حسابات بدون Business ظاهر");
       if (!groups.has(key)) groups.set(key, { label, accounts: [] });
       groups.get(key)!.accounts.push(account);
     });
     return Array.from(groups.entries());
-  }, [adAccounts]);
+  }, [adAccounts, isEn]);
 
   const stats = useMemo(() => {
     const delivering = campaigns.filter(isCampaignDelivering).length;
@@ -301,8 +309,8 @@ const FacebookAdsDashboard: React.FC = () => {
   const recommendationCount = performanceSummary?.recommendations?.length || 0;
 
   const selectedDateLabel =
-    FACEBOOK_ADS_DATE_PRESETS.find((preset) => preset.value === filters.datePreset)
-      ?.label || "آخر 30 يوم";
+    getFacebookAdsDatePresets(isEn).find((preset) => preset.value === filters.datePreset)
+      ?.label || (isEn ? "Last 30 Days" : "آخر 30 يوم");
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -374,7 +382,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 Meta Ads Cockpit
               </div>
               <h1 className="mt-1.5 truncate text-xl font-black leading-tight sm:text-2xl tracking-tight">
-                مركز الحملات الإعلانية
+                {isEn ? "Ad Campaigns Center" : "مركز الحملات الإعلانية"}
               </h1>
               <p className="mt-1 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
                 {selectedDateLabel}: {dateRange.startDate} - {dateRange.endDate}
@@ -384,14 +392,14 @@ const FacebookAdsDashboard: React.FC = () => {
             <div className="grid gap-2.5 md:grid-cols-[minmax(190px,1.3fr)_minmax(135px,0.75fr)_auto_auto_auto]">
               <label className="block">
                 <span className="mb-1 block text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                  الحساب الإعلاني
+                  {isEn ? "Ad Account" : "الحساب الإعلاني"}
                 </span>
                 <select
                   value={selectedAdAccountId}
                   onChange={(event) => setSelectedAdAccountId(event.target.value)}
                   className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 >
-                  <option value="">اختار حساب إعلاني</option>
+                  <option value="">{isEn ? "Select Ad Account" : "اختار حساب إعلاني"}</option>
                   {businessGroups.map(([key, group]) => (
                     <optgroup key={key} label={group.label}>
                       {group.accounts.map((account) => (
@@ -406,12 +414,12 @@ const FacebookAdsDashboard: React.FC = () => {
 
               <SelectFilter
                 icon={CalendarDays}
-                label="الفترة الزمنية"
+                label={isEn ? "Date Range" : "الفترة الزمنية"}
                 value={filters.datePreset}
                 onChange={(value) =>
                   updateFilters({ datePreset: value as FacebookAdsDatePreset })
                 }
-                options={FACEBOOK_ADS_DATE_PRESETS}
+                options={getFacebookAdsDatePresets(isEn)}
               />
 
               <button
@@ -421,7 +429,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-                تحديث
+                {isEn ? "Refresh" : "تحديث"}
               </button>
               <button
                 type="button"
@@ -430,7 +438,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-blue-200/70 bg-blue-50/70 px-3 text-xs font-bold text-blue-700 hover:bg-blue-100/70 disabled:opacity-60 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300 transition-all"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-                مزامنة
+                {isEn ? "Sync" : "مزامنة"}
               </button>
               <button
                 type="button"
@@ -439,7 +447,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 text-xs font-black text-white shadow-sm shadow-blue-500/25 hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
               >
                 <Plus className="h-4 w-4" />
-                إنشاء حملة
+                {isEn ? "Create Campaign" : "إنشاء حملة"}
               </button>
             </div>
           </div>
@@ -468,13 +476,13 @@ const FacebookAdsDashboard: React.FC = () => {
         {/* Metrics Overview */}
         <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
           <MetricCard
-            label="إجمالي الإنفاق"
+            label={isEn ? "Total Spend" : "إجمالي الإنفاق"}
             value={formatCurrency(performanceSummary?.totals.spend || 0, selectedCurrency)}
             icon={Wallet}
             variant="spend"
           />
           <MetricCard
-            label="المشتريات"
+            label={isEn ? "Purchases" : "المشتريات"}
             value={formatNumber(performanceSummary?.totals.purchases || 0)}
             icon={CheckCircle2}
             variant="purchases"
@@ -494,7 +502,7 @@ const FacebookAdsDashboard: React.FC = () => {
           <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900">
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-black text-slate-500 dark:text-slate-400">
-                تسليم فعلي
+                {isEn ? "Active Delivery" : "تسليم فعلي"}
               </span>
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:bg-blue-400/20 dark:text-blue-300">
                 <BarChart3 className="h-4 w-4" />
@@ -515,7 +523,7 @@ const FacebookAdsDashboard: React.FC = () => {
                 </p>
                 {stats.activeButBlocked > 0 && (
                   <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                    {formatNumber(stats.activeButBlocked)} محظور
+                    {formatNumber(stats.activeButBlocked)} {isEn ? "blocked" : "محظور"}
                   </span>
                 )}
               </div>
@@ -536,7 +544,7 @@ const FacebookAdsDashboard: React.FC = () => {
               }`}
             >
               <Layers className="h-4 w-4" />
-              الحملات الإعلانية
+              {isEn ? "Ad Campaigns" : "الحملات الإعلانية"}
               <span
                 className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
                   currentTab === "campaigns"
@@ -558,15 +566,15 @@ const FacebookAdsDashboard: React.FC = () => {
               }`}
             >
               <Gauge className="h-4 w-4" />
-              القرارات والتوصيات
+              {isEn ? "Decisions & Recommendations" : "القرارات والتوصيات"}
               {decisionCounts.warnings > 0 && (
                 <span className="rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
-                  {decisionCounts.warnings} تحذير
+                  {decisionCounts.warnings} {isEn ? "warning" : "تحذير"}
                 </span>
               )}
               {decisionCounts.opportunities > 0 && (
                 <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
-                  {decisionCounts.opportunities} فرصة
+                  {decisionCounts.opportunities} {isEn ? "opportunity" : "فرصة"}
                 </span>
               )}
             </button>
@@ -581,7 +589,7 @@ const FacebookAdsDashboard: React.FC = () => {
               }`}
             >
               <BellRing className="h-4 w-4" />
-              تنبيهات الرصيد WhatsApp
+              {isEn ? "WhatsApp Budget Alerts" : "تنبيهات الرصيد WhatsApp"}
             </button>
 
             <button
@@ -594,7 +602,7 @@ const FacebookAdsDashboard: React.FC = () => {
               }`}
             >
               <Globe2 className="h-4 w-4" />
-              الأداء الجغرافي
+              {isEn ? "Geo Performance" : "الأداء الجغرافي"}
             </button>
           </div>
 
@@ -605,7 +613,7 @@ const FacebookAdsDashboard: React.FC = () => {
               }`}
               className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-[11px] font-black text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
             >
-              تشخيص الحساب
+              {isEn ? "Account Diagnosis" : "تشخيص الحساب"}
               <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
             </Link>
           </div>
@@ -642,11 +650,12 @@ const FacebookAdsDashboard: React.FC = () => {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-base font-black">
-                    مركز قرارات وتوصيات Media Buying
+                    {isEn ? "Media Buying Decisions & Recommendations Center" : "مركز قرارات وتوصيات Media Buying"}
                   </h2>
                   <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    تحليل آلي للنتائج الحية لتحديد الإعلانات الرابحة للتوسيع
-                    والإعلانات الخاسرة للإيقاف مع درجات الثقة.
+                    {isEn
+                      ? "Automated analysis of live results to identify winning ads to scale and losing ads to stop, with confidence scores."
+                      : "تحليل آلي للنتائج الحية لتحديد الإعلانات الرابحة للتوسيع والإعلانات الخاسرة للإيقاف مع درجات الثقة."}
                   </p>
                 </div>
                 <button
@@ -662,7 +671,7 @@ const FacebookAdsDashboard: React.FC = () => {
                   }
                   className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3.5 text-xs font-black text-blue-700 hover:bg-blue-100 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
                 >
-                  فتح تقرير القرارات الموسع
+                  {isEn ? "Open Expanded Decision Report" : "فتح تقرير القرارات الموسع"}
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </button>
               </div>
@@ -678,7 +687,7 @@ const FacebookAdsDashboard: React.FC = () => {
               <section className="rounded-xl border border-amber-200 bg-amber-50/70 p-4 dark:border-amber-900/60 dark:bg-amber-950/30">
                 <div className="flex items-center gap-2 text-xs font-black text-amber-900 dark:text-amber-200">
                   <Sparkles className="h-4 w-4" />
-                  توصيات التحسين المباشرة ({recommendationCount})
+                  {isEn ? `Direct Optimization Recommendations (${recommendationCount})` : `توصيات التحسين المباشرة (${recommendationCount})`}
                 </div>
                 <div className="mt-3 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                   {performanceSummary?.recommendations?.map((rec, idx) => (
@@ -724,11 +733,12 @@ const FacebookAdsDashboard: React.FC = () => {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-base font-black">
-                  الأداء الجغرافي (أين نصرف وأين نوسع؟)
+                  {isEn ? "Geo Performance (Where do we spend & expand?)" : "الأداء الجغرافي (أين نصرف وأين نوسع؟)"}
                 </h2>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  توزيع الإنفاق والمبيعات وتكلفة الاكتساب CPA حسب المحافظات
-                  والدول لحسابك الإعلاني.
+                  {isEn
+                    ? "Distribution of spend, sales, and CPA by regions and countries for your ad account."
+                    : "توزيع الإنفاق والمبيعات وتكلفة الاكتساب CPA حسب المحافظات والدول لحسابك الإعلاني."}
                 </p>
               </div>
 
@@ -742,7 +752,7 @@ const FacebookAdsDashboard: React.FC = () => {
                       : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
                   }`}
                 >
-                  المحافظات / المناطق
+                  {isEn ? "Regions / Governorates" : "المحافظات / المناطق"}
                 </button>
                 <button
                   type="button"
@@ -753,7 +763,7 @@ const FacebookAdsDashboard: React.FC = () => {
                       : "text-slate-500 hover:text-slate-900 dark:text-slate-400"
                   }`}
                 >
-                  الدول
+                  {isEn ? "Countries" : "الدول"}
                 </button>
               </div>
             </div>
@@ -768,7 +778,9 @@ const FacebookAdsDashboard: React.FC = () => {
               </div>
             ) : topGeoRows.length === 0 ? (
               <div className="mt-6 rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                لا توجد بيانات جغرافية كافية بعد لهذه الفترة للحساب المختار.
+                {isEn
+                  ? "No sufficient geo data yet for this period and selected account."
+                  : "لا توجد بيانات جغرافية كافية بعد لهذه الفترة للحساب المختار."}
               </div>
             ) : (
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -783,7 +795,7 @@ const FacebookAdsDashboard: React.FC = () => {
                           {row.label}
                         </h3>
                         <p className="text-[11px] font-bold text-slate-500">
-                          {row.campaignsCount || row.campaigns.length} حملة
+                          {row.campaignsCount || row.campaigns.length} {isEn ? "campaign" : "حملة"}
                         </p>
                       </div>
                       <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-black text-blue-700 dark:bg-blue-950/60 dark:text-blue-200">
@@ -794,7 +806,7 @@ const FacebookAdsDashboard: React.FC = () => {
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="text-[11px] font-bold text-slate-500">
-                          المشتريات:
+                          {isEn ? "Purchases:" : "المشتريات:"}
                         </span>
                         <p className="font-black text-slate-950 dark:text-white">
                           {formatNumber(row.metrics.purchases)}

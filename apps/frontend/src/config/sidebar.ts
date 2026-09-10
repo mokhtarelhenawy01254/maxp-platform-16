@@ -203,6 +203,11 @@ export const getSidebarConfig = (
     userSidebarSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> },
     assignedApps?: string[],
 ): SidebarSection[] => {
+    const isEn = Boolean(
+        (typeof window !== 'undefined' && (localStorage.getItem('language') === 'en' || localStorage.getItem('i18nextLng')?.startsWith('en') || document.documentElement.lang === 'en')) ||
+        (typeof t === 'function' && t('sidebar.marketingSection') === 'Marketing & Advertising')
+    );
+
     const debugWindow =
         typeof window !== 'undefined'
             ? (window as Window & { debugSidebar?: boolean; debug?: boolean })
@@ -582,7 +587,7 @@ export const getSidebarConfig = (
                 { to: '/products/reviews', icon: Star, label: t('sidebar.productReviews'), requiredPermissions: ['orders.product-reviews.view'], hidden: !isAnyAppActive(['ugc-reviews-pro', 'store-pro']) },
                 { to: '/settings/orders', icon: Cog, label: t('sidebar.ordersSettings'), requiredPermissions: ['orders.settings.view'] },
                 { to: '/settings/customer-blocks', icon: ShieldAlert, label: t('sidebar.customerBlockSettings'), requiredPermissions: ['orders.customer-blocks.view'], hidden: !isAppActive('customer-blocks') },
-                { to: '/orders/shipments', icon: Truck, label: 'سجلات الشحنات والتوصيل', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']) },
+                { to: '/orders/shipments', icon: Truck, label: isEn ? 'Shipments & Delivery Logs' : 'سجلات الشحنات والتوصيل', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']) },
                 { to: '/shipping-companies', icon: Building, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']) },
                 { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']) },
                 { to: '/returns', icon: CheckCircle2, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'], hidden: !isAnyAppActive(['returns-settings', 'store-pro']) },
@@ -608,7 +613,7 @@ export const getSidebarConfig = (
             icon: BarChart3,
             items: [
                 { to: '/analytics/orders', icon: BarChart3, label: t('dashboard.overview') },
-                { to: '/analytics/store', icon: LineChart, label: 'تحليلات المتجر ومسار التحويل' },
+                { to: '/analytics/store', icon: LineChart, label: isEn ? 'Store & Funnel Analytics' : 'تحليلات المتجر ومسار التحويل' },
                 { to: '/analytics/orders/orders', icon: Archive, label: t('sidebar.orderAnalytics') },
                 { to: '/analytics/orders/revenue', icon: Banknote, label: t('sidebar.revenueAnalytics') },
                 { to: '/analytics/orders/products', icon: ShoppingBag, label: t('sidebar.productAnalytics') },
@@ -698,7 +703,7 @@ export const getSidebarConfig = (
                 {
                     to: '/analytics/store',
                     icon: LineChart,
-                    label: 'تحليلات المتجر ومسار التحويل',
+                    label: isEn ? 'Store & Funnel Analytics' : 'تحليلات المتجر ومسار التحويل',
                     hidden: !isAppActive('analytics-advanced')
                 },
                 {
@@ -727,11 +732,11 @@ export const getSidebarConfig = (
             icon: Users,
             items: [
                 { to: '/customers', icon: Users, label: t('sidebar.customers') },
-                { to: '/whatsapp/customer-journey', icon: RefreshCcw, label: t('sidebar.whatsappCustomerJourney') || 'رحلات زيادة الطلب والتكرار' },
-                { to: '/customers/points-center', icon: Trophy, label: t('sidebar.customerPointsCenter') || 'أعضاء ونقاط الولاء' },
-                { to: '/customers/segments', icon: Filter, label: t('sidebar.customerSegments') || 'الشرائح وقوائم العملاء' },
-                { to: '/customers/customer-notifications', icon: Bell, label: t('sidebar.customerNotifications') || 'إشعارات وحملات العملاء' },
-                { to: '/customers/settings', icon: Settings2, label: t('sidebar.customerLoyaltySettings') || 'إعدادات الولاء والخصم' },
+                { to: '/whatsapp/customer-journey', icon: RefreshCcw, label: isEn ? 'Customer Journeys & Re-order' : (t('sidebar.whatsappCustomerJourney') || 'رحلات زيادة الطلب والتكرار') },
+                { to: '/customers/points-center', icon: Trophy, label: isEn ? 'Loyalty Members & Points' : (t('sidebar.customerPointsCenter') || 'أعضاء ونقاط الولاء') },
+                { to: '/customers/segments', icon: Filter, label: isEn ? 'Segments & Customer Lists' : (t('sidebar.customerSegments') || 'الشرائح وقوائم العملاء') },
+                { to: '/customers/customer-notifications', icon: Bell, label: isEn ? 'Customer Notifications & Campaigns' : (t('sidebar.customerNotifications') || 'إشعارات وحملات العملاء') },
+                { to: '/customers/settings', icon: Settings2, label: isEn ? 'Loyalty & Discount Settings' : (t('sidebar.customerLoyaltySettings') || 'إعدادات الولاء والخصم') },
                 ...(user?.role === 'CUSTOMER' ? [{ to: '/wallet', icon: Wallet, label: t('sidebar.wallet') }] : []),
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان CRM غير مفعل
@@ -838,14 +843,14 @@ export const getSidebarConfig = (
         // 4️⃣.9️⃣ إدارة الوكالة (Agency OS)
         {
             id: 'marketing-agency',
-            title: t('sidebar.marketingAgencySection', { defaultValue: 'إدارة الوكالة' }),
+            title: isEn ? 'Marketing Agency (Agency OS)' : t('sidebar.marketingAgencySection', { defaultValue: 'إدارة الوكالة' }),
             icon: Briefcase,
             items: [
-                { to: '/agency', icon: BarChart3, label: t('sidebar.agencyOverview', { defaultValue: 'لوحة التحكم' }) },
-                { to: '/agency?tab=clients', icon: Users, label: t('sidebar.agencyClients', { defaultValue: 'العملاء والأسعار' }) },
-                { to: '/agency?tab=invoices', icon: Receipt, label: t('sidebar.agencyInvoices', { defaultValue: 'الفواتير والأرباح' }) },
-                { to: '/agency?tab=approvals', icon: ClipboardCheck, label: t('sidebar.agencyApprovals', { defaultValue: 'موافقات المحتوى' }) },
-                { to: '/agency?tab=suite', icon: Briefcase, label: t('sidebar.agencySuite', { defaultValue: 'الأدوات المتكاملة' }) },
+                { to: '/agency', icon: BarChart3, label: isEn ? 'Agency Dashboard' : t('sidebar.agencyOverview', { defaultValue: 'لوحة التحكم' }) },
+                { to: '/agency?tab=clients', icon: Users, label: isEn ? 'Clients & Pricing' : t('sidebar.agencyClients', { defaultValue: 'العملاء والأسعار' }) },
+                { to: '/agency?tab=invoices', icon: Receipt, label: isEn ? 'Invoices & Profit' : t('sidebar.agencyInvoices', { defaultValue: 'الفواتير والأرباح' }) },
+                { to: '/agency?tab=approvals', icon: ClipboardCheck, label: isEn ? 'Content Approvals' : t('sidebar.agencyApprovals', { defaultValue: 'موافقات المحتوى' }) },
+                { to: '/agency?tab=suite', icon: Briefcase, label: isEn ? 'Integrated Suite' : t('sidebar.agencySuite', { defaultValue: 'الأدوات المتكاملة' }) },
             ],
             hidden: user?.role === 'AFFILIATE' || !isAppActive('marketing-agency-pro'),
         },
@@ -853,78 +858,78 @@ export const getSidebarConfig = (
         // 5️⃣ التسويق والإعلانات
         {
             id: 'marketing',
-            title: t('sidebar.marketingSection'),
+            title: isEn ? 'Marketing & Advertising' : t('sidebar.marketingSection'),
             icon: Megaphone,
             items: [
                 // 1. إعلانات فيسبوك (Meta Ads)
                 {
                     to: '/advertising/facebook-ads',
                     icon: Megaphone,
-                    label: t('sidebar.facebookAds'),
+                    label: isEn ? 'Facebook Ads Campaigns' : t('sidebar.facebookAds'),
                     hidden: false,
                     children: [
-                        { to: '/advertising/facebook-ads', label: 'لوحة التحكم والحملات' },
-                        { to: '/advertising/facebook-ads/decision-reports', label: t('sidebar.facebookAdsReports') },
-                        { to: '/advertising/facebook-ads/ad-library', label: t('sidebar.adLibrary') },
-                        { to: '/advertising/facebook-ads/audiences', label: t('sidebar.audiences') },
-                        { to: '/advertising/facebook-ads/catalogs', label: t('sidebar.productCatalogs') },
-                        { to: '/advertising/facebook-ads/tests', label: t('sidebar.abTests') },
-                        { to: '/advertising/facebook-ads/overlay-campaigns', label: t('sidebar.overlayCampaigns') },
+                        { to: '/advertising/facebook-ads', label: isEn ? 'Dashboard & Campaigns' : 'لوحة التحكم والحملات' },
+                        { to: '/advertising/facebook-ads/decision-reports', label: isEn ? 'Decision Reports' : t('sidebar.facebookAdsReports') },
+                        { to: '/advertising/facebook-ads/ad-library', label: isEn ? 'Ad Library' : t('sidebar.adLibrary') },
+                        { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : t('sidebar.audiences') },
+                        { to: '/advertising/facebook-ads/catalogs', label: isEn ? 'Product Catalogs' : t('sidebar.productCatalogs') },
+                        { to: '/advertising/facebook-ads/tests', label: isEn ? 'A/B Tests' : t('sidebar.abTests') },
+                        { to: '/advertising/facebook-ads/overlay-campaigns', label: isEn ? 'Overlay Campaigns' : t('sidebar.overlayCampaigns') },
                     ],
                 },
                 // 2. التتبع والبيانات (Tracking & Pixels)
                 {
                     to: '/advertising/facebook-pixel',
                     icon: BarChart3,
-                    label: 'التتبع والبيانات',
+                    label: isEn ? 'Tracking & Data' : 'التتبع والبيانات',
                     children: [
-                        { to: '/advertising/facebook-pixel', label: t('sidebar.facebookPixel') },
-                        { to: '/advertising/google-tag-manager', label: t('sidebar.googleTagManager') },
-                        { to: '/advertising/google-analytics', label: t('sidebar.googleAnalytics') },
+                        { to: '/advertising/facebook-pixel', label: isEn ? 'Facebook Pixel & CAPI' : t('sidebar.facebookPixel') },
+                        { to: '/advertising/google-tag-manager', label: isEn ? 'Google Tag Manager' : t('sidebar.googleTagManager') },
+                        { to: '/advertising/google-analytics', label: isEn ? 'Google Analytics & Ads' : t('sidebar.googleAnalytics') },
                     ],
                 },
                 // 3. صفحات الهبوط ومسارات التحويل (Funnels & Landing Pages)
                 {
                     to: '/advertising/product-landing-pages',
                     icon: Monitor,
-                    label: 'صفحات الهبوط والمسارات',
+                    label: isEn ? 'Landing Pages & Funnels' : 'صفحات الهبوط والمسارات',
                     children: [
-                        { to: '/advertising/product-landing-pages', label: t('sidebar.productLandingPages') },
-                        { to: '/advertising/funnel-wizard', label: t('sidebar.quickFunnel') },
+                        { to: '/advertising/product-landing-pages', label: isEn ? 'Product Landing Pages' : t('sidebar.productLandingPages') },
+                        { to: '/advertising/funnel-wizard', label: isEn ? 'Quick Funnel' : (t('sidebar.quickFunnel') || 'مسار تحويل سريع') },
                     ],
                 },
                 // 4. نشر المحتوى والقنوات (Publishing & Channels)
                 {
                     to: '/facebook/create-post',
                     icon: SquarePen,
-                    label: 'نشر المحتوى والقنوات',
+                    label: isEn ? 'Publishing & Channels' : 'نشر المحتوى والقنوات',
                     children: [
-                        { to: '/broadcast', label: t('sidebar.broadcast'), hidden: !isAppActive('crm-basic') },
-                        { to: '/facebook/create-post', label: t('sidebar.facebookPost') },
-                        { to: '/tiktok/publish', label: t('sidebar.tiktokPublish'), hidden: !isAppActive('tiktok-integrations') },
-                        { to: '/tiktok/shop', label: t('sidebar.tiktokShop'), hidden: !isAppActive('tiktok-integrations') },
-                        { to: '/tiktok-inbox', label: t('sidebar.tiktokInbox'), hidden: !isAppActive('tiktok-integrations') },
-                        { to: '/tiktok/settings', label: t('sidebar.tiktokSettings'), hidden: !isAppActive('tiktok-integrations') },
+                        { to: '/broadcast', label: isEn ? 'Broadcast' : t('sidebar.broadcast'), hidden: !isAppActive('crm-basic') },
+                        { to: '/facebook/create-post', label: isEn ? 'Facebook Post' : t('sidebar.facebookPost') },
+                        { to: '/tiktok/publish', label: isEn ? 'TikTok Publish' : t('sidebar.tiktokPublish'), hidden: !isAppActive('tiktok-integrations') },
+                        { to: '/tiktok/shop', label: isEn ? 'TikTok Shop' : t('sidebar.tiktokShop'), hidden: !isAppActive('tiktok-integrations') },
+                        { to: '/tiktok-inbox', label: isEn ? 'TikTok Inbox' : t('sidebar.tiktokInbox'), hidden: !isAppActive('tiktok-integrations') },
+                        { to: '/tiktok/settings', label: isEn ? 'TikTok Settings' : t('sidebar.tiktokSettings'), hidden: !isAppActive('tiktok-integrations') },
                     ],
                 },
                 // 5. حاسبات التسويق والربحية (Marketing & Profitability Calculators)
                 {
                     to: '/tools/profitability-engine',
                     icon: Calculator,
-                    label: 'حاسبات التسويق والربحية',
+                    label: isEn ? 'Profitability Calculators' : 'حاسبات التسويق والربحية',
                     children: [
-                        { to: '/tools/profitability-engine', label: t('sidebar.profitabilityEngine') },
-                        { to: '/tools/break-even', label: t('sidebar.projectBreakEven') },
-                        { to: '/tools/product-break-even', label: t('sidebar.productBreakEven') },
-                        { to: '/tools/pricing-strategy', label: t('sidebar.pricingStrategy') },
-                        { to: '/campaign-calculator', label: t('sidebar.campaignCalculator') },
-                        { to: '/tools/ad-budget-planner', label: t('sidebar.adBudgetPlanner') },
-                        { to: '/tools/discount-impact', label: t('sidebar.discountImpact') },
-                        { to: '/tools/shipping-optimizer', label: t('sidebar.shippingOptimizer') },
-                        { to: '/tools/monthly-pnl', label: t('sidebar.monthlyPnL') },
-                        { to: '/tools/clv-calculator', label: t('sidebar.clvCalculator') },
-                        { to: '/tools/upsell-planner', label: t('sidebar.upsellPlanner') },
-                        { to: '/tools/refund-rate', label: t('sidebar.refundRateCalculator') },
+                        { to: '/tools/profitability-engine', label: isEn ? 'Profitability Engine' : t('sidebar.profitabilityEngine') },
+                        { to: '/tools/break-even', label: isEn ? 'Project Break-Even' : t('sidebar.projectBreakEven') },
+                        { to: '/tools/product-break-even', label: isEn ? 'Product Break-Even' : t('sidebar.productBreakEven') },
+                        { to: '/tools/pricing-strategy', label: isEn ? 'Pricing Strategy' : t('sidebar.pricingStrategy') },
+                        { to: '/campaign-calculator', label: isEn ? 'Campaign Calculator' : t('sidebar.campaignCalculator') },
+                        { to: '/tools/ad-budget-planner', label: isEn ? 'Ad Budget Planner' : t('sidebar.adBudgetPlanner') },
+                        { to: '/tools/discount-impact', label: isEn ? 'Discount Impact' : t('sidebar.discountImpact') },
+                        { to: '/tools/shipping-optimizer', label: isEn ? 'Shipping Optimizer' : t('sidebar.shippingOptimizer') },
+                        { to: '/tools/monthly-pnl', label: isEn ? 'Monthly P&L' : t('sidebar.monthlyPnL') },
+                        { to: '/tools/clv-calculator', label: isEn ? 'CLV Calculator' : t('sidebar.clvCalculator') },
+                        { to: '/tools/upsell-planner', label: isEn ? 'Upsell Planner' : t('sidebar.upsellPlanner') },
+                        { to: '/tools/refund-rate', label: isEn ? 'Refund Rate Calculator' : t('sidebar.refundRateCalculator') },
                     ],
                 },
             ],
@@ -1110,14 +1115,14 @@ export const getSidebarConfig = (
         // 7️⃣.6️⃣.7️⃣ أكاديمية ماكس بي
         {
             id: 'academy',
-            title: t('sidebar.academyModule', 'أكاديمية ماكس بي'),
+            title: isEn ? 'MaxP Academy' : t('sidebar.academyModule', 'أكاديمية ماكس بي'),
             icon: GraduationCap,
             hidden: !isAppActive('academy-app') && !isAppActive('academy'),
             items: [
-                { to: '/academy/dashboard', icon: BarChart3, label: t('sidebar.academyDashboard', 'لوحة الأكاديمية') },
-                { to: '/academy/courses', icon: BookOpen, label: t('sidebar.academyCourses', 'إدارة الكورسات') },
-                { to: '/academy/catalog', icon: Store, label: t('sidebar.academyCatalog', 'بوابة الطلاب والكتالوج') },
-                { to: '/academy/students', icon: Users, label: t('sidebar.academyStudents', 'الطلاب والتقدم') },
+                { to: '/academy/dashboard', icon: BarChart3, label: isEn ? 'Academy Dashboard' : t('sidebar.academyDashboard', 'لوحة الأكاديمية') },
+                { to: '/academy/courses', icon: BookOpen, label: isEn ? 'Courses Management' : t('sidebar.academyCourses', 'إدارة الكورسات') },
+                { to: '/academy/catalog', icon: Store, label: isEn ? 'Student Portal & Catalog' : t('sidebar.academyCatalog', 'بوابة الطلاب والكتالوج') },
+                { to: '/academy/students', icon: Users, label: isEn ? 'Students & Progress' : t('sidebar.academyStudents', 'الطلاب والتقدم') },
             ]
         },
 
@@ -1242,7 +1247,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/admin/services', icon: SquarePen, label: t('sidebar.serviceManagement') },
                 { to: '/admin/service-orders', icon: ClipboardList, label: t('sidebar.serviceOrders') },
-                { to: '/admin/services/settings', icon: Settings, label: 'إعدادات الخدمات' },
+                { to: '/admin/services/settings', icon: Settings, label: isEn ? 'Services Settings' : 'إعدادات الخدمات' },
             ]
         },
 
@@ -1319,13 +1324,13 @@ export const getSidebarConfig = (
         // 1️⃣5️⃣ إدارة النظام (للسوبر أدمن)
         ...(user?.role === 'SUPER_ADMIN' ? [{
             id: 'system',
-            title: t('sidebar.systemManagementSection') || 'إدارة النظام',
+            title: isEn ? 'System Management' : (t('sidebar.systemManagementSection') || 'إدارة النظام'),
             icon: Building,
             items: [
-                { to: '/super-admin/dashboard', icon: LayoutDashboard, label: 'لوحة تحكم السوبر أدمن' },
-                { to: '/super-admin/companies-v2', icon: Building, label: t('sidebar.companiesManagement') || 'إدارة الشركات' },
-                { to: '/super-admin/billing-overview', icon: Banknote, label: t('sidebar.billingOverview') || 'المالية والاشتراكات' },
-                { to: '/super-admin/server-usage', icon: HardDrive, label: 'استهلاك الخوادم والمراقبة' },
+                { to: '/super-admin/dashboard', icon: LayoutDashboard, label: isEn ? 'Super Admin Dashboard' : 'لوحة تحكم السوبر أدمن' },
+                { to: '/super-admin/companies-v2', icon: Building, label: isEn ? 'Companies Management' : (t('sidebar.companiesManagement') || 'إدارة الشركات') },
+                { to: '/super-admin/billing-overview', icon: Banknote, label: isEn ? 'Billing & Subscriptions' : (t('sidebar.billingOverview') || 'المالية والاشتراكات') },
+                { to: '/super-admin/server-usage', icon: HardDrive, label: isEn ? 'Server Usage & Monitoring' : 'استهلاك الخوادم والمراقبة' },
             ]
         }] : []),
 

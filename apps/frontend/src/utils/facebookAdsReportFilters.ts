@@ -22,6 +22,22 @@ export const FACEBOOK_ADS_DATE_PRESETS: Array<{
   { value: "custom", label: "فترة مخصصة" },
 ];
 
+export const getFacebookAdsDatePresets = (
+  isEn = false,
+): Array<{
+  value: FacebookAdsDatePreset;
+  label: string;
+}> => [
+  { value: "last_7d", label: isEn ? "Last 7 Days" : "آخر 7 أيام" },
+  { value: "last_14d", label: isEn ? "Last 14 Days" : "آخر 14 يوم" },
+  { value: "last_30d", label: isEn ? "Last 30 Days" : "آخر 30 يوم" },
+  { value: "last_90d", label: isEn ? "Last 90 Days" : "آخر 90 يوم" },
+  { value: "this_month", label: isEn ? "This Month" : "هذا الشهر" },
+  { value: "today", label: isEn ? "Today" : "اليوم" },
+  { value: "yesterday", label: isEn ? "Yesterday" : "أمس" },
+  { value: "custom", label: isEn ? "Custom Range" : "فترة مخصصة" },
+];
+
 export interface FacebookAdsStoredDateFilter {
   preset: FacebookAdsDatePreset;
   startDate?: string;
