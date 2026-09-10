@@ -847,6 +847,40 @@ class EnhancedOrderService {
     const addrText = parsedAddress?.address || (typeof data.customerAddress === 'string' && !data.customerAddress.trim().startsWith('{') ? data.customerAddress : '') || '';
     const addrPhone = parsedAddress?.phone || data.customerPhone || customer.phone;
 
+    // استخراج attribution تلقائياً لو الطلب من محادثة
+    let attribution = null;
+    if (data.attribution) {
+      attribution = typeof data.attribution === 'string' ? safeJsonParse(data.attribution) : data.attribution;
+    } else if (conversation || data.conversation) {
+      const conv = conversation || data.conversation;
+      let convMeta = {};
+      if (typeof conv.metadata === 'string') {
+        try { convMeta = JSON.parse(conv.metadata) || {}; } catch (_) { convMeta = {}; }
+      } else if (conv.metadata && typeof conv.metadata === 'object') {
+        convMeta = conv.metadata;
+      }
+
+      const convPlatform = (conv.channel || convMeta.platform || 'facebook').toLowerCase();
+      const adId = convMeta.adId || null;
+      const adTitle = convMeta.adsContextData?.ad_title || null;
+      const campaignName = adTitle || (adId ? `إعلان فيسبوك (${adId})` : `محادثة ${convPlatform === 'whatsapp' ? 'واتساب' : 'فيسبوك'}`);
+
+      attribution = {
+        channel: 'inbox',
+        platform: convPlatform,
+        source: `${convPlatform}_inbox`,
+        medium: adId ? 'click_to_messenger' : 'chat_inbox',
+        campaignName,
+        campaignId: convMeta.campaignId || null,
+        adId,
+        adRef: convMeta.adRef || null,
+        postId: convMeta.postId || null,
+        pageId: convMeta.pageId || null,
+        conversationId: conv.id || data.conversationId || null,
+        capturedAt: new Date().toISOString()
+      };
+    }
+
     return {
       orderNumber,
       customerId: customer.id,
@@ -922,9 +956,6 @@ class EnhancedOrderService {
       productSize: data.productSize,
       productPrice: costs.productPrice,
 
-      quantity: data.quantity || 1,
-      products: data.products, // ✅ تمرير مصفوفة المنتجات
-
       // metadata
       metadata: JSON.stringify({
         conversationId: data.conversationId,
@@ -933,6 +964,7 @@ class EnhancedOrderService {
         returnAmount: data.returnAmount || null,
         ...(data.autoDiscountVoucherId && { autoDiscountVoucherId: data.autoDiscountVoucherId }),
         ...(data.autoDiscountApplied && { autoDiscountApplied: data.autoDiscountApplied }),
+        ...(attribution && { attribution }),
         originalData: {
           productName: data.productName,
           productColor: data.productColor,

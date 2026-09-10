@@ -144,4 +144,36 @@ describe('utils/orderAttribution', () => {
       expect(extractAttributionFromCheckoutData(null)).toBeNull();
     });
   });
+
+  describe('channel and inbox attribution', () => {
+    test('defaults channel to storefront for regular web traffic', () => {
+      const result = sanitizeOrderAttribution({
+        source: 'facebook',
+        campaignName: 'Summer Sale',
+      });
+      expect(result.channel).toBe('storefront');
+    });
+
+    test('sets channel to inbox when conversationId or inbox source is present', () => {
+      const result = sanitizeOrderAttribution({
+        source: 'facebook_inbox',
+        conversationId: 'conv_123',
+        adId: 'ad_999',
+        postId: 'post_888',
+      });
+      expect(result.channel).toBe('inbox');
+      expect(result.adId).toBe('ad_999');
+      expect(result.postId).toBe('post_888');
+      expect(result.conversationId).toBe('conv_123');
+    });
+
+    test('respects explicit channel value', () => {
+      const result = sanitizeOrderAttribution({
+        channel: 'inbox',
+        source: 'facebook',
+      });
+      expect(result.channel).toBe('inbox');
+    });
+  });
 });
+

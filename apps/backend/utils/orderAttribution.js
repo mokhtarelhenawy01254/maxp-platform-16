@@ -173,7 +173,16 @@ function sanitizeOrderAttribution(rawAttribution, fallbacks = {}) {
     source = 'audience_network';
   }
 
+  const rawChannel = normalizeAttributionText(attribution.channel, 50)?.toLowerCase();
+  const isInboxExplicit =
+    rawChannel === 'inbox' ||
+    Boolean(attribution.conversationId) ||
+    Boolean(attribution.adId && source && source.includes('inbox')) ||
+    (source && (source.includes('inbox') || source.includes('messenger')));
+  const channel = isInboxExplicit ? 'inbox' : (rawChannel || 'storefront');
+
   const sanitized = {
+    channel,
     platform,
     source,
     medium,
@@ -196,6 +205,22 @@ function sanitizeOrderAttribution(rawAttribution, fallbacks = {}) {
     adId: normalizeAttributionText(
       attribution.adId ||
         attribution.ad_id,
+      160,
+    ),
+    adRef: normalizeAttributionText(
+      attribution.adRef || attribution.ad_ref,
+      160,
+    ),
+    postId: normalizeAttributionText(
+      attribution.postId || attribution.post_id,
+      160,
+    ),
+    pageId: normalizeAttributionText(
+      attribution.pageId || attribution.page_id,
+      160,
+    ),
+    conversationId: normalizeAttributionText(
+      attribution.conversationId || attribution.conversation_id,
       160,
     ),
     content: normalizeAttributionText(

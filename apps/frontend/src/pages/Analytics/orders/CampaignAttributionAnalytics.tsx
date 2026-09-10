@@ -20,6 +20,10 @@ import PeriodSelector, {
 
 interface CampaignAttributionSummary {
   totalOrders: number;
+  storefrontOrders?: number;
+  inboxOrders?: number;
+  storefrontRevenue?: number;
+  inboxRevenue?: number;
   trackedOrders: number;
   campaignTaggedOrders: number;
   directOrders: number;
@@ -36,6 +40,7 @@ interface CampaignAttributionSummary {
 
 interface CampaignAttributionRow {
   key: string;
+  channel?: string;
   trackingType: string;
   platform: string;
   source: string;
@@ -44,6 +49,9 @@ interface CampaignAttributionRow {
   campaignName: string;
   adSetId: string | null;
   adId: string | null;
+  adRef?: string | null;
+  postId?: string | null;
+  pageId?: string | null;
   content: string | null;
   term: string | null;
   totalOrders: number;
@@ -80,11 +88,13 @@ interface CampaignAttributionAnalyticsData {
   platformBreakdown: BreakdownRow[];
   trend: TrendRow[];
   availableFilters: {
+    channels?: string[];
     sources: string[];
     platforms: string[];
     trackingTypes: string[];
   };
   appliedFilters: {
+    channel?: string;
     source: string;
     platform: string;
     trackingType: string;
@@ -112,6 +122,21 @@ const trackingTypeBadgeClasses: Record<string, string> = {
 
 const getTrackingBadgeClass = (type: string) =>
   trackingTypeBadgeClasses[type] || trackingTypeBadgeClasses["unattributed"];
+
+const channelLabels: Record<string, string> = {
+  storefront: "متجر إلكتروني",
+  inbox: "رسائل الإنبوكس",
+};
+
+const channelBadgeClasses: Record<string, string> = {
+  storefront:
+    "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-900/30 dark:text-indigo-200 dark:border-indigo-800",
+  inbox:
+    "bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-200 dark:border-purple-800",
+};
+
+const getChannelBadgeClass = (channel?: string) =>
+  channelBadgeClasses[channel || "storefront"] || channelBadgeClasses.storefront;
 
 const formatAttributionValue = (value?: string | null) => {
   if (!value) {
@@ -221,7 +246,10 @@ const StatsBar: React.FC<{ data: CampaignAttributionAnalyticsData }> = ({
     {
       label: "إجمالي الطلبات",
       value: s.totalOrders.toLocaleString(),
-      detail: `${s.deliveryRate.toFixed(1)}% نسبة التسليم`,
+      detail:
+        s.storefrontOrders !== undefined && s.inboxOrders !== undefined
+          ? `${s.storefrontOrders.toLocaleString()} متجر · ${s.inboxOrders.toLocaleString()} إنبوكس`
+          : `${s.deliveryRate.toFixed(1)}% نسبة التسليم`,
       accent: "text-blue-600 dark:text-blue-400",
     },
     {
@@ -245,7 +273,10 @@ const StatsBar: React.FC<{ data: CampaignAttributionAnalyticsData }> = ({
     {
       label: "إجمالي الإيراد",
       value: formatPrice(s.totalRevenue),
-      detail: `${formatPrice(s.deliveredRevenue)} إيراد المسلّم`,
+      detail:
+        s.inboxRevenue !== undefined && s.inboxRevenue > 0
+          ? `${formatPrice(s.storefrontRevenue || 0)} متجر · ${formatPrice(s.inboxRevenue)} إنبوكس`
+          : `${formatPrice(s.deliveredRevenue)} إيراد المسلّم`,
       accent: "text-amber-600 dark:text-amber-400",
     },
     {
@@ -280,6 +311,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [range, setRange] = useState<PeriodRange | null>(null);
+  const [channel, setChannel] = useState("all");
   const [source, setSource] = useState("all");
   const [platform, setPlatform] = useState("all");
   const [trackingType, setTrackingType] = useState("all");
@@ -310,6 +342,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
           source,
           platform,
           trackingType,
+          channel,
           search: deferredSearch || undefined,
           signal: controller.signal,
         });
@@ -344,7 +377,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
     fetchAnalytics();
 
     return () => controller.abort();
-  }, [deferredSearch, range, platform, source, trackingType]);
+  }, [deferredSearch, range, platform, source, trackingType, channel]);
 
   const sourceChartData = useMemo(
     () => (data?.sourceBreakdown || []).slice(0, 8),
@@ -420,6 +453,17 @@ const CampaignAttributionAnalytics: React.FC = () => {
       {/* Compact filters */}
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-gray-100 bg-white p-2 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <select
+          value={channel}
+          onChange={(event) => setChannel(event.target.value)}
+          className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
+          aria-label="القناة"
+        >
+          <option value="all">كل القنوات (متجر + إنبوكس)</option>
+          <option value="storefront">🛒 المتجر الإلكتروني فقط</option>
+          <option value="inbox">💬 رسائل الإنبوكس فقط</option>
+        </select>
+
+        <select
           value={source}
           onChange={(event) => setSource(event.target.value)}
           className="rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs font-semibold text-gray-700 shadow-sm focus:ring-2 focus:ring-blue-500/30 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200"
@@ -478,11 +522,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
 
       {/* Footnote instead of tall banner */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[11px] leading-relaxed text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-        الطلبات القديمة قبل تفعيل التتبع تظهر "غير منسوبة"، والجديدة تتجمع حسب{" "}
-        <span className="font-semibold">
-          source / medium / campaign ID / ad ID
-        </span>
-        .
+        يجمع هذا التقرير طلبات المتجر الإلكتروني (روابط UTM) وطلبات رسائل وإنبوكس فيسبوك الناتجة عن إعلانات الرسائل (Click-to-Messenger)، مع إمكانية الفلترة السريعة بالقناة والمصدر بالأعلى.
       </div>
 
       {/* Charts + platforms side panel */}
@@ -682,11 +722,18 @@ const CampaignAttributionAnalytics: React.FC = () => {
                   >
                     <td className="py-2 pr-0 pl-2">
                       <div className="space-y-1">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${getTrackingBadgeClass(row.trackingType)}`}
-                        >
-                          {trackingTypeLabels[row.trackingType] || row.trackingType}
-                        </span>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${getTrackingBadgeClass(row.trackingType)}`}
+                          >
+                            {trackingTypeLabels[row.trackingType] || row.trackingType}
+                          </span>
+                          <span
+                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium ${getChannelBadgeClass(row.channel)}`}
+                          >
+                            {row.channel === "inbox" ? "💬 إنبوكس" : "🛒 متجر"}
+                          </span>
+                        </div>
                         <div className="font-semibold text-gray-900 dark:text-white">
                           {formatAttributionValue(row.source)}
                         </div>
@@ -713,11 +760,25 @@ const CampaignAttributionAnalytics: React.FC = () => {
                     </td>
                     <td className="px-2 py-2">
                       <div className="space-y-1 text-[10px] text-gray-600 dark:text-gray-300">
-                        <div>
-                          Campaign: {formatAttributionValue(row.campaignId)}
-                        </div>
-                        <div>Ad Set: {formatAttributionValue(row.adSetId)}</div>
-                        <div>Ad ID: {formatAttributionValue(row.adId)}</div>
+                        {row.campaignId && (
+                          <div>Campaign: {row.campaignId}</div>
+                        )}
+                        {row.adSetId && (
+                          <div>Ad Set: {row.adSetId}</div>
+                        )}
+                        {row.adId && (
+                          <div className="font-medium text-purple-700 dark:text-purple-300">
+                            Ad ID: {row.adId}
+                          </div>
+                        )}
+                        {row.postId && (
+                          <div className="text-gray-500 dark:text-gray-400">
+                            Post: {row.postId.length > 18 ? `${row.postId.slice(0, 18)}...` : row.postId}
+                          </div>
+                        )}
+                        {!row.campaignId && !row.adSetId && !row.adId && !row.postId && (
+                          <div>-</div>
+                        )}
                       </div>
                     </td>
                     <td className="px-2 py-2 font-bold text-gray-900 dark:text-white">

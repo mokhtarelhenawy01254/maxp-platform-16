@@ -444,6 +444,41 @@ class OrderService {
         }),
       };
 
+      // جلب بيانات المحادثة وتوريث attribution إذا كان الطلب من محادثة
+      let conversationAttribution = null;
+      if (conversationId) {
+        try {
+          const conv = await this.getPrisma().conversation.findUnique({
+            where: { id: conversationId },
+            select: { id: true, channel: true, metadata: true }
+          });
+          if (conv) {
+            let convMeta = {};
+            try { convMeta = typeof conv.metadata === 'string' ? JSON.parse(conv.metadata) : (conv.metadata || {}); } catch (_) {}
+            const convPlatform = (conv.channel || convMeta.platform || 'facebook').toLowerCase();
+            const adId = convMeta.adId || null;
+            const adTitle = convMeta.adsContextData?.ad_title || null;
+            const campaignName = adTitle || (adId ? `إعلان فيسبوك (${adId})` : `محادثة ${convPlatform === 'whatsapp' ? 'واتساب' : 'فيسبوك'}`);
+            conversationAttribution = {
+              channel: 'inbox',
+              platform: convPlatform,
+              source: `${convPlatform}_inbox`,
+              medium: adId ? 'click_to_messenger' : 'chat_inbox',
+              campaignName,
+              campaignId: convMeta.campaignId || null,
+              adId,
+              adRef: convMeta.adRef || null,
+              postId: convMeta.postId || null,
+              pageId: convMeta.pageId || null,
+              conversationId: conv.id,
+              capturedAt: new Date().toISOString()
+            };
+          }
+        } catch (convErr) {
+          console.warn('⚠️ [ORDER-SERVICE] Failed to resolve conversation attribution:', convErr.message);
+        }
+      }
+
       const order = await safeQuery(async () => {
         const prisma = this.getPrisma();
         return await prisma.order.create({
@@ -451,6 +486,7 @@ class OrderService {
             orderNumber,
             company: { connect: { id: companyId } },
             customer: { connect: { id: resolvedCustomerId } },
+            conversationId: conversationId || null,
             subtotal: parseFloat(subtotal.toFixed(2)),
             tax: 0,
             shipping: parseFloat(shipping.toFixed(2)),
@@ -475,6 +511,7 @@ class OrderService {
               ...(autoDiscountVoucherId && { autoDiscountVoucherId }),
               ...(autoDiscountVoucherId && { autoDiscountApplied: autoDiscountAppliedValue }),
               ...(conversationId && { conversationId }),
+              ...(conversationAttribution && { attribution: conversationAttribution }),
             }),
             orderItems: {
               create: [orderItem],

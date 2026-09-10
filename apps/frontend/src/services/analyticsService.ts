@@ -703,6 +703,7 @@ class AnalyticsService {
       source?: string;
       platform?: string;
       trackingType?: string;
+      channel?: string;
       search?: string;
       signal?: AbortSignal;
     } = {},
@@ -715,6 +716,7 @@ class AnalyticsService {
         source,
         platform,
         trackingType,
+        channel,
         search,
         signal,
       } = options;
@@ -726,6 +728,9 @@ class AnalyticsService {
       if (platform && platform !== "all") params.platform = platform;
       if (trackingType && trackingType !== "all") {
         params.trackingType = trackingType;
+      }
+      if (channel && channel !== "all") {
+        (params as any).channel = channel;
       }
       if (search) params.search = search;
 

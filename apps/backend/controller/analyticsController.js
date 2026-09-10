@@ -129,22 +129,63 @@ const normalizeAttributionText = (value, fallback = '') => {
   return text || fallback;
 };
 
-const buildOrderAttributionSnapshot = (metadata) => {
-  const rawAttribution =
+const buildOrderAttributionSnapshot = (metadata, orderContext = {}) => {
+  let rawAttribution =
     metadata && typeof metadata === 'object' && metadata.attribution
       ? metadata.attribution
       : null;
 
+  // Fallback to conversation metadata if order has a conversation but no direct attribution
+  if (!rawAttribution && orderContext.conversation) {
+    const conv = orderContext.conversation;
+    let convMeta = {};
+    try {
+      convMeta = typeof conv.metadata === 'string' ? JSON.parse(conv.metadata) : (conv.metadata || {});
+    } catch (_) {
+      convMeta = {};
+    }
+
+    const convPlatform = (conv.channel || convMeta.platform || 'facebook').toLowerCase();
+    const adId = convMeta.adId || null;
+    const adTitle = convMeta.adsContextData?.ad_title || null;
+    const campaignName = adTitle || (adId ? `إعلان فيسبوك (${adId})` : `محادثة ${convPlatform === 'whatsapp' ? 'واتساب' : 'فيسبوك'}`);
+
+    rawAttribution = {
+      channel: 'inbox',
+      platform: convPlatform,
+      source: `${convPlatform}_inbox`,
+      medium: adId ? 'click_to_messenger' : 'chat_inbox',
+      campaignName,
+      campaignId: convMeta.campaignId || null,
+      adId,
+      adRef: convMeta.adRef || null,
+      postId: convMeta.postId || null,
+      pageId: convMeta.pageId || null,
+      conversationId: conv.id,
+      capturedAt: null,
+    };
+  }
+
+  const isInboxOrder =
+    Boolean(orderContext.conversationId) ||
+    Boolean(orderContext.conversation) ||
+    (orderContext.sourceType && String(orderContext.sourceType).includes('conversation')) ||
+    (orderContext.extractionMethod && String(orderContext.extractionMethod).includes('inbox'));
+
   if (!rawAttribution || typeof rawAttribution !== 'object') {
     return {
+      channel: isInboxOrder ? 'inbox' : 'storefront',
       trackingType: 'unattributed',
-      platform: 'unknown',
-      source: 'unattributed',
-      medium: 'unattributed',
+      platform: isInboxOrder ? 'facebook' : 'unknown',
+      source: isInboxOrder ? 'inbox_unattributed' : 'unattributed',
+      medium: isInboxOrder ? 'chat' : 'unattributed',
       campaignId: '',
       campaignName: '',
       adSetId: '',
       adId: '',
+      adRef: '',
+      postId: '',
+      pageId: '',
       content: '',
       term: '',
       landingPath: '',
@@ -153,14 +194,24 @@ const buildOrderAttributionSnapshot = (metadata) => {
     };
   }
 
-  const source = normalizeAttributionText(rawAttribution.source, 'unknown').toLowerCase();
+  const rawChannel = normalizeAttributionText(rawAttribution.channel, 50)?.toLowerCase();
+  const sourceText = normalizeAttributionText(rawAttribution.source, 'unknown').toLowerCase();
+  const isInboxExplicit =
+    rawChannel === 'inbox' ||
+    isInboxOrder ||
+    Boolean(rawAttribution.conversationId) ||
+    sourceText.includes('inbox') ||
+    sourceText.includes('messenger');
+  const channel = isInboxExplicit ? 'inbox' : (rawChannel || 'storefront');
+
+  const source = sourceText;
   const medium = normalizeAttributionText(
     rawAttribution.medium,
-    source === 'direct' ? 'direct' : 'unknown',
+    source === 'direct' ? 'direct' : (channel === 'inbox' ? 'chat' : 'unknown'),
   ).toLowerCase();
   const platform = normalizeAttributionText(
     rawAttribution.platform,
-    source !== 'unknown' ? source : 'unknown',
+    source !== 'unknown' ? source : (channel === 'inbox' ? 'facebook' : 'unknown'),
   ).toLowerCase();
   const campaignId = normalizeAttributionText(
     rawAttribution.campaignId || rawAttribution.utmId,
@@ -170,23 +221,26 @@ const buildOrderAttributionSnapshot = (metadata) => {
   );
   const adSetId = normalizeAttributionText(rawAttribution.adSetId);
   const adId = normalizeAttributionText(rawAttribution.adId);
+  const adRef = normalizeAttributionText(rawAttribution.adRef);
+  const postId = normalizeAttributionText(rawAttribution.postId);
+  const pageId = normalizeAttributionText(rawAttribution.pageId);
   const content = normalizeAttributionText(rawAttribution.content || rawAttribution.utmContent);
   const term = normalizeAttributionText(rawAttribution.term || rawAttribution.utmTerm);
   const landingPath = normalizeAttributionText(rawAttribution.landingPath);
   const referrer = normalizeAttributionText(rawAttribution.referrer);
   const capturedAt = normalizeAttributionText(rawAttribution.capturedAt) || null;
 
-  const hasCampaign = Boolean(campaignId || campaignName);
+  const hasCampaign = Boolean(campaignId || campaignName || adId);
   const hasTracking = Boolean(
     hasCampaign ||
       adSetId ||
-      adId ||
       content ||
       term ||
       landingPath ||
       referrer ||
-      (source && source !== 'unknown') ||
-      (medium && medium !== 'unknown'),
+      postId ||
+      (source && source !== 'unknown' && source !== 'unattributed') ||
+      (medium && medium !== 'unknown' && medium !== 'unattributed'),
   );
 
   let trackingType = 'unattributed';
@@ -199,6 +253,7 @@ const buildOrderAttributionSnapshot = (metadata) => {
   }
 
   return {
+    channel,
     trackingType,
     platform,
     source: hasTracking ? source || 'unknown' : 'unattributed',
@@ -207,6 +262,9 @@ const buildOrderAttributionSnapshot = (metadata) => {
     campaignName,
     adSetId,
     adId,
+    adRef,
+    postId,
+    pageId,
     content,
     term,
     landingPath,
@@ -3985,6 +4043,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
       source,
       platform,
       trackingType,
+      channel,
       search,
     } = req.query;
     const { start, end } = parseAnalyticsDateRange({ startDate, endDate, period });
@@ -4002,12 +4061,22 @@ const getCampaignAttributionAnalytics = async (req, res) => {
         total: true,
         createdAt: true,
         metadata: true,
+        conversationId: true,
+        sourceType: true,
+        extractionMethod: true,
+        conversation: {
+          select: {
+            id: true,
+            channel: true,
+            metadata: true,
+          },
+        },
       },
     });
 
     const allOrders = orders.map((order) => {
       const metadata = parseJsonSafely(order.metadata);
-      const attribution = buildOrderAttributionSnapshot(metadata);
+      const attribution = buildOrderAttributionSnapshot(metadata, order);
       const total = Number.parseFloat(String(order.total || 0));
       const safeTotal = Number.isFinite(total) ? total : 0;
       const safeStatus = normalizeAttributionText(order.status, 'PENDING');
@@ -4015,6 +4084,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
       const createdAtKey = createdAtDate.toISOString().slice(0, 10);
       const searchText = [
         order.orderNumber,
+        attribution.channel,
         attribution.platform,
         attribution.source,
         attribution.medium,
@@ -4022,6 +4092,8 @@ const getCampaignAttributionAnalytics = async (req, res) => {
         attribution.campaignName,
         attribution.adSetId,
         attribution.adId,
+        attribution.adRef,
+        attribution.postId,
         attribution.content,
         attribution.term,
       ]
@@ -4047,9 +4119,14 @@ const getCampaignAttributionAnalytics = async (req, res) => {
     const sourceFilter = normalizeAttributionText(source).toLowerCase();
     const platformFilter = normalizeAttributionText(platform).toLowerCase();
     const trackingTypeFilter = normalizeAttributionText(trackingType).toLowerCase();
+    const channelFilter = normalizeAttributionText(channel).toLowerCase();
     const searchFilter = normalizeAttributionText(search).toLowerCase();
 
     const filteredOrders = allOrders.filter((order) => {
+      if (channelFilter && channelFilter !== 'all' && order.channel !== channelFilter) {
+        return false;
+      }
+
       if (sourceFilter && sourceFilter !== 'all' && order.source !== sourceFilter) {
         return false;
       }
@@ -4077,6 +4154,14 @@ const getCampaignAttributionAnalytics = async (req, res) => {
       (accumulator, order) => {
         accumulator.totalOrders += 1;
         accumulator.totalRevenue += order.total;
+
+        if (order.channel === 'inbox') {
+          accumulator.inboxOrders += 1;
+          accumulator.inboxRevenue += order.total;
+        } else {
+          accumulator.storefrontOrders += 1;
+          accumulator.storefrontRevenue += order.total;
+        }
 
         if (order.trackingType !== 'unattributed') {
           accumulator.trackedOrders += 1;
@@ -4111,6 +4196,10 @@ const getCampaignAttributionAnalytics = async (req, res) => {
       },
       {
         totalOrders: 0,
+        storefrontOrders: 0,
+        inboxOrders: 0,
+        storefrontRevenue: 0,
+        inboxRevenue: 0,
         trackedOrders: 0,
         campaignTaggedOrders: 0,
         directOrders: 0,
@@ -4124,6 +4213,8 @@ const getCampaignAttributionAnalytics = async (req, res) => {
     );
 
     summary.totalRevenue = roundAnalyticsNumber(summary.totalRevenue);
+    summary.storefrontRevenue = roundAnalyticsNumber(summary.storefrontRevenue);
+    summary.inboxRevenue = roundAnalyticsNumber(summary.inboxRevenue);
     summary.deliveredRevenue = roundAnalyticsNumber(summary.deliveredRevenue);
     summary.averageOrderValue =
       summary.totalOrders > 0
@@ -4145,6 +4236,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
 
     filteredOrders.forEach((order) => {
       const rowKey = [
+        order.channel,
         order.trackingType,
         order.platform,
         order.source,
@@ -4158,6 +4250,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
       if (!campaignRowsMap.has(rowKey)) {
         campaignRowsMap.set(rowKey, {
           key: rowKey,
+          channel: order.channel,
           trackingType: order.trackingType,
           platform: order.platform,
           source: order.source,
@@ -4172,6 +4265,9 @@ const getCampaignAttributionAnalytics = async (req, res) => {
                 : 'بدون اسم حملة'),
           adSetId: order.adSetId || null,
           adId: order.adId || null,
+          adRef: order.adRef || null,
+          postId: order.postId || null,
+          pageId: order.pageId || null,
           content: order.content || null,
           term: order.term || null,
           landingPath: order.landingPath || null,
@@ -4304,6 +4400,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
       .sort((left, right) => left.date.localeCompare(right.date));
 
     const availableFilters = {
+      channels: ['all', 'storefront', 'inbox'],
       sources: [...new Set(allOrders.map((order) => order.source))]
         .filter(Boolean)
         .sort((left, right) => left.localeCompare(right)),
@@ -4325,6 +4422,7 @@ const getCampaignAttributionAnalytics = async (req, res) => {
         trend,
         availableFilters,
         appliedFilters: {
+          channel: channelFilter || 'all',
           source: sourceFilter || 'all',
           platform: platformFilter || 'all',
           trackingType: trackingTypeFilter || 'all',
