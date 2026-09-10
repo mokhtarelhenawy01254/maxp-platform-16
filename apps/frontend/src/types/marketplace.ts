@@ -55,6 +55,7 @@ export interface MarketplaceApp {
   tags?: string[];
   activePricingModel?: string;
   isInstalled?: boolean;
+  isIncludedInPlan?: boolean;
   reviews?: Review[];
   mainRoute?: string | null;
   adminRoute?: string | null;

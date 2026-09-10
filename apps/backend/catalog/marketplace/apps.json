@@ -641,9 +641,7 @@
     "unitPrice": 0.5,
     "unitName": "message",
     "trialDays": 0,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "فرق المبيعات والدعم التي تستقبل محادثات كثيرة.",
       "surface": "داخل المحادثات والردود واقتراحات الرسائل.",
@@ -672,7 +670,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-03-06T00:00:00Z",
-    "updatedAt": "2026-03-06T00:00:00Z"
+    "updatedAt": "2026-09-10T20:50:02.650Z"
   },
   {
     "id": "cat-app-store-basic",
@@ -1903,9 +1901,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر التي تشحن طلبات وتتعامل مع شركة أو عدة شركات شحن ومناديب.",
       "surface": "داخل مركز شركات الشحن، سجلات الشحنات، وصفحة تجهيز الطلبات.",
@@ -1946,7 +1942,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-09-06T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-order-invoicing",
@@ -1961,9 +1957,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر اللي تحتاج فواتير ضريبية محترفة.",
       "surface": "داخل الفواتير وإعداداتها والتقارير المالية.",
@@ -1998,7 +1992,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-wholesale-pro",
@@ -2013,9 +2007,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "شركات الجملة والتوزيع التي تبيع لتجار جملة وموزعين بأسعار خاصة وحدود ائتمانية.",
       "surface": "داخل لوحة الجملة — قوائم الأسعار، العملاء، كشوف الحساب، والمديونية.",
@@ -2062,7 +2054,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-30T00:00:00.000Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-product-presentations",
@@ -2134,9 +2126,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر اللي بتعاني من المرتجعات العالية في طلبات COD.",
       "surface": "داخل إعدادات الدفع، ولوحة تحكم الطلبات، وواتساب.",
@@ -2177,7 +2167,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-07-21T00:00:00.000Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-agent-workspace",
@@ -2291,9 +2281,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر التي تبيع من نقطة البيع أو المعرض مباشرة.",
       "surface": "داخل صفحة نقطة البيع (POS) لإتمام البيع الفوري.",
@@ -2328,7 +2316,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-08-05T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-coupons-pro",
@@ -2649,9 +2637,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "فرق خدمة العملاء والمتابعة التي تحتاج فحص عدة طلبات في نفس الوقت.",
       "surface": "داخل صفحة البحث المجمع في إدارة الطلبات.",
@@ -2680,7 +2666,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-customer-blocks",
@@ -2695,9 +2681,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر التي تواجه عملاء مرتجعين أو مزعجين وتريد منعهم من الطلب.",
       "surface": "داخل إعدادات حظر العملاء في إدارة الطلبات.",
@@ -2726,7 +2710,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-bulk-orders",
@@ -2787,9 +2771,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "فرق الشحن والمعالجة التي تريد تسريع تغيير الحالات اليومي.",
       "surface": "داخل صفحة التغيير السريع للحالة في إدارة الطلبات.",
@@ -2812,7 +2794,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.655Z"
   },
   {
     "id": "cat-app-status-summary",
@@ -2867,9 +2849,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "فرق المرتجعات التي تريد توحيد أسباب الإرجاع وسياسات القبول.",
       "surface": "داخل إعدادات المرتجعات في إدارة الطلبات.",
@@ -2892,7 +2872,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.656Z"
   },
   {
     "id": "cat-app-order-workflow",
@@ -2907,9 +2887,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر التي تريد تخصيص تسلسل معالجة طلباتها ليتناسب مع عمليتها.",
       "surface": "داخل إعدادات مسار الطلبات في إدارة الطلبات.",
@@ -2932,7 +2910,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.656Z"
   },
   {
     "id": "cat-app-facebook-post",
@@ -2993,9 +2971,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 14,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر التي تستخدم GTM لإدارة أكواد التتبع والتحويلات.",
       "surface": "داخل إعدادات Google Tag Manager في التسويق.",
@@ -3018,7 +2994,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-09T00:00:00.000Z",
-    "updatedAt": "2026-08-09T00:00:00.000Z"
+    "updatedAt": "2026-09-10T20:50:02.656Z"
   },
   {
     "id": "cat-app-broadcast-pro",

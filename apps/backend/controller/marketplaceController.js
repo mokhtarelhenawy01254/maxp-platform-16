@@ -7,6 +7,7 @@ const { buildInstalledMarketplaceAppSettings } = require('../utils/marketplaceAp
 const businessSpecialtyService = require('../services/businessSpecialtyService');
 const aiServiceAdminClient = require('../services/aiServiceAdminClient');
 const { getDefaultAgentTemplateSlug, buildDefaultAgentConfig } = require('../utils/getDefaultAgentTemplate');
+const { getCandidateAppSlugs } = require('../middleware/checkAppAccess');
 
 // Legacy storefront template engine has been removed from runtime.
 const PLATFORM_ENGINE_VERSION = 'removed';
@@ -81,19 +82,25 @@ async function enrichAppsWithDbState(apps, user) {
   });
 
   const dbBySlug = new Map(dbApps.map((app) => [app.slug, app]));
+  const dbById = new Map(dbApps.map((app) => [app.id, app]));
   const installedByAppId = new Map();
+  const installedSlugSet = new Set();
 
-  if (user && user.companyId && dbApps.length > 0) {
+  if (user && user.companyId) {
     const installedApps = await executeWithRetry(async () => {
       return await getSharedPrismaClient().companyApp.findMany({
         where: {
-          companyId: user.companyId,
-          appId: { in: dbApps.map((app) => app.id) }
+          companyId: user.companyId
         },
         select: {
           appId: true,
           status: true,
-          activePricingModel: true
+          activePricingModel: true,
+          app: {
+            select: {
+              slug: true
+            }
+          }
         }
       });
     });
@@ -101,6 +108,10 @@ async function enrichAppsWithDbState(apps, user) {
     installedApps.forEach((installation) => {
       if (ACTIVE_STATUSES.includes(installation.status)) {
         installedByAppId.set(installation.appId, installation.activePricingModel || null);
+        const slug = installation.app?.slug || dbById.get(installation.appId)?.slug;
+        if (slug) {
+          installedSlugSet.add(slug);
+        }
       }
     });
   }
@@ -111,7 +122,19 @@ async function enrichAppsWithDbState(apps, user) {
     const rating = dbApp ? toSafeNumber(dbApp.rating, 0) : toSafeNumber(app.rating, 0);
     const reviewCount = dbApp ? toSafeNumber(dbApp.reviewCount, 0) : toSafeNumber(app.reviewCount, 0);
     const appId = dbApp ? dbApp.id : (app.id || `file-${app.slug}`);
-    const isInstalled = dbApp ? installedByAppId.has(dbApp.id) : false;
+    const isDirectlyInstalled = dbApp ? installedByAppId.has(dbApp.id) : false;
+    let isInstalled = isDirectlyInstalled;
+    let isIncludedInPlan = false;
+
+    if (!isDirectlyInstalled && user && user.companyId) {
+      const candidates = typeof getCandidateAppSlugs === 'function' ? getCandidateAppSlugs(app.slug) : [];
+      const coveringSlug = candidates.find((cand) => cand !== app.slug && installedSlugSet.has(cand));
+      if (coveringSlug) {
+        isInstalled = true;
+        isIncludedInPlan = true;
+      }
+    }
+
     const activePricingModel = dbApp ? (installedByAppId.get(dbApp.id) || null) : null;
 
     return {
@@ -125,6 +148,7 @@ async function enrichAppsWithDbState(apps, user) {
         reviews: reviewCount
       },
       isInstalled,
+      isIncludedInPlan,
       activePricingModel
     };
   });

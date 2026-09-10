@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
@@ -127,7 +127,7 @@ function groupAppsBySidebarSections(apps: MarketplaceApp[]): AppGroupSection[] {
   return result;
 }
 
-function getCategoryDisplayCategories(categories: Category[]) {
+function getCategoryDisplayCategories(categories: Category[], categoryCounts: Record<string, number> = {}) {
   const categoryIconsMap: Record<string, typeof Package> = {
     AI: Brain, MARKETING: Sparkles, SALES: ShoppingBag, CRM: BarChart3,
     ACCOUNTING: DollarSign, FINANCE: DollarSign, ANALYTICS: TrendingUp,
@@ -140,11 +140,15 @@ function getCategoryDisplayCategories(categories: Category[]) {
     PRODUCTIVITY: Package, COMMUNICATION: MessageSquare,
     GAMIFICATION: Gamepad2, DESIGN: Palette,
   };
-  return categories.map(c => ({
-    id: c.category,
-    name: c.name,
-    icon: categoryIconsMap[c.category] || Package,
-  }));
+  return categories.map(c => {
+    const catUpper = (c.category || "").toUpperCase();
+    return {
+      id: c.category,
+      name: c.name,
+      icon: categoryIconsMap[catUpper] || Package,
+      count: categoryCounts[catUpper] ?? c.count ?? 0,
+    };
+  });
 }
 
 export default function MarketplaceV2() {
@@ -186,8 +190,9 @@ export default function MarketplaceV2() {
   };
 
   useEffect(() => {
-    const q = searchParams.get("q"); const c = searchParams.get("category"); const s = searchParams.get("sort");
+    const q = searchParams.get("q"); const c = searchParams.get("category"); const s = searchParams.get("sort"); const h = searchParams.get("hub");
     if (q) setSearchQuery(q); if (c) setSelectedCategory(c); if (s) setSortBy(s as SortOption);
+    if (h && SYSTEM_HUBS.some(hub => hub.id === h)) setSelectedSystemHub(h);
   }, []);
 
   useEffect(() => {
@@ -195,14 +200,14 @@ export default function MarketplaceV2() {
     if (selectedCategory) p.set("category", selectedCategory);
     if (searchQuery) p.set("q", searchQuery);
     if (sortBy && sortBy !== "featured") p.set("sort", sortBy);
+    if (selectedSystemHub && selectedSystemHub !== "ALL") p.set("hub", selectedSystemHub);
     setSearchParams(p, { replace: true });
-  }, [selectedCategory, searchQuery, sortBy, setSearchParams]);
+  }, [selectedCategory, searchQuery, sortBy, selectedSystemHub, setSearchParams]);
 
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       const params: Record<string, string | number> = {};
-      if (selectedCategory) params.category = selectedCategory;
       if (sortBy) params.sort = sortBy;
       params.page = 1;
       params.limit = MARKETPLACE_APPS_FETCH_LIMIT;
@@ -212,36 +217,41 @@ export default function MarketplaceV2() {
         apiClient.get<ApiEnvelope<Category[]>>("/marketplace/categories"),
       ]);
 
-      setApps(appsRes.data.data);
-      setCategories(categoriesRes.data.data);
+      setApps(appsRes.data.data || []);
+      setCategories(categoriesRes.data.data || []);
     } catch {
       toast.error(t('marketplace.fetchError'));
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, sortBy, t]);
+  }, [sortBy, t]);
 
   useEffect(() => { fetchData(); setDisplayCount(DISPLAY_INCREMENT); }, [fetchData]);
 
   const activeHubDef = SYSTEM_HUBS.find(h => h.id === selectedSystemHub);
-  const hubFiltered = apps.filter(a => {
+  const hubFiltered = useMemo(() => apps.filter(a => {
     if (selectedSystemHub === "ALL") return true;
     if (!activeHubDef || activeHubDef.categories.length === 0) return true;
     return activeHubDef.categories.includes((a.category || "").toUpperCase());
-  });
+  }), [apps, selectedSystemHub, activeHubDef]);
 
-  const collectionFiltered = hubFiltered.filter(a => matchesCollection(a, collection));
-  const searchFiltered = collectionFiltered.filter(a => matchesSearch(a, searchQuery));
-  const filterFiltered = searchFiltered.filter(a => {
+  const categoryFiltered = useMemo(() => hubFiltered.filter(a => {
+    if (!selectedCategory) return true;
+    return (a.category || "").toUpperCase() === selectedCategory.toUpperCase();
+  }), [hubFiltered, selectedCategory]);
+
+  const collectionFiltered = useMemo(() => categoryFiltered.filter(a => matchesCollection(a, collection)), [categoryFiltered, collection]);
+  const searchFiltered = useMemo(() => collectionFiltered.filter(a => matchesSearch(a, searchQuery)), [collectionFiltered, searchQuery]);
+  const filterFiltered = useMemo(() => searchFiltered.filter(a => {
     if (priceFilter === "FREE" && a.pricingModel !== "FREE") return false;
     if (priceFilter === "PAID" && a.pricingModel === "FREE") return false;
     return matchesFilters(a, filters);
-  });
-  const filteredApps = filterFiltered.filter(a => {
+  }), [searchFiltered, priceFilter, filters]);
+  const filteredApps = useMemo(() => filterFiltered.filter(a => {
     if (statusFilter === "INSTALLED") return a.isInstalled;
     if (statusFilter === "NOT_INSTALLED") return !a.isInstalled;
     return true;
-  });
+  }), [filterFiltered, statusFilter]);
   const displayedApps = filteredApps.slice(0, displayCount);
 
   const hasMoreApps = filteredApps.length > displayCount;
@@ -271,10 +281,29 @@ export default function MarketplaceV2() {
     } finally { setUninstallingApp(null); }
   };
 
-  const availableCategories = selectedSystemHub === "ALL" || !activeHubDef || activeHubDef.categories.length === 0
-    ? categories
-    : categories.filter(c => activeHubDef.categories.includes((c.category || "").toUpperCase()));
-  const categoryDisplay = getCategoryDisplayCategories(availableCategories);
+  const categoryCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const app of hubFiltered) {
+      const cat = (app.category || "").toUpperCase();
+      if (cat) counts[cat] = (counts[cat] || 0) + 1;
+    }
+    return counts;
+  }, [hubFiltered]);
+
+  const availableCategories = useMemo(() => {
+    const base = selectedSystemHub === "ALL" || !activeHubDef || activeHubDef.categories.length === 0
+      ? categories
+      : categories.filter(c => activeHubDef.categories.includes((c.category || "").toUpperCase()));
+    return base.map(c => ({
+      ...c,
+      count: categoryCounts[(c.category || "").toUpperCase()] ?? 0,
+    }));
+  }, [selectedSystemHub, activeHubDef, categories, categoryCounts]);
+
+  const categoryDisplay = useMemo(
+    () => getCategoryDisplayCategories(availableCategories, categoryCounts),
+    [availableCategories, categoryCounts]
+  );
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category === selectedCategory ? "" : category);
@@ -422,7 +451,7 @@ export default function MarketplaceV2() {
               {/* All Categories Drawer Sheet Trigger */}
               <CategorySidebar
                 isMobile
-                categories={categories}
+                categories={availableCategories}
                 selectedCategory={selectedCategory}
                 onSelect={handleCategorySelect}
                 className="h-10 px-3 rounded-xl border-border/40 font-bold shrink-0"

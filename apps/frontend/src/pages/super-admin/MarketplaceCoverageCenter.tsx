@@ -17,9 +17,9 @@ import {
 } from "../../components/ui/table";
 import LoadingSpinner from "../../components/ui/LoadingSpinner";
 import { Separator } from "../../components/ui/separator";
+import { useTranslation } from "react-i18next";
 import { buildApiUrl } from "../../utils/urlHelper";
 import tokenManager from "../../utils/tokenManager";
-import i18n from "../../i18n";
 import { areaLabels, marketplaceFeatureMap, statusLabels } from "../../config/marketplaceFeatureMap";
 import { buildMarketplaceCoverage } from "./marketplaceCoverageUtils";
 import type { CompanyCoverageSummary, CoverageCompany, CoverageFeatureEntry, MarketplaceCoverageStatus } from "./marketplaceCoverageUtils";
@@ -41,6 +41,7 @@ const getRowTone = (summary: CompanyCoverageSummary) => {
 const getInstallableRows = (entries: CoverageFeatureEntry[]) => entries.filter(e => e.appSlug && e.catalogExists && (e.coverageStatus === "missing" || e.coverageStatus === "fallback"));
 
 const MarketplaceCoverageCenter: React.FC = () => {
+  const { t } = useTranslation();
   const [payload, setPayload] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -53,8 +54,8 @@ const MarketplaceCoverageCenter: React.FC = () => {
 
   const fetchCoverage = useCallback(async ({ quiet = false } = {}) => {
     if (quiet) setRefreshing(true); else setLoading(true);
-    try { const r = await axios.get(buildApiUrl("super-admin/marketplace-management/coverage"), { headers: getAuthHeaders() }); if (!r.data?.success) throw new Error("Coverage API returned an unsuccessful response"); setPayload(r.data.data); setError(null); } catch (e: any) { const ae = e.response; if (ae?.status === 401 || ae?.status === 403) setError(i18n.t("superAdmin.marketplaceCoverage.noPermission")); else if (ae?.status === 404) setError(i18n.t("superAdmin.marketplaceCoverage.coverageUnavailable")); else setError(ae?.data?.message || i18n.t("superAdmin.marketplaceCoverage.loadFailed")); } finally { setLoading(false); setRefreshing(false); }
-  }, []);
+    try { const r = await axios.get(buildApiUrl("super-admin/marketplace-management/coverage"), { headers: getAuthHeaders() }); if (!r.data?.success) throw new Error("Coverage API returned an unsuccessful response"); setPayload(r.data.data); setError(null); } catch (e: any) { const ae = e.response; if (ae?.status === 401 || ae?.status === 403) setError(t("superAdmin.marketplaceCoverage.noPermission")); else if (ae?.status === 404) setError(t("superAdmin.marketplaceCoverage.coverageUnavailable")); else setError(ae?.data?.message || t("superAdmin.marketplaceCoverage.loadFailed")); } finally { setLoading(false); setRefreshing(false); }
+  }, [t]);
 
   useEffect(() => { fetchCoverage(); }, [fetchCoverage]);
 
@@ -112,9 +113,9 @@ const MarketplaceCoverageCenter: React.FC = () => {
       </div>
 
       <Dialog open={!!confirmDialog} onOpenChange={o => { if (!o) setConfirmDialog(null); }}>
-        <DialogContent><DialogHeader><DialogTitle>{i18n.t("superAdmin.marketplaceCoverage.confirmTitle")}</DialogTitle></DialogHeader>
-          <AlertDescription>{i18n.t("superAdmin.marketplaceCoverage.confirmPrefix")} <strong>{confirmDialog?.entry?.appLabel || confirmDialog?.entry?.appSlug}</strong> {i18n.t("superAdmin.marketplaceCoverage.confirmSuffix", { companyName: confirmDialog?.company?.name || "" })}</AlertDescription>
-          <DialogFooter><Button variant="outline" onClick={() => setConfirmDialog(null)}>{i18n.t("superAdmin.marketplaceCoverage.cancel")}</Button><Button onClick={executeInstall}>{i18n.t("superAdmin.marketplaceCoverage.confirmActivate")}</Button></DialogFooter>
+        <DialogContent><DialogHeader><DialogTitle>{t("superAdmin.marketplaceCoverage.confirmTitle")}</DialogTitle></DialogHeader>
+          <AlertDescription>{t("superAdmin.marketplaceCoverage.confirmPrefix")} <strong>{confirmDialog?.entry?.appLabel || confirmDialog?.entry?.appSlug}</strong> {t("superAdmin.marketplaceCoverage.confirmSuffix", { companyName: confirmDialog?.company?.name || "" })}</AlertDescription>
+          <DialogFooter><Button variant="outline" onClick={() => setConfirmDialog(null)}>{t("superAdmin.marketplaceCoverage.cancel")}</Button><Button onClick={executeInstall}>{t("superAdmin.marketplaceCoverage.confirmActivate")}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

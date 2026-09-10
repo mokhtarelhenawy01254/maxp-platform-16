@@ -13069,7 +13069,9 @@
       "groups": {
         "commerce": "Commerce & Sales",
         "data": "Data & AI",
-        "operations": "Operations & Management",
+        "operations": "Operations & Logistics",
+        "finance": "Finance & Payments",
+        "hr": "HR & Workforce",
         "communication": "Communication & Integrations",
         "specialized": "Specialized Verticals",
         "other": "Other Categories"

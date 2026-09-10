@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   Star, CheckCircle2, Clock, Shield, BadgeCheck, Brain, Package, ExternalLink, ArrowRight,
@@ -51,6 +51,7 @@ export function AppCard({
   animationDelay = 0,
 }: AppCardProps) {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const BrandIcon = app.slug ? appIconsBySlug[app.slug] : undefined;
   const appIconKey = app.icon?.trim().toLowerCase();
@@ -62,6 +63,17 @@ export function AppCard({
   const destination = app.mainRoute || getAppDestination(app);
   const systemHub = getAppSystemHub(app);
   const SystemIcon = systemHub.icon;
+
+  const handleOpenApp = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!destination) return;
+    if (destination.startsWith("http://") || destination.startsWith("https://")) {
+      window.location.href = destination;
+    } else {
+      navigate(destination);
+    }
+  };
 
   // ── List / Horizontal View ──
   if (variant === "horizontal") {
@@ -98,9 +110,14 @@ export function AppCard({
                   {systemHub.nameAr}
                 </span>
                 {app.isInstalled ? (
-                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-500/20">
+                  <span className={cn(
+                    "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border",
+                    app.isIncludedInPlan
+                      ? "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-500/20"
+                      : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-500/20"
+                  )}>
                     <CheckCircle2 size={10} />
-                    {t('marketplace.installedBadge', 'مثبت')}
+                    {app.isIncludedInPlan ? "مشمول في باقتك" : t('marketplace.installedBadge', 'مثبت')}
                   </span>
                 ) : showBadges && badges.length > 0 && badgeConfig[badges[0]] ? (
                   <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border", badgeConfig[badges[0]].className)}>
@@ -125,17 +142,19 @@ export function AppCard({
           </div>
 
           <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/20">
-            <span className="text-xs font-bold text-foreground/80 px-2 py-1 rounded-md bg-muted/40">
-              {getPrice(app, t)}
-            </span>
+            {app.isIncludedInPlan ? (
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400 px-2 py-1 rounded-md bg-blue-50 dark:bg-blue-950/40 border border-blue-200/40">
+                مشمول في باقتك
+              </span>
+            ) : (
+              <span className="text-xs font-bold text-foreground/80 px-2 py-1 rounded-md bg-muted/40">
+                {getPrice(app, t)}
+              </span>
+            )}
 
             {app.isInstalled ? (
               <span
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  window.location.href = destination;
-                }}
+                onClick={handleOpenApp}
                 className="inline-flex items-center gap-1 text-xs font-bold px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-colors cursor-pointer"
               >
                 <ExternalLink size={12} />
@@ -211,9 +230,14 @@ export function AppCard({
 
           <div className="flex items-center gap-1 flex-wrap justify-end">
             {app.isInstalled ? (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-500/20">
+              <span className={cn(
+                "inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border",
+                app.isIncludedInPlan
+                  ? "bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border-blue-500/20"
+                  : "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border-emerald-500/20"
+              )}>
                 <CheckCircle2 size={11} />
-                {t('marketplace.installedBadge', 'مثبت')}
+                {app.isIncludedInPlan ? "مشمول في باقتك" : t('marketplace.installedBadge', 'مثبت')}
               </span>
             ) : showBadges && badges.length > 0 && badgeConfig[badges[0]] ? (
               <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border", badgeConfig[badges[0]].className)}>
@@ -280,17 +304,19 @@ export function AppCard({
 
           {/* Footer: Price & Direct Action */}
           <div className="mt-auto pt-3 border-t border-border/30 flex items-center justify-between gap-2">
-            <span className="text-xs font-bold text-foreground/80">
-              {getPrice(app, t)}
-            </span>
+            {app.isIncludedInPlan ? (
+              <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                مشمول في باقتك
+              </span>
+            ) : (
+              <span className="text-xs font-bold text-foreground/80">
+                {getPrice(app, t)}
+              </span>
+            )}
 
             {app.isInstalled ? (
               <span
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  window.location.href = destination;
-                }}
+                onClick={handleOpenApp}
                 className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
               >
                 <ExternalLink size={11} />

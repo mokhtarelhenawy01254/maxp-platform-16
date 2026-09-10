@@ -13063,6 +13063,8 @@ declare module 'react-i18next' {
             commerce: string;
             data: string;
             operations: string;
+            finance: string;
+            hr: string;
             communication: string;
             specialized: string;
             other: string;

@@ -180,6 +180,50 @@ export const APP_ROUTE_MAP: Record<string, string> = {
   "executable-mindmap": "/mindmap",
   "order-preparation": "/orders/preparation",
   "order-preparation-hold": "/orders/preparation?pageSize=96&activeStage=ON_HOLD_PREP",
+  // Financial & Calculator Tools
+  "break-even": "/tools/break-even",
+  "product-break-even": "/tools/product-break-even",
+  "pricing-strategy": "/tools/pricing-strategy",
+  "profitability-engine": "/tools/profitability-engine",
+  "campaign-calculator": "/tools/campaign-prediction",
+  "ad-budget-planner": "/tools/ad-budget-planner",
+  "discount-impact": "/tools/discount-impact",
+  "shipping-optimizer": "/tools/shipping-optimizer",
+  "monthly-pnl": "/tools/monthly-pnl",
+  "clv-calculator": "/tools/clv-calculator",
+  "upsell-planner": "/tools/upsell-planner",
+  "refund-rate": "/tools/refund-rate",
+  // HR Suite
+  "hr-core": "/hr",
+  "hr-attendance-pro": "/hr/attendance",
+  "hr-payroll": "/hr/payroll",
+  "hr-recruitment": "/hr/recruitment",
+  "hr-assets": "/hr/assets",
+  // Order Operations
+  "manual-orders-pro": "/orders/manual",
+  "bulk-orders": "/orders/bulk",
+  "agent-workspace": "/orders/workspace",
+  "quick-status": "/orders/quick-status",
+  "status-summary": "/orders/status-summary",
+  "returns-settings": "/returns/settings",
+  "order-workflow": "/settings/order-workflow",
+  "order-confirmation-distribution": "/orders/confirmations",
+  "order-accounting-sources": "/analytics/orders",
+  "order-source-tracking": "/analytics/orders",
+  // Marketing & Tracking
+  "google-tag-manager": "/advertising/google-tag-manager",
+  "campaign-attribution": "/advertising/facebook-ads/attribution",
+  "marketing-agency-pro": "/agency",
+  "facebook-catalog-shop": "/marketing/facebook",
+  "facebook-pixel-capi": "/settings/pixels",
+  "bot-automation": "/automation/bot-studio",
+  "woocommerce-pro": "/products/import-woocommerce",
+  // Specialized Verticals & Finance
+  "academy-app": "/academy/dashboard",
+  "radiology-app": "/radiology",
+  "order-invoicing": "/invoices",
+  "product-presentations": "/products",
+  "cod-deposit": "/settings/cod-deposit",
 };
 
 export function getAppDestination(app: { slug: string; mainRoute?: string | null }): string {
@@ -261,7 +305,17 @@ export const categoryGroups: CategoryGroupDef[] = [
   {
     id: "operations",
     labelKey: "marketplace.categories.groups.operations",
-    categories: ["PRODUCTIVITY", "HR", "FINANCE", "ACCOUNTING", "PAYMENTS", "PROCUREMENT", "WAREHOUSE", "SHIPPING", "AUTOMATION"],
+    categories: ["PRODUCTIVITY", "WAREHOUSE", "PROCUREMENT", "SHIPPING", "AUTOMATION"],
+  },
+  {
+    id: "finance",
+    labelKey: "marketplace.categories.groups.finance",
+    categories: ["FINANCE", "ACCOUNTING", "PAYMENTS"],
+  },
+  {
+    id: "hr",
+    labelKey: "marketplace.categories.groups.hr",
+    categories: ["HR"],
   },
   {
     id: "communication",

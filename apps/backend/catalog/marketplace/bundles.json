@@ -97,5 +97,33 @@
     ],
     "createdAt": "2026-09-04T00:00:00.000Z",
     "updatedAt": "2026-09-04T00:00:00.000Z"
+  },
+  {
+    "id": "cat-bundle-financial-pricing-suite",
+    "slug": "financial-pricing-suite",
+    "name": "حزمة التحليل والتسعير المالي",
+    "nameEn": "Financial & Pricing Suite",
+    "description": "الحزمة المالية المتكاملة للتجار والشركات: حاسبات التعادل، محرك الربحية، استراتيجيات التسعير، تخطيط ميزانية الإعلانات، القوائم المالية، ومحسن الشحن في باقة واحدة شاملة بتوفير 86%.",
+    "monthlyPrice": 249,
+    "yearlyPrice": 2490,
+    "discount": 86,
+    "isActive": true,
+    "isFeatured": true,
+    "appSlugs": [
+      "break-even",
+      "product-break-even",
+      "pricing-strategy",
+      "profitability-engine",
+      "campaign-calculator",
+      "ad-budget-planner",
+      "discount-impact",
+      "shipping-optimizer",
+      "monthly-pnl",
+      "clv-calculator",
+      "upsell-planner",
+      "refund-rate"
+    ],
+    "createdAt": "2026-09-10T00:00:00.000Z",
+    "updatedAt": "2026-09-10T00:00:00.000Z"
   }
 ]

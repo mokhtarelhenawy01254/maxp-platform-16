@@ -51,7 +51,10 @@ export function CategorySidebar({
     return (
       <button
         key={cat.category}
-        onClick={() => onSelect(cat.category)}
+        onClick={() => {
+          onSelect(cat.category);
+          if (isMobile) setIsOpen(false);
+        }}
         className={cn(
           "group flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
           active
@@ -73,7 +76,10 @@ export function CategorySidebar({
   const content = (
     <div className="space-y-1">
       <button
-        onClick={() => onSelect("")}
+        onClick={() => {
+          onSelect("");
+          if (isMobile) setIsOpen(false);
+        }}
         className={cn(
           "flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-colors",
           !selectedCategory
