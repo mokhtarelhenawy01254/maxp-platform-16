@@ -8,9 +8,9 @@ import {
   Package, Loader2,
   Layers3, Sparkles, PackageX, X, Zap,
   Store, Users, MessageSquare, BarChart3, TrendingUp,
-  DollarSign, Heart,
+  DollarSign, Heart, CheckCircle2,
   ShoppingBag, Brain,
-  LayoutGrid,
+  LayoutGrid, List,
   Truck,
   CreditCard, Gamepad2, Palette, ClipboardList, Percent,
 } from "lucide-react";
@@ -62,6 +62,7 @@ function matchesCollection(app: MarketplaceApp, col: ToolCollectionId) {
 }
 
 function matchesFilters(app: MarketplaceApp, filters: MarketplaceFilters) {
+  if (app.isPublic === false || app.isActive === false || app.slug === 'multi-warehouse-pro') return false;
   if (filters.priceModel && filters.priceModel !== "ALL") {
     if (filters.priceModel === "FREE" && app.pricingModel !== "FREE") return false;
     if (filters.priceModel === "PAID" && app.pricingModel === "FREE") return false;
@@ -103,6 +104,7 @@ function groupAppsBySidebarSections(apps: MarketplaceApp[]): AppGroupSection[] {
   const byGroup = new Map<string, MarketplaceApp[]>();
   const other: MarketplaceApp[] = [];
   for (const app of apps) {
+    if (app.isPublic === false || app.isActive === false || app.slug === 'multi-warehouse-pro') continue;
     const group = categoryGroups.find((g) => g.categories.includes(app.category));
     if (group) {
       const list = byGroup.get(group.id) || [];
@@ -153,11 +155,27 @@ export default function MarketplaceV2() {
   const [collection, setCollection] = useState<ToolCollectionId>("ALL");
   const [uninstallingApp, setUninstallingApp] = useState<string | null>(null);
   const [confirmUninstallApp, setConfirmUninstallApp] = useState<MarketplaceApp | null>(null);
-  const [showNotInstalled, setShowNotInstalled] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "INSTALLED" | "NOT_INSTALLED">("ALL");
+  const [priceFilter, setPriceFilter] = useState<"ALL" | "FREE" | "PAID">("ALL");
   const [filters, setFilters] = useState<MarketplaceFilters>({});
   const [displayCount, setDisplayCount] = useState(DISPLAY_INCREMENT);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
+    try {
+      return (localStorage.getItem("mp_marketplace_view_mode") as "grid" | "list") || "grid";
+    } catch {
+      return "grid";
+    }
+  });
+
+  const handleSetViewMode = (mode: "grid" | "list") => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("mp_marketplace_view_mode", mode);
+    } catch {}
+  };
 
   useEffect(() => {
     const q = searchParams.get("q"); const c = searchParams.get("category"); const s = searchParams.get("sort");
@@ -199,8 +217,16 @@ export default function MarketplaceV2() {
 
   const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
   const searchFiltered = collectionFiltered.filter(a => matchesSearch(a, searchQuery));
-  const filterFiltered = searchFiltered.filter(a => matchesFilters(a, filters));
-  const filteredApps = showNotInstalled ? filterFiltered.filter(a => !a.isInstalled) : filterFiltered;
+  const filterFiltered = searchFiltered.filter(a => {
+    if (priceFilter === "FREE" && a.pricingModel !== "FREE") return false;
+    if (priceFilter === "PAID" && a.pricingModel === "FREE") return false;
+    return matchesFilters(a, filters);
+  });
+  const filteredApps = filterFiltered.filter(a => {
+    if (statusFilter === "INSTALLED") return a.isInstalled;
+    if (statusFilter === "NOT_INSTALLED") return !a.isInstalled;
+    return true;
+  });
   const displayedApps = filteredApps.slice(0, displayCount);
 
   const hasMoreApps = filteredApps.length > displayCount;
@@ -240,140 +266,269 @@ export default function MarketplaceV2() {
   return (
     <div className="min-h-screen bg-background">
       {loading ? (
-        <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pt-6 pb-16">
-          <div className="mt-8">
+        <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8 pt-6 pb-16">
+          <div className="mt-8 space-y-6">
             <SectionSkeleton count={4} />
             <SectionSkeleton count={4} />
           </div>
         </div>
       ) : (
-        <>
-          <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8 pb-16">
-            <div className="mt-4 flex items-start gap-5">
+        <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8 pb-16">
+          {/* ── Top Header & Omni Filter Bar ── */}
+          <div className="pt-4 pb-2">
+            {/* Row 1: Search, Status Segmented Controls, Drawer Sheet Trigger, and View Switcher */}
+            <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+              {/* Search Bar */}
+              <div className="flex-1 min-w-[240px]">
+                <SearchBar
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder={t('marketplace.searchPlaceholder', 'ابحث عن التطبيقات، المميزات، أو الفئات...')}
+                />
+              </div>
+
+              {/* Status Segmented Buttons */}
+              <div className="flex items-center p-1 rounded-xl bg-muted/50 border border-border/30 shrink-0 text-xs font-semibold">
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter("ALL"); setDisplayCount(DISPLAY_INCREMENT); }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg transition-all",
+                    statusFilter === "ALL" ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  الكل ({apps.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter("INSTALLED"); setDisplayCount(DISPLAY_INCREMENT); }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1",
+                    statusFilter === "INSTALLED" ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <CheckCircle2 size={12} />
+                  المثبتة ({apps.filter(a => a.isInstalled).length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setStatusFilter("NOT_INSTALLED"); setDisplayCount(DISPLAY_INCREMENT); }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg transition-all",
+                    statusFilter === "NOT_INSTALLED" ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  غير مثبتة
+                </button>
+              </div>
+
+              {/* All Categories Drawer Sheet Trigger */}
               <CategorySidebar
+                isMobile
                 categories={categories}
                 selectedCategory={selectedCategory}
                 onSelect={handleCategorySelect}
-                className="sticky top-2 hidden lg:block w-64 shrink-0 max-h-[calc(100vh-1rem)] overflow-y-auto scrollbar-none"
+                className="h-10 px-3 rounded-xl border-border/40 font-bold shrink-0"
               />
-              <div className="flex-1 min-w-0">
-            <div className="sticky top-0 z-40 py-3 bg-background/80 backdrop-blur-xl border-b border-border/10 mb-4">
-              <div className="flex items-center gap-3 flex-wrap">
-                <div className="flex items-center gap-2 shrink-0">
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-border/30 bg-muted/30 px-3 py-1.5 text-[11px] font-bold text-foreground whitespace-nowrap">
-                    <Package size={13} className="text-primary" />
-                    <span className="tabular-nums">{apps.length}</span>
-                    <span className="text-muted-foreground">{t('marketplace.totalApps')}</span>
-                  </span>
-                </div>
-                <div className="flex-1 min-w-[200px]">
-                  <SearchBar
-                    value={searchQuery}
-                    onChange={setSearchQuery}
-                    placeholder={t('marketplace.searchPlaceholder')}
-                  />
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <CategorySidebar
-                    isMobile
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onSelect={handleCategorySelect}
-                    className="lg:hidden"
-                  />
-                  <Button
-                    variant={showNotInstalled ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setShowNotInstalled(!showNotInstalled)}
-                    className="h-9 gap-1.5 rounded-xl text-xs font-bold"
-                  >
-                    <PackageX size={13} />
-                    {t('marketplace.notInstalled')}
-                  </Button>
-                </div>
+
+              {/* Grid / List View Switcher */}
+              <div className="hidden sm:flex items-center p-1 rounded-xl bg-muted/50 border border-border/30 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => handleSetViewMode("grid")}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-all",
+                    viewMode === "grid" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="عرض شبكي (Grid View)"
+                  aria-label="Grid View"
+                >
+                  <LayoutGrid size={16} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSetViewMode("list")}
+                  className={cn(
+                    "p-1.5 rounded-lg transition-all",
+                    viewMode === "list" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  )}
+                  title="عرض قائمة (List View)"
+                  aria-label="List View"
+                >
+                  <List size={16} />
+                </button>
               </div>
             </div>
 
-            <div className="mt-3 lg:hidden overflow-x-auto scrollbar-none pb-1">
-              <CategoryBar categories={categoryDisplay} selectedCategory={selectedCategory} onSelect={handleCategorySelect} />
+            {/* Row 2: Category Pills Bar */}
+            <div className="mt-3 pt-3 border-t border-border/20">
+              <CategoryBar
+                categories={categoryDisplay}
+                selectedCategory={selectedCategory}
+                onSelect={handleCategorySelect}
+              />
             </div>
 
-            <div className="mt-4 space-y-1">
-              {displayedApps.length === 0 ? (
-                <div className="mp-empty-state">
-                  <div className="mp-empty-ilustration">
-                    <Package size={36} className="text-muted-foreground/40" />
-                  </div>
-                  <h3 className="text-lg font-extrabold text-foreground mb-1">
-                    {searchQuery ? t('marketplace.noSearchResults', { query: searchQuery }) : t('marketplace.emptySearchTitle')}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4 max-w-md">
-                    {t('marketplace.emptyHint')}
-                  </p>
-                  {(searchQuery || selectedCategory || filters || showNotInstalled) && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="gap-1.5 rounded-xl"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setSelectedCategory("");
-                        setCollection("ALL");
-                        setShowNotInstalled(false);
-                        setFilters({});
-                        setDisplayCount(DISPLAY_INCREMENT);
-                      }}
-                    >
-                      <X size={14} />
-                      {t('marketplace.clearAllFilters')}
-                    </Button>
+            {/* Active Filter summary if any filter is on */}
+            {(selectedCategory || searchQuery || statusFilter !== "ALL" || priceFilter !== "ALL") && (
+              <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-xl border border-border/25 flex-wrap">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span>النتائج: <strong className="text-foreground font-bold">{filteredApps.length}</strong> تطبيق</span>
+                  {selectedCategory && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold">
+                      {categories.find(c => c.category === selectedCategory)?.name || selectedCategory}
+                      <X size={12} className="cursor-pointer hover:opacity-75" onClick={() => setSelectedCategory("")} />
+                    </span>
+                  )}
+                  {statusFilter !== "ALL" && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-background text-foreground border border-border/40 font-semibold">
+                      {statusFilter === "INSTALLED" ? "المثبتة فقط" : "غير المثبتة"}
+                      <X size={12} className="cursor-pointer hover:opacity-75" onClick={() => setStatusFilter("ALL")} />
+                    </span>
+                  )}
+                  {searchQuery && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-background text-foreground border border-border/40 font-semibold">
+                      بحث: &ldquo;{searchQuery}&rdquo;
+                      <X size={12} className="cursor-pointer hover:opacity-75" onClick={() => setSearchQuery("")} />
+                    </span>
                   )}
                 </div>
-              ) : (
-                <>
-                  {groupAppsBySidebarSections(displayedApps).map((section) => (
-                    <div key={section.id} className="mt-6">
-                      <div className="mp-section-header-v2 mb-3">
-                        <div className="flex items-center gap-2">
-                          <Layers3 size={16} className="text-primary" />
-                          <h3 className="text-sm font-extrabold text-foreground tracking-tight">{t(section.labelKey)}</h3>
-                          <span className="mp-section-count-v2">{section.apps.length}</span>
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                        {section.apps.map((app, i) => (
-                          <div
-                            key={app.id}
-                            className="mp-stagger"
-                            style={{ animationDelay: `${(i % 20) * 40}ms`, animationFillMode: "backwards" }}
-                          >
-                            <AppCard
-                              app={app}
-                              variant="default"
-                              showBadges
-                          showRating
-                          showInstalls
-                          showDescription
-                          showTags
-                          animationDelay={i * 40}
-                        />
-                      </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("");
+                    setStatusFilter("ALL");
+                    setPriceFilter("ALL");
+                    setFilters({});
+                    setDisplayCount(DISPLAY_INCREMENT);
+                  }}
+                  className="text-primary hover:underline font-bold shrink-0 text-xs"
+                >
+                  إعادة ضبط الفلاتر
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── Apps Content Area ── */}
+          <div className="mt-4">
+            {displayedApps.length === 0 ? (
+              <div className="text-center py-16 px-4 rounded-2xl border border-dashed border-border/50 my-6 bg-card/40">
+                <div className="mx-auto size-14 rounded-2xl bg-muted/50 flex items-center justify-center text-muted-foreground/60 mb-3">
+                  <Package size={28} />
+                </div>
+                <h3 className="text-base font-bold text-foreground mb-1">
+                  {searchQuery ? t('marketplace.noSearchResults', { query: searchQuery }) : t('marketplace.emptySearchTitle')}
+                </h3>
+                <p className="text-xs text-muted-foreground mb-4 max-w-md mx-auto">
+                  {t('marketplace.emptyHint')}
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 rounded-xl text-xs font-bold"
+                  onClick={() => {
+                    setSearchQuery("");
+                    setSelectedCategory("");
+                    setStatusFilter("ALL");
+                    setPriceFilter("ALL");
+                    setFilters({});
+                    setDisplayCount(DISPLAY_INCREMENT);
+                  }}
+                >
+                  <X size={13} />
+                  {t('marketplace.clearAllFilters')}
+                </Button>
+              </div>
+            ) : selectedCategory ? (
+              /* Flat layout when a specific category is selected */
+              <div className="mt-4">
+                {viewMode === "grid" ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                    {displayedApps.map((app) => (
+                      <AppCard
+                        key={app.id}
+                        app={app}
+                        variant="default"
+                        showBadges
+                        showRating
+                        showInstalls
+                        showDescription
+                      />
                     ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {displayedApps.map((app) => (
+                      <AppCard
+                        key={app.id}
+                        app={app}
+                        variant="horizontal"
+                        showBadges
+                        showRating
+                        showInstalls
+                        showDescription
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Grouped layout when viewing all categories */
+              <div className="space-y-8 mt-4">
+                {groupAppsBySidebarSections(displayedApps).map((section) => (
+                  <div key={section.id}>
+                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/30">
+                      <div className="flex items-center gap-2">
+                        <Layers3 size={15} className="text-primary" />
+                        <h3 className="text-sm font-bold text-foreground">{t(section.labelKey)}</h3>
+                        <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-muted/60 text-muted-foreground tabular-nums">
+                          {section.apps.length}
+                        </span>
                       </div>
                     </div>
-                  ))}
 
-                  <div ref={sentinelRef} className={hasMoreApps ? "h-4" : "hidden"} />
-                  {!hasMoreApps && displayedApps.length > 0 && (
-                    <p className="mt-8 text-center text-xs text-muted-foreground">{t('marketplace.allLoaded')}</p>
-                  )}
-                </>
-              )}
-            </div>
+                    {viewMode === "grid" ? (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                        {section.apps.map((app) => (
+                          <AppCard
+                            key={app.id}
+                            app={app}
+                            variant="default"
+                            showBadges
+                            showRating
+                            showInstalls
+                            showDescription
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2.5">
+                        {section.apps.map((app) => (
+                          <AppCard
+                            key={app.id}
+                            app={app}
+                            variant="horizontal"
+                            showBadges
+                            showRating
+                            showInstalls
+                            showDescription
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
-            </div>
+            )}
+
+            <div ref={sentinelRef} className={hasMoreApps ? "h-6" : "hidden"} />
+            {!hasMoreApps && displayedApps.length > 0 && (
+              <p className="mt-10 text-center text-xs text-muted-foreground/60">{t('marketplace.allLoaded')}</p>
+            )}
           </div>
-        </>
+        </div>
       )}
 
       <AlertDialog open={!!confirmUninstallApp} onOpenChange={(o) => !o && setConfirmUninstallApp(null)}>

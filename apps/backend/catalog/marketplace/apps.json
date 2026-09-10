@@ -2477,7 +2477,7 @@
         "access": "PAID"
       }
     },
-    "isActive": true,
+    "isActive": false,
     "isPublic": false,
     "isFeatured": false,
     "isPopular": false,
@@ -2486,7 +2486,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-09-10T16:29:31.258Z"
+    "updatedAt": "2026-09-10T20:18:23.311Z"
   },
   {
     "id": "cat-app-order-accounting-sources",
