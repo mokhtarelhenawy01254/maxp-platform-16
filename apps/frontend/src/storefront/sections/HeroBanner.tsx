@@ -108,6 +108,7 @@ import {
   ButcherCounterHero,
   ButcherAtelierHero,
 } from "./hero-banner/ButcherHeroes";
+import { DentalPrecisionHero } from "./hero-banner/DentalPrecisionHero";
 
 const DropBoardHero: React.FC<HeroVariantProps> = (props) => {
   const leadImage = props.backgroundImage || props.panel.image || "";

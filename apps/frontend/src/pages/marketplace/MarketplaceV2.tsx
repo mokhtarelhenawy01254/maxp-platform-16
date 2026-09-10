@@ -37,6 +37,10 @@ import {
   categoryGroups,
   OTHER_CATEGORY_GROUP_ID,
 } from "@/utils/marketplace";
+import {
+  SYSTEM_HUBS,
+  resolveRecommendedSystemHub,
+} from "@/utils/marketplaceSystems";
 
 interface ApiEnvelope<T> {
   success: boolean;
@@ -145,7 +149,7 @@ function getCategoryDisplayCategories(categories: Category[]) {
 
 export default function MarketplaceV2() {
   const { t } = useTranslation();
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const [apps, setApps] = useState<MarketplaceApp[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -161,6 +165,10 @@ export default function MarketplaceV2() {
   const [displayCount, setDisplayCount] = useState(DISPLAY_INCREMENT);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  const companySpecialtySlug = user?.company?.businessSpecialty?.slug;
+  const recommendedHub = resolveRecommendedSystemHub(companySpecialtySlug);
+  const [selectedSystemHub, setSelectedSystemHub] = useState<string>("ALL");
 
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
     try {
@@ -215,7 +223,14 @@ export default function MarketplaceV2() {
 
   useEffect(() => { fetchData(); setDisplayCount(DISPLAY_INCREMENT); }, [fetchData]);
 
-  const collectionFiltered = apps.filter(a => matchesCollection(a, collection));
+  const activeHubDef = SYSTEM_HUBS.find(h => h.id === selectedSystemHub);
+  const hubFiltered = apps.filter(a => {
+    if (selectedSystemHub === "ALL") return true;
+    if (!activeHubDef || activeHubDef.categories.length === 0) return true;
+    return activeHubDef.categories.includes((a.category || "").toUpperCase());
+  });
+
+  const collectionFiltered = hubFiltered.filter(a => matchesCollection(a, collection));
   const searchFiltered = collectionFiltered.filter(a => matchesSearch(a, searchQuery));
   const filterFiltered = searchFiltered.filter(a => {
     if (priceFilter === "FREE" && a.pricingModel !== "FREE") return false;
@@ -256,7 +271,10 @@ export default function MarketplaceV2() {
     } finally { setUninstallingApp(null); }
   };
 
-  const categoryDisplay = getCategoryDisplayCategories(categories);
+  const availableCategories = selectedSystemHub === "ALL" || !activeHubDef || activeHubDef.categories.length === 0
+    ? categories
+    : categories.filter(c => activeHubDef.categories.includes((c.category || "").toUpperCase()));
+  const categoryDisplay = getCategoryDisplayCategories(availableCategories);
 
   const handleCategorySelect = (category: string) => {
     setSelectedCategory(category === selectedCategory ? "" : category);
@@ -276,6 +294,85 @@ export default function MarketplaceV2() {
         <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8 pb-16">
           {/* ── Top Header & Omni Filter Bar ── */}
           <div className="pt-4 pb-2">
+            {/* 1. Recommended Hub Callout (if company has specialty) */}
+            {recommendedHub && (
+              <div className="mb-3.5 flex items-center justify-between gap-3 p-3 rounded-2xl border border-primary/20 bg-primary/[0.03] text-xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Sparkles size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-foreground">
+                      منظومة مخصصة لنشاط حسابك: <span className="text-primary">{user?.company?.businessSpecialty?.nameAr || recommendedHub.nameAr}</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground line-clamp-1">
+                      {recommendedHub.descriptionAr}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedSystemHub(selectedSystemHub === recommendedHub.id ? "ALL" : recommendedHub.id);
+                    setSelectedCategory("");
+                    setDisplayCount(DISPLAY_INCREMENT);
+                  }}
+                  className={cn(
+                    "px-3 py-1.5 rounded-xl font-bold shrink-0 transition-colors text-xs",
+                    selectedSystemHub === recommendedHub.id
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-background border border-border/40 hover:border-primary/40 text-foreground"
+                  )}
+                >
+                  {selectedSystemHub === recommendedHub.id ? "معروضة حالياً ✓" : `عرض حلول ${recommendedHub.nameAr}`}
+                </button>
+              </div>
+            )}
+
+            {/* 2. System Hubs Switcher (Multi-System Solution Selector) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 mb-3 border-b border-border/20">
+              {SYSTEM_HUBS.map(hub => {
+                const Icon = hub.icon;
+                const active = hub.id === selectedSystemHub;
+                const isRecommended = recommendedHub?.id === hub.id;
+                const hubAppCount = hub.id === "ALL"
+                  ? apps.length
+                  : apps.filter(a => hub.categories.includes((a.category || "").toUpperCase())).length;
+
+                return (
+                  <button
+                    key={hub.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSystemHub(hub.id);
+                      setSelectedCategory("");
+                      setDisplayCount(DISPLAY_INCREMENT);
+                    }}
+                    className={cn(
+                      "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 shrink-0",
+                      active
+                        ? "bg-foreground text-background shadow-sm"
+                        : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
+                    )}
+                  >
+                    <Icon size={14} className={active ? "text-background" : "text-primary"} />
+                    <span>{hub.nameAr}</span>
+                    <span className={cn(
+                      "text-[10px] tabular-nums px-1.5 py-0.2 rounded-full",
+                      active ? "bg-background/20 text-background font-semibold" : "bg-muted text-muted-foreground"
+                    )}>
+                      {hubAppCount}
+                    </span>
+                    {isRecommended && (
+                      <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                        موصى به
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Row 1: Search, Status Segmented Controls, Drawer Sheet Trigger, and View Switcher */}
             <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
               {/* Search Bar */}
@@ -370,10 +467,16 @@ export default function MarketplaceV2() {
             </div>
 
             {/* Active Filter summary if any filter is on */}
-            {(selectedCategory || searchQuery || statusFilter !== "ALL" || priceFilter !== "ALL") && (
+            {(selectedSystemHub !== "ALL" || selectedCategory || searchQuery || statusFilter !== "ALL" || priceFilter !== "ALL") && (
               <div className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-xl border border-border/25 flex-wrap">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span>النتائج: <strong className="text-foreground font-bold">{filteredApps.length}</strong> تطبيق</span>
+                  {selectedSystemHub !== "ALL" && activeHubDef && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-foreground text-background font-bold">
+                      {activeHubDef.nameAr}
+                      <X size={12} className="cursor-pointer hover:opacity-75" onClick={() => setSelectedSystemHub("ALL")} />
+                    </span>
+                  )}
                   {selectedCategory && (
                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-primary/10 text-primary font-bold">
                       {categories.find(c => c.category === selectedCategory)?.name || selectedCategory}
@@ -398,6 +501,7 @@ export default function MarketplaceV2() {
                   onClick={() => {
                     setSearchQuery("");
                     setSelectedCategory("");
+                    setSelectedSystemHub("ALL");
                     setStatusFilter("ALL");
                     setPriceFilter("ALL");
                     setFilters({});

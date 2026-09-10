@@ -11,6 +11,7 @@ import {
   shouldUseTextIcon, getPrice, getAvailableBadges, getAppDestination,
 } from "@/utils/marketplace";
 import { getMarketplaceFeatureItems } from "@/pages/marketplace/featureCatalog";
+import { getAppSystemHub } from "@/utils/marketplaceSystems";
 
 export interface AppCardProps {
   app: MarketplaceApp;
@@ -59,6 +60,8 @@ export function AppCard({
   const badges = getAvailableBadges(app);
   const features = useMemo(() => getMarketplaceFeatureItems(app), [app]);
   const destination = app.mainRoute || getAppDestination(app);
+  const systemHub = getAppSystemHub(app);
+  const SystemIcon = systemHub.icon;
 
   // ── List / Horizontal View ──
   if (variant === "horizontal") {
@@ -90,6 +93,10 @@ export function AppCard({
                 <h3 dir="auto" className="text-sm font-bold text-foreground group-hover/card:text-primary transition-colors truncate">
                   {app.name}
                 </h3>
+                <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold border", systemHub.badgeClassName)}>
+                  <SystemIcon size={10} />
+                  {systemHub.nameAr}
+                </span>
                 {app.isInstalled ? (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-500/20">
                     <CheckCircle2 size={10} />
@@ -218,6 +225,13 @@ export function AppCard({
 
         {/* Info */}
         <div className="flex flex-col flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span className={cn("inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[9px] font-bold border", systemHub.badgeClassName)}>
+              <SystemIcon size={9} />
+              {systemHub.nameAr}
+            </span>
+          </div>
+
           <div className="flex items-baseline justify-between gap-1.5 mb-1.5">
             <h3
               dir="auto"
