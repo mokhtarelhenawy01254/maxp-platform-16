@@ -490,7 +490,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "lookbook-showcase": {
     label: "قسم الإلهام",
     component: "lookbook-showcase",
-    pages: ["home", "lookbook"],
+    pages: ["home", "lookbook", "shop"],
     variants: [
       { value: "standard", label: "قياسي" },
       { value: "boutique-storyboard", label: "لوحة بوتيك هادئة" },
@@ -1885,7 +1885,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   reviews: {
     label: "Reviews",
     component: "reviews",
-    pages: ["home", "pdp"],
+    pages: ["home", "pdp", "shop"],
     variants: [
       { value: "standard", label: "Standard" },
       { value: "editorial", label: "Editorial" },
@@ -2702,7 +2702,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "services-grid": {
     label: "شبكة الخدمات والمزايا",
     component: "services-grid",
-    pages: ["home"],
+    pages: ["home", "collections", "services", "shop"],
     variants: [
       { value: "standard", label: "قياسي" },
       { value: "mixed-highlight", label: "شبكة غير منتظمة" },
@@ -2732,7 +2732,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
   "features-bar": {
     label: "شريط المزايا المصوّر",
     component: "features-bar",
-    pages: ["home", "shop", "pdp"],
+    pages: ["home", "shop", "pdp", "collections", "contact", "about"],
     variants: [
       { value: "trust-strip", label: "شريط المزايا (أساسي)" },
       { value: "service-clarity", label: "وضوح الخدمة" },
