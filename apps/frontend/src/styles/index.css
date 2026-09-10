@@ -1,18 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-
-@theme {
-  --font-sans: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-heading: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
-}
-
-/* Google Fonts loaded asynchronously in index.html and dynamically in ThemeProvider */
 @import "./sidebar-elite.css";
 @import "./whatsapp-dark.css";
 @import "./whatsapp-responsive.css";
 @import "./marketplace-premium.css";
 @import "./facebook-inbox-dark.css";
-/* @import "shadcn/tailwind.css"; */
+
+@theme {
+  --font-sans: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+}
 
 /* Geist Variable — self-hosted via /assets/files/ */
 @font-face {

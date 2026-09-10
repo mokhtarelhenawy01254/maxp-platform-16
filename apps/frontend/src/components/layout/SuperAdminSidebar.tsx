@@ -535,8 +535,8 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
         aria-label="Super Admin Navigation"
       >
         {/* Tier 1: Icon Rail (Width 80px) */}
-        <div className="business-sidebar-rail">
-          <div className="business-sidebar-brand-block">
+        <div className="business-sidebar-rail w-20 flex flex-col items-center py-6 shrink-0 z-20">
+          <div className="business-sidebar-brand-block mb-6 shrink-0">
             <Link to="/super-admin/dashboard" className="block" title="MAX-P Control">
               <div className="business-brand-glyph" data-admin="true">
                 <Shield className="h-6 w-6 text-white" />
@@ -544,7 +544,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
             </Link>
           </div>
 
-          <div className="business-sidebar-rail-scroll">
+          <div className="business-sidebar-rail-scroll flex-1 w-full overflow-y-auto overflow-x-hidden flex flex-col items-center gap-1">
             {menuGroups.map((group) => {
               const isActive = activeGroupId === group.id;
               return (
@@ -555,12 +555,12 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
                     setActiveGroupId(group.id);
                     if (isCollapsed) setIsCollapsed(false);
                   }}
-                  className="business-sidebar-rail-item"
+                  className="business-sidebar-rail-item w-full flex flex-col items-center py-2.5 px-1 bg-transparent border-0 cursor-pointer"
                   data-active={isActive}
                   title={group.title}
                 >
-                  <span className="business-sidebar-rail-icon">{group.icon}</span>
-                  <span className="business-sidebar-rail-label">{group.title}</span>
+                  <span className="business-sidebar-rail-icon flex items-center justify-center">{group.icon}</span>
+                  <span className="business-sidebar-rail-label text-[11px] font-semibold text-center mt-1 leading-tight">{group.title}</span>
                 </button>
               );
             })}
@@ -569,24 +569,24 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
 
         {/* Tier 2: Submenu Panel (Width 256px, collapsible) */}
         <div
-          className="business-sidebar-panel"
+          className="business-sidebar-panel flex flex-col h-full overflow-hidden"
           data-collapsed={isCollapsed}
         >
-          <div className="business-sidebar-panel-header">
-            <div className="business-sidebar-company">
-              <div className="business-brand-glyph business-brand-glyph--small">
+          <div className="business-sidebar-panel-header flex items-center justify-between p-4 border-b shrink-0">
+            <div className="business-sidebar-company flex items-center gap-3 min-w-0">
+              <div className="business-brand-glyph business-brand-glyph--small shrink-0">
                 {user?.firstName?.charAt(0) || "M"}
               </div>
-              <div className="business-sidebar-company-copy">
-                <h2 className="text-foreground">التحكم الذكي</h2>
-                <p>{searchQuery ? "نتائج البحث" : activeGroup?.title || "إدارة النظام"}</p>
+              <div className="business-sidebar-company-copy min-w-0">
+                <h2 className="text-foreground text-sm font-bold truncate">التحكم الذكي</h2>
+                <p className="text-xs text-muted-foreground truncate">{searchQuery ? "نتائج البحث" : activeGroup?.title || "إدارة النظام"}</p>
               </div>
             </div>
 
             <button
               type="button"
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="business-icon-button business-icon-button--sm"
+              className="business-icon-button business-icon-button--sm shrink-0"
               aria-label={isCollapsed ? "توسيع القائمة" : "طي القائمة"}
               title={isCollapsed ? "توسيع القائمة" : "طي القائمة"}
             >
@@ -599,7 +599,7 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
           </div>
 
           {/* Search Box */}
-          <div className="business-sidebar-search-wrap">
+          <div className="business-sidebar-search-wrap relative px-3 py-2 border-b shrink-0">
             <label htmlFor={searchInputId} className="sr-only">
               البحث في القوائم
             </label>
