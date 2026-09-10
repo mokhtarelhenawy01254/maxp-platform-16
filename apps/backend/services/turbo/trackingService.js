@@ -87,19 +87,33 @@ class TrackingService {
         const batchCodes = new Set(shipments.map(s => s.code).filter(Boolean));
         try {
           const prisma = getSharedPrismaClient();
-          const dbOrders = await safeQuery(() =>
-            prisma.order.findMany({
-              where: {
-                companyId: this.companyId,
-                turboShipmentId: { not: null },
-                turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted', 'archived'] }
-              },
-              select: { turboShipmentId: true, turboTrackingNumber: true },
-              take: 200
-            }), 3
-          );
+          const [dbOrders, dbGuestOrders] = await Promise.all([
+            safeQuery(() =>
+              prisma.order.findMany({
+                where: {
+                  companyId: this.companyId,
+                  turboShipmentId: { not: null },
+                  turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted', 'archived'] }
+                },
+                select: { turboShipmentId: true, turboTrackingNumber: true },
+                take: 150
+              }), 3
+            ).catch(() => []),
+            safeQuery(() =>
+              prisma.guestOrder.findMany({
+                where: {
+                  companyId: this.companyId,
+                  turboShipmentId: { not: null },
+                  turboShipmentStatus: { notIn: ['delivered', 'cancelled', 'returned', 'remitted', 'archived'] }
+                },
+                select: { turboShipmentId: true, turboTrackingNumber: true },
+                take: 150
+              }), 3
+            ).catch(() => [])
+          ]);
 
-          const codesToFetch = dbOrders
+          const allDbCandidates = [...(dbOrders || []), ...(dbGuestOrders || [])];
+          const codesToFetch = allDbCandidates
             .map(o => o.turboShipmentId || o.turboTrackingNumber)
             .filter(c => c && !batchCodes.has(c))
             .slice(0, 100);

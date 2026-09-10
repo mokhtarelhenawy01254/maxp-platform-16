@@ -1634,9 +1634,22 @@ const PreparationQueue: React.FC = () => {
       toast.error(t('preparation.page.selectOrderFirst'));
       return;
     }
+
+    const onHoldSelected = selectedOrders.some((orderNumber) => {
+      const o = getOrderByNumber(orderNumber);
+      return o?.stage === 'ON_HOLD_PREP' || o?.normalizedStatus === 'ON_HOLD_PREP';
+    }) || activeStage === 'ON_HOLD_PREP';
+
+    if (onHoldSelected) {
+      const confirmed = window.confirm(
+        '⚠️ تنبيه: لقد حددت طلبات معلقة لوجود مشكلة (ON_HOLD_PREP).\n\nهل أنت متأكد من رغبتك في إرسالها لشركة الشحن واستخراج بوالص شحن رسمية لها الآن؟'
+      );
+      if (!confirmed) return;
+    }
+
     await fetchActiveCarriers();
     setShowDispatchModal(true);
-  }, [fetchActiveCarriers, selectedOrders.length, t]);
+  }, [activeStage, fetchActiveCarriers, getOrderByNumber, selectedOrders, t]);
 
   const handleDispatchToCarrier = useCallback(
     async (carrier: ActiveCarrier) => {
@@ -1650,7 +1663,14 @@ const PreparationQueue: React.FC = () => {
         let response: {
           data?: {
             success?: boolean;
-            data?: { success?: number; failed?: number };
+            data?: {
+              success?: number;
+              failed?: number;
+              results?: {
+                failed?: Array<{ orderNumber: string; error?: string; reason?: string }>;
+                skipped?: Array<{ orderNumber: string; reason?: string }>;
+              };
+            };
             error?: string;
           };
         };
@@ -1692,10 +1712,25 @@ const PreparationQueue: React.FC = () => {
           const data = response.data.data || {};
           const successCount = data.success ?? selectedOrders.length;
           const failedCount = data.failed ?? 0;
+          const failedList = data.results?.failed || [];
+
           toast.success(
             `تم بنجاح إرسال ${successCount} طلب إلى ${carrier.name}` +
               (failedCount > 0 ? ` (فشل ${failedCount})` : '')
           );
+
+          if (failedList.length > 0) {
+            const preview = failedList
+              .slice(0, 5)
+              .map((item) => `• طلب #${item.orderNumber}: ${item.error || item.reason || 'تعذر الإنشاء'}`)
+              .join('\n');
+            const remainder = failedList.length > 5 ? `\n... و ${failedList.length - 5} طلبات أخرى` : '';
+            toast.error(
+              `تعذر إرسال ${failedList.length} طلب إلى ${carrier.name}:\n${preview}${remainder}`,
+              { duration: 10000 }
+            );
+          }
+
           setShowDispatchModal(false);
           uiActions.clearBulkControls();
           void fetchAll();

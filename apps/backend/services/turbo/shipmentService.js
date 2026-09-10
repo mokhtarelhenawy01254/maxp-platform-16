@@ -194,6 +194,12 @@ class ShipmentService {
       }
       if (!cleanGovernorate) throw new Error('المحافظة غير محددة أو غير مطابقة لقائمة المحافظات المعتمدة في تربو.');
 
+      const methodStr = String(orderData.paymentMethod || paymentMethod || '').trim().toUpperCase();
+      const paymentStatusStr = String(orderData.paymentStatus || '').trim().toUpperCase();
+      const isPrepaid = ['PAID', 'ONLINE', 'CARD', 'PAYMOB', 'FAWRY', 'CREDIT_CARD', 'VISA', 'WALLET', 'INSTAPAY', 'PREPAID'].includes(methodStr) ||
+        ['PAID', 'COMPLETED'].includes(paymentStatusStr);
+      const codAmount = (isOrderVal === 2 || isPrepaid) ? 0 : parseFloat(totalValue || orderData.total || 0);
+
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3) ? cleanAddress.trim() : `${cleanArea || cleanGovernorate} - ${cleanGovernorate}`;
       const shipmentData = {
         authentication_key: apiKey, main_client_code: mainClientCode || 37321, remote_order_id: orderNumber || `Order ${orderNumber}`,
@@ -201,7 +207,7 @@ class ShipmentService {
         api_followup_phone: senderNumber || validPhone, government: cleanGovernorate, area: cleanArea || cleanGovernorate || 'المركز الرئيسي',
         address: finalAddress, notes: notes || `Order #${orderNumber}`, order_summary: formattedSummary,
         return_summary: orderData.returnSummary || defaultReturnSummary,
-        amount_to_be_collected: (isOrderVal === 2 || (paymentMethod && paymentMethod.toUpperCase() === 'PAID')) ? 0 : parseFloat(totalValue || orderData.total || 0),
+        amount_to_be_collected: codAmount,
         return_amount: returnAmt, is_order: isOrderVal, can_open: orderData.canOpen !== undefined ? (orderData.canOpen ? "1" : "0") : "1",
         weight: totalWeight || 1, delivery_type: 0, is_fragile: 0
       };
@@ -334,7 +340,9 @@ class ShipmentService {
       }
 
       const methodStr = String(formattedData.paymentMethod || '').trim().toUpperCase();
-      const isPrepaid = ['PAID', 'ONLINE', 'CARD', 'PAYMOB', 'FAWRY', 'CREDIT_CARD', 'VISA'].includes(methodStr);
+      const paymentStatusStr = String(formattedData.paymentStatus || '').trim().toUpperCase();
+      const isPrepaid = ['PAID', 'ONLINE', 'CARD', 'PAYMOB', 'FAWRY', 'CREDIT_CARD', 'VISA', 'WALLET', 'INSTAPAY', 'PREPAID'].includes(methodStr) ||
+        ['PAID', 'COMPLETED'].includes(paymentStatusStr);
       const codAmount = (isOrderVal === 2 || isPrepaid) ? 0 : totalValue;
       let rawPhoneDigits = String(formattedData.customerPhone || '').replace(/\D/g, '');
       let validPhone = rawPhoneDigits;

@@ -308,7 +308,95 @@ class OrderDetailsUpdateService {
     };
   }
 
-  buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields, diffDetails = []) {
+  async syncTurboForGuestOrder(updatedOrder, companyId, orderNumber) {
+    if (!updatedOrder?.turboShipmentId) {
+      return {
+        attempted: false,
+        updated: false,
+        shipmentId: null,
+        error: null,
+      };
+    }
+
+    try {
+      const prisma = this.getPrismaClient();
+      let company = null;
+      if (prisma?.company?.findUnique) {
+        company = await prisma.company.findUnique({
+          where: { id: companyId },
+          select: { turboApiKey: true, turboEnabled: true }
+        });
+      }
+
+      if (!company?.turboEnabled || !company?.turboApiKey) {
+        return {
+          attempted: false,
+          updated: false,
+          shipmentId: updatedOrder.turboShipmentId,
+          error: null,
+        };
+      }
+
+      const TurboService = this.getTurboServiceClass();
+      const turboService = new TurboService(company.turboApiKey, companyId);
+      const { normalizeGuestShippingAddress } = require('../utils/turbo/addressParser');
+      const shippingAddressDetails = normalizeGuestShippingAddress(updatedOrder.shippingAddress);
+
+      let items = updatedOrder.items || [];
+      if (typeof items === 'string') {
+        try { items = JSON.parse(items); } catch (_) { items = []; }
+      }
+
+      const orderData = turboService.formatOrderForTurbo({
+        id: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        customerName: updatedOrder.guestName || '',
+        customerPhone: updatedOrder.guestPhone || '',
+        customerEmail: updatedOrder.guestEmail || '',
+        customerAddress: shippingAddressDetails.customerAddress,
+        shippingAddress: shippingAddressDetails.rawShippingAddress,
+        city: shippingAddressDetails.city,
+        paymentMethod: updatedOrder.paymentMethod || 'CASH',
+        paymentStatus: updatedOrder.paymentStatus || null,
+        total: updatedOrder.finalTotal || updatedOrder.total || 0,
+        shipping: updatedOrder.shippingCost || 0,
+        notes: updatedOrder.notes || '',
+        orderItems: items.map(item => ({
+          productName: item.name || item.productName || 'منتج',
+          quantity: item.quantity || 1,
+          price: item.price || 0,
+          total: item.total || ((item.price || 0) * (item.quantity || 1)),
+          color: item.color || null,
+          size: item.size || null,
+          variantName: item.variantName || null,
+        }))
+      }, {
+        firstName: updatedOrder.guestName?.split(' ')[0] || '',
+        lastName: updatedOrder.guestName?.split(' ').slice(1).join(' ') || '',
+        phone: updatedOrder.guestPhone || '',
+        email: updatedOrder.guestEmail || ''
+      }, items);
+
+      await turboService.updateShipment(updatedOrder.turboShipmentId, orderData);
+
+      return {
+        attempted: true,
+        updated: true,
+        shipmentId: updatedOrder.turboShipmentId,
+        error: null,
+      };
+    } catch (error) {
+      console.error(`❌ [TURBO] Failed to update guest shipment for order ${orderNumber}:`, error.message);
+      return {
+        attempted: true,
+        updated: false,
+        shipmentId: updatedOrder.turboShipmentId || null,
+        error: error.message,
+      };
+    }
+  }
+
+  buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields, turboSync = null, diffDetails = []) {
     return {
       orderType: 'guest',
       orderId: updatedOrder.id,
@@ -323,10 +411,10 @@ class OrderDetailsUpdateService {
       governorate: shippingAddress.governorate || null,
       alternativePhone: metadata.alternativePhone ?? null,
       metadata,
-      turboSync: {
+      turboSync: turboSync || {
         attempted: false,
         updated: false,
-        shipmentId: null,
+        shipmentId: updatedOrder?.turboShipmentId || null,
         error: null,
       },
       socketPayload: {
@@ -398,8 +486,9 @@ class OrderDetailsUpdateService {
         where: { id: guestOrder.id },
         data: updateData,
       });
+      const turboSync = await this.syncTurboForGuestOrder(updatedOrder, companyId, updatedOrder.orderNumber);
 
-      return this.buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields, diffDetails);
+      return this.buildGuestResult(updatedOrder, metadata, shippingAddress, updatedFields, turboSync, diffDetails);
     }
 
     const error = new Error('Order not found');

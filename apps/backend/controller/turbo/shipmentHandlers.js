@@ -68,7 +68,7 @@ const bulkCreateShipments = async (req, res) => {
     if (!companyId) return res.status(403).json({ success: false, error: 'معرف الشركة مطلوب' });
     if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) return res.status(400).json({ success: false, error: 'يرجى تحديد طلب واحد على الأقل لإرساله لتربو' });
     const prisma = getSharedPrismaClient();
-    const company = await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { turboApiKey: true, turboEnabled: true } }), 3);
+    const company = await safeQuery(() => prisma.company.findUnique({ where: { id: companyId }, select: { turboApiKey: true, turboEnabled: true, settings: true } }), 3);
     let turboApiKey = company?.turboApiKey;
     let turboEnabled = company?.turboEnabled;
     if (!turboEnabled || !turboApiKey) {
@@ -85,24 +85,172 @@ const bulkCreateShipments = async (req, res) => {
       }
     }
     if (!turboEnabled || !turboApiKey) return res.status(400).json({ success: false, error: 'خدمة شحن تربو غير مفعلة في إعدادات الشركة أو لم يتم إدخال مفتاح API' });
-    const orders = await safeQuery(() => prisma.order.findMany({ where: { OR: [{ orderNumber: { in: orderIds } }, { id: { in: orderIds } }], companyId, turboShipmentId: null }, include: { customer: true, orderItems: { include: { product: true, productVariant: true } }, company: { select: { id: true, turboApiKey: true, turboEnabled: true } } }, take: 100 }), 3);
-    if (orders.length === 0) return res.status(404).json({ success: false, error: 'لم يتم العثور على أي طلبات غير مشحونة بحاجة للإرسال لتربو' });
-    const turboService = new TurboService(turboApiKey, companyId);
-    const results = { success: [], failed: [], skipped: [] };
-    for (const order of orders) {
+
+    let automationStatus = null;
+    if (company?.settings) {
       try {
-        if (order.turboShipmentId) { results.skipped.push({ orderNumber: order.orderNumber, reason: 'يوجد شحنة تربو مسجلة بالفعل' }); continue; }
+        const cs = typeof company.settings === 'string' ? JSON.parse(company.settings) : company.settings;
+        if (cs?.turboAutomationEnabled && cs?.turboAutomationStatus) {
+          automationStatus = cs.turboAutomationStatus;
+        }
+      } catch (_) {}
+    }
+
+    const regularOrders = await safeQuery(() => prisma.order.findMany({
+      where: {
+        OR: [{ orderNumber: { in: orderIds } }, { id: { in: orderIds } }],
+        companyId,
+        turboShipmentId: null
+      },
+      include: {
+        customer: true,
+        orderItems: { include: { product: true, productVariant: true } },
+        company: { select: { id: true, turboApiKey: true, turboEnabled: true } }
+      },
+      take: 100
+    }), 3);
+
+    const regularMatchedIds = new Set(regularOrders.flatMap(o => [o.id, o.orderNumber]));
+    const remainingIds = orderIds.filter(id => !regularMatchedIds.has(id));
+
+    let guestOrders = [];
+    if (remainingIds.length > 0) {
+      guestOrders = await safeQuery(() => prisma.guestOrder.findMany({
+        where: {
+          OR: [{ orderNumber: { in: remainingIds } }, { id: { in: remainingIds } }],
+          companyId,
+          turboShipmentId: null
+        },
+        take: 100
+      }), 3);
+    }
+
+    const totalCandidateOrders = regularOrders.length + guestOrders.length;
+    if (totalCandidateOrders === 0) return res.status(404).json({ success: false, error: 'لم يتم العثور على أي طلبات غير مشحونة بحاجة للإرسال لتربو' });
+
+    const turboService = new TurboService(turboApiKey, companyId);
+    const { normalizeGuestShippingAddress } = require('../../utils/turbo/addressParser');
+    const results = { success: [], failed: [], skipped: [] };
+
+    // 1. Process regular orders
+    for (const order of regularOrders) {
+      try {
+        if (order.turboShipmentId) {
+          results.skipped.push({ orderNumber: order.orderNumber, reason: 'يوجد شحنة تربو مسجلة بالفعل' });
+          continue;
+        }
         const orderData = turboService.formatOrderForTurbo(order, order.customer, order.orderItems);
         const result = await turboService.createShipment(orderData);
-        if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
-        else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: { turboShipmentId: String(result.shipmentId || ''), turboTrackingNumber: String(result.trackingNumber || ''), turboShipmentStatus: result.status, turboLabelUrl: result.labelUrl, turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data) } }), 3); }
+        const updateData = {
+          turboShipmentId: String(result.shipmentId || ''),
+          turboTrackingNumber: String(result.trackingNumber || ''),
+          turboShipmentStatus: result.status,
+          turboLabelUrl: result.labelUrl,
+          turboMetadata: serializeTurboMetadata(order.turboMetadata, result.data)
+        };
+
+        if (order.orderNumber) {
+          await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3);
+        } else if (order.id) {
+          await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: updateData }), 3);
+        }
+
+        if (automationStatus && automationStatus !== order.status) {
+          try {
+            await orderService.updateOrderStatus(order.orderNumber, companyId, automationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح (إرسال جماعي)', 'SYSTEM', 'System Automation', null, true);
+          } catch (autoErr) {
+            console.warn(`⚠️ [TURBO-AUTOMATION] Error updating order status for ${order.orderNumber}:`, autoErr.message);
+          }
+        }
+
         results.success.push({ orderNumber: order.orderNumber, shipmentId: result.shipmentId, trackingNumber: result.trackingNumber });
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 300));
       } catch (error) {
         results.failed.push({ orderNumber: order.orderNumber, error: turboService.translateTurboErrorToArabic(error.message) });
       }
     }
-    res.json({ success: true, data: { total: orders.length, success: results.success.length, failed: results.failed.length, skipped: results.skipped.length, results } });
+
+    // 2. Process guest orders
+    for (const guest of guestOrders) {
+      try {
+        if (guest.turboShipmentId) {
+          results.skipped.push({ orderNumber: guest.orderNumber, reason: 'يوجد شحنة تربو مسجلة بالفعل' });
+          continue;
+        }
+        let items = guest.items || [];
+        if (typeof items === 'string') {
+          try { items = JSON.parse(items); } catch (_) { items = []; }
+        }
+        const shippingAddressDetails = normalizeGuestShippingAddress(guest.shippingAddress);
+        const guestOrderData = turboService.formatOrderForTurbo({
+          id: guest.id,
+          orderNumber: guest.orderNumber,
+          customerName: guest.guestName || '',
+          customerPhone: guest.guestPhone || '',
+          customerEmail: guest.guestEmail || '',
+          customerAddress: shippingAddressDetails.customerAddress,
+          shippingAddress: shippingAddressDetails.rawShippingAddress,
+          city: shippingAddressDetails.city,
+          paymentMethod: guest.paymentMethod || 'CASH',
+          paymentStatus: guest.paymentStatus || null,
+          total: guest.finalTotal || guest.total || 0,
+          shipping: guest.shippingCost || 0,
+          notes: guest.notes || '',
+          orderItems: items.map(item => ({
+            productName: item.name || item.productName || 'منتج',
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+            total: item.total || ((item.price || 0) * (item.quantity || 1)),
+            color: item.color || null,
+            size: item.size || null,
+            variantName: item.variantName || null,
+          }))
+        }, {
+          firstName: guest.guestName?.split(' ')[0] || '',
+          lastName: guest.guestName?.split(' ').slice(1).join(' ') || '',
+          phone: guest.guestPhone || '',
+          email: guest.guestEmail || ''
+        }, items);
+
+        const result = await turboService.createShipment(guestOrderData);
+        const updateData = {
+          turboShipmentId: String(result.shipmentId || ''),
+          turboTrackingNumber: String(result.trackingNumber || ''),
+          turboShipmentStatus: result.status,
+          turboLabelUrl: result.labelUrl,
+          turboMetadata: serializeTurboMetadata(guest.turboMetadata, result.data)
+        };
+
+        await safeQuery(() => prisma.guestOrder.updateMany({
+          where: guest.orderNumber ? { orderNumber: guest.orderNumber, companyId } : { id: guest.id, companyId },
+          data: updateData
+        }), 3);
+
+        if (automationStatus && automationStatus !== guest.status) {
+          try {
+            await orderService.updateGuestOrderStatus(guest.orderNumber, companyId, automationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح (إرسال جماعي)', 'SYSTEM', 'System Automation', null, { skipCallAttemptGuard: true, skipTransitionValidation: true });
+          } catch (autoErr) {
+            console.warn(`⚠️ [TURBO-AUTOMATION] Error updating guest order status for ${guest.orderNumber}:`, autoErr.message);
+          }
+        }
+
+        results.success.push({ orderNumber: guest.orderNumber, shipmentId: result.shipmentId, trackingNumber: result.trackingNumber, isGuest: true });
+        await new Promise(resolve => setTimeout(resolve, 300));
+      } catch (error) {
+        results.failed.push({ orderNumber: guest.orderNumber, error: turboService.translateTurboErrorToArabic(error.message), isGuest: true });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        total: totalCandidateOrders,
+        success: results.success.length,
+        failed: results.failed.length,
+        skipped: results.skipped.length,
+        results
+      }
+    });
   } catch (error) {
     console.error('❌ [TURBO-CONTROLLER] Error in bulk create shipments:', error);
     const turboService = new TurboService('dummy');

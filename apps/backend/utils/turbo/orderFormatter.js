@@ -153,6 +153,7 @@ function formatOrderForTurbo(order, customer, items) {
     shipping: shippingFee,
     totalValue: totalValue,
     paymentMethod: order.paymentMethod || 'CASH',
+    paymentStatus: order.paymentStatus || null,
     notes: order.notes || '',
     createdAt: order.createdAt || new Date().toISOString(),
     phone2: resolvedPhone2,
