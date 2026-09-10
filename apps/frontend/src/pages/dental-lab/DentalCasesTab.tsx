@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, CreditCard, Eye, Filter, FilterX, Flame, Layers, Loader2, Pencil, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
+  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, Pencil, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
@@ -140,122 +140,168 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
   const labelCls = "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1";
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center" onClick={() => !saving && onClose()}>
-      <div className={`${MODAL_CONTENT_CLS} !max-w-3xl max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">{initial ? t("dentalLab.cases.editTitle") : t("dentalLab.cases.createTitle")}</h3>
-          <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex justify-end animate-in fade-in duration-200" onClick={() => !saving && onClose()}>
+      <div className="w-full max-w-2xl bg-white dark:bg-gray-850 h-full shadow-2xl flex flex-col border-r dark:border-gray-700 animate-in slide-in-from-right duration-300" onClick={e => e.stopPropagation()}>
+        {/* Drawer Header */}
+        <div className="px-6 py-4 border-b dark:border-gray-700 flex items-center justify-between bg-gray-50/70 dark:bg-gray-800">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                <Pencil className="w-4 h-4" />
+              </span>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
+                {initial ? `تعديل الأوردر ${initial.caseNumber || initial.id.slice(0, 8)}` : t("dentalLab.cases.createTitle")}
+              </h3>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {initial ? "تعديل تفاصيل وأسنان ومواصفات الحالة السريعة عبر الدرج الجانبي" : "إدخال بيانات حالة جديدة في معمل الأسنان"}
+            </p>
+          </div>
+          <button onClick={() => !saving && onClose()} className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="mb-5 rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-3 flex flex-wrap items-center gap-3">
-          <input
-            ref={scanInputRef}
-            type="file"
-            accept="image/*,.pdf"
-            className="hidden"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) handleScanFile(f); }}
-          />
-          <button
-            type="button"
-            onClick={() => scanInputRef.current?.click()}
-            disabled={scanParsing}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50"
-          >
-            {scanParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
-            {t("dentalLab.cases.scanParse")}
-          </button>
-          <span className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.cases.scanHint")}</span>
-          {scanMsg ? <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{scanMsg}</span> : null}
-        </div>
+        {/* Optional Banner for Deep Case Detail */}
+        {initial && (
+          <div className="px-6 py-2.5 bg-blue-50/90 dark:bg-blue-950/40 border-b border-blue-100 dark:border-blue-900/60 flex items-center justify-between gap-3 text-xs">
+            <span className="text-blue-800 dark:text-blue-200">
+              تريد إدارة فحص الجودة (QC)، الأشعة ثلاثية الأبعاد (STL)، أو الفواتير الموسعة؟
+            </span>
+            <Link
+              to={`/dental-lab/cases/${initial.id}`}
+              className="font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0"
+              onClick={onClose}
+            >
+              <span>فتح صفحة الأوردر</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.doctor")} *</label>
-            <select className={inputCls} value={doctorId} onChange={e => setDoctorId(e.target.value)}>
-              <option value="">—</option>
-              {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.workType")} *</label>
-            <select className={inputCls} value={workTypeId} onChange={onWorkTypeChange}>
-              <option value="">—</option>
-              {workTypes.filter(w => w.isActive).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.patientName")} *</label>
-            <input className={inputCls} value={patientName} onChange={e => setPatientName(e.target.value)} placeholder="اسم المريض" />
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.patientPhone")}</label>
-            <input className={inputCls} value={patientPhone} onChange={e => setPatientPhone(e.target.value)} placeholder="01xxxxxxxxx" dir="ltr" />
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelCls}>{t("dentalLab.cases.teeth")} (تحديد الأسنان بالخريطة التفاعلية)</label>
-            <OdontogramChart
-              selectedTeeth={selectedTeeth}
-              onChange={(arr) => {
-                setSelectedTeeth(arr);
-                setTeeth(arr.join(", "));
-              }}
+        {/* Scrollable Form Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
+          <div className="rounded-xl border border-dashed border-gray-300 dark:border-gray-600 p-3.5 flex flex-wrap items-center gap-3 bg-gray-50/50 dark:bg-gray-800/40">
+            <input
+              ref={scanInputRef}
+              type="file"
+              accept="image/*,.pdf"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleScanFile(f); }}
             />
+            <button
+              type="button"
+              onClick={() => scanInputRef.current?.click()}
+              disabled={scanParsing}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/40 disabled:opacity-50 font-medium shadow-xs"
+            >
+              {scanParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
+              {t("dentalLab.cases.scanParse")}
+            </button>
+            <span className="text-xs text-gray-500 dark:text-gray-400">{t("dentalLab.cases.scanHint")}</span>
+            {scanMsg ? <span className="text-xs font-medium text-emerald-600 dark:text-emerald-400">{scanMsg}</span> : null}
           </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.shade")}</label>
-            <input className={inputCls} value={shade} onChange={e => setShade(e.target.value)} placeholder="مثال: A2" />
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.material")}</label>
-            <input className={inputCls} value={material} onChange={e => setMaterial(e.target.value)} placeholder="مثال: زيركون 3D Pro" />
-          </div>
-          <div>
-            <label className={labelCls}>الشركة المصنعة / الماركة</label>
-            <input className={inputCls} value={materialBrand} onChange={e => setMaterialBrand(e.target.value)} placeholder="مثال: Ivoclar, Aidite, Wieland" />
-          </div>
-          <div>
-            <label className={labelCls}>رقم التشغيلة (Lot #)</label>
-            <input className={inputCls} value={lotNumber} onChange={e => setLotNumber(e.target.value)} placeholder="مثال: LOT-2026-88" />
-          </div>
-          <div>
-            <label className={labelCls}>سنوات الضمان (Warranty)</label>
-            <input className={inputCls} type="number" min="0" max="20" value={warrantyYears} onChange={e => setWarrantyYears(Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")}</label>
-            <input className={inputCls} type="number" value={priceSnapshot} onChange={e => setPriceSnapshot(Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.discount")}</label>
-            <input className={inputCls} type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.dueDate")}</label>
-            <input className={inputCls} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
-          </div>
-          <div>
-            <label className={labelCls}>{t("dentalLab.cases.priority")}</label>
-            <select className={inputCls} value={priority} onChange={e => setPriority(e.target.value as DentalCasePriority)}>
-              {(Object.keys(PRIORITY_CONFIG) as (keyof typeof PRIORITY_CONFIG)[]).map(k => (
-                <option key={k} value={k}>{PRIORITY_CONFIG[k].label}</option>
-              ))}
-            </select>
-          </div>
-          <div className="sm:col-span-2">
-            <label className={labelCls}>{t("dentalLab.common.notes")}</label>
-            <textarea className={`${inputCls} min-h-[80px] resize-y`} value={notes} onChange={e => setNotes(e.target.value)} />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.doctor")} *</label>
+              <select className={inputCls} value={doctorId} onChange={e => setDoctorId(e.target.value)}>
+                <option value="">—</option>
+                {doctors.filter(d => d.isActive).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.workType")} *</label>
+              <select className={inputCls} value={workTypeId} onChange={onWorkTypeChange}>
+                <option value="">—</option>
+                {workTypes.filter(w => w.isActive).map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.patientName")} *</label>
+              <input className={inputCls} value={patientName} onChange={e => setPatientName(e.target.value)} placeholder="اسم المريض" />
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.patientPhone")}</label>
+              <input className={inputCls} value={patientPhone} onChange={e => setPatientPhone(e.target.value)} placeholder="01xxxxxxxxx" dir="ltr" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>{t("dentalLab.cases.teeth")} (تحديد الأسنان بالخريطة التفاعلية)</label>
+              <OdontogramChart
+                selectedTeeth={selectedTeeth}
+                onChange={(arr) => {
+                  setSelectedTeeth(arr);
+                  setTeeth(arr.join(", "));
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.shade")}</label>
+              <input className={inputCls} value={shade} onChange={e => setShade(e.target.value)} placeholder="مثال: A2" />
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.material")}</label>
+              <input className={inputCls} value={material} onChange={e => setMaterial(e.target.value)} placeholder="مثال: زيركون 3D Pro" />
+            </div>
+            <div>
+              <label className={labelCls}>الشركة المصنعة / الماركة</label>
+              <input className={inputCls} value={materialBrand} onChange={e => setMaterialBrand(e.target.value)} placeholder="مثال: Ivoclar, Aidite, Wieland" />
+            </div>
+            <div>
+              <label className={labelCls}>رقم التشغيلة (Lot #)</label>
+              <input className={inputCls} value={lotNumber} onChange={e => setLotNumber(e.target.value)} placeholder="مثال: LOT-2026-88" />
+            </div>
+            <div>
+              <label className={labelCls}>سنوات الضمان (Warranty)</label>
+              <input className={inputCls} type="number" min="0" max="20" value={warrantyYears} onChange={e => setWarrantyYears(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.priceSnapshot")}</label>
+              <input className={inputCls} type="number" value={priceSnapshot} onChange={e => setPriceSnapshot(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.discount")}</label>
+              <input className={inputCls} type="number" value={discount} onChange={e => setDiscount(Number(e.target.value))} />
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.dueDate")}</label>
+              <input className={inputCls} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+            </div>
+            <div>
+              <label className={labelCls}>{t("dentalLab.cases.priority")}</label>
+              <select className={inputCls} value={priority} onChange={e => setPriority(e.target.value as DentalCasePriority)}>
+                {(Object.keys(PRIORITY_CONFIG) as (keyof typeof PRIORITY_CONFIG)[]).map(k => (
+                  <option key={k} value={k}>{PRIORITY_CONFIG[k].label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelCls}>{t("dentalLab.common.notes")}</label>
+              <textarea className={`${inputCls} min-h-[80px] resize-y`} value={notes} onChange={e => setNotes(e.target.value)} />
+            </div>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
-            {t("dentalLab.common.cancel")}
-          </button>
-          <button onClick={save} disabled={saving || !patientName.trim()} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}{saving ? t("dentalLab.common.saving") : t("dentalLab.common.save")}
-          </button>
+        {/* Sticky Drawer Footer */}
+        <div className="px-6 py-4 border-t dark:border-gray-700 bg-gray-50/80 dark:bg-gray-800/80 flex items-center justify-between">
+          {initial ? (
+            <Link
+              to={`/dental-lab/cases/${initial.id}`}
+              onClick={onClose}
+              className="text-xs text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 flex items-center gap-1 font-medium"
+            >
+              <span>صفحة تفاصيل الحالة</span>
+              <ExternalLink className="w-3 h-3" />
+            </Link>
+          ) : <div />}
+          <div className="flex items-center gap-3">
+            <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 text-xs font-semibold">
+              {t("dentalLab.common.cancel")}
+            </button>
+            <button onClick={save} disabled={saving || !patientName.trim()} className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 flex items-center gap-2 text-xs font-bold shadow-sm">
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}{saving ? t("dentalLab.common.saving") : t("dentalLab.common.save")}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -792,6 +838,9 @@ export default function DentalCasesTab() {
     return "ACTIVE";
   });
   const [actionBusyId, setActionBusyId] = useState<string | null>(null);
+  const [layoutMode, setLayoutMode] = useState<"TABLE" | "KANBAN">(() => {
+    return (searchParams.get("layout") || "").toUpperCase() === "KANBAN" ? "KANBAN" : "TABLE";
+  });
   const pageSize = 20;
 
   const [doctors, setDoctors] = useState<DentalLabDoctor[]>([]);
@@ -1103,6 +1152,36 @@ export default function DentalCasesTab() {
           <p className="text-xs text-gray-500 dark:text-gray-400">إدارة ومتابعة مراحل الشغل وحالات المعمل</p>
         </div>
         <div className="flex items-center gap-2">
+          {/* Table / Kanban View Toggle */}
+          <div className="flex items-center bg-gray-100 dark:bg-gray-800 p-0.5 rounded-lg border border-gray-200 dark:border-gray-700 text-xs">
+            <button
+              type="button"
+              onClick={() => setLayoutMode("TABLE")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
+                layoutMode === "TABLE"
+                  ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+              }`}
+              title="عرض جدول الحالات"
+            >
+              <List className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">جدول</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setLayoutMode("KANBAN")}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-medium transition-all ${
+                layoutMode === "KANBAN"
+                  ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                  : "text-gray-500 hover:text-gray-900 dark:text-gray-400"
+              }`}
+              title="عرض لوحة مراحل التشغيل (كانبان)"
+            >
+              <Columns3 className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">كانبان</span>
+            </button>
+          </div>
+
           <button
             onClick={() => setKioskOpen(true)}
             className="flex items-center gap-2 px-3 sm:px-4 py-2 border border-blue-300 dark:border-blue-700 bg-blue-50/70 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm font-semibold shadow-sm"
@@ -1320,7 +1399,7 @@ export default function DentalCasesTab() {
         <div className="text-center py-16 text-gray-400 dark:text-gray-500">
           <p>{viewMode === "TRASH" ? "سلة المهملات فارغة لا توجد بها حالات" : t("dentalLab.common.noResults")}</p>
         </div>
-      ) : (
+      ) : layoutMode === "TABLE" ? (
         <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border dark:border-gray-700 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full min-w-[1000px] text-sm">
@@ -1458,10 +1537,10 @@ export default function DentalCasesTab() {
                           </div>
                         ) : (
                           <div className="flex items-center gap-1 flex-wrap">
-                            <a href={`/dental-lab/cases/${c.id}`} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("dentalLab.cases.open")}>
+                            <Link to={`/dental-lab/cases/${c.id}`} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded" title={t("dentalLab.cases.open")}>
                               <Eye className="w-4 h-4" />
-                            </a>
-                            <button onClick={() => { setEditingCase(c); setCreateOpen(true); }} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title={t("dentalLab.common.edit")}>
+                            </Link>
+                            <button onClick={() => { setEditingCase(c); setCreateOpen(true); }} className="p-1.5 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded" title="تعديل سريع بالدرج الجانبي">
                               <Pencil className="w-4 h-4" />
                             </button>
                             {next && (
@@ -1495,6 +1574,166 @@ export default function DentalCasesTab() {
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      ) : (
+        /* Kanban Pipeline View (معايير 2026 للوحة مراحل التشغيل) */
+        <div className="overflow-x-auto pb-4">
+          <div className="flex items-start gap-4 min-w-[1280px]">
+            {CASE_STATUSES.filter(s => s.id !== "CLOSED").map(st => {
+              const stageCases = (cases || []).filter(c => c.status === st.id);
+              return (
+                <div
+                  key={st.id}
+                  className="w-80 shrink-0 flex flex-col bg-gray-50/70 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700/70 shadow-xs max-h-[calc(100vh-300px)]"
+                >
+                  {/* Column Header */}
+                  <div className="p-3.5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-2xl">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${st.dotColor}`} />
+                      <span className="font-bold text-sm text-gray-900 dark:text-gray-100">{st.label}</span>
+                    </div>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-mono">
+                      {stageCases.length}
+                    </span>
+                  </div>
+
+                  {/* Cards Scrollable Container */}
+                  <div className="p-3 space-y-3 overflow-y-auto flex-1">
+                    {stageCases.length === 0 ? (
+                      <div className="py-8 text-center border-2 border-dashed border-gray-200 dark:border-gray-700/60 rounded-xl text-xs text-gray-400">
+                        لا توجد حالات حالياً
+                      </div>
+                    ) : (
+                      stageCases.map(c => {
+                        const next = nextStatusOf(c.status);
+                        const overdue = isCaseOverdue(c);
+                        const daysOverdue = overdue ? getDaysOverdue(c) : 0;
+                        const isSelected = selectedCaseIds.has(c.id);
+
+                        return (
+                          <div
+                            key={c.id}
+                            className={`p-3.5 rounded-xl bg-white dark:bg-gray-850 border shadow-xs hover:shadow-md transition-all flex flex-col gap-2.5 ${
+                              isSelected
+                                ? "ring-2 ring-blue-500 border-blue-400 dark:border-blue-500"
+                                : overdue
+                                  ? "border-rose-300 dark:border-rose-900/80 bg-rose-50/20"
+                                  : "border-gray-200 dark:border-gray-700/80"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <input
+                                  type="checkbox"
+                                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-3.5 h-3.5 cursor-pointer"
+                                  checked={isSelected}
+                                  onChange={() => toggleSelect(c.id)}
+                                />
+                                <Link
+                                  to={`/dental-lab/cases/${c.id}`}
+                                  className="font-mono font-bold text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                                  title="فتح تفاصيل الأوردر"
+                                >
+                                  <span>{c.caseNumber || c.id.slice(0, 8)}</span>
+                                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                                </Link>
+                              </div>
+                              {statusBadge(PRIORITY_CONFIG, c.priority)}
+                            </div>
+
+                            <div>
+                              <div className="text-xs font-bold text-gray-900 dark:text-gray-100 truncate">
+                                {c.patientName}
+                              </div>
+                              <div className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                د. {c.doctorName || "طبيب غير محدد"}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 text-[11px] bg-gray-50 dark:bg-gray-800/80 p-2 rounded-lg border border-gray-100 dark:border-gray-700/50">
+                              <span className="font-medium text-gray-700 dark:text-gray-300 truncate">
+                                {c.workTypeName || "نوع الشغل غير محدد"}
+                              </span>
+                              {c.teeth && (
+                                <span className="shrink-0 px-1.5 py-0.5 rounded bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300 text-[10px] font-bold font-mono">
+                                  🦷 {c.teeth}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between gap-1 text-[11px]">
+                              <span className="text-gray-400 text-[10px]">الفني:</span>
+                              {c.assignments && c.assignments.length > 0 ? (
+                                <div className="flex flex-wrap gap-1 justify-end max-w-[170px]">
+                                  {c.assignments.map(a => (
+                                    <span
+                                      key={a.id}
+                                      className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-purple-50 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 truncate max-w-[100px]"
+                                      title={a.technician?.name || a.technicianId}
+                                    >
+                                      {a.technician?.name || a.technicianId}
+                                    </span>
+                                  ))}
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setAssignCaseData(c)}
+                                  className="text-[10px] text-purple-600 dark:text-purple-400 hover:underline flex items-center gap-0.5 font-medium"
+                                >
+                                  <UserPlus className="w-3 h-3" />
+                                  <span>إسناد فني</span>
+                                </button>
+                              )}
+                            </div>
+
+                            <div className="flex items-center justify-between text-[11px] pt-1 border-t dark:border-gray-800">
+                              <span className="text-gray-400 text-[10px]">التسليم:</span>
+                              {overdue ? (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 animate-pulse">
+                                  <Flame className="w-3 h-3" /> متأخر {daysOverdue} يوم
+                                </span>
+                              ) : (
+                                <span className="text-gray-600 dark:text-gray-300 font-medium">
+                                  {fmtDate(c.dueDate)}
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1.5 pt-1">
+                              {next && (
+                                <button
+                                  onClick={() => setAdvanceCaseData(c)}
+                                  className="flex-1 py-1.5 px-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold flex items-center justify-center gap-1 transition-colors shadow-xs"
+                                  title={`ترقية إلى ${CASE_STATUS_MAP[next]?.label || next}`}
+                                >
+                                  <span>ترقية للمرحلة التالية</span>
+                                  <ArrowRightCircle className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => { setEditingCase(c); setCreateOpen(true); }}
+                                className="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors"
+                                title="تعديل سريع بالدرج الجانبي"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <Link
+                                to={`/dental-lab/cases/${c.id}`}
+                                className="p-1.5 text-gray-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg border border-gray-200 dark:border-gray-700 transition-colors"
+                                title="فتح صفحة تفاصيل الحالة"
+                              >
+                                <Eye className="w-3.5 h-3.5" />
+                              </Link>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
