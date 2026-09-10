@@ -65,6 +65,7 @@ const ShopTheLook = React.lazy(() => import('../sections/ShopTheLook'));
 const LookMosaic = React.lazy(() => import('../sections/LookMosaic'));
 const LookPlanner = React.lazy(() => import('../sections/LookPlanner'));
 const LookProgress = React.lazy(() => import('../sections/LookProgress'));
+const Dental3DShowcase = React.lazy(() => import('../sections/Dental3DShowcase'));
 
 const baseComponentRegistry: Record<
   string,
@@ -132,6 +133,7 @@ const baseComponentRegistry: Record<
   'look-mosaic': LookMosaic,
   'look-planner': LookPlanner,
   'look-progress': LookProgress,
+  'dental-3d-showcase': Dental3DShowcase,
 };
 
 /**

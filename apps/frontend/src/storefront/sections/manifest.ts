@@ -3332,6 +3332,24 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { key: "tabs", label: "التبويبات (label|title|image|hotspots)", type: "textarea", placeholder: "Men|Urban Rider Leather Jacket|https://...|60:28:Title:Desc:https://..." },
     ],
   },
+  "dental-3d-showcase": {
+    label: "معاينة ثلاثية الأبعاد للتركيبات (Dental 3D Showcase)",
+    component: "dental-3d-showcase",
+    note: "معاينة تفاعلية 360° لتركيبات الأسنان والزيركون مع محاكي درجات الألوان VITA ودورة العمل الرقمية CAD/CAM.",
+    pages: ["home", "shop", "pdp", "about"],
+    variants: [
+      { value: "standard", label: "قياسي" },
+      { value: "interactive-3d", label: "تفاعلي 3D" },
+      { value: "workflow-focus", label: "مسار العمل" },
+    ],
+    fields: [
+      { key: "badge", label: "الشارة", type: "text", placeholder: "Digital CAD/CAM Laboratory" },
+      { key: "title", label: "العنوان", type: "text", placeholder: "معاينة التركيبات ثلاثية الأبعاد بدقة الميكرون" },
+      { key: "subtitle", label: "الوصف", type: "textarea" },
+      { key: "ctaText", label: "نص زر الإجراء", type: "text", placeholder: "طلب كيت عينات للعيادة 📦" },
+      { key: "ctaLink", label: "رابط زر الإجراء", type: "url", placeholder: "/contact" },
+    ],
+  },
 } as const satisfies Record<string, StorefrontSectionManifestEntry>;
 
 export type StorefrontSectionId = keyof typeof STOREFRONT_SECTION_MANIFEST;
@@ -3448,6 +3466,7 @@ const STOREFRONT_SECTION_VARIANT_ALIASES = {
   "shop-product-grid": {
     legacy: "product-grid",
   },
+  "dental-3d-showcase": {},
 } as const satisfies Partial<Record<StorefrontSectionId, Record<string, string>>>;
 
 const normalizeVariantValue = (variant: string): string =>

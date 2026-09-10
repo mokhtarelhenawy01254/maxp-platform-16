@@ -498,6 +498,12 @@ const STOREFRONT_THEME_CATEGORY_PRESETS: Record<
     "portfolio-showcase",
     "معرض أعمال وخدمات",
   ),
+  "dental-lab-elite": createThemeCategoryMeta(
+    "medical",
+    "طبي وصحي",
+    "dental-lab",
+    "معمل ومختبر أسنان رقمي 3D",
+  ),
 };
 
 const getStorefrontThemeCategoryMeta = (
@@ -507,6 +513,8 @@ const getStorefrontThemeCategoryMeta = (
   DEFAULT_STOREFRONT_THEME_CATEGORY;
 
 export const STOREFRONT_THEME_DESCRIPTIONS: Record<string, string> = {
+  "dental-lab-elite":
+    "Dental Lab Elite — قالب بريميوم فائق التطور لمعامل ومختبرات الأسنان الرقمية: سرد تفاعلي ثلاثي الأبعاد 3D لمراحل CAD/CAM، ومحاكي درجات الألوان VITA، وسلايدر قبل وبعد، ومهيأ لتصدر بحث جوجل والظهور المحلي لجذب عيادات وأطباء الأسنان.",
   "creative-portfolio":
     "قالب بورتفوليو واستوديو إبداعي متكامل للمصممين، الوكالات، المستقلين، والشركات الخدمية: عرض مشاريع احترافي، مقارنة قبل وبعد، شبكة خدمات، وطلب تسعير مباشر بدون تعقيدات المتاجر التقليدية.",
   "soft-graceful":

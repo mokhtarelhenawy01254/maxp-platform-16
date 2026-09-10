@@ -6466,6 +6466,7 @@ const GENERATED_PREVIEW_FAMILY_BY_SECONDARY: Record<
   "travel-services": "travelStore",
   "home-garden": "plantsStore",
   "kids-toys": "babyStore",
+  "dental-lab": "techStore",
 };
 
 const GENERATED_PREVIEW_FAMILY_BY_PRIMARY: Record<
@@ -6491,6 +6492,7 @@ const GENERATED_PREVIEW_FAMILY_BY_PRIMARY: Record<
   grocery: "groceryStore",
   "plants-garden": "plantsStore",
   "baby-kids": "babyStore",
+  medical: "techStore",
 };
 
 const GENERATED_PHYSICAL_REVIEW_COPY: Record<string, string[]> = {

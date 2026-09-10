@@ -54,6 +54,7 @@ import softGracefulData from "./soft-graceful.json";
 import allureData from "./allure.json";
 import anjellaBoutiqueData from "./anjella-boutique.json";
 import creativePortfolioData from "./creative-portfolio.json";
+import dentalLabEliteData from "./dental-lab-elite.json";
 import { ELESSI_PACK_THEME_PRESETS } from "./elessiPack";
 import {
   StorefrontPageConfig,
@@ -717,6 +718,7 @@ export const STOREFRONT_THEME_PRESETS: Record<string, StorefrontTheme> = {
   "allure": asStorefrontTheme(allureData),
   "anjella-boutique": asStorefrontTheme(anjellaBoutiqueData),
   "creative-portfolio": asStorefrontTheme(creativePortfolioData),
+  "dental-lab-elite": asStorefrontTheme(dentalLabEliteData),
   ...ELESSI_PACK_THEME_PRESETS,
 };
 

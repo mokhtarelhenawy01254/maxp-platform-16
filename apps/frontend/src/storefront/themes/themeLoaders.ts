@@ -1,4 +1,4 @@
-﻿import type { StorefrontTheme } from "../types/theme.types";
+import type { StorefrontTheme } from "../types/theme.types";
 import { getStorefrontThemePreset, DEFAULT_STOREFRONT_THEME_ID } from "./index";
 
 export type ThemeLoaderFn = () => Promise<{ default: unknown }>;
@@ -59,6 +59,7 @@ export const DYNAMIC_THEME_REGISTRY: Record<string, ThemeLoaderFn> = {
   "soft-graceful": () => import("./soft-graceful.json"),
   "allure": () => import("./allure.json"),
   "anjella-boutique": () => import("./anjella-boutique.json"),
+  "dental-lab-elite": () => import("./dental-lab-elite.json"),
 };
 
 const THEME_CACHE = new Map<string, StorefrontTheme>();

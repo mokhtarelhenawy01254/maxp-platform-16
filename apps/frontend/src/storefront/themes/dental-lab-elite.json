@@ -1,0 +1,320 @@
+{
+  "id": "dental-lab-elite",
+  "name": "Dental Lab Elite — معمل أسنان رقمي فاخر",
+  "direction": "rtl",
+  "description": "قالب بريميوم فائق التطور لمعامل ومختبرات الأسنان الرقمية — سرد تفاعلي ثلاثي الأبعاد 3D لمراحل CAD/CAM، ومحاكي درجات الألوان VITA، وسلايدر قبل وبعد، ومهيأ لتصدر بحث جوجل والظهور المحلي.",
+  "tokens": {
+    "colors": {
+      "primary": "192 95% 48%",
+      "primaryForeground": "222 47% 7%",
+      "secondary": "217 33% 14%",
+      "secondaryForeground": "210 40% 98%",
+      "accent": "168 84% 52%",
+      "accentForeground": "222 47% 7%",
+      "background": "222 47% 7%",
+      "foreground": "210 40% 98%",
+      "muted": "217 33% 14%",
+      "mutedForeground": "215 20% 65%",
+      "border": "217 33% 20%",
+      "card": "222 47% 9%",
+      "cardForeground": "210 40% 98%",
+      "ring": "192 95% 48%"
+    },
+    "typography": {
+      "headingFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
+      "bodyFont": "\"IBM Plex Sans Arabic\", \"Inter\", sans-serif",
+      "baseSize": "16px",
+      "direction": "rtl"
+    },
+    "shape": {
+      "borderRadius": "1.25rem",
+      "buttonRadius": "0.75rem"
+    },
+    "productCard": {
+      "borderRadius": "1.25rem",
+      "boxShadow": "0 20px 50px -20px rgba(6, 182, 212, 0.25)",
+      "hoverShadow": "0 30px 60px -15px rgba(6, 182, 212, 0.4)",
+      "badgeRadius": "999px",
+      "buttonRadius": "0.75rem",
+      "surfaceOpacity": "0.95"
+    }
+  },
+  "seo": {
+    "titleTemplate": "%s | معمل أسنان رقمي متقدم CAD/CAM",
+    "description": "معمل أسنان رقمي يقدم أرقى حلول التركيبات التجميلية وزراعة الأسنان وعدسات الفينير بتقنيات CAD/CAM والطباعة ثلاثية الأبعاد بدقة ±5 ميكرون لعيادات وأطباء الأسنان."
+  },
+  "preview": {
+    "imageUrl": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=1600",
+    "colors": ["192 95% 48%", "222 47% 7%", "168 84% 52%"]
+  },
+  "header": {
+    "brandName": "APEX DENTAL LAB ✨",
+    "showSearch": false,
+    "showCart": false,
+    "announcementText": "🟢 استقبال مسحات الـ STL وPLY الرقمية على مدار الساعة لجميع عيادات الأسنان.",
+    "navigation": [
+      { "label": "الرئيسية", "to": "/" },
+      { "label": "كتالوج التركيبات والحلول", "to": "/shop" },
+      { "label": "التكنولوجيا الرقمية 3D", "to": "/about" },
+      { "label": "طلب عينات للعيادة", "to": "/contact" }
+    ],
+    "actions": [
+      { "label": "بوابة الأطباء 🩺", "to": "/dental-portal", "style": "secondary" },
+      { "label": "طلب كيت عينات مجاني 📦", "to": "/contact", "style": "primary" }
+    ]
+  },
+  "footer": {
+    "description": "APEX Digital Dental Lab — شريك أطباء وعيادات الأسنان في صناعة الابتسامة الرقمية فائقة الدقة بتقنيات CAD/CAM وخامات الزيركون والإيماكس المعتمدة عالمياً.",
+    "copyrightText": "© 2026 APEX Dental Studio. جميع الحقوق محفوظة لعيادات ومراكز طب الأسنان.",
+    "socialLinks": {
+      "instagram": "https://instagram.com",
+      "facebook": "https://facebook.com",
+      "whatsapp": "https://wa.me/201000000000"
+    },
+    "navigation": [
+      {
+        "title": "حلول التركيبات",
+        "links": [
+          { "label": "تركيبات الزيركون متعدد الطبقات", "to": "/shop" },
+          { "label": "عدسات الفينير والإيماكس التجميلي", "to": "/shop" },
+          { "label": "دعامات الزراعة المخصصة Titanium", "to": "/shop" },
+          { "label": "أدلة الجراحة الرقمية Surgical Guides", "to": "/shop" }
+        ]
+      },
+      {
+        "title": "خدمات الأطباء",
+        "links": [
+          { "label": "تسجيل الدخول لبوابة الطبيب", "to": "/dental-portal" },
+          { "label": "طلب كيت عينات وألوان للعيادة", "to": "/contact" },
+          { "label": "مواصفات مسح الـ 3D Scan المعتمدة", "to": "/about" },
+          { "label": "ضمان الجودة وشهادات المطابقة", "to": "/about" }
+        ]
+      },
+      {
+        "title": "التواصل السريع",
+        "links": [
+          { "label": "خدمة عملاء العيادات (واتساب)", "to": "/contact" },
+          { "label": "زيارة المعمل التكنولوجي", "to": "/contact" },
+          { "label": "الشحن والتسليم السريع للعيادات", "to": "/contact" }
+        ]
+      }
+    ]
+  },
+  "pages": {
+    "home": {
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "variant": "standard",
+          "settings": {
+            "badge": "CAD/CAM 2026",
+            "message": "استقبال المسحات الرقمية (STL/PLY) مباشرة من ماسحات iTero و3Shape وMedit | شحن وتوصيل فوري للعيادات خلال 24-48 ساعة",
+            "saleLabel": "دقة ميكرونية",
+            "shippingLabel": "توصيل سريع",
+            "returnLabel": "ضمان 5 سنوات",
+            "ctaText": "انضم كطبيب معتمد",
+            "ctaLink": "/contact"
+          }
+        },
+        {
+          "type": "hero-banner",
+          "variant": "split-panel",
+          "settings": {
+            "eyebrow": "معمل ومختبر أسنان رقمي فائق التطور",
+            "title": "دقة هندسية وجمال طبيعي لأرقى عيادات الأسنان",
+            "subtitle": "نحول مسحاتك الفموية الرقمية إلى تركيبات زيركون وإيماكس متناهية الدقة بهندسة CAD/CAM خماسية المحاور، لتضمن انطباقاً ميكرونياً خالياً من التعديل من أول جلسة.",
+            "ctaText": "طلب كيت عينات مجاني للعيادة 📦",
+            "ctaLink": "/contact",
+            "secondaryCtaText": "دخول بوابة الأطباء 🩺",
+            "secondaryCtaLink": "/dental-portal",
+            "image": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=1200",
+            "imageAlt": "مختبر أسنان رقمي متطور",
+            "badge": "دقة ±5 ميكرون معتمدة",
+            "features": "مسح رقمي فوري ثلاثي الأبعاد|تفريز خماسي المحاور 5-Axis|خامات زيركون ألمانية معتمدة|ضمان استبدال رسمي 5 سنوات"
+          }
+        },
+        {
+          "type": "dental-3d-showcase",
+          "variant": "interactive-3d",
+          "settings": {
+            "badge": "Digital CAD/CAM Laboratory 2026",
+            "title": "معاينة التركيبات ثلاثية الأبعاد بدقة الميكرون",
+            "subtitle": "اختبر دقة محاكاة الخزف الرقمي، وتدرج شفافية الزيركون وتطابق الألوان بدقة هندسية حقيقية قبل بدء التفريز.",
+            "ctaText": "طلب كيت عينات للعيادة 📦",
+            "ctaLink": "/contact"
+          }
+        },
+        {
+          "type": "tech-grid",
+          "settings": {
+            "badge": "حلول التركيبات الرقمية",
+            "title": "أحدث خامات وتقنيات الأسنان المعتمدة عالمياً",
+            "subtitle": "نعتمد فقط أفضل الخامات الطبية المتوافقة حيوياً لتلبية متطلبات الحالات التجميلية والعلاجية المعقدة.",
+            "viewAllText": "استعرض كل الخدمات والأسعار",
+            "borderGlow": true,
+            "blur": 16,
+            "items": [
+              {
+                "title": "زيركون متعدد الطبقات 5Y-PSZ",
+                "price": "دقة تفريز ±5µm",
+                "image": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=600",
+                "description": "تدرج شفافية طبيعي يماثل المينا العاجية مع مقاومة انحناء تتجاوز 1200 ميجاباسكال."
+              },
+              {
+                "title": "عدسات إيماكس التجميلية IPS e.max",
+                "price": "سماكة فائقة 0.3mm",
+                "image": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&q=80&w=600",
+                "description": "خزف زجاجي فائق الشفافية يعكس الضوء بحيوية طبيعية تامة للحالات الأمامية وابتسامة هوليوود."
+              },
+              {
+                "title": "دعامات الزراعة المخصصة Titanium Custom",
+                "price": "ملف تتبع طبيعي",
+                "image": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=600",
+                "description": "تصميم خط لثوي تشريحي مخصص يضمن نمو اللثة وحمايتها من الالتهابات حول الزرعة."
+              },
+              {
+                "title": "أطقم هجينة All-on-4 / All-on-6",
+                "price": "ثبات وهيكل متين",
+                "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=600",
+                "description": "إعادة تأهيل الفك الكامل بهيكل زيركون مقوى أو بييك طبي فائق الخفة والصلابة."
+              }
+            ]
+          }
+        },
+        {
+          "type": "before-after",
+          "settings": {
+            "badge": "النتائج السريرية والتجميلية",
+            "title": "مقارنة دقة خط الإنهاء وتطابق درجات اللون",
+            "subtitle": "شاهد كيف تحول السن المحضر إلى تركيبة خزفية متناسقة تحاكي الطبيعة التشريحية للأسنان المجاورة.",
+            "beforeImage": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=1600",
+            "afterImage": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=1600",
+            "beforeLabel": "تحضير السن والمسح الرقمي (قبل)",
+            "afterLabel": "التركيبة النهائية التجميلية (بعد)"
+          }
+        },
+        {
+          "type": "reviews",
+          "settings": {
+            "title": "ماذا يقول نخبة أطباء وجراحي الأسنان عنا؟",
+            "subtitle": "ثقة متبادلة مع أكثر من 120 عيادة ومركز أسنان متخصص يعتمدون علينا في حالاتهم اليومية والمعقدة.",
+            "showWriteReview": false,
+            "reviews": "د. أحمد الشناوي|استشاري التركيبات وزراعة الأسنان|تعاملت مع العديد من المعامل، لكن دقة الـ CAD/CAM هنا وانطباق الحواف من أول تجربة وفر عليّ وعلى مرضاي وقت الجلسات بالكامل.|https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=200|5\nد. سارة فهمي|أخصائية تجميل وابتسامة الأسنان|تطابق ألوان الزيركون والشفافية الطبيعية لعدسات الإيماكس مبهر جداً. المرضى دائماً منبهرين بالنتيجة الطبيعية غير المصطنعة.|https://images.unsplash.com/photo-1594824813580-ff67f8149e6d?auto=format&fit=crop&q=80&w=200|5\nد. محمود عبد الرحمن|مدير مركز طب الأسنان التخصصي|بوابة الأطباء الرقمية سهلت علينا إرسال ملفات الـ STL ومتابعة مراحل التصنيع لحظة بلحظة مع التزام تام بمواعيد التسليم.|https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=200|5"
+          }
+        },
+        {
+          "type": "info-content",
+          "settings": {
+            "badge": "معايير الجودة والاعتماد",
+            "title": "لماذا يعتمد كبار استشاريي الأسنان على معملنا؟",
+            "subtitle": "نجمع بين الحرفية الألمانية في التفريز والأيدي الفنية الماهرة لنقدم لعيادتك أعلى مقاييس النجاح السريري.",
+            "body": [
+              "استخدام خامات معتمدة طبياً 100% من كبرى الشركات الألمانية والسويسرية مع شهادات مطابقة بيولوجية.",
+              "دعم كامل لكافة صيغ الماسحات الفموية الرقمية بدون وسيط، مع فحص رقمي فوري لملف المسح قبل بدء الإنتاج.",
+              "تسليم سريع ومؤكد مع تغليف طبي معقم وكود تتبع خاص بكل حالة لحفظ تاريخ المريض وسجل التركيبة."
+            ],
+            "detailsTitle": "مؤشرات الثقة والأداء",
+            "details": [
+              "دقة الهامش التشريحي|±5 ميكرون",
+              "معدل تطابق الجلسة الأولى|99.8%",
+              "سرعة تنفيذ الحالات العاجلة|24 ساعة",
+              "ضمان استبدال وإعادة تصنيع|5 سنوات كاملة"
+            ],
+            "ctaText": "انضم إلى شبكة الأطباء المعتمدين",
+            "ctaLink": "/contact"
+          }
+        }
+      ]
+    },
+    "shop": {
+      "layoutHint": "commerce-3col",
+      "pageGoal": "discovery",
+      "sections": [
+        {
+          "type": "shop-command-bar",
+          "variant": "default-discovery"
+        },
+        {
+          "type": "filters-sidebar",
+          "settings": {
+            "badge": "كتالوج خدمات المعمل",
+            "title": "حلول وتركيبات الأسنان الرقمية",
+            "subtitle": "تصفح أنواع التركيبات والخامات المعتمدة مع بيان مدد التنفيذ والمواصفات الفنية."
+          }
+        },
+        {
+          "type": "product-grid",
+          "variant": "standard",
+          "settings": {
+            "title": "جميع أنواع الشغل والتركيبات",
+            "subtitle": "اختر نوع التركيبة للاطلاع على التفاصيل وإرسال أمر الشغل عبر بوابة الطبيب."
+          }
+        }
+      ]
+    },
+    "pdp": {
+      "layoutHint": "product-detail",
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "product-gallery",
+          "variant": "standard"
+        },
+        {
+          "type": "product-info",
+          "variant": "standard"
+        },
+        {
+          "type": "dental-3d-showcase",
+          "variant": "workflow-focus",
+          "settings": {
+            "badge": "مواصفات الخامة والإنتاج",
+            "title": "دقة التفريز ومعايير التصنيع",
+            "subtitle": "فحص الميكرون وخطة العمل المتبعة لهذه التركيبة داخل معملنا."
+          }
+        },
+        {
+          "type": "related-products",
+          "variant": "standard"
+        }
+      ]
+    },
+    "cart": {
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "promo-strip",
+          "settings": {
+            "badge": "سلة أوامر الشغل",
+            "message": "تأكيد طلبات التركيبات وإرفاق ملفات المسح الرقمي للعيادة.",
+            "saleLabel": "فحص فوري",
+            "shippingLabel": "توصيل للعيادة",
+            "returnLabel": "ضمان 5 سنوات"
+          }
+        },
+        {
+          "type": "cart-items",
+          "variant": "standard"
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted"
+        }
+      ]
+    },
+    "checkout": {
+      "pageGoal": "conversion",
+      "sections": [
+        {
+          "type": "checkout-form",
+          "variant": "standard"
+        },
+        {
+          "type": "order-summary",
+          "variant": "highlighted"
+        }
+      ]
+    }
+  }
+}
