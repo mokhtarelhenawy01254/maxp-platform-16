@@ -1360,7 +1360,7 @@ const getCaseDetail = async (req, res) => {
   }
 };
 
-const CASE_UPDATE_FIELDS = ['patientName', 'patientPhone', 'teeth', 'shade', 'material', 'lotNumber', 'materialBrand', 'warrantyYears', 'priority', 'notes', 'dueDate'];
+const CASE_UPDATE_FIELDS = ['patientName', 'patientPhone', 'teeth', 'shade', 'material', 'lotNumber', 'materialBrand', 'warrantyYears', 'priority', 'notes', 'dueDate', 'unitsCount', 'unitPrice'];
 
 const updateCase = async (req, res) => {
   try {
@@ -1373,7 +1373,7 @@ const updateCase = async (req, res) => {
     if (!existing) return res.status(404).json({ success: false, error: 'الحالة غير موجودة' });
 
     // RECEPTION لا يعدل الحقول المالية
-    const financialFields = ['priceSnapshot', 'discount', 'paid', 'doctorId', 'workTypeId', 'workTypeName'];
+    const financialFields = ['priceSnapshot', 'discount', 'paid', 'doctorId', 'workTypeId', 'workTypeName', 'unitPrice', 'unitsCount'];
     const hasFinancialChange = financialFields.some((f) => f in body);
     if (hasFinancialChange) {
       const teamRolesUpd = await require('../services/dentalRoles').loadTeamRoles(companyId);
@@ -1405,6 +1405,15 @@ const updateCase = async (req, res) => {
       data.priority = priority;
     }
 
+    if ('unitsCount' in body) {
+      const uc = parseInt(body.unitsCount, 10);
+      data.unitsCount = !isNaN(uc) && uc > 0 ? uc : 1;
+    }
+    if ('unitPrice' in body) {
+      const up = toNonNegativeNumber(body.unitPrice, 0);
+      if (up.valid) data.unitPrice = up.value;
+    }
+
     if ('doctorId' in body) {
       const doctorId = body.doctorId || null;
       if (doctorId) {
@@ -1432,13 +1441,26 @@ const updateCase = async (req, res) => {
         if (!workType) return res.status(400).json({ success: false, error: 'نوع الشغل لا ينتمي لهذه الشركة' });
         data.workTypeId = workTypeId;
         data.workTypeName = workType.name;
-        if (!('priceSnapshot' in body)) priceSnapshot = Number(workType.price) || 0;
+        if (!('unitPrice' in body)) {
+          data.unitPrice = Number(workType.price) || 0;
+        }
+        if (!('priceSnapshot' in body)) {
+          const uc = data.unitsCount !== undefined ? data.unitsCount : (existing.unitsCount || 1);
+          const up = data.unitPrice !== undefined ? data.unitPrice : (Number(workType.price) || 0);
+          priceSnapshot = round2(uc * up);
+        }
       } else {
         data.workTypeId = null;
         data.workTypeName = null;
       }
     } else if ('workTypeName' in body) {
       data.workTypeName = body.workTypeName ? String(body.workTypeName).trim() : null;
+    } else if (('unitsCount' in body || 'unitPrice' in body) && !('priceSnapshot' in body)) {
+      const uc = data.unitsCount !== undefined ? data.unitsCount : (existing.unitsCount || 1);
+      const up = data.unitPrice !== undefined ? data.unitPrice : (existing.unitPrice || 0);
+      if (up > 0) {
+        priceSnapshot = round2(uc * up);
+      }
     }
 
     let discount = Number(existing.discount) || 0;
@@ -1475,8 +1497,8 @@ const updateCase = async (req, res) => {
     data.remaining = remaining;
     data.paymentStatus = derivePaymentStatus(total, paid);
 
-    const dentalCase = await prisma.dentalLabCase.update({ where: { id }, data, include: CASE_LIST_INCLUDE });
-    res.json({ success: true, data: dentalCase });
+    const dentalCase = await prisma.dentalLabCase.update({ where: { id }, data, include: CASE_DETAIL_INCLUDE });
+    res.json({ success: true, data: serializeDentalCaseDetail(dentalCase) });
   } catch (error) {
     console.error('Error updating dental case:', error);
     res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الحالة' });

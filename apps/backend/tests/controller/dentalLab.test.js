@@ -382,6 +382,61 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
     });
   });
 
+  describe('updateCase', () => {
+    test('updates unitsCount, unitPrice, recalculates priceSnapshot and total', async () => {
+      const prisma = createPrisma();
+      const existing = makeCase({
+        id: 'case-upd-1',
+        unitsCount: 1,
+        unitPrice: 200,
+        priceSnapshot: 200,
+        discount: 0,
+        total: 200,
+        paid: 50,
+      });
+      prisma.dentalLabCase.findFirst.mockResolvedValue(existing);
+      prisma.dentalLabCase.update.mockImplementation(({ data }) => ({ ...existing, ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateCase(
+        req({
+          params: { id: 'case-upd-1' },
+          body: {
+            unitsCount: 3,
+            unitPrice: 300,
+            patientName: 'أحمد محمود المحدث',
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      const updateData = prisma.dentalLabCase.update.mock.calls[0][0].data;
+      expect(updateData.unitsCount).toBe(3);
+      expect(updateData.unitPrice).toBe(300);
+      expect(updateData.priceSnapshot).toBe(900);
+      expect(updateData.total).toBe(900);
+      expect(updateData.remaining).toBe(850);
+      expect(updateData.patientName).toBe('أحمد محمود المحدث');
+    });
+
+    test('returns 404 if case does not exist', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findFirst.mockResolvedValue(null);
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.updateCase(
+        req({ params: { id: 'non-existent' }, body: { patientName: 'test' } }),
+        res
+      );
+
+      expect(res.statusCode).toBe(404);
+      expect(res.payload.error).toBe('الحالة غير موجودة');
+    });
+  });
+
   describe('listCases', () => {
     test('applies filters, search, pagination and includes doctor + workType', async () => {
       const prisma = createPrisma();

@@ -5,15 +5,17 @@ import { toast } from "sonner";
 import DentalModelViewer from "./DentalModelViewer";
 import OdontogramChart from "./OdontogramChart";
 import {
-  AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, FileDown, FileText, History,
-  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, X as XMarkIcon, XCircle,
+  AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, Eye, FileDown, FileText, History,
+  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, UserX, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
   CASE_STATUSES, CASE_STATUS_MAP, PRIORITY_CONFIG, PAYMENT_STATUS_MAP, ROLE_CONFIG, STAGE_STATUS_MAP,
   DentalCaseHistoryEntry, DentalCaseStage, DentalCaseAttachment, DentalInvoice, DentalTechnician,
   DentalQualityCheck, DentalRefabrication, DentalCaseStatus, DentalLabCaseDetail, RefabricationStage, CreditNote,
+  DentalLabDoctor, DentalWorkType, DentalCasePriority,
   fetchCaseDetail, advanceCase, updateCase, deleteCaseAttachment,
-  addInvoicePayment, fetchTechnicians, fetchCaseFileBlob, fetchWorkOrderPdf, fetchPanLabelPdf, fetchWarrantyCertificatePdf,
+  addInvoicePayment, fetchTechnicians, fetchDoctors, fetchWorkTypes, addStageAssignee, removeStageAssignee,
+  fetchCaseFileBlob, fetchWorkOrderPdf, fetchPanLabelPdf, fetchWarrantyCertificatePdf,
   sendCaseToTryIn, returnCaseFromTryIn, downloadAllFiles,
   recordQualityCheck, flagRefabrication, resolveRefabrication,
   trashCase, restoreCase, permanentDeleteCase,
@@ -606,6 +608,9 @@ export default function DentalCaseDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [technicians, setTechnicians] = useState<DentalTechnician[]>([]);
+  const [doctors, setDoctors] = useState<DentalLabDoctor[]>([]);
+  const [workTypes, setWorkTypes] = useState<DentalWorkType[]>([]);
+  const [assignStage, setAssignStage] = useState<DentalCaseStage | null>(null);
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
   const [paymentInvoice, setPaymentInvoice] = useState<DentalInvoice | null>(null);
@@ -755,6 +760,18 @@ export default function DentalCaseDetailPage() {
         setTechnicians(list);
       })
       .catch(() => setTechnicians([]));
+    fetchDoctors({ all: true })
+      .then((res) => {
+        const list = Array.isArray(res) ? res : [];
+        setDoctors(list);
+      })
+      .catch(() => setDoctors([]));
+    fetchWorkTypes()
+      .then((res) => {
+        const list = Array.isArray(res) ? res : [];
+        setWorkTypes(list);
+      })
+      .catch(() => setWorkTypes([]));
   }, [refresh]);
 
   // Max file size (50MB) — matches backend upload limit. Hard cap to
@@ -1001,6 +1018,8 @@ export default function DentalCaseDetailPage() {
     { label: t("dentalLab.cases.patientPhone"), value: c.patientPhone ? <span dir="ltr">{c.patientPhone}</span> : "—" },
     { label: t("dentalLab.cases.doctor"), value: c.doctorName || "—" },
     { label: t("dentalLab.cases.workType"), value: c.workTypeName || "—" },
+    { label: "عدد الوحدات", value: c.unitsCount ? `${c.unitsCount} وحدات` : "1 وحدة" },
+    { label: "سعر الوحدة", value: c.unitPrice ? fmtMoney(c.unitPrice) : "—" },
     { label: t("dentalLab.cases.teeth"), value: c.teeth || "—" },
     { label: t("dentalLab.cases.shade"), value: c.shade || "—" },
     { label: t("dentalLab.cases.material"), value: c.material || "—" },
@@ -1078,8 +1097,11 @@ export default function DentalCaseDetailPage() {
             <RefreshCw className="w-4 h-4" />{t("dentalLab.common.refresh")}
           </button>
           {!c.isDeleted && (
-            <button onClick={() => setStatusOpen(true)} className="flex items-center gap-2 px-4 py-2 border dark:border-gray-600 rounded-lg text-sm hover:bg-gray-50 dark:hover:bg-gray-700">
-              <Pencil className="w-4 h-4" />{t("dentalLab.detail.editStatus")}
+            <button
+              onClick={() => setStatusOpen(true)}
+              className="flex items-center gap-2 px-3.5 py-2 border border-blue-200 dark:border-blue-800 bg-blue-50/80 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 rounded-lg text-sm font-semibold hover:bg-blue-100 dark:hover:bg-blue-900/60 shadow-sm transition-colors"
+            >
+              <Pencil className="w-4 h-4" /> تعديل الحالة بالكامل
             </button>
           )}
           {next && !c.isTryIn && !c.isDeleted && (
@@ -1316,21 +1338,39 @@ export default function DentalCaseDetailPage() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-300">
-                      <th className="text-right py-2 px-2">{t("dentalLab.detail.stageName")}</th>
-                      <th className="text-right py-2 px-2">{t("dentalLab.detail.assignee")}</th>
-                      <th className="text-right py-2 px-2">{t("dentalLab.common.status")}</th>
-                      <th className="text-right py-2 px-2">{t("dentalLab.detail.startedAt")}</th>
-                      <th className="text-right py-2 px-2">{t("dentalLab.detail.completedAt")}</th>
+                      <th className="text-right py-2.5 px-3">{t("dentalLab.detail.stageName")}</th>
+                      <th className="text-right py-2.5 px-3">{t("dentalLab.detail.assignee")}</th>
+                      <th className="text-right py-2.5 px-3">{t("dentalLab.common.status")}</th>
+                      <th className="text-right py-2.5 px-3">{t("dentalLab.detail.startedAt")}</th>
+                      <th className="text-right py-2.5 px-3">{t("dentalLab.detail.completedAt")}</th>
+                      <th className="text-right py-2.5 px-3">إسناد الفني</th>
                     </tr>
                   </thead>
                   <tbody>
                     {stages.map(s => (
-                      <tr key={s.id} className="border-b dark:border-gray-700 last:border-b-0">
-                        <td className="py-2 px-2 font-medium">{s.name}</td>
-                        <td className="py-2 px-2">{s.assigneeName || "—"}</td>
-                        <td className="py-2 px-2">{badge(STAGE_STATUS_MAP, s.status) ?? <span className="text-gray-400">{s.status}</span>}</td>
-                        <td className="py-2 px-2">{fmtDate(s.startedAt)}</td>
-                        <td className="py-2 px-2">{fmtDate(s.completedAt)}</td>
+                      <tr key={s.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-gray-900/30">
+                        <td className="py-2.5 px-3 font-medium">{s.name}</td>
+                        <td className="py-2.5 px-3">
+                          <span className={s.assigneeName ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-400 italic text-xs"}>
+                            {s.assigneeName || "غير محدد"}
+                          </span>
+                        </td>
+                        <td className="py-2.5 px-3">{badge(STAGE_STATUS_MAP, s.status) ?? <span className="text-gray-400">{s.status}</span>}</td>
+                        <td className="py-2.5 px-3 text-xs">{fmtDate(s.startedAt)}</td>
+                        <td className="py-2.5 px-3 text-xs">{fmtDate(s.completedAt)}</td>
+                        <td className="py-2.5 px-3">
+                          {!c.isDeleted && (
+                            <button
+                              type="button"
+                              onClick={() => setAssignStage(s)}
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                              title={s.assigneeName ? "تغيير الفني المسند" : "إسناد فني للمرحلة"}
+                            >
+                              <UserCheck className="w-3.5 h-3.5" />
+                              {s.assigneeName ? "تغيير" : "تعيين فني"}
+                            </button>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -1682,7 +1722,23 @@ export default function DentalCaseDetailPage() {
       )}
 
       {statusOpen && (
-        <EditStatusModal caseData={c} onClose={() => setStatusOpen(false)} onSaved={() => { setStatusOpen(false); refresh(); }} />
+        <EditCaseModal
+          caseData={c}
+          doctors={doctors}
+          workTypes={workTypes}
+          onClose={() => setStatusOpen(false)}
+          onSaved={() => { setStatusOpen(false); refresh(); }}
+        />
+      )}
+
+      {assignStage && (
+        <AssignStageModal
+          caseId={c.id}
+          stage={assignStage}
+          technicians={technicians}
+          onClose={() => setAssignStage(null)}
+          onSaved={() => { setAssignStage(null); refresh(); }}
+        />
       )}
 
       {tryInSendOpen && (
@@ -1788,32 +1844,211 @@ function AdvanceModal({ caseData, next, technicians, onClose, onSaved }: Advance
   );
 }
 
-interface EditStatusModalProps {
-  caseData: DentalLabCaseDetail;
+interface AssignStageModalProps {
+  caseId: string;
+  stage: DentalCaseStage;
+  technicians: DentalTechnician[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-function EditStatusModal({ caseData, onClose, onSaved }: EditStatusModalProps) {
+function AssignStageModal({ caseId, stage, technicians, onClose, onSaved }: AssignStageModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
-  const [status, setStatus] = useState(caseData.status);
-  const [lotNumber, setLotNumber] = useState(caseData.lotNumber || "");
-  const [materialBrand, setMaterialBrand] = useState(caseData.materialBrand || "");
-  const [warrantyYears, setWarrantyYears] = useState(caseData.warrantyYears || 0);
+  const [technicianId, setTechnicianId] = useState(stage.assigneeId || "");
+  const [role, setRole] = useState("PRIMARY");
+  const [notes, setNotes] = useState("");
+
+  const handleAssign = async () => {
+    if (!technicianId) {
+      toast.error("يرجى اختيار الفني المسند للمرحلة");
+      return;
+    }
+    setSaving(true);
+    try {
+      await addStageAssignee(caseId, stage.id, {
+        technicianId,
+        role,
+        sharePercent: 100,
+        notes: notes.trim() || undefined,
+      });
+      toast.success("تم إسناد الفني للمرحلة بنجاح");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleUnassign = async () => {
+    if (!stage.assigneeId) return;
+    if (!window.confirm("هل أنت متأكد من إلغاء إسناد الفني من هذه المرحلة؟")) return;
+    setSaving(true);
+    try {
+      await removeStageAssignee(caseId, stage.id, stage.assigneeId);
+      toast.success("تم إلغاء إسناد الفني");
+      onSaved();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => !saving && onClose()}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-md w-full`} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4 border-b dark:border-gray-700 pb-3">
+          <h3 className="text-base font-bold flex items-center gap-2">
+            <UserCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+            إسناد فني لمرحلة: <span className="text-blue-600 dark:text-blue-400">{stage.name}</span>
+          </h3>
+          <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
+            <XMarkIcon className="w-5 h-5" />
+          </button>
+        </div>
+        <div className="space-y-4 text-sm">
+          <div>
+            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">اختر الفني المسؤول *</label>
+            <select className={MODAL_INPUT_CLS} value={technicianId} onChange={e => setTechnicianId(e.target.value)}>
+              <option value="">— اختر فني —</option>
+              {technicians.filter(x => x.isActive).map(x => (
+                <option key={x.id} value={x.id}>
+                  {x.name} ({x.role})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">دور الفني في هذه المرحلة</label>
+            <select className={MODAL_INPUT_CLS} value={role} onChange={e => setRole(e.target.value)}>
+              <option value="PRIMARY">فني رئيسي للمرحلة (Primary)</option>
+              <option value="ASSISTANT">مساعد (Assistant)</option>
+              <option value="QC">مراجعة وفحص (QC)</option>
+              <option value="FINISHER">تشطيب نهائي (Finisher)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات للمرحلة</label>
+            <input className={MODAL_INPUT_CLS} value={notes} onChange={e => setNotes(e.target.value)} placeholder="تعليمات خاصة للفني..." />
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-3 mt-6 pt-3 border-t dark:border-gray-700">
+          {stage.assigneeId ? (
+            <button
+              type="button"
+              onClick={handleUnassign}
+              disabled={saving}
+              className="px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/60 disabled:opacity-50"
+            >
+              إلغاء الإسناد
+            </button>
+          ) : <div />}
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
+              {t("dentalLab.common.cancel")}
+            </button>
+            <button onClick={handleAssign} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 font-semibold">
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {stage.assigneeId ? "تحديث الإسناد" : "تأكيد الإسناد"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface EditCaseModalProps {
+  caseData: DentalLabCaseDetail;
+  doctors: DentalLabDoctor[];
+  workTypes: DentalWorkType[];
+  onClose: () => void;
+  onSaved: () => void;
+}
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+function EditCaseModal({ caseData, doctors, workTypes, onClose, onSaved }: EditCaseModalProps) {
+  const { t } = useTranslation();
+  const [saving, setSaving] = useState(false);
+  const [doctorId, setDoctorId] = useState(caseData.doctorId || "");
+  const [patientName, setPatientName] = useState(caseData.patientName || "");
+  const [patientPhone, setPatientPhone] = useState(caseData.patientPhone || "");
+  const [workTypeId, setWorkTypeId] = useState(caseData.workTypeId || "");
+  const [workTypeName, setWorkTypeName] = useState(caseData.workTypeName || "");
+  const [unitsCount, setUnitsCount] = useState<number>(caseData.unitsCount || 1);
+  const [unitPrice, setUnitPrice] = useState<number>(caseData.unitPrice || 0);
+  const [priceSnapshot, setPriceSnapshot] = useState<number>(caseData.priceSnapshot || 0);
+  const [discount, setDiscount] = useState<number>(caseData.discount || 0);
+  const [dueDate, setDueDate] = useState(caseData.dueDate ? caseData.dueDate.slice(0, 10) : "");
+  const [priority, setPriority] = useState<DentalCasePriority>((caseData.priority as DentalCasePriority) || "NORMAL");
+  const [status, setStatus] = useState<DentalCaseStatus>((caseData.status as DentalCaseStatus) || "RECEIVED");
+  const [selectedTeeth, setSelectedTeeth] = useState<string[]>(
+    caseData.teeth ? caseData.teeth.split(/[,،\s]+/).filter(Boolean) : []
+  );
   const [teeth, setTeeth] = useState(caseData.teeth || "");
   const [shade, setShade] = useState(caseData.shade || "");
   const [material, setMaterial] = useState(caseData.material || "");
+  const [lotNumber, setLotNumber] = useState(caseData.lotNumber || "");
+  const [materialBrand, setMaterialBrand] = useState(caseData.materialBrand || "");
+  const [warrantyYears, setWarrantyYears] = useState(caseData.warrantyYears || 0);
   const [notes, setNotes] = useState(caseData.notes || "");
+
+  const onWorkTypeChange = (wtId: string) => {
+    setWorkTypeId(wtId);
+    const wt = workTypes.find(w => w.id === wtId);
+    if (wt) {
+      setWorkTypeName(wt.name);
+      const pr = Number(wt.price) || 0;
+      setUnitPrice(pr);
+      setPriceSnapshot(round2(pr * (unitsCount || 1)));
+      if (wt.defaultMaterial && !material) setMaterial(wt.defaultMaterial);
+      if (wt.materialBrand && !materialBrand) setMaterialBrand(wt.materialBrand);
+      if (wt.defaultWarrantyYears != null && !warrantyYears) setWarrantyYears(wt.defaultWarrantyYears);
+    }
+  };
+
+  const handleUnitsCountChange = (count: number) => {
+    const validCount = Math.max(1, count);
+    setUnitsCount(validCount);
+    if (unitPrice > 0) {
+      setPriceSnapshot(round2(validCount * unitPrice));
+    }
+  };
+
+  const handleUnitPriceChange = (price: number) => {
+    const validPrice = Math.max(0, price);
+    setUnitPrice(validPrice);
+    if (unitsCount > 0) {
+      setPriceSnapshot(round2(unitsCount * validPrice));
+    }
+  };
 
   const save = async () => {
     if (saving) return;
+    if (!patientName.trim()) {
+      toast.error(t("dentalLab.common.name"));
+      return;
+    }
     setSaving(true);
     try {
       if (status !== caseData.status) {
         await advanceCase(caseData.id, { status: status as DentalCaseStatus });
       }
       await updateCase(caseData.id, {
+        doctorId: doctorId || undefined,
+        patientName: patientName.trim(),
+        patientPhone: patientPhone.trim() || undefined,
+        workTypeId: workTypeId || undefined,
+        workTypeName: workTypeName.trim() || undefined,
+        unitsCount: Math.max(1, Number(unitsCount) || 1),
+        unitPrice: Math.max(0, Number(unitPrice) || 0),
+        priceSnapshot: Math.max(0, Number(priceSnapshot) || 0),
+        discount: Math.max(0, Number(discount) || 0),
+        dueDate: dueDate || undefined,
+        priority: priority as DentalCasePriority,
         teeth: teeth.trim() || undefined,
         shade: shade.trim() || undefined,
         material: material.trim() || undefined,
@@ -1831,61 +2066,191 @@ function EditStatusModal({ caseData, onClose, onSaved }: EditStatusModalProps) {
     }
   };
 
+  const labelCls = "block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1";
+  const sectionTitleCls = "text-sm font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2 border-b dark:border-gray-700 pb-2 mb-3";
+
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => !saving && onClose()}>
-      <div className={`${MODAL_CONTENT_CLS} max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-bold">تعديل بيانات الحالة والضمان</h3>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onClick={() => !saving && onClose()}>
+      <div className={`${MODAL_CONTENT_CLS} !max-w-4xl max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-5 border-b dark:border-gray-700 pb-3">
+          <div>
+            <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">تعديل بيانات الحالة بالكامل</h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              رقم الحالة: <span className="font-mono font-semibold">{caseData.caseNumber}</span>
+            </p>
+          </div>
           <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
-        <div className="space-y-4 text-sm">
+
+        <div className="space-y-6 text-sm">
+          {/* Section 1: Doctor & Patient */}
+          <div className="bg-gray-50/70 dark:bg-gray-800/40 p-4 rounded-xl border dark:border-gray-700/60">
+            <h4 className={sectionTitleCls}>
+              👤 بيانات الطبيب والمريض
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div>
+                <label className={labelCls}>الطبيب المعالج *</label>
+                <select className={MODAL_INPUT_CLS} value={doctorId} onChange={e => setDoctorId(e.target.value)}>
+                  <option value="">— اختر الطبيب —</option>
+                  {doctors.filter(d => d.isActive).map(d => (
+                    <option key={d.id} value={d.id}>
+                      {d.name} {d.clinicName ? `(${d.clinicName})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>اسم المريض *</label>
+                <input className={MODAL_INPUT_CLS} value={patientName} onChange={e => setPatientName(e.target.value)} placeholder="اسم المريض" />
+              </div>
+              <div>
+                <label className={labelCls}>هاتف المريض</label>
+                <input className={MODAL_INPUT_CLS} value={patientPhone} onChange={e => setPatientPhone(e.target.value)} placeholder="01xxxxxxxxx" dir="ltr" />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2: Work & Units */}
+          <div className="bg-gray-50/70 dark:bg-gray-800/40 p-4 rounded-xl border dark:border-gray-700/60">
+            <h4 className={sectionTitleCls}>
+              ⚙️ مواصفات الشغل والأسنان
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              <div>
+                <label className={labelCls}>نوع الشغل *</label>
+                <select className={MODAL_INPUT_CLS} value={workTypeId} onChange={e => onWorkTypeChange(e.target.value)}>
+                  <option value="">— اختر نوع الشغل —</option>
+                  {workTypes.filter(w => w.isActive).map(w => (
+                    <option key={w.id} value={w.id}>{w.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>عدد الوحدات / الكراونات</label>
+                <input
+                  className={MODAL_INPUT_CLS}
+                  type="number"
+                  min="1"
+                  value={unitsCount}
+                  onChange={e => handleUnitsCountChange(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>سعر الوحدة</label>
+                <input
+                  className={MODAL_INPUT_CLS}
+                  type="number"
+                  min="0"
+                  value={unitPrice}
+                  onChange={e => handleUnitPriceChange(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>اللون (Shade)</label>
+                <input className={MODAL_INPUT_CLS} value={shade} onChange={e => setShade(e.target.value)} placeholder="مثال: A1, A2, BL2" />
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <label className={labelCls}>تحديد الأسنان بالخريطة التفاعلية (FDI Odontogram)</label>
+              <OdontogramChart
+                selectedTeeth={selectedTeeth}
+                onChange={(arr) => {
+                  setSelectedTeeth(arr);
+                  setTeeth(arr.join(", "));
+                }}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label className={labelCls}>الخامة (Material)</label>
+                <input className={MODAL_INPUT_CLS} value={material} onChange={e => setMaterial(e.target.value)} placeholder="زيركون، إيماكس، PFM..." />
+              </div>
+              <div>
+                <label className={labelCls}>الشركة المصنعة / الماركة</label>
+                <input className={MODAL_INPUT_CLS} value={materialBrand} onChange={e => setMaterialBrand(e.target.value)} placeholder="Ivoclar, Wieland, Aidite..." />
+              </div>
+              <div>
+                <label className={labelCls}>رقم التشغيلة (Lot #)</label>
+                <input className={MODAL_INPUT_CLS} value={lotNumber} onChange={e => setLotNumber(e.target.value)} placeholder="LOT-2026-XXXX" />
+              </div>
+              <div>
+                <label className={labelCls}>سنوات الضمان</label>
+                <input className={MODAL_INPUT_CLS} type="number" min="0" max="20" value={warrantyYears} onChange={e => setWarrantyYears(Number(e.target.value))} />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: Financial & Dates */}
+          <div className="bg-gray-50/70 dark:bg-gray-800/40 p-4 rounded-xl border dark:border-gray-700/60">
+            <h4 className={sectionTitleCls}>
+              💰 الأسعار والجدولة
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div>
+                <label className={labelCls}>الإجمالي قبل الخصم</label>
+                <input
+                  className={MODAL_INPUT_CLS}
+                  type="number"
+                  min="0"
+                  value={priceSnapshot}
+                  onChange={e => setPriceSnapshot(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>قيمة الخصم</label>
+                <input
+                  className={MODAL_INPUT_CLS}
+                  type="number"
+                  min="0"
+                  value={discount}
+                  onChange={e => setDiscount(Number(e.target.value))}
+                />
+              </div>
+              <div>
+                <label className={labelCls}>تاريخ التسليم المتوقع</label>
+                <input className={MODAL_INPUT_CLS} type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} />
+              </div>
+              <div>
+                <label className={labelCls}>الأولوية</label>
+                <select className={MODAL_INPUT_CLS} value={priority} onChange={e => setPriority(e.target.value as DentalCasePriority)}>
+                  {(Object.keys(PRIORITY_CONFIG) as (keyof typeof PRIORITY_CONFIG)[]).map(k => (
+                    <option key={k} value={k}>{PRIORITY_CONFIG[k].label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-3">
+              <label className={labelCls}>حالة الشغل العامة</label>
+              <select className={MODAL_INPUT_CLS} value={status} onChange={e => setStatus(e.target.value as DentalCaseStatus)}>
+                {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+
+          {/* Section 4: Notes */}
           <div>
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.common.status")}</label>
-            <select className={MODAL_INPUT_CLS} value={status} onChange={e => setStatus(e.target.value as DentalCaseStatus)}>
-              {CASE_STATUSES.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
-            </select>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">الشركة المصنعة / الماركة</label>
-              <input className={MODAL_INPUT_CLS} value={materialBrand} onChange={e => setMaterialBrand(e.target.value)} placeholder="مثال: Ivoclar, Aidite, Wieland..." />
-            </div>
-            <div>
-              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">رقم التشغيلة (Lot #)</label>
-              <input className={MODAL_INPUT_CLS} value={lotNumber} onChange={e => setLotNumber(e.target.value)} placeholder="مثال: LOT-2026-9988" />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">سنوات الضمان</label>
-              <input className={MODAL_INPUT_CLS} type="number" min="0" max="20" value={warrantyYears} onChange={e => setWarrantyYears(Number(e.target.value))} />
-            </div>
-            <div>
-              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">اللون (Shade)</label>
-              <input className={MODAL_INPUT_CLS} value={shade} onChange={e => setShade(e.target.value)} placeholder="A1, A2, BL2..." />
-            </div>
-            <div>
-              <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">الأسنان (Teeth)</label>
-              <input className={MODAL_INPUT_CLS} value={teeth} onChange={e => setTeeth(e.target.value)} placeholder="11, 21, 22..." />
-            </div>
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">المادة (Material)</label>
-            <input className={MODAL_INPUT_CLS} value={material} onChange={e => setMaterial(e.target.value)} placeholder="Zirconia 3D Pro, E.max Press, PFM..." />
-          </div>
-          <div>
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">{t("dentalLab.common.notes")}</label>
-            <textarea className={`${MODAL_INPUT_CLS} min-h-[60px] resize-y`} value={notes} onChange={e => setNotes(e.target.value)} />
+            <label className={labelCls}>ملاحظات وتعليمات الشغل</label>
+            <textarea
+              className={`${MODAL_INPUT_CLS} min-h-[70px] resize-y`}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="إرشادات التحضير، تفاصيل خاصة..."
+            />
           </div>
         </div>
-        <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
+
+        <div className="flex justify-end gap-3 mt-6 pt-4 border-t dark:border-gray-700">
+          <button onClick={onClose} disabled={saving} className="px-5 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
             {t("dentalLab.common.cancel")}
           </button>
-          <button onClick={save} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2">
-            {saving && <Loader2 className="w-4 h-4 animate-spin" />}{t("dentalLab.common.save")}
+          <button onClick={save} disabled={saving} className="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 font-semibold shadow-sm">
+            {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+            {t("dentalLab.common.save")}
           </button>
         </div>
       </div>
