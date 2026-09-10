@@ -6,11 +6,11 @@ import DentalModelViewer from "./DentalModelViewer";
 import OdontogramChart from "./OdontogramChart";
 import {
   AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, Eye, FileDown, FileText, History,
-  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, X as XMarkIcon, XCircle,
+  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, Users, UserPlus, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
   CASE_STATUSES, CASE_STATUS_MAP, PRIORITY_CONFIG, PAYMENT_STATUS_MAP, ROLE_CONFIG, STAGE_STATUS_MAP,
-  DentalCaseHistoryEntry, DentalCaseStage, DentalCaseAttachment, DentalInvoice, DentalTechnician,
+  DentalCaseHistoryEntry, DentalCaseStage, DentalStageAssignee, DentalCaseAttachment, DentalInvoice, DentalTechnician,
   DentalQualityCheck, DentalRefabrication, DentalCaseStatus, DentalLabCaseDetail, RefabricationStage, CreditNote,
   DentalLabDoctor, DentalWorkType, DentalCasePriority,
   fetchCaseDetail, advanceCase, updateCase, deleteCaseAttachment,
@@ -41,6 +41,14 @@ const REFAB_STAGES: { id: RefabricationStage; labelKey: string }[] = [
   { id: "MANUFACTURING", labelKey: "dentalLab.status.MANUFACTURING" },
   { id: "QC", labelKey: "dentalLab.status.QC" },
   { id: "RECEIVED", labelKey: "dentalLab.status.RECEIVED" },
+];
+
+const STAGE_ASSIGNEE_ROLES: { id: string; label: string; shortLabel: string; badgeCls: string }[] = [
+  { id: "PRIMARY", label: "فني رئيسي (Primary)", shortLabel: "رئيسي", badgeCls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300 border-blue-200 dark:border-blue-800" },
+  { id: "ASSISTANT", label: "مساعد (Assistant)", shortLabel: "مساعد", badgeCls: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300 border-purple-200 dark:border-purple-800" },
+  { id: "QC", label: "مراجعة وفحص جودة (QC)", shortLabel: "فحص جودة", badgeCls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800" },
+  { id: "FINISHER", label: "تشطيب وتلميع (Finisher)", shortLabel: "تشطيب", badgeCls: "bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 border-amber-200 dark:border-amber-800" },
+  { id: "OTHER", label: "دور آخر (Other)", shortLabel: "آخر", badgeCls: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700" },
 ];
 
 const badge = (map: Record<string, { label: string; color: string }>, value?: string, fallback?: string) => {
@@ -1340,40 +1348,66 @@ export default function DentalCaseDetailPage() {
                   <thead>
                     <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-300">
                       <th className="text-right py-2.5 px-3">{t("dentalLab.detail.stageName")}</th>
-                      <th className="text-right py-2.5 px-3">{t("dentalLab.detail.assignee")}</th>
+                      <th className="text-right py-2.5 px-3">الفنيون المسندون للمرحلة</th>
                       <th className="text-right py-2.5 px-3">{t("dentalLab.common.status")}</th>
                       <th className="text-right py-2.5 px-3">{t("dentalLab.detail.startedAt")}</th>
                       <th className="text-right py-2.5 px-3">{t("dentalLab.detail.completedAt")}</th>
-                      <th className="text-right py-2.5 px-3">إسناد الفني</th>
+                      <th className="text-right py-2.5 px-3">إدارة الفنيين</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {stages.map(s => (
-                      <tr key={s.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-gray-900/30">
-                        <td className="py-2.5 px-3 font-medium">{s.name}</td>
-                        <td className="py-2.5 px-3">
-                          <span className={s.assigneeName ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-400 italic text-xs"}>
-                            {s.assigneeName || "غير محدد"}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3">{badge(STAGE_STATUS_MAP, s.status) ?? <span className="text-gray-400">{s.status}</span>}</td>
-                        <td className="py-2.5 px-3 text-xs">{fmtDate(s.startedAt)}</td>
-                        <td className="py-2.5 px-3 text-xs">{fmtDate(s.completedAt)}</td>
-                        <td className="py-2.5 px-3">
-                          {!c.isDeleted && (
-                            <button
-                              type="button"
-                              onClick={() => setAssignStage(s)}
-                              className="px-2.5 py-1 rounded-lg text-xs font-semibold border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
-                              title={s.assigneeName ? "تغيير الفني المسند" : "إسناد فني للمرحلة"}
-                            >
-                              <UserCheck className="w-3.5 h-3.5" />
-                              {s.assigneeName ? "تغيير" : "تعيين فني"}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
+                    {stages.map(s => {
+                      const hasAssignees = s.assignees && s.assignees.length > 0;
+                      return (
+                        <tr key={s.id} className="border-b dark:border-gray-700 last:border-b-0 hover:bg-gray-50/50 dark:hover:bg-gray-900/30">
+                          <td className="py-2.5 px-3 font-medium">{s.name}</td>
+                          <td className="py-2.5 px-3">
+                            {hasAssignees ? (
+                              <div className="flex flex-wrap gap-1.5 items-center">
+                                {s.assignees!.map((asg) => {
+                                  const techName = asg.technician?.name || asg.technicianName || asg.technicianId;
+                                  const roleMeta = STAGE_ASSIGNEE_ROLES.find(r => r.id === asg.role);
+                                  return (
+                                    <span
+                                      key={asg.id || asg.technicianId}
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs border font-medium ${roleMeta?.badgeCls || 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'}`}
+                                      title={asg.notes ? `ملاحظات: ${asg.notes}` : undefined}
+                                    >
+                                      <span className="font-semibold">{techName}</span>
+                                      <span className="text-[10px] opacity-80">
+                                        ({roleMeta ? roleMeta.shortLabel : asg.role})
+                                      </span>
+                                    </span>
+                                  );
+                                })}
+                              </div>
+                            ) : (
+                              <span className={s.assigneeName ? "font-semibold text-gray-900 dark:text-gray-100" : "text-gray-400 italic text-xs"}>
+                                {s.assigneeName || "غير محدد"}
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-3">{badge(STAGE_STATUS_MAP, s.status) ?? <span className="text-gray-400">{s.status}</span>}</td>
+                          <td className="py-2.5 px-3 text-xs">{fmtDate(s.startedAt)}</td>
+                          <td className="py-2.5 px-3 text-xs">{fmtDate(s.completedAt)}</td>
+                          <td className="py-2.5 px-3">
+                            {!c.isDeleted && (
+                              <button
+                                type="button"
+                                onClick={() => setAssignStage(s)}
+                                className="px-2.5 py-1 rounded-lg text-xs font-semibold border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1"
+                                title="إدارة وإسناد الفنيين لهذه المرحلة (يمكن إضافة أكثر من فني)"
+                              >
+                                <Users className="w-3.5 h-3.5" />
+                                {hasAssignees
+                                  ? `إدارة الفنيين (${s.assignees!.length})`
+                                  : (s.assigneeName ? "إدارة الفني" : "+ تعيين فني")}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -1735,10 +1769,10 @@ export default function DentalCaseDetailPage() {
       {assignStage && (
         <AssignStageModal
           caseId={c.id}
-          stage={assignStage}
+          stage={(c.stages || []).find(s => s.id === assignStage.id) || assignStage}
           technicians={technicians}
           onClose={() => setAssignStage(null)}
-          onSaved={() => { setAssignStage(null); refresh(); }}
+          onSaved={() => refresh()}
         />
       )}
 
@@ -1884,24 +1918,59 @@ interface AssignStageModalProps {
 function AssignStageModal({ caseId, stage, technicians, onClose, onSaved }: AssignStageModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
-  const [technicianId, setTechnicianId] = useState(stage.assigneeId || "");
+  const [removingTechId, setRemovingTechId] = useState<string | null>(null);
+
+  // Local list of assignees for immediate UI responsiveness
+  const [assignees, setAssignees] = useState<DentalStageAssignee[]>(() => {
+    if (stage.assignees && stage.assignees.length > 0) return stage.assignees;
+    if (stage.assigneeId) {
+      return [{
+        id: `legacy-${stage.assigneeId}`,
+        stageId: stage.id,
+        technicianId: stage.assigneeId,
+        technicianName: stage.assigneeName,
+        role: "PRIMARY",
+        sharePercent: 100,
+        technician: { id: stage.assigneeId, name: stage.assigneeName || "فني مسند" },
+      }];
+    }
+    return [];
+  });
+
+  // Sync if prop updates
+  useEffect(() => {
+    if (stage.assignees && stage.assignees.length > 0) {
+      setAssignees(stage.assignees);
+    }
+  }, [stage.assignees]);
+
+  // Form state for adding a technician
+  const [technicianId, setTechnicianId] = useState("");
   const [role, setRole] = useState("PRIMARY");
   const [notes, setNotes] = useState("");
 
-  const handleAssign = async () => {
+  const handleAddAssignee = async () => {
     if (!technicianId) {
-      toast.error("يرجى اختيار الفني المسند للمرحلة");
+      toast.error("يرجى اختيار الفني المراد إسناده للمرحلة");
       return;
     }
     setSaving(true);
     try {
-      await addStageAssignee(caseId, stage.id, {
+      const updatedCase = await addStageAssignee(caseId, stage.id, {
         technicianId,
         role,
         sharePercent: 100,
         notes: notes.trim() || undefined,
       });
       toast.success("تم إسناد الفني للمرحلة بنجاح");
+      if (updatedCase && updatedCase.stages) {
+        const found = updatedCase.stages.find(s => s.id === stage.id);
+        if (found && found.assignees) {
+          setAssignees(found.assignees);
+        }
+      }
+      setTechnicianId("");
+      setNotes("");
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
@@ -1910,79 +1979,183 @@ function AssignStageModal({ caseId, stage, technicians, onClose, onSaved }: Assi
     }
   };
 
-  const handleUnassign = async () => {
-    if (!stage.assigneeId) return;
-    if (!window.confirm("هل أنت متأكد من إلغاء إسناد الفني من هذه المرحلة؟")) return;
-    setSaving(true);
+  const handleRemoveAssignee = async (techId: string, techName?: string) => {
+    if (!window.confirm(`هل أنت متأكد من إزالة الفني "${techName || 'المحدد'}" من هذه المرحلة؟`)) return;
+    setRemovingTechId(techId);
     try {
-      await removeStageAssignee(caseId, stage.id, stage.assigneeId);
-      toast.success("تم إلغاء إسناد الفني");
+      const updatedCase = await removeStageAssignee(caseId, stage.id, techId);
+      toast.success("تم إلغاء إسناد الفني من المرحلة");
+      if (updatedCase && updatedCase.stages) {
+        const found = updatedCase.stages.find(s => s.id === stage.id);
+        if (found) {
+          setAssignees(found.assignees || []);
+        } else {
+          setAssignees(prev => prev.filter(a => a.technicianId !== techId));
+        }
+      } else {
+        setAssignees(prev => prev.filter(a => a.technicianId !== techId));
+      }
       onSaved();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
     } finally {
-      setSaving(false);
+      setRemovingTechId(null);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => !saving && onClose()}>
-      <div className={`${MODAL_CONTENT_CLS} max-w-md w-full`} onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto" onClick={() => !saving && onClose()}>
+      <div className={`${MODAL_CONTENT_CLS} max-w-lg w-full max-h-[90vh] overflow-y-auto`} onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-4 border-b dark:border-gray-700 pb-3">
-          <h3 className="text-base font-bold flex items-center gap-2">
-            <UserCheck className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-            إسناد فني لمرحلة: <span className="text-blue-600 dark:text-blue-400">{stage.name}</span>
-          </h3>
+          <div>
+            <h3 className="text-base font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+              <Users className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+              إسناد الفنيين لمرحلة: <span className="text-blue-600 dark:text-blue-400">{stage.name}</span>
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              يمكنك تعيين أكثر من فني وتحديد دور كل فني (رئيسي، مساعد، فحص جودة، تشطيب)
+            </p>
+          </div>
           <button onClick={() => !saving && onClose()} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
             <XMarkIcon className="w-5 h-5" />
           </button>
         </div>
-        <div className="space-y-4 text-sm">
+
+        {/* List of currently assigned technicians */}
+        <div className="mb-5">
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wide flex items-center gap-1.5">
+              <span>الفنيون المسندون للمرحلة</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 font-bold">
+                {assignees.length}
+              </span>
+            </h4>
+          </div>
+
+          {assignees.length === 0 ? (
+            <div className="p-4 rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-dashed border-gray-300 dark:border-gray-700 text-center text-xs text-gray-500 dark:text-gray-400">
+              لا يوجد فنيون مسندون لهذه المرحلة حتى الآن. اختر فنياً من النموذج أدناه لإسناده.
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {assignees.map((asg) => {
+                const techName = asg.technician?.name || asg.technicianName || asg.technicianId;
+                const roleMeta = STAGE_ASSIGNEE_ROLES.find(r => r.id === asg.role);
+                const isRemoving = removingTechId === asg.technicianId;
+                return (
+                  <div
+                    key={asg.id || asg.technicianId}
+                    className="flex items-center justify-between p-3 rounded-xl border dark:border-gray-700 bg-white dark:bg-gray-800/80 shadow-sm"
+                  >
+                    <div className="flex-1 min-w-0 pr-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-semibold text-sm text-gray-900 dark:text-gray-100 truncate">
+                          {techName}
+                        </span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold border ${roleMeta?.badgeCls || 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 border-gray-200 dark:border-gray-700'}`}>
+                          {roleMeta?.shortLabel || asg.role}
+                        </span>
+                      </div>
+                      {asg.notes && (
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 line-clamp-2">
+                          📝 {asg.notes}
+                        </p>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveAssignee(asg.technicianId, techName)}
+                      disabled={isRemoving || saving}
+                      className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition disabled:opacity-50 flex items-center gap-1 text-xs"
+                      title="إزالة الفني من المرحلة"
+                    >
+                      {isRemoving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Add new technician to stage section */}
+        <div className="bg-gray-50/80 dark:bg-gray-800/50 p-4 rounded-xl border dark:border-gray-700/80 space-y-3.5">
+          <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+            <UserPlus className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            إضافة فني جديد إلى المرحلة
+          </h4>
+
           <div>
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">اختر الفني المسؤول *</label>
-            <select className={MODAL_INPUT_CLS} value={technicianId} onChange={e => setTechnicianId(e.target.value)}>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              اختر الفني *
+            </label>
+            <select
+              className={MODAL_INPUT_CLS}
+              value={technicianId}
+              onChange={e => setTechnicianId(e.target.value)}
+            >
               <option value="">— اختر فني —</option>
-              {technicians.filter(x => x.isActive).map(x => (
-                <option key={x.id} value={x.id}>
-                  {x.name} ({x.role})
+              {technicians
+                .filter(x => x.isActive)
+                .map(x => {
+                  const alreadyAssigned = assignees.some(a => a.technicianId === x.id);
+                  return (
+                    <option key={x.id} value={x.id}>
+                      {x.name} ({ROLE_CONFIG[x.role]?.label || x.role}) {alreadyAssigned ? "— (مسند بالفعل)" : ""}
+                    </option>
+                  );
+                })}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              دور الفني في هذه المرحلة
+            </label>
+            <select
+              className={MODAL_INPUT_CLS}
+              value={role}
+              onChange={e => setRole(e.target.value)}
+            >
+              {STAGE_ASSIGNEE_ROLES.map(r => (
+                <option key={r.id} value={r.id}>
+                  {r.label}
                 </option>
               ))}
             </select>
           </div>
+
           <div>
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">دور الفني في هذه المرحلة</label>
-            <select className={MODAL_INPUT_CLS} value={role} onChange={e => setRole(e.target.value)}>
-              <option value="PRIMARY">فني رئيسي للمرحلة (Primary)</option>
-              <option value="ASSISTANT">مساعد (Assistant)</option>
-              <option value="QC">مراجعة وفحص (QC)</option>
-              <option value="FINISHER">تشطيب نهائي (Finisher)</option>
-            </select>
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
+              ملاحظات وتوجيهات خاصة للفني (اختياري)
+            </label>
+            <input
+              className={MODAL_INPUT_CLS}
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="مثال: مسؤول عن الفينش النهائي والمقاسات..."
+            />
           </div>
-          <div>
-            <label className="block font-medium text-gray-700 dark:text-gray-300 mb-1">ملاحظات للمرحلة</label>
-            <input className={MODAL_INPUT_CLS} value={notes} onChange={e => setNotes(e.target.value)} placeholder="تعليمات خاصة للفني..." />
-          </div>
+
+          <button
+            type="button"
+            onClick={handleAddAssignee}
+            disabled={saving || !technicianId}
+            className="w-full mt-2 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50 transition"
+          >
+            {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            + إضافة الفني للمرحلة
+          </button>
         </div>
-        <div className="flex items-center justify-between gap-3 mt-6 pt-3 border-t dark:border-gray-700">
-          {stage.assigneeId ? (
-            <button
-              type="button"
-              onClick={handleUnassign}
-              disabled={saving}
-              className="px-3 py-2 text-xs font-semibold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg border border-red-200 dark:border-red-900/60 disabled:opacity-50"
-            >
-              إلغاء الإسناد
-            </button>
-          ) : <div />}
-          <div className="flex items-center gap-2">
-            <button onClick={onClose} disabled={saving} className="px-4 py-2 text-gray-700 dark:text-gray-300 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50">
-              {t("dentalLab.common.cancel")}
-            </button>
-            <button onClick={handleAssign} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2 font-semibold">
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {stage.assigneeId ? "تحديث الإسناد" : "تأكيد الإسناد"}
-            </button>
-          </div>
+
+        <div className="flex justify-end mt-5 pt-3 border-t dark:border-gray-700">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-5 py-2 text-sm text-gray-700 dark:text-gray-300 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
+          >
+            إغلاق
+          </button>
         </div>
       </div>
     </div>
