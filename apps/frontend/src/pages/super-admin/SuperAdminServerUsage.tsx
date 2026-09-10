@@ -33,25 +33,30 @@ const SuperAdminServerUsage = () => {
   const breakdownData = stats?.breakdown ? [{ name: "الصور", value: stats.breakdown.images, color: "var(--color-primary)", icon: <Image className="size-4" /> }, { name: "الفيديوهات", value: stats.breakdown.videos, color: "var(--color-destructive)", icon: <Video className="size-4" /> }, { name: "الصوتيات", value: stats.breakdown.audio, color: "var(--color-secondary)", icon: <Music className="size-4" /> }, { name: "المستندات", value: stats.breakdown.documents, color: "var(--color-warning)", icon: <FileText className="size-4" /> }, { name: "أخرى", value: stats.breakdown.other, color: "var(--color-muted-foreground)", icon: <MoreHorizontal className="size-4" /> }] : [];
 
   return (
-    <div className="p-4 rtl min-h-full bg-gradient-to-br from-transparent via-transparent to-blue-50/50 dark:to-slate-900/50">
-      <div className="flex justify-between items-center mb-4">
-        <div><h1 className="text-3xl font-black bg-gradient-to-r from-blue-500 to-blue-700 bg-clip-text text-transparent">تحليل استهلاك القرص</h1><p className="text-sm font-medium text-muted-foreground">مراقبة حية وتفصيلية لموارد التخزين</p></div>
-        <div className="p-2 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500 hover:text-white transition-all cursor-pointer" onClick={fetchStats}><RefreshCw className="size-5" /></div>
+    <div className="space-y-4" dir="rtl">
+      <div className="flex justify-between items-center mb-2">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-blue-500 to-blue-700 bg-clip-text text-transparent">تحليل استهلاك القرص</h1>
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground">مراقبة حية وتفصيلية لموارد التخزين</p>
+        </div>
+        <div className="p-2 rounded-xl bg-blue-500/10 border border-blue-500/20 text-blue-500 hover:bg-blue-500 hover:text-white transition-all cursor-pointer" onClick={fetchStats}>
+          <RefreshCw className="size-4" />
+        </div>
       </div>
 
-      {error && <div className="mb-4 rounded-xl bg-destructive/10 p-3 text-destructive shadow-lg">{error}</div>}
+      {error && <div className="mb-4 rounded-xl bg-destructive/10 p-3 text-xs sm:text-sm text-destructive shadow-sm">{error}</div>}
 
       {stats && <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0 * 0.1 }} className="lg:col-span-1">
-          <Card className="h-full backdrop-blur-xl border overflow-hidden"><CardContent className="p-4">
-            <h2 className="font-bold flex items-center gap-1 mb-3"><PieChartIcon className="size-4 text-blue-500" /> نظرة عامة</h2>
-            <div className="relative min-h-[280px] w-full"><ResponsiveContainer width="100%" height={280}><PieChart><Pie data={chartData} cx="50%" cy="50%" innerRadius={80} outerRadius={100} stroke="none" paddingAngle={8} dataKey="value" startAngle={90} endAngle={-270}>{chartData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Pie></PieChart></ResponsiveContainer>
+          <Card className="h-full backdrop-blur-xl border border-border/50 rounded-2xl overflow-hidden"><CardContent className="p-4">
+            <h2 className="text-sm font-semibold flex items-center gap-1.5 mb-2"><PieChartIcon className="size-4 text-blue-500" /> نظرة عامة</h2>
+            <div className="relative min-h-[240px] w-full"><ResponsiveContainer width="100%" height={240}><PieChart><Pie data={chartData} cx="50%" cy="50%" innerRadius={70} outerRadius={90} stroke="none" paddingAngle={6} dataKey="value" startAngle={90} endAngle={-270}>{chartData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Pie></PieChart></ResponsiveContainer>
               <motion.div initial={{ opacity: 0, scale: 0.5 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.5 }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-center w-full">
-                <p className="text-3xl font-black text-primary">{stats.usagePercent}%</p>
-                <p className="text-xs font-semibold text-muted-foreground">نسبة الاستهلاك</p>
+                <p className="text-2xl sm:text-3xl font-bold tabular-nums text-primary">{stats.usagePercent}%</p>
+                <p className="text-xs font-medium text-muted-foreground">نسبة الاستهلاك</p>
               </motion.div>
             </div>
-            <div className="flex items-center justify-center gap-3 mt-3"><div className="text-center"><p className="text-lg font-bold">{formatSize(stats.used)}</p><p className="text-xs text-muted-foreground">المستخدم</p></div><Separator orientation="vertical" className="h-10" /><div className="text-center"><p className="text-lg font-bold text-green-600">{formatSize(stats.free)}</p><p className="text-xs text-green-600">المتاح</p></div></div>
+            <div className="flex items-center justify-center gap-3 mt-2"><div className="text-center"><p className="text-sm sm:text-base font-bold tabular-nums">{formatSize(stats.used)}</p><p className="text-xs text-muted-foreground">المستخدم</p></div><Separator orientation="vertical" className="h-8" /><div className="text-center"><p className="text-sm sm:text-base font-bold tabular-nums text-green-600">{formatSize(stats.free)}</p><p className="text-xs text-green-600">المتاح</p></div></div>
           </CardContent></Card>
         </motion.div>
 

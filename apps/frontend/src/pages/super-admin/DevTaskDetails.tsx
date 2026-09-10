@@ -1878,61 +1878,61 @@ const DevTaskDetails: React.FC = () => {
               })}
             </div>
             {(!task.attachments || task.attachments.length === 0) && (
-              <div className="text-center py-12 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 mt-6">
-                <PaperClipIcon className="h-12 w-12 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
-                <p>لا توجد مرفقات</p>
+              <div className="text-center py-6 text-gray-500 dark:text-gray-400 bg-gray-50 dark:bg-gray-800/50 rounded-xl border border-dashed border-gray-200 dark:border-gray-700 mt-4">
+                <PaperClipIcon className="h-9 w-9 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+                <p className="text-sm">لا توجد مرفقات</p>
               </div>
             )}
           </div>
         )}
 
         {activeTab === "time" && (
-          <div className="space-y-8">
+          <div className="space-y-6">
             {/* Live Timer Section */}
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-8 rounded-2xl text-white shadow-xl relative overflow-hidden">
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-700 p-5 sm:p-6 rounded-2xl text-white shadow-xl relative overflow-hidden">
               <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
               <div className="relative z-10 text-center">
-                <p className="text-indigo-100 font-medium mb-3 tracking-wide uppercase text-sm">
+                <p className="text-indigo-100 font-medium mb-2 tracking-wide uppercase text-xs sm:text-sm">
                   {isCurrentTaskTimerActive ? "جلسة نشطة" : "العداد متوقف"}
                 </p>
-                <p className="text-6xl font-mono font-bold mb-8 drop-shadow-md">
+                <p className="text-3xl sm:text-4xl font-mono font-bold mb-5 drop-shadow-md tracking-wider tabular-nums">
                   {formatTime(currentTaskElapsedSeconds)}
                 </p>
 
                 <div className="flex justify-center">
                   {isCurrentTaskTimerActive ? (
-                    <div className="flex flex-wrap justify-center gap-3">
+                    <div className="flex flex-wrap justify-center gap-2.5">
                       {isCurrentTaskTimerPaused ? (
                         <button
                           onClick={handleResumeTimer}
-                          className="flex items-center gap-3 px-8 py-4 bg-green-500 hover:bg-green-600 text-white rounded-full font-bold shadow-lg transition-all transform hover:scale-105"
+                          className="flex items-center gap-2 px-5 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-full font-semibold shadow-md transition-all text-sm"
                         >
-                          <PlayIcon className="h-6 w-6" />
+                          <PlayIcon className="h-4 w-4" />
                           استئناف العداد
                         </button>
                       ) : (
                         <button
                           onClick={handlePauseTimer}
-                          className="flex items-center gap-3 px-8 py-4 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full font-bold shadow-lg transition-all transform hover:scale-105"
+                          className="flex items-center gap-2 px-5 py-2.5 bg-yellow-500 hover:bg-yellow-600 text-white rounded-full font-semibold shadow-md transition-all text-sm"
                         >
-                          <PauseIcon className="h-6 w-6" />
+                          <PauseIcon className="h-4 w-4" />
                           إيقاف مؤقت
                         </button>
                       )}
                       <button
                         onClick={handleStopTimer}
-                        className="flex items-center gap-3 px-8 py-4 bg-red-500 hover:bg-red-600 text-white rounded-full font-bold shadow-lg transition-all transform hover:scale-105"
+                        className="flex items-center gap-2 px-5 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full font-semibold shadow-md transition-all text-sm"
                       >
-                        <StopIcon className="h-6 w-6" />
+                        <StopIcon className="h-4 w-4" />
                         إيقاف العداد
                       </button>
                     </div>
                   ) : (
                     <button
                       onClick={handleStartTimer}
-                      className="flex items-center gap-3 px-8 py-4 bg-white text-indigo-700 hover:bg-indigo-50 rounded-full font-bold shadow-lg transition-all transform hover:scale-105"
+                      className="flex items-center gap-2 px-6 py-2.5 bg-white text-indigo-700 hover:bg-indigo-50 rounded-full font-semibold shadow-md transition-all text-sm"
                     >
-                      <PlayIcon className="h-6 w-6" />
+                      <PlayIcon className="h-4 w-4" />
                       ابدأ التسجيل
                     </button>
                   )}

@@ -390,17 +390,17 @@ const DevProjects: React.FC = () => {
 
       {/* Empty State */}
       {projects.length === 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-12 text-center">
-          <FolderIcon className="h-16 w-16 mx-auto mb-4 text-gray-300 dark:text-gray-600" />
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
+          <FolderIcon className="h-10 w-10 mx-auto mb-3 text-gray-300 dark:text-gray-600" />
+          <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-1">
             لا توجد مشاريع
           </h3>
-          <p className="text-gray-500 dark:text-gray-400 mb-6">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
             ابدأ بإنشاء مشروع جديد
           </p>
           <button
             onClick={() => setShowForm(true)}
-            className="px-6 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600"
+            className="px-5 py-2 bg-indigo-600 dark:bg-indigo-500 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 text-sm font-medium"
           >
             <PlusIcon className="h-5 w-5 inline ml-2" />
             مشروع جديد

@@ -281,11 +281,11 @@ function KeyDetailDrawer({ keyData, open, onClose }: { keyData: AiKey; open: boo
           {tab === "logs" && (
             <div>
               {logsLoading ? (
-                <div className="flex items-center justify-center py-12"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
+                <div className="flex items-center justify-center py-6"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
               ) : logs.length === 0 ? (
-                <div className="text-center py-12">
-                  <History className="size-8 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">لا توجد سجلات</p>
+                <div className="text-center py-6">
+                  <History className="size-7 text-muted-foreground/30 mx-auto mb-1.5" />
+                  <p className="text-xs text-muted-foreground">لا توجد سجلات</p>
                 </div>
               ) : (
                 <div className="space-y-1.5">
@@ -317,9 +317,9 @@ function KeyDetailDrawer({ keyData, open, onClose }: { keyData: AiKey; open: boo
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-12">
-                  <Zap className="size-8 text-muted-foreground/30 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">لا توجد موديلات مكونة</p>
+                <div className="text-center py-6">
+                  <Zap className="size-7 text-muted-foreground/30 mx-auto mb-1.5" />
+                  <p className="text-xs text-muted-foreground">لا توجد موديلات مكونة</p>
                 </div>
               )}
             </div>
@@ -478,8 +478,8 @@ function KeyManagerContent() {
           <TableBody>
             {sortedKeys.length === 0 ? (
               <TableRow className="hover:bg-transparent">
-                <TableCell colSpan={8} className="text-center py-16">
-                  <KeyRound className="size-8 text-muted-foreground/30 mx-auto mb-3" />
+                <TableCell colSpan={8} className="text-center py-8">
+                  <KeyRound className="size-7 text-muted-foreground/30 mx-auto mb-2" />
                   <p className="text-sm text-muted-foreground">لا توجد مفاتيح مطابقة</p>
                 </TableCell>
               </TableRow>
@@ -547,8 +547,8 @@ function KeyManagerContent() {
       {/* Mobile cards */}
       <div className="sm:hidden space-y-2">
         {sortedKeys.length === 0 ? (
-          <div className="text-center py-16">
-            <KeyRound className="size-8 text-muted-foreground/30 mx-auto mb-3" />
+          <div className="text-center py-8">
+            <KeyRound className="size-7 text-muted-foreground/30 mx-auto mb-2" />
             <p className="text-sm text-muted-foreground">لا توجد مفاتيح مطابقة</p>
           </div>
         ) : (

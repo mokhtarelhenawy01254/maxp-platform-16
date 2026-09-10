@@ -30,7 +30,7 @@ function AppItemRow({ app, onInstall, action }: { app: ActivationItem; onInstall
         </div>
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-black text-foreground">{app.name}</p>
+            <p className="text-sm font-semibold text-foreground">{app.name}</p>
             {app.isInstalled ? (
               <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300">مفعل</Badge>
             ) : null}
@@ -42,7 +42,7 @@ function AppItemRow({ app, onInstall, action }: { app: ActivationItem; onInstall
           <p className="text-xs font-bold text-foreground/70">{app.monthlyPrice ? formatCurrency(app.monthlyPrice) : "—"}</p>
         </div>
       </div>
-      <Button type="button" variant={app.isInstalled ? "outline" : "default"} size="sm" className="h-9 shrink-0 rounded-lg px-4 text-xs font-black"
+      <Button type="button" variant={app.isInstalled ? "outline" : "default"} size="sm" className="h-9 shrink-0 rounded-lg px-4 text-xs font-semibold"
         onClick={() => onInstall(app)} disabled={app.isInstalled || action === app.slug}
       >
         {action === app.slug ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : app.isInstalled ? <CheckCircle2 className="ml-1.5 size-3.5" /> : <Zap className="ml-1.5 size-3.5" />}
@@ -61,7 +61,7 @@ function BundleItemRow({ bundle, onSubscribe, action }: { bundle: ActivationItem
         </div>
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-sm font-black text-foreground">{bundle.name}</p>
+            <p className="text-sm font-semibold text-foreground">{bundle.name}</p>
             {bundle.isComplete ? (
               <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-bold text-emerald-700 dark:border-emerald-800/70 dark:bg-emerald-950/40 dark:text-emerald-300">مكتملة</Badge>
             ) : null}
@@ -70,7 +70,7 @@ function BundleItemRow({ bundle, onSubscribe, action }: { bundle: ActivationItem
           {bundle.description ? <p className="text-xs text-muted-foreground line-clamp-1">{bundle.description}</p> : null}
         </div>
       </div>
-      <Button type="button" variant={bundle.isComplete ? "outline" : "default"} size="sm" className="h-9 shrink-0 rounded-lg px-4 text-xs font-black"
+      <Button type="button" variant={bundle.isComplete ? "outline" : "default"} size="sm" className="h-9 shrink-0 rounded-lg px-4 text-xs font-semibold"
         onClick={() => onSubscribe(bundle.slug)} disabled={bundle.isComplete || action === bundle.slug}
       >
         {action === bundle.slug ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : bundle.isComplete ? <CheckCircle2 className="ml-1.5 size-3.5" /> : <Layers className="ml-1.5 size-3.5" />}
@@ -106,7 +106,7 @@ export function CompanyActivationCenter({
     <Card className="rounded-2xl border" id="company-activation-center">
       <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-1">
-          <CardTitle className="text-xl font-black">مركز التفعيل</CardTitle>
+          <CardTitle className="text-xl font-bold">مركز التفعيل</CardTitle>
           <CardDescription>تصفح وفعّل الأدوات والباقات المتاحة لهذه الشركة بنقرة واحدة.</CardDescription>
         </div>
         {uninstalledCount > 0 ? (
@@ -124,7 +124,7 @@ export function CompanyActivationCenter({
         <div className="space-y-2">
           <div className="flex items-center gap-2">
             <Cog className="size-4 text-muted-foreground" />
-            <h4 className="text-sm font-black text-foreground">خاصيات إضافية</h4>
+            <h4 className="text-sm font-semibold text-foreground">خاصيات إضافية</h4>
           </div>
           <Separator />
           <div className="flex items-center justify-between gap-4 py-3">
@@ -141,8 +141,8 @@ export function CompanyActivationCenter({
         </div>
 
         {activationLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="size-8 animate-spin text-primary/60" />
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="size-6 animate-spin text-primary/60" />
           </div>
         ) : (
           <>
@@ -150,7 +150,7 @@ export function CompanyActivationCenter({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Layers className="size-4 text-amber-600" />
-                  <h4 className="text-sm font-black text-foreground">الباقات المتاحة</h4>
+                  <h4 className="text-sm font-semibold text-foreground">الباقات المتاحة</h4>
                 </div>
                 <Separator />
                 <div className="divide-y divide-border/20">
@@ -165,7 +165,7 @@ export function CompanyActivationCenter({
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <Package className="size-4 text-primary" />
-                  <h4 className="text-sm font-black text-foreground">الأدوات المتاحة ({orderedCatalogApps.length})</h4>
+                  <h4 className="text-sm font-semibold text-foreground">الأدوات المتاحة ({orderedCatalogApps.length})</h4>
                 </div>
                 <Separator />
                 <div className="divide-y divide-border/20">

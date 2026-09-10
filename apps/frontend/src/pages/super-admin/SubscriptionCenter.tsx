@@ -2387,14 +2387,14 @@ const MarketplaceAppsTab = ({
           )}
         </>
       ) : (
-        <div className="rounded-2xl border border-dashed bg-card text-card-foreground p-12 text-center">
-          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted">
-            <Search className="h-8 w-8 text-muted-foreground/50" />
+        <div className="rounded-xl border border-dashed bg-card/60 text-card-foreground p-6 sm:p-8 text-center">
+          <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-muted">
+            <Search className="h-5 w-5 text-muted-foreground/50" />
           </div>
-          <p className="text-base font-semibold text-foreground mt-4">لا توجد تطبيقات مطابقة للبحث أو الفلتر المختار</p>
-          <p className="text-sm text-muted-foreground mt-1">جرّب تعديل كلمات البحث، الفئة، أو خيارات التصفية السريعة</p>
-          <Button variant="outline" size="sm" onClick={handleResetFilters} className="mt-4">
-            <RefreshCw className="h-4 w-4 ml-1.5" />
+          <p className="text-sm font-semibold text-foreground mt-3">لا توجد تطبيقات مطابقة للبحث أو الفلتر المختار</p>
+          <p className="text-xs text-muted-foreground mt-1">جرّب تعديل كلمات البحث، الفئة، أو خيارات التصفية السريعة</p>
+          <Button variant="outline" size="sm" onClick={handleResetFilters} className="mt-3 text-xs">
+            <RefreshCw className="h-3.5 w-3.5 ml-1.5" />
             إعادة ضبط الفلاتر
           </Button>
         </div>
@@ -2634,9 +2634,9 @@ const BundlesAndPricingTab = ({
       </div>
 
       {bundles.length === 0 && (
-        <div className="rounded-lg border bg-card text-card-foreground shadow-sm p-10 text-center">
-          <Package className="mx-auto h-10 w-10 text-muted-foreground/40" />
-          <p className="text-base font-semibold text-muted-foreground mt-3">لا توجد باقات محددة</p>
+        <div className="rounded-xl border bg-card/60 text-card-foreground shadow-sm p-6 text-center">
+          <Package className="mx-auto h-7 w-7 text-muted-foreground/40" />
+          <p className="text-sm font-semibold text-muted-foreground mt-2">لا توجد باقات محددة</p>
         </div>
       )}
     </div>

@@ -344,47 +344,47 @@ const SuperAdminDashboard = () => {
   }
 
   return (
-    <div className="relative w-full bg-slate-50/30 p-6 dark:bg-slate-950/20 lg:p-10" dir="rtl">
-      <div className="pointer-events-none absolute -right-20 -top-20 size-[500px] rounded-full bg-primary/5 blur-[120px]" />
-      <div className="pointer-events-none absolute -bottom-20 -left-20 size-[500px] rounded-full bg-indigo-500/5 blur-[120px]" />
+    <div className="relative w-full space-y-5" dir="rtl">
+      <div className="pointer-events-none absolute -right-20 -top-20 size-[400px] rounded-full bg-primary/5 blur-[100px]" />
+      <div className="pointer-events-none absolute -bottom-20 -left-20 size-[400px] rounded-full bg-indigo-500/5 blur-[100px]" />
 
-      <div className="relative w-full space-y-6">
+      <div className="relative w-full space-y-5">
         {/* Header */}
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div className="space-y-2">
-            <div className="flex items-center gap-3">
-              <div className="flex size-12 items-center justify-center rounded-[20px] bg-primary text-white shadow-xl shadow-primary/20">
-                <LayoutDashboard className="size-6" />
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-xl bg-primary text-white shadow-md shadow-primary/20">
+                <LayoutDashboard className="size-5" />
               </div>
-              <h1 className="text-4xl font-black tracking-tight text-foreground">لوحة تحكم مدير النظام</h1>
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">لوحة تحكم مدير النظام</h1>
             </div>
-            <p className="text-lg font-bold text-muted-foreground/70">
+            <p className="text-xs sm:text-sm font-medium text-muted-foreground">
               مرحباً {user?.firstName} {user?.lastName}، إليك نظرة شاملة على نبض النظام اليوم.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex items-center gap-2 rounded-2xl bg-white/50 p-2.5 shadow-sm dark:bg-slate-900/50">
-              <div className="flex size-9 items-center justify-center rounded-xl bg-green-500/10 text-green-600">
-                <Clock className="size-5" />
+          <div className="flex flex-wrap items-center gap-2.5">
+            <div className="flex items-center gap-2 rounded-xl bg-card/60 px-3 py-1.5 border border-border/40 shadow-sm">
+              <div className="flex size-7 items-center justify-center rounded-lg bg-green-500/10 text-green-600">
+                <Clock className="size-4" />
               </div>
-              <div className="pl-3 text-right">
-                <p className="text-[10px] font-black uppercase tracking-widest text-muted-foreground/60">تاريخ اليوم</p>
-                <p className="text-sm font-black text-foreground">
+              <div className="text-right">
+                <p className="text-[10px] font-medium text-muted-foreground">تاريخ اليوم</p>
+                <p className="text-xs font-semibold text-foreground">
                   {new Date().toLocaleDateString("ar-EG", { weekday: "long", day: "numeric", month: "long" })}
                 </p>
               </div>
             </div>
 
             <Button onClick={() => setShowActiveUsers(true)}
-              className="h-14 rounded-2xl bg-green-600 px-6 font-black shadow-lg shadow-green-500/20 transition-all hover:scale-105 hover:bg-green-700 active:scale-95">
-              <Users className="ml-2 size-5" />
+              className="h-9 sm:h-10 rounded-xl bg-green-600 px-4 font-semibold text-xs sm:text-sm shadow-sm transition-all hover:bg-green-700 active:scale-95">
+              <Users className="ml-1.5 size-4" />
               المستخدمون النشطون
             </Button>
 
             <Button variant="outline" onClick={() => fetchDashboard(true)} disabled={isRefreshing}
-              className="h-14 rounded-2xl border-border/60 bg-white/50 px-6 font-black shadow-sm backdrop-blur-sm transition-all hover:bg-white active:scale-95 dark:bg-slate-900/50">
-              <RefreshCw className={cn("ml-2 size-5", isRefreshing && "animate-spin")} />
+              className="h-9 sm:h-10 rounded-xl border-border/60 bg-card/60 px-4 font-semibold text-xs sm:text-sm shadow-sm backdrop-blur-sm transition-all hover:bg-card active:scale-95">
+              <RefreshCw className={cn("ml-1.5 size-4", isRefreshing && "animate-spin")} />
               {isRefreshing ? 'جاري التحديث...' : 'تحديث البيانات'}
             </Button>
           </div>
@@ -394,7 +394,7 @@ const SuperAdminDashboard = () => {
         {data?.health && <SystemHealthBar health={data.health} />}
 
         {/* Metric Cards */}
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard title="إجمالي الشركات" value={data?.overview?.totalCompanies || 0} icon={Building2} color="indigo"
             subtext={`نشطة: ${data?.overview?.activeCompanies || 0}`} growth={data?.comparison?.companiesGrowth} />
           <MetricCard title="إجمالي المستخدمين" value={data?.overview?.totalUsers || 0} icon={Users2} color="emerald"
@@ -406,70 +406,70 @@ const SuperAdminDashboard = () => {
         </div>
 
         {/* Recent Activity + Growth */}
-        <Card className="rounded-[40px] border-border/40 bg-white/70 shadow-lg backdrop-blur-xl dark:bg-slate-900/70">
-          <CardHeader className="p-8 pb-4">
+        <Card className="rounded-2xl border-border/50 bg-card/75 shadow-sm backdrop-blur-xl">
+          <CardHeader className="p-5 pb-3">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex size-11 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 shadow-inner">
-                  <TrendingUp className="size-6" />
+              <div className="flex items-center gap-3">
+                <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600 shadow-inner">
+                  <TrendingUp className="size-5" />
                 </div>
                 <div>
-                  <CardTitle className="text-xl font-black">النشاط الأخير</CardTitle>
-                  <CardDescription className="text-[11px] font-bold">معدل النمو خلال آخر 30 يوماً</CardDescription>
+                  <CardTitle className="text-base font-bold">النشاط الأخير</CardTitle>
+                  <CardDescription className="text-xs font-medium text-muted-foreground">معدل النمو خلال آخر 30 يوماً</CardDescription>
                 </div>
               </div>
-              <Badge variant="outline" className="rounded-full border-emerald-500/20 bg-emerald-500/5 px-4 py-1 text-[11px] font-black text-emerald-600">
+              <Badge variant="outline" className="rounded-full border-emerald-500/20 bg-emerald-500/10 px-3 py-0.5 text-xs font-medium text-emerald-600">
                 + نمو إيجابي
               </Badge>
             </div>
           </CardHeader>
-          <CardContent className="p-8 pt-4">
-            <div className="grid gap-6 md:grid-cols-3">
-              <div className="group relative overflow-hidden rounded-[32px] border border-border/40 bg-white/50 p-6 transition-all hover:bg-white dark:bg-slate-950/50">
-                <div className="absolute -left-6 -top-6 size-20 rounded-full bg-indigo-500/5 blur-2xl" />
-                <div className="relative space-y-4">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600">
-                    <Briefcase className="size-5" />
+          <CardContent className="p-5 pt-2">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-4 transition-all hover:bg-background">
+                <div className="absolute -left-6 -top-6 size-16 rounded-full bg-indigo-500/5 blur-xl" />
+                <div className="relative space-y-2">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-600">
+                    <Briefcase className="size-4" />
                   </div>
                   <div>
-                    <p className="text-3xl font-black text-foreground">{data?.recentActivity?.newCompaniesLast30Days || 0}</p>
-                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">شركات جديدة</p>
+                    <p className="text-2xl font-bold tabular-nums text-foreground">{data?.recentActivity?.newCompaniesLast30Days || 0}</p>
+                    <p className="text-xs font-medium text-muted-foreground">شركات جديدة</p>
                     {data?.comparison?.companiesGrowth !== undefined && (
-                      <p className={cn("mt-1 text-[10px] font-black", data.comparison.companiesGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                      <p className={cn("mt-0.5 text-[11px] font-semibold tabular-nums", data.comparison.companiesGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
                         {data.comparison.companiesGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.companiesGrowth).toFixed(1)}% عن الشهر الماضي
                       </p>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="group relative overflow-hidden rounded-[32px] border border-border/40 bg-white/50 p-6 transition-all hover:bg-white dark:bg-slate-950/50">
-                <div className="absolute -left-6 -top-6 size-20 rounded-full bg-emerald-500/5 blur-2xl" />
-                <div className="relative space-y-4">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-600">
-                    <Users2 className="size-5" />
+              <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-4 transition-all hover:bg-background">
+                <div className="absolute -left-6 -top-6 size-16 rounded-full bg-emerald-500/5 blur-xl" />
+                <div className="relative space-y-2">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600">
+                    <Users2 className="size-4" />
                   </div>
                   <div>
-                    <p className="text-3xl font-black text-foreground">{data?.recentActivity?.newUsersLast30Days || 0}</p>
-                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">مستخدمين جدد</p>
+                    <p className="text-2xl font-bold tabular-nums text-foreground">{data?.recentActivity?.newUsersLast30Days || 0}</p>
+                    <p className="text-xs font-medium text-muted-foreground">مستخدمين جدد</p>
                     {data?.comparison?.usersGrowth !== undefined && (
-                      <p className={cn("mt-1 text-[10px] font-black", data.comparison.usersGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                      <p className={cn("mt-0.5 text-[11px] font-semibold tabular-nums", data.comparison.usersGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
                         {data.comparison.usersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.usersGrowth).toFixed(1)}% عن الشهر الماضي
                       </p>
                     )}
                   </div>
                 </div>
               </div>
-              <div className="group relative overflow-hidden rounded-[32px] border border-border/40 bg-white/50 p-6 transition-all hover:bg-white dark:bg-slate-950/50">
-                <div className="absolute -left-6 -top-6 size-20 rounded-full bg-blue-500/5 blur-2xl" />
-                <div className="relative space-y-4">
-                  <div className="flex size-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
-                    <Users className="size-5" />
+              <div className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-4 transition-all hover:bg-background">
+                <div className="absolute -left-6 -top-6 size-16 rounded-full bg-blue-500/5 blur-xl" />
+                <div className="relative space-y-2">
+                  <div className="flex size-9 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600">
+                    <Users className="size-4" />
                   </div>
                   <div>
-                    <p className="text-3xl font-black text-foreground">{data?.recentActivity?.newCustomersLast30Days || 0}</p>
-                    <p className="text-xs font-black uppercase tracking-widest text-muted-foreground/70">عملاء جدد</p>
+                    <p className="text-2xl font-bold tabular-nums text-foreground">{data?.recentActivity?.newCustomersLast30Days || 0}</p>
+                    <p className="text-xs font-medium text-muted-foreground">عملاء جدد</p>
                     {data?.comparison?.customersGrowth !== undefined && (
-                      <p className={cn("mt-1 text-[10px] font-black", data.comparison.customersGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
+                      <p className={cn("mt-0.5 text-[11px] font-semibold tabular-nums", data.comparison.customersGrowth >= 0 ? "text-emerald-600" : "text-rose-600")}>
                         {data.comparison.customersGrowth >= 0 ? '↑' : '↓'} {Math.abs(data.comparison.customersGrowth).toFixed(1)}% عن الشهر الماضي
                       </p>
                     )}

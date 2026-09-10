@@ -175,7 +175,7 @@ const DevEvaluationMember: React.FC = () => {
             <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
               <div className="text-center mb-4">
                 <div className="text-sm text-gray-500 mb-1">{i18n.t("superAdmin.evaluation.member.overallScoreLabel")}</div>
-                <div className={`text-5xl font-bold ${getScoreColor(current.overallScore)}`}>
+                <div className={`text-3xl sm:text-4xl font-bold tabular-nums ${getScoreColor(current.overallScore)}`}>
                   {Math.round(current.overallScore)}
                 </div>
                 <div className="text-xs text-gray-400 mt-1">{i18n.t("superAdmin.evaluation.member.outOf")}</div>
@@ -322,8 +322,8 @@ const DevEvaluationMember: React.FC = () => {
           </div>
         </>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
-          <ChartBarIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 sm:p-8 text-center">
+          <ChartBarIcon className="h-10 w-10 text-gray-300 dark:text-gray-600 mx-auto mb-2" />
           <p className="text-gray-500">{i18n.t("superAdmin.evaluation.member.emptyDetail")}</p>
           <p className="text-gray-400 text-sm mt-1">{i18n.t("superAdmin.evaluation.member.emptyDetailHint")}</p>
         </div>

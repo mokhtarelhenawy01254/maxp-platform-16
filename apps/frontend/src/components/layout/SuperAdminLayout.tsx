@@ -61,7 +61,7 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children, fullWidth
         <SuperAdminHeader currentDrawerWidth={cw} isCollapsed={isCollapsed} onCollapseToggle={() => setIsCollapsed(!isCollapsed)}
           onMobileMenuOpen={() => setMobileOpen(true)} activeUsersCount={activeUsersCount} onShowActiveUsers={() => setShowActive(true)} user={u} title={title} />
         <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
-          <div className="w-full px-4 py-6 sm:px-8">{children}</div>
+          <div className="w-full px-3 py-4 sm:px-6 sm:py-5 max-w-[1600px] mx-auto">{children}</div>
         </main>
       </div>
       {showActive && <ActiveUsersMonitor isOpen={showActive} onClose={() => setShowActive(false)} />}
