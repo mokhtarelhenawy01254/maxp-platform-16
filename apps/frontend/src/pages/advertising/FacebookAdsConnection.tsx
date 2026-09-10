@@ -17,7 +17,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { changeLanguage } from "../../i18n";
-import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useAuth } from "../../hooks/useAuthSimple";
 import {
   facebookAdsService,
@@ -453,7 +452,6 @@ const FacebookAdsConnection: React.FC = () => {
               </button>
             </div>
           </div>
-          <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
         </header>
 
         {error ? (

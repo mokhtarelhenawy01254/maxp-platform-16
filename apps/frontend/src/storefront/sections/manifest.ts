@@ -289,6 +289,7 @@ export const STOREFRONT_SECTION_MANIFEST = {
       { value: "playful-split", label: "تقسيم مرح (أطفال)" },
       { value: "layered-parallax-sky", label: "سماء تفاعلية (أطفال)" },
       { value: "grooming-hero", label: "Hero مدونة Grooming (داكن)" },
+      { value: "dental-precision-hero", label: "معمل أسنان رقمي CAD/CAM فاخر" },
     ],
     fields: [
       {

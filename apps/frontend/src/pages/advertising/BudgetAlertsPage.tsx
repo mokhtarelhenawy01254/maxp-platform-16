@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import MiniMetric from "../../components/advertising/dashboard/MiniMetric";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
@@ -373,8 +372,6 @@ const BudgetAlertsPage: React.FC = () => {
             </label>
           </div>
         </section>
-
-        <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
 
         <section className="grid gap-2 sm:grid-cols-2">
           <MiniMetric

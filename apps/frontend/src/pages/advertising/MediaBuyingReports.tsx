@@ -16,7 +16,6 @@ import {
   Table2,
 } from "lucide-react";
 import FacebookAdsAccountContextPanel from "../../components/advertising/FacebookAdsAccountContextPanel";
-import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
   type FacebookPerformanceBreakdown,
@@ -382,7 +381,6 @@ const MediaBuyingReports: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 px-4 py-6 text-slate-950 dark:bg-slate-950 dark:text-white font-sans sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-5">
-        <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
         <FacebookAdsAccountContextPanel context={accountContext} compact />
 
         <header className="flex flex-col gap-4 border-b border-slate-200 pb-5 dark:border-slate-800 lg:flex-row lg:items-end lg:justify-between">

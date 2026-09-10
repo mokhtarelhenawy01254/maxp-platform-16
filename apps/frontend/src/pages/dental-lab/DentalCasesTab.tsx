@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, Pencil, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
+  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, Columns3, CreditCard, ExternalLink, Eye, Filter, FilterX, Flame, Layers, List, Loader2, Pencil, Printer, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
@@ -13,6 +13,7 @@ import {
   createInvoice, addInvoicePayment, kioskScanCase,
   trashCase, restoreCase, permanentDeleteCase,
   bulkAdvanceCases, bulkAssignTechnician, bulkUpdatePriority, bulkTrashCases, bulkRestoreCases,
+  fetchPanLabelPdf, fetchWorkOrderPdf,
   fmtMoney, fmtDate, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
@@ -30,14 +31,16 @@ interface CreateCaseModalProps {
   initial?: DentalLabCase | null;
   doctors: DentalLabDoctor[];
   workTypes: DentalWorkType[];
+  technicians: DentalTechnician[];
   onClose: () => void;
   onSaved: () => void;
 }
 
-function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: CreateCaseModalProps) {
+function CreateCaseModal({ initial, doctors, workTypes, technicians, onClose, onSaved }: CreateCaseModalProps) {
   const { t } = useTranslation();
   const [saving, setSaving] = useState(false);
   const [doctorId, setDoctorId] = useState(initial?.doctorId ?? "");
+  const [technicianId, setTechnicianId] = useState(initial?.assignments?.[0]?.technicianId ?? "");
   const [workTypeId, setWorkTypeId] = useState(initial?.workTypeId ?? "");
   const [workTypeName, setWorkTypeName] = useState(initial?.workTypeName ?? "");
   const [priceSnapshot, setPriceSnapshot] = useState(initial?.priceSnapshot ?? 0);
@@ -45,6 +48,14 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
   const [patientPhone, setPatientPhone] = useState(initial?.patientPhone ?? "");
   const [teeth, setTeeth] = useState(initial?.teeth ?? "");
   const [selectedTeeth, setSelectedTeeth] = useState<string[]>(initial?.teeth ? initial.teeth.split(/[,،\s]+/).filter(Boolean) : []);
+  const [unitsCount, setUnitsCount] = useState<number>(() => {
+    if (initial?.unitsCount && initial.unitsCount > 0) return initial.unitsCount;
+    if (initial?.teeth) {
+      const parsed = initial.teeth.split(/[,،\s]+/).filter(Boolean);
+      if (parsed.length > 0) return parsed.length;
+    }
+    return 1;
+  });
   const [shade, setShade] = useState(initial?.shade ?? "");
   const [material, setMaterial] = useState(initial?.material ?? "");
   const [lotNumber, setLotNumber] = useState(initial?.lotNumber ?? "");
@@ -65,7 +76,12 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
     try {
       const result = await parseScan(file);
       if (result.patientName) setPatientName(result.patientName);
-      if (result.teeth) setTeeth(result.teeth);
+      if (result.teeth) {
+        setTeeth(result.teeth);
+        const parsed = result.teeth.split(/[,،\s]+/).filter(Boolean);
+        setSelectedTeeth(parsed);
+        if (parsed.length > 0) setUnitsCount(parsed.length);
+      }
       if (result.shade) setShade(result.shade);
       if (result.material) setMaterial(result.material);
       if (result.notes) setNotes(result.notes);
@@ -77,7 +93,10 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
         if (matched) {
           setWorkTypeId(matched.id);
           setWorkTypeName(matched.name);
-          if (matched.price != null) setPriceSnapshot(matched.price);
+          if (matched.price != null) {
+            const cnt = unitsCount > 0 ? unitsCount : 1;
+            setPriceSnapshot(matched.pricingMode === "FLAT" ? matched.price : matched.price * cnt);
+          }
         }
       }
       setScanMsg(t("dentalLab.cases.scanDone"));
@@ -95,7 +114,21 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
     setWorkTypeId(id);
     const wt = workTypes.find(w => w.id === id);
     setWorkTypeName(wt?.name ?? "");
-    if (wt && wt.price != null) setPriceSnapshot(wt.price);
+    if (wt && wt.price != null) {
+      const cnt = unitsCount > 0 ? unitsCount : 1;
+      setPriceSnapshot(wt.pricingMode === "FLAT" ? wt.price : wt.price * cnt);
+    }
+  };
+
+  const onTeethChange = (arr: string[]) => {
+    setSelectedTeeth(arr);
+    const count = arr.length > 0 ? arr.length : 1;
+    setUnitsCount(count);
+    setTeeth(arr.join(", "));
+    const wt = workTypes.find(w => w.id === workTypeId);
+    if (wt && wt.price != null && wt.pricingMode !== "FLAT") {
+      setPriceSnapshot(Number(wt.price) * count);
+    }
   };
 
   const save = async () => {
@@ -105,11 +138,13 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
     try {
       const payload = {
         doctorId: doctorId || undefined,
+        technicianId: technicianId || undefined,
         patientName: patientName.trim(),
         patientPhone: patientPhone.trim() || undefined,
         workTypeId: workTypeId || undefined,
         workTypeName: workTypeName || undefined,
         teeth: teeth.trim() || undefined,
+        unitsCount: Number(unitsCount) > 0 ? Number(unitsCount) : 1,
         shade: shade.trim() || undefined,
         material: material.trim() || undefined,
         lotNumber: lotNumber.trim() || undefined,
@@ -226,12 +261,41 @@ function CreateCaseModal({ initial, doctors, workTypes, onClose, onSaved }: Crea
               <input className={inputCls} value={patientPhone} onChange={e => setPatientPhone(e.target.value)} placeholder="01xxxxxxxxx" dir="ltr" />
             </div>
             <div className="sm:col-span-2">
-              <label className={labelCls}>{t("dentalLab.cases.teeth")} (تحديد الأسنان بالخريطة التفاعلية)</label>
+              <div className="flex items-center justify-between mb-1">
+                <label className={labelCls}>{t("dentalLab.cases.teeth")} (تحديد الأسنان بالخريطة التفاعلية)</label>
+                <span className="text-xs font-semibold px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300">
+                  {unitsCount} {unitsCount === 1 ? "سن / وحدة" : "أسنان / وحدات"}
+                </span>
+              </div>
               <OdontogramChart
                 selectedTeeth={selectedTeeth}
-                onChange={(arr) => {
-                  setSelectedTeeth(arr);
-                  setTeeth(arr.join(", "));
+                onChange={onTeethChange}
+              />
+            </div>
+            <div>
+              <label className={labelCls}>الفني المسند للتشغيل (اختياري)</label>
+              <select className={inputCls} value={technicianId} onChange={e => setTechnicianId(e.target.value)}>
+                <option value="">— بدون إسناد فوري —</option>
+                {technicians.filter(t => t.isActive).map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({ROLE_CONFIG[t.role]?.label || t.role})</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={labelCls}>عدد الوحدات (Units Count)</label>
+              <input
+                className={inputCls}
+                type="number"
+                min="1"
+                max="32"
+                value={unitsCount}
+                onChange={e => {
+                  const val = Math.max(1, Number(e.target.value) || 1);
+                  setUnitsCount(val);
+                  const wt = workTypes.find(w => w.id === workTypeId);
+                  if (wt && wt.price != null && wt.pricingMode !== "FLAT") {
+                    setPriceSnapshot(Number(wt.price) * val);
+                  }
                 }}
               />
             </div>

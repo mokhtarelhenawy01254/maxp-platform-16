@@ -566,8 +566,33 @@ const FacebookAdsDashboard: React.FC = () => {
           </div>
         </section>
 
-        {/* Cockpit Navigation Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
+        {!selectedAdAccountId ? (
+          <section className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200/90 bg-white p-8 text-center dark:border-blue-900/60 dark:bg-slate-900 shadow-xs">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md shadow-blue-500/25">
+              <Megaphone className="h-6 w-6" />
+            </div>
+            <h2 className="mt-3 text-base font-black text-slate-900 dark:text-white">
+              {isEn ? "Select an Ad Account to Begin" : "يرجى اختيار حساب إعلاني لبدء إدارة الحملات"}
+            </h2>
+            <p className="mt-1 max-w-md text-xs font-medium text-slate-500 dark:text-slate-400">
+              {isEn
+                ? "Choose your Meta Ad Account from the selector above, or connect a new account to see live data."
+                : "اختر حسابك الإعلاني من القائمة العلوية لعرض الحملات والنتائج الحية، أو قم بربط حساب جديد."}
+            </p>
+            <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <Link
+                to="/advertising/facebook-ads/connection"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-black text-white shadow-xs hover:bg-blue-700 transition-all"
+              >
+                <ArrowUpRight className="h-4 w-4" />
+                {isEn ? "Connect / Manage Ad Accounts" : "إدارة وربط الحسابات الإعلانية"}
+              </Link>
+            </div>
+          </section>
+        ) : (
+          <>
+            {/* Cockpit Navigation Tabs */}
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white/95 p-1.5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
           <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto no-scrollbar">
             <button
               type="button"
@@ -882,6 +907,8 @@ const FacebookAdsDashboard: React.FC = () => {
               </div>
             )}
           </section>
+        )}
+          </>
         )}
       </main>
     </div>

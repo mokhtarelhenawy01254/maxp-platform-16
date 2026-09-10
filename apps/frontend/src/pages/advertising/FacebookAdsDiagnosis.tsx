@@ -18,7 +18,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import MiniMetric from "../../components/advertising/dashboard/MiniMetric";
@@ -521,8 +520,6 @@ const FacebookAdsDiagnosis: React.FC = () => {
             </div>
           )}
         </section>
-
-        <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
 
         <section className="grid gap-2.5 md:grid-cols-4">
           <MetricCard

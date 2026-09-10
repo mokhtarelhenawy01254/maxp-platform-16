@@ -3189,6 +3189,7 @@ const HeroBanner: React.FC<HeroBannerProps> = ({ section, settings }) => {
   if (variant === "elessi-pet-sunroom")
     return <ElessiPetSunroomHero {...props} />;
   if (variant === "grooming-hero") return <GroomingProHero {...props} />;
+  if (variant === "dental-precision-hero") return <DentalPrecisionHero {...props} />;
 
   return <CenteredHero {...props} />;
 };

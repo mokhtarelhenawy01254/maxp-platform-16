@@ -21,8 +21,8 @@
       "ring": "192 95% 48%"
     },
     "typography": {
-      "headingFont": "\"IBM Plex Sans Arabic\", \"Tajawal\", sans-serif",
-      "bodyFont": "\"IBM Plex Sans Arabic\", \"Inter\", sans-serif",
+      "headingFont": "\"Alexandria\", \"IBM Plex Sans Arabic\", sans-serif",
+      "bodyFont": "\"Alexandria\", \"IBM Plex Sans Arabic\", sans-serif",
       "baseSize": "16px",
       "direction": "rtl"
     },
@@ -119,9 +119,9 @@
         },
         {
           "type": "hero-banner",
-          "variant": "split-panel",
+          "variant": "dental-precision-hero",
           "settings": {
-            "eyebrow": "معمل ومختبر أسنان رقمي فائق التطور",
+            "eyebrow": "معمل ومختبر أسنان رقمي فائق التطور • CAD/CAM 2026",
             "title": "دقة هندسية وجمال طبيعي لأرقى عيادات الأسنان",
             "subtitle": "نحول مسحاتك الفموية الرقمية إلى تركيبات زيركون وإيماكس متناهية الدقة بهندسة CAD/CAM خماسية المحاور، لتضمن انطباقاً ميكرونياً خالياً من التعديل من أول جلسة.",
             "ctaText": "طلب كيت عينات مجاني للعيادة 📦",

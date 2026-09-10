@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { 
   Sparkles, 
   RotateCw, 
@@ -34,6 +35,8 @@ interface DentalShade {
   id: string;
   name: string;
   hex: string;
+  bodyHex: string;
+  cervicalHex: string;
   subsurface: string;
   roughness: number;
   metalness: number;
@@ -41,11 +44,11 @@ interface DentalShade {
 }
 
 const SHADES: DentalShade[] = [
-  { id: 'BL1', name: 'BL1 Hollywood', hex: '#FFFFFF', subsurface: '#F0F7FF', roughness: 0.18, metalness: 0.05, description: 'أعلى درجات البياض التجميلي الناصع مع بريق لؤلؤي حيوي' },
-  { id: 'BL3', name: 'BL3 Natural Bleach', hex: '#FBFBFA', subsurface: '#F8F6F0', roughness: 0.22, metalness: 0.04, description: 'تبييض طبيعي متناسق ومشرق غير مصطنع' },
-  { id: 'A1', name: 'A1 Classic Ivory', hex: '#F7F5EE', subsurface: '#EFEADB', roughness: 0.25, metalness: 0.03, description: 'عاجي ناصع كلاسيكي يناسب الأسنان الشابة' },
-  { id: 'A2', name: 'A2 Natural Standard', hex: '#EFE9DC', subsurface: '#E6DCC9', roughness: 0.28, metalness: 0.03, description: 'الدرجة الطبيعية الأكثر شيوعاً ومطابقة لـ 80% من المرضى' },
-  { id: 'B1', name: 'B1 High Luminosity', hex: '#F9F7F1', subsurface: '#F2ECE0', roughness: 0.20, metalness: 0.04, description: 'درجة صفراء منخفضة مع شفافية وانعكاس ضوئي فائق' },
+  { id: 'BL1', name: 'BL1 Hollywood', hex: '#FFFFFF', bodyHex: '#FAFAFA', cervicalHex: '#EDE6DD', subsurface: '#F0F7FF', roughness: 0.12, metalness: 0.02, description: 'أعلى درجات البياض التجميلي الناصع مع بريق لؤلؤي حيوي' },
+  { id: 'BL3', name: 'BL3 Natural Bleach', hex: '#FBFBFA', bodyHex: '#F2ECE2', cervicalHex: '#E5D6C3', subsurface: '#F8F6F0', roughness: 0.14, metalness: 0.02, description: 'تبييض طبيعي متناسق ومشرق غير مصطنع' },
+  { id: 'A1', name: 'A1 Classic Ivory', hex: '#F7F5EE', bodyHex: '#EBDDCB', cervicalHex: '#D8C3A5', subsurface: '#EFEADB', roughness: 0.15, metalness: 0.02, description: 'عاجي ناصع كلاسيكي يناسب الأسنان الشابة' },
+  { id: 'A2', name: 'A2 Natural Standard', hex: '#EFE9DC', bodyHex: '#E2CEB5', cervicalHex: '#CCAFA2', subsurface: '#E6DCC9', roughness: 0.16, metalness: 0.02, description: 'الدرجة الطبيعية الأكثر شيوعاً ومطابقة لـ 80% من المرضى' },
+  { id: 'B1', name: 'B1 High Luminosity', hex: '#F9F7F1', bodyHex: '#EDE2D0', cervicalHex: '#DECBB0', subsurface: '#F2ECE0', roughness: 0.13, metalness: 0.02, description: 'درجة صفراء منخفضة مع شفافية وانعكاس ضوئي فائق' },
 ];
 
 const WORKFLOW_STEPS = [
@@ -140,58 +143,127 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.35;
+    renderer.toneMappingExposure = 1.25;
     container.replaceChildren(renderer.domElement);
 
-    // Studio Dental Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+    // Studio Dental Environment & Lighting
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    const roomEnv = new RoomEnvironment();
+    scene.environment = pmremGenerator.fromScene(roomEnv).texture;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.9);
     scene.add(ambientLight);
 
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.2);
-    keyLight.position.set(15, 25, 20);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.4);
+    keyLight.position.set(12, 22, 18);
     scene.add(keyLight);
 
-    const cyanRimLight = new THREE.DirectionalLight(0x38bdf8, 2.8);
-    cyanRimLight.position.set(-20, -10, -15);
+    const cyanRimLight = new THREE.DirectionalLight(0x38bdf8, 2.2);
+    cyanRimLight.position.set(-18, -8, -14);
     scene.add(cyanRimLight);
 
-    const warmFillLight = new THREE.DirectionalLight(0xfff3d6, 1.4);
-    warmFillLight.position.set(0, -15, 15);
+    const warmFillLight = new THREE.DirectionalLight(0xffeedd, 1.2);
+    warmFillLight.position.set(0, -12, 14);
     scene.add(warmFillLight);
+
+    // Translucent ceramic back-light
+    const backLight = new THREE.DirectionalLight(0xffffff, 1.1);
+    backLight.position.set(0, 4, -14);
+    scene.add(backLight);
+
+    // Create realistic procedural multilayer canvas texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 128;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      const grad = ctx.createLinearGradient(0, 512, 0, 0);
+      grad.addColorStop(0.0, activeShade.cervicalHex);
+      grad.addColorStop(0.35, activeShade.bodyHex);
+      grad.addColorStop(0.75, activeShade.hex);
+      grad.addColorStop(1.0, '#ffffff');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, 128, 512);
+    }
+    const multilayerTexture = new THREE.CanvasTexture(canvas);
 
     // Create high-precision procedural anatomical Molar / Crown model
     const group = new THREE.Group();
 
-    // 1. Tooth Crown Body
-    const crownGeometry = new THREE.CylinderGeometry(3.6, 2.8, 5.2, 48, 24);
-    const posAttr = crownGeometry.attributes.position;
-    for (let i = 0; i < posAttr.count; i++) {
-      const x = posAttr.getX(i);
-      const y = posAttr.getY(i);
-      const z = posAttr.getZ(i);
+    // 1. Tooth Crown Body (High-tessellation sculpted anatomical molar)
+    const crownGeometry = new THREE.CylinderGeometry(3.6, 2.7, 5.4, 64, 48);
+    const pos = crownGeometry.attributes.position;
+    for (let i = 0; i < pos.count; i++) {
+      let x = pos.getX(i);
+      let y = pos.getY(i);
+      let z = pos.getZ(i);
 
-      if (y > 1.5) {
-        const cuspFactor = Math.sin(x * 1.8) * Math.cos(z * 1.8) * 0.45;
-        const grooveFactor = Math.sin(Math.atan2(z, x) * 4) * 0.25;
-        posAttr.setY(i, y + cuspFactor - grooveFactor);
+      // normY: 0 (cervical margin) to 1 (occlusal table)
+      const normY = (y + 2.7) / 5.4;
+
+      // Natural rounded-cuboid molar cross section
+      const angle = Math.atan2(z, x);
+      const aspect = 1.0 + 0.12 * Math.cos(angle * 2);
+      x *= aspect;
+      z *= (2.0 - aspect);
+
+      // Cervical waist vs middle third contour bulge
+      if (normY < 0.42) {
+        const cervicalTaper = 0.88 + Math.sin(normY * Math.PI * 1.1) * 0.18;
+        x *= cervicalTaper;
+        z *= cervicalTaper;
+      } else {
+        const middleBulge = 1.0 + Math.sin((normY - 0.42) * Math.PI) * 0.08;
+        x *= middleBulge;
+        z *= middleBulge;
       }
-      if (y < -1.0) {
-        const waist = 1 - Math.sin((y + 2.6) / 1.6) * 0.15;
-        posAttr.setX(i, x * waist);
-        posAttr.setZ(i, z * waist);
+
+      // Occlusal Anatomy (Cusps & Fissures)
+      if (normY > 0.65) {
+        const topWeight = Math.pow((normY - 0.65) / 0.35, 1.6);
+        const distFromCenter = Math.sqrt(x * x + z * z);
+        
+        // 4 Anatomical Cusps
+        const dMB = Math.hypot(x - (-1.4), z - 1.2);
+        const cuspMB = Math.exp(-dMB * 1.3) * 1.05;
+
+        const dDB = Math.hypot(x - 1.3, z - 1.1);
+        const cuspDB = Math.exp(-dDB * 1.4) * 0.9;
+
+        const dML = Math.hypot(x - (-1.3), z - (-1.3));
+        const cuspML = Math.exp(-dML * 1.2) * 1.2;
+
+        const dDL = Math.hypot(x - 1.2, z - (-1.2));
+        const cuspDL = Math.exp(-dDL * 1.3) * 0.85;
+
+        // Central fossa depression & cross fissures
+        const centralFossa = Math.exp(-distFromCenter * 1.35) * 0.7;
+        const grooveX = Math.exp(-Math.abs(z) * 2.5) * 0.3;
+        const grooveZ = Math.exp(-Math.abs(x) * 2.5) * 0.3;
+
+        const elevation = (cuspMB + cuspDB + cuspML + cuspDL - centralFossa - (grooveX + grooveZ) * 0.5) * topWeight;
+        y += elevation;
+
+        // Marginal ridge inward curve
+        if (normY > 0.90 && distFromCenter < 2.2) {
+          y -= (1 - distFromCenter / 2.2) * 0.4 * topWeight;
+        }
       }
+
+      pos.setXYZ(i, x, y, z);
     }
     crownGeometry.computeVertexNormals();
 
     const crownMaterial = new THREE.MeshPhysicalMaterial({
-      color: new THREE.Color(activeShade.hex),
-      roughness: activeShade.roughness,
-      metalness: activeShade.metalness,
-      clearcoat: 0.95,
-      clearcoatRoughness: 0.12,
-      transmission: materialType === 'emax' ? 0.35 : 0.18,
-      ior: 1.62,
-      thickness: 1.8,
+      map: multilayerTexture,
+      roughness: 0.12,
+      metalness: 0.02,
+      clearcoat: 1.0,
+      clearcoatRoughness: 0.06,
+      transmission: materialType === 'emax' ? 0.35 : 0.20,
+      ior: 1.54,
+      thickness: 2.2,
       wireframe: wireframeMode,
     });
 
@@ -200,7 +272,7 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
     group.add(crownMesh);
 
     // 2. Margin Line Indicator Ring (Laser precision line)
-    const marginRingGeom = new THREE.TorusGeometry(2.82, 0.05, 16, 64);
+    const marginRingGeom = new THREE.TorusGeometry(2.78, 0.045, 16, 64);
     marginRingGeom.rotateX(Math.PI / 2);
     const marginRingMat = new THREE.MeshBasicMaterial({
       color: 0x06b6d4,
@@ -224,11 +296,11 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
     group.add(scannerRingMesh);
 
     // 4. Abutment / Base Foundation
-    const abutmentGeom = new THREE.CylinderGeometry(2.7, 2.2, 2.6, 32);
+    const abutmentGeom = new THREE.CylinderGeometry(2.65, 2.1, 2.6, 32);
     const abutmentMat = new THREE.MeshStandardMaterial({
       color: materialType === 'titanium' ? 0x94a3b8 : 0xd4d4d8,
-      metalness: materialType === 'titanium' ? 0.85 : 0.2,
-      roughness: 0.3,
+      metalness: materialType === 'titanium' ? 0.88 : 0.25,
+      roughness: 0.25,
     });
     const abutmentMesh = new THREE.Mesh(abutmentGeom, abutmentMat);
     abutmentMesh.position.y = -2.8;
@@ -298,6 +370,8 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
       scannerRingMat.dispose();
       abutmentGeom.dispose();
       abutmentMat.dispose();
+      multilayerTexture.dispose();
+      pmremGenerator.dispose();
     };
   }, [activeShade, wireframeMode, materialType, isRotating, viewAngle]);
 
@@ -313,7 +387,16 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
   }, [materialType]);
 
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#0B0F17] via-[#0F172A] to-[#0B0F17] py-16 md:py-24 text-white">
+    <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#060913] via-[#0A101E] to-[#060913] py-16 md:py-24 text-white">
+      {/* Blueprint Grid Background Pattern */}
+      <div 
+        className="pointer-events-none absolute inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage: 'radial-gradient(circle, #38bdf8 1px, transparent 1px)',
+          backgroundSize: '28px 28px',
+        }}
+      />
+
       {/* Dynamic Background Glows */}
       <div className="pointer-events-none absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-cyan-500/10 blur-[140px]" />
       <div className="pointer-events-none absolute -bottom-40 -right-40 h-[500px] w-[500px] rounded-full bg-blue-600/10 blur-[150px]" />
@@ -325,10 +408,10 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
             <Sparkles className="h-3.5 w-3.5 animate-pulse text-cyan-300" />
             <span>{badge}</span>
           </div>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white">
+          <h2 className="font-heading text-2xl sm:text-4xl lg:text-[2.65rem] font-bold tracking-tight text-white leading-tight">
             {title}
           </h2>
-          <p className="mx-auto max-w-3xl text-sm sm:text-base text-slate-300">
+          <p className="mx-auto max-w-3xl text-sm sm:text-base text-slate-300 font-normal leading-relaxed">
             {subtitle}
           </p>
         </div>
