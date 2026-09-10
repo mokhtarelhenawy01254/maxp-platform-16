@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { apiClient } from "../services/apiClient";
 import { useAuth } from "../hooks/useAuthSimple";
+import { socketService } from "../services/socketService";
+import { toast } from "sonner";
 import {
   BellIcon,
   CheckIcon,
@@ -11,12 +14,17 @@ import {
   XCircleIcon,
   CheckCircleIcon,
   Cog6ToothIcon,
+  ArrowPathIcon,
+  ArrowRightIcon,
+  ShoppingBagIcon,
+  ClockIcon,
+  ArrowTopRightOnSquareIcon,
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
 
-interface NotificationItem {
+export interface NotificationItem {
   id: string;
-  type: "error" | "warning" | "info" | "success" | "test";
+  type: string;
   title: string;
   message: string;
   timestamp: Date;
@@ -24,61 +32,160 @@ interface NotificationItem {
   silent?: boolean;
   customerId?: string;
   errorType?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
+  data?: Record<string, unknown>;
   severity?: "low" | "medium" | "high" | "critical";
   source?: "system";
 }
 
+const normalizeNotification = (n: any): NotificationItem => {
+  const rawDate = n.createdAt || n.timestamp || n.date;
+  const parsedDate = rawDate ? new Date(rawDate) : new Date();
+  const validDate = isNaN(parsedDate.getTime()) ? new Date() : parsedDate;
+
+  let parsedData = n.data;
+  if (typeof parsedData === "string") {
+    try {
+      parsedData = JSON.parse(parsedData);
+    } catch {
+      parsedData = { raw: parsedData };
+    }
+  }
+
+  const rawType = String(n.type || "info").toLowerCase();
+
+  return {
+    id: String(n.id || Math.random().toString(36).substring(2, 9)),
+    type: rawType,
+    title: n.title || "إشعار جديد",
+    message: n.message || "",
+    timestamp: validDate,
+    isRead: Boolean(n.isRead ?? n.read),
+    silent: Boolean(n.silent),
+    customerId: n.customerId,
+    errorType: n.errorType,
+    metadata: n.metadata,
+    data: parsedData,
+    severity: n.severity,
+    source: "system" as const,
+  };
+};
+
+const formatNotificationTime = (date: Date): string => {
+  if (!date || isNaN(date.getTime())) return "";
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return "الآن";
+  if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+  if (diffDays === 1) {
+    return `أمس، ${date.toLocaleTimeString("ar-EG", { hour: "numeric", minute: "2-digit" })}`;
+  }
+  if (diffDays < 7) return `منذ ${diffDays} أيام`;
+
+  return date.toLocaleDateString("ar-EG", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
+const resolveTargetUrl = (notification: NotificationItem): string | null => {
+  const data = (notification.data || notification.metadata || {}) as Record<string, any>;
+  if (typeof data.url === "string" && data.url.trim().length > 0) {
+    return data.url.trim();
+  }
+  if (data.orderId) {
+    return `/orders?orderId=${encodeURIComponent(String(data.orderId))}`;
+  }
+  if (data.conversationId) {
+    return `/whatsapp-inbox?conversationId=${encodeURIComponent(String(data.conversationId))}`;
+  }
+  if (data.taskId) {
+    return `/tasks/${encodeURIComponent(String(data.taskId))}`;
+  }
+  if (data.customerId) {
+    return `/customers/${encodeURIComponent(String(data.customerId))}`;
+  }
+  return null;
+};
+
 const Notifications: React.FC = () => {
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<"all" | "unread" | "read">("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  useEffect(() => {
-    fetchNotifications();
-  }, [user, isAuthenticated]);
-
-  const fetchNotifications = async () => {
-    if (!user || !isAuthenticated) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await apiClient.get("/v1/notifications/recent", {
-        params: { limit: 50 },
-      });
-
-      if (response.data.success || response.status === 200) {
-        const systemNotifications = (response.data.notifications || []).map(
-          (n: any) => ({
-            ...n,
-            source: "system" as const,
-          }),
-        );
-
-        setNotifications(systemNotifications);
+  const fetchNotifications = useCallback(
+    async (showLoadingSpinner = true) => {
+      if (!user || !isAuthenticated) {
+        setLoading(false);
+        return;
       }
-    } catch (error) {
-      console.error(
-        "❌ [NotificationsPage] Error fetching notifications:",
-        error,
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
+
+      if (showLoadingSpinner) {
+        setLoading(true);
+      } else {
+        setRefreshing(true);
+      }
+
+      try {
+        const response = await apiClient.get("/v1/notifications/recent", {
+          params: { limit: 50 },
+        });
+
+        if (response.data?.success || response.status === 200) {
+          const rawItems = response.data?.notifications || [];
+          const normalized = rawItems.map(normalizeNotification);
+          setNotifications(normalized);
+        }
+      } catch (error) {
+        console.error("❌ [NotificationsPage] Error fetching notifications:", error);
+      } finally {
+        setLoading(false);
+        setRefreshing(false);
+      }
+    },
+    [user, isAuthenticated],
+  );
+
+  useEffect(() => {
+    fetchNotifications(true);
+
+    const handleRealtimeUpdate = () => {
+      fetchNotifications(false);
+    };
+
+    socketService.on("new_notification", handleRealtimeUpdate);
+    socketService.on("order:created", handleRealtimeUpdate);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        fetchNotifications(false);
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      socketService.off("new_notification", handleRealtimeUpdate);
+      socketService.off("order:created", handleRealtimeUpdate);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [fetchNotifications]);
 
   const markAsRead = async (notificationId: string) => {
     try {
       await apiClient.post(`/notifications/${notificationId}/read`, {});
-
-      setNotifications((prev: NotificationItem[]) =>
-        prev.map((n: NotificationItem) =>
-          n.id === notificationId ? { ...n, isRead: true } : n,
-        ),
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notificationId ? { ...n, isRead: true } : n)),
       );
     } catch (error) {
       console.error("Error marking notification as read:", error);
@@ -88,12 +195,11 @@ const Notifications: React.FC = () => {
   const markAllAsRead = async () => {
     try {
       await apiClient.post("/notifications/mark-all-read", {});
-
-      setNotifications((prev: NotificationItem[]) =>
-        prev.map((n: NotificationItem) => ({ ...n, isRead: true })),
-      );
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+      toast.success("تم تحديد جميع الإشعارات كمقروءة");
     } catch (error) {
       console.error("Error marking all notifications as read:", error);
+      toast.error("تعذر تحديد الإشعارات كمقروءة");
     }
   };
 
@@ -101,278 +207,412 @@ const Notifications: React.FC = () => {
     try {
       await apiClient.delete(`/notifications/${notificationId}`);
       setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+      toast.success("تم حذف الإشعار");
     } catch (error) {
       console.error("Error deleting notification:", error);
+      toast.error("تعذر حذف الإشعار");
     }
   };
 
-  const getIcon = (type: string, severity?: string) => {
-    switch (type) {
-      case "error":
-        return <XCircleIcon className="h-6 w-6 text-red-500" />;
-      case "warning":
-        return <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500" />;
-      case "success":
-        return <CheckCircleIcon className="h-6 w-6 text-green-500" />;
-      case "test":
-        return <BellSolidIcon className="h-6 w-6 text-blue-500" />;
-      default:
-        return <InformationCircleIcon className="h-6 w-6 text-blue-500" />;
+  const handleNotificationClick = (notification: NotificationItem) => {
+    const targetUrl = resolveTargetUrl(notification);
+    if (!notification.isRead) {
+      markAsRead(notification.id);
     }
+
+    if (!targetUrl) return;
+
+    if (/^https?:\/\//i.test(targetUrl)) {
+      try {
+        const parsed = new URL(targetUrl);
+        if (parsed.origin === window.location.origin) {
+          navigate(parsed.pathname + parsed.search + parsed.hash);
+          return;
+        }
+      } catch {
+        // Ignored
+      }
+      window.open(targetUrl, "_blank", "noopener,noreferrer");
+      return;
+    }
+
+    navigate(targetUrl);
   };
 
-  const getTypeColor = (type: string, severity?: string) => {
-    switch (type) {
-      case "error":
-        return "bg-red-100 text-red-800 border-red-200";
-      case "warning":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "success":
-        return "bg-green-100 text-green-800 border-green-200";
-      case "test":
-        return "bg-blue-100 text-blue-800 border-blue-200";
-      default:
-        return "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200 border-gray-200 dark:border-gray-600";
+  const getIcon = (type: string) => {
+    const normalized = type.toLowerCase();
+    if (normalized.includes("order")) {
+      return <ShoppingBagIcon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />;
     }
+    if (normalized.includes("error")) {
+      return <XCircleIcon className="h-5 w-5 text-red-500" />;
+    }
+    if (normalized.includes("warning")) {
+      return <ExclamationTriangleIcon className="h-5 w-5 text-amber-500" />;
+    }
+    if (normalized.includes("success")) {
+      return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
+    }
+    if (normalized.includes("test")) {
+      return <BellSolidIcon className="h-5 w-5 text-blue-500" />;
+    }
+    return <InformationCircleIcon className="h-5 w-5 text-blue-500" />;
   };
 
-  const filteredNotifications = notifications
-    .filter((notification: NotificationItem) => {
-      const matchesReadFilter =
-        filter === "all" ||
-        (filter === "read" && notification.isRead) ||
-        (filter === "unread" && !notification.isRead);
+  const getTypeBadge = (type: string) => {
+    const normalized = type.toLowerCase();
+    if (normalized.includes("order")) {
+      return {
+        label: "طلب",
+        className: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
+      };
+    }
+    if (normalized.includes("error")) {
+      return {
+        label: "خطأ",
+        className: "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800",
+      };
+    }
+    if (normalized.includes("warning")) {
+      return {
+        label: "تحذير",
+        className: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800",
+      };
+    }
+    if (normalized.includes("success")) {
+      return {
+        label: "نجاح",
+        className: "bg-green-50 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800",
+      };
+    }
+    if (normalized.includes("test")) {
+      return {
+        label: "تجريبي",
+        className: "bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
+      };
+    }
+    if (normalized.includes("attendance")) {
+      return {
+        label: "حضور",
+        className: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
+      };
+    }
+    return {
+      label: "معلومات",
+      className: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+    };
+  };
 
-      const matchesTypeFilter =
-        typeFilter === "all" || notification.type === typeFilter;
+  const filteredNotifications = useMemo(() => {
+    return notifications
+      .filter((item) => {
+        const matchesRead =
+          filter === "all" ||
+          (filter === "read" && item.isRead) ||
+          (filter === "unread" && !item.isRead);
 
-      return matchesReadFilter && matchesTypeFilter;
-    })
-    .sort(
-      (a: NotificationItem, b: NotificationItem) =>
-        new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime(),
-    );
+        const normalizedType = item.type.toLowerCase();
+        let matchesType = true;
+        if (typeFilter === "order") {
+          matchesType = normalizedType.includes("order");
+        } else if (typeFilter === "warning") {
+          matchesType = normalizedType.includes("warning");
+        } else if (typeFilter === "error") {
+          matchesType = normalizedType.includes("error");
+        } else if (typeFilter === "success") {
+          matchesType = normalizedType.includes("success");
+        } else if (typeFilter === "info") {
+          matchesType =
+            normalizedType.includes("info") ||
+            (!normalizedType.includes("order") &&
+              !normalizedType.includes("error") &&
+              !normalizedType.includes("warning") &&
+              !normalizedType.includes("success"));
+        }
 
-  const unreadCount = notifications.filter(
-    (n: NotificationItem) => !n.isRead,
-  ).length;
+        return matchesRead && matchesType;
+      })
+      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
+  }, [notifications, filter, typeFilter]);
+
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.isRead).length,
+    [notifications],
+  );
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      <div className="flex flex-col items-center justify-center min-h-[50vh] p-4 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-3 border-blue-600 border-t-transparent mb-4"></div>
+        <p className="text-sm text-gray-500 dark:text-gray-400">جاري تحميل الإشعارات...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 space-x-reverse">
-              <BellSolidIcon className="h-8 w-8 text-blue-600" />
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  الإشعارات
-                </h1>
-                <p className="text-gray-600 dark:text-gray-400">
-                  إجمالي الإشعارات: {notifications.length} | غير مقروءة:{" "}
-                  {unreadCount}
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-3">
-              <a
-                href="/notification-settings"
-                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
-              >
-                <Cog6ToothIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
-                <span>إعدادات وتخصيص الإشعارات</span>
-              </a>
-
+    <div className="w-full max-w-5xl mx-auto space-y-4 sm:space-y-6 pb-24 sm:pb-8">
+      {/* Header Container - Optimized for mobile Android viewports */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 bg-white dark:bg-gray-800 p-4 sm:p-6 rounded-2xl border border-gray-100 dark:border-gray-700/60 shadow-sm">
+        <div className="flex items-center gap-3 min-w-0">
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="p-2 -mr-1.5 rounded-xl text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 transition-colors sm:hidden touch-manipulation"
+            aria-label="رجوع"
+            title="رجوع"
+          >
+            <ArrowRightIcon className="h-5 w-5" />
+          </button>
+          <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <BellSolidIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 dark:text-white truncate">
+                الإشعارات
+              </h1>
               {unreadCount > 0 && (
-                <button
-                  onClick={markAllAsRead}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse text-sm font-medium shadow-sm"
-                >
-                  <CheckIcon className="h-5 w-5" />
-                  <span>تحديد الكل كمقروء</span>
-                </button>
+                <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-200">
+                  {unreadCount} غير مقروء
+                </span>
               )}
             </div>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 truncate">
+              إجمالي {notifications.length} إشعار مسجل
+            </p>
           </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
-          <div className="flex flex-wrap gap-4">
-            {/* Read Status Filter */}
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                الحالة:
-              </label>
-              <select
-                value={filter}
-                onChange={(e) => setFilter(e.target.value as any)}
-                className="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">الكل</option>
-                <option value="unread">غير مقروءة</option>
-                <option value="read">مقروءة</option>
-              </select>
-            </div>
+        {/* Action Buttons Toolbar */}
+        <div className="flex items-center gap-2 flex-wrap pt-2 sm:pt-0 border-t border-gray-100 dark:border-gray-700 sm:border-0">
+          <button
+            type="button"
+            onClick={() => fetchNotifications(false)}
+            disabled={refreshing}
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm touch-manipulation disabled:opacity-50"
+            title="تحديث القائمة"
+          >
+            <ArrowPathIcon className={`h-4 w-4 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
+            <span>تحديث</span>
+          </button>
 
-            {/* Type Filter */}
-            <div className="flex items-center space-x-2 space-x-reverse">
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                النوع:
-              </label>
-              <select
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value)}
-                className="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="all">الكل</option>
-                <option value="info">معلومات</option>
-                <option value="success">نجاح</option>
-                <option value="warning">تحذير</option>
-                <option value="error">خطأ</option>
-                <option value="test">تجريبي</option>
-              </select>
-            </div>
-          </div>
-        </div>
+          <Link
+            to="/notification-settings"
+            className="inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs sm:text-sm font-medium rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-sm touch-manipulation no-underline"
+          >
+            <Cog6ToothIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+            <span>الإعدادات</span>
+          </Link>
 
-        {/* Notifications List */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-          {filteredNotifications.length === 0 ? (
-            <div className="p-12 text-center">
-              <BellIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-                لا توجد إشعارات
-              </h3>
-              <p className="text-gray-500 dark:text-gray-400">
-                {filter === "unread"
-                  ? "لا توجد إشعارات غير مقروءة"
-                  : "لا توجد إشعارات متاحة"}
-              </p>
-            </div>
-          ) : (
-            <div className="divide-y divide-gray-200 dark:divide-gray-700">
-              {filteredNotifications.map((notification: NotificationItem) => {
-                const targetUrl =
-                  (notification as any).data?.url ||
-                  notification.metadata?.url;
-
-                return (
-                  <div
-                    key={notification.id}
-                    onClick={() => {
-                      if (targetUrl) {
-                        if (!notification.isRead) {
-                          markAsRead(notification.id);
-                        }
-                        window.location.href = targetUrl;
-                      }
-                    }}
-                    className={`p-6 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 ${
-                      targetUrl ? "cursor-pointer" : ""
-                    } ${
-                      !notification.isRead
-                        ? "bg-blue-50 dark:bg-blue-900/20 border-r-4 border-blue-500"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start space-x-4 space-x-reverse">
-                      <div className="flex-shrink-0 mt-1">
-                        {getIcon(notification.type, notification.severity)}
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 space-x-reverse mb-2">
-                              <h3
-                                className={`text-lg font-medium ${!notification.isRead ? "text-gray-900 dark:text-white" : "text-gray-700 dark:text-gray-300"}`}
-                              >
-                                {notification.title}
-                              </h3>
-                              <span
-                                className={`px-2 py-1 text-xs rounded-full border ${getTypeColor(notification.type, notification.severity)}`}
-                              >
-                                {notification.type === "test"
-                                    ? "تجريبي"
-                                    : notification.type === "success"
-                                      ? "نجاح"
-                                      : notification.type === "error"
-                                        ? "خطأ"
-                                        : notification.type === "warning"
-                                          ? "تحذير"
-                                          : "معلومات"}
-                              </span>
-                            </div>
-
-                            <p className="text-gray-600 dark:text-gray-400 mb-3 whitespace-pre-wrap">
-                              {notification.message}
-                            </p>
-
-                            <div className="flex items-center space-x-4 space-x-reverse text-sm text-gray-500 dark:text-gray-400">
-                              <span>
-                                {new Date(notification.timestamp).toLocaleString(
-                                  "ar-EG",
-                                )}
-                              </span>
-                              {targetUrl && (
-                                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium hover:underline">
-                                  عرض التفاصيل ←
-                                </span>
-                              )}
-                              {notification.isRead && (
-                                <span className="flex items-center space-x-1 space-x-reverse">
-                                  <CheckIcon className="h-4 w-4" />
-                                  <span>مقروء</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-
-                          <div className="flex items-center space-x-2 space-x-reverse mr-4">
-                            {!notification.isRead && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  markAsRead(notification.id);
-                                }}
-                                className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-                                title="تحديد كمقروء"
-                              >
-                                <EyeIcon className="h-5 w-5" />
-                              </button>
-                            )}
-
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                deleteNotification(notification.id);
-                              }}
-                              className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                              title="حذف الإشعار"
-                            >
-                              <TrashIcon className="h-5 w-5" />
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={markAllAsRead}
+              className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs sm:text-sm font-medium rounded-xl bg-blue-600 hover:bg-blue-700 text-white transition shadow-sm touch-manipulation"
+            >
+              <CheckIcon className="h-4 w-4" />
+              <span>تحديد الكل كمقروء</span>
+            </button>
           )}
         </div>
+      </div>
+
+      {/* Filter Tabs & Dropdowns */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-3 sm:p-4 shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+          {/* Read/Unread Filter Pills */}
+          <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-900 p-1 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setFilter("all")}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all touch-manipulation ${
+                filter === "all"
+                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+              }`}
+            >
+              الكل ({notifications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("unread")}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all touch-manipulation ${
+                filter === "unread"
+                  ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+              }`}
+            >
+              غير مقروءة ({unreadCount})
+            </button>
+            <button
+              type="button"
+              onClick={() => setFilter("read")}
+              className={`flex-1 sm:flex-initial px-3 py-1.5 text-xs sm:text-sm font-medium rounded-lg transition-all touch-manipulation ${
+                filter === "read"
+                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+              }`}
+            >
+              مقروءة ({notifications.length - unreadCount})
+            </button>
+          </div>
+
+          {/* Type Filter Selector */}
+          <div className="flex items-center gap-2 self-end sm:self-center w-full sm:w-auto">
+            <span className="text-xs text-gray-500 dark:text-gray-400 shrink-0">تصنيف:</span>
+            <select
+              value={typeFilter}
+              onChange={(e) => setTypeFilter(e.target.value)}
+              className="w-full sm:w-auto rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-200 px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">جميع الأنواع</option>
+              <option value="order">طلبات البيع</option>
+              <option value="info">معلومات ونظام</option>
+              <option value="warning">تنبيهات وتحذيرات</option>
+              <option value="error">أخطاء</option>
+              <option value="success">إشعارات النجاح</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Notifications List */}
+      <div className="space-y-2.5">
+        {filteredNotifications.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700/60 p-8 sm:p-12 text-center shadow-sm">
+            <div className="w-14 h-14 rounded-full bg-gray-100 dark:bg-gray-700/50 text-gray-400 mx-auto mb-3 flex items-center justify-center">
+              <BellIcon className="h-7 w-7" />
+            </div>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white mb-1">
+              لا توجد إشعارات حالياً
+            </h3>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-sm mx-auto mb-4">
+              {filter === "unread"
+                ? "رائع! لقد قرأت جميع الإشعارات المتاحة."
+                : "ستظهر هنا أي تنبيهات أو طلبات جديدة فور وصولها."}
+            </p>
+            <button
+              type="button"
+              onClick={() => fetchNotifications(false)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-medium rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-200 transition touch-manipulation"
+            >
+              <ArrowPathIcon className="h-4 w-4" />
+              <span>إعادة التحقق</span>
+            </button>
+          </div>
+        ) : (
+          filteredNotifications.map((notification) => {
+            const targetUrl = resolveTargetUrl(notification);
+            const badge = getTypeBadge(notification.type);
+            const isClickable = Boolean(targetUrl);
+
+            return (
+              <div
+                key={notification.id}
+                onClick={() => handleNotificationClick(notification)}
+                className={`group relative rounded-2xl border transition-all duration-200 overflow-hidden ${
+                  isClickable ? "cursor-pointer" : ""
+                } ${
+                  !notification.isRead
+                    ? "bg-blue-50/40 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/60 shadow-xs"
+                    : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700/60 hover:border-gray-300 dark:hover:border-gray-600 shadow-xs"
+                }`}
+              >
+                {/* Visual Unread Accent Indicator */}
+                {!notification.isRead && (
+                  <div className="absolute top-0 bottom-0 right-0 w-1.5 bg-blue-600 dark:bg-blue-500" />
+                )}
+
+                <div className="p-3.5 sm:p-5 flex items-start gap-3 sm:gap-4">
+                  {/* Notification Icon Bubble */}
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gray-50 dark:bg-gray-700/60 border border-gray-100 dark:border-gray-700 flex items-center justify-center shrink-0 mt-0.5">
+                    {getIcon(notification.type)}
+                  </div>
+
+                  {/* Content Area */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2 flex-wrap min-w-0">
+                        <h2
+                          className={`text-sm sm:text-base font-semibold leading-snug truncate ${
+                            !notification.isRead
+                              ? "text-gray-900 dark:text-white"
+                              : "text-gray-700 dark:text-gray-300"
+                          }`}
+                        >
+                          {notification.title}
+                        </h2>
+                        <span
+                          className={`px-2 py-0.5 text-[11px] font-medium rounded-full border ${badge.className}`}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
+
+                      {/* Card Action Buttons (Eye & Trash) - Touch Friendly */}
+                      <div className="flex items-center gap-1 shrink-0 -mt-1 -ml-1">
+                        {!notification.isRead && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markAsRead(notification.id);
+                            }}
+                            className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors touch-manipulation"
+                            title="تحديد كمقروء"
+                            aria-label="تحديد كمقروء"
+                          >
+                            <EyeIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteNotification(notification.id);
+                          }}
+                          className="p-1.5 sm:p-2 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors touch-manipulation"
+                          title="حذف الإشعار"
+                          aria-label="حذف الإشعار"
+                        >
+                          <TrashIcon className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Message Body */}
+                    <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap leading-relaxed mb-2.5">
+                      {notification.message}
+                    </p>
+
+                    {/* Footer Details: Relative Time + Target Link */}
+                    <div className="flex items-center justify-between gap-3 text-xs text-gray-400 dark:text-gray-500 pt-1 border-t border-gray-100/80 dark:border-gray-700/40">
+                      <div className="flex items-center gap-1.5">
+                        <ClockIcon className="h-3.5 w-3.5" />
+                        <span title={notification.timestamp.toLocaleString("ar-EG")}>
+                          {formatNotificationTime(notification.timestamp)}
+                        </span>
+                        {notification.isRead && (
+                          <span className="inline-flex items-center gap-0.5 text-gray-400 mr-2">
+                            <CheckIcon className="h-3.5 w-3.5 text-green-500" />
+                            <span>مقروء</span>
+                          </span>
+                        )}
+                      </div>
+
+                      {targetUrl && (
+                        <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-600 dark:text-blue-400 group-hover:underline">
+                          <span>عرض التفاصيل</span>
+                          <ArrowTopRightOnSquareIcon className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
       </div>
     </div>
   );

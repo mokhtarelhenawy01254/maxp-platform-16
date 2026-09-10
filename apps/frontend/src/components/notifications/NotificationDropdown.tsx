@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
 import { buildApiUrl } from "../../utils/urlHelper";
@@ -169,6 +170,7 @@ const buildIncompleteOrderNotificationItem = (
 const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
   className = "",
 }) => {
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
@@ -789,7 +791,18 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                           markAsRead(notification.id);
                         }
                         setIsOpen(false);
-                        window.location.href = targetUrl;
+                        if (/^https?:\/\//i.test(targetUrl)) {
+                          try {
+                            const parsed = new URL(targetUrl);
+                            if (parsed.origin === window.location.origin) {
+                              navigate(parsed.pathname + parsed.search + parsed.hash);
+                              return;
+                            }
+                          } catch {}
+                          window.open(targetUrl, "_blank", "noopener,noreferrer");
+                          return;
+                        }
+                        navigate(targetUrl);
                       }
                     }}
                     className={`px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors duration-200 ${
@@ -901,8 +914,7 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
               <button
                 onClick={() => {
                   setIsOpen(false);
-                  // Navigate to notifications page
-                  window.location.href = "/notifications";
+                  navigate("/notifications");
                 }}
                 className="w-full text-center text-sm text-blue-600 hover:text-blue-800 transition-colors duration-200"
               >

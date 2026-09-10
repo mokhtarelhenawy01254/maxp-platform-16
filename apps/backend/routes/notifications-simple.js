@@ -102,6 +102,7 @@ router.get('/recent', authenticateToken, async (req, res) => {
       }
       return {
         ...notif,
+        timestamp: notif.createdAt,
         data: parsedData
       };
     });
