@@ -7505,6 +7505,26 @@ declare module 'react-i18next' {
         typeFreeShipping: string;
         active: string;
         inactive: string;
+        modalEditTitle: string;
+        modalDeleteTitle: string;
+        deleteConfirm: string;
+        delete: string;
+        deleted: string;
+        deleteFailed: string;
+        updated: string;
+        updateFailed: string;
+        statusUpdated: string;
+        searchPlaceholder: string;
+        statsTotalCoupons: string;
+        statsActiveCoupons: string;
+        statsTotalUsages: string;
+        statsTotalDiscount: string;
+        generateCode: string;
+        allowWithLoyalty: string;
+        unlimited: string;
+        pagePrev: string;
+        pageNext: string;
+        pageInfo: string;
       };
       couponsAnalytics: {
         title: string;

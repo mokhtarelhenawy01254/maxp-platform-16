@@ -14,6 +14,9 @@ import {
   Edit,
   X,
   Loader2,
+  MapPin,
+  Globe,
+  SlidersHorizontal,
 } from "lucide-react";
 
 interface CustomerLoyaltyTier {
@@ -22,12 +25,53 @@ interface CustomerLoyaltyTier {
   nameAr?: string;
   minPoints: number;
   maxPoints?: number;
+  minSpent?: number;
+  maxSpent?: number;
+  minItems?: number;
+  maxItems?: number;
+  calculationType?: string;
   benefits: any;
+  targetGovernorates?: string[];
+  conditions?: {
+    minOrders?: number;
+    minSpent?: number;
+  } | null;
   color: string;
   icon: string;
   customersCount: number;
   programId: string;
 }
+
+
+export const EGYPT_GOVERNORATES = [
+  "القاهرة",
+  "الجيزة",
+  "الإسكندرية",
+  "القليوبية",
+  "الدقهلية",
+  "الشرقية",
+  "المنوفية",
+  "الغربية",
+  "البحيرة",
+  "دمياط",
+  "بورسعيد",
+  "الإسماعيلية",
+  "السويس",
+  "كفر الشيخ",
+  "الفيوم",
+  "بني سويف",
+  "المنيا",
+  "أسيوط",
+  "سوهاج",
+  "قنا",
+  "الأقصر",
+  "أسوان",
+  "البحر الأحمر",
+  "الوادي الجديد",
+  "مطروح",
+  "شمال سيناء",
+  "جنوب سيناء"
+];
 
 const TIER_PRESET_PACKS = [
   { key: "classic5", name: "كلاسيك — 5 مستويات", description: "برونز، فضة، ذهب، بلاتين، دايموند", count: 5, icon: "crown" },
@@ -48,6 +92,9 @@ const LoyaltyTiers: React.FC = () => {
   const [presetProgramId, setPresetProgramId] = useState("");
   const [selectedPresetKey, setSelectedPresetKey] = useState<string | null>(null);
   const [isApplyingPreset, setIsApplyingPreset] = useState(false);
+
+  // 🌍 فلترة المستويات حسب النطاق الجغرافي
+  const [selectedGovFilter, setSelectedGovFilter] = useState<string>("ALL");
 
   // 🆕 تفعيل نظام المستويات (مستقل عن الخصم التلقائي عبر loyalty-config)
   const [tiersEnabled, setTiersEnabled] = useState<boolean>(false);
@@ -148,7 +195,11 @@ const LoyaltyTiers: React.FC = () => {
 
   const handleOpenModal = (tier: CustomerLoyaltyTier | null = null) => {
     if (tier) {
-      setEditingTier({ ...tier });
+      setEditingTier({
+        ...tier,
+        targetGovernorates: Array.isArray(tier.targetGovernorates) ? [...tier.targetGovernorates] : [],
+        conditions: tier.conditions ? { ...tier.conditions } : { minOrders: undefined, minSpent: undefined }
+      });
     } else {
       setEditingTier({
         name: "",
@@ -156,6 +207,8 @@ const LoyaltyTiers: React.FC = () => {
         minPoints: 0,
         maxPoints: 0,
         benefits: [""],
+        targetGovernorates: [],
+        conditions: { minOrders: undefined, minSpent: undefined },
         color: "#6366f1",
         icon: "crown",
         programId: programs.length > 0 ? programs[0].id : "",
@@ -170,10 +223,18 @@ const LoyaltyTiers: React.FC = () => {
     try {
       setIsSaving(true);
       // Clean up benefits: remove empty ones
-      const cleanBenefits = (editingTier.benefits || []).filter((b) => b.trim() !== "");
-      const payload = {
+      const cleanBenefits = (editingTier.benefits || []).filter((b) => typeof b === "string" && b.trim() !== "");
+      const hasConditions = editingTier.conditions && (editingTier.conditions.minOrders || editingTier.conditions.minSpent);
+      const payload: any = {
         ...editingTier,
         benefits: cleanBenefits,
+        targetGovernorates: Array.isArray(editingTier.targetGovernorates) ? editingTier.targetGovernorates : [],
+        conditions: hasConditions
+          ? {
+              minOrders: editingTier.conditions?.minOrders ? Number(editingTier.conditions.minOrders) : undefined,
+              minSpent: editingTier.conditions?.minSpent ? Number(editingTier.conditions.minSpent) : undefined,
+            }
+          : null,
       };
 
       if (editingTier.maxPoints === 0 || !editingTier.maxPoints) {
@@ -247,6 +308,12 @@ const LoyaltyTiers: React.FC = () => {
       </div>
     );
   }
+
+  const displayedTiers = tiers.filter((t) => {
+    if (selectedGovFilter === "ALL") return true;
+    if (selectedGovFilter === "GLOBAL") return !t.targetGovernorates || t.targetGovernorates.length === 0;
+    return Array.isArray(t.targetGovernorates) && t.targetGovernorates.includes(selectedGovFilter);
+  });
 
   return (
     <div className="space-y-6">
@@ -348,8 +415,64 @@ const LoyaltyTiers: React.FC = () => {
           </button>
         </div>
       ) : (
+        <>
+          {/* 🌍 شريط تصفية المستويات حسب المحافظات */}
+          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm">
+            <div className="flex items-center gap-2 text-sm font-semibold text-gray-800 dark:text-gray-200">
+              <MapPin className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span>تصفية المستويات حسب النطاق الجغرافي:</span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={() => setSelectedGovFilter("ALL")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  selectedGovFilter === "ALL"
+                    ? "bg-purple-600 text-white shadow-sm"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                الكل ({tiers.length})
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelectedGovFilter("GLOBAL")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  selectedGovFilter === "GLOBAL"
+                    ? "bg-purple-600 text-white shadow-sm"
+                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+              >
+                🌐 عام لكافة المحافظات ({tiers.filter((t) => !t.targetGovernorates || t.targetGovernorates.length === 0).length})
+              </button>
+              <select
+                value={selectedGovFilter === "ALL" || selectedGovFilter === "GLOBAL" ? "" : selectedGovFilter}
+                onChange={(e) => setSelectedGovFilter(e.target.value || "ALL")}
+                className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-xs font-medium text-gray-800 dark:text-gray-200"
+              >
+                <option value="">اختر محافظة معينة...</option>
+                {EGYPT_GOVERNORATES.map((gov) => {
+                  const count = tiers.filter((t) => t.targetGovernorates && t.targetGovernorates.includes(gov)).length;
+                  return (
+                    <option key={gov} value={gov}>
+                      {gov} {count > 0 ? `(${count})` : ""}
+                    </option>
+                  );
+                })}
+              </select>
+            </div>
+          </div>
+
+      {displayedTiers.length === 0 ? (
+        <div className="text-center py-10 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <MapPin className="w-10 h-10 text-gray-400 mx-auto mb-2" />
+          <p className="text-gray-600 dark:text-gray-300 text-sm">
+            لا توجد مستويات مطابقة لهذا النطاق الجغرافي
+          </p>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {tiers.map((tier) => (
+          {displayedTiers.map((tier) => (
             <div
               key={tier.id}
               className="relative group bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-all duration-200"
@@ -358,6 +481,26 @@ const LoyaltyTiers: React.FC = () => {
                  <button onClick={(e) => handleDelete(tier.id, e)} className="p-1.5 text-gray-400 hover:text-red-500 bg-white dark:bg-gray-700 rounded-md shadow-sm border border-gray-200 dark:border-gray-600">
                     <Trash2 className="w-4 h-4" />
                  </button>
+              </div>
+
+              {/* 📍 بادج النطاق الجغرافي والشروط */}
+              <div className="flex items-center justify-between gap-2 mb-4">
+                {tier.targetGovernorates && tier.targetGovernorates.length > 0 ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-indigo-50 text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                    <MapPin className="w-3 h-3 text-indigo-500" />
+                    {tier.targetGovernorates.join("، ")}
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-md bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-600">
+                    <Globe className="w-3 h-3 text-gray-500" />
+                    جميع المحافظات
+                  </span>
+                )}
+                {tier.conditions && (tier.conditions.minOrders || tier.conditions.minSpent) ? (
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-700">
+                    شرط مركب
+                  </span>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-4 mb-6">
@@ -402,6 +545,21 @@ const LoyaltyTiers: React.FC = () => {
                 ) : null}
               </div>
 
+              {tier.conditions && (tier.conditions.minOrders || tier.conditions.minSpent) ? (
+                <div className="mb-4 p-2.5 bg-amber-50/60 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/40 rounded-lg text-xs space-y-1 text-amber-900 dark:text-amber-200">
+                  <span className="font-bold flex items-center gap-1">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-amber-600" />
+                    شروط إضافية للتأهل:
+                  </span>
+                  {tier.conditions.minOrders ? (
+                    <div>• حد أدنى: <span className="font-bold">{tier.conditions.minOrders}</span> طلب مكتمل</div>
+                  ) : null}
+                  {tier.conditions.minSpent ? (
+                    <div>• حد أدنى للإنفاق: <span className="font-bold">{Number(tier.conditions.minSpent).toLocaleString()}</span> ج.م</div>
+                  ) : null}
+                </div>
+              ) : null}
+
               <div className="space-y-2">
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
                   مميزات المستوى:
@@ -434,6 +592,8 @@ const LoyaltyTiers: React.FC = () => {
           ))}
         </div>
       )}
+    </>
+  )}
 
       {isModalOpen && editingTier && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
@@ -523,6 +683,120 @@ const LoyaltyTiers: React.FC = () => {
                     onChange={(e) => setEditingTier({ ...editingTier, maxPoints: e.target.value ? Number(e.target.value) : undefined })}
                     className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900"
                   />
+                </div>
+              </div>
+
+              {/* 🌍 النطاق الجغرافي للمستوى */}
+              <div className="space-y-3 p-4 bg-gray-50 dark:bg-gray-900/40 rounded-xl border border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-bold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-purple-600" />
+                    النطاق الجغرافي للمستوى (المحافظات المؤهلة)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingTier({ ...editingTier, targetGovernorates: [] })}
+                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                    >
+                      تحديد كعام (لكل المحافظات)
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      type="button"
+                      onClick={() => setEditingTier({ ...editingTier, targetGovernorates: [...EGYPT_GOVERNORATES] })}
+                      className="text-xs text-purple-600 dark:text-purple-400 hover:underline"
+                    >
+                      اختيار الكل
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  اتركها فارغة لتطبيق المستوى على جميع المحافظات، أو اختر محافظات معينة (مثل القاهرة والجيزة) ليكون مستوى مخصصاً لمنطقتهم فقط.
+                </p>
+
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                  {EGYPT_GOVERNORATES.map((gov) => {
+                    const isSelected = Array.isArray(editingTier.targetGovernorates) && editingTier.targetGovernorates.includes(gov);
+                    return (
+                      <button
+                        key={gov}
+                        type="button"
+                        onClick={() => {
+                          const current = Array.isArray(editingTier.targetGovernorates) ? editingTier.targetGovernorates : [];
+                          const updated = isSelected ? current.filter(g => g !== gov) : [...current, gov];
+                          setEditingTier({ ...editingTier, targetGovernorates: updated });
+                        }}
+                        className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
+                          isSelected
+                            ? "bg-purple-600 text-white shadow-sm"
+                            : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+                        }`}
+                      >
+                        {isSelected ? "✓ " : ""}{gov}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ⚙️ شروط مركبة إضافية للتأهل (Compound Conditions) */}
+              <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/40 space-y-3">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="w-4 h-4 text-amber-600" />
+                  <label className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                    شروط مركبة إضافية للتأهل للمستوى (اختياري)
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  يمكنك اشتراط عدد طلبات محدد أو حد أدنى للإنفاق بجانب الشرط الرئيسي للترقية للمستوى.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      الحد الأدنى لعدد الطلبات المكتملة
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="مثلاً: 3 طلبات"
+                      value={editingTier.conditions?.minOrders ?? ""}
+                      onChange={(e) =>
+                        setEditingTier({
+                          ...editingTier,
+                          conditions: {
+                            ...editingTier.conditions,
+                            minOrders: e.target.value ? Number(e.target.value) : undefined,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                      الحد الأدنى لإجمالي الإنفاق (ج.م)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="مثلاً: 2000 ج.م"
+                      value={editingTier.conditions?.minSpent ?? ""}
+                      onChange={(e) =>
+                        setEditingTier({
+                          ...editingTier,
+                          conditions: {
+                            ...editingTier.conditions,
+                            minSpent: e.target.value ? Number(e.target.value) : undefined,
+                          },
+                        })
+                      }
+                      className="w-full px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-sm"
+                    />
+                  </div>
                 </div>
               </div>
 

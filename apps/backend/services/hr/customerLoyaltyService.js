@@ -214,11 +214,14 @@ class CustomerLoyaltyService {
             }
           });
 
+          const parsedBenefits = tier.benefits ? parseJsonMaybe(tier.benefits, null) : null;
           return {
             ...tier,
             program: tier.customerLoyaltyProgram,
             customersCount: count,
-            benefits: tier.benefits ? JSON.parse(tier.benefits) : []
+            benefits: parsedBenefits || [],
+            targetGovernorates: Array.isArray(parsedBenefits?.targetGovernorates) ? parsedBenefits.targetGovernorates : [],
+            conditions: parsedBenefits?.conditions || null
           };
         })
       );
@@ -261,7 +264,14 @@ class CustomerLoyaltyService {
   /**
    * التأكد من عدم وجود مستوى آخر بنفس الحدود أو متداخل معها في نفس البرنامج
    */
-  async _assertNoTierRangeConflict(prisma, companyId, programId, calculationType, excludeTierId, range) {
+  _governoratesOverlap(govsA, govsB) {
+    const a = Array.isArray(govsA) && govsA.length > 0 ? govsA : ['*'];
+    const b = Array.isArray(govsB) && govsB.length > 0 ? govsB : ['*'];
+    if (a.includes('*') || b.includes('*')) return true;
+    return a.some((g) => b.includes(g));
+  }
+
+  async _assertNoTierRangeConflict(prisma, companyId, programId, calculationType, excludeTierId, range, targetGovernorates = []) {
     if (range.min !== null && range.max !== null && range.min > range.max) {
       const err = new Error('الحد الأدنى أكبر من الحد الأقصى');
       err.statusCode = 400;
@@ -279,7 +289,8 @@ class CustomerLoyaltyService {
         minSpent: true,
         maxSpent: true,
         minItems: true,
-        maxItems: true
+        maxItems: true,
+        benefits: true
       }
     });
 
@@ -288,14 +299,26 @@ class CustomerLoyaltyService {
       const tRange = this._extractTierRange(calculationType, t);
       if (this._isRangeEmpty(tRange)) continue;
 
+      let tGovs = [];
+      try {
+        const parsed = t.benefits ? parseJsonMaybe(t.benefits, null) : null;
+        if (Array.isArray(parsed?.targetGovernorates)) {
+          tGovs = parsed.targetGovernorates;
+        }
+      } catch {}
+
+      if (!this._governoratesOverlap(targetGovernorates, tGovs)) {
+        continue;
+      }
+
       if (tRange.min === range.min && tRange.max === range.max) {
-        const err = new Error(`يوجد مستوى آخر بنفس الحد الأدنى والأقصى ("${t.nameAr || t.name}")`);
+        const err = new Error(`يوجد مستوى آخر بنفس الحد الأدنى والأقصى ("${t.nameAr || t.name}") لنفس النطاق الجغرافي`);
         err.statusCode = 400;
         throw err;
       }
 
       if (this._rangesOverlap(tRange, range)) {
-        const err = new Error(`حدود المستوى تتداخل مع مستوى آخر ("${t.nameAr || t.name}") في نفس البرنامج`);
+        const err = new Error(`حدود المستوى تتداخل مع مستوى آخر ("${t.nameAr || t.name}") في نفس البرنامج لنفس النطاق الجغرافي`);
         err.statusCode = 400;
         throw err;
       }
@@ -309,9 +332,27 @@ class CustomerLoyaltyService {
     const prisma = getSharedPrismaClient();
     try {
       const calcType = data.calculationType || 'POINTS';
+      const targetGovernorates = Array.isArray(data.targetGovernorates)
+        ? data.targetGovernorates
+        : (data.benefits && Array.isArray(data.benefits.targetGovernorates) ? data.benefits.targetGovernorates : []);
+      const conditions = data.conditions || data.benefits?.conditions || null;
+
       const newRange = this._extractTierRange(calcType, data);
       if (!this._isRangeEmpty(newRange)) {
-        await this._assertNoTierRangeConflict(prisma, companyId, data.programId, calcType, null, newRange);
+        await this._assertNoTierRangeConflict(prisma, companyId, data.programId, calcType, null, newRange, targetGovernorates);
+      }
+
+      let benefitsObj = data.benefits;
+      if (Array.isArray(benefitsObj)) {
+        benefitsObj = { items: benefitsObj };
+      } else if (!benefitsObj || typeof benefitsObj !== 'object') {
+        benefitsObj = {};
+      }
+      if (targetGovernorates.length > 0) {
+        benefitsObj.targetGovernorates = targetGovernorates;
+      }
+      if (conditions) {
+        benefitsObj.conditions = conditions;
       }
 
       const tier = await prisma.customerLoyaltyTier.create({
@@ -327,16 +368,19 @@ class CustomerLoyaltyService {
           maxSpent: data.maxSpent != null ? data.maxSpent : undefined,
           minItems: data.minItems != null ? data.minItems : undefined,
           maxItems: data.maxItems != null ? data.maxItems : undefined,
-          benefits: data.benefits ? JSON.stringify(data.benefits) : null,
+          benefits: Object.keys(benefitsObj).length > 0 ? JSON.stringify(benefitsObj) : (data.benefits ? JSON.stringify(data.benefits) : null),
           color: data.color || '#6366f1',
           icon: data.icon || 'crown',
           priority: data.priority || 1
         }
       });
 
+      const parsedBenefits = tier.benefits ? parseJsonMaybe(tier.benefits, null) : null;
       return {
         ...tier,
-        benefits: tier.benefits ? JSON.parse(tier.benefits) : null
+        benefits: parsedBenefits,
+        targetGovernorates: Array.isArray(parsedBenefits?.targetGovernorates) ? parsedBenefits.targetGovernorates : [],
+        conditions: parsedBenefits?.conditions || null
       };
     } catch (error) {
       console.error('❌ Error creating loyalty tier:', error);
@@ -361,13 +405,39 @@ class CustomerLoyaltyService {
           minSpent: true,
           maxSpent: true,
           minItems: true,
-          maxItems: true
+          maxItems: true,
+          benefits: true
         }
       });
       if (!existing) {
         const err = new Error('المستوى غير موجود');
         err.statusCode = 404;
         throw err;
+      }
+
+      const existingBenefits = existing.benefits ? parseJsonMaybe(existing.benefits, {}) : {};
+      const targetGovernorates = data.targetGovernorates !== undefined
+        ? (Array.isArray(data.targetGovernorates) ? data.targetGovernorates : [])
+        : (existingBenefits?.targetGovernorates || []);
+      const conditions = data.conditions !== undefined
+        ? data.conditions
+        : (existingBenefits?.conditions || null);
+
+      let benefitsObj = data.benefits !== undefined ? data.benefits : existingBenefits;
+      if (Array.isArray(benefitsObj)) {
+        benefitsObj = { items: benefitsObj };
+      } else if (!benefitsObj || typeof benefitsObj !== 'object') {
+        benefitsObj = {};
+      }
+      if (targetGovernorates.length > 0) {
+        benefitsObj.targetGovernorates = targetGovernorates;
+      } else {
+        delete benefitsObj.targetGovernorates;
+      }
+      if (conditions) {
+        benefitsObj.conditions = conditions;
+      } else if (data.conditions === null) {
+        delete benefitsObj.conditions;
       }
 
       const updateData = {};
@@ -383,14 +453,13 @@ class CustomerLoyaltyService {
       if (data.color !== undefined) updateData.color = data.color;
       if (data.icon !== undefined) updateData.icon = data.icon;
       if (data.priority !== undefined) updateData.priority = data.priority;
-      if (data.benefits !== undefined) updateData.benefits = data.benefits ? JSON.stringify(data.benefits) : null;
+      updateData.benefits = Object.keys(benefitsObj).length > 0 ? JSON.stringify(benefitsObj) : null;
 
-      // التحقق من عدم تكرار/تداخل الحدود مع مستويات أخرى في نفس البرنامج
       const calcType = data.calculationType !== undefined ? data.calculationType : (existing.calculationType || 'POINTS');
       const merged = { ...existing, ...updateData };
       const newRange = this._extractTierRange(calcType, merged);
       if (!this._isRangeEmpty(newRange)) {
-        await this._assertNoTierRangeConflict(prisma, companyId, existing.programId, calcType, tierId, newRange);
+        await this._assertNoTierRangeConflict(prisma, companyId, existing.programId, calcType, tierId, newRange, targetGovernorates);
       }
 
       const tier = await prisma.customerLoyaltyTier.update({
@@ -401,9 +470,12 @@ class CustomerLoyaltyService {
         data: updateData
       });
 
+      const parsedBenefits = tier.benefits ? parseJsonMaybe(tier.benefits, null) : null;
       return {
         ...tier,
-        benefits: tier.benefits ? JSON.parse(tier.benefits) : null
+        benefits: parsedBenefits,
+        targetGovernorates: Array.isArray(parsedBenefits?.targetGovernorates) ? parsedBenefits.targetGovernorates : [],
+        conditions: parsedBenefits?.conditions || null
       };
     } catch (error) {
       console.error('❌ Error updating loyalty tier:', error);
@@ -563,7 +635,11 @@ class CustomerLoyaltyService {
       if (initialMethod !== 'POINTS') {
         initialMetric = await this.computeTierMetric(companyId, customerId, programId, initialMethod);
       }
-      const initialTier = await this.determineTier(companyId, programId, initialMetric, initialMethod);
+      const initialGov = await this.resolveCustomerGovernorate(companyId, customerId);
+      const initialTier = await this.determineTier(companyId, programId, initialMetric, initialMethod, {
+        customerId,
+        governorate: initialGov
+      });
 
       // إنشاء السجل
       const record = await prisma.customerLoyaltyRecord.create({
@@ -777,6 +853,30 @@ class CustomerLoyaltyService {
   /**
    * تحديث مستوى العميل بناءً على نقاطه
    */
+  async resolveCustomerGovernorate(companyId, customerId) {
+    const prisma = getSharedPrismaClient();
+    try {
+      const order = await prisma.order.findFirst({
+        where: { companyId, customerId },
+        orderBy: { createdAt: 'desc' },
+        select: { governorate: true, city: true, shippingAddress: true }
+      });
+      if (!order) return null;
+      if (order.governorate && String(order.governorate).trim()) return String(order.governorate).trim();
+      if (order.shippingAddress) {
+        try {
+          const parsed = typeof order.shippingAddress === 'string' ? JSON.parse(order.shippingAddress) : order.shippingAddress;
+          if (parsed?.governorate && String(parsed.governorate).trim()) return String(parsed.governorate).trim();
+        } catch {}
+      }
+      if (order.city && String(order.city).trim()) return String(order.city).trim();
+      return null;
+    } catch (e) {
+      console.warn('⚠️ [LOYALTY] Failed to resolve customer governorate:', e?.message);
+      return null;
+    }
+  }
+
   async updateCustomerTier(companyId, customerId, programId) {
     const prisma = getSharedPrismaClient();
     try {
@@ -794,7 +894,28 @@ class CustomerLoyaltyService {
       const method = await this.resolveTierMethod(companyId, customerId, programId);
       const metricValue = await this.computeTierMetric(companyId, customerId, programId, method);
 
-      const newTier = await this.determineTier(companyId, programId, metricValue, method);
+      const governorate = await this.resolveCustomerGovernorate(companyId, customerId);
+      const [spentAgg, ordersAgg] = typeof prisma.order?.aggregate === 'function'
+        ? await Promise.all([
+            prisma.order.aggregate({
+              where: { customerId, companyId, status: 'DELIVERED' },
+              _sum: { total: true }
+            }),
+            prisma.order.aggregate({
+              where: { customerId, companyId, status: 'DELIVERED' },
+              _count: true
+            })
+          ])
+        : [{ _sum: { total: 0 } }, { _count: 0 }];
+
+      const customerContext = {
+        customerId,
+        governorate,
+        totalSpent: parseFloat(spentAgg._sum?.total || 0),
+        ordersCount: ordersAgg._count || 0
+      };
+
+      const newTier = await this.determineTier(companyId, programId, metricValue, method, customerContext);
 
       if (newTier && newTier.id !== record.tierId) {
         const oldTier = record.tierId
@@ -1118,7 +1239,8 @@ class CustomerLoyaltyService {
       };
       const sorted = [...tiers].sort((a, b) => sortKey(a) - sortKey(b));
 
-      const currentTier = await this.determineTier(companyId, program.id, metric, method);
+      const governorate = await this.resolveCustomerGovernorate(companyId, customerId);
+      const currentTier = await this.determineTier(companyId, program.id, metric, method, { customerId, governorate });
       let nextTier = null;
       for (const t of sorted) {
         if (sortKey(t) > metric && (!nextTier || sortKey(t) < sortKey(nextTier))) {
@@ -1203,7 +1325,7 @@ class CustomerLoyaltyService {
   /**
    * تحديد المستوى بناءً على طريقة الحساب (نقاط / فلوس / قطع)
    */
-  async determineTier(companyId, programId, metricValue, method = 'POINTS') {
+  async determineTier(companyId, programId, metricValue, method = 'POINTS', customerContext = {}) {
     const prisma = getSharedPrismaClient();
     try {
       const tiers = await prisma.customerLoyaltyTier.findMany({
@@ -1213,31 +1335,69 @@ class CustomerLoyaltyService {
           calculationType: method
         },
         orderBy: {
-          priority: 'desc' // أعلى أولوية أولاً
+          priority: 'desc'
         }
       });
 
       const val = Number(metricValue);
+      const customerGov = customerContext.governorate ? String(customerContext.governorate).trim().toLowerCase() : null;
+
+      const regionalTiers = [];
+      const globalTiers = [];
 
       for (const tier of tiers) {
-        let match = false;
-        if (method === 'SPENT') {
-          const min = tier.minSpent != null ? Number(tier.minSpent) : 0;
-          const max = tier.maxSpent != null ? Number(tier.maxSpent) : null;
-          match = val >= min && (max == null || val <= max);
-        } else if (method === 'ITEMS' || method === 'ORDER_COUNT') {
-          const min = tier.minItems != null ? Number(tier.minItems) : 0;
-          const max = tier.maxItems != null ? Number(tier.maxItems) : null;
-          match = val >= min && (max == null || val <= max);
-        } else {
-          // POINTS
-          const min = tier.minPoints != null ? Number(tier.minPoints) : 0;
-          const max = tier.maxPoints != null ? Number(tier.maxPoints) : null;
-          match = val >= min && (max == null || val <= max);
-        }
+        const parsedBenefits = tier.benefits ? parseJsonMaybe(tier.benefits, null) : null;
+        const govs = Array.isArray(parsedBenefits?.targetGovernorates) ? parsedBenefits.targetGovernorates : [];
 
-        if (match) {
-          return tier;
+        const matchesGov = customerGov && govs.some((g) => {
+          const normG = String(g).trim().toLowerCase();
+          return normG === customerGov || customerGov.includes(normG) || normG.includes(customerGov);
+        });
+
+        if (matchesGov) {
+          regionalTiers.push({ ...tier, _parsedBenefits: parsedBenefits });
+        } else if (govs.length === 0 || govs.includes('*') || govs.includes('ALL')) {
+          globalTiers.push({ ...tier, _parsedBenefits: parsedBenefits });
+        }
+      }
+
+      const candidateLists = regionalTiers.length > 0 ? [regionalTiers, globalTiers] : [globalTiers];
+
+      for (const candidateList of candidateLists) {
+        for (const tier of candidateList) {
+          let match = false;
+          if (method === 'SPENT') {
+            const min = tier.minSpent != null ? Number(tier.minSpent) : 0;
+            const max = tier.maxSpent != null ? Number(tier.maxSpent) : null;
+            match = val >= min && (max == null || val <= max);
+          } else if (method === 'ITEMS' || method === 'ORDER_COUNT') {
+            const min = tier.minItems != null ? Number(tier.minItems) : 0;
+            const max = tier.maxItems != null ? Number(tier.maxItems) : null;
+            match = val >= min && (max == null || val <= max);
+          } else {
+            // POINTS
+            const min = tier.minPoints != null ? Number(tier.minPoints) : 0;
+            const max = tier.maxPoints != null ? Number(tier.maxPoints) : null;
+            match = val >= min && (max == null || val <= max);
+          }
+
+          if (match && tier._parsedBenefits?.conditions) {
+            const conds = tier._parsedBenefits.conditions;
+            if (conds.minOrders != null && customerContext.ordersCount != null) {
+              if (Number(customerContext.ordersCount) < Number(conds.minOrders)) {
+                match = false;
+              }
+            }
+            if (conds.minSpent != null && customerContext.totalSpent != null) {
+              if (Number(customerContext.totalSpent) < Number(conds.minSpent)) {
+                match = false;
+              }
+            }
+          }
+
+          if (match) {
+            return tier;
+          }
         }
       }
 
