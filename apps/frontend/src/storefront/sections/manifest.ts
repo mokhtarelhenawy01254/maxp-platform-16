@@ -3045,7 +3045,9 @@ export const STOREFRONT_SECTION_MANIFEST = {
     label: "Affiliate FAQ (with FAQPage schema)",
     component: "affiliate-faq",
     fields: [
+      { key: "badge", label: "شارة أعلى العنوان", type: "text", placeholder: "الأسئلة الشائعة" },
       { key: "title", label: "Title", type: "text", placeholder: "Frequently Asked Questions" },
+      { key: "subtitle", label: "الوصف", type: "textarea", placeholder: "إجابات على الأسئلة الأكثر تكراراً" },
       { key: "faqs", label: "FAQs", type: "textarea", placeholder: "Question|Answer per line" },
     ],
   },
