@@ -1,9 +1,6 @@
 const ACCESS_TOKEN_KEY = "accessToken";
 const LEGACY_ACCESS_TOKEN_KEY = "token";
-
-// ponytail: refreshToken now lives in httpOnly cookie (set by backend), not localStorage
-// Access token stays in sessionStorage (tab-scoped, cleared on close)
-// This prevents XSS from stealing long-lived refresh tokens
+const REFRESH_TOKEN_KEY = "refreshToken";
 
 const readToken = (key: string): string | null =>
   sessionStorage.getItem(key) || localStorage.getItem(key);
@@ -50,18 +47,20 @@ export const tokenManager = {
     writeToken(LEGACY_ACCESS_TOKEN_KEY, token);
   },
 
-  // ponytail: refresh token is httpOnly cookie now, no client-side storage needed
   getRefreshToken(): string | null {
-    return null;
+    return readToken(REFRESH_TOKEN_KEY);
   },
 
-  setRefreshToken(_token: string): void {
-    // no-op: refresh token is set as httpOnly cookie by backend
+  setRefreshToken(token: string): void {
+    if (token) {
+      writeToken(REFRESH_TOKEN_KEY, token);
+    }
   },
 
   clearTokens(): void {
     clearToken(ACCESS_TOKEN_KEY);
     clearToken(LEGACY_ACCESS_TOKEN_KEY);
+    clearToken(REFRESH_TOKEN_KEY);
   },
 };
 

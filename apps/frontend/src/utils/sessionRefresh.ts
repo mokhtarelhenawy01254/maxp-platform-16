@@ -39,23 +39,28 @@ export const refreshSessionTokens = async (
   // No need to read from tokenManager
 
   try {
+    const fallbackRefreshToken = tokenManager.getRefreshToken();
     const response = await fetchImpl(`${getApiUrl()}/auth/refresh`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
+      body: fallbackRefreshToken ? JSON.stringify({ refreshToken: fallbackRefreshToken }) : undefined,
       credentials: "include",
     });
 
     const payload = await parseResponseJson(response);
 
     if (response.ok && payload?.accessToken) {
-      tokenManager.setAccessToken(payload.accessToken);
+      tokenManager.setAccessToken(payload.accessToken as string);
+      if (payload.refreshToken) {
+        tokenManager.setRefreshToken(payload.refreshToken as string);
+      }
 
       return {
         ok: true,
-        accessToken: payload.accessToken,
-        refreshToken: "",
+        accessToken: payload.accessToken as string,
+        refreshToken: (payload.refreshToken as string) || "",
       };
     }
 

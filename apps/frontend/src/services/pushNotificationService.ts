@@ -124,6 +124,29 @@ class PushNotificationService {
       console.error("❌ [PUSH] Error registering device token:", err);
     });
 
+    const navigateSafely = (target: string) => {
+      let destination = target;
+      if (/^https?:\/\/(?:www\.)?maxp\.online/i.test(destination)) {
+        try {
+          const parsed = new URL(destination);
+          destination = parsed.pathname + parsed.search + parsed.hash;
+        } catch {}
+      }
+
+      if (destination.startsWith("/")) {
+        window.dispatchEvent(new CustomEvent("maxp:navigate", { detail: destination }));
+        if (window.location.pathname + window.location.search !== destination) {
+          setTimeout(() => {
+            if (window.location.pathname + window.location.search !== destination) {
+              window.location.href = destination;
+            }
+          }, 100);
+        }
+      } else {
+        window.open(destination, "_blank");
+      }
+    };
+
     // 3. وصول إشعار والتطبيق مفتوح في المقدمة (Foreground)
     PushNotifications.addListener("pushNotificationReceived", async (notification) => {
       console.log("🔔 [PUSH] Notification received in foreground:", notification.title);
@@ -143,7 +166,7 @@ class PushNotificationService {
             ? {
                 label: "عرض",
                 onClick: () => {
-                  window.location.href = targetUrl;
+                  navigateSafely(targetUrl);
                 },
               }
             : undefined,
@@ -165,10 +188,7 @@ class PushNotificationService {
         (data.orderId ? `/orders?orderId=${data.orderId}` : null);
 
       if (targetUrl) {
-        // توجيه المستخدم مباشرة للصفحة المطلوبة
-        if (window.location.pathname + window.location.search !== targetUrl) {
-          window.location.href = targetUrl;
-        }
+        navigateSafely(targetUrl);
       }
     });
   }

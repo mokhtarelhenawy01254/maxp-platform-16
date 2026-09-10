@@ -1688,6 +1688,7 @@ const AppContent = () => {
   // Use real authentication state
   const { isAuthenticated, isLoading, user } = useAuth();
   const { pathname } = useLocation();
+  const navigate = useNavigate();
   const isDev = import.meta.env.DEV || import.meta.env.MODE === "development";
 
   const [activeLpSlugs, setActiveLpSlugs] = useState<Set<string> | null>(null);
@@ -1756,6 +1757,43 @@ const AppContent = () => {
       pushNotificationService.syncTokenWithBackend();
     }
   }, [isAuthenticated, user]);
+
+  // Native Mobile Back Button & In-App Navigation (Android)
+  useEffect(() => {
+    let removeBackListener: (() => void) | undefined;
+
+    import("@capacitor/core").then(({ Capacitor }) => {
+      if (!Capacitor.isNativePlatform()) return;
+
+      import("@capacitor/app").then(({ App: CapApp }) => {
+        CapApp.addListener("backButton", ({ canGoBack }) => {
+          const currentPath = window.location.pathname;
+          if (currentPath === "/dashboard" || currentPath === "/" || currentPath === "/apps") {
+            CapApp.exitApp();
+          } else if (canGoBack || window.history.length > 1) {
+            navigate(-1);
+          } else {
+            navigate("/dashboard");
+          }
+        }).then((listener) => {
+          removeBackListener = () => listener.remove();
+        });
+      });
+    });
+
+    const handleCustomNavigate = (e: Event) => {
+      const customEvt = e as CustomEvent<string>;
+      if (customEvt.detail) {
+        navigate(customEvt.detail);
+      }
+    };
+    window.addEventListener("maxp:navigate", handleCustomNavigate);
+
+    return () => {
+      if (removeBackListener) removeBackListener();
+      window.removeEventListener("maxp:navigate", handleCustomNavigate);
+    };
+  }, [navigate]);
 
   // Subdomain Detection Logic
   const hostname = window.location.hostname;
