@@ -2007,7 +2007,7 @@ export default function DentalCasesTab() {
       )}
 
       {createOpen && (
-        <CreateCaseModal initial={editingCase} doctors={doctors} workTypes={workTypes} onClose={() => { setCreateOpen(false); setEditingCase(null); }} onSaved={handleSaved} />
+        <CreateCaseModal initial={editingCase} doctors={doctors} workTypes={workTypes} technicians={technicians} onClose={() => { setCreateOpen(false); setEditingCase(null); }} onSaved={handleSaved} />
       )}
       {kioskOpen && (
         <KioskScannerModal technicians={technicians} onClose={() => setKioskOpen(false)} onScanned={() => refresh({ silent: true })} />
