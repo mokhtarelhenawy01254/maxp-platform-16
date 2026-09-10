@@ -34,7 +34,7 @@ export interface BulkActionBarProps {
   /** Open the bulk print page. */
   onPrintInvoices: () => void;
   /** Create Turbo shipments for the whole selection. */
-  onCreateTurboShipments: () => void;
+  onCreateTurboShipments?: () => void;
   /** Create QP Express shipments for the whole selection. */
   onCreateQpExpressShipments?: () => void;
   /** Create Bosta shipments for the whole selection. */
@@ -132,7 +132,7 @@ export const BulkActionBar: React.FC<BulkActionBarProps> = ({
           {printing ? t("orders.printing") : t("orders.printInvoices")}
         </Button>
 
-        {!isTrashView && (
+        {!isTrashView && onCreateTurboShipments && (
           <Button
             type="button"
             variant="outline"

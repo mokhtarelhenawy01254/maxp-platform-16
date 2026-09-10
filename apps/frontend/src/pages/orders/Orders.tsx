@@ -1138,6 +1138,9 @@ const Orders: React.FC = () => {
   const [merchantSettlementLoading, setMerchantSettlementLoading] =
     useState(false);
   const [merchantSettlementError, setMerchantSettlementError] = useState("");
+  const [activeCarriers, setActiveCarriers] = useState<
+    Array<{ id: string; name?: string; slug?: string; providerKey?: string; isActive?: boolean }>
+  >([]);
 
   const [filters, setFilters] = useState<OrdersFilters>(
     restoredListViewState.filters,
@@ -1505,10 +1508,42 @@ const Orders: React.FC = () => {
 
     void fetchUnifiedOperationOptions();
 
+  }, [isAdmin, isMerchant]);
+ 
+  useEffect(() => {
+    if (!canSelectOrders) return;
+    let isMounted = true;
+    const fetchActiveCarriers = async () => {
+      try {
+        let activeList: Array<{ id: string; name?: string; slug?: string; providerKey?: string; isActive?: boolean }> = [];
+        try {
+          const res = await apiClient.get<{ success: boolean; data?: typeof activeList }>(
+            "/shipping-companies/active-carriers",
+            { _skipErrorToast: true } as any,
+          );
+          if (res.data?.success && Array.isArray(res.data.data)) {
+            activeList = res.data.data;
+          }
+        } catch {
+          const fallbackRes = await apiClient.get<{ success: boolean; data?: typeof activeList }>(
+            "/shipping-companies?status=active&all=true",
+            { _skipErrorToast: true } as any,
+          );
+          if (fallbackRes.data?.success && Array.isArray(fallbackRes.data.data)) {
+            activeList = fallbackRes.data.data.filter((c) => c.isActive);
+          }
+        }
+        if (!isMounted) return;
+        setActiveCarriers(activeList);
+      } catch {
+        // Silently ignore
+      }
+    };
+    void fetchActiveCarriers();
     return () => {
       isMounted = false;
     };
-  }, [isAdmin, isMerchant]);
+  }, [canSelectOrders]);
 
   useEffect(() => {
     const selectedMerchantId = filters.merchantId[0] || "";
@@ -2408,6 +2443,39 @@ const Orders: React.FC = () => {
     }
   };
 
+  const hasActiveTurbo = useMemo(() => {
+    return activeCarriers.some(
+      (c) =>
+        c.isActive &&
+        (c.providerKey === "TURBO" ||
+          c.slug === "turbo" ||
+          c.name?.toLowerCase().includes("turbo") ||
+          c.name?.includes("تربو")),
+    );
+  }, [activeCarriers]);
+
+  const hasActiveQpExpress = useMemo(() => {
+    return activeCarriers.some(
+      (c) =>
+        c.isActive &&
+        (c.providerKey === "QP_EXPRESS" ||
+          c.slug === "qp-express" ||
+          c.name?.toLowerCase().includes("qp") ||
+          c.name?.includes("كيو بي")),
+    );
+  }, [activeCarriers]);
+
+  const hasActiveBosta = useMemo(() => {
+    return activeCarriers.some(
+      (c) =>
+        c.isActive &&
+        (c.providerKey === "BOSTA" ||
+          c.slug === "bosta" ||
+          c.name?.toLowerCase().includes("bosta") ||
+          c.name?.includes("بوستا")),
+    );
+  }, [activeCarriers]);
+
   const getUnifiedStatusDisplay = (order: Order, translate: (key: string) => string) => {
     const display = getOrderStatusDisplay(order);
     const customStyle = getStatusBadgeStyle(order.status || "");
@@ -2855,9 +2923,9 @@ const Orders: React.FC = () => {
           onClearSelection={() => setSelectedOrders([])}
           onStatusChange={handleBulkStatusUpdate}
           onPrintInvoices={handleBulkPrintInvoices}
-          onCreateTurboShipments={handleBulkCreateTurboShipments}
-          onCreateQpExpressShipments={handleBulkCreateQpExpressShipments}
-          onCreateBostaShipments={handleBulkCreateBostaShipments}
+          onCreateTurboShipments={hasActiveTurbo ? handleBulkCreateTurboShipments : undefined}
+          onCreateQpExpressShipments={hasActiveQpExpress ? handleBulkCreateQpExpressShipments : undefined}
+          onCreateBostaShipments={hasActiveBosta ? handleBulkCreateBostaShipments : undefined}
           onDelete={handleBulkDelete}
         />
       )}
@@ -2875,24 +2943,36 @@ const Orders: React.FC = () => {
             label: t("orders.palette.bulkPrintAll"),
             onSelect: () => handleBulkPrintInvoices(),
           },
-          {
-            id: "bulk-turbo",
-            group: "bulk",
-            label: t("orders.palette.bulkCreateTurboAll"),
-            onSelect: () => handleBulkCreateTurboShipments(),
-          },
-          {
-            id: "bulk-qpexpress",
-            group: "bulk",
-            label: "شحن الطلبات المحددة عبر كيو بي إكسبريس (QP Express)",
-            onSelect: () => handleBulkCreateQpExpressShipments(),
-          },
-          {
-            id: "bulk-bosta",
-            group: "bulk",
-            label: "شحن الطلبات المحددة عبر بوستا (Bosta)",
-            onSelect: () => handleBulkCreateBostaShipments(),
-          },
+          ...(hasActiveTurbo
+            ? [
+                {
+                  id: "bulk-turbo",
+                  group: "bulk",
+                  label: t("orders.palette.bulkCreateTurboAll"),
+                  onSelect: () => handleBulkCreateTurboShipments(),
+                },
+              ]
+            : []),
+          ...(hasActiveQpExpress
+            ? [
+                {
+                  id: "bulk-qpexpress",
+                  group: "bulk",
+                  label: "شحن الطلبات المحددة عبر كيو بي إكسبريس (QP Express)",
+                  onSelect: () => handleBulkCreateQpExpressShipments(),
+                },
+              ]
+            : []),
+          ...(hasActiveBosta
+            ? [
+                {
+                  id: "bulk-bosta",
+                  group: "bulk",
+                  label: "شحن الطلبات المحددة عبر بوستا (Bosta)",
+                  onSelect: () => handleBulkCreateBostaShipments(),
+                },
+              ]
+            : []),
           {
             id: "bulk-delete",
             group: "bulk",
