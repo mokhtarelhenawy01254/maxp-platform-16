@@ -6,8 +6,14 @@
     {
       "src": "/logo.png",
       "type": "image/png",
-      "sizes": "192x192 512x512",
-      "purpose": "any maskable"
+      "sizes": "192x192 512x512 1024x1024",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512 1024x1024",
+      "purpose": "maskable"
     }
   ],
   "start_url": "/",
