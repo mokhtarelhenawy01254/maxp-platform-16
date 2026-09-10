@@ -1,10 +1,12 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Gauge } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Gauge, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   type FacebookAdsDecisionSummary,
   type FacebookAdsPerformanceSummary,
+  facebookAdsService,
 } from "../../../services/facebookAdsService";
 import {
   formatCurrency,
@@ -27,10 +29,52 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
   const { i18n } = useTranslation();
   const isEn = i18n.language?.startsWith("en") || localStorage.getItem("language") === "en";
 
+  const [executedActions, setExecutedActions] = useState<Record<string, boolean>>({});
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
   const topDecisionRows = useMemo(
     () => (decisionSummary?.rows || []).slice(0, 4),
     [decisionSummary?.rows],
   );
+
+  const handleExecuteDecision = async (
+    e: React.MouseEvent,
+    row: (typeof topDecisionRows)[number],
+  ) => {
+    e.stopPropagation();
+    const isDanger = row.decision.tone === "danger" || row.decision.tone === "warning";
+    const campaignId = row.campaign?.id;
+    if (!campaignId) {
+      toast.error(isEn ? "No campaign linked" : "لا توجد حملة مرتبطة بهذا الإعلان");
+      return;
+    }
+
+    setActionLoadingId(row.ad.id);
+    try {
+      if (isDanger) {
+        await facebookAdsService.pauseCampaign(campaignId);
+        setExecutedActions((prev) => ({ ...prev, [row.ad.id]: true }));
+        toast.success(
+          isEn
+            ? `Campaign paused for "${row.ad.name}"`
+            : `تم إيقاف حملة "${row.ad.name}" بنجاح`,
+        );
+      } else {
+        const nextBudget = Math.round((row.campaign.budgetAmount || 100) * 1.2);
+        await facebookAdsService.updateCampaign(campaignId, { budgetAmount: nextBudget });
+        setExecutedActions((prev) => ({ ...prev, [row.ad.id]: true }));
+        toast.success(
+          isEn
+            ? `Budget scaled to ${formatCurrency(nextBudget, selectedCurrency)}`
+            : `تم زيادة الميزانية إلى ${formatCurrency(nextBudget, selectedCurrency)}`,
+        );
+      }
+    } catch {
+      toast.error(isEn ? "Action failed" : "تعذر تنفيذ الإجراء على Meta");
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   return (
     <>
@@ -49,39 +93,70 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
               </span>
             </div>
             <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              {isEn ? "Advisory: No ads are paused or scaled automatically" : "استرشادية: لا يتم إيقاف أو توسيع أي إعلان تلقائياً"}
+              {isEn ? "Actionable recommendations with instant execution" : "توصيات قابلة للتنفيذ المباشر بنقرة واحدة"}
             </span>
           </div>
           <div className="grid gap-2.5 xl:grid-cols-4">
-            {topDecisionRows.map((row) => (
-              <button
-                key={row.ad.id}
-                type="button"
-                onClick={() =>
-                  navigate(`/advertising/facebook-ads/ads/${row.ad.id}`)
-                }
-                className={`min-w-0 rounded-xl border p-3 text-right transition-all hover:-translate-y-0.5 hover:shadow-md ${getDecisionClass(
-                  row.decision.tone,
-                )}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <span className="truncate text-xs font-black">
-                    {row.decision.label}
-                  </span>
-                  <span className="shrink-0 rounded-md bg-black/5 px-1.5 py-0.5 text-[10px] font-black dark:bg-white/10">
-                    {formatNumber(row.decision.confidence.score)}% {isEn ? "conf." : "ثقة"}
-                  </span>
+            {topDecisionRows.map((row) => {
+              const isDanger = row.decision.tone === "danger" || row.decision.tone === "warning";
+              const isExecuted = executedActions[row.ad.id];
+              const isLoading = actionLoadingId === row.ad.id;
+
+              return (
+                <div
+                  key={row.ad.id}
+                  onClick={() =>
+                    navigate(`/advertising/facebook-ads/ads/${row.ad.id}`)
+                  }
+                  className={`min-w-0 cursor-pointer rounded-xl border p-3 text-start transition-all hover:-translate-y-0.5 hover:shadow-md ${getDecisionClass(
+                    row.decision.tone,
+                  )}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="truncate text-xs font-black">
+                      {row.decision.label}
+                    </span>
+                    <span className="shrink-0 rounded-md bg-black/5 px-1.5 py-0.5 text-[10px] font-black dark:bg-white/10">
+                      {formatNumber(row.decision.confidence.score)}% {isEn ? "conf." : "ثقة"}
+                    </span>
+                  </div>
+                  <p className="mt-1.5 truncate text-[11px] font-bold opacity-90">
+                    {row.ad.name}
+                  </p>
+                  <div className="mt-2 grid grid-cols-3 gap-1 border-t border-current/10 pt-2 text-[10px] font-black">
+                    <span>CPA: {formatCurrency(row.decision.metrics.cpa || 0, selectedCurrency)}</span>
+                    <span>ROAS: {formatNumber(row.decision.metrics.roas || 0, 2)}x</span>
+                    <span>{isEn ? "Profit" : "ربح"}: {formatCurrency(row.decision.metrics.estimatedProfit || 0, selectedCurrency)}</span>
+                  </div>
+
+                  {/* Direct Action Execution Button */}
+                  <div className="mt-2.5 pt-2 border-t border-current/10">
+                    {isExecuted ? (
+                      <span className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-emerald-600/10 py-1 text-[10px] font-black text-emerald-700 dark:text-emerald-300">
+                        <CheckCircle2 className="h-3 w-3" />
+                        {isEn ? "Action Executed" : "تم التنفيذ بنجاح"}
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled={isLoading}
+                        onClick={(e) => handleExecuteDecision(e, row)}
+                        className={`inline-flex w-full items-center justify-center gap-1 rounded-lg py-1 px-2 text-[10px] font-black text-white shadow-xs transition-all ${
+                          isDanger
+                            ? "bg-rose-600 hover:bg-rose-700"
+                            : "bg-emerald-600 hover:bg-emerald-700"
+                        } disabled:opacity-50`}
+                      >
+                        {isLoading && <Loader2 className="h-3 w-3 animate-spin" />}
+                        {isDanger
+                          ? (isEn ? "⛔ Pause Campaign Now" : "⛔ إيقاف الحملة فوراً")
+                          : (isEn ? "🚀 Scale Budget +20%" : "🚀 زيادة الميزانية 20%")}
+                      </button>
+                    )}
+                  </div>
                 </div>
-                <p className="mt-1.5 truncate text-[11px] font-bold opacity-90">
-                  {row.ad.name}
-                </p>
-                <div className="mt-2 grid grid-cols-3 gap-1 border-t border-current/10 pt-2 text-[10px] font-black">
-                  <span>CPA: {formatCurrency(row.decision.metrics.cpa || 0, selectedCurrency)}</span>
-                  <span>ROAS: {formatNumber(row.decision.metrics.roas || 0, 2)}x</span>
-                  <span>{isEn ? "Profit" : "ربح"}: {formatCurrency(row.decision.metrics.estimatedProfit || 0, selectedCurrency)}</span>
-                </div>
-              </button>
-            ))}
+              );
+            })}
           </div>
         </section>
       ) : null}

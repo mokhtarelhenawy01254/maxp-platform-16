@@ -869,10 +869,11 @@ export const getSidebarConfig = (
                     hidden: false,
                     children: [
                         { to: '/advertising/facebook-ads', label: isEn ? 'Dashboard & Campaigns' : 'لوحة التحكم والحملات' },
-                        { to: '/advertising/facebook-ads/decision-reports', label: isEn ? 'Decision Reports' : t('sidebar.facebookAdsReports') },
-                        { to: '/advertising/facebook-ads/ad-library', label: isEn ? 'Ad Library' : t('sidebar.adLibrary') },
                         { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : t('sidebar.audiences') },
+                        { to: '/advertising/facebook-ads/ad-library', label: isEn ? 'Ad Library & Creatives' : 'مكتبة الكرياتيف والإعلانات' },
                         { to: '/advertising/facebook-ads/catalogs', label: isEn ? 'Product Catalogs' : t('sidebar.productCatalogs') },
+                        { to: '/advertising/facebook-ads/decision-reports', label: isEn ? 'Decision Reports & Profit' : 'تقارير الأرباح والقرارات' },
+                        { to: '/advertising/facebook-ads/connection', label: isEn ? 'Accounts & Connection' : 'ربط الحسابات والإعدادات' },
                         { to: '/advertising/facebook-ads/tests', label: isEn ? 'A/B Tests' : t('sidebar.abTests') },
                         { to: '/advertising/facebook-ads/overlay-campaigns', label: isEn ? 'Overlay Campaigns' : t('sidebar.overlayCampaigns') },
                     ],

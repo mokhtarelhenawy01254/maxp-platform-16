@@ -21,7 +21,6 @@ import {
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
-import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import CampaignsListSection from "../../components/advertising/dashboard/CampaignsListSection";
@@ -341,13 +340,19 @@ const FacebookAdsDashboard: React.FC = () => {
 
     try {
       setSyncing(true);
-      await facebookAdsService.syncFromFacebook(selectedAdAccountId, {
-        includeStructure: false,
-      });
+      await Promise.all([
+        refreshAdAccounts(),
+        facebookAdsService.syncFromFacebook(selectedAdAccountId, {
+          includeStructure: false,
+        }),
+      ]);
       await loadCampaigns(selectedAdAccountId);
-      tToast.success("FacebookAdsDashboard.success_update_f698");
+      if (currentTab === "geo") {
+        await loadGeoPerformance(selectedAdAccountId);
+      }
+      toast.success(isEn ? "Live sync with Meta completed" : "تمت المزامنة وتحديث البيانات مع Meta بنجاح");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل مزامنة الحملات"));
+      toast.error(getApiErrorMessage(error, "فشل مزامنة الحملات مع Meta"));
     } finally {
       setSyncing(false);
     }
@@ -378,31 +383,40 @@ const FacebookAdsDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-950 dark:bg-slate-950 dark:text-white font-sans">
       <main className="mx-auto flex max-w-[1400px] flex-col gap-3 p-3 sm:p-4">
-        {/* Header Section */}
-        <section className="rounded-2xl border border-slate-200/80 bg-white/95 p-4 sm:p-5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
-          <div className="grid gap-3.5 xl:grid-cols-[minmax(230px,0.65fr)_minmax(680px,1.8fr)] xl:items-end">
+        {/* Compact Operational Header */}
+        <section className="rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 sm:p-4 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            {/* Title & Date display */}
             <div className="min-w-0">
-              <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
-                <Megaphone className="h-3.5 w-3.5" />
-                Meta Ads Cockpit
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                  <Megaphone className="h-3.5 w-3.5" />
+                  Meta Ads Cockpit
+                </div>
+                {selectedAccountBalance != null && (
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                    <Wallet className="h-3 w-3" />
+                    {isEn ? "Balance:" : "الرصيد المتاح:"} {formatCurrency(selectedAccountBalance, selectedCurrency)}
+                  </span>
+                )}
               </div>
-              <h1 className="mt-1.5 truncate text-xl font-black leading-tight sm:text-2xl tracking-tight">
+              <h1 className="mt-1 truncate text-lg sm:text-xl font-black leading-tight tracking-tight">
                 {isEn ? "Ad Campaigns Center" : "مركز الحملات الإعلانية"}
               </h1>
-              <p className="mt-1 truncate text-xs font-bold text-slate-500 dark:text-slate-400">
-                {selectedDateLabel}: {dateRange.startDate} - {dateRange.endDate}
+              <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
+                <span>{selectedDateLabel}: </span>
+                <span dir="ltr" className="font-semibold">{dateRange.startDate} → {dateRange.endDate}</span>
               </p>
             </div>
 
-            <div className="grid gap-2.5 md:grid-cols-[minmax(190px,1.3fr)_minmax(135px,0.75fr)_auto_auto_auto]">
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                  {isEn ? "Ad Account" : "الحساب الإعلاني"}
-                </span>
+            {/* Quick Action Controls */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Ad Account Selector */}
+              <div className="min-w-[170px] flex-1 sm:flex-initial">
                 <select
                   value={selectedAdAccountId}
                   onChange={(event) => setSelectedAdAccountId(event.target.value)}
-                  className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none transition-all focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                  className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-800 shadow-xs outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
                 >
                   <option value="">{isEn ? "Select Ad Account" : "اختار حساب إعلاني"}</option>
                   {businessGroups.map(([key, group]) => (
@@ -415,50 +429,48 @@ const FacebookAdsDashboard: React.FC = () => {
                     </optgroup>
                   ))}
                 </select>
-              </label>
+              </div>
 
-              <SelectFilter
-                icon={CalendarDays}
-                label={isEn ? "Date Range" : "الفترة الزمنية"}
-                value={filters.datePreset}
-                onChange={(value) =>
-                  updateFilters({ datePreset: value as FacebookAdsDatePreset })
-                }
-                options={getFacebookAdsDatePresets(isEn)}
-              />
+              {/* Date Preset */}
+              <div className="min-w-[130px]">
+                <SelectFilter
+                  icon={CalendarDays}
+                  label={isEn ? "Date" : "الفترة"}
+                  value={filters.datePreset}
+                  onChange={(value) =>
+                    updateFilters({ datePreset: value as FacebookAdsDatePreset })
+                  }
+                  options={getFacebookAdsDatePresets(isEn)}
+                />
+              </div>
 
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 disabled:opacity-60 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
-              >
-                <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} />
-                {isEn ? "Refresh" : "تحديث"}
-              </button>
+              {/* Single Unified Sync Button */}
               <button
                 type="button"
                 onClick={handleSyncFromFacebook}
-                disabled={syncing || !selectedAdAccountId}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-blue-200/70 bg-blue-50/70 px-3 text-xs font-bold text-blue-700 hover:bg-blue-100/70 disabled:opacity-60 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300 transition-all"
+                disabled={syncing || refreshing || !selectedAdAccountId}
+                title={isEn ? "Sync live data with Meta" : "مزامنة البيانات الحية مع Meta"}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-blue-200/70 bg-blue-50/70 px-3 text-xs font-bold text-blue-700 hover:bg-blue-100/80 disabled:opacity-60 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300 transition-all shadow-xs"
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
-                {isEn ? "Sync" : "مزامنة"}
+                <RefreshCw className={`h-3.5 w-3.5 ${syncing || refreshing ? "animate-spin" : ""}`} />
+                <span className="hidden sm:inline">{isEn ? "Sync Meta" : "مزامنة Meta"}</span>
               </button>
+
+              {/* Create Campaign CTA */}
               <button
                 type="button"
                 onClick={handleCreateCampaign}
                 disabled={!selectedAdAccountId}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 text-xs font-black text-white shadow-sm shadow-blue-500/25 hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 text-xs font-black text-white shadow-xs shadow-blue-500/25 hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
               >
                 <Plus className="h-4 w-4" />
-                {isEn ? "Create Campaign" : "إنشاء حملة"}
+                <span>{isEn ? "Create Ad" : "إنشاء حملة"}</span>
               </button>
             </div>
           </div>
 
           {filters.datePreset === "custom" && (
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:max-w-sm">
+            <div className="mt-3 grid gap-2 sm:grid-cols-2 xl:max-w-sm pt-2 border-t border-slate-100 dark:border-slate-800">
               <input
                 type="date"
                 value={filters.startDate || dateRange.startDate}
@@ -475,28 +487,31 @@ const FacebookAdsDashboard: React.FC = () => {
           )}
         </section>
 
-        {/* Sub Navigation */}
-        <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
-
         {/* Metrics Overview */}
-        <section className="grid gap-2 md:grid-cols-2 xl:grid-cols-5">
+        <section className="grid gap-2 grid-cols-2 lg:grid-cols-5">
           <MetricCard
             label={isEn ? "Total Spend" : "إجمالي الإنفاق"}
             value={formatCurrency(performanceSummary?.totals.spend || 0, selectedCurrency)}
             icon={Wallet}
             variant="spend"
+            delta={{ text: isEn ? "active" : "الفترة المحددة", isPositive: true }}
           />
           <MetricCard
             label={isEn ? "Purchases" : "المشتريات"}
             value={formatNumber(performanceSummary?.totals.purchases || 0)}
             icon={CheckCircle2}
             variant="purchases"
+            subtitle={`${formatCurrency(performanceSummary?.totals.purchaseValue || 0, selectedCurrency)} ${isEn ? "revenue" : "مبيعات"}`}
           />
           <MetricCard
             label="ROAS"
             value={`${formatNumber(performanceSummary?.totals.roas || 0, 2)}x`}
             icon={TrendingUp}
             variant="roas"
+            delta={{
+              text: (performanceSummary?.totals.roas || 0) >= 3 ? (isEn ? "Profitable" : "رابح") : (isEn ? "Watch" : "متابعة"),
+              isPositive: (performanceSummary?.totals.roas || 0) >= 3,
+            }}
           />
           <MetricCard
             label="CPA"
@@ -504,10 +519,21 @@ const FacebookAdsDashboard: React.FC = () => {
             icon={Target}
             variant="cpa"
           />
-          <div className="group relative overflow-hidden rounded-2xl border border-slate-200/80 bg-white p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900">
+          <div
+            onClick={() => {
+              if (stats.activeButBlocked > 0) {
+                updateFilters({ statusFilter: "WITH_ISSUES" });
+              }
+            }}
+            className={`group relative overflow-hidden rounded-2xl border p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md col-span-2 sm:col-span-1 ${
+              stats.activeButBlocked > 0
+                ? "border-amber-300/80 bg-amber-50/40 cursor-pointer dark:border-amber-900/50 dark:bg-amber-950/20"
+                : "border-slate-200/80 bg-white dark:border-slate-800/80 dark:bg-slate-900"
+            }`}
+          >
             <div className="flex items-center justify-between gap-2">
               <span className="text-[11px] font-black text-slate-500 dark:text-slate-400">
-                {isEn ? "Active Delivery" : "تسليم فعلي"}
+                {isEn ? "Active Delivery" : "تسليم الحملات"}
               </span>
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:bg-blue-400/20 dark:text-blue-300">
                 <BarChart3 className="h-4 w-4" />
@@ -526,9 +552,13 @@ const FacebookAdsDashboard: React.FC = () => {
                 <p className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
                   {formatNumber(stats.delivering)} / {formatNumber(stats.total)}
                 </p>
-                {stats.activeButBlocked > 0 && (
-                  <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400">
-                    {formatNumber(stats.activeButBlocked)} {isEn ? "blocked" : "محظور"}
+                {stats.activeButBlocked > 0 ? (
+                  <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline">
+                    ⚠️ {formatNumber(stats.activeButBlocked)} {isEn ? "blocked" : "محظور (انقر للفلترة)"}
+                  </span>
+                ) : (
+                  <span className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                    {isEn ? "All delivering smoothly" : "كل شيء يعمل بكفاءة"}
                   </span>
                 )}
               </div>
