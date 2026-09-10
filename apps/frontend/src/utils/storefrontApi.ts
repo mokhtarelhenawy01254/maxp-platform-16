@@ -509,6 +509,7 @@ export const storefrontApi = {
       "/coupons/validate",
       withJsonBody("POST", {
         companyId,
+        code: couponCode,
         couponCode,
         orderAmount,
       }),

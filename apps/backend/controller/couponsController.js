@@ -239,20 +239,47 @@ exports.updateCoupon = async (req, res) => {
       });
     }
 
+    // التحقق من تكرار الكود إذا تم تغييره
+    if (updateData.code && updateData.code.toUpperCase() !== existingCoupon.code) {
+      const codeExists = await getPrisma().coupon.findFirst({
+        where: {
+          companyId,
+          code: updateData.code.toUpperCase(),
+          NOT: { id }
+        }
+      });
+      if (codeExists) {
+        return res.status(400).json({
+          success: false,
+          error: 'يوجد كوبون آخر بنفس الكود بالفعل'
+        });
+      }
+    }
+
+    // تجهيز الحقول المسموح بتعديلها فقط (Safe Whitelist)
+    const safeData = {};
+    if (updateData.name !== undefined) safeData.name = updateData.name;
+    if (updateData.description !== undefined) safeData.description = updateData.description;
+    if (updateData.code !== undefined) safeData.code = updateData.code.toUpperCase();
+    if (updateData.type !== undefined) {
+      const t = String(updateData.type).toUpperCase();
+      safeData.type = t === 'FIXED' ? 'FIXED_AMOUNT' : t;
+    }
+    if (updateData.value !== undefined) safeData.value = parseFloat(updateData.value);
+    if (updateData.minOrderAmount !== undefined) safeData.minOrderAmount = updateData.minOrderAmount ? parseFloat(updateData.minOrderAmount) : null;
+    if (updateData.maxDiscountAmount !== undefined) safeData.maxDiscountAmount = updateData.maxDiscountAmount ? parseFloat(updateData.maxDiscountAmount) : null;
+    if (updateData.usageLimit !== undefined) safeData.usageLimit = updateData.usageLimit ? parseInt(updateData.usageLimit) : null;
+    if (updateData.userUsageLimit !== undefined) safeData.userUsageLimit = updateData.userUsageLimit ? parseInt(updateData.userUsageLimit) : null;
+    if (updateData.validFrom !== undefined) safeData.validFrom = new Date(updateData.validFrom);
+    if (updateData.validTo !== undefined) safeData.validTo = new Date(updateData.validTo);
+    if (updateData.isActive !== undefined) safeData.isActive = Boolean(updateData.isActive);
+    if (updateData.customerSegments !== undefined) safeData.customerSegments = typeof updateData.customerSegments === 'string' ? updateData.customerSegments : JSON.stringify(updateData.customerSegments);
+    if (updateData.allowWithLoyalty !== undefined) safeData.allowWithLoyalty = Boolean(updateData.allowWithLoyalty);
+
     // تحديث الكوبون
     const updatedCoupon = await getPrisma().coupon.update({
       where: { id },
-      data: {
-        ...updateData,
-        code: updateData.code ? updateData.code.toUpperCase() : undefined,
-        type: updateData.type ? (updateData.type.toUpperCase() === 'FIXED' ? 'FIXED_AMOUNT' : updateData.type.toUpperCase()) : undefined,
-        value: updateData.value ? parseFloat(updateData.value) : undefined,
-        minOrderAmount: updateData.minOrderAmount ? parseFloat(updateData.minOrderAmount) : undefined,
-        maxDiscountAmount: updateData.maxDiscountAmount ? parseFloat(updateData.maxDiscountAmount) : undefined,
-        validFrom: updateData.validFrom ? new Date(updateData.validFrom) : undefined,
-        validTo: updateData.validTo ? new Date(updateData.validTo) : undefined,
-        customerSegments: updateData.customerSegments ? JSON.stringify(updateData.customerSegments) : undefined
-      }
+      data: safeData
     });
 
     res.json({
@@ -376,6 +403,7 @@ exports.validateCoupon = async (req, res) => {
 
     // حساب قيمة الخصم
     let discountAmount = 0;
+    const isFreeShipping = coupon.type === 'FREE_SHIPPING';
     if (coupon.type === 'PERCENTAGE') {
       discountAmount = (parseFloat(orderAmount) * parseFloat(coupon.value)) / 100;
       // تطبيق الحد الأقصى للخصم إذا كان موجوداً
@@ -386,8 +414,12 @@ exports.validateCoupon = async (req, res) => {
       discountAmount = parseFloat(coupon.value);
     }
 
+    discountAmount = Math.max(0, Math.min(parseFloat(orderAmount), discountAmount));
+
     res.json({
       success: true,
+      discount: discountAmount,
+      discountAmount,
       data: {
         coupon: {
           id: coupon.id,
@@ -397,6 +429,8 @@ exports.validateCoupon = async (req, res) => {
           value: coupon.value
         },
         discountAmount,
+        discount: discountAmount,
+        isFreeShipping,
         finalAmount: parseFloat(orderAmount) - discountAmount
       }
     });

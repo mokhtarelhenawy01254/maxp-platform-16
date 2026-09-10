@@ -1310,24 +1310,46 @@ router.post('/', async (req, res) => {
 
     // Apply coupon
     let discountAmount = 0;
+    let appliedCoupon = null;
     if (couponCode) {
+      const now = new Date();
       const coupon = await prisma.coupon.findFirst({
         where: {
-          code: couponCode.toUpperCase(),
+          code: String(couponCode).trim().toUpperCase(),
           companyId: company.id,
           isActive: true,
-          OR: [
-            { expiryDate: null },
-            { expiryDate: { gt: new Date() } }
-          ]
+          validFrom: { lte: now },
+          validTo: { gte: now }
         }
       });
 
       if (coupon) {
-        if (coupon.type === 'PERCENTAGE') {
-          discountAmount = (cartTotal * coupon.value) / 100;
-        } else {
-          discountAmount = coupon.value;
+        const usageLimitReached = coupon.usageLimit && coupon.usageCount >= coupon.usageLimit;
+        const minOrderMet = !coupon.minOrderAmount || Number(cartTotal) >= Number(coupon.minOrderAmount);
+
+        if (!usageLimitReached && minOrderMet) {
+          if (coupon.type === 'PERCENTAGE') {
+            discountAmount = (cartTotal * Number(coupon.value)) / 100;
+            if (coupon.maxDiscountAmount && discountAmount > Number(coupon.maxDiscountAmount)) {
+              discountAmount = Number(coupon.maxDiscountAmount);
+            }
+          } else if (coupon.type === 'FREE_SHIPPING') {
+            discountAmount = 0;
+            if (shippingCost > 0) {
+              freeShippingAdjustment = {
+                source: 'coupon-free-shipping',
+                threshold: 0,
+                originalShippingCost,
+                discountAmount: originalShippingCost,
+                appliedShippingCost: 0,
+              };
+              shippingCost = 0;
+            }
+          } else {
+            discountAmount = Number(coupon.value);
+          }
+          discountAmount = Math.max(0, Math.min(cartTotal, Number(discountAmount)));
+          appliedCoupon = coupon;
         }
       }
     }
@@ -2785,7 +2807,32 @@ router.post('/', async (req, res) => {
         },
       });
 
-      if (couponCode && Number(discountAmount || 0) > 0) {
+      if (appliedCoupon) {
+        try {
+          await prisma.$transaction([
+            prisma.couponUsage.create({
+              data: {
+                couponId: appliedCoupon.id,
+                companyId: company.id,
+                customerId: customer?.id || null,
+                orderId: createdOrder?.id || null,
+                discountAmount: Number(discountAmount || 0),
+                orderAmount: Number(trackedTotal || cartTotal || 0),
+              }
+            }),
+            prisma.coupon.update({
+              where: { id: appliedCoupon.id },
+              data: {
+                usageCount: { increment: 1 }
+              }
+            })
+          ]);
+        } catch (couponUsageErr) {
+          console.error('⚠️ [ORDER-CREATE] Failed to record coupon usage:', couponUsageErr);
+        }
+      }
+
+      if (couponCode && (Number(discountAmount || 0) > 0 || appliedCoupon?.type === 'FREE_SHIPPING')) {
         await trackStorefrontAppUsage({
           companyId: company.id,
           slug: 'conversion-suite',

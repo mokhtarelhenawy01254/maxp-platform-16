@@ -24,8 +24,12 @@ export const useCoupon = ({ companyId, onSuccess, onError }: UseCouponProps) => 
       
       // Response structure might vary, adapting to common patterns
       if (response && (response.success || response.valid)) {
-        // Use provided discount or calculate dummy 15% if success but no amount provided (for theme demo)
-        const discountAmount = response.discount || (orderAmount * 0.15);
+        const discountAmount = Number(
+          response.data?.discountAmount ??
+          response.discountAmount ??
+          response.discount ??
+          (response.valid ? orderAmount * 0.15 : 0)
+        );
         
         setAppliedCoupon(code);
         onSuccess?.(discountAmount, code);
@@ -34,8 +38,8 @@ export const useCoupon = ({ companyId, onSuccess, onError }: UseCouponProps) => 
         setError(errorMsg);
         onError?.(errorMsg);
       }
-    } catch (err: any) {
-      const errorMsg = err.message || "Failed to validate coupon";
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : "Failed to validate coupon";
       setError(errorMsg);
       onError?.(errorMsg);
     } finally {

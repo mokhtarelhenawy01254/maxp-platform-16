@@ -15,7 +15,8 @@ const withCompanyContext = [extractSubdomainMiddleware, requireCompany];
 router.post('/coupons/validate', ...withCompanyContext, async (req, res) => {
   try {
     const companyId = req.company?.id || req.companyId;
-    const { code, orderAmount, customerId } = req.body || {};
+    const { orderAmount, customerId } = req.body || {};
+    const rawCode = req.body?.code || req.body?.couponCode;
 
     if (!companyId) {
       return res.status(400).json({
@@ -24,7 +25,7 @@ router.post('/coupons/validate', ...withCompanyContext, async (req, res) => {
       });
     }
 
-    if (!code || orderAmount === undefined || orderAmount === null || orderAmount === '') {
+    if (!rawCode || orderAmount === undefined || orderAmount === null || orderAmount === '') {
       return res.status(400).json({
         success: false,
         error: 'يرجى إدخال كود الكوبون وقيمة الطلب',
@@ -43,7 +44,7 @@ router.post('/coupons/validate', ...withCompanyContext, async (req, res) => {
     const coupon = await prisma.coupon.findFirst({
       where: {
         companyId,
-        code: String(code).trim().toUpperCase(),
+        code: String(rawCode).trim().toUpperCase(),
         isActive: true,
       },
       include: {
@@ -94,6 +95,7 @@ router.post('/coupons/validate', ...withCompanyContext, async (req, res) => {
     }
 
     let discountAmount = 0;
+    const isFreeShipping = coupon.type === 'FREE_SHIPPING';
     if (coupon.type === 'PERCENTAGE') {
       discountAmount = (parsedOrderAmount * Number(coupon.value)) / 100;
       if (coupon.maxDiscountAmount && discountAmount > Number(coupon.maxDiscountAmount)) {
@@ -107,6 +109,8 @@ router.post('/coupons/validate', ...withCompanyContext, async (req, res) => {
 
     return res.json({
       success: true,
+      discount: discountAmount,
+      discountAmount,
       data: {
         coupon: {
           id: coupon.id,
@@ -116,6 +120,8 @@ router.post('/coupons/validate', ...withCompanyContext, async (req, res) => {
           value: coupon.value,
         },
         discountAmount,
+        discount: discountAmount,
+        isFreeShipping,
         finalAmount: Number((parsedOrderAmount - discountAmount).toFixed(2)),
       },
     });
