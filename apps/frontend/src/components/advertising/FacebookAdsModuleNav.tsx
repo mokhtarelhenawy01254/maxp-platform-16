@@ -1,5 +1,6 @@
 import React from "react";
 import { Link, NavLink, useLocation, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Activity,
   Archive,
@@ -30,138 +31,181 @@ interface FacebookAdsModuleNavProps {
 const navItems = [
   {
     to: "/advertising/facebook-ads",
-    label: "مركز التحكم",
-    description: "نظرة عامة",
+    labelAr: "مركز التحكم",
+    labelEn: "Cockpit",
+    descriptionAr: "نظرة عامة",
+    descriptionEn: "Overview",
     icon: Activity,
   },
   {
     to: "/advertising/facebook-ads/connection",
-    label: "الربط",
-    description: "حسابات الإعلانات",
+    labelAr: "الربط",
+    labelEn: "Connection",
+    descriptionAr: "حسابات الإعلانات",
+    descriptionEn: "Ad Accounts",
     icon: PlugZap,
   },
   {
     to: "/advertising/facebook-ads/diagnosis",
-    label: "التشخيص",
-    description: "تحليل الأداء",
+    labelAr: "التشخيص",
+    labelEn: "Diagnosis",
+    descriptionAr: "تحليل الأداء",
+    descriptionEn: "Performance",
     icon: Search,
   },
   {
     to: "/advertising/facebook-ads/campaigns",
-    label: "الحملات",
-    description: "إدارة ومزامنة",
+    labelAr: "الحملات",
+    labelEn: "Campaigns",
+    descriptionAr: "إدارة ومزامنة",
+    descriptionEn: "Manage & Sync",
     icon: ClipboardCheck,
   },
   {
     to: "/advertising/facebook-ads/ad-library",
-    label: "المكتبة",
-    description: "بحث ومقارنة",
+    labelAr: "المكتبة",
+    labelEn: "Ad Library",
+    descriptionAr: "بحث ومقارنة",
+    descriptionEn: "Search & Compare",
     icon: Archive,
   },
   {
     to: "/advertising/facebook-ads/audiences",
-    label: "الجماهير",
-    description: "استهداف",
+    labelAr: "الجماهير",
+    labelEn: "Audiences",
+    descriptionAr: "استهداف",
+    descriptionEn: "Targeting",
     icon: Users,
   },
   {
     to: "/advertising/facebook-ads/creative-formats",
-    label: "الكرياتيف",
-    description: "الصيغ والمكتبة",
+    labelAr: "الكرياتيف",
+    labelEn: "Creatives",
+    descriptionAr: "الصيغ والمكتبة",
+    descriptionEn: "Formats & Assets",
     icon: Library,
   },
 ] as const;
 
 const toolGroups = [
   {
-    title: "التحسين والقرارات",
+    titleAr: "التحسين والقرارات",
+    titleEn: "Optimization & Decisions",
     items: [
       {
         to: "/advertising/facebook-ads/automation-rules",
-        label: "قواعد الأتمتة",
-        description: "إيقاف، رفع ميزانية، وتنبيهات",
+        labelAr: "قواعد الأتمتة",
+        labelEn: "Automation Rules",
+        descriptionAr: "إيقاف، رفع ميزانية، وتنبيهات",
+        descriptionEn: "Pause, scale budget & alerts",
         icon: Gauge,
       },
       {
         to: "/advertising/facebook-ads/decision-reports",
-        label: "تقارير القرار",
-        description: "قرارات media buying قابلة للتنفيذ",
+        labelAr: "تقارير القرار",
+        labelEn: "Decision Reports",
+        descriptionAr: "قرارات media buying قابلة للتنفيذ",
+        descriptionEn: "Actionable media buying reports",
         icon: BarChart3,
       },
       {
         to: "/advertising/facebook-ads/dco",
-        label: "DCO",
-        description: "توليفات نصوص وصور ديناميكية",
+        labelAr: "DCO",
+        labelEn: "DCO",
+        descriptionAr: "توليفات نصوص وصور ديناميكية",
+        descriptionEn: "Dynamic text & image combos",
         icon: Wand2,
       },
       {
         to: "/advertising/facebook-ads/advantage-plus",
-        label: "Advantage+",
-        description: "توافق وتسريع حملات التسوق",
+        labelAr: "Advantage+",
+        labelEn: "Advantage+",
+        descriptionAr: "توافق وتسريع حملات التسوق",
+        descriptionEn: "Shopping campaign acceleration",
         icon: BrainCircuit,
       },
     ],
   },
   {
-    title: "البيانات والتحويلات",
+    titleAr: "البيانات والتحويلات",
+    titleEn: "Data & Conversions",
     items: [
       {
         to: "/advertising/facebook-ads/budget-alerts",
-        label: "تنبيهات الرصيد",
-        description: "WhatsApp Budget Alerts",
+        labelAr: "تنبيهات الرصيد",
+        labelEn: "Budget Alerts",
+        descriptionAr: "WhatsApp Budget Alerts",
+        descriptionEn: "WhatsApp Budget Alerts",
         icon: BellRing,
       },
       {
         to: "/advertising/facebook-ads/lead-forms",
-        label: "نماذج العملاء",
-        description: "Lead forms من صفحات Meta",
+        labelAr: "نماذج العملاء",
+        labelEn: "Lead Forms",
+        descriptionAr: "Lead forms من صفحات Meta",
+        descriptionEn: "Instant Lead Forms from Meta",
         icon: ClipboardCheck,
       },
       {
         to: "/advertising/facebook-ads/conversions",
-        label: "Conversions API",
-        description: "Pixel + CAPI وجودة الأحداث",
+        labelAr: "Conversions API",
+        labelEn: "Conversions API",
+        descriptionAr: "Pixel + CAPI وجودة الأحداث",
+        descriptionEn: "Pixel + CAPI & Event Quality",
         icon: PlugZap,
       },
       {
         to: "/advertising/facebook-ads/attribution",
-        label: "الإسناد",
-        description: "نوافذ التحويل وقياس الطلبات",
+        labelAr: "الإسناد",
+        labelEn: "Attribution",
+        descriptionAr: "نوافذ التحويل وقياس الطلبات",
+        descriptionEn: "Attribution windows & order tracking",
         icon: Network,
       },
       {
         to: "/advertising/facebook-ads/saved-audiences",
-        label: "الجماهير المحفوظة",
-        description: "استهداف محفوظ لإعادة الاستخدام",
+        labelAr: "الجماهير المحفوظة",
+        labelEn: "Saved Audiences",
+        descriptionAr: "استهداف محفوظ لإعادة الاستخدام",
+        descriptionEn: "Saved targeting presets",
         icon: Target,
       },
     ],
   },
   {
-    title: "الأصول والاختبار",
+    titleAr: "الأصول والاختبار",
+    titleEn: "Assets & Testing",
     items: [
       {
         to: "/advertising/facebook-ads/ad-preview",
-        label: "معاينة الإعلان",
-        description: "Preview آمن قبل الإطلاق",
+        labelAr: "معاينة الإعلان",
+        labelEn: "Ad Preview",
+        descriptionAr: "Preview آمن قبل الإطلاق",
+        descriptionEn: "Safe pre-launch preview",
         icon: MousePointerClick,
       },
       {
         to: "/advertising/facebook-ads/catalogs",
-        label: "الكتالوجات",
-        description: "Product catalogs وdynamic ads",
+        labelAr: "الكتالوجات",
+        labelEn: "Catalogs",
+        descriptionAr: "Product catalogs وdynamic ads",
+        descriptionEn: "Product catalogs & dynamic ads",
         icon: Boxes,
       },
       {
         to: "/advertising/facebook-ads/tests",
-        label: "A/B Tests",
-        description: "اختبارات كرياتيف وجمهور",
+        labelAr: "A/B Tests",
+        labelEn: "A/B Tests",
+        descriptionAr: "اختبارات كرياتيف وجمهور",
+        descriptionEn: "Creative & audience experiments",
         icon: FlaskConical,
       },
       {
         to: "/advertising/facebook-ads/create-full-ad",
-        label: "إنشاء إعلان كامل",
-        description: "Wizard آمن للحملة والإعلان",
+        labelAr: "إنشاء إعلان كامل",
+        labelEn: "Create Full Ad",
+        descriptionAr: "Wizard آمن للحملة والإعلان",
+        descriptionEn: "Guided campaign & ad builder",
         icon: Megaphone,
       },
     ],
@@ -171,6 +215,8 @@ const toolGroups = [
 const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
   selectedAdAccountId,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
   const [searchParams] = useSearchParams();
   const location = useLocation();
   const [isToolsOpen, setIsToolsOpen] = React.useState(false);
@@ -183,8 +229,6 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
     if (accountId) {
       params.set("adAccountId", accountId);
     }
-
-
 
     const query = params.toString();
     return query ? `${path}?${query}` : path;
@@ -202,6 +246,7 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
         {navItems.map((item) => {
           const Icon = item.icon;
+          const label = isEn ? item.labelEn : item.labelAr;
 
           return (
             <NavLink
@@ -210,7 +255,7 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
               end={item.to === "/advertising/facebook-ads"}
               className={({ isActive }) =>
                 [
-                  "group flex min-w-[110px] items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition-all duration-150",
+                  "group flex min-w-[105px] items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold tracking-normal transition-all duration-150",
                   isActive
                     ? "active bg-blue-600 text-white shadow-sm shadow-blue-500/25"
                     : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white",
@@ -221,7 +266,7 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
                 <Icon className="h-4 w-4" />
               </span>
               <span className="min-w-0 text-start">
-                <span className="block truncate">{item.label}</span>
+                <span className="block truncate">{label}</span>
               </span>
             </NavLink>
           );
@@ -234,7 +279,7 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
             aria-controls="facebook-ads-tools-launcher"
             onClick={() => setIsToolsOpen((current) => !current)}
             className={[
-              "group flex min-w-[110px] items-center gap-2 rounded-xl px-3 py-2 text-xs font-black transition-all duration-150",
+              "group flex min-w-[105px] items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold tracking-normal transition-all duration-150",
               isToolsOpen || isToolActive
                 ? "bg-blue-600 text-white shadow-sm shadow-blue-500/25"
                 : "text-slate-600 hover:bg-slate-100/80 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-slate-800/80 dark:hover:text-white",
@@ -244,7 +289,7 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
               <LineChart className="h-4 w-4" />
             </span>
             <span className="min-w-0 text-start">
-              <span className="block truncate">الأدوات</span>
+              <span className="block truncate">{isEn ? "Tools" : "الأدوات"}</span>
             </span>
             <ChevronDown
               className={[
@@ -262,59 +307,64 @@ const FacebookAdsModuleNav: React.FC<FacebookAdsModuleNavProps> = ({
           className="absolute end-1.5 top-[calc(100%+0.5rem)] z-30 w-[min(780px,calc(100vw-2rem))] rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-xl p-4 text-slate-950 shadow-2xl dark:border-slate-800/90 dark:bg-slate-900/95 dark:text-white animate-in fade-in-50 zoom-in-95 duration-150"
         >
           <div className="grid gap-4 md:grid-cols-3">
-            {toolGroups.map((group) => (
-              <section key={group.title} aria-label={group.title}>
-                <h3 className="mb-2 px-1 text-xs font-black text-slate-500 dark:text-slate-400">
-                  {group.title}
-                </h3>
-                <div className="space-y-1">
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    const active = location.pathname.startsWith(item.to);
+            {toolGroups.map((group) => {
+              const groupTitle = isEn ? group.titleEn : group.titleAr;
+              return (
+                <section key={group.titleAr} aria-label={group.titleAr}>
+                  <h3 className="mb-2 px-1 text-xs font-bold text-slate-500 dark:text-slate-400">
+                    {groupTitle}
+                  </h3>
+                  <div className="space-y-1">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const active = location.pathname.startsWith(item.to);
+                      const label = isEn ? item.labelEn : item.labelAr;
+                      const description = isEn ? item.descriptionEn : item.descriptionAr;
 
-                    return (
-                      <Link
-                        key={item.to}
-                        to={buildTo(item.to)}
-                        onClick={() => setIsToolsOpen(false)}
-                        className={[
-                          "group flex min-w-0 items-start gap-2.5 rounded-xl p-2 text-start transition-all",
-                          active
-                            ? "bg-blue-50/80 text-blue-900 border border-blue-200/80 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-900/60"
-                            : "hover:bg-slate-100/80 dark:hover:bg-slate-800/60",
-                        ].join(" ")}
-                      >
-                        <span
+                      return (
+                        <Link
+                          key={item.to}
+                          to={buildTo(item.to)}
+                          onClick={() => setIsToolsOpen(false)}
                           className={[
-                            "mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg transition-colors",
+                            "group flex min-w-0 items-start gap-2.5 rounded-xl p-2 text-start transition-all",
                             active
-                              ? "bg-blue-600 text-white shadow-xs"
-                              : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 group-hover:bg-blue-100 group-hover:text-blue-700 dark:group-hover:bg-blue-950/60 dark:group-hover:text-blue-300",
+                              ? "bg-blue-50/80 text-blue-900 border border-blue-200/80 dark:bg-blue-950/40 dark:text-blue-200 dark:border-blue-900/60"
+                              : "hover:bg-slate-100/80 dark:hover:bg-slate-800/60",
                           ].join(" ")}
                         >
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-xs font-black">
-                            {item.label}
-                          </span>
                           <span
                             className={[
-                              "block text-[11px] leading-4 line-clamp-1",
+                              "mt-0.5 flex h-8 w-8 flex-none items-center justify-center rounded-lg transition-colors",
                               active
-                                ? "text-blue-700 dark:text-blue-300"
-                                : "text-slate-500 dark:text-slate-400",
+                                ? "bg-blue-600 text-white shadow-xs"
+                                : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 group-hover:bg-blue-100 group-hover:text-blue-700 dark:group-hover:bg-blue-950/60 dark:group-hover:text-blue-300",
                             ].join(" ")}
                           >
-                            {item.description}
+                            <Icon className="h-4 w-4" />
                           </span>
-                        </span>
-                      </Link>
-                    );
-                  })}
-                </div>
-              </section>
-            ))}
+                          <span className="min-w-0">
+                            <span className="block truncate text-xs font-bold text-slate-900 dark:text-white">
+                              {label}
+                            </span>
+                            <span
+                              className={[
+                                "block text-[11px] leading-4 line-clamp-1",
+                                active
+                                  ? "text-blue-700 dark:text-blue-300"
+                                  : "text-slate-500 dark:text-slate-400",
+                              ].join(" ")}
+                            >
+                              {description}
+                            </span>
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
           </div>
         </div>
       ) : null}
