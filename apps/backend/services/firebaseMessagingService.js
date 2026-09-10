@@ -14,7 +14,9 @@ function initFirebase() {
   try {
     admin = require("firebase-admin");
   } catch (err) {
-    console.warn("⚠️ [FCM] firebase-admin package is not installed or available.");
+    if (process.env.NODE_ENV !== "test") {
+      console.warn("⚠️ [FCM] firebase-admin package is not installed or available.");
+    }
     return null;
   }
 
@@ -162,6 +164,18 @@ async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null
     typeof imageUrl === "string" &&
     (imageUrl.startsWith("https://") || imageUrl.startsWith("http://"));
 
+  const typeId = String(data.typeId || "");
+  const source = String(data.source || "");
+  const resolvedChannelId =
+    data.channelId ||
+    (typeId === "customer_message" || source === "whatsapp_message"
+      ? "maxp_messages_channel"
+      : typeId === "order_created" || typeId === "order_status_changed"
+        ? "maxp_orders_channel"
+        : typeId.startsWith("task_")
+          ? "maxp_tasks_channel"
+          : "maxp_default_channel");
+
   const message = {
     tokens,
     notification: {
@@ -174,7 +188,7 @@ async function sendToFcmTokens({ tokens, title, body, data = {}, imageUrl = null
       priority: "high",
       notification: {
         sound: "default",
-        channelId: "maxp_default_channel",
+        channelId: resolvedChannelId,
         defaultVibrateTimings: true,
         defaultSound: true,
         priority: "max",

@@ -10,6 +10,7 @@ import {
   InformationCircleIcon,
   XCircleIcon,
   CheckCircleIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
 
@@ -183,15 +184,25 @@ const Notifications: React.FC = () => {
               </div>
             </div>
 
-            {unreadCount > 0 && (
-              <button
-                onClick={markAllAsRead}
-                className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse"
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href="/notification-settings"
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
               >
-                <CheckIcon className="h-5 w-5" />
-                <span>تحديد الكل كمقروء</span>
-              </button>
-            )}
+                <Cog6ToothIcon className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                <span>إعدادات وتخصيص الإشعارات</span>
+              </a>
+
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center space-x-2 space-x-reverse text-sm font-medium shadow-sm"
+                >
+                  <CheckIcon className="h-5 w-5" />
+                  <span>تحديد الكل كمقروء</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

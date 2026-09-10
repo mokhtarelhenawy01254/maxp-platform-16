@@ -327,6 +327,18 @@ const sendNotificationToSubscription = async (record, payload) => {
   }
 };
 
+const isPushDeliveryAvailable = () => {
+  const hasVapid = Boolean(getOptionalVapidConfiguration());
+  if (hasVapid) return true;
+
+  try {
+    const { isFirebaseInitialized } = require("./firebaseMessagingService");
+    return Boolean(isFirebaseInitialized());
+  } catch (_) {
+    return false;
+  }
+};
+
 const sendBrowserPushToCompany = async ({
   companyId,
   typeId,
@@ -341,6 +353,16 @@ const sendBrowserPushToCompany = async ({
   data = {},
   forceVisibleNotification = false,
 }) => {
+  if (!isPushDeliveryAvailable()) {
+    return {
+      attempted: 0,
+      sent: 0,
+      skipped: 0,
+      failed: 0,
+      disabled: true,
+      reason: "missing_vapid_keys",
+    };
+  }
 
   const prisma = getSharedPrismaClient();
   const subscriptions = await prisma.browserPushSubscription.findMany({
@@ -473,6 +495,17 @@ const sendBrowserPushToUser = async ({
   data = {},
   forceVisibleNotification = false,
 }) => {
+  if (!isPushDeliveryAvailable()) {
+    return {
+      attempted: 0,
+      sent: 0,
+      skipped: 0,
+      failed: 0,
+      disabled: true,
+      reason: "missing_vapid_keys",
+    };
+  }
+
   const prisma = getSharedPrismaClient();
   const [user, preferenceRecord, subscriptions] = await Promise.all([
     prisma.user.findUnique({

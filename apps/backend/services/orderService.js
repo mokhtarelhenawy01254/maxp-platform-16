@@ -1573,6 +1573,30 @@ class OrderService {
             console.error('⚠️ [WHATSAPP-STATUS-ERROR] Background notification failed:', whatsappError.message);
           }
 
+          // 🔔 Mobile / Web Push Notification for Order Status Changed
+          try {
+            const { sendBrowserPushToCompany } = require('./browserPushService');
+            void sendBrowserPushToCompany({
+              companyId: order.companyId,
+              typeId: 'order_status_changed',
+              title: `تحديث حالة الطلب #${order.orderNumber || orderNumber}`,
+              body: `تغيرت حالة الطلب إلى: ${status}`,
+              compactBody: `تغيرت حالة الطلب #${order.orderNumber || orderNumber}`,
+              url: `/orders?orderId=${order.id}`,
+              data: {
+                source: 'order_status_changed',
+                orderId: order.id,
+                orderNumber: order.orderNumber || orderNumber,
+                status,
+                typeId: 'order_status_changed',
+              },
+            }).catch((pushErr) => {
+              console.warn('⚠️ [PUSH-STATUS] Error:', pushErr?.message || pushErr);
+            });
+          } catch (pushImportErr) {
+            console.warn('⚠️ [PUSH-STATUS] Failed to bootstrap:', pushImportErr?.message || pushImportErr);
+          }
+
           // 🧾 Auto Invoice Generation
           try {
             const prisma = this.getPrisma();

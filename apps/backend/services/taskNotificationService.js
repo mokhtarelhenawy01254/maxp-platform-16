@@ -194,6 +194,29 @@ const taskNotificationService = {
                 }
             }
 
+            // 3. Dispatch Push Notification (FCM mobile & Web Push) respecting user preferences
+            try {
+                const { sendBrowserPushToUser } = require('./browserPushService');
+                void sendBrowserPushToUser({
+                    companyId,
+                    userId,
+                    typeId: type || 'task_assigned',
+                    title: title || 'إشعار مهمة جديد',
+                    body: message || 'تم تحديث تفاصيل المهمة',
+                    compactBody: title || 'إشعار مهمة',
+                    url: link || `/tasks/${taskId}`,
+                    data: {
+                        source: 'task_notification',
+                        taskId,
+                        typeId: type || 'task_assigned',
+                    },
+                }).catch((pushErr) => {
+                    console.warn('⚠️ [PUSH-TASK] Failed to dispatch task push:', pushErr?.message || pushErr);
+                });
+            } catch (pushImportErr) {
+                console.warn('⚠️ [PUSH-TASK] Bootstrap error:', pushImportErr?.message || pushImportErr);
+            }
+
             if (logActivity && taskId) {
                 await createTaskActivitySafe({
                     taskId,

@@ -52,18 +52,51 @@ class PushNotificationService {
       await PushNotifications.register();
       console.log("✅ [PUSH] Registered with FCM service");
 
-      // إنشاء قناة الإشعارات لنظام أندرويد لضمان ظهور الإشعار مع الصوت والاهتزاز
+      // إنشاء قنوات الإشعارات لنظام أندرويد لتمكين التخصيص والتحكم في النغمات
       try {
-        await PushNotifications.createChannel({
-          id: "maxp_default_channel",
-          name: "إشعارات MaxP",
-          description: "إشعارات الرسائل والطلبات الجديدة",
-          importance: 5,
-          visibility: 1,
-          sound: "default",
-          vibration: true,
-          lights: true,
-        });
+        await Promise.all([
+          PushNotifications.createChannel({
+            id: "maxp_messages_channel",
+            name: "رسائل العملاء والواتساب",
+            description: "إشعارات رسائل الواتساب والعملاء الواردة",
+            importance: 5,
+            visibility: 1,
+            sound: "default",
+            vibration: true,
+            lights: true,
+          }),
+          PushNotifications.createChannel({
+            id: "maxp_orders_channel",
+            name: "الطلبات الجديدة وتغيير الحالة",
+            description: "إشعارات إنشاء الطلبات وتحديثات الشحن والتوصيل",
+            importance: 5,
+            visibility: 1,
+            sound: "default",
+            vibration: true,
+            lights: true,
+          }),
+          PushNotifications.createChannel({
+            id: "maxp_tasks_channel",
+            name: "المهام والتذكيرات",
+            description: "إشعارات تكليف ومتابعة المهام ومواعيد الاستحقاق",
+            importance: 4,
+            visibility: 1,
+            sound: "default",
+            vibration: true,
+            lights: true,
+          }),
+          PushNotifications.createChannel({
+            id: "maxp_default_channel",
+            name: "إشعارات MaxP العامة",
+            description: "تنبيهات النظام العامة",
+            importance: 4,
+            visibility: 1,
+            sound: "default",
+            vibration: true,
+            lights: true,
+          }),
+        ]);
+        console.log("✅ [PUSH] All Android notification channels configured successfully");
       } catch (channelError) {
         console.warn("⚠️ [PUSH] Notification channel setup warning:", channelError);
       }
@@ -91,22 +124,49 @@ class PushNotificationService {
       console.error("❌ [PUSH] Error registering device token:", err);
     });
 
-    // 3. وصول إشعار والتطبيق مفتوح في المقدمة
-    PushNotifications.addListener("pushNotificationReceived", (notification) => {
+    // 3. وصول إشعار والتطبيق مفتوح في المقدمة (Foreground)
+    PushNotifications.addListener("pushNotificationReceived", async (notification) => {
       console.log("🔔 [PUSH] Notification received in foreground:", notification.title);
-      // تشغيل تنبيه صوتي أو اهتزاز إذا لزم
+      try {
+        const { toast } = await import("sonner");
+        const data = notification.data || {};
+        const targetUrl =
+          data.url ||
+          (data.conversationId ? `/whatsapp-inbox?conversationId=${encodeURIComponent(data.conversationId)}` : null) ||
+          (data.taskId ? `/tasks/${data.taskId}` : null) ||
+          (data.orderId ? `/orders?orderId=${data.orderId}` : null);
+
+        toast(notification.title || "إشعار جديد", {
+          description: notification.body,
+          duration: 6000,
+          action: targetUrl
+            ? {
+                label: "عرض",
+                onClick: () => {
+                  window.location.href = targetUrl;
+                },
+              }
+            : undefined,
+        });
+      } catch (toastErr) {
+        console.warn("Could not display in-app toast for push notification:", toastErr);
+      }
     });
 
     // 4. نقر المستخدم على الإشعار من شريط الهاتف أو شاشة القفل
     PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
-      const data = action.notification.data || {};
+      const data = action.notification?.data || {};
       console.log("👆 [PUSH] Notification clicked by user:", data);
 
-      const targetUrl = data.url || (data.conversationId ? `/whatsapp?conversationId=${data.conversationId}` : null);
+      const targetUrl =
+        data.url ||
+        (data.conversationId ? `/whatsapp-inbox?conversationId=${encodeURIComponent(data.conversationId)}` : null) ||
+        (data.taskId ? `/tasks/${data.taskId}` : null) ||
+        (data.orderId ? `/orders?orderId=${data.orderId}` : null);
 
       if (targetUrl) {
-        // توجيه المستخدم مباشرة للمحادثة أو الطلب
-        if (window.location.pathname !== targetUrl) {
+        // توجيه المستخدم مباشرة للصفحة المطلوبة
+        if (window.location.pathname + window.location.search !== targetUrl) {
           window.location.href = targetUrl;
         }
       }

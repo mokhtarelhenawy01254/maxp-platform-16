@@ -12,6 +12,7 @@ import {
   XCircleIcon,
   EyeIcon,
   TrashIcon,
+  Cog6ToothIcon,
 } from "@heroicons/react/24/outline";
 import { BellIcon as BellSolidIcon } from "@heroicons/react/24/solid";
 import { socketService } from "../../services/socketService";
@@ -712,9 +713,17 @@ const NotificationDropdown: React.FC<NotificationDropdownProps> = ({
                     تحديد الكل كمقروء
                   </button>
                 )}
+                <a
+                  href="/notification-settings"
+                  onClick={() => setIsOpen(false)}
+                  className="text-gray-400 hover:text-blue-600 transition-colors duration-200 p-1"
+                  title="تخصيص وإعدادات الإشعارات"
+                >
+                  <Cog6ToothIcon className="w-5 h-5" />
+                </a>
                 <button
                   onClick={() => setIsOpen(false)}
-                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                  className="text-gray-400 hover:text-gray-600 transition-colors duration-200 p-1"
                 >
                   <XMarkIcon className="w-5 h-5" />
                 </button>
