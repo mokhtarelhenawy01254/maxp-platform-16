@@ -21,6 +21,11 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
   ChevronUpIcon,
+  PrinterIcon,
+  CalendarIcon,
+  TicketIcon,
+  BanknotesIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import i18n from "../../../i18n";
@@ -33,6 +38,13 @@ import { InboxConversation } from "../../../types/inbox.types";
 import { EGYPT_GOVERNORATES } from "../../../constants/egyptGovernorates";
 import { detectUserGovernorate } from "../../../utils/geolocation";
 import { getPrimaryImageUrl } from "../../../utils/imageUrl";
+import { useAuth } from "../../../hooks/useAuthSimple";
+import {
+  customerBlocklistService,
+  CustomerBlockEvaluation,
+} from "../../../services/customerBlocklistService";
+import { GovernorateAreaSearch } from "../../../components/ui/GovernorateAreaSearch";
+
 
 const overlayStyle: React.CSSProperties = {
   background: "rgba(7, 17, 32, 0.58)",
@@ -225,10 +237,22 @@ interface CartItem {
   name: string;
   variantName?: string;
   price: number;
+  originalPrice: number;
   quantity: number;
   image: string;
   stock: number;
   sku?: string;
+  color?: string;
+  size?: string;
+}
+
+interface CouponInfo {
+  id: string;
+  code: string;
+  name: string;
+  type: "PERCENTAGE" | "FIXED";
+  value: number;
+  discountAmount: number;
 }
 
 interface ShippingInfo {
@@ -548,6 +572,15 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const productListRef = useRef<HTMLDivElement>(null);
   const skipNextSearchRef = useRef(false);
 
+  const { user } = useAuth();
+  const canOverrideBlockedCustomer = [
+    "OWNER",
+    "COMPANY_ADMIN",
+    "SUPER_ADMIN",
+    "MANAGER",
+    "ADMIN",
+  ].includes(user?.role || "");
+
   // Cart State
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [showMobileCart, setShowMobileCart] = useState(false);
@@ -557,7 +590,36 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
   const [customerName, setCustomerName] = useState(initialCustomerName || convCustomerName || "");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
+  const [area, setArea] = useState("");
   const [notes, setNotes] = useState("");
+
+  // Customer Blocklist State
+  const [checkingBlock, setCheckingBlock] = useState(false);
+  const [customerBlock, setCustomerBlock] = useState<CustomerBlockEvaluation | null>(null);
+  const [allowBlockedCustomerOverride, setAllowBlockedCustomerOverride] = useState(false);
+
+  // Order Settings State
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [status, setStatus] = useState("CONFIRMED");
+  const [requestType, setRequestType] = useState("delivery");
+  const [returnAmount, setReturnAmount] = useState("");
+
+  // Coupon State
+  const [couponCode, setCouponCode] = useState("");
+  const [appliedCoupon, setAppliedCoupon] = useState<CouponInfo | null>(null);
+  const [loadingCoupon, setLoadingCoupon] = useState(false);
+
+  // Manual Discount State
+  const [manualDiscount, setManualDiscount] = useState(0);
+
+  // Scheduled Order State
+  const [isScheduledOrder, setIsScheduledOrder] = useState(false);
+  const [scheduledDeliveryDate, setScheduledDeliveryDate] = useState("");
+  const [scheduledDeliveryTime, setScheduledDeliveryTime] = useState("");
+  const [scheduledNotes, setScheduledNotes] = useState("");
+
+  // Order Success State
+  const [createdOrder, setCreatedOrder] = useState<{ id: string; orderNumber?: string } | null>(null);
 
   // Shipping State
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo | null>(null);
@@ -585,6 +647,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           ? String(convCustomerName)
           : ""
       );
+      setCreatedOrder(null);
     }
   }, [isOpen, initialCustomerName, initialCustomerPhone, convCustomerName]);
 
@@ -624,6 +687,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         setCustomerName((prev) => String(prev || "").trim() || fullName);
         setAddress((prev) => String(prev || "").trim() || (customer.address ? String(customer.address) : ""));
         setCity((prev) => prev || customer.governorate || customer.city || "");
+        setArea((prev) => prev || customer.area || customer.city || "");
         setNotes((prev) => String(prev || "").trim() || (customer.notes ? String(customer.notes) : ""));
       } catch (error) {
         console.error("Quick order customer lookup error:", error);
@@ -635,6 +699,49 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       window.clearTimeout(timeoutId);
     };
   }, [isOpen, phone]);
+
+  // Customer Blocklist check
+  useEffect(() => {
+    const digits = String(phone || "").replace(/\D/g, "");
+    if (!isOpen || digits.length < 10) {
+      setCustomerBlock(null);
+      setAllowBlockedCustomerOverride(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        setCheckingBlock(true);
+        const result = await customerBlocklistService.check({
+          phone: String(phone),
+          source: "manual",
+          paymentMethod,
+        });
+
+        if (!isCancelled) {
+          setCustomerBlock(result?.rule || result?.blocked ? result : null);
+          if (!result?.blocked) {
+            setAllowBlockedCustomerOverride(false);
+          }
+        }
+      } catch (error) {
+        if (!isCancelled) {
+          setCustomerBlock(null);
+          setAllowBlockedCustomerOverride(false);
+        }
+      } finally {
+        if (!isCancelled) {
+          setCheckingBlock(false);
+        }
+      }
+    }, 450);
+
+    return () => {
+      isCancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [isOpen, phone, paymentMethod]);
 
   // Fetch products
   const fetchProducts = useCallback(
@@ -663,20 +770,20 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         const data = await response.json();
 
         if (data.success && data.data) {
-          const mappedProducts: Product[] = data.data.map((p: any) => {
+          const mappedProducts: Product[] = data.data.map((p: Record<string, unknown>) => {
             return {
-              id: p.id,
-              name: p.name,
-              price: p.price,
-              stock: p.stock,
-              sku: p.sku,
-              trackInventory: p.trackInventory,
+              id: String(p.id),
+              name: String(p.name),
+              price: Number(p.price),
+              stock: Number(p.stock),
+              sku: String(p.sku || ""),
+              trackInventory: p.trackInventory as boolean | undefined,
               image: getPrimaryImageUrl(p.mainImage, p.image, p.images),
-              variants: (p.variants || p.productVariants || []).map((v: any) => ({
+              variants: ((p.variants || p.productVariants || []) as Record<string, unknown>[]).map((v) => ({
                 ...v,
                 image: getPrimaryImageUrl(v.image, v.images),
-                trackInventory: v.trackInventory,
-              })),
+                trackInventory: v.trackInventory as boolean | undefined,
+              })) as unknown as ProductVariant[],
             };
           });
 
@@ -805,7 +912,11 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       );
       tToast.success("QuickOrderModal.msg_7c93");
     } else {
-      const price = variant ? parseFloat(String(variant.price)) : product.price;
+      const productPrice =
+        typeof product.price === "string"
+          ? parseFloat(product.price)
+          : product.price || 0;
+      const price = variant ? parseFloat(String(variant.price)) : productPrice;
       const image = variant && variant.image ? variant.image : product.image;
       const stock = variant ? variant.stock : product.stock;
       const sku = variant ? variant.sku : product.sku;
@@ -827,10 +938,13 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           name: product.name,
           variantName,
           price,
+          originalPrice: price,
           quantity: 1,
           image,
           stock,
           sku,
+          color: variant?.color,
+          size: variant?.size,
         },
       ]);
       tToast.success("QuickOrderModal.msg_e784");
@@ -872,6 +986,39 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     );
   };
 
+  // Update item custom price
+  const updateItemPrice = (
+    productId: string,
+    variantId: string | undefined,
+    newPrice: number,
+  ) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        const isMatch = variantId
+          ? item.productId === productId && item.variantId === variantId
+          : item.productId === productId && !item.variantId;
+
+        return isMatch ? { ...item, price: newPrice } : item;
+      }),
+    );
+  };
+
+  // Restore original price
+  const restoreItemPrice = (
+    productId: string,
+    variantId: string | undefined,
+  ) => {
+    setCartItems((prev) =>
+      prev.map((item) => {
+        const isMatch = variantId
+          ? item.productId === productId && item.variantId === variantId
+          : item.productId === productId && !item.variantId;
+
+        return isMatch ? { ...item, price: item.originalPrice } : item;
+      }),
+    );
+  };
+
   // Remove from cart
   const removeFromCart = (productId: string, variantId?: string) => {
     setCartItems((prev) =>
@@ -885,14 +1032,62 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
     tToast.success("QuickOrderModal.success_delete_b9f1");
   };
 
+  // Apply Coupon
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) {
+      toast.error("يرجى إدخال كود الكوبون");
+      return;
+    }
+
+    if (subtotal <= 0) {
+      toast.error("لا يمكن تطبيق كوبون على سلة فارغة");
+      return;
+    }
+
+    try {
+      setLoadingCoupon(true);
+      const response = await apiClient.post("/coupons/validate", {
+        code: couponCode.trim(),
+        orderAmount: subtotal,
+      });
+
+      if (response.data?.success) {
+        const { coupon, discountAmount } = response.data.data;
+        setAppliedCoupon({
+          ...coupon,
+          discountAmount,
+        });
+        toast.success(`تم تطبيق الكوبون! خصم ${discountAmount.toLocaleString()} ج.م`);
+        setCouponCode("");
+      }
+    } catch (error: unknown) {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "كود الكوبون غير صالح أو منتهي");
+    } finally {
+      setLoadingCoupon(false);
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setAppliedCoupon(null);
+    toast.success("تم إزالة الكوبون");
+  };
+
   // Calculate totals
   const subtotal = useMemo(
     () => cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0),
     [cartItems],
   );
 
+  const couponDiscount = appliedCoupon?.discountAmount || 0;
+  const totalDiscount = couponDiscount + manualDiscount;
   const shippingCost = shippingInfo?.price || 0;
-  const grandTotal = subtotal + shippingCost;
+  const grandTotal = Math.max(0, subtotal - totalDiscount + shippingCost);
+
+  // Check if blocked customer prevents order
+  const blockPreventsOrder =
+    Boolean(customerBlock?.blocked) &&
+    !(canOverrideBlockedCustomer && allowBlockedCustomerOverride);
 
   // Create order
   const handleCreateOrder = async () => {
@@ -904,9 +1099,24 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
       tToast.error("QuickOrderModal.msg_55c5");
       return;
     }
+    if (blockPreventsOrder) {
+      toast.error(customerBlock?.message || "هذا العميل محظور من إنشاء الطلبات");
+      return;
+    }
+    if (isScheduledOrder && !scheduledDeliveryDate) {
+      toast.error("يرجى تحديد تاريخ التوصيل للطلب المجدول");
+      return;
+    }
 
     try {
       setLoading(true);
+
+      const scheduledDateTime =
+        isScheduledOrder && scheduledDeliveryDate
+          ? new Date(
+              `${scheduledDeliveryDate}${scheduledDeliveryTime ? "T" + scheduledDeliveryTime : "T00:00:00"}`,
+            ).toISOString()
+          : null;
 
       const extractionMethod =
         convPlatform === "whatsapp" ? "whatsapp_inbox" : "facebook_inbox";
@@ -921,157 +1131,235 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           quantity: item.quantity,
           variantId: item.variantId,
           sku: item.sku,
+          productColor: item.color ? String(item.color) : null,
+          productSize: item.size != null ? String(item.size) : null,
+          productImage: item.image,
         })),
         customerId: convCustomerId,
         customerPhone: phone,
         customerName: customerName.trim(),
         customerAddress: address,
-        city: city,
+        governorate: city,
+        city: area || city,
+        area: area || city,
         notes: notes,
-        status: "PENDING",
-        paymentMethod: "cod",
+        status: isScheduledOrder ? "SCHEDULED" : status,
+        paymentMethod: paymentMethod,
         extractionMethod,
         conversationId: convId,
         platform: convPlatform,
         source,
-        shippingCost: shippingCost,
-        shippingZoneId: shippingInfo?.zoneId,
+        requestType: requestType,
+        returnAmount: returnAmount ? parseFloat(returnAmount) : undefined,
+        couponId: appliedCoupon?.id,
+        couponCode: appliedCoupon?.code,
+        couponDiscount: couponDiscount,
+        manualDiscount: manualDiscount,
         subtotal: subtotal,
         totalAmount: grandTotal,
+        isScheduled: isScheduledOrder,
+        scheduledDeliveryDate: scheduledDateTime,
+        scheduledNotes: isScheduledOrder ? scheduledNotes : undefined,
+        allowBlockedCustomerOverride:
+          canOverrideBlockedCustomer && allowBlockedCustomerOverride,
+        shippingCost: shippingCost,
+        shippingZoneId: shippingInfo?.zoneId,
       };
 
       const response = await apiClient.post("/orders-enhanced", payload);
 
-      if (response.data.success) {
+      if (response.data?.success) {
         tToast.success("QuickOrderModal.success_create_5c00");
         const orderId = response.data.order?.id || response.data.data?.id;
+        const orderNumber = response.data.order?.orderNumber || response.data.data?.orderNumber;
 
         if (onOrderCreated && orderId) {
           onOrderCreated(orderId);
         }
 
-        // Reset and close
-        setCartItems([]);
-        setStep("products");
-        onClose();
+        setCreatedOrder({
+          id: orderId ? String(orderId) : "new",
+          orderNumber: orderNumber ? String(orderNumber) : undefined,
+        });
       } else {
         toast.error(
-          "فشل إنشاء الطلب: " + (response.data.error || i18n.t("QuickOrderModal.msg_4223")),
+          "فشل إنشاء الطلب: " + (response.data?.error || i18n.t("QuickOrderModal.msg_4223")),
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Create order error:", error);
-      toast.error(error.response?.data?.message || "حدث خطأ أثناء إنشاء الطلب");
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "حدث خطأ أثناء إنشاء الطلب");
     } finally {
       setLoading(false);
     }
   };
 
   // Render a cart item (reused in desktop sidebar and mobile drawer)
-  const renderCartItem = (item: CartItem) => (
-    <div
-      key={`${item.productId}-${item.variantId || ""}`}
-      className="business-cart-card p-2 sm:p-2.5 rounded-xl border"
-      style={{
-        background: "var(--business-surface-panel)",
-        borderColor: "var(--business-card-border)",
-      }}
-    >
-      <div className="flex gap-2.5">
-        <div className="business-product-card-media h-12 w-12 flex-shrink-0 overflow-hidden rounded-xl">
-          {item.image ? (
-            <img
-              src={item.image}
-              alt={item.name}
-              className="h-full w-full object-cover"
-            />
-          ) : (
-            <div
-              className="flex h-full w-full items-center justify-center"
-              style={mutedStyle}
-            >
-              <ArchiveBoxIcon className="h-6 w-6" />
+  const renderCartItem = (item: CartItem) => {
+    const isCustomPrice = item.price !== item.originalPrice;
+    const isOverStock = item.stock > 0 && item.quantity > item.stock;
+
+    return (
+      <div
+        key={`${item.productId}-${item.variantId || ""}`}
+        className={`business-cart-card p-2 sm:p-2.5 rounded-xl border transition-colors ${
+          isOverStock
+            ? "border-red-300 dark:border-red-700 bg-red-50/40 dark:bg-red-900/15"
+            : ""
+        }`}
+        style={{
+          background: isOverStock ? undefined : "var(--business-surface-panel)",
+          borderColor: isOverStock ? undefined : "var(--business-card-border)",
+        }}
+      >
+        <div className="flex gap-2.5">
+          <div className="business-product-card-media h-14 w-14 flex-shrink-0 overflow-hidden rounded-xl">
+            {item.image ? (
+              <img
+                src={item.image}
+                alt={item.name}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              <div
+                className="flex h-full w-full items-center justify-center"
+                style={mutedStyle}
+              >
+                <ArchiveBoxIcon className="h-6 w-6" />
+              </div>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex justify-between items-start gap-1">
+              <h4
+                className="line-clamp-1 text-xs font-semibold"
+                style={headingStyle}
+                title={item.name}
+              >
+                {item.name}
+              </h4>
+              <button
+                type="button"
+                onClick={() => removeFromCart(item.productId, item.variantId)}
+                className="text-gray-400 hover:text-red-500 p-0.5 rounded transition-colors flex-shrink-0"
+                title="حذف من السلة"
+              >
+                <TrashIcon className="h-4 w-4" />
+              </button>
             </div>
-          )}
+
+            {(item.color || item.size || item.variantName) && (
+              <div className="flex flex-wrap gap-1 mt-1">
+                {item.color && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 font-medium">
+                    {item.color}
+                  </span>
+                )}
+                {item.size && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300 font-medium">
+                    {item.size}
+                  </span>
+                )}
+                {!item.color && !item.size && item.variantName && (
+                  <span className="text-[10px] text-blue-500 font-medium truncate">
+                    {item.variantName}
+                  </span>
+                )}
+              </div>
+            )}
+
+            {isOverStock && (
+              <div className="flex items-center gap-1 text-[10px] text-red-500 font-medium mt-1">
+                <ExclamationTriangleIcon className="w-3.5 h-3.5 flex-shrink-0" />
+                <span>الكمية أكبر من المخزون ({item.stock})</span>
+              </div>
+            )}
+
+            <div className="mt-2 flex items-center justify-between gap-1 flex-wrap">
+              {/* Quantity controls */}
+              <div className="flex items-center gap-1 bg-muted/40 rounded-lg p-0.5 border border-border/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (item.quantity > 1) {
+                      updateQuantity(item.productId, item.variantId, -1);
+                    } else {
+                      removeFromCart(item.productId, item.variantId);
+                    }
+                  }}
+                  className="business-qty-button"
+                  aria-label="تقليل الكمية"
+                >
+                  <MinusIcon className="h-3 w-3" />
+                </button>
+                <span
+                  className="w-7 text-center text-xs font-bold"
+                  style={headingStyle}
+                >
+                  {item.quantity}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateQuantity(item.productId, item.variantId, 1)
+                  }
+                  className="business-qty-button"
+                  aria-label="زيادة الكمية"
+                >
+                  <PlusIcon className="h-3 w-3" />
+                </button>
+              </div>
+
+              {/* Editable unit price */}
+              <div className="flex flex-col items-end">
+                <div className="flex items-center gap-1">
+                  <input
+                    type="number"
+                    value={item.price}
+                    onChange={(e) => {
+                      const val = parseFloat(e.target.value) || 0;
+                      updateItemPrice(item.productId, item.variantId, val);
+                    }}
+                    className={`w-16 text-xs text-center font-bold py-0.5 px-1 rounded border ${
+                      isCustomPrice
+                        ? "border-amber-400 bg-amber-50 text-amber-900 dark:bg-amber-900/30 dark:text-amber-200"
+                        : "border-border/60 bg-background text-foreground"
+                    }`}
+                    title="سعر القطعة (قابل للتعديل)"
+                    min="0"
+                  />
+                  <span className="text-[10px] text-muted-foreground">ج.م</span>
+                </div>
+                {isCustomPrice && (
+                  <div className="flex items-center gap-1 text-[9px] text-muted-foreground mt-0.5">
+                    <span className="line-through">{item.originalPrice}</span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        restoreItemPrice(item.productId, item.variantId)
+                      }
+                      className="text-blue-500 hover:underline font-semibold"
+                      title="استعادة السعر الأصلي"
+                    >
+                      استعادة
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-1.5 flex justify-between items-center text-xs border-t border-border/30 pt-1">
+              <span className="text-[10px] text-muted-foreground">المجموع:</span>
+              <span className="font-bold text-xs" style={headingStyle}>
+                {(item.price * item.quantity).toLocaleString()} ج.م
+              </span>
+            </div>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <h4
-            className="line-clamp-1 text-xs font-medium"
-            style={headingStyle}
-            title={item.name}
-          >
-            {item.name}
-          </h4>
-          {item.variantName && (
-            <p className="text-[10px]" style={mutedStyle}>
-              {item.variantName}
-            </p>
-          )}
-          <p
-            className="mt-0.5 text-xs font-bold"
-            style={primaryStyle}
-          >
-            {item.price} ج.م
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() =>
-            removeFromCart(item.productId, item.variantId)
-          }
-          className="business-icon-button business-icon-button--sm flex-shrink-0"
-          style={dangerStyle}
-          aria-label="حذف المنتج من السلة"
-        >
-          <TrashIcon className="h-4 w-4" />
-        </button>
       </div>
-      <div className="mt-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <button
-            type="button"
-            onClick={() =>
-              updateQuantity(
-                item.productId,
-                item.variantId,
-                -1,
-              )
-            }
-            className="business-qty-button"
-            aria-label="تقليل الكمية"
-          >
-            <MinusIcon className="h-3 w-3" />
-          </button>
-          <span
-            className="w-8 text-center text-xs sm:text-sm font-semibold"
-            style={headingStyle}
-          >
-            {item.quantity}
-          </span>
-          <button
-            type="button"
-            onClick={() =>
-              updateQuantity(
-                item.productId,
-                item.variantId,
-                1,
-              )
-            }
-            className="business-qty-button"
-            aria-label="زيادة الكمية"
-          >
-            <PlusIcon className="h-3 w-3" />
-          </button>
-        </div>
-        <span
-          className="text-xs sm:text-sm font-bold"
-          style={headingStyle}
-        >
-          {(item.price * item.quantity).toLocaleString()} ج.م
-        </span>
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (!isOpen) return null;
 
@@ -1108,49 +1396,166 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
         </div>
 
         {/* Steps Indicator */}
-        <div className="business-workflow-tabs">
-          <button
-            type="button"
-            onClick={() => {
-              setStep("products");
-              setShowMobileCart(false);
-            }}
-            className="business-workflow-tab flex-1 sm:flex-initial"
-            data-active={step === "products" && !showMobileCart}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span className="business-workflow-badge">1</span>
-              المنتجات
-              {cartItems.length > 0 && (
-                <span className="business-gallery-count">
-                  {cartItems.length}
-                </span>
-              )}
-            </span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              if (cartItems.length > 0) {
-                setStep("checkout");
+        {!createdOrder && (
+          <div className="business-workflow-tabs">
+            <button
+              type="button"
+              onClick={() => {
+                setStep("products");
                 setShowMobileCart(false);
-              }
-            }}
-            disabled={cartItems.length === 0}
-            className="business-workflow-tab flex-1 sm:flex-initial"
-            data-active={step === "checkout"}
-            data-disabled={cartItems.length === 0}
-          >
-            <span className="flex items-center justify-center gap-2">
-              <span className="business-workflow-badge">2</span>
-              الدفع والتوصيل
-            </span>
-          </button>
-        </div>
+              }}
+              className="business-workflow-tab flex-1 sm:flex-initial"
+              data-active={step === "products" && !showMobileCart}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span className="business-workflow-badge">1</span>
+                المنتجات
+                {cartItems.length > 0 && (
+                  <span className="business-gallery-count">
+                    {cartItems.length}
+                  </span>
+                )}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (cartItems.length > 0) {
+                  setStep("checkout");
+                  setShowMobileCart(false);
+                }
+              }}
+              disabled={cartItems.length === 0}
+              className="business-workflow-tab flex-1 sm:flex-initial"
+              data-active={step === "checkout"}
+              data-disabled={cartItems.length === 0}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span className="business-workflow-badge">2</span>
+                الدفع والتوصيل
+              </span>
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         <div className="relative flex flex-1 overflow-hidden">
-          {step === "products" ? (
+          {createdOrder ? (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-8 flex items-center justify-center">
+              <div
+                className="max-w-md w-full text-center space-y-6 business-page-panel p-6 sm:p-8 shadow-xl rounded-2xl border"
+                style={{
+                  background: "var(--business-surface-panel)",
+                  borderColor: "var(--business-card-border)",
+                }}
+              >
+                <div
+                  className="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full flex items-center justify-center border"
+                  style={{
+                    background: "rgba(16, 185, 129, 0.12)",
+                    borderColor: "rgba(16, 185, 129, 0.28)",
+                    color: "var(--business-success)",
+                  }}
+                >
+                  <CheckCircleIcon className="w-10 h-10 sm:w-12 sm:h-12 text-emerald-500" />
+                </div>
+
+                <div className="space-y-1.5">
+                  <h3 className="text-xl sm:text-2xl font-bold" style={headingStyle}>
+                    تم إنشاء الطلب بنجاح!
+                  </h3>
+                  <p className="text-sm" style={mutedStyle}>
+                    رقم الطلب:{" "}
+                    <span className="font-mono font-bold" style={headingStyle}>
+                      #{createdOrder.orderNumber || createdOrder.id}
+                    </span>
+                  </p>
+                </div>
+
+                <div
+                  className="p-4 rounded-xl text-xs sm:text-sm text-right space-y-2 border"
+                  style={{
+                    background: "var(--business-surface-subtle)",
+                    borderColor: "var(--business-card-border)",
+                  }}
+                >
+                  <div className="flex justify-between">
+                    <span style={mutedStyle}>العميل:</span>
+                    <span className="font-medium" style={headingStyle}>
+                      {customerName}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span style={mutedStyle}>الهاتف:</span>
+                    <span className="font-mono font-medium" style={headingStyle}>
+                      {phone}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span style={mutedStyle}>إجمالي الطلب:</span>
+                    <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                      {grandTotal.toLocaleString()} ج.م
+                    </span>
+                  </div>
+                  {isScheduledOrder && scheduledDeliveryDate && (
+                    <div className="flex justify-between">
+                      <span style={mutedStyle}>موعد التوصيل:</span>
+                      <span className="font-medium" style={headingStyle}>
+                        {scheduledDeliveryDate} {scheduledDeliveryTime ? `(${scheduledDeliveryTime})` : ""}
+                      </span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex flex-col gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.open(`/orders/${encodeURIComponent(createdOrder.id)}?print=true`, "_blank");
+                    }}
+                    className="business-chip-button w-full py-3 flex items-center justify-center gap-2 font-bold text-sm"
+                    data-active="true"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, var(--business-success) 0%, color-mix(in srgb, var(--color-secondary) 82%, white) 100%)",
+                      borderColor: "transparent",
+                      color: "white",
+                    }}
+                  >
+                    <PrinterIcon className="w-5 h-5" />
+                    طباعة الفاتورة / البوليصة
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.open(`/orders/${encodeURIComponent(createdOrder.id)}`, "_blank");
+                    }}
+                    className="business-chip-button w-full py-2.5 flex items-center justify-center gap-2 text-sm border"
+                    style={{
+                      borderColor: "var(--business-card-border)",
+                      color: "var(--business-text-primary)",
+                    }}
+                  >
+                    عرض تفاصيل الطلب
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCreatedOrder(null);
+                      setCartItems([]);
+                      onClose();
+                    }}
+                    className="text-xs pt-2 underline transition-colors"
+                    style={mutedStyle}
+                  >
+                    إنهاء والعودة للمحادثة
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : step === "products" ? (
             <>
               {/* Products Grid */}
               <div className="flex flex-1 flex-col overflow-hidden min-w-0">
@@ -1573,63 +1978,145 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                     بيانات العميل
                   </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                    <div>
-                      <label className="mb-1 block text-xs" style={mutedStyle}>
-                        اسم العميل <span style={dangerStyle}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={customerName}
-                        onChange={(e) => setCustomerName(e.target.value)}
-                        className="business-control-input w-full text-sm"
-                        placeholder="اسم العميل"
-                      />
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div>
+                        <label className="mb-1 block text-xs" style={mutedStyle}>
+                          رقم الهاتف <span style={dangerStyle}>*</span>
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className="business-control-input w-full text-sm"
+                            placeholder="01xxxxxxxxx"
+                            dir="ltr"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs" style={mutedStyle}>
+                          اسم العميل <span style={dangerStyle}>*</span>
+                        </label>
+                        <input
+                          type="text"
+                          value={customerName}
+                          onChange={(e) => setCustomerName(e.target.value)}
+                          className="business-control-input w-full text-sm"
+                          placeholder="اسم العميل"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="mb-1 block text-xs" style={mutedStyle}>
-                        رقم الهاتف <span style={dangerStyle}>*</span>
-                      </label>
-                      <input
-                        type="text"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        className="business-control-input w-full text-sm"
-                        placeholder="01xxxxxxxxx"
-                        dir="ltr"
-                      />
-                    </div>
+
+                    {/* Customer Blocklist Warning Banner */}
+                    {(checkingBlock || customerBlock) && (
+                      <div
+                        className={`rounded-xl border p-3 text-xs sm:text-sm ${
+                          customerBlock?.blocked
+                            ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-900/20 dark:text-red-300"
+                            : "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200"
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <ExclamationTriangleIcon className="mt-0.5 h-4 w-4 shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-semibold">
+                              {checkingBlock
+                                ? "جاري فحص سجل العميل..."
+                                : customerBlock?.blocked
+                                  ? "تنبيه: العميل محظور من إنشاء الطلبات"
+                                  : "تنبيه بخصوص هذا العميل"}
+                            </p>
+                            {customerBlock?.message && (
+                              <p className="mt-1 leading-5 text-xs">
+                                {customerBlock.message}
+                              </p>
+                            )}
+                            {customerBlock?.blocked &&
+                              canOverrideBlockedCustomer && (
+                                <label className="mt-2.5 flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={allowBlockedCustomerOverride}
+                                    onChange={(e) =>
+                                      setAllowBlockedCustomerOverride(
+                                        e.target.checked,
+                                      )
+                                    }
+                                    className="h-4 w-4 rounded border-red-300 text-red-600 focus:ring-red-500"
+                                  />
+                                  <span>تجاوز الحظر وإتمام الطلب (صلاحية إدارية)</span>
+                                </label>
+                              )}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
-
-                {/* Shipping Info */}
-                <div className="business-page-panel p-4">
+                {/* Shipping & Location Info */}
+                <div className="business-page-panel p-3.5 sm:p-4">
                   <h3
-                    className="mb-4 flex items-center gap-2 font-semibold"
+                    className="mb-3 sm:mb-4 flex items-center gap-2 font-semibold text-sm sm:text-base"
                     style={headingStyle}
                   >
                     <MapPinIcon className="h-5 w-5" style={mutedStyle} />
-                    عنوان التوصيل
+                    عنوان وموقع التوصيل
                   </h3>
 
-                  <div className="space-y-4">
+                  <div className="space-y-3 sm:space-y-4">
+                    {/* Smart Governorate and Area Search */}
                     <div>
                       <label className="mb-1 block text-xs" style={mutedStyle}>
-                        المحافظة
+                        البحث الذكي عن المحافظة والمنطقة (شركة الشحن)
                       </label>
-                      <select
-                        value={city}
-                        onChange={(e) => setCity(e.target.value)}
-                        className="business-control-input w-full"
-                      >
-                        <option value="">اختر المحافظة...</option>
-                        {EGYPT_GOVERNORATES.map((gov) => (
-                          <option key={gov.id} value={gov.nameAr}>
-                            {gov.nameAr}
-                          </option>
-                        ))}
-                      </select>
+                      <GovernorateAreaSearch
+                        value={{ governorate: city, area }}
+                        onChange={(next) => {
+                          setCity(next.governorate);
+                          setArea(next.area);
+                        }}
+                        placeholder="ابحث عن المحافظة أو المنطقة..."
+                        searchPlaceholder="اكتب اسم المحافظة أو المدينة..."
+                        emptyText="لا توجد مناطق مطابقة"
+                        loadingText="جاري البحث..."
+                        autoSearchText={address || ""}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs" style={mutedStyle}>
+                          المحافظة <span style={dangerStyle}>*</span>
+                        </label>
+                        <select
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          className="business-control-input w-full text-sm"
+                        >
+                          <option value="">اختر المحافظة...</option>
+                          {EGYPT_GOVERNORATES.map((gov) => (
+                            <option key={gov.id} value={gov.nameAr}>
+                              {gov.nameAr}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-xs" style={mutedStyle}>
+                          المدينة / المنطقة التابعة
+                        </label>
+                        <input
+                          type="text"
+                          value={area}
+                          onChange={(e) => setArea(e.target.value)}
+                          placeholder="المدينة أو المنطقة"
+                          className="business-control-input w-full text-sm"
+                        />
+                      </div>
                     </div>
 
                     <div>
@@ -1639,12 +2126,12 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                       <textarea
                         value={address}
                         onChange={(e) => setAddress(e.target.value)}
-                        className="business-chat-input h-20 w-full resize-none"
+                        className="business-chat-input h-20 w-full resize-none text-sm"
                         placeholder="اسم الشارع، رقم العمارة، علامة مميزة..."
                       />
                     </div>
 
-                    {/* Shipping Cost */}
+                    {/* Shipping Cost Banner */}
                     {loadingShipping ? (
                       <div
                         className="flex items-center gap-2 text-sm"
@@ -1667,7 +2154,7 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                             style={successStyle}
                           >
                             <TruckIcon className="h-4 w-4" />
-                            تكلفة الشحن
+                            تكلفة الشحن ({shippingInfo.governorate || city})
                           </span>
                           <span className="font-bold" style={successStyle}>
                             {shippingInfo.price.toLocaleString()} ج.م
@@ -1687,23 +2174,259 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                           style={warningStyle}
                         >
                           <ExclamationTriangleIcon className="h-4 w-4" />
-                          لا توجد منطقة شحن لهذه المحافظة
+                          لا توجد منطقة شحن مسجلة لهذه المحافظة (سيتم احتساب الشحن 0 ج.م)
                         </div>
                       </div>
                     ) : null}
                   </div>
                 </div>
 
-                {/* Notes */}
-                <div className="business-page-panel p-4">
+                {/* Coupons and Discounts */}
+                <div className="business-page-panel p-3.5 sm:p-4">
+                  <h3
+                    className="mb-3 flex items-center gap-2 font-semibold text-sm sm:text-base"
+                    style={headingStyle}
+                  >
+                    <TicketIcon className="h-5 w-5" style={mutedStyle} />
+                    الكوبونات والخصم
+                  </h3>
+
+                  <div className="space-y-3">
+                    {/* Coupon Input or Applied Chip */}
+                    {!appliedCoupon ? (
+                      <div>
+                        <label className="mb-1 block text-xs" style={mutedStyle}>
+                          كود الكوبون
+                        </label>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                            placeholder="أدخل كود الكوبون..."
+                            className="business-control-input flex-1 text-sm font-mono"
+                            onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                          />
+                          <button
+                            type="button"
+                            onClick={handleApplyCoupon}
+                            disabled={loadingCoupon || !couponCode.trim() || subtotal <= 0}
+                            className="business-chip-button px-4 py-2 text-xs sm:text-sm font-semibold"
+                            data-active="true"
+                          >
+                            {loadingCoupon ? "جاري الفحص..." : "تطبيق"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between p-2.5 rounded-xl border border-blue-200 bg-blue-50/50 dark:border-blue-800 dark:bg-blue-900/20 text-xs sm:text-sm">
+                        <div className="flex items-center gap-2">
+                          <TicketIcon className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                          <span className="font-bold text-blue-700 dark:text-blue-300 font-mono">
+                            {appliedCoupon.code}
+                          </span>
+                          <span className="text-muted-foreground">
+                            (خصم {appliedCoupon.discountAmount.toLocaleString()} ج.م)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemoveCoupon}
+                          className="text-red-500 hover:text-red-700 p-1 rounded transition-colors"
+                          title="إزالة الكوبون"
+                        >
+                          <XMarkIcon className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Manual Discount */}
+                    <div>
+                      <label className="mb-1 block text-xs" style={mutedStyle}>
+                        خصم يدوي مباشر (ج.م)
+                      </label>
+                      <input
+                        type="number"
+                        value={manualDiscount || ""}
+                        onChange={(e) => setManualDiscount(Math.max(0, parseFloat(e.target.value) || 0))}
+                        placeholder="0"
+                        min="0"
+                        className="business-control-input w-full text-sm"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Order Settings & Payment */}
+                <div className="business-page-panel p-3.5 sm:p-4">
+                  <h3
+                    className="mb-3 flex items-center gap-2 font-semibold text-sm sm:text-base"
+                    style={headingStyle}
+                  >
+                    <BanknotesIcon className="h-5 w-5" style={mutedStyle} />
+                    إعدادات الطلب والدفع
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="mb-1 block text-xs" style={mutedStyle}>
+                        طريقة الدفع
+                      </label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="business-control-input w-full text-sm"
+                      >
+                        <option value="CASH">دفع عند الاستلام (كاش)</option>
+                        <option value="WALLET">محفظة إلكترونية</option>
+                        <option value="INSTAPAY">إنستاباي (InstaPay)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs" style={mutedStyle}>
+                        حالة الطلب
+                      </label>
+                      <select
+                        value={status}
+                        onChange={(e) => setStatus(e.target.value)}
+                        className="business-control-input w-full text-sm"
+                      >
+                        <option value="CONFIRMED">مؤكد (CONFIRMED)</option>
+                        <option value="PENDING">معلق (PENDING)</option>
+                        <option value="PROCESSING">قيد التجهيز (PROCESSING)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-1 block text-xs" style={mutedStyle}>
+                        نوع الطلب
+                      </label>
+                      <select
+                        value={requestType}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setRequestType(val);
+                          if (val === "return") {
+                            setStatus("RETURNED");
+                          } else if (val === "exchange") {
+                            setStatus("EXCHANGED");
+                          } else {
+                            setStatus("CONFIRMED");
+                          }
+                        }}
+                        className="business-control-input w-full text-sm"
+                      >
+                        <option value="delivery">شحن وتوصيل عادي</option>
+                        <option value="partial_delivery">طلب تسليم جزئي</option>
+                        <option value="exchange">طلب استبدال</option>
+                        <option value="return">طلب مرتجع</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {(requestType === "return" || requestType === "exchange") && (
+                    <div className="mt-3">
+                      <label className="mb-1 block text-xs" style={mutedStyle}>
+                        💰 مبلغ التحصيل في حالة المرتجع (افتراضي: مصاريف الشحن)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="number"
+                          value={returnAmount}
+                          onChange={(e) => setReturnAmount(e.target.value)}
+                          placeholder={
+                            shippingInfo
+                              ? `${shippingInfo.price} (مصاريف الشحن)`
+                              : "سيتم استخدام مصاريف الشحن تلقائياً"
+                          }
+                          className="business-control-input w-full text-sm pe-12"
+                          min="0"
+                          step="1"
+                        />
+                        <span className="absolute end-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
+                          ج.م
+                        </span>
+                      </div>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        هذا المبلغ يظهر لشركة الشحن كـ &quot;مبلغ التحصيل في حالة المرتجع&quot;.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Scheduled Order Section */}
+                <div className="business-page-panel p-3.5 sm:p-4">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={isScheduledOrder}
+                      onChange={(e) => setIsScheduledOrder(e.target.checked)}
+                      className="h-4 w-4 rounded border-border text-primary focus:ring-primary"
+                    />
+                    <CalendarIcon className="h-5 w-5 text-amber-500" />
+                    <span className="text-sm font-semibold text-foreground">
+                      جدولة الطلب لتسليمه في تاريخ محدد
+                    </span>
+                  </label>
+
+                  {isScheduledOrder && (
+                    <div className="mt-3 space-y-3 pt-3 border-t border-border/40">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-foreground">
+                            تاريخ التوصيل <span style={dangerStyle}>*</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={scheduledDeliveryDate}
+                            onChange={(e) => setScheduledDeliveryDate(e.target.value)}
+                            min={
+                              new Date(Date.now() + 24 * 60 * 60 * 1000)
+                                .toISOString()
+                                .split("T")[0]
+                            }
+                            className="business-control-input w-full text-xs"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="mb-1 block text-xs font-medium text-foreground">
+                            وقت التوصيل المفضل (اختياري)
+                          </label>
+                          <input
+                            type="time"
+                            value={scheduledDeliveryTime}
+                            onChange={(e) => setScheduledDeliveryTime(e.target.value)}
+                            className="business-control-input w-full text-xs"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs font-medium text-foreground">
+                          ملاحظات الجدولة والتسليم
+                        </label>
+                        <textarea
+                          value={scheduledNotes}
+                          onChange={(e) => setScheduledNotes(e.target.value)}
+                          placeholder="مثال: تسليم بعد الساعة 5 مساءً..."
+                          className="business-control-input w-full text-xs h-14 resize-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Additional Notes */}
+                <div className="business-page-panel p-3.5 sm:p-4">
                   <label className="mb-1 block text-xs" style={mutedStyle}>
-                    ملاحظات (اختياري)
+                    ملاحظات الطلب (اختياري)
                   </label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     className="business-chat-input h-16 w-full resize-none text-sm"
-                    placeholder="أي ملاحظات إضافية..."
+                    placeholder="أي ملاحظات إضافية على الطلب..."
                   />
                 </div>
 
@@ -1726,6 +2449,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                         {subtotal.toLocaleString()} ج.م
                       </span>
                     </div>
+
+                    {totalDiscount > 0 && (
+                      <div className="flex justify-between text-green-600 dark:text-green-400 font-medium">
+                        <span>إجمالي الخصم</span>
+                        <span>-{totalDiscount.toLocaleString()} ج.م</span>
+                      </div>
+                    )}
+
                     {shippingCost > 0 && (
                       <div className="flex justify-between">
                         <span style={mutedStyle}>الشحن</span>
@@ -1734,13 +2465,14 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
                         </span>
                       </div>
                     )}
+
                     <div
                       className="flex justify-between pt-2 text-lg font-bold"
                       style={{
                         borderTop: "1px solid var(--business-muted-line)",
                       }}
                     >
-                      <span style={headingStyle}>الإجمالي</span>
+                      <span style={headingStyle}>الإجمالي النهائي</span>
                       <span style={primaryStyle}>
                         {grandTotal.toLocaleString()} ج.م
                       </span>
@@ -1752,69 +2484,89 @@ const QuickOrderModal: React.FC<QuickOrderModalProps> = ({
           )}
         </div>
 
-        {/* Footer */}
-        <div className="business-footer-bar flex items-center justify-between p-3 sm:p-4">
-          <button
-            type="button"
-            onClick={step === "checkout" ? () => setStep("products") : onClose}
-            className="business-chip-button px-4 py-2 text-xs sm:text-sm"
-          >
-            {step === "checkout" ? "رجوع" : "إلغاء"}
-          </button>
-
-          {step === "products" && cartItems.length > 0 && (
+        {/* Footer (Hidden when createdOrder is active) */}
+        {!createdOrder && (
+          <div className="business-footer-bar flex items-center justify-between p-3 sm:p-4">
             <button
               type="button"
-              onClick={() => {
-                setShowMobileCart(false);
-                setStep("checkout");
-              }}
-              className="business-chip-button md:hidden flex items-center gap-1.5 px-4 py-2 text-xs font-bold"
-              data-active="true"
+              onClick={step === "checkout" ? () => setStep("products") : onClose}
+              className="business-chip-button px-4 py-2 text-xs sm:text-sm"
             >
-              <span>متابعة الطلب</span>
-              <span className="opacity-90">({grandTotal.toLocaleString()} ج.م)</span>
+              {step === "checkout" ? "رجوع" : "إلغاء"}
             </button>
-          )}
 
-          {step === "checkout" && (
-            <button
-              type="button"
-              onClick={handleCreateOrder}
-              disabled={
-                loading || cartItems.length === 0 || !phone || !customerName
-              }
-              className={`business-chip-button flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm font-medium ${
-                loading || cartItems.length === 0 || !phone || !customerName
-                  ? "cursor-not-allowed opacity-60"
-                  : ""
-              }`}
-              style={
-                loading || cartItems.length === 0 || !phone || !customerName
-                  ? undefined
-                  : {
-                      background:
-                        "linear-gradient(135deg, var(--business-success) 0%, color-mix(in srgb, var(--color-secondary) 82%, white) 100%)",
-                      borderColor: "transparent",
-                      color: "white",
-                    }
-              }
-            >
-              {loading ? (
-                <div
-                  className="h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-t-transparent"
-                  style={{
-                    borderColor: "currentColor",
-                    borderTopColor: "transparent",
-                  }}
-                />
-              ) : (
-                <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
-              )}
-              إنشاء الطلب ({grandTotal.toLocaleString()} ج.م)
-            </button>
-          )}
-        </div>
+            {step === "products" && cartItems.length > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  setShowMobileCart(false);
+                  setStep("checkout");
+                }}
+                className="business-chip-button md:hidden flex items-center gap-1.5 px-4 py-2 text-xs font-bold"
+                data-active="true"
+              >
+                <span>متابعة الطلب</span>
+                <span className="opacity-90">({grandTotal.toLocaleString()} ج.م)</span>
+              </button>
+            )}
+
+            {step === "checkout" && (
+              <button
+                type="button"
+                onClick={handleCreateOrder}
+                disabled={
+                  loading ||
+                  cartItems.length === 0 ||
+                  !phone ||
+                  !customerName ||
+                  blockPreventsOrder ||
+                  (isScheduledOrder && !scheduledDeliveryDate) ||
+                  (Boolean(city) && loadingShipping)
+                }
+                className={`business-chip-button flex items-center gap-2 px-4 sm:px-6 py-2 text-xs sm:text-sm font-medium ${
+                  loading ||
+                  cartItems.length === 0 ||
+                  !phone ||
+                  !customerName ||
+                  blockPreventsOrder ||
+                  (isScheduledOrder && !scheduledDeliveryDate) ||
+                  (Boolean(city) && loadingShipping)
+                    ? "cursor-not-allowed opacity-60"
+                    : ""
+                }`}
+                style={
+                  loading ||
+                  cartItems.length === 0 ||
+                  !phone ||
+                  !customerName ||
+                  blockPreventsOrder ||
+                  (isScheduledOrder && !scheduledDeliveryDate) ||
+                  (Boolean(city) && loadingShipping)
+                    ? undefined
+                    : {
+                        background:
+                          "linear-gradient(135deg, var(--business-success) 0%, color-mix(in srgb, var(--color-secondary) 82%, white) 100%)",
+                        borderColor: "transparent",
+                        color: "white",
+                      }
+                }
+              >
+                {loading ? (
+                  <div
+                    className="h-4 w-4 sm:h-5 sm:w-5 animate-spin rounded-full border-2 border-t-transparent"
+                    style={{
+                      borderColor: "currentColor",
+                      borderTopColor: "transparent",
+                    }}
+                  />
+                ) : (
+                  <CheckCircleIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+                )}
+                إنشاء الطلب ({grandTotal.toLocaleString()} ج.م)
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Variant Selection Modal - Same as ManualOrder */}
         {showVariantModal && selectedProduct && (
