@@ -613,6 +613,11 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
               onChange={(e) => setSearchQuery(e.target.value)}
               className="business-sidebar-search"
             />
+            {!searchQuery && (
+              <span className="pointer-events-none absolute inset-inline-end-4 top-1/2 -translate-y-1/2 rounded border border-border/60 bg-muted/40 px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                /
+              </span>
+            )}
             {searchQuery && (
               <button
                 type="button"
@@ -647,7 +652,10 @@ const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
                     aria-current={isItemActive ? "page" : undefined}
                   >
                     <span className="business-sidebar-nav-icon">{item.icon}</span>
-                    <span className="business-sidebar-nav-text">{item.text}</span>
+                    <span className="business-sidebar-nav-text flex-1 truncate">{item.text}</span>
+                    {isItemActive && (
+                      <span className="size-1.5 rounded-full bg-white/90 shadow-sm shrink-0" />
+                    )}
                   </Link>
                 );
               })

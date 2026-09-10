@@ -1,5 +1,11 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+
+@theme {
+  --font-sans: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', sans-serif;
+}
+
 /* Google Fonts loaded asynchronously in index.html and dynamically in ThemeProvider */
 @import "./sidebar-elite.css";
 @import "./whatsapp-dark.css";
@@ -51,6 +57,33 @@
 }
 
 @custom-variant dark (&:is(.dark *));
+
+/* Global Typography & Font Stacks */
+html,
+body {
+  font-family: var(--font-sans, 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, sans-serif);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+[dir="rtl"] {
+  font-family: 'IBM Plex Sans Arabic', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+/* 2026 Arabic Typography Guard: Cursive Arabic ligatures must never have letter-spacing or uppercase breaks */
+[dir="rtl"],
+[dir="rtl"] * {
+  letter-spacing: normal !important;
+}
+
+/* Tabular figures for numbers, metrics, currency, and counters */
+.tabular-nums,
+[data-tabular="true"],
+.font-mono-numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
 
 /* Smooth theme transitions */
 html,

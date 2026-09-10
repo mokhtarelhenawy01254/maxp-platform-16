@@ -54,32 +54,32 @@ const MetricCard = ({ title, value, icon: Icon, color, growth, subtext, classNam
   const isPositive = growth !== undefined && growth > 0;
   const isNegative = growth !== undefined && growth < 0;
   return (
-    <div className={cn("group relative overflow-hidden rounded-[32px] border bg-white/70 p-6 shadow-sm backdrop-blur-xl transition-all duration-500 hover:-translate-y-1.5 hover:shadow-xl dark:bg-slate-950/70", colorMap[color] || "border-border/40", className)}>
-      <div className={cn("absolute -left-12 -top-12 size-32 rounded-full blur-3xl transition-all duration-700 group-hover:scale-125", glowMap[color] || "bg-primary/5")} />
+    <div className={cn("group relative overflow-hidden rounded-[24px] border bg-card/75 p-6 shadow-sm backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:shadow-md", colorMap[color] || "border-border/50", className)}>
+      <div className={cn("absolute -left-12 -top-12 size-32 rounded-full blur-3xl transition-all duration-500 group-hover:scale-125", glowMap[color] || "bg-primary/5")} />
       <div className="relative flex items-center justify-between">
         <div className="space-y-1.5">
-          <p className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground/80">{title}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{title}</p>
           <div className="flex items-baseline gap-2">
-            <h3 className="text-4xl font-black tracking-tighter text-foreground">
+            <h3 className="text-3xl sm:text-4xl font-bold tracking-tight tabular-nums text-foreground">
               {typeof value === 'number' ? value.toLocaleString() : value}
             </h3>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {subtext && (
-              <Badge variant="outline" className={cn("mt-0.5 rounded-full border-none px-2.5 py-0.5 text-[10px] font-black", colorMap[color]?.split(' ')[2])}>
+              <Badge variant="outline" className={cn("mt-0.5 rounded-full border-none px-2.5 py-0.5 text-[11px] font-medium", colorMap[color]?.split(' ')[2])}>
                 <Activity className="ml-0.5 size-3" />{subtext}
               </Badge>
             )}
             {growth !== undefined && (
-              <Badge variant="outline" className={cn("mt-0.5 rounded-full border-none px-2 py-0.5 text-[10px] font-black", isPositive ? "bg-emerald-500/10 text-emerald-600" : isNegative ? "bg-rose-500/10 text-rose-600" : "bg-gray-500/10 text-gray-500")}>
+              <Badge variant="outline" className={cn("mt-0.5 rounded-full border-none px-2 py-0.5 text-[11px] font-medium tabular-nums", isPositive ? "bg-emerald-500/10 text-emerald-600" : isNegative ? "bg-rose-500/10 text-rose-600" : "bg-gray-500/10 text-gray-500")}>
                 {isPositive ? <ArrowUp className="ml-0.5 size-3" /> : isNegative ? <ArrowDown className="ml-0.5 size-3" /> : null}
                 {isPositive ? "+" : ""}{growth?.toFixed(1)}%
               </Badge>
             )}
           </div>
         </div>
-        <div className={cn("flex size-14 items-center justify-center rounded-[22px] shadow-inner transition-all duration-500 group-hover:scale-110 group-hover:shadow-lg", colorMap[color]?.split(' ').slice(0, 2).join(' '))}>
-          <Icon className="size-7" />
+        <div className={cn("flex size-12 items-center justify-center rounded-2xl shadow-inner transition-all duration-300 group-hover:scale-110", colorMap[color]?.split(' ').slice(0, 2).join(' '))}>
+          <Icon className="size-6" />
         </div>
       </div>
     </div>
@@ -92,25 +92,25 @@ const SystemHealthBar = ({ health }: { health: DashboardData['health'] }) => {
   const dbColor = health.database === 'connected' ? 'text-emerald-500' : 'text-rose-500';
   const uptimeStr = Math.floor(health.uptime / 86400) + 'd ' + Math.floor((health.uptime % 86400) / 3600) + 'h';
   return (
-    <div className="flex flex-wrap items-center gap-4 rounded-[20px] border border-border/40 bg-white/60 px-6 py-4 backdrop-blur-xl dark:bg-slate-900/60">
-      <div className="flex items-center gap-2.5">
-        <div className={cn("size-2.5 rounded-full animate-pulse", statusColor)} />
-        <span className="text-[11px] font-black uppercase tracking-wider text-muted-foreground/70">حالة النظام:</span>
-        <span className={cn("text-sm font-black", health.status === 'healthy' ? 'text-emerald-600' : health.status === 'degraded' ? 'text-amber-600' : 'text-rose-600')}>
+    <div className="flex flex-wrap items-center gap-4 rounded-2xl border border-border/50 bg-card/60 px-5 py-3.5 backdrop-blur-xl">
+      <div className="flex items-center gap-2">
+        <div className={cn("size-2 rounded-full animate-pulse", statusColor)} />
+        <span className="text-xs font-medium text-muted-foreground">حالة النظام:</span>
+        <span className={cn("text-xs font-semibold", health.status === 'healthy' ? 'text-emerald-600' : health.status === 'degraded' ? 'text-amber-600' : 'text-rose-600')}>
           {statusText}
         </span>
       </div>
-      <div className="h-6 w-px bg-border/40" />
-      <div className="flex items-center gap-2 text-muted-foreground/70">
+      <div className="h-4 w-px bg-border/40" />
+      <div className="flex items-center gap-2 text-muted-foreground">
         <Server className="size-4" />
-        <span className="text-[11px] font-black">{uptimeStr}</span>
+        <span className="text-xs font-medium tabular-nums">{uptimeStr}</span>
       </div>
-      <div className="h-6 w-px bg-border/40" />
+      <div className="h-4 w-px bg-border/40" />
       <div className="flex items-center gap-2">
         <Database className={cn("size-4", dbColor)} />
-        <span className={cn("text-[11px] font-black", dbColor)}>{health.database === 'connected' ? 'DB متصل' : 'DB منفصل'}</span>
+        <span className={cn("text-xs font-medium", dbColor)}>{health.database === 'connected' ? 'DB متصل' : 'DB منفصل'}</span>
         {health.dbStats && (
-          <span className="text-[10px] text-muted-foreground/60 font-black">
+          <span className="text-[11px] text-muted-foreground/80 tabular-nums">
             ({health.dbStats.active}/{health.dbStats.queryCount} اتصال)
           </span>
         )}
@@ -210,32 +210,32 @@ const SystemServicesGrid = ({ systems }: { systems: DashboardData['systems'] }) 
   const usageColor = (u: string) => u === 'high' ? 'text-rose-500 bg-rose-500/10' : u === 'medium' ? 'text-amber-500 bg-amber-500/10' : 'text-emerald-500 bg-emerald-500/10';
 
   return (
-    <div className="rounded-[32px] border border-border/40 bg-white/70 p-6 shadow-lg backdrop-blur-xl dark:bg-slate-900/70">
-      <div className="mb-6 flex items-center gap-4">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 shadow-inner">
-          <Layers className="size-6" />
+    <div className="rounded-2xl border border-border/50 bg-card/75 p-5 shadow-sm backdrop-blur-xl">
+      <div className="mb-5 flex items-center gap-3">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600 shadow-inner">
+          <Layers className="size-5" />
         </div>
         <div>
-          <h3 className="text-lg font-black">خدمات النظام</h3>
-          <p className="text-[11px] font-bold text-muted-foreground/70">حالة تشغيل الأنظمة والخدمات</p>
+          <h3 className="text-base font-bold text-foreground">خدمات النظام</h3>
+          <p className="text-xs text-muted-foreground">حالة تشغيل الأنظمة والخدمات</p>
         </div>
       </div>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {systems.map((s) => (
-          <div key={s.systemName} className="group relative overflow-hidden rounded-[20px] border border-border/40 bg-white/50 p-4 transition-all hover:bg-white hover:shadow-md dark:bg-slate-950/50 dark:hover:bg-slate-950/80">
+          <div key={s.systemName} className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/50 p-3.5 transition-all hover:bg-background hover:shadow-sm">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className={cn("flex size-9 items-center justify-center rounded-xl", s.isEnabled ? "bg-emerald-500/10 text-emerald-600" : "bg-gray-200/50 text-gray-400 dark:bg-gray-800/50")}>
-                  {s.isEnabled ? <Power className="size-4" /> : <PowerOff className="size-4" />}
+              <div className="flex items-center gap-2.5">
+                <div className={cn("flex size-8 items-center justify-center rounded-lg", s.isEnabled ? "bg-emerald-500/10 text-emerald-600" : "bg-muted text-muted-foreground")}>
+                  {s.isEnabled ? <Power className="size-3.5" /> : <PowerOff className="size-3.5" />}
                 </div>
                 <div>
-                  <p className="text-sm font-black text-foreground">{s.displayName}</p>
-                  <p className="text-[10px] font-bold text-muted-foreground/60">{s.category === 'api_keys' ? 'مفاتيح API' : s.category === 'monitoring' ? 'مراقبة' : s.category === 'general' ? 'عام' : s.category}</p>
+                  <p className="text-xs font-semibold text-foreground">{s.displayName}</p>
+                  <p className="text-[10px] text-muted-foreground">{s.category === 'api_keys' ? 'مفاتيح API' : s.category === 'monitoring' ? 'مراقبة' : s.category === 'general' ? 'عام' : s.category}</p>
                 </div>
               </div>
-              <div className="flex flex-col items-end gap-1.5">
-                <div className={cn("size-2 rounded-full", s.isEnabled ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-gray-400 dark:bg-gray-600")} />
-                <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-black", usageColor(s.resourceUsage))}>{s.resourceUsage === 'high' ? 'عال' : s.resourceUsage === 'medium' ? 'متوسط' : 'خفيف'}</span>
+              <div className="flex flex-col items-end gap-1">
+                <div className={cn("size-2 rounded-full", s.isEnabled ? "bg-emerald-500 shadow-sm shadow-emerald-500/50" : "bg-muted-foreground/40")} />
+                <span className={cn("rounded-full px-2 py-0.5 text-[9px] font-medium", usageColor(s.resourceUsage))}>{s.resourceUsage === 'high' ? 'عال' : s.resourceUsage === 'medium' ? 'متوسط' : 'خفيف'}</span>
               </div>
             </div>
           </div>
@@ -248,23 +248,23 @@ const SystemServicesGrid = ({ systems }: { systems: DashboardData['systems'] }) 
 const AlertsPanel = ({ alerts }: { alerts: DashboardData['alerts'] }) => {
   if (!alerts || alerts.length === 0) return null;
   return (
-    <div className="rounded-[32px] border border-border/40 bg-white/70 p-6 shadow-lg backdrop-blur-xl dark:bg-slate-900/70">
-      <div className="mb-5 flex items-center gap-4">
-        <div className="flex size-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600 shadow-inner">
-          <AlertTriangle className="size-6" />
+    <div className="rounded-2xl border border-border/50 bg-card/75 p-5 shadow-sm backdrop-blur-xl">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex size-10 items-center justify-center rounded-xl bg-rose-500/10 text-rose-600 shadow-inner">
+          <AlertTriangle className="size-5" />
         </div>
         <div>
-          <h3 className="text-lg font-black">التنبيهات</h3>
-          <p className="text-[11px] font-bold text-muted-foreground/70">آخر الأحداث الهامة في النظام</p>
+          <h3 className="text-base font-bold text-foreground">التنبيهات</h3>
+          <p className="text-xs text-muted-foreground">آخر الأحداث الهامة في النظام</p>
         </div>
       </div>
       <div className="space-y-2">
         {alerts.map((a) => (
-          <div key={a.id} className={cn("flex items-start gap-3 rounded-2xl p-3.5", a.type === 'error' ? "bg-rose-500/5 border border-rose-500/10" : "bg-amber-500/5 border border-amber-500/10")}>
+          <div key={a.id} className={cn("flex items-start gap-3 rounded-xl p-3", a.type === 'error' ? "bg-rose-500/5 border border-rose-500/10" : "bg-amber-500/5 border border-amber-500/10")}>
             {a.type === 'error' ? <XCircle className="mt-0.5 size-4 shrink-0 text-rose-500" /> : <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />}
             <div className="min-w-0 flex-1">
-              <p className="text-sm font-black text-foreground truncate">{a.message}</p>
-              <p className="text-[10px] font-bold text-muted-foreground/60 mt-0.5">
+              <p className="text-xs font-semibold text-foreground truncate">{a.message}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5 tabular-nums">
                 {a.category} · {new Date(a.timestamp).toLocaleDateString("ar-EG", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>

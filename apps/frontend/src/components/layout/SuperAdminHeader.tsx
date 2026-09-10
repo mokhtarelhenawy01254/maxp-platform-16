@@ -52,18 +52,24 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
   return (
     <header
       className={cn(
-        "sticky top-0 z-30 flex h-16 w-full items-center border-b backdrop-blur-lg bg-background/80 border-border shrink-0",
+        "sticky top-0 z-30 flex h-16 w-full items-center border-b backdrop-blur-xl bg-background/75 border-border/50 shrink-0 transition-all duration-300",
       )}
     >
       <div className="flex w-full items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3 flex-shrink-0">
           <Button variant="ghost" size="icon" onClick={onMobileMenuOpen} className="sm:hidden"><Menu className="size-5 text-muted-foreground" /></Button>
           <Button variant="ghost" size="icon" onClick={onCollapseToggle} className="hidden sm:flex" aria-label={t("superAdmin.toggleSidebar")}><Menu className="size-5 text-muted-foreground" /></Button>
-          <h1 className="text-base font-bold tracking-tight truncate max-w-[120px] lg:max-w-[200px]">{title}</h1>
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-base font-bold tracking-tight truncate max-w-[140px] lg:max-w-[220px] text-foreground">{title}</h1>
+            <div className="hidden xl:flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-medium text-emerald-600 dark:text-emerald-400">
+              <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>الإنتاج v6.4 • نشط</span>
+            </div>
+          </div>
           <div className="hidden md:block"><GlobalTimer /></div>
           <GlobalSearch />
         </div>
-        <div className="flex items-center gap-1 flex-shrink-0">
+        <div className="flex items-center gap-1.5 flex-shrink-0">
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -74,9 +80,9 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
                   aria-label={t("superAdmin.activeUsers")}
                   className={cn("relative", activeUsersCount > 0 ? "text-emerald-500 hover:text-emerald-600 hover:bg-emerald-500/10" : "text-muted-foreground")}
                 >
-                  <Lightbulb className={cn("size-6", activeUsersCount > 0 && "animate-pulse")} />
+                  <Lightbulb className={cn("size-5", activeUsersCount > 0 && "animate-pulse")} />
                   {activeUsersCount > 0 && (
-                    <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-[0.6rem] font-bold text-white">{activeUsersCount}</span>
+                    <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-emerald-500 text-[0.6rem] font-bold text-white shadow-sm">{activeUsersCount}</span>
                   )}
                 </Button>
               </TooltipTrigger>
@@ -85,8 +91,9 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
           </TooltipProvider>
           <ThemeToggle />
           <DropdownMenu>
-            <DropdownMenuTrigger className="border-2 border-transparent p-0.5 hover:border-primary rounded-lg cursor-pointer" aria-label={t("superAdmin.profileMenu")}>
-              <Avatar className="size-8 bg-primary font-bold"><AvatarFallback>{user?.firstName?.charAt(0)}</AvatarFallback></Avatar>
+            <DropdownMenuTrigger className="relative border border-transparent p-0.5 hover:border-primary/40 rounded-full cursor-pointer transition-all" aria-label={t("superAdmin.profileMenu")}>
+              <Avatar className="size-8 bg-primary font-bold shadow-sm"><AvatarFallback>{user?.firstName?.charAt(0) || "M"}</AvatarFallback></Avatar>
+              <span className="absolute bottom-0 inset-inline-end-0 size-2 rounded-full bg-emerald-500 ring-2 ring-background" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="min-w-[180px]">
               <DropdownMenuItem onClick={() => { logout(); navigate("/auth/login"); }} className="font-semibold text-destructive"><LogOut className="ml-2 size-4" />{t("superAdmin.logout")}</DropdownMenuItem>
