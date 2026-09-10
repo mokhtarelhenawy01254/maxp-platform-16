@@ -133,6 +133,7 @@ export const APP_ROUTE_MAP: Record<string, string> = {
   "commerce-advanced": "/my-apps/commerce-advanced/settings",
   "order-core": "/orders",
   "inventory-pro": "/inventory",
+  "multi-warehouse-pro": "/inventory/warehouses",
   "facebook-pages-connect": "/marketing/facebook",
   "facebook-post": "/marketing/facebook-post",
   "facebook-ads-pro": "/advertising/facebook-ads",

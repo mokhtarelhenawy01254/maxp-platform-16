@@ -1833,9 +1833,9 @@
   {
     "id": "cat-app-inventory-pro",
     "slug": "inventory-pro",
-    "name": "المخزون والمستودعات",
-    "nameEn": "Inventory Pro",
-    "description": "نظام إدارة مخزون متقدم مع باركود، تتبع Serial Numbers، وتنبيهات ذكية.",
+    "name": "المخزون والمستودعات الشامل",
+    "nameEn": "Inventory & Multi-Warehouse Pro",
+    "description": "نظام متكامل لإدارة المخزون والمستودعات المتعددة، تتبع الكميات، التحويلات بين المخازن، الجرد الدوري، ونقاط إعادة الطلب والتنبيهات الذكية.",
     "category": "WAREHOUSE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 199,
@@ -1847,46 +1847,52 @@
       "store-basic"
     ],
     "positioning": {
-      "audience": "المتاجر اللي عندها مخزون كبير وتحتاج تتبعه بدقة.",
-      "surface": "داخل لوحة المخزون والمستودعات والجرد.",
-      "outcome": "تحكم دقيق في المخزون مع تنبيهات ذكية وتقارير."
+      "audience": "المتاجر والشركات التي تدير مخزوناً ومستودعات متعددة وتحتاج تتبعاً دقيقاً لحركة البضائع.",
+      "surface": "داخل لوحة المخزون، إدارة المستودعات، الجرد، وسجلات حركة الأصناف.",
+      "outcome": "تحكم كامل وفوري في الكميات وحركات التوريد والتحويل وتقليل نفاد البضائع."
     },
     "features": {
-      "barcode": {
-        "enabled": true,
-        "name": "باركود",
-        "description": "مسح وطباعة باركود للمنتجات لتسريع الجرد.",
-        "access": "PAID"
-      },
       "warehouses": {
         "enabled": true,
-        "name": "المستودعات",
-        "description": "إدارة مستودعات متعددة وتتبع المخزون في كل منها.",
+        "name": "المستودعات المتعددة",
+        "description": "إنشاء وإدارة أكثر من مستودع وتوزيع البضائع وربطها بالمتاجر والفروع.",
+        "access": "PAID"
+      },
+      "transfers": {
+        "enabled": true,
+        "name": "تحويلات المخزون",
+        "description": "نقل الكميات بين المستودعات مع سجل كامل للمسار والمسؤول.",
         "access": "PAID"
       },
       "audits": {
         "enabled": true,
-        "name": "الجرد",
-        "description": "جرد دوري آلي للمخزون مع تقارير الفروق.",
+        "name": "الجرد ومطابقة الأرصدة",
+        "description": "جرد دوري آلي للمخزون مع تقارير الفروق وتعديلات الأرصدة.",
         "access": "PAID"
       },
       "alerts": {
         "enabled": true,
-        "name": "تنبيهات المخزون",
-        "description": "إشعارات عند نفاد المخزون أو اقتراب الحد الأدنى.",
+        "name": "نقاط إعادة الطلب والتنبيهات",
+        "description": "تحديد حدود إعادة الطلب وتنبيهات فورية عند وصول المنتجات للحد الأدنى أو النفاد.",
+        "access": "PAID"
+      },
+      "tracking": {
+        "enabled": true,
+        "name": "تتبع حركة الأصناف وSKU",
+        "description": "تتبع حركات الإضافة والخصم والمبيعات والمرتجعات لكل صنف وباركود.",
         "access": "PAID"
       }
     },
     "isActive": true,
     "isPublic": true,
     "isFeatured": false,
-    "isPopular": false,
+    "isPopular": true,
     "icon": "package",
     "logo": null,
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-08-04T00:00:00.000Z"
+    "updatedAt": "2026-09-10T16:29:31.257Z"
   },
   {
     "id": "cat-app-order-shipping-turbo",
@@ -2437,7 +2443,7 @@
     "slug": "multi-warehouse-pro",
     "name": "المخزون المتعدد",
     "nameEn": "Multi-Warehouse Inventory",
-    "description": "إدارة مخزون عبر مستودعات متعددة — تحويلات المخزون بين المستودعات، وتوزيع الكميات لكل فرع.",
+    "description": "إدارة المستودعات المتعددة والتحويلات — مدمج الآن بالكامل ضمن تطبيق المخزون والمستودعات الشامل (Inventory Pro).",
     "category": "WAREHOUSE",
     "pricingModel": "SUBSCRIPTION",
     "monthlyPrice": 149,
@@ -2474,7 +2480,7 @@
       }
     },
     "isActive": true,
-    "isPublic": true,
+    "isPublic": false,
     "isFeatured": false,
     "isPopular": false,
     "icon": "warehouse",
@@ -2482,7 +2488,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-08-05T00:00:00.000Z",
-    "updatedAt": "2026-08-05T00:00:00.000Z"
+    "updatedAt": "2026-09-10T16:29:31.258Z"
   },
   {
     "id": "cat-app-order-accounting-sources",

@@ -221,7 +221,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-slate-500 to-slate-600',
     sectionIds: ['inventory'],
     category: 'operations',
-    requiredApps: ['store', 'store-basic', 'store-pro'],
+    requiredApps: ['inventory-pro', 'multi-warehouse-pro', 'store', 'store-basic', 'store-pro'],
   },
   {
     id: 'shipping',

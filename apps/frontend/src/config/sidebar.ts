@@ -374,9 +374,6 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/products', icon: ShoppingBag, label: t('sidebar.products') },
                     { to: '/products/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
-                { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
-                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements') },
-                    { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
                 ],
             },
             {
@@ -831,14 +828,15 @@ export const getSidebarConfig = (
             icon: ClipboardList,
             items: [
                 { to: '/inventory', icon: Archive, label: t('sidebar.inventory') },
-                { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['multi-warehouse-pro', 'store-pro']) },
+                { to: '/inventory/movements', icon: ArrowLeftRight, label: t('sidebar.stockMovements') },
+                { to: '/inventory/warehouses', icon: Building, label: t('sidebar.warehouses'), hidden: !isAnyAppActive(['inventory-pro', 'multi-warehouse-pro', 'store-pro']) },
                 { to: '/inventory/audits', icon: ClipboardList, label: t('sidebar.inventoryAudits') },
                 { to: '/inventory/reorder-points', icon: AlertTriangle, label: t('sidebar.reorderPoints') },
                 { to: '/inventory/analytics', icon: BarChart3, label: t('sidebar.orderAnalytics') },
                 { to: '/inventory/reports', icon: BarChart3, label: t('sidebar.inventoryReports') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store', 'store-basic', 'ecommerce-basic'])
         },
 
         // 4️⃣.9️⃣ إدارة الوكالة (Agency OS)

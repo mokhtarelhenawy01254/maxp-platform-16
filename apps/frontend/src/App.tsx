@@ -5315,14 +5315,6 @@ const AppContent = () => {
                   }
                 />
                 <Route
-                  path="/inventory/reports"
-                  element={
-                    <Layout>
-                      <InventoryReports />
-                    </Layout>
-                  }
-                />
-                <Route
                   path="/coupons"
                   element={
                     <Layout>
@@ -5488,7 +5480,9 @@ const AppContent = () => {
                   path="/inventory"
                   element={
                     <Layout>
-                      <Inventory />
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <Inventory />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5496,7 +5490,9 @@ const AppContent = () => {
                   path="/inventory/analytics"
                   element={
                     <Layout>
-                      <InventoryAnalytics />
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <InventoryAnalytics />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5504,7 +5500,9 @@ const AppContent = () => {
                   path="/inventory/warehouses"
                   element={
                     <Layout>
-                      <WarehouseManagement />
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <WarehouseManagement />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5512,7 +5510,9 @@ const AppContent = () => {
                   path="/inventory/audits"
                   element={
                     <Layout>
-                      <InventoryAudits />
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <InventoryAudits />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5520,7 +5520,9 @@ const AppContent = () => {
                   path="/inventory/reorder-points"
                   element={
                     <Layout>
-                      <ReorderPointsPage />
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <ReorderPointsPage />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -5528,7 +5530,9 @@ const AppContent = () => {
                   path="/inventory/reports"
                   element={
                     <Layout>
-                      <InventoryReports />
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <InventoryReports />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
@@ -6376,7 +6380,9 @@ const AppContent = () => {
                   path="/inventory/movements"
                   element={
                     <Layout>
-                      <StockMovements />
+                      <AppAccessRoute requiredAppSlugs={['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store']}>
+                        <StockMovements />
+                      </AppAccessRoute>
                     </Layout>
                   }
                 />
