@@ -486,6 +486,17 @@ export const storefrontVariantRegistry = {
       tone: 'nursery-merchandising',
       status: 'implemented-now',
     },
+    {
+      id: 'dental-precision-hero',
+      section: 'HeroBanner',
+      purpose: 'Ultra-modern 2026 CAD/CAM dental laboratory hero with blueprint grid, clinical telemetry metrics, scanner ecosystem badges, and ISO trust seal',
+      bestPages: ['home'],
+      bestArchetypes: ['dental-lab', 'medical-lab', 'precision-manufacturing', 'b2b-healthcare'],
+      rtlSuitability: 'high',
+      density: 'medium-high',
+      tone: 'precision-clinical',
+      status: 'implemented-now',
+    },
   ],
   ProductGrid: [
     {
