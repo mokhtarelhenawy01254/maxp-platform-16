@@ -1381,10 +1381,16 @@ const SECTION_APP_FALLBACKS: Record<string, string[]> = {
  * the app registry section mapping.
  */
 const resolveSectionAppSlugs = (sectionId: string): string[] => {
+    const rawId = sectionId.toLowerCase();
     const matching = APP_REGISTRY.filter(
         (app) => app.sectionIds.includes(sectionId) || app.id === sectionId,
     );
-    const slugs = new Set<string>([sectionId.toLowerCase()]);
+    const slugs = new Set<string>([
+        rawId,
+        rawId.endsWith('-app') ? rawId.replace(/-app$/, '') : `${rawId}-app`,
+        rawId.endsWith('-section') ? rawId.replace(/-section$/, '') : `${rawId}-section`,
+        rawId.endsWith('-module') ? rawId.replace(/-module$/, '') : `${rawId}-module`,
+    ]);
     for (const app of matching) {
         slugs.add(app.id.toLowerCase());
         if (app.requiredApps && app.requiredApps.length > 0) {

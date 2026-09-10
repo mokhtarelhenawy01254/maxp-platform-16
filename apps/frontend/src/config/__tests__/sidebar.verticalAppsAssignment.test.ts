@@ -1,4 +1,4 @@
-﻿import { describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { getSidebarConfig } from '../sidebar';
 
 describe('Vertical Apps & Per-User AssignedApps Gating', () => {
@@ -84,5 +84,31 @@ describe('Vertical Apps & Per-User AssignedApps Gating', () => {
     expect(sectionIds).toContain('radiology');
     expect(sectionIds).toContain('lab');
     expect(sectionIds).not.toContain('education');
+  });
+
+  it('automatically resolves future unconfigured app slugs ending in -app or section ID', () => {
+    // Simulated future app: section ID 'hotel' with slug 'hotel-app'
+    const user = {
+      id: 'user-hotel-1',
+      role: 'EMPLOYEE',
+      company: {
+        id: 'comp-hotel-1',
+        name: 'Grand Hotel',
+        activeApps: ['hotel-app'],
+      },
+      companies: [
+        {
+          id: 'comp-hotel-1',
+          name: 'Grand Hotel',
+          isCurrent: true,
+          activeApps: ['hotel-app'],
+        },
+      ],
+    };
+
+    const config = getSidebarConfig(t, user, undefined, undefined, ['hotel-app']);
+    const sectionIds = config.map((s) => s.id);
+
+    expect(sectionIds).toContain('hotel');
   });
 });
