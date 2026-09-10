@@ -16,6 +16,7 @@ import {
   ShoppingBagIcon,
   ChartBarIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -47,6 +48,9 @@ const CampaignDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const [campaign, setCampaign] = useState<FacebookCampaign | null>(null);
   const [insights, setInsights] =
     useState<FacebookCampaignInsightsResponse | null>(null);
@@ -85,12 +89,12 @@ const CampaignDetails: React.FC = () => {
       );
     } catch (error: unknown) {
       console.error("Error loading campaign:", error);
-      toast.error(getApiErrorMessage(error, "فشل في تحميل الحملة"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to load campaign" : "فشل في تحميل الحملة"));
       navigate(dashboardUrl);
     } finally {
       setLoading(false);
     }
-  }, [dashboardUrl, id, navigate]);
+  }, [dashboardUrl, id, isEn, navigate]);
 
   useEffect(() => {
     if (id) {
@@ -112,7 +116,7 @@ const CampaignDetails: React.FC = () => {
       tToast.success("CampaignDetails.msg_c0fb");
       await loadCampaign();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل في إيقاف الحملة"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to pause campaign" : "فشل في إيقاف الحملة"));
     }
   };
 
@@ -123,13 +127,13 @@ const CampaignDetails: React.FC = () => {
       tToast.success("CampaignDetails.msg_00e5");
       await loadCampaign();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل في استئناف الحملة"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to resume campaign" : "فشل في استئناف الحملة"));
     }
   };
 
   const handleDelete = async () => {
     if (!id) return;
-    if (!window.confirm("هل أنت متأكد من حذف هذه الحملة؟")) {
+    if (!window.confirm(isEn ? "Are you sure you want to delete this campaign?" : "هل أنت متأكد من حذف هذه الحملة؟")) {
       return;
     }
 
@@ -138,7 +142,7 @@ const CampaignDetails: React.FC = () => {
       tToast.success("CampaignDetails.success_delete_b4c9");
       navigate(dashboardUrl);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل في حذف الحملة"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to delete campaign" : "فشل في حذف الحملة"));
     }
   };
 
@@ -158,27 +162,27 @@ const CampaignDetails: React.FC = () => {
   };
 
   const getStatusLabel = (status: string) => {
-    const labels = {
-      ACTIVE: "نشط",
-      PAUSED: "متوقف",
-      ARCHIVED: "مؤرشف",
-      DELETED: "محذوف",
+    const labels: Record<string, string> = {
+      ACTIVE: isEn ? "Active" : "نشط",
+      PAUSED: isEn ? "Paused" : "متوقف",
+      ARCHIVED: isEn ? "Archived" : "مؤرشف",
+      DELETED: isEn ? "Deleted" : "محذوف",
     };
-    return labels[status as keyof typeof labels] || status;
+    return labels[status] || status;
   };
 
   const formatCurrency = (value?: number, currency = "EGP") =>
-    new Intl.NumberFormat("ar-EG", {
+    new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
       style: "currency",
       currency,
       maximumFractionDigits: 2,
     }).format(value || 0);
 
   const formatNumber = (value?: number) =>
-    new Intl.NumberFormat("ar-EG").format(value || 0);
+    new Intl.NumberFormat(isEn ? "en-US" : "ar-EG").format(value || 0);
 
   const formatPercent = (value?: number) =>
-    `${new Intl.NumberFormat("ar-EG", {
+    `${new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
       maximumFractionDigits: 2,
     }).format(value || 0)}%`;
 
@@ -193,12 +197,12 @@ const CampaignDetails: React.FC = () => {
   if (!campaign) {
     return (
       <div className="text-center py-12">
-        <p className="text-gray-600">الحملة غير موجودة</p>
+        <p className="text-gray-600">{isEn ? "Campaign not found" : "الحملة غير موجودة"}</p>
         <button
           onClick={() => navigate(dashboardUrl)}
-          className="mt-4 text-indigo-600 hover:text-indigo-700"
+          className="mt-4 text-indigo-600 hover:text-indigo-700 font-bold"
         >
-          العودة للقائمة
+          {isEn ? "Back to Dashboard" : "العودة للقائمة"}
         </button>
       </div>
     );
@@ -216,17 +220,17 @@ const CampaignDetails: React.FC = () => {
     (campaign as CampaignWithCurrency).adAccount?.currency || "EGP";
   const dateRangeLabel = insights?.dateRange
     ? `${insights.dateRange.startDate} → ${insights.dateRange.endDate}`
-    : "آخر 30 يوم";
+    : isEn ? "Last 30 days" : "آخر 30 يوم";
   const metricItems = [
     {
-      label: "الإنفاق",
+      label: isEn ? "Spend" : "الإنفاق",
       value: formatCurrency(insights?.data.spend, campaignCurrency),
-      sub: `${formatNumber(insights?.data.impressions)} ظهور`,
+      sub: `${formatNumber(insights?.data.impressions)} ${isEn ? "impressions" : "ظهور"}`,
     },
     {
-      label: "المشتريات",
+      label: isEn ? "Purchases" : "المشتريات",
       value: formatNumber(insights?.data.purchases),
-      sub: `${formatNumber(insights?.data.clicks)} نقرة`,
+      sub: `${formatNumber(insights?.data.clicks)} ${isEn ? "clicks" : "نقرة"}`,
     },
     {
       label: "ROAS",
@@ -241,16 +245,17 @@ const CampaignDetails: React.FC = () => {
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" dir={isEn ? "ltr" : "rtl"}>
       <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
         <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
             <button
               onClick={() => navigate(dashboardUrl)}
               className="mt-0.5 rounded-lg border border-slate-200 p-2 text-slate-600 hover:bg-slate-50"
-              aria-label="العودة لقائمة الحملات"
+              aria-label={isEn ? "Back to Campaigns" : "العودة لقائمة الحملات"}
+              title={isEn ? "Back" : "رجوع"}
             >
-              <ArrowLeftIcon className="h-4 w-4" />
+              <ArrowLeftIcon className={`h-4 w-4 ${isEn ? "" : "rotate-180"}`} />
             </button>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -270,21 +275,21 @@ const CampaignDetails: React.FC = () => {
               </div>
               <div className="mt-2 flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
                 <span className="rounded-lg bg-slate-50 px-2.5 py-1">
-                  الهدف: {getObjectiveLabel(campaign.objective)}
+                  {isEn ? "Objective:" : "الهدف:"} {getObjectiveLabel(campaign.objective)}
                 </span>
                 <span className="rounded-lg bg-slate-50 px-2.5 py-1">
-                  الميزانية:{" "}
+                  {isEn ? "Budget:" : "الميزانية:"}{" "}
                   {formatCurrency(campaign.budgetAmount, campaignCurrency)}
-                  {campaign.budgetType === "DAILY" ? " / يوم" : ""}
+                  {campaign.budgetType === "DAILY" ? (isEn ? " / day" : " / يوم") : ""}
                 </span>
                 <span className="rounded-lg bg-slate-50 px-2.5 py-1">
-                  المجموعات: {activeAdSets}/{campaignAdSets.length}
+                  {isEn ? "Ad Sets:" : "المجموعات:"} {activeAdSets}/{campaignAdSets.length}
                 </span>
                 <span className="rounded-lg bg-slate-50 px-2.5 py-1">
-                  الإعلانات: {activeAds}/{campaignAds.length}
+                  {isEn ? "Ads:" : "الإعلانات:"} {activeAds}/{campaignAds.length}
                 </span>
                 <span className="rounded-lg bg-slate-50 px-2.5 py-1">
-                  الفترة: {dateRangeLabel}
+                  {isEn ? "Period:" : "الفترة:"} {dateRangeLabel}
                 </span>
               </div>
             </div>
@@ -299,7 +304,7 @@ const CampaignDetails: React.FC = () => {
               <ArrowPathIcon
                 className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
               />
-              تحديث
+              {isEn ? "Refresh" : "تحديث"}
             </button>
             {campaign.status === "ACTIVE" ? (
               <button
@@ -307,7 +312,7 @@ const CampaignDetails: React.FC = () => {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100"
               >
                 <PauseIcon className="h-4 w-4" />
-                إيقاف
+                {isEn ? "Pause" : "إيقاف"}
               </button>
             ) : campaign.status === "PAUSED" ? (
               <button
@@ -315,7 +320,7 @@ const CampaignDetails: React.FC = () => {
                 className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100"
               >
                 <PlayIcon className="h-4 w-4" />
-                تشغيل
+                {isEn ? "Resume" : "تشغيل"}
               </button>
             ) : null}
             <button
@@ -323,7 +328,7 @@ const CampaignDetails: React.FC = () => {
               className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-bold text-red-700 hover:bg-red-50"
             >
               <TrashIcon className="h-4 w-4" />
-              حذف
+              {isEn ? "Delete" : "حذف"}
             </button>
           </div>
         </div>
@@ -354,10 +359,12 @@ const CampaignDetails: React.FC = () => {
         <div className="flex flex-col gap-2 border-b border-slate-100 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-base font-black text-slate-950">
-              مجموعات الإعلانات داخل الحملة
+              {isEn ? "Campaign Ad Sets" : "مجموعات الإعلانات داخل الحملة"}
             </h2>
             <p className="mt-0.5 text-xs font-semibold text-slate-500">
-              افتح أي إعلان لمراجعة الأداء والتشخيص التفصيلي.
+              {isEn
+                ? "Open any ad to view detailed performance & diagnosis."
+                : "افتح أي إعلان لمراجعة الأداء والتشخيص التفصيلي."}
             </p>
           </div>
           <button
@@ -371,14 +378,14 @@ const CampaignDetails: React.FC = () => {
             className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
           >
             <PlusIcon className="h-4 w-4" />
-            إضافة مجموعة
+            {isEn ? "Add Ad Set" : "إضافة مجموعة"}
           </button>
         </div>
 
         {campaignAdSets.length === 0 ? (
           <div className="px-4 py-8 text-center">
             <p className="text-sm font-semibold text-slate-600">
-              لا توجد مجموعات إعلانات بعد
+              {isEn ? "No ad sets yet" : "لا توجد مجموعات إعلانات بعد"}
             </p>
             <button
               onClick={() =>
@@ -391,7 +398,7 @@ const CampaignDetails: React.FC = () => {
               className="mt-3 inline-flex items-center gap-1.5 rounded-lg bg-slate-950 px-3 py-2 text-xs font-bold text-white hover:bg-slate-800"
             >
               <PlusIcon className="h-4 w-4" />
-              إنشاء أول مجموعة
+              {isEn ? "Create First Ad Set" : "إنشاء أول مجموعة"}
             </button>
           </div>
         ) : (
@@ -416,9 +423,9 @@ const CampaignDetails: React.FC = () => {
                       <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
                         <span>
                           {formatCurrency(adSet.budgetAmount, campaignCurrency)}
-                          {adSet.budgetType === "DAILY" ? " / يوم" : ""}
+                          {adSet.budgetType === "DAILY" ? (isEn ? " / day" : " / يوم") : ""}
                         </span>
-                        <span>{ads.length} إعلان</span>
+                        <span>{ads.length} {isEn ? "ads" : "إعلان"}</span>
                         {adSet.optimizationGoal && (
                           <span>{adSet.optimizationGoal}</span>
                         )}
@@ -434,10 +441,10 @@ const CampaignDetails: React.FC = () => {
                           )
                         }
                         className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700"
-                        title="إنشاء إعلان جديد"
+                        title={isEn ? "Create New Ad" : "إنشاء إعلان جديد"}
                       >
                         <PlusIcon className="h-4 w-4" />
-                        إعلان جديد
+                        {isEn ? "New Ad" : "إعلان جديد"}
                       </button>
                       <button
                         onClick={() =>
@@ -448,10 +455,10 @@ const CampaignDetails: React.FC = () => {
                           )
                         }
                         className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-50 px-3 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100"
-                        title="إنشاء Dynamic Ad"
+                        title={isEn ? "Create Dynamic Ad" : "إنشاء Dynamic Ad"}
                       >
                         <ShoppingBagIcon className="h-4 w-4" />
-                        Dynamic
+                        {isEn ? "Dynamic" : "Dynamic"}
                       </button>
                     </div>
                   </div>
@@ -468,8 +475,10 @@ const CampaignDetails: React.FC = () => {
                               ),
                             )
                           }
-                          className="flex min-h-[50px] items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-right hover:border-indigo-200 hover:bg-indigo-50"
-                          title="فتح تفاصيل وتحليل الإعلان"
+                          className={`flex min-h-[50px] items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 ${
+                            isEn ? "text-left" : "text-right"
+                          } hover:border-indigo-200 hover:bg-indigo-50`}
+                          title={isEn ? "Open ad details and analysis" : "فتح تفاصيل وتحليل الإعلان"}
                         >
                           <div className="min-w-0">
                             <p className="truncate text-sm font-bold text-slate-950">
@@ -477,12 +486,12 @@ const CampaignDetails: React.FC = () => {
                             </p>
                             <p className="mt-0.5 text-xs font-semibold text-slate-500">
                               {getStatusLabel(ad.effectiveStatus || ad.status)} ·{" "}
-                              {ad.facebookAdId ? "Meta Synced" : "محلي"}
+                              {ad.facebookAdId ? "Meta Synced" : (isEn ? "Local only" : "محلي")}
                             </p>
                           </div>
                           <span className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-50 px-2 py-1 text-xs font-bold text-indigo-700">
                             <ChartBarIcon className="h-4 w-4" />
-                            الأداء
+                            {isEn ? "Performance" : "الأداء"}
                           </span>
                         </button>
                       ))}

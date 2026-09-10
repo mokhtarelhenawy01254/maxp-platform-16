@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -52,6 +53,8 @@ import type {
 } from "./wizard/types";
 import {
   WIZARD_STEPS,
+  getWizardSteps,
+  getObjectives,
   OBJECTIVES,
   SPECIAL_AD_CATEGORIES,
   BID_STRATEGIES,
@@ -81,6 +84,10 @@ import {
 
 
 const CreateAdWizard: React.FC = () => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const wizardSteps = useMemo(() => getWizardSteps(isEn), [isEn]);
+  const objectives = useMemo(() => getObjectives(isEn), [isEn]);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const launchPrefillId = searchParams.get("launchPrefillId") || "";
@@ -1084,25 +1091,25 @@ const CreateAdWizard: React.FC = () => {
     selectedRemoteAdAccount?.billingHealth?.accountStatusLabel ||
     (selectedAdAccountIsActive ? "مفعل داخل MaxP" : "يحتاج تفعيل");
   const selectedObjectiveLabel =
-    OBJECTIVES.find((objective) => objective.value === formData.objective)?.label ||
+    objectives.find((objective) => objective.value === formData.objective)?.label ||
     formData.objective ||
-    "غير محدد";
+    (isEn ? "Unspecified" : "غير محدد");
   const selectedCreativeSummary =
     formData.creativeType === "CAROUSEL"
-      ? `Carousel - ${formData.carouselCards.length} كارت`
+      ? `Carousel - ${formData.carouselCards.length} ${isEn ? "cards" : "كارت"}`
       : formData.creativeType === "SINGLE_IMAGE"
-        ? "صورة واحدة"
+        ? (isEn ? "Single Image" : "صورة واحدة")
         : formData.creativeType === "SINGLE_VIDEO"
-          ? "فيديو واحد"
-          : `Flexible - ${formData.flexibleAssets.length} ملف`;
+          ? (isEn ? "Single Video" : "فيديو واحد")
+          : `Flexible - ${formData.flexibleAssets.length} ${isEn ? "files" : "ملف"}`;
   const publishConfirmDisabled =
     loading ||
     !publishAccountConfirmed ||
     (formData.status === "ACTIVE" && !activePublishConfirmed);
   const currentWizardStep =
-    WIZARD_STEPS.find((step) => step.id === currentStep) ?? WIZARD_STEPS[0]!;
+    wizardSteps.find((step) => step.id === currentStep) ?? wizardSteps[0]!;
   const formatSelectedAdAccountCurrency = (value?: number) =>
-    new Intl.NumberFormat("ar-EG", {
+    new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
       style: "currency",
       currency: selectedAdAccountCurrency,
       maximumFractionDigits: 2,
@@ -1621,10 +1628,12 @@ const CreateAdWizard: React.FC = () => {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            إنشاء إعلان جديد
+            {isEn ? "Create New Ad" : "إنشاء إعلان جديد"}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 mt-2">
-            اتبع الخطوات لإنشاء حملة إعلانية احترافية
+            {isEn
+              ? "Follow the steps to create a professional advertising campaign"
+              : "اتبع الخطوات لإنشاء حملة إعلانية احترافية"}
           </p>
         </div>
 
@@ -1670,7 +1679,7 @@ const CreateAdWizard: React.FC = () => {
         {/* Stepper */}
         <div className="mb-8 overflow-x-auto">
           <div className="flex items-center justify-between min-w-[700px] max-w-4xl mx-auto px-4">
-            {WIZARD_STEPS.map((step, index) => (
+            {wizardSteps.map((step, index) => (
               <React.Fragment key={step.id}>
                 <div className="flex flex-col items-center">
                   <div
@@ -1694,7 +1703,7 @@ const CreateAdWizard: React.FC = () => {
                     {step.title}
                   </span>
                 </div>
-                {index < WIZARD_STEPS.length - 1 && (
+                {index < wizardSteps.length - 1 && (
                   <div
                     className={"flex-1 h-1 mx-2 transition-all " +
                       (currentStep > step.id
@@ -1832,15 +1841,15 @@ const CreateAdWizard: React.FC = () => {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex justify-between items-center">
+        <div className="flex justify-between items-center" dir={isEn ? "ltr" : "rtl"}>
           <button
             type="button"
             onClick={handleBack}
             disabled={currentStep === 1}
             className="flex items-center gap-2 px-6 py-3 border border-gray-300 dark:border-gray-600 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium"
           >
-            <ChevronRight className="w-5 h-5" />
-            السابق
+            {isEn ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5" />}
+            {isEn ? "Previous" : "السابق"}
           </button>
 
           {currentStep < 6 ? (
@@ -1849,8 +1858,8 @@ const CreateAdWizard: React.FC = () => {
               onClick={handleNext}
               className="flex items-center gap-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-all font-medium shadow-lg shadow-blue-500/25"
             >
-              التالي
-              <ChevronLeft className="w-5 h-5" />
+              {isEn ? "Next" : "التالي"}
+              {isEn ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
             </button>
           ) : (
             <button
@@ -1862,11 +1871,11 @@ const CreateAdWizard: React.FC = () => {
               {loading ? (
                 <>
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  جاري النشر...
+                  {isEn ? "Publishing..." : "جاري النشر..."}
                 </>
               ) : (
                 <>
-                  مراجعة وتأكيد النشر
+                  {isEn ? "Review & Publish" : "مراجعة وتأكيد النشر"}
                   <Sparkles className="w-5 h-5" />
                 </>
               )}

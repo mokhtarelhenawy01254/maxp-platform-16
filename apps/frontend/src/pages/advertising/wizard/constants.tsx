@@ -13,120 +13,137 @@ import {
 } from "lucide-react";
 import type { WizardStep } from "./types";
 
-export const WIZARD_STEPS: WizardStep[] = [
+export const getWizardSteps = (isEn: boolean): WizardStep[] => [
   {
     id: 1,
-    title: "هدف الحملة",
-    description: "اختر هدف حملتك الإعلانية",
+    title: isEn ? "Campaign Objective" : "هدف الحملة",
+    description: isEn ? "Choose campaign goal" : "اختر هدف حملتك الإعلانية",
     icon: <Target className="w-5 h-5" />,
   },
   {
     id: 2,
-    title: "الميزانية والجدولة",
-    description: "حدد ميزانيتك ومواعيد الإعلان",
+    title: isEn ? "Budget & Schedule" : "الميزانية والجدولة",
+    description: isEn ? "Set budget & schedule" : "حدد ميزانيتك ومواعيد الإعلان",
     icon: <DollarSign className="w-5 h-5" />,
   },
   {
     id: 3,
-    title: "الاستهداف",
-    description: "حدد جمهورك المستهدف",
+    title: isEn ? "Targeting" : "الاستهداف",
+    description: isEn ? "Define target audience" : "حدد جمهورك المستهدف",
     icon: <Users className="w-5 h-5" />,
   },
   {
     id: 4,
-    title: "المواضع",
-    description: "اختر أين يظهر إعلانك",
+    title: isEn ? "Placements" : "المواضع",
+    description: isEn ? "Choose ad placements" : "اختر أين يظهر إعلانك",
     icon: <Layout className="w-5 h-5" />,
   },
   {
     id: 5,
-    title: "المحتوى الإبداعي",
-    description: "أنشئ إعلانك",
+    title: isEn ? "Creative" : "المحتوى الإبداعي",
+    description: isEn ? "Build your ad creative" : "أنشئ إعلانك",
     icon: <Image className="w-5 h-5" />,
   },
   {
     id: 6,
-    title: "المراجعة والنشر",
-    description: "راجع وانشر إعلانك",
+    title: isEn ? "Review & Publish" : "المراجعة والنشر",
+    description: isEn ? "Review and publish ad" : "راجع وانشر إعلانك",
     icon: <CheckCircle className="w-5 h-5" />,
   },
 ];
 
-export const OBJECTIVES = [
+export const WIZARD_STEPS: WizardStep[] = getWizardSteps(false);
+
+export const getObjectives = (isEn: boolean) => [
   {
     value: "OUTCOME_AWARENESS",
-    label: "الوعي",
-    description: "زيادة الوعي بعلامتك التجارية",
+    label: isEn ? "Awareness" : "الوعي",
+    description: isEn ? "Increase brand awareness" : "زيادة الوعي بعلامتك التجارية",
     icon: <Eye className="w-6 h-6" />,
   },
   {
     value: "OUTCOME_TRAFFIC",
-    label: "الزيارات",
-    description: "زيادة زيارات موقعك",
+    label: isEn ? "Traffic" : "الزيارات",
+    description: isEn ? "Send traffic to your website" : "زيادة زيارات موقعك",
     icon: <Globe className="w-6 h-6" />,
   },
   {
     value: "OUTCOME_ENGAGEMENT",
-    label: "التفاعل",
-    description: "زيادة التفاعل مع منشوراتك",
+    label: isEn ? "Engagement" : "التفاعل",
+    description: isEn ? "Get more post engagement" : "زيادة التفاعل مع منشوراتك",
     icon: <Users className="w-6 h-6" />,
   },
   {
     value: "OUTCOME_LEADS",
-    label: "العملاء المحتملين",
-    description: "جمع بيانات العملاء",
+    label: isEn ? "Leads" : "العملاء المحتملين",
+    description: isEn ? "Collect customer leads" : "جمع بيانات العملاء",
     icon: <Target className="w-6 h-6" />,
   },
   {
     value: "OUTCOME_SALES",
-    label: "المبيعات",
-    description: "زيادة المبيعات والتحويلات",
+    label: isEn ? "Sales" : "المبيعات",
+    description: isEn ? "Drive sales & conversions" : "زيادة المبيعات والتحويلات",
     icon: <DollarSign className="w-6 h-6" />,
   },
   {
     value: "OUTCOME_APP_PROMOTION",
-    label: "ترويج التطبيق",
-    description: "زيادة تحميلات التطبيق",
+    label: isEn ? "App Promotion" : "ترويج التطبيق",
+    description: isEn ? "Increase app downloads" : "زيادة تحميلات التطبيق",
     icon: <Zap className="w-6 h-6" />,
   },
 ];
 
-export const SPECIAL_AD_CATEGORIES = [
-  { value: "NONE", label: "لا شيء" },
-  { value: "HOUSING", label: "إسكان" },
-  { value: "EMPLOYMENT", label: "توظيف" },
-  { value: "CREDIT", label: "ائتمان" },
-  { value: "ISSUES_ELECTIONS_POLITICS", label: "قضايا اجتماعية أو سياسية" },
+export const OBJECTIVES = getObjectives(false);
+
+export const getSpecialAdCategories = (isEn: boolean) => [
+  { value: "NONE", label: isEn ? "None" : "لا شيء" },
+  { value: "HOUSING", label: isEn ? "Housing" : "إسكان" },
+  { value: "EMPLOYMENT", label: isEn ? "Employment" : "توظيف" },
+  { value: "CREDIT", label: isEn ? "Credit" : "ائتمان" },
+  {
+    value: "ISSUES_ELECTIONS_POLITICS",
+    label: isEn ? "Social / Political Issues" : "قضايا اجتماعية أو سياسية",
+  },
 ];
 
-export const BID_STRATEGIES = [
+export const SPECIAL_AD_CATEGORIES = getSpecialAdCategories(false);
+
+export const getBidStrategies = (isEn: boolean) => [
   {
     value: "LOWEST_COST",
-    label: "أقل تكلفة",
-    description: "الحصول على أكبر عدد من النتائج بأقل تكلفة",
+    label: isEn ? "Lowest Cost" : "أقل تكلفة",
+    description: isEn
+      ? "Get the most results for your budget"
+      : "الحصول على أكبر عدد من النتائج بأقل تكلفة",
   },
   {
     value: "BID_CAP",
-    label: "حد أقصى للمزايدة",
-    description: "التحكم في الحد الأقصى للمزايدة",
+    label: isEn ? "Bid Cap" : "حد أقصى للمزايدة",
+    description: isEn ? "Control maximum bid cap" : "التحكم في الحد الأقصى للمزايدة",
   },
   {
     value: "COST_CAP",
-    label: "حد التكلفة",
-    description: "الحفاظ على متوسط تكلفة محدد",
+    label: isEn ? "Cost Cap" : "حد التكلفة",
+    description: isEn
+      ? "Maintain specific average cost"
+      : "الحفاظ على متوسط تكلفة محدد",
   },
 ];
 
-export const CALL_TO_ACTIONS = [
-  { value: "LEARN_MORE", label: "معرفة المزيد" },
-  { value: "SHOP_NOW", label: "تسوق الآن" },
-  { value: "SIGN_UP", label: "سجل الآن" },
-  { value: "CONTACT_US", label: "تواصل معنا" },
-  { value: "DOWNLOAD", label: "تحميل" },
-  { value: "GET_OFFER", label: "احصل على العرض" },
-  { value: "BOOK_NOW", label: "احجز الآن" },
-  { value: "SEND_MESSAGE", label: "أرسل رسالة" },
+export const BID_STRATEGIES = getBidStrategies(false);
+
+export const getCallToActions = (isEn: boolean) => [
+  { value: "LEARN_MORE", label: isEn ? "Learn More" : "معرفة المزيد" },
+  { value: "SHOP_NOW", label: isEn ? "Shop Now" : "تسوق الآن" },
+  { value: "SIGN_UP", label: isEn ? "Sign Up" : "سجل الآن" },
+  { value: "CONTACT_US", label: isEn ? "Contact Us" : "تواصل معنا" },
+  { value: "DOWNLOAD", label: isEn ? "Download" : "تحميل" },
+  { value: "GET_OFFER", label: isEn ? "Get Offer" : "احصل على العرض" },
+  { value: "BOOK_NOW", label: isEn ? "Book Now" : "احجز الآن" },
+  { value: "SEND_MESSAGE", label: isEn ? "Send Message" : "أرسل رسالة" },
 ];
+
+export const CALL_TO_ACTIONS = getCallToActions(false);
 
 export const PLACEMENTS = [
   {

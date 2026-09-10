@@ -7,6 +7,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { tToast } from "../../../utils/i18n-toast";
 import MiniMetric from "./MiniMetric";
@@ -53,26 +54,42 @@ const defaultBudgetAlertForm: BudgetAlertFormState = {
   cooldownMinutes: "720",
 };
 
-const budgetAlertMetricOptions: Record<
+const getBudgetAlertMetricOptions = (
+  isEn: boolean,
+): Record<
   FacebookAdsBudgetAlertScope,
   Array<{ value: FacebookAdsBudgetAlertMetric; label: string }>
-> = {
+> => ({
   AD_ACCOUNT: [
-    { value: "ACCOUNT_BALANCE", label: "رصيد الحساب الإعلاني" },
-    { value: "SPEND_CAP_REMAINING", label: "المتبقي من حد إنفاق الحساب" },
+    {
+      value: "ACCOUNT_BALANCE",
+      label: isEn ? "Ad Account Balance" : "رصيد الحساب الإعلاني",
+    },
+    {
+      value: "SPEND_CAP_REMAINING",
+      label: isEn ? "Spend Cap Remaining" : "المتبقي من حد إنفاق الحساب",
+    },
   ],
   CAMPAIGN: [
-    { value: "CAMPAIGN_BUDGET_REMAINING", label: "المتبقي من ميزانية الحملة" },
-    { value: "CAMPAIGN_FINISHED", label: "عند انتهاء الحملة/نفاد الميزانية" },
+    {
+      value: "CAMPAIGN_BUDGET_REMAINING",
+      label: isEn ? "Campaign Budget Remaining" : "المتبقي من ميزانية الحملة",
+    },
+    {
+      value: "CAMPAIGN_FINISHED",
+      label: isEn ? "When Campaign Ends / Depleted" : "عند انتهاء الحملة/نفاد الميزانية",
+    },
   ],
-};
+});
 
-const budgetAlertScopeOptions: Array<{
+const getBudgetAlertScopeOptions = (
+  isEn: boolean,
+): Array<{
   value: FacebookAdsBudgetAlertScope;
   label: string;
-}> = [
-  { value: "AD_ACCOUNT", label: "الحساب الإعلاني" },
-  { value: "CAMPAIGN", label: "حملة محددة" },
+}> => [
+  { value: "AD_ACCOUNT", label: isEn ? "Ad Account" : "الحساب الإعلاني" },
+  { value: "CAMPAIGN", label: isEn ? "Specific Campaign" : "حملة محددة" },
 ];
 
 const splitAlertPhones = (value: string) =>
@@ -81,15 +98,18 @@ const splitAlertPhones = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const getBudgetAlertMetricLabel = (metric: string) =>
-  Object.values(budgetAlertMetricOptions)
+const getBudgetAlertMetricLabel = (metric: string, isEn: boolean) =>
+  Object.values(getBudgetAlertMetricOptions(isEn))
     .flat()
     .find((option) => option.value === metric)?.label || metric;
 
-const getBudgetAlertTargetName = (rule: FacebookAdsBudgetAlertRule) =>
+const getBudgetAlertTargetName = (
+  rule: FacebookAdsBudgetAlertRule,
+  isEn: boolean,
+) =>
   rule.scope === "CAMPAIGN"
-    ? rule.campaign?.name || "حملة غير محددة"
-    : rule.adAccount?.name || "حساب إعلاني";
+    ? rule.campaign?.name || (isEn ? "Unspecified Campaign" : "حملة غير محددة")
+    : rule.adAccount?.name || (isEn ? "Ad Account" : "حساب إعلاني");
 
 const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
   selectedAdAccountId,
@@ -98,6 +118,11 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
   selectedAccountBalance,
   selectedSpendCapRemaining,
 }) => {
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+  const metricOptions = useMemo(() => getBudgetAlertMetricOptions(isEn), [isEn]);
+  const scopeOptions = useMemo(() => getBudgetAlertScopeOptions(isEn), [isEn]);
+
   const [budgetAlertRules, setBudgetAlertRules] = useState<
     FacebookAdsBudgetAlertRule[]
   >([]);
@@ -150,7 +175,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       const next = { ...current, ...patch };
       if (patch.scope && patch.scope !== current.scope) {
         next.metric =
-          budgetAlertMetricOptions[patch.scope]?.[0]?.value || current.metric;
+          metricOptions[patch.scope]?.[0]?.value || current.metric;
         next.campaignId = patch.scope === "CAMPAIGN" ? current.campaignId : "";
         if (next.metric === "CAMPAIGN_FINISHED") {
           next.thresholdAmount = "0";
@@ -213,7 +238,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       await reloadBudgetAlerts();
       tToast.success("budgetAlerts.success_create_4d9c");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل إنشاء التنبيه"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to create alert" : "فشل إنشاء التنبيه"));
     } finally {
       setSavingBudgetAlert(false);
     }
@@ -226,7 +251,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       await reloadBudgetAlerts();
       tToast.success("budgetAlerts.success_send_4249");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل اختبار التنبيه"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to test alert" : "فشل اختبار التنبيه"));
     } finally {
       setTestingBudgetAlertId(null);
     }
@@ -239,9 +264,13 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
         getRulePayload(rule, !rule.isEnabled),
       );
       await reloadBudgetAlerts();
-      toast.success(rule.isEnabled ? "تم إيقاف التنبيه" : "تم تفعيل التنبيه");
+      toast.success(
+        rule.isEnabled
+          ? isEn ? "Alert disabled" : "تم إيقاف التنبيه"
+          : isEn ? "Alert enabled" : "تم تفعيل التنبيه",
+      );
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل تحديث التنبيه"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to update alert" : "فشل تحديث التنبيه"));
     }
   };
 
@@ -251,7 +280,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       await reloadBudgetAlerts();
       tToast.success("budgetAlerts.success_delete_2449");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل حذف التنبيه"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to delete alert" : "فشل حذف التنبيه"));
     }
   };
 
@@ -262,7 +291,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       await reloadBudgetAlerts();
       tToast.success("budgetAlerts.msg_914b");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل فحص التنبيهات"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to check alerts" : "فشل فحص التنبيهات"));
     } finally {
       setCheckingBudgetAlerts(false);
     }
@@ -273,7 +302,9 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
       <section className="grid gap-3 xl:grid-cols-[0.9fr_1.1fr] opacity-60">
         <div className="rounded-xl border border-slate-200 bg-white p-6 text-center dark:border-slate-800 dark:bg-slate-900">
           <RefreshCw className="mx-auto h-6 w-6 animate-spin text-blue-500" />
-          <p className="mt-2 text-xs font-bold text-slate-500">جاري تحميل قواعد التنبيهات...</p>
+          <p className="mt-2 text-xs font-bold text-slate-500">
+            {isEn ? "Loading alert rules..." : "جاري تحميل قواعد التنبيهات..."}
+          </p>
         </div>
       </section>
     );
@@ -288,10 +319,13 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
               <BellRing className="h-4 w-4" />
               WhatsApp Budget Alerts
             </div>
-            <h2 className="mt-1 text-base font-black">تنبيهات رصيد الإعلانات</h2>
+            <h2 className="mt-1 text-base font-black">
+              {isEn ? "Ad Budget Alerts" : "تنبيهات رصيد الإعلانات"}
+            </h2>
             <p className="mt-1 text-xs font-bold leading-5 text-slate-500 dark:text-slate-400">
-              راقب رصيد الحساب وحد إنفاقه، أو المتبقي من ميزانية حملة محددة،
-              وابعت رسالة WhatsApp عند الوصول للحد المختار.
+              {isEn
+                ? "Monitor ad account balance and spend caps, or a specific campaign budget, and send WhatsApp alerts upon reaching thresholds."
+                : "راقب رصيد الحساب وحد إنفاقه، أو المتبقي من ميزانية حملة محددة، وابعث رسالة WhatsApp عند الوصول للحد المختار."}
             </p>
           </div>
           <button
@@ -303,24 +337,24 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
             <RefreshCw
               className={`h-3.5 w-3.5 ${checkingBudgetAlerts ? "animate-spin" : ""}`}
             />
-            افحص الآن
+            {isEn ? "Check Now" : "افحص الآن"}
           </button>
         </div>
 
         <div className="mt-3 grid gap-2 sm:grid-cols-2">
           <MiniMetric
-            label="رصيد الحساب الحالي"
+            label={isEn ? "Current Ad Account Balance" : "رصيد الحساب الحالي"}
             value={
               selectedAccountBalance === null
-                ? "غير متاح من Meta"
+                ? isEn ? "Not available from Meta" : "غير متاح من Meta"
                 : formatCurrency(selectedAccountBalance, selectedCurrency)
             }
           />
           <MiniMetric
-            label="المتبقي من حد الإنفاق"
+            label={isEn ? "Remaining Spend Cap" : "المتبقي من حد الإنفاق"}
             value={
               selectedSpendCapRemaining === null
-                ? "غير متاح من Meta"
+                ? isEn ? "Not available from Meta" : "غير متاح من Meta"
                 : formatCurrency(selectedSpendCapRemaining, selectedCurrency)
             }
           />
@@ -329,32 +363,32 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
         <div className="mt-3 grid gap-2 md:grid-cols-2">
           <SelectFilter
             icon={SlidersHorizontal}
-            label="نوع الرصيد"
+            label={isEn ? "Balance Type" : "نوع الرصيد"}
             value={budgetAlertForm.scope}
             onChange={(value) =>
               updateBudgetAlertForm({
                 scope: value as FacebookAdsBudgetAlertScope,
               })
             }
-            options={budgetAlertScopeOptions}
+            options={scopeOptions}
           />
           <SelectFilter
             icon={Gauge}
-            label="متى أرسل؟"
+            label={isEn ? "When to Send?" : "متى أرسل؟"}
             value={budgetAlertForm.metric}
             onChange={(value) =>
               updateBudgetAlertForm({
                 metric: value as FacebookAdsBudgetAlertMetric,
               })
             }
-            options={budgetAlertMetricOptions[budgetAlertForm.scope]}
+            options={metricOptions[budgetAlertForm.scope]}
           />
         </div>
 
         {budgetAlertForm.scope === "CAMPAIGN" ? (
           <label className="mt-2 block">
             <span className="mb-1 block text-[11px] font-black text-slate-500">
-              الحملة
+              {isEn ? "Campaign" : "الحملة"}
             </span>
             <select
               value={budgetAlertForm.campaignId}
@@ -363,7 +397,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
               }
               className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
             >
-              <option value="">اختار حملة</option>
+              <option value="">{isEn ? "Select Campaign" : "اختار حملة"}</option>
               {campaigns.map((campaign) => (
                 <option key={campaign.id} value={campaign.id}>
                   {campaign.name} - {formatCurrency(campaign.budgetAmount, selectedCurrency)}
@@ -376,7 +410,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
         <div className="mt-2 grid gap-2 md:grid-cols-2">
           <label className="block">
             <span className="mb-1 block text-[11px] font-black text-slate-500">
-              قيمة التنبيه
+              {isEn ? "Alert Threshold Amount" : "قيمة التنبيه"}
             </span>
             <input
               type="number"
@@ -392,7 +426,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
           </label>
           <label className="block">
             <span className="mb-1 block text-[11px] font-black text-slate-500">
-              منع التكرار بالدقائق
+              {isEn ? "Cooldown (minutes)" : "منع التكرار بالدقائق"}
             </span>
             <input
               type="number"
@@ -409,7 +443,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
 
         <label className="mt-2 block">
           <span className="mb-1 block text-[11px] font-black text-slate-500">
-            أرقام WhatsApp المستقبلة
+            {isEn ? "Recipient WhatsApp Numbers" : "أرقام WhatsApp المستقبلة"}
           </span>
           <textarea
             rows={3}
@@ -417,7 +451,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
             onChange={(event) =>
               updateBudgetAlertForm({ recipientPhones: event.target.value })
             }
-            placeholder="مثال: 01000000000&#10;01200000000"
+            placeholder={isEn ? "e.g.: 01000000000\n01200000000" : "مثال: 01000000000\n01200000000"}
             className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </label>
@@ -429,27 +463,35 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
           className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           <BellRing className="h-4 w-4" />
-          {savingBudgetAlert ? "جاري الحفظ..." : "إنشاء تنبيه WhatsApp"}
+          {savingBudgetAlert
+            ? isEn ? "Saving..." : "جاري الحفظ..."
+            : isEn ? "Create WhatsApp Alert" : "إنشاء تنبيه WhatsApp"}
         </button>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center justify-between gap-2">
           <div>
-            <h2 className="text-base font-black">التنبيهات المفعلة</h2>
+            <h2 className="text-base font-black">
+              {isEn ? "Active Alerts" : "التنبيهات المفعلة"}
+            </h2>
             <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-              يتم الفحص تلقائياً كل 15 دقيقة، مع منع تكرار الرسائل لنفس الحد.
+              {isEn
+                ? "Auto-checked every 15 minutes, with cooldown prevention."
+                : "يتم الفحص تلقائياً كل 15 دقيقة، مع منع تكرار الرسائل لنفس الحد."}
             </p>
           </div>
           <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-black text-slate-600 dark:bg-slate-800 dark:text-slate-200">
-            {formatNumber(selectedAccountAlertRules.length)} قواعد
+            {formatNumber(selectedAccountAlertRules.length)} {isEn ? "rules" : "قواعد"}
           </span>
         </div>
 
         <div className="mt-3 grid gap-2">
           {selectedAccountAlertRules.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
-              لا توجد تنبيهات بعد. أضف حد مثل 100 جنيه وسيتم الإرسال عند الوصول له.
+              {isEn
+                ? "No alerts yet. Set a threshold like 100 and an alert will be sent when reached."
+                : "لا توجد تنبيهات بعد. أضف حد مثل 100 جنيه وسيتم الإرسال عند الوصول له."}
             </div>
           ) : (
             selectedAccountAlertRules.map((rule) => (
@@ -461,7 +503,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="truncate text-sm font-black">
-                        {getBudgetAlertTargetName(rule)}
+                        {getBudgetAlertTargetName(rule, isEn)}
                       </h3>
                       <span
                         className={[
@@ -471,19 +513,21 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
                             : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300",
                         ].join(" ")}
                       >
-                        {rule.isEnabled ? "مفعل" : "متوقف"}
+                        {rule.isEnabled ? (isEn ? "Active" : "مفعل") : (isEn ? "Paused" : "متوقف")}
                       </span>
                       <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-black text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
-                        {getBudgetAlertMetricLabel(rule.metric)}
+                        {getBudgetAlertMetricLabel(rule.metric, isEn)}
                       </span>
                     </div>
                     <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
                       <span>
-                        الحد: {formatCurrency(rule.thresholdAmount, rule.currency)}
+                        {isEn ? "Threshold:" : "الحد:"} {formatCurrency(rule.thresholdAmount, rule.currency)}
                       </span>
-                      <span>آخر قراءة: {rule.lastObservedLabel || "لم يتم الفحص"}</span>
                       <span>
-                        الأرقام: {rule.recipientPhones.join("، ") || "غير محدد"}
+                        {isEn ? "Last check:" : "آخر قراءة:"} {rule.lastObservedLabel || (isEn ? "Not checked yet" : "لم يتم الفحص")}
+                      </span>
+                      <span>
+                        {isEn ? "Recipients:" : "الأرقام:"} {rule.recipientPhones.join(", ") || (isEn ? "Unspecified" : "غير محدد")}
                       </span>
                     </div>
                   </div>
@@ -496,14 +540,14 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
                       className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-blue-200 px-2 text-[11px] font-black text-blue-700 hover:bg-blue-50 disabled:opacity-60 dark:border-blue-900/60 dark:text-blue-200 dark:hover:bg-blue-950/30"
                     >
                       <Send className="h-3.5 w-3.5" />
-                      اختبار
+                      {isEn ? "Test" : "اختبار"}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleToggleBudgetAlert(rule)}
                       className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 px-2 text-[11px] font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                     >
-                      {rule.isEnabled ? "إيقاف" : "تفعيل"}
+                      {rule.isEnabled ? (isEn ? "Pause" : "إيقاف") : (isEn ? "Enable" : "تفعيل")}
                     </button>
                     <button
                       type="button"
@@ -511,7 +555,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
                       className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-red-200 px-2 text-[11px] font-black text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:text-red-200 dark:hover:bg-red-950/30"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
-                      حذف
+                      {isEn ? "Delete" : "حذف"}
                     </button>
                   </div>
                 </div>
@@ -523,7 +567,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
         {budgetAlertLogs.length ? (
           <div className="mt-3 rounded-xl bg-slate-50 p-2 dark:bg-slate-950">
             <h3 className="mb-2 text-xs font-black text-slate-500 dark:text-slate-300">
-              آخر رسائل WhatsApp
+              {isEn ? "Recent WhatsApp Messages" : "آخر رسائل WhatsApp"}
             </h3>
             <div className="grid gap-1.5">
               {budgetAlertLogs.slice(0, 4).map((log) => (
@@ -532,7 +576,7 @@ const BudgetAlertsPanel: React.FC<BudgetAlertsPanelProps> = ({
                   className="flex flex-col gap-1 rounded-lg bg-white px-2 py-1.5 text-[11px] font-bold text-slate-600 dark:bg-slate-900 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between"
                 >
                   <span className="truncate">
-                    {getBudgetAlertMetricLabel(log.metric)} → {log.recipientPhone}
+                    {getBudgetAlertMetricLabel(log.metric, isEn)} → {log.recipientPhone}
                   </span>
                   <span
                     className={

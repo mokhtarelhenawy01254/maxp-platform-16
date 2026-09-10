@@ -18,6 +18,7 @@ import {
   LinkIcon,
   SparklesIcon,
 } from "@heroicons/react/24/outline";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import {
@@ -92,18 +93,18 @@ const getCreativePayload = (creative: unknown): Record<string, unknown> => {
   return {};
 };
 
-const getStatusLabel = (status?: string) => {
+const getStatusLabel = (status?: string, isEn = false) => {
   const labels: Record<string, string> = {
-    ACTIVE: "نشط",
-    PAUSED: "متوقف",
-    ARCHIVED: "مؤرشف",
-    DELETED: "محذوف",
-    IN_PROCESS: "قيد المعالجة",
-    WITH_ISSUES: "به مشاكل",
-    DISAPPROVED: "مرفوض",
+    ACTIVE: isEn ? "Active" : "نشط",
+    PAUSED: isEn ? "Paused" : "متوقف",
+    ARCHIVED: isEn ? "Archived" : "مؤرشف",
+    DELETED: isEn ? "Deleted" : "محذوف",
+    IN_PROCESS: isEn ? "In Process" : "قيد المعالجة",
+    WITH_ISSUES: isEn ? "With Issues" : "به مشاكل",
+    DISAPPROVED: isEn ? "Disapproved" : "مرفوض",
   };
 
-  return labels[status || ""] || status || "غير محدد";
+  return labels[status || ""] || status || (isEn ? "Unspecified" : "غير محدد");
 };
 
 const getStatusBadge = (status?: string) => {
@@ -152,6 +153,9 @@ const getPreviewHtml = (preview: unknown[]) => {
 const AdDetails: React.FC = () => {
   const { adId } = useParams<{ adId: string }>();
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
   const [dateRange, setDateRange] = useState(getStoredDateRange);
   const [details, setDetails] = useState<FacebookAdDetailResponse | null>(null);
   const [breakdowns, setBreakdowns] = useState<
@@ -166,21 +170,21 @@ const AdDetails: React.FC = () => {
 
   const formatCurrency = useCallback(
     (value?: number) =>
-      new Intl.NumberFormat("ar-EG", {
+      new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
         style: "currency",
         currency: selectedCurrency,
         maximumFractionDigits: 2,
       }).format(getSafeNumber(value)),
-    [selectedCurrency],
+    [isEn, selectedCurrency],
   );
 
   const formatNumber = (value?: number) =>
-    new Intl.NumberFormat("ar-EG", {
+    new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
       maximumFractionDigits: 0,
     }).format(getSafeNumber(value));
 
   const formatDecimal = (value?: number, suffix = "") =>
-    `${new Intl.NumberFormat("ar-EG", {
+    `${new Intl.NumberFormat(isEn ? "en-US" : "ar-EG", {
       maximumFractionDigits: 2,
     }).format(getSafeNumber(value))}${suffix}`;
 
@@ -199,7 +203,7 @@ const AdDetails: React.FC = () => {
         );
 
         if (!detailResult?.ad) {
-          throw new Error("بيانات الإعلان غير مكتملة");
+          throw new Error(isEn ? "Incomplete ad data" : "بيانات الإعلان غير مكتملة");
         }
 
         setDetails(detailResult);
@@ -232,12 +236,12 @@ const AdDetails: React.FC = () => {
         setBreakdowns(nextBreakdowns);
       } catch (error: unknown) {
         console.error("Error loading ad details:", error);
-        toast.error(getApiErrorMessage(error, "فشل في تحميل تفاصيل الإعلان"));
+        toast.error(getApiErrorMessage(error, isEn ? "Failed to load ad details" : "فشل في تحميل تفاصيل الإعلان"));
       } finally {
         setLoading(false);
       }
     },
-    [adId, dateRange.endDate, dateRange.startDate],
+    [adId, dateRange.endDate, dateRange.startDate, isEn],
   );
 
   useEffect(() => {
@@ -265,7 +269,7 @@ const AdDetails: React.FC = () => {
       await loadDetails({ silent: true });
       tToast.success("AdDetails.msg_39be");
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل في مزامنة الإعلان"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to sync ad" : "فشل في مزامنة الإعلان"));
     } finally {
       setSyncing(false);
     }
@@ -285,7 +289,7 @@ const AdDetails: React.FC = () => {
       );
       setPreviewData(result);
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل في تحميل معاينة الإعلان"));
+      toast.error(getApiErrorMessage(error, isEn ? "Failed to load ad preview" : "فشل في تحميل معاينة الإعلان"));
     } finally {
       setPreviewLoading(false);
     }
@@ -300,7 +304,9 @@ const AdDetails: React.FC = () => {
     ? `/advertising/facebook-ads/campaigns/${details.campaign.id}`
     : "/advertising/facebook-ads";
   const performanceSourceLabel =
-    details?.meta?.performanceSource === "META" ? "Meta مباشر" : "محلي";
+    details?.meta?.performanceSource === "META"
+      ? (isEn ? "Meta Direct" : "Meta مباشر")
+      : (isEn ? "Local" : "محلي");
   const performanceSourceClass =
     details?.meta?.performanceSource === "META"
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
@@ -313,12 +319,12 @@ const AdDetails: React.FC = () => {
   const metricSummary = details?.summary;
   const metricCards = [
     {
-      label: "الإنفاق",
+      label: isEn ? "Spend" : "الإنفاق",
       value: formatCurrency(metricSummary?.spend),
       comparison: details?.comparisons.previousPeriod["spend"],
     },
     {
-      label: "المشتريات",
+      label: isEn ? "Purchases" : "المشتريات",
       value: formatNumber(metricSummary?.purchases),
       comparison: details?.comparisons.previousPeriod["purchases"],
     },
@@ -354,7 +360,7 @@ const AdDetails: React.FC = () => {
     return (
       <span className={`text-[11px] font-bold ${className}`}>
         {sign}
-        {formatPercent(change)} عن الفترة السابقة
+        {formatPercent(change)} {isEn ? "vs previous period" : "عن الفترة السابقة"}
       </span>
     );
   };
@@ -393,7 +399,7 @@ const AdDetails: React.FC = () => {
                 </p>
               </div>
               <span className="shrink-0 text-xs font-bold text-slate-600">
-                {formatNumber(row.metrics.purchases)} شراء
+                {formatNumber(row.metrics.purchases)} {isEn ? "purchases" : "شراء"}
               </span>
             </div>
             <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100">
@@ -421,12 +427,12 @@ const AdDetails: React.FC = () => {
   if (!details) {
     return (
       <div className="py-12 text-center">
-        <p className="text-slate-600">الإعلان غير موجود</p>
+        <p className="text-slate-600">{isEn ? "Ad not found" : "الإعلان غير موجود"}</p>
         <button
           onClick={() => navigate("/advertising/facebook-ads")}
-          className="mt-4 text-indigo-600 hover:text-indigo-700"
+          className="mt-4 text-indigo-600 hover:text-indigo-700 font-bold"
         >
-          العودة للوحة الإعلانات
+          {isEn ? "Back to Ads Dashboard" : "العودة للوحة الإعلانات"}
         </button>
       </div>
     );
@@ -439,16 +445,17 @@ const AdDetails: React.FC = () => {
   const qualityMetrics = details.quality.metrics || {};
 
   return (
-    <div className="space-y-3" dir="rtl">
+    <div className="space-y-3" dir={isEn ? "ltr" : "rtl"}>
       <div className="rounded-lg border border-slate-200 bg-white p-3 shadow-sm">
         <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
           <div className="flex min-w-0 items-start gap-3">
             <button
               onClick={() => navigate(dashboardUrl)}
               className="mt-0.5 rounded-lg border border-slate-200 p-1.5 text-slate-600 hover:bg-slate-50"
-              title="رجوع"
+              title={isEn ? "Back" : "رجوع"}
+              aria-label={isEn ? "Back" : "رجوع"}
             >
-              <ArrowLeftIcon className="h-4 w-4" />
+              <ArrowLeftIcon className={`h-4 w-4 ${isEn ? "" : "rotate-180"}`} />
             </button>
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
@@ -460,7 +467,7 @@ const AdDetails: React.FC = () => {
                     details.ad.effectiveStatus || details.ad.status,
                   )}`}
                 >
-                  {getStatusLabel(details.ad.effectiveStatus || details.ad.status)}
+                  {getStatusLabel(details.ad.effectiveStatus || details.ad.status, isEn)}
                 </span>
                 <span
                   className={`rounded-full border px-2.5 py-1 text-xs font-bold ${getVerdictClass(
@@ -495,7 +502,7 @@ const AdDetails: React.FC = () => {
                   startDate: event.target.value,
                 }))
               }
-              className="h-9 rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-9 rounded-lg border border-slate-200 px-3 text-sm font-semibold"
             />
             <input
               type="date"
@@ -506,7 +513,7 @@ const AdDetails: React.FC = () => {
                   endDate: event.target.value,
                 }))
               }
-              className="h-9 rounded-lg border border-slate-200 px-3 text-sm"
+              className="h-9 rounded-lg border border-slate-200 px-3 text-sm font-semibold"
             />
             <button
               onClick={handleRefresh}
@@ -516,7 +523,7 @@ const AdDetails: React.FC = () => {
               <ArrowPathIcon
                 className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
               />
-              تحديث
+              {isEn ? "Refresh" : "تحديث"}
             </button>
             <button
               onClick={handleSync}
@@ -524,7 +531,7 @@ const AdDetails: React.FC = () => {
               className="inline-flex h-9 items-center gap-2 rounded-lg bg-indigo-600 px-3 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50"
             >
               <BoltIcon className={`h-4 w-4 ${syncing ? "animate-pulse" : ""}`} />
-              مزامنة
+              {isEn ? "Sync" : "مزامنة"}
             </button>
             <button
               onClick={handlePreview}
@@ -532,7 +539,7 @@ const AdDetails: React.FC = () => {
               className="inline-flex h-9 items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-3 text-sm font-bold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
             >
               <EyeIcon className="h-4 w-4" />
-              معاينة
+              {isEn ? "Preview" : "معاينة"}
             </button>
           </div>
         </div>
@@ -545,7 +552,7 @@ const AdDetails: React.FC = () => {
               <div className="flex items-center justify-between gap-2">
                 <span className="text-sm font-black">{decision.label}</span>
                 <span className="text-[11px] font-black">
-                  ثقة {formatNumber(decision.confidence?.score)}%
+                  {isEn ? "Confidence" : "ثقة"} {formatNumber(decision.confidence?.score)}%
                 </span>
               </div>
               <p className="mt-1 line-clamp-1 text-[11px] font-semibold">
@@ -556,34 +563,34 @@ const AdDetails: React.FC = () => {
               </p>
             </div>
             <div className="rounded-md border border-slate-200 px-2.5 py-2">
-              <p className="text-[10px] font-bold text-slate-500">هدف CPA</p>
+              <p className="text-[10px] font-bold text-slate-500">{isEn ? "Target CPA" : "هدف CPA"}</p>
               <p className="mt-0.5 text-sm font-black text-slate-950">
                 {formatCurrency(decision.economics?.targetCpa)}
               </p>
             </div>
             <div className="rounded-md border border-slate-200 px-2.5 py-2">
-              <p className="text-[10px] font-bold text-slate-500">Break-even ROAS</p>
+              <p className="text-[10px] font-bold text-slate-500">{isEn ? "Break-even ROAS" : "Break-even ROAS"}</p>
               <p className="mt-0.5 text-sm font-black text-slate-950">
                 {formatDecimal(decision.economics?.breakEvenRoas)}x
               </p>
             </div>
             <div className="rounded-md border border-slate-200 px-2.5 py-2">
-              <p className="text-[10px] font-bold text-slate-500">ربح تقديري</p>
+              <p className="text-[10px] font-bold text-slate-500">{isEn ? "Estimated Profit" : "ربح تقديري"}</p>
               <p className="mt-0.5 text-sm font-black text-slate-950">
                 {formatCurrency(decision.metrics?.estimatedProfit)}
               </p>
             </div>
             <div className="rounded-md border border-slate-200 px-2.5 py-2">
-              <p className="text-[10px] font-bold text-slate-500">طلبات منسوبة</p>
+              <p className="text-[10px] font-bold text-slate-500">{isEn ? "Attributed Orders" : "طلبات منسوبة"}</p>
               <p className="mt-0.5 text-sm font-black text-slate-950">
                 {formatNumber(decision.attribution?.exactDeliveredOrders)} /{" "}
                 {formatNumber(decision.attribution?.relatedDeliveredOrders)}
               </p>
             </div>
             <div className="rounded-md border border-slate-200 px-2.5 py-2">
-              <p className="text-[10px] font-bold text-slate-500">تكلفة المنتج</p>
+              <p className="text-[10px] font-bold text-slate-500">{isEn ? "Product Cost" : "تكلفة المنتج"}</p>
               <p className="mt-0.5 truncate text-sm font-black text-slate-950">
-                {decision.economics?.costSource || "غير متاح"}
+                {decision.economics?.costSource || (isEn ? "Not available" : "غير متاح")}
               </p>
             </div>
           </div>
@@ -612,7 +619,7 @@ const AdDetails: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <div>
               <h2 className="text-base font-black text-slate-950">
-                تشخيص الفانل
+                {isEn ? "Funnel Diagnosis" : "تشخيص الفانل"}
               </h2>
               <p className="mt-0.5 text-xs text-slate-500">
                 {details.funnel.diagnosis.title}
@@ -656,7 +663,7 @@ const AdDetails: React.FC = () => {
           <div className="flex items-center gap-2">
             <SparklesIcon className="h-5 w-5 text-indigo-600" />
             <h2 className="text-base font-black text-slate-950">
-              توصيات القرار
+              {isEn ? "Decision Recommendations" : "توصيات القرار"}
             </h2>
           </div>
           <div className="mt-2 space-y-2">
@@ -680,13 +687,15 @@ const AdDetails: React.FC = () => {
           <div className="flex items-center gap-2">
             <CursorArrowRaysIcon className="h-5 w-5 text-slate-700" />
             <h2 className="text-base font-black text-slate-950">
-              العمر والجنس
+              {isEn ? "Age & Gender" : "العمر والجنس"}
             </h2>
           </div>
           <div className="mt-3">
             {renderBreakdownRows(
               breakdowns.age_gender,
-              "لا توجد بيانات عمر/جنس كافية لهذا الإعلان.",
+              isEn
+                ? "Not enough age/gender data for this ad."
+                : "لا توجد بيانات عمر/جنس كافية لهذا الإعلان.",
             )}
           </div>
         </div>
@@ -695,13 +704,15 @@ const AdDetails: React.FC = () => {
           <div className="flex items-center gap-2">
             <ChartBarIcon className="h-5 w-5 text-slate-700" />
             <h2 className="text-base font-black text-slate-950">
-              المنصة والموضع
+              {isEn ? "Platform & Placement" : "المنصة والموضع"}
             </h2>
           </div>
           <div className="mt-3">
             {renderBreakdownRows(
               breakdowns.placement,
-              "لا توجد بيانات مواضع كافية لهذا الإعلان.",
+              isEn
+                ? "Not enough placement data for this ad."
+                : "لا توجد بيانات مواضع كافية لهذا الإعلان.",
             )}
           </div>
         </div>
@@ -709,12 +720,16 @@ const AdDetails: React.FC = () => {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center gap-2">
             <BoltIcon className="h-5 w-5 text-slate-700" />
-            <h2 className="text-base font-black text-slate-950">الأجهزة</h2>
+            <h2 className="text-base font-black text-slate-950">
+              {isEn ? "Devices" : "الأجهزة"}
+            </h2>
           </div>
           <div className="mt-3">
             {renderBreakdownRows(
               breakdowns.device,
-              "لا توجد بيانات أجهزة كافية لهذا الإعلان.",
+              isEn
+                ? "Not enough device data for this ad."
+                : "لا توجد بيانات أجهزة كافية لهذا الإعلان.",
             )}
           </div>
         </div>
@@ -723,22 +738,25 @@ const AdDetails: React.FC = () => {
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-base font-black text-slate-950">
-            الكريتيف والرسالة
+            {isEn ? "Creative & Message" : "الكريتيف والرسالة"}
           </h2>
           <div className="mt-3 space-y-3 text-sm">
             <div>
-              <p className="text-xs font-bold text-slate-500">النص الأساسي</p>
+              <p className="text-xs font-bold text-slate-500">
+                {isEn ? "Primary Text" : "النص الأساسي"}
+              </p>
               <p className="mt-1 whitespace-pre-wrap text-slate-800">
-                {details.ad.primaryText || "غير متاح"}
+                {details.ad.primaryText || (isEn ? "Not available" : "غير متاح")}
               </p>
             </div>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <InfoLine label="العنوان" value={details.ad.headline} />
-              <InfoLine label="CTA" value={details.ad.callToAction} />
-              <InfoLine label="النوع" value={details.ad.creativeType} />
+              <InfoLine label={isEn ? "Headline" : "العنوان"} value={details.ad.headline} notAvailableText={isEn ? "Not available" : "غير متاح"} />
+              <InfoLine label="CTA" value={details.ad.callToAction} notAvailableText={isEn ? "Not available" : "غير متاح"} />
+              <InfoLine label={isEn ? "Creative Type" : "النوع"} value={details.ad.creativeType} notAvailableText={isEn ? "Not available" : "غير متاح"} />
               <InfoLine
                 label="Creative ID"
-                value={String(creativePayload["creativeId"] || "غير متاح")}
+                value={String(creativePayload["creativeId"] || (isEn ? "Not available" : "غير متاح"))}
+                notAvailableText={isEn ? "Not available" : "غير متاح"}
               />
             </div>
             {details.ad.linkUrl && (
@@ -749,7 +767,7 @@ const AdDetails: React.FC = () => {
                 className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-indigo-700 hover:bg-indigo-50"
               >
                 <LinkIcon className="h-4 w-4" />
-                فتح رابط الإعلان
+                {isEn ? "Open Ad Link" : "فتح رابط الإعلان"}
               </a>
             )}
           </div>
@@ -757,38 +775,45 @@ const AdDetails: React.FC = () => {
 
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-base font-black text-slate-950">
-            جودة الإعلان من Meta
+            {isEn ? "Ad Quality from Meta" : "جودة الإعلان من Meta"}
           </h2>
           <div className="mt-3 grid grid-cols-1 gap-2">
             <QualityLine
               label="Quality Ranking"
               value={qualityMetrics.qualityRanking}
+              notAvailableText={isEn ? "Not available" : "غير متاح"}
             />
             <QualityLine
               label="Engagement Ranking"
               value={qualityMetrics.engagementRateRanking}
+              notAvailableText={isEn ? "Not available" : "غير متاح"}
             />
             <QualityLine
               label="Conversion Ranking"
               value={qualityMetrics.conversionRateRanking}
+              notAvailableText={isEn ? "Not available" : "غير متاح"}
             />
           </div>
           {!details.quality.available && (
             <div className="mt-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
               {details.quality.error ||
-                "مؤشرات الجودة غير متاحة من Meta لهذا الإعلان حالياً."}
+                (isEn
+                  ? "Quality ranking metrics not currently available from Meta for this ad."
+                  : "مؤشرات الجودة غير متاحة من Meta لهذا الإعلان حالياً.")}
             </div>
           )}
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-base font-black text-slate-950">
-            مقارنة داخل المجموعة
+            {isEn ? "In-Group Comparison" : "مقارنة داخل المجموعة"}
           </h2>
           <div className="mt-3 space-y-2">
             {bestSibling && (
               <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-900">
-                <p className="font-black">أفضل ROAS: {bestSibling.name}</p>
+                <p className="font-black">
+                  {isEn ? "Best ROAS:" : "أفضل ROAS:"} {bestSibling.name}
+                </p>
                 <p className="mt-1 text-xs">
                   ROAS {formatDecimal(bestSibling.metrics.roas)}x · CPA{" "}
                   {formatCurrency(bestSibling.metrics.cpa)}
@@ -801,7 +826,7 @@ const AdDetails: React.FC = () => {
                 onClick={() =>
                   navigate(`/advertising/facebook-ads/ads/${sibling.id}`)
                 }
-                className={`w-full rounded-lg border p-3 text-right text-sm hover:bg-slate-50 ${
+                className={`w-full rounded-lg border p-3 ${isEn ? "text-left" : "text-right"} text-sm hover:bg-slate-50 ${
                   sibling.id === details.ad.id
                     ? "border-indigo-200 bg-indigo-50"
                     : "border-slate-200 bg-white"
@@ -817,7 +842,7 @@ const AdDetails: React.FC = () => {
                 </div>
                 <p className="mt-1 text-xs text-slate-500">
                   {formatCurrency(sibling.metrics.spend)} ·{" "}
-                  {formatNumber(sibling.metrics.purchases)} شراء
+                  {formatNumber(sibling.metrics.purchases)} {isEn ? "purchases" : "شراء"}
                 </p>
               </button>
             ))}
@@ -829,7 +854,7 @@ const AdDetails: React.FC = () => {
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm xl:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="text-base font-black text-slate-950">
-              معاينة الإعلان
+              {isEn ? "Ad Preview" : "معاينة الإعلان"}
             </h2>
             <button
               onClick={handlePreview}
@@ -837,7 +862,7 @@ const AdDetails: React.FC = () => {
               className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               <EyeIcon className="h-4 w-4" />
-              تحميل المعاينة
+              {isEn ? "Load Preview" : "تحميل المعاينة"}
             </button>
           </div>
 
@@ -851,49 +876,50 @@ const AdDetails: React.FC = () => {
           ) : (
             <div className="mt-3 flex h-52 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50 text-sm text-slate-500">
               {details.ad.facebookAdId
-                ? "اضغط تحميل المعاينة لعرض شكل الإعلان من Meta."
-                : "المعاينة تحتاج Facebook Ad ID."}
+                ? (isEn ? "Click load preview to view how this ad renders on Meta." : "اضغط تحميل المعاينة لعرض شكل الإعلان من Meta.")
+                : (isEn ? "Preview requires Facebook Ad ID." : "المعاينة تحتاج Facebook Ad ID.")}
             </div>
           )}
         </div>
 
         <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
           <h2 className="text-base font-black text-slate-950">
-            صحة التتبع والربط
+            {isEn ? "Tracking & Connection Health" : "صحة التتبع والربط"}
           </h2>
           <div className="mt-3 space-y-2 text-sm">
             <HealthLine
               ok={Boolean(details.ad.facebookAdId)}
               label="Facebook Ad ID"
-              value={details.ad.facebookAdId || "غير مربوط"}
+              value={details.ad.facebookAdId || (isEn ? "Not connected" : "غير مربوط")}
             />
             <HealthLine
               ok={Boolean(details.campaign.pixelId)}
               label="Pixel"
-              value={details.campaign.pixelId || "غير مسجل محلياً"}
+              value={details.campaign.pixelId || (isEn ? "Not registered locally" : "غير مسجل محلياً")}
             />
             <HealthLine
               ok={summary.purchases > 0 || summary.spend === 0}
               label="Purchase Event"
               value={
                 summary.purchases > 0
-                  ? `${formatNumber(summary.purchases)} حدث شراء`
-                  : "لا يوجد Purchase في الفترة"
+                  ? `${formatNumber(summary.purchases)} ${isEn ? "purchases" : "حدث شراء"}`
+                  : (isEn ? "No Purchases in period" : "لا يوجد Purchase في الفترة")
               }
             />
             <HealthLine
               ok={Boolean(details.ad.lastSyncAt)}
-              label="آخر مزامنة"
+              label={isEn ? "Last Sync" : "آخر مزامنة"}
               value={
                 details.ad.lastSyncAt
-                  ? new Date(details.ad.lastSyncAt).toLocaleString("ar-EG")
-                  : "غير متاح"
+                  ? new Date(details.ad.lastSyncAt).toLocaleString(isEn ? "en-US" : "ar-EG")
+                  : (isEn ? "Not available" : "غير متاح")
               }
             />
           </div>
           <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
-            أي قرار إيقاف/توسيع يعتمد على صحة Purchase وCAPI؛ لو التتبع ناقص،
-            ROAS وCPA ممكن يضللوا القرار.
+            {isEn
+              ? "Scaling/pausing decisions rely on accurate Purchase & CAPI tracking; if tracking is incomplete, ROAS & CPA may mislead decisions."
+              : "أي قرار إيقاف/توسيع يعتمد على صحة Purchase وCAPI؛ لو التتبع ناقص، ROAS وCPA ممكن يضللوا القرار."}
           </div>
         </div>
       </div>
@@ -901,11 +927,11 @@ const AdDetails: React.FC = () => {
   );
 };
 
-const InfoLine = ({ label, value }: { label: string; value?: string }) => (
+const InfoLine = ({ label, value, notAvailableText = "غير متاح" }: { label: string; value?: string; notAvailableText?: string }) => (
   <div className="rounded-lg border border-slate-200 bg-slate-50 p-2">
     <p className="text-[11px] font-bold text-slate-500">{label}</p>
     <p className="mt-1 truncate text-sm font-bold text-slate-900">
-      {value || "غير متاح"}
+      {value || notAvailableText}
     </p>
   </div>
 );
@@ -913,14 +939,16 @@ const InfoLine = ({ label, value }: { label: string; value?: string }) => (
 const QualityLine = ({
   label,
   value,
+  notAvailableText = "غير متاح",
 }: {
   label: string;
   value?: string;
+  notAvailableText?: string;
 }) => (
   <div className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2">
     <span className="text-xs font-bold text-slate-500">{label}</span>
     <span className="text-sm font-black text-slate-900">
-      {value || "غير متاح"}
+      {value || notAvailableText}
     </span>
   </div>
 );
