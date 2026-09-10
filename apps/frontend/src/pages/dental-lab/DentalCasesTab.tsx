@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -1198,7 +1198,13 @@ export default function DentalCasesTab() {
                       }`}
                     >
                       <td className="py-3 px-4 font-medium" dir="ltr">
-                        <span className="font-mono">{c.caseNumber || c.id.slice(0, 8)}</span>
+                        <Link
+                          to={`/dental-lab/cases/${c.id}`}
+                          className="font-mono font-bold text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline inline-flex items-center gap-1 group"
+                          title="فتح تفاصيل الحالة / الأوردر"
+                        >
+                          <span>{c.caseNumber || c.id.slice(0, 8)}</span>
+                        </Link>
                       </td>
                       <td className="py-3 px-4 font-medium">
                         {c.patientName}
