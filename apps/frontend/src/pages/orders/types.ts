@@ -154,6 +154,10 @@ export interface OrderDetailsType {
     settlementStatus?: string | null;
   } | null;
 
+  // Unified Shipping Fields
+  trackingNumber?: string | null;
+  carrierType?: string | null;
+
   // Turbo Shipping Fields
   turboShipmentId?: string;
   turboTrackingNumber?: string;

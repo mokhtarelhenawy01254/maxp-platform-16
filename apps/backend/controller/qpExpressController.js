@@ -5,6 +5,8 @@
 
 const QpExpressService = require('../services/qpExpressService');
 const { getSharedPrismaClient, safeQuery } = require('../services/sharedDatabase');
+const { calculateCollectableCodAmount } = require('../utils/shippingFinancialUtils');
+const { generateCode128Svg } = require('../utils/barcodeGenerator');
 
 const getService = (req) => {
   const companyId = req.user?.companyId || null;
@@ -57,7 +59,7 @@ exports.createShipment = async (req, res) => {
     const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';
     const shippingAddress = order.shippingAddress || order.address || order.customer?.address || '';
     const city = order.city || order.governorate || order.shippingCity || '';
-    const totalAmount = Number(order.totalAmount || order.total || order.subtotal || 0);
+    const totalAmount = calculateCollectableCodAmount(order);
 
     let items = [];
     if (order.orderItems && Array.isArray(order.orderItems)) {
@@ -486,7 +488,13 @@ function renderThermalStickerHtml(order) {
   const notes = !isCorruptedNotes ? rawNotes : 'المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة';
 
   const orderDate = order.order_date ? String(order.order_date).slice(0, 10) : new Date().toISOString().slice(0, 10);
-  const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${serial}&scale=2&width=40&height=10&includetext&alttext=QP${serial}`;
+  const barcodeSvg = generateCode128Svg(String(serial), {
+    height: 32,
+    barWidth: 1.5,
+    includeText: true,
+    fontSize: 10,
+    altText: serial ? `QP${serial}` : '',
+  });
 
   return `
     <div class="sticker-container">
@@ -502,7 +510,7 @@ function renderThermalStickerHtml(order) {
       </div>
 
       <div class="barcode-section">
-        <img class="barcode-img" src="${barcodeUrl}" alt="Barcode ${serial}" />
+        ${barcodeSvg}
       </div>
 
       <div class="info-grid">

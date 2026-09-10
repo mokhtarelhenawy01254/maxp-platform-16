@@ -772,11 +772,31 @@ const OrderDetails: React.FC = () => {
   };
 
   const handlePrintWaybill = async () => {
-    const waybillData = await getWaybill();
-    if (waybillData) {
-      // In a real scenario, open PDF or print window
-      console.log("Waybill Data:", waybillData);
+    const isQp =
+      order?.carrierType === "QP_EXPRESS" ||
+      order?.shippingCompany?.providerKey === "QP_EXPRESS" ||
+      Boolean(order?.qpTrackingNumber);
+    const isBosta =
+      order?.carrierType === "BOSTA" ||
+      order?.shippingCompany?.providerKey === "BOSTA";
+    const tracking = order?.trackingNumber || order?.turboTrackingNumber;
+
+    if (isQp && tracking) {
+      window.open(`/api/v1/qp-express/waybill/${tracking}`, "_blank");
+      return;
     }
+
+    if (isBosta && (bostaShipment?.trackingNumber || tracking)) {
+      if (printBostaAWB) {
+        printBostaAWB();
+      } else {
+        toast.info("جاري تجهيز بوليصة بوستا...");
+      }
+      return;
+    }
+
+    // Default Turbo or internal waybill
+    await getWaybill();
   };
 
   const handleCalculateShipping = async () => {

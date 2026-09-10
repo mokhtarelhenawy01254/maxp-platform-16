@@ -33,6 +33,29 @@ class TurboApiClient {
         });
       }, 2);
 
+      if (!company?.turboApiKey) {
+        const carrier = await safeQuery(async () => {
+          return await prisma.shippingCompany.findFirst({
+            where: {
+              companyId: this.companyId,
+              providerKey: 'TURBO',
+              isActive: true,
+            },
+          });
+        }, 2);
+
+        if (carrier) {
+          let s = {};
+          try {
+            s = carrier.settings ? (typeof carrier.settings === 'string' ? JSON.parse(carrier.settings) : carrier.settings) : {};
+          } catch {}
+          if (carrier.apiKey || s.apiKey) {
+            this.apiKey = carrier.apiKey || s.apiKey;
+            return this.apiKey;
+          }
+        }
+      }
+
       if (!company || !company.turboEnabled) {
         throw new Error('Turbo is not enabled for this company');
       }
@@ -58,7 +81,7 @@ class TurboApiClient {
 
   async getHeaders(apiKey = null, isFormData = false) {
     const headers = {
-      'Accept': 'application/json'
+      'Accept': 'application/json',
     };
 
     if (apiKey) {
@@ -86,7 +109,31 @@ class TurboApiClient {
         });
       }, 2);
 
-      return company?.turboMainClientCode || null;
+      if (company?.turboMainClientCode) {
+        return company.turboMainClientCode;
+      }
+
+      const carrier = await safeQuery(async () => {
+        return await prisma.shippingCompany.findFirst({
+          where: {
+            companyId: this.companyId,
+            providerKey: 'TURBO',
+            isActive: true,
+          },
+        });
+      }, 2);
+
+      if (carrier?.settings) {
+        let s = {};
+        try {
+          s = typeof carrier.settings === 'string' ? JSON.parse(carrier.settings) : carrier.settings;
+        } catch {}
+        if (s.mainClientCode || s.clientCode || s.customerId) {
+          return s.mainClientCode || s.clientCode || s.customerId;
+        }
+      }
+
+      return null;
     } catch (error) {
       console.error('❌ [TURBO] Error fetching main_client_code:', error);
       return null;

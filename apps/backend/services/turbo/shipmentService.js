@@ -198,7 +198,10 @@ class ShipmentService {
       const paymentStatusStr = String(orderData.paymentStatus || '').trim().toUpperCase();
       const isPrepaid = ['PAID', 'ONLINE', 'CARD', 'PAYMOB', 'FAWRY', 'CREDIT_CARD', 'VISA', 'WALLET', 'INSTAPAY', 'PREPAID'].includes(methodStr) ||
         ['PAID', 'COMPLETED'].includes(paymentStatusStr);
-      const codAmount = (isOrderVal === 2 || isPrepaid) ? 0 : parseFloat(totalValue || orderData.total || 0);
+      let codAmount = (isOrderVal === 2 || isPrepaid) ? 0 : parseFloat(totalValue || orderData.total || 0);
+      if (codAmount > 0 && orderData.codDepositPaid && Number(orderData.codDepositAmount) > 0) {
+        codAmount = Math.max(0, codAmount - Number(orderData.codDepositAmount));
+      }
 
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3) ? cleanAddress.trim() : `${cleanArea || cleanGovernorate} - ${cleanGovernorate}`;
       const shipmentData = {

@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const TurboService = require('./turboService');
 const BostaService = require('./bostaService');
 const QpExpressService = require('./qpExpressService');
+const { calculateCollectableCodAmount } = require('../utils/shippingFinancialUtils');
 
 const PROVIDER_KEYS = Object.freeze({
   MANUAL: 'MANUAL',
@@ -246,7 +247,7 @@ const updateShipmentFromProviderResult = async (prisma, shipment, provider, resu
     });
   }
 
-  return prisma.shipment.update({
+  const updatedShipment = await prisma.shipment.update({
     where: { id: shipment.id },
     data: {
       carrierType: provider.providerKey,
@@ -255,10 +256,35 @@ const updateShipmentFromProviderResult = async (prisma, shipment, provider, resu
       externalShipmentId: result.externalShipmentId || result.shipmentId || shipment.externalShipmentId || null,
       labelUrl: result.labelUrl || shipment.labelUrl || null,
       serviceLevel: result.serviceLevel || shipment.serviceLevel || provider.serviceLevel || null,
-      cost: result.cost !== undefined ? result.cost : shipment.cost || null,
+      cost: result.cost !== undefined && result.cost !== null ? result.cost : (shipment.cost || Number(shipment.order?.shipping || 0)),
       metadata: safeJsonStringify(metadata),
     },
   });
+
+  if (shipment.orderId && (result.trackingNumber || shipment.trackingNumber)) {
+    try {
+      const finalTrackingNumber = result.trackingNumber || shipment.trackingNumber;
+      await prisma.order.update({
+        where: { id: shipment.orderId },
+        data: {
+          status: 'SHIPPED',
+          trackingNumber: finalTrackingNumber,
+          carrierType: provider.providerKey,
+          ...(provider.providerKey === 'TURBO'
+            ? {
+                turboTrackingNumber: finalTrackingNumber,
+                turboShipmentId: result.externalShipmentId || result.shipmentId || shipment.externalShipmentId || null,
+                turboShipmentStatus: 'created',
+              }
+            : {}),
+        },
+      });
+    } catch (orderSyncErr) {
+      console.warn('⚠️ [SHIPPING_PROVIDER] Could not sync order status:', orderSyncErr.message);
+    }
+  }
+
+  return updatedShipment;
 };
 
 const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
@@ -378,15 +404,32 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
       customerId: settings.customerId ? Number(settings.customerId) : null,
     }, shipment.companyId);
 
+    const codAmount = calculateCollectableCodAmount(shipment.order);
+    const customerName =
+      shipment.order?.customerName ||
+      shipment.order?.customer?.name ||
+      (shipment.order?.customer
+        ? `${shipment.order.customer.firstName || ''} ${shipment.order.customer.lastName || ''}`.trim()
+        : null) ||
+      'عميل';
+
     const orderData = {
       orderId: shipment.order?.id,
       orderNumber: shipment.order?.orderNumber || String(shipment.order?.id),
-      customerName: shipment.order?.customerName || shipment.order?.customer?.name || 'عميل',
+      customerName,
       customerPhone: shipment.order?.customerPhone || shipment.order?.customer?.phone,
-      shippingAddress: shipment.destinationAddress || shipment.order?.address,
-      city: shipment.destinationGovernorate || shipment.destinationCity || shipment.order?.city,
+      shippingAddress:
+        shipment.destinationAddress ||
+        shipment.order?.customerAddress ||
+        shipment.order?.shippingAddress,
+      city:
+        shipment.destinationGovernorate ||
+        shipment.destinationCity ||
+        shipment.order?.governorate ||
+        shipment.order?.city,
       items: shipment.order?.orderItems || [],
-      totalAmount: shipment.order?.totalAmount || 0,
+      totalAmount: codAmount,
+      price: codAmount,
       notes: shipment.order?.notes || '',
     };
 

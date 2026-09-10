@@ -61,6 +61,7 @@ export interface InvoiceData {
   order?: {
     orderNumber?: string;
     status?: string;
+    trackingNumber?: string | null;
     turboTrackingNumber?: string | null;
     orderItems?: InvoiceItem[];
   };
@@ -148,8 +149,15 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
   const curLabel = currency === "EGP" ? "ج.م" : currency;
   const fm = (a: number) => `${new Intl.NumberFormat("ar-EG").format(a)} ${curLabel}`;
   
+  const trackingNumberVal =
+    invoice.order?.trackingNumber ||
+    invoice.order?.turboTrackingNumber ||
+    (invoice as any).trackingNumber ||
+    (invoice.order as any)?.shipment?.trackingNumber ||
+    null;
+
   const showOrderBarcode = s.showBarcodeOrderCode !== false && invoice.order?.orderNumber;
-  const showShipBarcode = s.showBarcodeShippingCode !== false && invoice.order?.turboTrackingNumber;
+  const showShipBarcode = s.showBarcodeShippingCode !== false && Boolean(trackingNumberVal);
 
   const borderStyle = "2px solid #000";
   const innerBorderStyle = "1.5px solid #000";
@@ -280,8 +288,8 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
         {/* Row 7: Shipping Barcode & Total (Footer) */}
         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr 1.2fr", minHeight: compact ? "50px" : "65px", alignItems: "stretch" }}>
            <div style={{ borderLeft: innerBorderStyle, padding: compact ? "4px 8px" : "8px 12px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
-             {showShipBarcode ? (
-                <InvoiceBarcode value={invoice.order!.turboTrackingNumber!} label={i18n.t("invoiceContent.shippingCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
+             {showShipBarcode && trackingNumberVal ? (
+                <InvoiceBarcode value={String(trackingNumberVal)} label={i18n.t("invoiceContent.shippingCode")} height={compact ? 35 : 45} width={compact ? 1.2 : 1.5} compact={compact} />
              ) : (
                <span style={{ color: "#94a3b8" }}>—</span>
              )}

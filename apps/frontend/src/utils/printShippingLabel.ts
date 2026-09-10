@@ -33,6 +33,8 @@ export interface SimpleOrderForLabel {
     productSku?: string;
     metadata?: Record<string, unknown> | string | null;
   }>;
+  trackingNumber?: string | null;
+  carrierType?: string | null;
   turboTrackingNumber?: string | null;
   shipping?: number | string;
   subtotal?: number | string;
@@ -77,6 +79,8 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
     notes: order.notes || "",
     createdAt: order.createdAt || new Date().toISOString(),
     updatedAt: order.updatedAt || new Date().toISOString(),
+    trackingNumber: order.trackingNumber || order.turboTrackingNumber || null,
+    carrierType: order.carrierType || null,
     turboTrackingNumber: order.turboTrackingNumber || null,
     shippingAddress: order.shippingAddress || "",
   };
@@ -520,8 +524,15 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
   const orderBarcode = order.orderNumber
     ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(order.orderNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الطلب</div></div>`
     : "";
-  const shippingBarcode = order.turboTrackingNumber
-    ? `<div style="text-align:center">${generateBarcodeSvg(order.turboTrackingNumber)}<div style="font-size:10px;font-weight:600;color:#000">كود الشحن</div></div>`
+  const trackingNumberVal =
+    order.trackingNumber ||
+    order.turboTrackingNumber ||
+    (order as any).shipment?.trackingNumber ||
+    (order as any).merchantOrder?.trackingNumber ||
+    null;
+
+  const shippingBarcode = trackingNumberVal
+    ? `<div style="text-align:center;margin-bottom:4px">${generateBarcodeSvg(String(trackingNumberVal))}<div style="font-size:10px;font-weight:600;color:#000">كود الشحن (${escapeHtml(trackingNumberVal)})</div></div>`
     : "";
 
   return `
@@ -534,6 +545,7 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
             <div class="company-name">مرسل: ${escapeHtml(companyName || "منصة MaxP")}</div>
           </div>
           <div class="barcodes">
+            ${shippingBarcode}
             ${orderBarcode}
           </div>
         </div>

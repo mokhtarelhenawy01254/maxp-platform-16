@@ -16,6 +16,7 @@ class QpExpressApiClient {
     this.httpsAgent = new https.Agent({ rejectUnauthorized: false });
 
     this._token = null;
+    this._refreshToken = null;
     this._tokenExpiresAt = 0;
   }
 
@@ -50,6 +51,9 @@ class QpExpressApiClient {
 
       if (response.data && response.data.access) {
         this._token = response.data.access;
+        if (response.data.refresh) {
+          this._refreshToken = response.data.refresh;
+        }
         // SimpleJWT token expiration or default 1 hour
         try {
           const payload = JSON.parse(Buffer.from(this._token.split('.')[1], 'base64').toString('utf8'));
@@ -67,6 +71,53 @@ class QpExpressApiClient {
       const detail = data?.detail || error.message;
       console.error('❌ [QP_EXPRESS] Auth Error:', { status, detail });
       throw new Error(`QP Express authentication failed: ${detail}`);
+    }
+  }
+
+  /**
+   * تجديد التوكن باستخدام refresh token
+   */
+  async refreshAccessToken() {
+    if (!this._refreshToken) {
+      return this.getAccessToken();
+    }
+
+    try {
+      const response = await axios({
+        method: 'POST',
+        url: `${this.baseUrl}/api/token/refresh/`,
+        data: {
+          refresh: this._refreshToken,
+        },
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        timeout: this.timeout,
+        httpsAgent: this.httpsAgent,
+      });
+
+      if (response.data && response.data.access) {
+        this._token = response.data.access;
+        if (response.data.refresh) {
+          this._refreshToken = response.data.refresh;
+        }
+        const now = Math.floor(Date.now() / 1000);
+        try {
+          const payload = JSON.parse(Buffer.from(this._token.split('.')[1], 'base64').toString('utf8'));
+          this._tokenExpiresAt = payload.exp || (now + 3600);
+        } catch {
+          this._tokenExpiresAt = now + 3600;
+        }
+        return this._token;
+      }
+      throw new Error('Invalid response from QP Express token refresh endpoint.');
+    } catch (error) {
+      console.warn('⚠️ [QP_EXPRESS] Refresh token failed, falling back to full login:', error.message);
+      this._refreshToken = null;
+      this._token = null;
+      this._tokenExpiresAt = 0;
+      return this.getAccessToken();
     }
   }
 
@@ -106,6 +157,7 @@ class QpExpressApiClient {
         console.warn('⚠️ [QP_EXPRESS] 401 Unauthorized encountered. Refreshing token and retrying...');
         this._token = null;
         this._tokenExpiresAt = 0;
+        await this.refreshAccessToken();
         return this.request(endpoint, { ...options, _isRetry: true });
       }
 

@@ -19,9 +19,11 @@ class QpExpressShipmentService {
     }
 
     const parts = items.map(item => {
-      const name = item.product?.title || item.title || item.name || 'منتج';
+      const name = item.productName || item.product?.name || item.product?.title || item.title || item.name || 'منتج';
       const qty = item.quantity || 1;
-      const variant = [item.size, item.color, item.variant].filter(Boolean).join(' - ');
+      const size = item.productSize || item.size || '';
+      const color = item.productColor || item.color || '';
+      const variant = [size, color, item.variant].filter(Boolean).join(' - ');
       return variant ? `${name} (${variant}) × ${qty}` : `${name} × ${qty}`;
     });
 
@@ -105,6 +107,11 @@ class QpExpressShipmentService {
       throw new Error('تعذر تحديد كود العميل الخاص بحساب كيو بي إكسبريس. يرجى التأكد من صحة اسم المستخدم وكلمة المرور في إعدادات الربط.');
     }
 
+    const inspectionNotice = 'مسموح بفتح ومعاينة الشحنة في وجود المندوب';
+    const finalNotes = notes && String(notes).trim()
+      ? (String(notes).includes('معاين') || String(notes).includes('فتح') ? String(notes).trim() : `${inspectionNotice} - ${String(notes).trim()}`)
+      : inspectionNotice;
+
     // Contract payload based on /addorders/order/ schema
     const payload = {
       customer: this._client.customerId,
@@ -116,7 +123,7 @@ class QpExpressShipmentService {
       total_amount: codAmount,
       city: String(cityId),
       address: address.substring(0, 295),
-      notes: (notes || '').substring(0, 250),
+      notes: finalNotes.substring(0, 250),
       customer_serial: String(orderNumber || orderId || '')
     };
 

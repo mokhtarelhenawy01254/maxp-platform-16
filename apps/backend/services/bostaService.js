@@ -1,5 +1,6 @@
 const axios = require('axios');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
+const { calculateCollectableCodAmount } = require('../utils/shippingFinancialUtils');
 
 const BOSTA_DELIVERY_TYPES = {
   FORWARD: 10,
@@ -170,12 +171,20 @@ class BostaService {
   }
 
   formatOrderForBosta(order, customer) {
-    const rawMethod = String(order.paymentMethod || 'CASH').toUpperCase();
-    const isCod = ['CASH', 'COD'].includes(rawMethod);
-    const type = isCod ? BOSTA_DELIVERY_TYPES.CASH_COLLECTION : BOSTA_DELIVERY_TYPES.FORWARD;
-    const codAmount = isCod ? Number(order.total || 0) : 0;
+    const codAmount = calculateCollectableCodAmount(order);
+    const type = codAmount > 0 ? BOSTA_DELIVERY_TYPES.CASH_COLLECTION : BOSTA_DELIVERY_TYPES.FORWARD;
     const items = order.orderItems || [];
     const totalWeight = items.reduce((sum, item) => sum + Number(item.product?.weight || item.weight || 0.5), 0.5);
+
+    const formattedItems = items.map(item => {
+      const name = item.productName || item.product?.name || item.name || 'منتج';
+      const qty = item.quantity || 1;
+      const size = item.productSize || item.size || '';
+      const color = item.productColor || item.color || '';
+      const variant = [size, color].filter(Boolean).join(' - ');
+      return variant ? `${name} (${variant}) × ${qty}` : `${name} × ${qty}`;
+    });
+    const itemsDescription = formattedItems.length > 0 ? formattedItems.join(' + ') : `طلب #${order.orderNumber || order.id}`;
 
     // Format address
     let addressLine = order.customerAddress || order.shippingAddress || customer?.address || '';
@@ -206,7 +215,8 @@ class BostaService {
       type,
       specs: {
         packageDetails: [{ weight: Math.max(totalWeight, 0.5), length: 10, width: 10, height: 10 }],
-        description: `Order #${order.orderNumber || order.id}`,
+        description: itemsDescription.substring(0, 450),
+        allowToOpenPackage: order.canOpen !== false,
       },
       cod: { collectionAmount: codAmount },
       dropOffAddress: {
