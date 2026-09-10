@@ -51,6 +51,7 @@ const createPrisma = (overrides = {}) => {
       findFirst: jest.fn(),
       create: jest.fn(),
       update: jest.fn(),
+      updateMany: jest.fn(),
       groupBy: jest.fn(),
     },
     dentalCaseStage: {
@@ -1341,12 +1342,21 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
         })
       );
     });
+  });
+
   describe('bulkOperations', () => {
+    const mockCase = (id, status, stages = []) => ({
+      id,
+      companyId: 'company-1',
+      status,
+      stages,
+    });
+
     test('bulkAdvanceCases updates status and stages for multiple cases', async () => {
       const prisma = createPrisma();
       prisma.dentalLabCase.findMany.mockResolvedValue([
-        baseCase('RECEIVED', [{ id: 'st-1', sortOrder: 0, status: 'IN_PROGRESS' }, { id: 'st-2', sortOrder: 1, status: 'PENDING' }]),
-        baseCase('RECEIVED', [{ id: 'st-3', sortOrder: 0, status: 'IN_PROGRESS' }, { id: 'st-4', sortOrder: 1, status: 'PENDING' }]),
+        mockCase('case-1', 'RECEIVED', [{ id: 'st-1', sortOrder: 0, status: 'IN_PROGRESS' }, { id: 'st-2', sortOrder: 1, status: 'PENDING' }]),
+        mockCase('case-2', 'RECEIVED', [{ id: 'st-3', sortOrder: 0, status: 'IN_PROGRESS' }, { id: 'st-4', sortOrder: 1, status: 'PENDING' }]),
       ]);
       prisma.dentalCaseStage.update.mockResolvedValue({});
       prisma.dentalLabCase.update.mockResolvedValue({});
@@ -1365,7 +1375,7 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       const prisma = createPrisma();
       prisma.dentalTechnician.findFirst.mockResolvedValue({ id: 'tech-1', name: 'أحمد فني' });
       prisma.dentalLabCase.findMany.mockResolvedValue([
-        baseCase('RECEIVED', [{ id: 'st-1', status: 'IN_PROGRESS' }]),
+        mockCase('case-1', 'RECEIVED', [{ id: 'st-1', status: 'IN_PROGRESS' }]),
       ]);
       prisma.dentalCaseAssignment.create.mockResolvedValue({});
       prisma.dentalCaseStage.update.mockResolvedValue({});
