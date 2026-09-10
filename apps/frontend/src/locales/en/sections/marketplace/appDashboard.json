@@ -191,6 +191,33 @@
     },
     "broadcast": {
       "description": "Send broadcast campaigns and bulk messages to customers"
+    },
+    "dentalLab": {
+      "description": "Dental cases, fabrication stages, technician assignments, and doctor billing"
+    },
+    "lab": {
+      "description": "Medical lab tests, patient samples, diagnostic reports, and invoices"
+    },
+    "radiology": {
+      "description": "Radiology cases, imaging doctors, smart reports, and result delivery"
+    },
+    "medicalCenter": {
+      "description": "Patient appointments, clinics and physicians, and medical services"
+    },
+    "education": {
+      "description": "Student management, class schedules, instructors, and parent portal"
+    },
+    "hotel": {
+      "description": "Room reservations, guest check-in, billing, and hospitality services"
+    },
+    "forms": {
+      "description": "Build and manage interactive registration forms and survey data"
+    },
+    "tasks": {
+      "description": "Team task tracking, workspaces, projects, and goals"
+    },
+    "academy": {
+      "description": "Course catalog, AI coaching, interactive quizzes, and student management"
     }
   }
 }

@@ -12667,6 +12667,33 @@ declare module 'react-i18next' {
           broadcast: {
             description: string;
           };
+          dentalLab: {
+            description: string;
+          };
+          lab: {
+            description: string;
+          };
+          radiology: {
+            description: string;
+          };
+          medicalCenter: {
+            description: string;
+          };
+          education: {
+            description: string;
+          };
+          hotel: {
+            description: string;
+          };
+          forms: {
+            description: string;
+          };
+          tasks: {
+            description: string;
+          };
+          academy: {
+            description: string;
+          };
         };
       };
       appointments: {

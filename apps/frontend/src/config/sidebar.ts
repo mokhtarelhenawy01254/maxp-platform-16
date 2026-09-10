@@ -151,7 +151,8 @@ const hasPermissionAccessForSection = (user: SidebarUser | undefined, sectionId:
         return reqPerms.some(p => userPerms.includes(p));
     }
     
-    return false;
+    // Sections that do not define domain-level restrictions (e.g. vertical apps) are accessible
+    return true;
 };
 
 const applySidebarOverrides = (
@@ -1340,12 +1341,15 @@ export const getSidebarConfig = (
     let result = applySidebarOverrides(sidebarConfig, sidebarManagementData, user?.role, userSidebarSettings, user);
 
     // Strict per-user app assignment: when assignedApps is configured (non-empty),
-    // only the sections belonging to those apps remain. All other sections —
-    // including universal ones (settings/profile/company) — are hidden so the
-    // user sees exactly the apps they were assigned.
+    // only the sections belonging to those apps remain.
+    // For OWNER and SUPER_ADMIN roles, core administrative sections (company, settings,
+    // marketplace, my-account) remain accessible so owners can always manage their company.
     if (assignedApps && assignedApps.length > 0) {
         const normalizedAssigned = assignedApps.map((a) => a.trim().toLowerCase()).filter(Boolean);
         const isAssigned = (section: SidebarSection): boolean => {
+            if (['OWNER', 'SUPER_ADMIN'].includes(user?.role || '') && ['company', 'settings', 'my-account', 'marketplace'].includes(section.id)) {
+                return true;
+            }
             const slugs = resolveSectionAppSlugs(section.id);
             if (slugs.length === 0) return false;
             return slugs.some((slug) => normalizedAssigned.includes(slug.toLowerCase()));
@@ -1357,19 +1361,43 @@ export const getSidebarConfig = (
 };
 
 /**
+ * Direct mapping for vertical & operational sections to their marketplace app slugs.
+ * Ensures robust mapping even if APP_REGISTRY metadata is modified or queried by sectionId.
+ */
+const SECTION_APP_FALLBACKS: Record<string, string[]> = {
+    'dental-lab': ['dental-lab-app'],
+    'lab': ['lab-app'],
+    'radiology': ['radiology-app'],
+    'medical-center': ['medical-system'],
+    'education': ['education-app'],
+    'hotel': ['hotel-app'],
+    'forms': ['forms-app'],
+    'tasks': ['business-tools'],
+    'academy': ['academy-app'],
+};
+
+/**
  * Resolve the marketplace app slugs that a sidebar section belongs to, based on
- * the app registry section mapping. Returns an empty array for universal
- * sections that are not tied to a specific marketplace app.
+ * the app registry section mapping.
  */
 const resolveSectionAppSlugs = (sectionId: string): string[] => {
     const matching = APP_REGISTRY.filter(
         (app) => app.sectionIds.includes(sectionId) || app.id === sectionId,
     );
-    const slugs: string[] = [];
+    const slugs = new Set<string>([sectionId.toLowerCase()]);
     for (const app of matching) {
+        slugs.add(app.id.toLowerCase());
         if (app.requiredApps && app.requiredApps.length > 0) {
-            slugs.push(...app.requiredApps);
+            for (const req of app.requiredApps) {
+                slugs.add(req.toLowerCase());
+            }
         }
     }
-    return slugs;
+    const fallbacks = SECTION_APP_FALLBACKS[sectionId];
+    if (fallbacks) {
+        for (const fb of fallbacks) {
+            slugs.add(fb.toLowerCase());
+        }
+    }
+    return Array.from(slugs);
 };

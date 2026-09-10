@@ -453,6 +453,15 @@ const SECTION_CATEGORY_OVERRIDES: Partial<Record<string, AppCategory>> = {
   company: 'system',
   'my-account': 'main',
   'my-companies': 'main',
+  'dental-lab': 'operations',
+  lab: 'operations',
+  radiology: 'operations',
+  'medical-center': 'operations',
+  education: 'operations',
+  hotel: 'operations',
+  forms: 'operations',
+  tasks: 'operations',
+  academy: 'operations',
 };
 
 const CATEGORY_COLORS: Record<AppCategory, string> = {
