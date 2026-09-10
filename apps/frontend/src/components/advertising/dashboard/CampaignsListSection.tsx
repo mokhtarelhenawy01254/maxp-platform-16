@@ -3,19 +3,25 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
+  Check,
   Clock3,
+  Edit2,
   Filter,
+  Loader2,
   PauseCircle,
   Search,
   SlidersHorizontal,
   Target,
+  X,
 } from "lucide-react";
+import { toast } from "sonner";
 import MiniMetric from "./MiniMetric";
 import SelectFilter from "./SelectFilter";
 import {
   CAMPAIGN_OBJECTIVES,
   type FacebookCampaign,
   type FacebookAdsPerformanceSummary,
+  facebookAdsService,
 } from "../../../services/facebookAdsService";
 import {
   formatCurrency,
@@ -87,10 +93,99 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
   const [showExtraFilters, setShowExtraFilters] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
 
+  // Status and budget overrides for instant optimistic UI
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});
+  const [budgetOverrides, setBudgetOverrides] = useState<Record<string, number>>({});
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  // Inline budget edit state
+  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+  const [editBudgetValue, setEditBudgetValue] = useState<string>("");
+  const [savingBudget, setSavingBudget] = useState(false);
+
   // Reset limit when filters or account changes
   React.useEffect(() => {
     setVisibleLimit(PAGE_SIZE);
   }, [filters, selectedAdAccountId]);
+
+  // Toggle campaign status handler (optimistic)
+  const handleToggleStatus = async (campaign: FacebookCampaign) => {
+    const currentEffective =
+      statusOverrides[campaign.id] || getCampaignEffectiveStatus(campaign);
+    const isCurrentlyActive = currentEffective === "ACTIVE";
+    const nextStatus = isCurrentlyActive ? "PAUSED" : "ACTIVE";
+
+    // Optimistic local state update
+    setStatusOverrides((prev) => ({ ...prev, [campaign.id]: nextStatus }));
+    setTogglingId(campaign.id);
+
+    try {
+      if (isCurrentlyActive) {
+        await facebookAdsService.pauseCampaign(campaign.id);
+        toast.success(
+          isEn
+            ? `Paused "${campaign.name}"`
+            : `تم إيقاف حملة "${campaign.name}"`,
+        );
+      } else {
+        await facebookAdsService.resumeCampaign(campaign.id);
+        toast.success(
+          isEn
+            ? `Activated "${campaign.name}"`
+            : `تم تنشيط حملة "${campaign.name}"`,
+        );
+      }
+    } catch (err) {
+      // Rollback on error
+      setStatusOverrides((prev) => ({ ...prev, [campaign.id]: currentEffective }));
+      toast.error(
+        isEn
+          ? `Failed to update status for "${campaign.name}"`
+          : `تعذر تحديث حالة "${campaign.name}" على Meta`,
+      );
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  // Inline budget edit handlers
+  const startEditBudget = (campaignId: string, currentBudget: number) => {
+    setEditingBudgetId(campaignId);
+    setEditBudgetValue(String(currentBudget));
+  };
+
+  const cancelEditBudget = () => {
+    setEditingBudgetId(null);
+    setEditBudgetValue("");
+  };
+
+  const handleSaveBudget = async (campaign: FacebookCampaign) => {
+    const num = parseFloat(editBudgetValue);
+    if (isNaN(num) || num <= 0) {
+      toast.error(isEn ? "Please enter a valid budget" : "يرجى إدخال رقم ميزانية صحيح");
+      return;
+    }
+
+    setSavingBudget(true);
+    try {
+      await facebookAdsService.updateCampaign(campaign.id, { budgetAmount: num });
+      setBudgetOverrides((prev) => ({ ...prev, [campaign.id]: num }));
+      setEditingBudgetId(null);
+      toast.success(
+        isEn
+          ? `Budget updated for "${campaign.name}"`
+          : `تم تحديث ميزانية "${campaign.name}" بنجاح`,
+      );
+    } catch (err) {
+      toast.error(
+        isEn
+          ? `Failed to update budget for "${campaign.name}"`
+          : `فشل تحديث ميزانية "${campaign.name}"`,
+      );
+    } finally {
+      setSavingBudget(false);
+    }
+  };
 
   const performanceByCampaignKey = useMemo(() => {
     const map = new Map<

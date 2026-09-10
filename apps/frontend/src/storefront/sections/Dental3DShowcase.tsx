@@ -92,12 +92,30 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
   const [wireframeMode, setWireframeMode] = useState<boolean>(false);
   const [materialType] = useState<'zirconia' | 'emax' | 'titanium'>('zirconia');
   const [isRotating, setIsRotating] = useState<boolean>(true);
+  const [viewAngle, setViewAngle] = useState<'perspective' | 'occlusal' | 'buccal'>('perspective');
   const [activeStep, setActiveStep] = useState<number>(1);
   const [hudStats, setHudStats] = useState({
     microns: 4.8,
     strength: 1250,
     fitScore: 99.8,
   });
+
+  const targetCamPosRef = useRef(new THREE.Vector3(0, 1.8, 16));
+  const targetLookRef = useRef(new THREE.Vector3(0, 0.4, 0));
+
+  const changeViewAngle = (angle: 'perspective' | 'occlusal' | 'buccal') => {
+    setViewAngle(angle);
+    if (angle === 'perspective') {
+      targetCamPosRef.current.set(0, 1.8, 16);
+      targetLookRef.current.set(0, 0.4, 0);
+    } else if (angle === 'occlusal') {
+      targetCamPosRef.current.set(0, 16, 0.05);
+      targetLookRef.current.set(0, 0.8, 0);
+    } else if (angle === 'buccal') {
+      targetCamPosRef.current.set(16, 0.4, 0);
+      targetLookRef.current.set(0, 0.4, 0);
+    }
+  };
 
   const badge = settings?.badge || 'Digital CAD/CAM Laboratory 2026';
   const title = settings?.title || 'معاينة التركيبات ثلاثية الأبعاد بدقة الميكرون';
@@ -116,7 +134,7 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
     scene.background = null;
 
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    camera.position.set(0, 4, 18);
+    camera.position.copy(targetCamPosRef.current);
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     renderer.setSize(width, height);
@@ -192,7 +210,20 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
     marginRingMesh.position.y = -1.6;
     group.add(marginRingMesh);
 
-    // 3. Abutment / Base Foundation
+    // 3. Dynamic Laser Scanner Ring (Oscillates during CAD scan)
+    const scannerRingGeom = new THREE.TorusGeometry(3.68, 0.035, 16, 64);
+    scannerRingGeom.rotateX(Math.PI / 2);
+    const scannerRingMat = new THREE.MeshBasicMaterial({
+      color: 0x22d3ee,
+      transparent: true,
+      opacity: 0.7,
+      blending: THREE.AdditiveBlending,
+    });
+    const scannerRingMesh = new THREE.Mesh(scannerRingGeom, scannerRingMat);
+    scannerRingMesh.position.y = 1.0;
+    group.add(scannerRingMesh);
+
+    // 4. Abutment / Base Foundation
     const abutmentGeom = new THREE.CylinderGeometry(2.7, 2.2, 2.6, 32);
     const abutmentMat = new THREE.MeshStandardMaterial({
       color: materialType === 'titanium' ? 0x94a3b8 : 0xd4d4d8,
@@ -211,18 +242,33 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
     controls.autoRotate = isRotating;
     controls.autoRotateSpeed = 2.0;
     controls.enableZoom = true;
-    controls.minDistance = 10;
+    controls.minDistance = 8;
     controls.maxDistance = 35;
     controls.maxPolarAngle = Math.PI / 2 + 0.3;
+    controls.target.copy(targetLookRef.current);
+
+    controls.addEventListener('start', () => {
+      targetCamPosRef.current.copy(camera.position);
+      targetLookRef.current.copy(controls.target);
+    });
 
     const clock = new THREE.Clock();
     const animate = () => {
       animId = requestAnimationFrame(animate);
       const elapsed = clock.getElapsedTime();
 
-      group.position.y = Math.sin(elapsed * 1.5) * 0.25;
+      // Gentle floating animation centered in viewport
+      group.position.y = 0.35 + Math.sin(elapsed * 1.5) * 0.2;
 
-      controls.autoRotate = isRotating;
+      // Laser scanner vertical oscillation
+      scannerRingMesh.position.y = 0.8 + Math.sin(elapsed * 2.2) * 2.5;
+      scannerRingMat.opacity = wireframeMode ? 0.95 : 0.5 + Math.sin(elapsed * 3) * 0.25;
+
+      // Smooth camera interpolation to target preset
+      camera.position.lerp(targetCamPosRef.current, 0.06);
+      controls.target.lerp(targetLookRef.current, 0.06);
+
+      controls.autoRotate = isRotating && viewAngle === 'perspective';
       controls.update();
       renderer.render(scene, camera);
     };
@@ -248,10 +294,12 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
       crownMaterial.dispose();
       marginRingGeom.dispose();
       marginRingMat.dispose();
+      scannerRingGeom.dispose();
+      scannerRingMat.dispose();
       abutmentGeom.dispose();
       abutmentMat.dispose();
     };
-  }, [activeShade, wireframeMode, materialType, isRotating]);
+  }, [activeShade, wireframeMode, materialType, isRotating, viewAngle]);
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -293,41 +341,79 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
             <div className="relative w-full aspect-[4/3] max-w-[620px] rounded-2xl border border-slate-700/60 bg-gradient-to-br from-slate-900/90 to-slate-950/90 shadow-[0_20px_60px_-15px_rgba(6,182,212,0.2)] backdrop-blur-xl overflow-hidden">
               
               {/* HUD Header Bar */}
-              <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
-                <div className="flex items-center gap-2 rounded-lg bg-black/60 px-3 py-1.5 border border-cyan-500/30 backdrop-blur-md pointer-events-auto">
+              <div className="absolute top-2.5 sm:top-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-10 flex items-center justify-between gap-1.5 sm:gap-2 pointer-events-none">
+                <div className="flex items-center gap-1.5 rounded-lg bg-black/70 px-2 py-1 sm:px-2.5 sm:py-1.5 border border-cyan-500/30 backdrop-blur-md pointer-events-auto">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
                   </span>
-                  <span className="text-[11px] font-mono font-bold tracking-wider text-cyan-300 uppercase">
-                    3D CAD Live Preview
+                  <span className="text-[9px] sm:text-[11px] font-mono font-bold tracking-wider text-cyan-300 uppercase">
+                    3D CAD Live
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 pointer-events-auto">
+                {/* Center / Camera Presets */}
+                <div className="flex items-center rounded-lg bg-black/70 p-0.5 border border-slate-700/80 backdrop-blur-md pointer-events-auto">
+                  <button
+                    onClick={() => changeViewAngle('perspective')}
+                    title="منظور حر"
+                    className={`rounded-md px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-[11px] font-semibold transition-all ${
+                      viewAngle === 'perspective'
+                        ? 'bg-cyan-500/30 text-cyan-300 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    3D حر
+                  </button>
+                  <button
+                    onClick={() => changeViewAngle('occlusal')}
+                    title="عرض إطباقي"
+                    className={`rounded-md px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-[11px] font-semibold transition-all ${
+                      viewAngle === 'occlusal'
+                        ? 'bg-cyan-500/30 text-cyan-300 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    إطباقي
+                  </button>
+                  <button
+                    onClick={() => changeViewAngle('buccal')}
+                    title="عرض جانبي"
+                    className={`rounded-md px-1.5 py-0.5 sm:px-2 sm:py-1 text-[9px] sm:text-[11px] font-semibold transition-all ${
+                      viewAngle === 'buccal'
+                        ? 'bg-cyan-500/30 text-cyan-300 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    جانبي
+                  </button>
+                </div>
+
+                {/* Right / Quick Toggles */}
+                <div className="flex items-center gap-1 pointer-events-auto">
                   <button
                     onClick={() => setIsRotating(!isRotating)}
                     title="تشغيل/إيقاف الدوران التلقائي"
-                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                    className={`rounded-lg border px-1.5 py-1 sm:px-2 sm:py-1 text-[9px] sm:text-xs font-semibold transition-all ${
                       isRotating
                         ? 'border-cyan-500/40 bg-cyan-500/20 text-cyan-300'
                         : 'border-slate-700 bg-slate-800/80 text-slate-400'
                     }`}
                   >
-                    <RotateCw className={`h-3.5 w-3.5 inline ml-1 ${isRotating ? 'animate-spin' : ''}`} style={{ animationDuration: '8s' }} />
-                    360°
+                    <RotateCw className={`h-3 w-3 inline ${isRotating ? 'animate-spin' : ''}`} style={{ animationDuration: '8s' }} />
+                    <span className="hidden sm:inline mr-1">360°</span>
                   </button>
                   <button
                     onClick={() => setWireframeMode(!wireframeMode)}
-                    title="فحص شبكة الـ Mesh وخط الإنهاء"
-                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                    title="فحص شبكة الـ Mesh"
+                    className={`rounded-lg border px-1.5 py-1 sm:px-2 sm:py-1 text-[9px] sm:text-xs font-semibold transition-all ${
                       wireframeMode
                         ? 'border-cyan-400 bg-cyan-500/30 text-white shadow-[0_0_15px_rgba(6,182,212,0.5)]'
                         : 'border-slate-700 bg-slate-800/80 text-slate-300'
                     }`}
                   >
-                    <Layers className="h-3.5 w-3.5 inline ml-1" />
-                    CAD Mesh
+                    <Layers className="h-3 w-3 inline" />
+                    <span className="hidden sm:inline mr-1">Mesh</span>
                   </button>
                 </div>
               </div>
@@ -339,21 +425,21 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
               />
 
               {/* HUD Telemetry Footer Inside Canvas */}
-              <div className="absolute bottom-3 left-3 right-3 z-10 grid grid-cols-3 gap-2 pointer-events-none">
-                <div className="rounded-lg border border-slate-800 bg-black/70 p-2 text-center backdrop-blur-md">
-                  <div className="text-[10px] text-slate-400 font-mono">CAD Tolerance</div>
+              <div className="absolute bottom-2.5 sm:bottom-3 left-2.5 sm:left-3 right-2.5 sm:right-3 z-10 grid grid-cols-3 gap-1.5 sm:gap-2 pointer-events-none">
+                <div className="rounded-lg border border-slate-800 bg-black/75 p-1.5 sm:p-2 text-center backdrop-blur-md">
+                  <div className="text-[10px] sm:text-xs text-slate-400 font-medium">دقة التفريز</div>
                   <div className="text-xs sm:text-sm font-bold font-mono text-cyan-400">
                     ±{hudStats.microns} µm
                   </div>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-black/70 p-2 text-center backdrop-blur-md">
-                  <div className="text-[10px] text-slate-400 font-mono">Flexural Strength</div>
+                <div className="rounded-lg border border-slate-800 bg-black/75 p-1.5 sm:p-2 text-center backdrop-blur-md">
+                  <div className="text-[10px] sm:text-xs text-slate-400 font-medium">قوة التحمل</div>
                   <div className="text-xs sm:text-sm font-bold font-mono text-white">
                     {hudStats.strength} MPa
                   </div>
                 </div>
-                <div className="rounded-lg border border-slate-800 bg-black/70 p-2 text-center backdrop-blur-md">
-                  <div className="text-[10px] text-slate-400 font-mono">First-Time Fit</div>
+                <div className="rounded-lg border border-slate-800 bg-black/75 p-1.5 sm:p-2 text-center backdrop-blur-md">
+                  <div className="text-[10px] sm:text-xs text-slate-400 font-medium">تطابق فوري</div>
                   <div className="text-xs sm:text-sm font-bold font-mono text-emerald-400">
                     {hudStats.fitScore}%
                   </div>
@@ -362,36 +448,36 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
             </div>
 
             {/* Interactive Shade Selector Bar */}
-            <div className="mt-5 w-full max-w-[620px] rounded-xl border border-slate-800 bg-slate-900/60 p-3.5 backdrop-blur-md">
+            <div className="mt-5 w-full max-w-[620px] rounded-xl border border-slate-800 bg-slate-900/60 p-3 sm:p-3.5 backdrop-blur-md">
               <div className="mb-2 flex items-center justify-between text-xs">
-                <span className="font-semibold text-slate-300 flex items-center gap-1.5">
+                <span className="font-semibold text-slate-300 flex items-center gap-1.5 text-[11px] sm:text-xs">
                   <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
                   محاكي تدرج الألوان (VITA Shade Guide):
                 </span>
-                <span className="font-mono text-cyan-400 font-bold">{activeShade.name}</span>
+                <span className="font-mono text-cyan-400 font-bold text-xs sm:text-sm">{activeShade.name}</span>
               </div>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
                 {SHADES.map((shade) => (
                   <button
                     key={shade.id}
                     onClick={() => setActiveShade(shade)}
-                    className={`group flex flex-col items-center gap-1.5 rounded-lg border p-2 transition-all ${
+                    className={`group flex flex-col items-center gap-1 rounded-lg border p-1.5 sm:p-2 transition-all ${
                       activeShade.id === shade.id
                         ? 'border-cyan-400 bg-cyan-950/40 shadow-[0_0_15px_rgba(6,182,212,0.3)]'
                         : 'border-slate-800 bg-slate-950/50 hover:border-slate-700'
                     }`}
                   >
                     <span 
-                      className="h-6 w-6 rounded-full border border-slate-400 shadow-inner group-hover:scale-110 transition-transform" 
+                      className="h-5 w-5 sm:h-6 sm:w-6 rounded-full border border-slate-400 shadow-inner group-hover:scale-110 transition-transform" 
                       style={{ backgroundColor: shade.hex }}
                     />
-                    <span className={`text-[11px] font-bold ${activeShade.id === shade.id ? 'text-cyan-300' : 'text-slate-400'}`}>
+                    <span className={`text-[10px] sm:text-[11px] font-bold ${activeShade.id === shade.id ? 'text-cyan-300' : 'text-slate-400'}`}>
                       {shade.id}
                     </span>
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-slate-400 text-center">
+              <p className="mt-2 text-[10px] sm:text-[11px] text-slate-400 text-center">
                 {activeShade.description}
               </p>
             </div>

@@ -1598,6 +1598,236 @@ const permanentDeleteCase = async (req, res) => {
   }
 };
 
+const bulkAdvanceCases = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseIds, to, status: targetStatus, reason } = req.body || {};
+    if (!Array.isArray(caseIds) || caseIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'يجب اختيار حالة واحدة على الأقل' });
+    }
+    const target = String(to || targetStatus || '').toUpperCase();
+    if (!CASE_STATUSES.has(target)) {
+      return res.status(400).json({ success: false, error: 'حالة المرحلة المستهدفة غير صالحة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const cases = await prisma.dentalLabCase.findMany({
+      where: { id: { in: caseIds }, companyId, isDeleted: false },
+      include: { stages: { orderBy: { sortOrder: 'asc' } } },
+    });
+
+    let updatedCount = 0;
+    const meta = {
+      changedBy: req.user?.id || req.user?.email || null,
+      userName: adminDisplayName(req),
+      reason: reason || `ترقية جماعية إلى ${target}`,
+    };
+
+    for (const c of cases) {
+      const current = c.status;
+      if (current === target) continue;
+      const currentIndex = CASE_STATUS_CHAIN.indexOf(current);
+      const targetIndex = CASE_STATUS_CHAIN.indexOf(target);
+      if (targetIndex < currentIndex) continue; // لا يرجع للخلف
+
+      const updateData = { status: target };
+      if (target === 'DELIVERED') {
+        updateData.deliveredAt = new Date();
+        updateData.orderStatus = 'COMPLETED';
+      }
+      if (target === 'CLOSED') {
+        updateData.orderStatus = 'COMPLETED';
+        if (!updateData.deliveredAt) updateData.deliveredAt = c.deliveredAt || new Date();
+      }
+
+      const stages = c.stages || [];
+      const targetStage = stageForStatus(stages, target);
+      const targetStageSort = targetStage ? Number(targetStage.sortOrder ?? 9999) : 9999;
+
+      await prisma.$transaction(async (tx) => {
+        for (const st of stages) {
+          const so = Number(st.sortOrder ?? 0);
+          if (so < targetStageSort && st.status !== 'DONE') {
+            await tx.dentalCaseStage.update({ where: { id: st.id }, data: { status: 'DONE', completedAt: new Date() } });
+          }
+        }
+        if (targetStage) {
+          await tx.dentalCaseStage.update({
+            where: { id: targetStage.id },
+            data: { status: 'IN_PROGRESS', startedAt: new Date() },
+          });
+        }
+        await tx.dentalLabCase.update({ where: { id: c.id }, data: updateData });
+      });
+
+      await recordDentalLabStatusHistory(prisma, {
+        companyId,
+        caseId: c.id,
+        dimension: 'STAGE',
+        status: target,
+        oldStatus: current,
+        changedBy: meta.changedBy,
+        userName: meta.userName,
+        reason: meta.reason,
+      }).catch(() => null);
+
+      updatedCount++;
+    }
+
+    res.json({ success: true, count: updatedCount, message: `تمت ترقية ${updatedCount} حالة إلى "${target}" بنجاح` });
+  } catch (error) {
+    console.error('Error bulk advancing dental cases:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في الترقية الجماعية للحالات' });
+  }
+};
+
+const bulkAssignTechnician = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseIds, technicianId, role = 'PRIMARY' } = req.body || {};
+    if (!Array.isArray(caseIds) || caseIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'يجب اختيار حالة واحدة على الأقل' });
+    }
+    if (!technicianId) {
+      return res.status(400).json({ success: false, error: 'يرجى اختيار الفني' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const technician = await prisma.dentalTechnician.findFirst({ where: { id: technicianId, companyId } });
+    if (!technician) return res.status(400).json({ success: false, error: 'الفني غير موجود أو لا ينتمي لهذه الشركة' });
+
+    const cases = await prisma.dentalLabCase.findMany({
+      where: { id: { in: caseIds }, companyId, isDeleted: false },
+      include: { stages: { orderBy: { sortOrder: 'asc' } } },
+    });
+
+    let assignedCount = 0;
+    for (const c of cases) {
+      const activeStage = findActiveStage(c.stages || []);
+      await prisma.$transaction(async (tx) => {
+        await tx.dentalCaseAssignment.create({
+          data: { companyId, caseId: c.id, technicianId, role },
+        });
+        if (activeStage) {
+          if (tx.dentalStageAssignee && typeof tx.dentalStageAssignee.upsert === 'function') {
+            await tx.dentalStageAssignee.upsert({
+              where: {
+                stageId_technicianId: { stageId: activeStage.id, technicianId },
+              },
+              create: {
+                companyId,
+                caseId: c.id,
+                stageId: activeStage.id,
+                technicianId,
+                technicianName: technician.name,
+                role,
+                sharePercent: 100,
+              },
+              update: { role },
+            });
+          }
+          if (!activeStage.assigneeId) {
+            await tx.dentalCaseStage.update({
+              where: { id: activeStage.id },
+              data: { assigneeId: technicianId, assigneeName: technician.name, startedAt: new Date() },
+            });
+          }
+        }
+      });
+
+      await recordDentalLabStatusHistory(prisma, {
+        companyId,
+        caseId: c.id,
+        dimension: 'STAGE',
+        status: 'ASSIGNED',
+        oldStatus: c.status,
+        changedBy: req.user?.id || req.user?.email || null,
+        userName: adminDisplayName(req),
+        reason: `إسناد جماعي إلى الفني ${technician.name}`,
+      }).catch(() => null);
+
+      assignedCount++;
+    }
+
+    res.json({ success: true, count: assignedCount, message: `تم إسناد ${assignedCount} حالة إلى ${technician.name} بنجاح` });
+  } catch (error) {
+    console.error('Error bulk assigning dental technician:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في الإسناد الجماعي للفني' });
+  }
+};
+
+const bulkUpdatePriority = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseIds, priority } = req.body || {};
+    if (!Array.isArray(caseIds) || caseIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'يجب اختيار حالة واحدة على الأقل' });
+    }
+    const p = String(priority || '').toUpperCase();
+    if (!['NORMAL', 'URGENT', 'STAT'].includes(p)) {
+      return res.status(400).json({ success: false, error: 'درجة الأولوية غير صالحة' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const result = await prisma.dentalLabCase.updateMany({
+      where: { id: { in: caseIds }, companyId, isDeleted: false },
+      data: { priority: p },
+    });
+
+    res.json({ success: true, count: result.count, message: `تم تحديث أولوية ${result.count} حالة بنجاح` });
+  } catch (error) {
+    console.error('Error bulk updating priority:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في تعديل الأولوية الجماعي' });
+  }
+};
+
+const bulkTrashCases = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseIds, reason } = req.body || {};
+    if (!Array.isArray(caseIds) || caseIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'يجب اختيار حالة واحدة على الأقل' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const result = await prisma.dentalLabCase.updateMany({
+      where: { id: { in: caseIds }, companyId, isDeleted: false },
+      data: { isDeleted: true, deletedAt: new Date() },
+    });
+
+    res.json({ success: true, count: result.count, message: `تم نقل ${result.count} حالة إلى سلة المهملات` });
+  } catch (error) {
+    console.error('Error bulk trashing dental cases:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في نقل الحالات إلى المهملات' });
+  }
+};
+
+const bulkRestoreCases = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseIds } = req.body || {};
+    if (!Array.isArray(caseIds) || caseIds.length === 0) {
+      return res.status(400).json({ success: false, error: 'يجب اختيار حالة واحدة على الأقل' });
+    }
+
+    const prisma = getSharedPrismaClient();
+    const result = await prisma.dentalLabCase.updateMany({
+      where: { id: { in: caseIds }, companyId, isDeleted: true },
+      data: { isDeleted: false, deletedAt: null },
+    });
+
+    res.json({ success: true, count: result.count, message: `تمت استعادة ${result.count} حالة بنجاح` });
+  } catch (error) {
+    console.error('Error bulk restoring dental cases:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ في استعادة الحالات' });
+  }
+};
+
 const advanceCaseStatus = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
@@ -5035,4 +5265,9 @@ module.exports = {
   returnCaseFromTryIn,
   kioskScanCase,
   getRemakesAnalysisReport,
+  bulkAdvanceCases,
+  bulkAssignTechnician,
+  bulkUpdatePriority,
+  bulkTrashCases,
+  bulkRestoreCases,
 };

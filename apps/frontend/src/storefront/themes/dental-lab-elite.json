@@ -109,7 +109,7 @@
           "variant": "standard",
           "settings": {
             "badge": "CAD/CAM 2026",
-            "message": "استقبال المسحات الرقمية (STL/PLY) مباشرة من ماسحات iTero و3Shape وMedit | شحن وتوصيل فوري للعيادات خلال 24-48 ساعة",
+            "message": "استقبال المسحات الرقمية (STL/PLY) مباشرة من ماسحات iTero و 3Shape و Medit | شحن وتوصيل فوري للعيادات خلال 24-48 ساعة",
             "saleLabel": "دقة ميكرونية",
             "shippingLabel": "توصيل سريع",
             "returnLabel": "ضمان 5 سنوات",
@@ -152,6 +152,7 @@
             "title": "أحدث خامات وتقنيات الأسنان المعتمدة عالمياً",
             "subtitle": "نعتمد فقط أفضل الخامات الطبية المتوافقة حيوياً لتلبية متطلبات الحالات التجميلية والعلاجية المعقدة.",
             "viewAllText": "استعرض كل الخدمات والأسعار",
+            "itemCtaText": "استعراض المواصفات الفنية",
             "borderGlow": true,
             "blur": 16,
             "items": [
@@ -188,8 +189,8 @@
             "badge": "النتائج السريرية والتجميلية",
             "title": "مقارنة دقة خط الإنهاء وتطابق درجات اللون",
             "subtitle": "شاهد كيف تحول السن المحضر إلى تركيبة خزفية متناسقة تحاكي الطبيعة التشريحية للأسنان المجاورة.",
-            "beforeImage": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=1600",
-            "afterImage": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=1600",
+            "beforeImage": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=1200",
+            "afterImage": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&q=80&w=1200",
             "beforeLabel": "تحضير السن والمسح الرقمي (قبل)",
             "afterLabel": "التركيبة النهائية التجميلية (بعد)"
           }

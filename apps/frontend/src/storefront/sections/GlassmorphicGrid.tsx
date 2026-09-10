@@ -73,18 +73,28 @@ const GlassmorphicGrid: React.FC<GlassmorphicGridProps> = ({ settings }) => {
                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
             </div>
 
-            <div className="space-y-1">
-              <h3 className="text-lg font-bold text-foreground font-sans">
+            <div className="space-y-1.5 flex-1">
+              <h3 className="text-base sm:text-lg font-bold text-foreground font-sans">
                 {item.title}
               </h3>
-              <p className="text-primary font-black tracking-widest text-sm uppercase">
-                {item.price}
-              </p>
+              {item.description && (
+                <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
+                  {item.description}
+                </p>
+              )}
+              {item.price && (
+                <p className="text-primary font-bold tracking-wide text-xs uppercase pt-0.5">
+                  {item.price}
+                </p>
+              )}
             </div>
 
-            <button className="mt-4 w-full py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-md font-bold text-xs uppercase tracking-widest group-hover:bg-primary group-hover:text-black transition-colors">
+            <Link
+              to={buildStorefrontPath(location.pathname, '/shop', location.search)}
+              className="mt-4 block w-full text-center py-2.5 bg-primary/10 text-primary border border-primary/20 rounded-md font-bold text-xs uppercase tracking-wider hover:bg-primary hover:text-black transition-colors"
+            >
               {itemCtaText}
-            </button>
+            </Link>
           </div>
         ))}
       </div>

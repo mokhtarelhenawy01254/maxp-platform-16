@@ -900,6 +900,21 @@ export const removeStageAssignee = async (
 ): Promise<DentalLabCaseDetail> =>
   unwrapEnvelope<DentalLabCaseDetail>(await apiClient.delete(`/dental-lab/cases/${caseId}/stages/${stageId}/assignees/${technicianId}`));
 
+export const bulkAdvanceCases = async (caseIds: string[], to: string, reason?: string): Promise<{ count: number; message: string }> =>
+  unwrapEnvelope<{ count: number; message: string }>(await apiClient.post("/dental-lab/cases/bulk/advance", { caseIds, to, reason }));
+
+export const bulkAssignTechnician = async (caseIds: string[], technicianId: string, role?: string): Promise<{ count: number; message: string }> =>
+  unwrapEnvelope<{ count: number; message: string }>(await apiClient.post("/dental-lab/cases/bulk/assign", { caseIds, technicianId, role }));
+
+export const bulkUpdatePriority = async (caseIds: string[], priority: DentalCasePriority): Promise<{ count: number; message: string }> =>
+  unwrapEnvelope<{ count: number; message: string }>(await apiClient.post("/dental-lab/cases/bulk/priority", { caseIds, priority }));
+
+export const bulkTrashCases = async (caseIds: string[], reason?: string): Promise<{ count: number; message: string }> =>
+  unwrapEnvelope<{ count: number; message: string }>(await apiClient.post("/dental-lab/cases/bulk/trash", { caseIds, reason }));
+
+export const bulkRestoreCases = async (caseIds: string[]): Promise<{ count: number; message: string }> =>
+  unwrapEnvelope<{ count: number; message: string }>(await apiClient.post("/dental-lab/cases/bulk/restore", { caseIds }));
+
 // Infer attachment kind from filename. Used as default when the user
 // doesn't pick one explicitly. Matches the ATTACHMENT_KINDS enum in the
 // backend (apps/backend/controller/dentalLabController.js).

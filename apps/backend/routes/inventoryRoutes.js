@@ -39,7 +39,7 @@ router.post('/reorder-points/bulk', checkAppAccess('inventory-pro'), inventoryCo
 // Approve a pending stock movement
 router.post('/approve-movement', checkAppAccess('inventory-pro'), inventoryController.approveMovement);
 
-// Transfer stock between warehouses (requires multi-warehouse-pro, falls back to inventory-pro)
-router.post('/transfer', checkAppAccess('multi-warehouse-pro'), inventoryController.transferStock);
+// Transfer stock between warehouses (requires inventory-pro, falls back to multi-warehouse-pro)
+router.post('/transfer', checkAppAccess('inventory-pro'), inventoryController.transferStock);
 
 module.exports = router;

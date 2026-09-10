@@ -1841,9 +1841,7 @@
     "unitPrice": null,
     "unitName": null,
     "trialDays": 0,
-    "requiredApps": [
-      "store-basic"
-    ],
+    "requiredApps": [],
     "positioning": {
       "audience": "المتاجر والشركات التي تدير مخزوناً ومستودعات متعددة وتحتاج تتبعاً دقيقاً لحركة البضائع.",
       "surface": "داخل لوحة المخزون، إدارة المستودعات، الجرد، وسجلات حركة الأصناف.",
@@ -1890,7 +1888,7 @@
     "coverImage": null,
     "engineCompatibility": null,
     "createdAt": "2026-06-26T00:00:00.000Z",
-    "updatedAt": "2026-09-10T16:29:31.257Z"
+    "updatedAt": "2026-09-10T20:24:53.047Z"
   },
   {
     "id": "cat-app-order-shipping-turbo",

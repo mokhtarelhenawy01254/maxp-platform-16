@@ -1341,6 +1341,73 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
         })
       );
     });
+  describe('bulkOperations', () => {
+    test('bulkAdvanceCases updates status and stages for multiple cases', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.findMany.mockResolvedValue([
+        baseCase('RECEIVED', [{ id: 'st-1', sortOrder: 0, status: 'IN_PROGRESS' }, { id: 'st-2', sortOrder: 1, status: 'PENDING' }]),
+        baseCase('RECEIVED', [{ id: 'st-3', sortOrder: 0, status: 'IN_PROGRESS' }, { id: 'st-4', sortOrder: 1, status: 'PENDING' }]),
+      ]);
+      prisma.dentalCaseStage.update.mockResolvedValue({});
+      prisma.dentalLabCase.update.mockResolvedValue({});
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.bulkAdvanceCases(req({ body: { caseIds: ['case-1', 'case-2'], to: 'DESIGN' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.count).toBe(2);
+    });
+
+    test('bulkAssignTechnician assigns technician to active stage of cases', async () => {
+      const prisma = createPrisma();
+      prisma.dentalTechnician.findFirst.mockResolvedValue({ id: 'tech-1', name: 'أحمد فني' });
+      prisma.dentalLabCase.findMany.mockResolvedValue([
+        baseCase('RECEIVED', [{ id: 'st-1', status: 'IN_PROGRESS' }]),
+      ]);
+      prisma.dentalCaseAssignment.create.mockResolvedValue({});
+      prisma.dentalCaseStage.update.mockResolvedValue({});
+      prisma.dentalCaseStatusHistory.create.mockResolvedValue({});
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.bulkAssignTechnician(req({ body: { caseIds: ['case-1'], technicianId: 'tech-1' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.count).toBe(1);
+    });
+
+    test('bulkUpdatePriority updates priority for selected cases', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.updateMany.mockResolvedValue({ count: 3 });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.bulkUpdatePriority(req({ body: { caseIds: ['c-1', 'c-2', 'c-3'], priority: 'URGENT' } }), res);
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(res.payload.count).toBe(3);
+    });
+
+    test('bulkTrashCases and bulkRestoreCases update isDeleted flag', async () => {
+      const prisma = createPrisma();
+      prisma.dentalLabCase.updateMany.mockResolvedValue({ count: 2 });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const resTrash = createResponse();
+      await controller.bulkTrashCases(req({ body: { caseIds: ['c-1', 'c-2'] } }), resTrash);
+      expect(resTrash.statusCode).toBe(200);
+      expect(resTrash.payload.count).toBe(2);
+
+      const resRestore = createResponse();
+      await controller.bulkRestoreCases(req({ body: { caseIds: ['c-1', 'c-2'] } }), resRestore);
+      expect(resRestore.statusCode).toBe(200);
+      expect(resRestore.payload.count).toBe(2);
+    });
   });
 
   describe('company scoping', () => {

@@ -109,6 +109,14 @@ router.delete('/technicians/payouts/:payoutId', verifyToken.authenticateToken, d
 router.get('/cases', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.listCases);
 router.post('/cases', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.createCase);
 router.post('/scan-parse', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), upload.single('file'), controller.parseScan);
+
+// Bulk operations (must be before /cases/:id)
+router.post('/cases/bulk/advance', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkAdvanceCases);
+router.post('/cases/bulk/assign', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkAssignTechnician);
+router.post('/cases/bulk/priority', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkUpdatePriority);
+router.post('/cases/bulk/trash', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkTrashCases);
+router.post('/cases/bulk/restore', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.bulkRestoreCases);
+
 router.get('/cases/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.getCaseDetail);
 router.put('/cases/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.updateCase);
 router.delete('/cases/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.trashCase);

@@ -3,7 +3,7 @@ import { useSearchParams, Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
-  AlertTriangle, ArrowRightCircle, Check, CreditCard, Eye, Filter, FilterX, Loader2, Pencil, RefreshCw, RotateCcw, ScanLine, Search, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon,
+  AlertTriangle, ArrowRightCircle, Check, CheckCircle2, CheckSquare, Clock, CreditCard, Eye, Filter, FilterX, Flame, Layers, Loader2, Pencil, RefreshCw, RotateCcw, ScanLine, Search, Square, Stethoscope, Trash2, Upload, UserPlus, Users, X as XMarkIcon, Zap,
 } from "lucide-react";
 import {
   CASE_STATUS_MAP, CASE_STATUSES, PRIORITY_CONFIG, ROLE_CONFIG, PAYMENT_STATUS_MAP,
@@ -12,6 +12,7 @@ import {
   createCase, updateCase, advanceCase, assignCase, removeCaseAssignment, uploadCaseAttachment, uploadCaseAttachments, parseScan,
   createInvoice, addInvoicePayment, kioskScanCase,
   trashCase, restoreCase, permanentDeleteCase,
+  bulkAdvanceCases, bulkAssignTechnician, bulkUpdatePriority, bulkTrashCases, bulkRestoreCases,
   fmtMoney, fmtDate, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
 } from "./shared";
@@ -806,6 +807,120 @@ export default function DentalCasesTab() {
   const [quickOrderOpen, setQuickOrderOpen] = useState(false);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
 
+  // Bulk Selection & Batch Operations (معايير 2026 للإجراءات الجماعية)
+  const [selectedCaseIds, setSelectedCaseIds] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkStatusTarget, setBulkStatusTarget] = useState("");
+  const [bulkTechTarget, setBulkTechTarget] = useState("");
+  const [bulkPriorityTarget, setBulkPriorityTarget] = useState<DentalCasePriority | "">("");
+
+  const toggleSelect = (id: string) => {
+    setSelectedCaseIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAllPage = () => {
+    if (!cases || cases.length === 0) return;
+    const allCurrentSelected = cases.every(c => selectedCaseIds.has(c.id));
+    setSelectedCaseIds(prev => {
+      const next = new Set(prev);
+      if (allCurrentSelected) {
+        cases.forEach(c => next.delete(c.id));
+      } else {
+        cases.forEach(c => next.add(c.id));
+      }
+      return next;
+    });
+  };
+
+  const handleBulkAdvance = async () => {
+    if (selectedCaseIds.size === 0 || !bulkStatusTarget) return;
+    const ids = Array.from(selectedCaseIds);
+    setBulkBusy(true);
+    try {
+      const res = await bulkAdvanceCases(ids, bulkStatusTarget);
+      toast.success(res.message || `تمت ترقية ${res.count} حالة بنجاح`);
+      setSelectedCaseIds(new Set());
+      setBulkStatusTarget("");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشلت الترقية الجماعية");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleBulkAssign = async () => {
+    if (selectedCaseIds.size === 0 || !bulkTechTarget) return;
+    const ids = Array.from(selectedCaseIds);
+    setBulkBusy(true);
+    try {
+      const res = await bulkAssignTechnician(ids, bulkTechTarget);
+      toast.success(res.message || `تم إسناد ${res.count} حالة للفني بنجاح`);
+      setSelectedCaseIds(new Set());
+      setBulkTechTarget("");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل الإسناد الجماعي");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleBulkPriority = async () => {
+    if (selectedCaseIds.size === 0 || !bulkPriorityTarget) return;
+    const ids = Array.from(selectedCaseIds);
+    setBulkBusy(true);
+    try {
+      const res = await bulkUpdatePriority(ids, bulkPriorityTarget);
+      toast.success(res.message || `تم تحديث أولوية ${res.count} حالة بنجاح`);
+      setSelectedCaseIds(new Set());
+      setBulkPriorityTarget("");
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تعديل الأولوية");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleBulkTrash = async () => {
+    if (selectedCaseIds.size === 0) return;
+    if (!window.confirm(`هل أنت متأكد من نقل ${selectedCaseIds.size} حالة إلى سلة المهملات؟`)) return;
+    const ids = Array.from(selectedCaseIds);
+    setBulkBusy(true);
+    try {
+      const res = await bulkTrashCases(ids);
+      toast.success(res.message || `تم نقل ${res.count} حالة للمهملات`);
+      setSelectedCaseIds(new Set());
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل نقل الحالات");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  const handleBulkRestore = async () => {
+    if (selectedCaseIds.size === 0) return;
+    const ids = Array.from(selectedCaseIds);
+    setBulkBusy(true);
+    try {
+      const res = await bulkRestoreCases(ids);
+      toast.success(res.message || `تمت استعادة ${res.count} حالة`);
+      setSelectedCaseIds(new Set());
+      refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشلت الاستعادة");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const loadRefs = useCallback(async () => {
     try {
       const [docs, wts, techsRes] = await Promise.all([fetchDoctors(), fetchWorkTypes(), fetchTechnicians()]);
@@ -1051,6 +1166,52 @@ export default function DentalCasesTab() {
           )}
         </div>
 
+        {/* Smart Filter Pills (معايير 2026 للفلترة السريعة اللحظية) */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 text-xs border-t dark:border-gray-800/80 pt-2.5">
+          <span className="text-gray-400 dark:text-gray-500 font-semibold flex items-center gap-1 shrink-0">
+            <Layers className="w-3.5 h-3.5" /> فلاتر سريعة:
+          </span>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(""); setDateRangePreset("ALL"); setTechnicianId(""); setStatus(""); setPage(1); }}
+            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 ${viewMode === "ACTIVE" && !priority && dateRangePreset === "ALL" && !technicianId && !status ? "bg-blue-600 text-white shadow-sm" : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"}`}
+          >
+            الكل
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("OVERDUE"); setPage(1); }}
+            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${viewMode === "OVERDUE" ? "bg-rose-600 text-white shadow-sm" : "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 border border-rose-200 dark:border-rose-900"}`}
+          >
+            <Flame className="w-3.5 h-3.5 text-rose-500" />
+            <span>متأخرة عن موعدها</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setDateRangePreset("today"); setPage(1); }}
+            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${dateRangePreset === "today" ? "bg-amber-600 text-white shadow-sm" : "bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 border border-amber-200 dark:border-amber-900"}`}
+          >
+            <Clock className="w-3.5 h-3.5 text-amber-500" />
+            <span>تسليم اليوم</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(priority === "URGENT" ? "" : "URGENT"); setPage(1); }}
+            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${priority === "URGENT" ? "bg-purple-600 text-white shadow-sm" : "bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 hover:bg-purple-100 border border-purple-200 dark:border-purple-900"}`}
+          >
+            <Zap className="w-3.5 h-3.5 text-purple-500" />
+            <span>مستعجل 🔥</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => { setViewMode("ACTIVE"); setPriority(priority === "STAT" ? "" : "STAT"); setPage(1); }}
+            className={`px-2.5 py-1 rounded-full font-medium transition-all shrink-0 flex items-center gap-1 ${priority === "STAT" ? "bg-red-600 text-white shadow-sm" : "bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 hover:bg-red-100 border border-red-200 dark:border-red-900"}`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-red-500" />
+            <span>طارئ فوري ⚡</span>
+          </button>
+        </div>
+
         {/* Comprehensive Filters Bar */}
         <div className="flex flex-wrap items-center gap-2.5 pt-1">
           {viewMode !== "TRASH" && (
@@ -1165,6 +1326,15 @@ export default function DentalCasesTab() {
             <table className="w-full min-w-[1000px] text-sm">
               <thead>
                 <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-500 dark:text-gray-300">
+                  <th className="w-10 py-3 px-3 text-center">
+                    <input
+                      type="checkbox"
+                      className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer align-middle"
+                      checked={cases.length > 0 && cases.every(c => selectedCaseIds.has(c.id))}
+                      onChange={toggleSelectAllPage}
+                      title="تحديد كل الحالات في هذه الصفحة"
+                    />
+                  </th>
                   {[
                     t("dentalLab.cases.caseNumber"),
                     t("dentalLab.cases.patient"),
@@ -1187,16 +1357,27 @@ export default function DentalCasesTab() {
                   const overdue = isCaseOverdue(c);
                   const daysOverdue = overdue ? getDaysOverdue(c) : 0;
                   const isBusy = actionBusyId === c.id;
+                  const isSelected = selectedCaseIds.has(c.id);
 
                   return (
                     <tr
                       key={c.id}
                       className={`border-b dark:border-gray-700 transition-colors ${
-                        overdue
-                          ? "bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30"
-                          : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                        isSelected
+                          ? "bg-blue-50/80 dark:bg-blue-950/40 hover:bg-blue-100/60 dark:hover:bg-blue-900/40"
+                          : overdue
+                            ? "bg-rose-50/40 dark:bg-rose-950/20 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                            : "hover:bg-gray-50 dark:hover:bg-gray-700"
                       }`}
                     >
+                      <td className="w-10 py-3 px-3 text-center" onClick={e => e.stopPropagation()}>
+                        <input
+                          type="checkbox"
+                          className="rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer align-middle"
+                          checked={isSelected}
+                          onChange={() => toggleSelect(c.id)}
+                        />
+                      </td>
                       <td className="py-3 px-4 font-medium" dir="ltr">
                         <Link
                           to={`/dental-lab/cases/${c.id}`}
@@ -1335,6 +1516,123 @@ export default function DentalCasesTab() {
           >
             {t("dentalLab.common.next")}
           </button>
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar (شريط الإجراءات الجماعية العائم - معايير 2026) */}
+      {selectedCaseIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-gray-900/95 dark:bg-gray-800/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-2xl border border-gray-700/80 flex items-center gap-3 flex-wrap max-w-[95vw] animate-in fade-in slide-in-from-bottom-5">
+          <div className="flex items-center gap-2 pr-2 border-l border-gray-700">
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-500 animate-ping" />
+            <span className="text-xs font-bold whitespace-nowrap">
+              تم تحديد {selectedCaseIds.size} حالة
+            </span>
+            <button
+              onClick={() => setSelectedCaseIds(new Set())}
+              className="text-[11px] text-gray-400 hover:text-white underline mr-1"
+            >
+              إلغاء
+            </button>
+          </div>
+
+          {viewMode !== "TRASH" ? (
+            <>
+              {/* Bulk Advance Status */}
+              <div className="flex items-center gap-1.5">
+                <select
+                  className="bg-gray-800 border border-gray-700 text-xs rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  value={bulkStatusTarget}
+                  onChange={e => setBulkStatusTarget(e.target.value)}
+                  disabled={bulkBusy}
+                >
+                  <option value="">ترقية المرحلة إلى...</option>
+                  {CASE_STATUSES.map(s => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleBulkAdvance}
+                  disabled={bulkBusy || !bulkStatusTarget}
+                  className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1 shadow-sm transition"
+                >
+                  {bulkBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowRightCircle className="w-3.5 h-3.5" />}
+                  تطبيق
+                </button>
+              </div>
+
+              {/* Bulk Assign Technician */}
+              <div className="flex items-center gap-1.5">
+                <select
+                  className="bg-gray-800 border border-gray-700 text-xs rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  value={bulkTechTarget}
+                  onChange={e => setBulkTechTarget(e.target.value)}
+                  disabled={bulkBusy}
+                >
+                  <option value="">إسناد للفني...</option>
+                  {technicians.filter(t => t.isActive).map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({ROLE_CONFIG[t.role]?.label || t.role})</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={handleBulkAssign}
+                  disabled={bulkBusy || !bulkTechTarget}
+                  className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1 shadow-sm transition"
+                >
+                  {bulkBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <UserPlus className="w-3.5 h-3.5" />}
+                  إسناد
+                </button>
+              </div>
+
+              {/* Bulk Priority */}
+              <div className="flex items-center gap-1.5">
+                <select
+                  className="bg-gray-800 border border-gray-700 text-xs rounded-lg px-2.5 py-1.5 text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={bulkPriorityTarget}
+                  onChange={e => setBulkPriorityTarget(e.target.value as DentalCasePriority)}
+                  disabled={bulkBusy}
+                >
+                  <option value="">الأولوية...</option>
+                  <option value="NORMAL">عادي</option>
+                  <option value="URGENT">مستعجل 🔥</option>
+                  <option value="STAT">طارئ فوري ⚡</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={handleBulkPriority}
+                  disabled={bulkBusy || !bulkPriorityTarget}
+                  className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1 shadow-sm transition"
+                >
+                  تحديث
+                </button>
+              </div>
+
+              {/* Bulk Trash */}
+              <button
+                type="button"
+                onClick={handleBulkTrash}
+                disabled={bulkBusy}
+                className="px-3 py-1.5 bg-red-600/90 hover:bg-red-600 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1 mr-auto shadow-sm transition"
+                title="نقل الحالات المحددة إلى المهملات"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                حذف ({selectedCaseIds.size})
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={handleBulkRestore}
+                disabled={bulkBusy}
+                className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold disabled:opacity-50 flex items-center gap-1 shadow-sm transition"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                استعادة الحالات المحددة ({selectedCaseIds.size})
+              </button>
+            </>
+          )}
         </div>
       )}
 

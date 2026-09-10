@@ -51,11 +51,15 @@ export default function MetricCard({
   value,
   icon: Icon,
   variant = "default",
+  delta,
+  subtitle,
 }: {
   label: string;
   value: string;
   icon: React.ComponentType<{ className?: string }>;
   variant?: "default" | "spend" | "purchases" | "roas" | "cpa";
+  delta?: { text: string; isPositive?: boolean };
+  subtitle?: string;
 }) {
   const v = variants[variant];
   return (
@@ -73,11 +77,30 @@ export default function MetricCard({
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p
-        className={`mt-2 truncate text-lg font-black tracking-tight ${v.value}`}
-      >
-        {value}
-      </p>
+      <div className="mt-2 flex items-baseline justify-between gap-2">
+        <p
+          className={`truncate text-lg font-black tracking-tight ${v.value}`}
+        >
+          {value}
+        </p>
+        {delta && (
+          <span
+            className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+              delta.isPositive
+                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
+            }`}
+          >
+            {delta.isPositive ? "▲ " : "▼ "}
+            {delta.text}
+          </span>
+        )}
+      </div>
+      {subtitle && (
+        <p className="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          {subtitle}
+        </p>
+      )}
     </div>
   );
 }
