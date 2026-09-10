@@ -210,6 +210,7 @@ export interface DentalCaseAttachment {
   caseId?: string;
   fileName: string;
   storedName?: string;
+  storedPath?: string;
   mimeType?: string;
   kind?: string;
   size?: number;
@@ -292,6 +293,9 @@ export interface DentalCaseCustomValue {
 export interface DentalCaseHistoryEntry {
   id: string;
   caseId?: string;
+  dimension?: string;
+  status?: string;
+  oldStatus?: string;
   fromStatus?: string;
   toStatus?: string;
   changedBy?: string;

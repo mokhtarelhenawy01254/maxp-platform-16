@@ -6,7 +6,7 @@ import DentalModelViewer from "./DentalModelViewer";
 import OdontogramChart from "./OdontogramChart";
 import {
   AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, Eye, FileDown, FileText, History,
-  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, UserX, X as XMarkIcon, XCircle,
+  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
   CASE_STATUSES, CASE_STATUS_MAP, PRIORITY_CONFIG, PAYMENT_STATUS_MAP, ROLE_CONFIG, STAGE_STATUS_MAP,
@@ -613,6 +613,7 @@ export default function DentalCaseDetailPage() {
   const [assignStage, setAssignStage] = useState<DentalCaseStage | null>(null);
   const [advanceOpen, setAdvanceOpen] = useState(false);
   const [statusOpen, setStatusOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<{ name: string; url: string } | null>(null);
   const [paymentInvoice, setPaymentInvoice] = useState<DentalInvoice | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadItems, setUploadItems] = useState<UploadItem[]>([]);
@@ -1767,6 +1768,34 @@ export default function DentalCaseDetailPage() {
 
       {refabOpen && (
         <RefabricationModal caseId={c.id} onClose={() => setRefabOpen(false)} onSaved={() => { setRefabOpen(false); refresh(); }} />
+      )}
+
+      {selectedModel && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4"
+          onClick={() => setSelectedModel(null)}
+        >
+          <div
+            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+              <div className="flex items-center gap-2 min-w-0">
+                <Box className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <span className="font-semibold text-gray-900 dark:text-gray-100 truncate">{selectedModel.name}</span>
+              </div>
+              <button
+                onClick={() => setSelectedModel(null)}
+                className="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100 rounded flex-shrink-0"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 relative min-h-[500px]">
+              <DentalModelViewer url={selectedModel.url} ext={(selectedModel.name.split(".").pop() || "stl").toLowerCase()} />
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
