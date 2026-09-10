@@ -355,46 +355,36 @@ const Notifications: React.FC = () => {
   }
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-2.5 sm:space-y-4 pb-20 sm:pb-8">
-      {/* Consolidated Compact Header Card - Highly space-efficient for mobile */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-200/70 dark:border-gray-700/60 p-2.5 sm:p-4 shadow-sm space-y-2 sm:space-y-2.5">
-        {/* Row 1: Back + Title + Unread Badge + Action Buttons */}
+    <div className="w-full max-w-5xl mx-auto space-y-3 sm:space-y-4 pb-20 sm:pb-8">
+      {/* Consolidated Clean Header Card */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl border border-gray-200/80 dark:border-gray-700/60 p-3 sm:p-4 shadow-sm space-y-2.5">
+        {/* Row 1: Title & Actions (Never truncated) */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-            <button
-              type="button"
-              onClick={() => navigate(-1)}
-              className="p-1.5 -mr-1 rounded-lg text-gray-500 hover:text-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400 transition-colors sm:hidden touch-manipulation"
-              aria-label="رجوع"
-              title="رجوع"
-            >
-              <ArrowRightIcon className="h-4 w-4" />
-            </button>
-            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
-              <BellSolidIcon className="h-4 w-4 sm:h-5 sm:w-5" />
-            </div>
-            <div className="flex items-center gap-1.5 min-w-0">
-              <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white truncate">
-                الإشعارات
-              </h1>
-              {unreadCount > 0 && (
-                <span className="px-1.5 py-0.5 text-[10.5px] font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-200 shrink-0">
-                  {unreadCount} غير مقروء
-                </span>
-              )}
-            </div>
+          <div className="flex items-center gap-2 min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white whitespace-nowrap">
+              الإشعارات
+            </h1>
+            {unreadCount > 0 ? (
+              <span className="px-2 py-0.5 text-xs font-semibold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/60 dark:text-blue-300 shrink-0">
+                {unreadCount} غير مقروء
+              </span>
+            ) : (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                ({notifications.length})
+              </span>
+            )}
           </div>
 
           {/* Actions: Mark all read + Refresh + Settings */}
-          <div className="flex items-center gap-1 shrink-0">
+          <div className="flex items-center gap-1.5 shrink-0">
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={markAllAsRead}
-                className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 text-[11px] sm:text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs touch-manipulation"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition shadow-xs touch-manipulation"
                 title="تحديد الكل كمقروء"
               >
-                <CheckIcon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                <CheckIcon className="h-3.5 w-3.5" />
                 <span className="whitespace-nowrap">قراءة الكل</span>
               </button>
             )}
@@ -403,79 +393,87 @@ const Notifications: React.FC = () => {
               type="button"
               onClick={() => fetchNotifications(false)}
               disabled={refreshing}
-              className="p-1 sm:px-2 sm:py-1 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-xs touch-manipulation disabled:opacity-50"
+              className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition border border-gray-200 dark:border-gray-700 touch-manipulation disabled:opacity-50"
               title="تحديث القائمة"
               aria-label="تحديث"
             >
-              <ArrowPathIcon className={`h-3.5 w-3.5 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
-              <span className="hidden sm:inline">تحديث</span>
+              <ArrowPathIcon className={`h-4 w-4 ${refreshing ? "animate-spin text-blue-600" : ""}`} />
             </button>
 
             <Link
               to="/notification-settings"
-              className="p-1 sm:px-2 sm:py-1 inline-flex items-center gap-1 text-[11px] sm:text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition shadow-xs touch-manipulation no-underline"
+              className="p-1.5 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition border border-gray-200 dark:border-gray-700 touch-manipulation no-underline"
               title="إعدادات الإشعارات"
               aria-label="الإعدادات"
             >
-              <Cog6ToothIcon className="h-3.5 w-3.5 text-gray-500 dark:text-gray-400" />
-              <span className="hidden sm:inline">الإعدادات</span>
+              <Cog6ToothIcon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
             </Link>
           </div>
         </div>
 
-        {/* Row 2: Filter Pills + Type Dropdown - Integrated Single Row */}
-        <div className="flex items-center justify-between gap-1.5 pt-1.5 border-t border-gray-100 dark:border-gray-700/50">
-          <div className="flex items-center gap-1 bg-gray-100/90 dark:bg-gray-900/80 p-0.5 rounded-lg text-xs overflow-x-auto shrink-0">
-            <button
-              type="button"
-              onClick={() => setFilter("all")}
-              className={`px-2 py-0.5 text-[11px] sm:text-xs font-medium rounded-md transition-all touch-manipulation whitespace-nowrap ${
-                filter === "all"
-                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              }`}
-            >
-              الكل ({notifications.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter("unread")}
-              className={`px-2 py-0.5 text-[11px] sm:text-xs font-medium rounded-md transition-all touch-manipulation whitespace-nowrap ${
-                filter === "unread"
-                  ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs font-semibold"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              }`}
-            >
-              غير مقروءة ({unreadCount})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter("read")}
-              className={`px-2 py-0.5 text-[11px] sm:text-xs font-medium rounded-md transition-all touch-manipulation whitespace-nowrap ${
-                filter === "read"
-                  ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
-                  : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
-              }`}
-            >
-              مقروءة ({notifications.length - unreadCount})
-            </button>
-          </div>
+        {/* Row 2: Status Tabs (3 Equal Columns - Zero Collision) */}
+        <div className="grid grid-cols-3 gap-1 bg-gray-100 dark:bg-gray-900/80 p-1 rounded-xl text-xs">
+          <button
+            type="button"
+            onClick={() => setFilter("all")}
+            className={`py-1.5 text-xs font-medium rounded-lg transition-all touch-manipulation text-center ${
+              filter === "all"
+                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            الكل ({notifications.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("unread")}
+            className={`py-1.5 text-xs font-medium rounded-lg transition-all touch-manipulation text-center ${
+              filter === "unread"
+                ? "bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs font-semibold"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            غير مقروءة ({unreadCount})
+          </button>
+          <button
+            type="button"
+            onClick={() => setFilter("read")}
+            className={`py-1.5 text-xs font-medium rounded-lg transition-all touch-manipulation text-center ${
+              filter === "read"
+                ? "bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-xs font-semibold"
+                : "text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+            }`}
+          >
+            مقروءة ({notifications.length - unreadCount})
+          </button>
+        </div>
 
-          <div className="flex items-center gap-1 min-w-0">
-            <select
-              value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value)}
-              className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 text-gray-700 dark:text-gray-200 px-2 py-1 text-[11px] sm:text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 truncate max-w-[125px] sm:max-w-none"
-              aria-label="تصفية حسب نوع الإشعار"
+        {/* Row 3: Category Filter Chips (Consistent text-xs, no browser select quirks) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar text-xs">
+          <span className="text-xs font-medium text-gray-400 dark:text-gray-500 shrink-0 ml-1">
+            التصنيف:
+          </span>
+          {[
+            { key: "all", label: "الجميع" },
+            { key: "order", label: "طلبات البيع" },
+            { key: "info", label: "معلومات" },
+            { key: "warning", label: "تنبيهات" },
+            { key: "error", label: "أخطاء" },
+            { key: "success", label: "نجاح" },
+          ].map((cat) => (
+            <button
+              key={cat.key}
+              type="button"
+              onClick={() => setTypeFilter(cat.key)}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium whitespace-nowrap transition-colors touch-manipulation ${
+                typeFilter === cat.key
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-gray-100 dark:bg-gray-900/70 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
+              }`}
             >
-              <option value="all">جميع الأنواع</option>
-              <option value="order">طلبات البيع</option>
-              <option value="info">معلومات</option>
-              <option value="warning">تنبيهات</option>
-              <option value="error">أخطاء</option>
-              <option value="success">نجاح</option>
-            </select>
-          </div>
+              {cat.label}
+            </button>
+          ))}
         </div>
       </div>
 
