@@ -1319,24 +1319,13 @@ export const getSidebarConfig = (
         // 1️⃣5️⃣ إدارة النظام (للسوبر أدمن)
         ...(user?.role === 'SUPER_ADMIN' ? [{
             id: 'system',
-            title: t('sidebar.systemManagementSection'),
+            title: t('sidebar.systemManagementSection') || 'إدارة النظام',
             icon: Building,
             items: [
-                { to: '/companies', icon: Building, label: t('sidebar.companiesManagement') },
-                { to: '/super-admin/queue-monitor', icon: ListOrdered, label: t('sidebar.systemMonitoring') }, // BullMQ Monitor
-                { to: '/super-admin/db-migration', icon: Wrench, label: t('sidebar.dbMigration') },
-                { to: '/super-admin/billing-overview', icon: Banknote, label: t('sidebar.billingOverview') },
-
-                { to: '/super-admin/marketplace-management', icon: Box, label: t('sidebar.marketplaceManagement') },
-                { to: '/super-admin/storefront-themes', icon: Palette, label: t('sidebar.storeThemePricing') },
-                { to: '/super-admin/marketing-links', icon: Megaphone, label: t('sidebar.marketingLinks') },
-                { to: '/super-admin/homepage-templates', icon: Monitor, label: t('sidebar.homepageTemplates') },
-                { to: '/super-admin/new-section', icon: Sparkles, label: t('sidebar.productStudio') },
-                { to: '/settings/store', icon: Palette, label: t('sidebar.shopStudio') },
-                { to: '/settings/store', icon: Palette, label: t('sidebar.shopTemplates') },
-                { to: '/super-admin/premium-product-demo', icon: Sparkles, label: t('sidebar.premiumDemo') },
-                { to: '/super-admin/partner-management', icon: Users, label: t('sidebar.partnerManagement') },
-                { to: '/super-admin/dev-leaderboard', icon: BarChart3, label: t('sidebar.devLeaderboard') },
+                { to: '/super-admin/dashboard', icon: LayoutDashboard, label: 'لوحة تحكم السوبر أدمن' },
+                { to: '/super-admin/companies-v2', icon: Building, label: t('sidebar.companiesManagement') || 'إدارة الشركات' },
+                { to: '/super-admin/billing-overview', icon: Banknote, label: t('sidebar.billingOverview') || 'المالية والاشتراكات' },
+                { to: '/super-admin/server-usage', icon: HardDrive, label: 'استهلاك الخوادم والمراقبة' },
             ]
         }] : []),
 

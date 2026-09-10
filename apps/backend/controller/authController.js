@@ -825,7 +825,9 @@ const login = async (req, res) => {
         isCurrent: true // Current company on login
       });
       delete companiesMap.get(user.companyId).installedApps;
-      currentActiveRole = roleInPrimary;
+      if (user.role !== 'SUPER_ADMIN') {
+        currentActiveRole = roleInPrimary;
+      }
     }
 
     // Add companies from userCompanies
@@ -1082,8 +1084,8 @@ const me = async (req, res) => {
       });
       delete companiesMap.get(user.companyId).installedApps;
 
-      // If this is the currently active company, ensure we use its role
-      if (user.companyId === decoded.companyId) {
+      // If this is the currently active company, ensure we use its role (unless user is global SUPER_ADMIN)
+      if (user.role !== 'SUPER_ADMIN' && user.companyId === decoded.companyId) {
         currentActiveRole = roleInPrimary;
       }
     }
@@ -1104,8 +1106,8 @@ const me = async (req, res) => {
           delete companiesMap.get(uc.companyId).installedApps;
         }
 
-        // If this secondary company is the current one, update active role
-        if (uc.companyId === decoded.companyId) {
+        // If this secondary company is the current one, update active role (unless user is global SUPER_ADMIN)
+        if (user.role !== 'SUPER_ADMIN' && uc.companyId === decoded.companyId) {
           currentActiveRole = uc.roleRef?.key || uc.role;
         }
       }

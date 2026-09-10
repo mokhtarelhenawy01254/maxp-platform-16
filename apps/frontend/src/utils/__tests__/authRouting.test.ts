@@ -87,8 +87,8 @@ describe("getPostAuthDestination", () => {
     expect(getPostAuthDestination({ role: "AFFILIATE" })).toBe("/affiliates/dashboard");
   });
 
-  it("returns /super-admin/dev-dashboard for system roles without saved path", () => {
-    expect(getPostAuthDestination({ role: "SUPER_ADMIN" })).toBe("/super-admin/dev-dashboard");
+  it("returns /super-admin/dashboard for system roles without saved path", () => {
+    expect(getPostAuthDestination({ role: "SUPER_ADMIN" })).toBe("/super-admin/dashboard");
   });
 
   it("returns /super-admin/dev-dashboard for legacy 'Team Lead' only when explicitly SUPER_ADMIN-like is NOT the case", () => {
@@ -180,13 +180,13 @@ describe("SUPER_ADMIN post-auth routing", () => {
     const superAdmin = { id: "sa1", role: "SUPER_ADMIN" };
     saveLastPath(superAdmin, "/apps");
     expect(getLastPath(superAdmin)).toBeNull();
-    expect(resolvePostAuthDestination(superAdmin)).toBe("/super-admin/dev-dashboard");
+    expect(resolvePostAuthDestination(superAdmin)).toBe("/super-admin/dashboard");
   });
 
   it("ignores state.from pointing to /apps", () => {
     const superAdmin = { id: "sa1", role: "SUPER_ADMIN" };
     expect(resolvePostAuthDestination(superAdmin, "/apps")).toBe(
-      "/super-admin/dev-dashboard",
+      "/super-admin/dashboard",
     );
   });
 

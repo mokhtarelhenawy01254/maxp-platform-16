@@ -52,9 +52,8 @@ const SuperAdminHeader: React.FC<SuperAdminHeaderProps> = ({
   return (
     <header
       className={cn(
-        "fixed top-0 z-40 flex h-16 items-center border-b backdrop-blur-lg transition-all duration-300 bg-background/80 border-border",
+        "sticky top-0 z-30 flex h-16 w-full items-center border-b backdrop-blur-lg bg-background/80 border-border shrink-0",
       )}
-      style={i18n.dir() === "rtl" ? { left: 0, width: `calc(100% - ${currentDrawerWidth}px)` } : { right: 0, width: `calc(100% - ${currentDrawerWidth}px)` }}
     >
       <div className="flex w-full items-center justify-between px-4 sm:px-6">
         <div className="flex items-center gap-3 flex-shrink-0">

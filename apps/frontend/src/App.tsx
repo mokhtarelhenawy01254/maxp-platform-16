@@ -2146,7 +2146,7 @@ const AppContent = () => {
               <>
             <Route
               path="/super-admin"
-              element={<Navigate to="/super-admin/dev-dashboard" replace />}
+              element={<Navigate to="/super-admin/dashboard" replace />}
             />
             <Route
               path="/super-admin/dashboard"
@@ -7820,8 +7820,8 @@ const AppContent = () => {
                     </Layout>
                   }
                 />
-                {/* Catch-all for authenticated users */}
-                <Route path="*" element={<Navigate to="/apps" replace />} />
+                {/* Catch-all for authenticated users: role-aware redirect */}
+                <Route path="*" element={<AuthenticatedFallbackRedirect />} />
               </>
             ) : (
               // Redirect unauthenticated users trying to access protected routes
@@ -8006,12 +8006,26 @@ const AppContent = () => {
   );
 };
 
+// Fallback redirect component for unmatched authenticated routes
+const AuthenticatedFallbackRedirect: React.FC = () => {
+  const { user } = useAuth();
+  if (user?.role === "SUPER_ADMIN") {
+    return <Navigate to="/super-admin/dashboard" replace />;
+  }
+  return <Navigate to="/apps" replace />;
+};
+
 // Fallback redirect for unmatched authenticated routes
 const RedirectToApps: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   React.useEffect(() => {
-    navigate("/apps", { replace: true });
-  }, [navigate]);
+    if (user?.role === "SUPER_ADMIN") {
+      navigate("/super-admin/dashboard", { replace: true });
+    } else {
+      navigate("/apps", { replace: true });
+    }
+  }, [navigate, user]);
   return null;
 };
 

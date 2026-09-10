@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate, Navigate } from "react-router-dom";
 import {
   Bars3Icon,
   ChevronDownIcon,
@@ -436,6 +436,10 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
         <SuperAdminLayout fullWidth={fullWidth} activeUsersCount={activeUsersCount}>{children}</SuperAdminLayout>
       </React.Suspense>
     );
+  }
+
+  if (isSuperAdmin && (location.pathname === "/apps" || location.pathname.startsWith("/apps/"))) {
+    return <Navigate to="/super-admin/dashboard" replace />;
   }
 
   const isValidSuperAdminSession = (): boolean => {

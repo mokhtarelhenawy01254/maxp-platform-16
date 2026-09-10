@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
   matchesSuperAdminNavigationPath,
   shouldUseSuperAdminShell,
@@ -9,6 +10,8 @@ describe("shouldUseSuperAdminShell", () => {
     expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/super-admin/companies-v2")).toBe(
       true,
     );
+    expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/admin/support")).toBe(true);
+    expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/admin/ai-hub")).toBe(true);
     expect(shouldUseSuperAdminShell("SUPER_ADMIN", "/company-dashboard")).toBe(
       false,
     );

@@ -119,7 +119,12 @@ const PREFIX_ROLE_GATES: Array<{ prefix: string; roles: string[] }> = [
 export const isCompanyRole = (role?: string | null): boolean => {
   if (!role) return false;
   const normalized = normalizeRole(role);
-  if (normalized === SUPER_ADMIN_ROLE || normalized === "MERCHANT" || normalized === "AFFILIATE") {
+  if (
+    normalized === SUPER_ADMIN_ROLE ||
+    normalized === "MERCHANT" ||
+    normalized === "AFFILIATE" ||
+    normalized === "CUSTOMER"
+  ) {
     return false;
   }
   return true;

@@ -6,7 +6,13 @@ export const shouldUseSuperAdminShell = (
     return false;
   }
 
-  return pathname === "/super-admin" || pathname.startsWith("/super-admin/");
+  return (
+    pathname === "/super-admin" ||
+    pathname.startsWith("/super-admin/") ||
+    pathname === "/admin/support" ||
+    pathname.startsWith("/admin/support") ||
+    pathname.startsWith("/admin/ai-hub")
+  );
 };
 
 export const matchesSuperAdminNavigationPath = (

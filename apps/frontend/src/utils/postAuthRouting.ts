@@ -203,7 +203,7 @@ export const resolvePostAuthDestination = (
     } catch {
       // ignore
     }
-    return "/super-admin/dev-dashboard";
+    return "/super-admin/dashboard";
   }
   if (isCompanyRole(user?.role)) return "/apps";
   return "/marketplace";

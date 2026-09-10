@@ -55,13 +55,15 @@ const SuperAdminLayout: React.FC<SuperAdminLayoutProps> = ({ children, fullWidth
   const title = getMenuGroups(t).find((g) => g.items.some((i) => matchesSuperAdminNavigationPath(location.pathname, i.path, location.search)))?.title || t("superAdmin.controlPanel");
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background" dir={i18n.dir()} data-theme={currentTheme.id}>
-      <SuperAdminHeader currentDrawerWidth={cw} isCollapsed={isCollapsed} onCollapseToggle={() => setIsCollapsed(!isCollapsed)}
-        onMobileMenuOpen={() => setMobileOpen(true)} activeUsersCount={activeUsersCount} onShowActiveUsers={() => setShowActive(true)} user={u} title={title} />
+    <div className="flex h-screen h-[100dvh] overflow-hidden bg-background" dir={i18n.dir()} data-theme={currentTheme.id}>
       <SuperAdminSidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} user={u} />
-      <main className="flex-1 overflow-y-auto overflow-x-hidden pt-16 transition-all duration-300" style={{ width: `calc(100% - ${cw}px)` }}>
-        <div className="w-full px-4 py-6 sm:px-8">{children}</div>
-      </main>
+      <div className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
+        <SuperAdminHeader currentDrawerWidth={cw} isCollapsed={isCollapsed} onCollapseToggle={() => setIsCollapsed(!isCollapsed)}
+          onMobileMenuOpen={() => setMobileOpen(true)} activeUsersCount={activeUsersCount} onShowActiveUsers={() => setShowActive(true)} user={u} title={title} />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
+          <div className="w-full px-4 py-6 sm:px-8">{children}</div>
+        </main>
+      </div>
       {showActive && <ActiveUsersMonitor isOpen={showActive} onClose={() => setShowActive(false)} />}
     </div>
   );
