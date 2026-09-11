@@ -65,7 +65,7 @@ describe("Register", () => {
     });
   });
 
-  test("sends brand-new accounts to the marketplace apps page", async () => {
+  test("sends brand-new accounts to the company dashboard", async () => {
     const { container } = render(
       <MemoryRouter>
         <Register />
@@ -105,14 +105,14 @@ describe("Register", () => {
     expect(mockTrackCompleteRegistration).toHaveBeenCalledWith(
       "auth_register",
       expect.objectContaining({
-        destination: "/marketplace",
+        destination: "/company-dashboard",
         role: "COMPANY_OWNER",
       }),
     );
 
     // Navigation is deferred via setTimeout(…, 100) in the submit handler.
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith("/marketplace", { replace: true });
+      expect(mockNavigate).toHaveBeenCalledWith("/company-dashboard", { replace: true });
     });
   });
 });
