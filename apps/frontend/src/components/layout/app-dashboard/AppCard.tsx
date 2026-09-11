@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AppDefinition } from '../../../config/appRegistry';
+import { useRoutePrefetch } from '../../../hooks/useRoutePrefetch';
 
 interface AppCardProps {
   app: AppDefinition;
@@ -53,6 +54,7 @@ const AppCard: React.FC<AppCardProps> = ({ app, isFavorite, onToggleFavorite }) 
         className: 'h-5 w-5',
       });
   const isRtl = i18n.language?.startsWith('ar') ?? false;
+  const prefetch = useRoutePrefetch();
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -62,12 +64,22 @@ const AppCard: React.FC<AppCardProps> = ({ app, isFavorite, onToggleFavorite }) 
 
   const appName = app.displayName ?? t(app.nameKey);
   const appDescription = app.displayDescription ?? t(app.descriptionKey);
+  const targetPath = app.route || `/apps/${app.id}`;
+
+  const handleMouseEnter = () => {
+    prefetch(targetPath);
+    if (app.id) {
+      prefetch(`/${app.id}`);
+    }
+  };
 
   return (
     <article className="relative">
       <Link
-        to={app.route || `/apps/${app.id}`}
+        to={targetPath}
         aria-label={appName}
+        onMouseEnter={handleMouseEnter}
+        onFocus={handleMouseEnter}
         className={`
         group relative w-full text-start p-4 rounded-xl cursor-pointer
         bg-white dark:bg-gray-800

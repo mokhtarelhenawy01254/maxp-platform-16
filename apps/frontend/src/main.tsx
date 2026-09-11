@@ -146,6 +146,9 @@ const removeLoadingScreen = (instant = false): void => {
   }
 };
 
+// Expose loader dismissal to the React app so it can trigger smooth handoff on real mount
+(window as unknown as Record<string, unknown>).__MAXP_REMOVE_INITIAL_LOADER__ = removeLoadingScreen;
+
 const renderBootstrapError = (error: unknown): void => {
   console.error("[bootstrap] Failed to start frontend application.", error);
   removeLoadingScreen();
@@ -199,7 +202,7 @@ const bootstrapApp = async (): Promise<void> => {
     return;
   }
 
-  loadAdminCriticalGoogleFonts();
+  // Google fonts are preloaded in index.html; avoid redundant blocking injections here
   const { default: AdminAppBootstrap } = await import(
     "./bootstrap/AdminAppBootstrap"
   );
@@ -240,7 +243,8 @@ void bootstrapApp()
     if (isStorefrontRequest()) {
       removeLoadingScreen(true);
     } else {
-      setTimeout(removeLoadingScreen, 50);
+      // Safety fallback: if App hasn't dismissed the loader within 4 seconds, remove it anyway
+      setTimeout(() => removeLoadingScreen(false), 4000);
     }
   })
   .catch((error) => {

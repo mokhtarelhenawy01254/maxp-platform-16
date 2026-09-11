@@ -33,6 +33,14 @@ const LandingPage: React.FC = () => {
     visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   };
 
+  const preloadAuth = () => {
+    import("./auth/Login").catch(() => {});
+  };
+
+  const preloadRegister = () => {
+    import("./auth/Register").catch(() => {});
+  };
+
   return (
     <div className="premium-landing" dir="rtl">
       {/* Ambient background */}
@@ -53,8 +61,22 @@ const LandingPage: React.FC = () => {
           <a href="#faq" className="nav-link">الأسئلة الشائعة</a>
         </div>
         <div className="nav-actions">
-          <Link to="/auth/login" className="nav-link ml-6">دخول</Link>
-          <Link to="/auth/register" className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white hover:bg-primary-700">ابدأ مجاناً</Link>
+          <Link
+            to="/auth/login"
+            className="nav-link ml-6"
+            onMouseEnter={preloadAuth}
+            onFocus={preloadAuth}
+          >
+            دخول
+          </Link>
+          <Link
+            to="/auth/register"
+            className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white hover:bg-primary-700"
+            onMouseEnter={preloadRegister}
+            onFocus={preloadRegister}
+          >
+            ابدأ مجاناً
+          </Link>
         </div>
       </nav>
 
@@ -81,7 +103,14 @@ const LandingPage: React.FC = () => {
             </motion.p>
 
             <motion.div variants={itemVariants} className="hero-actions">
-              <Link to="/auth/register" className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-10 py-3 text-sm font-semibold text-white hover:bg-primary-700">ابدأ التشغيل الآن</Link>
+              <Link
+                to="/auth/register"
+                className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-10 py-3 text-sm font-semibold text-white hover:bg-primary-700"
+                onMouseEnter={preloadRegister}
+                onFocus={preloadRegister}
+              >
+                ابدأ التشغيل الآن
+              </Link>
               <a href="#tools" className="inline-flex items-center justify-center rounded-xl bg-secondary-600 px-6 py-3 text-sm font-semibold text-white hover:bg-secondary-700">استعرض الأدوات</a>
             </motion.div>
           </div>

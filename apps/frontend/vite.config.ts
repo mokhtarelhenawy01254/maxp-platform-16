@@ -59,6 +59,7 @@ const STOREFRONT_DEFERRED_PRELOAD_CHUNKS = [
   /(?:^|\/)app-tracking-/,
   /(?:^|\/)app-query-client-/,
   /(?:^|\/)vendor-qrcode-/,
+  /(?:^|\/)i18n-en-/,
 ];
 const STOREFRONT_THEME_PRESET_MODULE_PATTERN = /\/src\/storefront\/themes\//;
 const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
@@ -677,7 +678,11 @@ export default defineConfig(({ mode }) => {
               return 'app-bootstrap-core';
             }
 
-            if (APP_I18N_MODULE_PATTERN.test(normalizedId)) {
+            if (normalizedId.includes('/locales/en/')) {
+              return 'i18n-en';
+            }
+
+            if (APP_I18N_MODULE_PATTERN.test(normalizedId) || normalizedId.includes('/locales/ar/')) {
               return 'app-i18n';
             }
 

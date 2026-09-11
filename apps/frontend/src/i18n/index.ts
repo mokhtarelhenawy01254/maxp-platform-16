@@ -2,8 +2,24 @@ import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import ar from "../locales/ar/translation.json";
-import en from "../locales/en/translation.json";
 import { getBackendUrl } from "../config/environment";
+
+let enPromise: Promise<void> | null = null;
+export const loadEnglishTranslations = async (): Promise<void> => {
+  if (i18n.hasResourceBundle("en", "translation")) return;
+  if (!enPromise) {
+    enPromise = import("../locales/en/translation.json")
+      .then((mod) => {
+        const messages = (mod as { default?: Record<string, unknown> }).default || mod;
+        i18n.addResourceBundle("en", "translation", messages, true, true);
+      })
+      .catch((err) => {
+        enPromise = null;
+        console.warn("[i18n] Failed to load English translations dynamically:", err);
+      });
+  }
+  return enPromise;
+};
 
 // قائمة الدول العربية
 const ARABIC_COUNTRIES = [
@@ -98,7 +114,6 @@ i18n
   .init({
     resources: {
       ar: { translation: ar },
-      en: { translation: en },
     },
     lng: initialLanguage,
     fallbackLng: "ar",
@@ -113,6 +128,12 @@ i18n
     },
   });
 
+if (initialLanguage === "en") {
+  void loadEnglishTranslations().then(() => {
+    void i18n.changeLanguage("en");
+  });
+}
+
 // تطبيق اتجاه النص
 document.documentElement.dir = initialLanguage === "ar" ? "rtl" : "ltr";
 document.documentElement.lang = initialLanguage;
@@ -123,10 +144,15 @@ if (!savedLanguage) {
   const runDetection = () => {
     getLanguageByCountry().then((detectedLanguage) => {
       if (detectedLanguage !== initialLanguage) {
-        i18n.changeLanguage(detectedLanguage);
-        localStorage.setItem("language", detectedLanguage);
-        document.documentElement.dir = detectedLanguage === "ar" ? "rtl" : "ltr";
-        document.documentElement.lang = detectedLanguage;
+        void (async () => {
+          if (detectedLanguage === "en") {
+            await loadEnglishTranslations();
+          }
+          await i18n.changeLanguage(detectedLanguage);
+          localStorage.setItem("language", detectedLanguage);
+          document.documentElement.dir = detectedLanguage === "ar" ? "rtl" : "ltr";
+          document.documentElement.lang = detectedLanguage;
+        })();
       }
     });
   };
@@ -143,8 +169,11 @@ export const getDirection = () => {
 };
 
 // دالة لتغيير اللغة
-export const changeLanguage = (language: string) => {
-  i18n.changeLanguage(language);
+export const changeLanguage = async (language: string) => {
+  if (language === "en") {
+    await loadEnglishTranslations();
+  }
+  await i18n.changeLanguage(language);
   localStorage.setItem("language", language);
   document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   document.documentElement.lang = language;
@@ -152,10 +181,10 @@ export const changeLanguage = (language: string) => {
   window.location.reload();
 };
 
-export const toggleLanguage = () => {
+export const toggleLanguage = async () => {
   const currentLang = i18n.language;
   const newLang = currentLang === "ar" ? "en" : "ar";
-  changeLanguage(newLang);
+  await changeLanguage(newLang);
   return newLang;
 };
 
