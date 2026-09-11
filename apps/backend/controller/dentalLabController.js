@@ -769,6 +769,15 @@ const createTechnician = async (req, res) => {
         }
         userId = existingUser.id;
 
+        // If password provided, update it to ensure user can log in
+        if (password && password.length >= 6) {
+          const hashedPassword = await bcrypt.hash(password, 10);
+          await prisma.user.update({
+            where: { id: existingUser.id },
+            data: { password: hashedPassword },
+          });
+        }
+
         // Ensure user is linked in userCompany for this company
         const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
         if (!uc) {
@@ -776,7 +785,7 @@ const createTechnician = async (req, res) => {
             data: {
               userId: existingUser.id,
               companyId,
-              role: 'STAFF',
+              role: 'AGENT',
               isActive: true,
               isDefault: false,
             },
@@ -796,7 +805,7 @@ const createTechnician = async (req, res) => {
             firstName,
             lastName,
             phone: body.phone ? String(body.phone).trim() : null,
-            role: 'STAFF',
+            role: 'AGENT',
             isActive: true,
             companyId,
           },
@@ -806,7 +815,7 @@ const createTechnician = async (req, res) => {
           data: {
             userId: newUser.id,
             companyId,
-            role: 'STAFF',
+            role: 'AGENT',
             isActive: true,
             isDefault: true,
           },
@@ -910,13 +919,18 @@ const updateTechnician = async (req, res) => {
       const existingUser = await prisma.user.findFirst({ where: { email } });
       if (existingUser) {
         data.userId = existingUser.id;
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { password: hashedPassword },
+        });
         const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
         if (!uc) {
           await prisma.userCompany.create({
             data: {
               userId: existingUser.id,
               companyId,
-              role: 'STAFF',
+              role: 'AGENT',
               isActive: true,
               isDefault: false,
             },
@@ -935,7 +949,7 @@ const updateTechnician = async (req, res) => {
             firstName,
             lastName,
             phone: data.phone || existing.phone,
-            role: 'STAFF',
+            role: 'AGENT',
             isActive: true,
             companyId,
           },
@@ -944,7 +958,7 @@ const updateTechnician = async (req, res) => {
           data: {
             userId: newUser.id,
             companyId,
-            role: 'STAFF',
+            role: 'AGENT',
             isActive: true,
             isDefault: true,
           },
