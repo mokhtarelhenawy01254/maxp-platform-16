@@ -92,6 +92,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
   const isEn = i18n.language?.startsWith("en") || localStorage.getItem("language") === "en";
   const [showExtraFilters, setShowExtraFilters] = useState(false);
   const [visibleLimit, setVisibleLimit] = useState(PAGE_SIZE);
+  const statusChips = useMemo(() => getDeliveryFilterOptions(isEn), [isEn]);
 
   // Status and budget overrides for instant optimistic UI
   const [statusOverrides, setStatusOverrides] = useState<Record<string, string>>({});

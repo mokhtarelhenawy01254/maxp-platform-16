@@ -387,7 +387,7 @@ const Dental3DShowcase: React.FC<Dental3DShowcaseProps> = ({ settings }) => {
   }, [materialType]);
 
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#060913] via-[#0A101E] to-[#060913] py-16 md:py-24 text-white">
+    <section id="dental-3d" className="relative w-full overflow-hidden bg-gradient-to-b from-[#060913] via-[#0A101E] to-[#060913] py-16 md:py-24 text-white">
       {/* Blueprint Grid Background Pattern */}
       <div 
         className="pointer-events-none absolute inset-0 opacity-[0.035]"

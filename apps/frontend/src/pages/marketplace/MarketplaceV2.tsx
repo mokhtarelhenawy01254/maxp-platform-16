@@ -295,10 +295,12 @@ export default function MarketplaceV2() {
     const base = selectedSystemHub === "ALL" || !activeHubDef || activeHubDef.categories.length === 0
       ? categories
       : categories.filter(c => activeHubDef.categories.includes((c.category || "").toUpperCase()));
-    return base.map(c => ({
-      ...c,
-      count: categoryCounts[(c.category || "").toUpperCase()] ?? 0,
-    }));
+    return base
+      .map(c => ({
+        ...c,
+        count: categoryCounts[(c.category || "").toUpperCase()] ?? 0,
+      }))
+      .filter(c => c.count > 0);
   }, [selectedSystemHub, activeHubDef, categories, categoryCounts]);
 
   const categoryDisplay = useMemo(
@@ -579,30 +581,22 @@ export default function MarketplaceV2() {
               /* Flat layout when a specific category is selected */
               <div className="mt-4">
                 {viewMode === "grid" ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
                     {displayedApps.map((app) => (
                       <AppCard
                         key={app.id}
                         app={app}
                         variant="default"
-                        showBadges
-                        showRating
-                        showInstalls
-                        showDescription
                       />
                     ))}
                   </div>
                 ) : (
-                  <div className="flex flex-col gap-2.5">
+                  <div className="flex flex-col gap-2">
                     {displayedApps.map((app) => (
                       <AppCard
                         key={app.id}
                         app={app}
                         variant="horizontal"
-                        showBadges
-                        showRating
-                        showInstalls
-                        showDescription
                       />
                     ))}
                   </div>
@@ -610,10 +604,10 @@ export default function MarketplaceV2() {
               </div>
             ) : (
               /* Grouped layout when viewing all categories */
-              <div className="space-y-8 mt-4">
+              <div className="space-y-7 mt-4">
                 {groupAppsBySidebarSections(displayedApps).map((section) => (
                   <div key={section.id}>
-                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/30">
+                    <div className="flex items-center justify-between gap-2 mb-3 pb-2 border-b border-border/25">
                       <div className="flex items-center gap-2">
                         <Layers3 size={15} className="text-primary" />
                         <h3 className="text-sm font-bold text-foreground">{t(section.labelKey)}</h3>
@@ -624,30 +618,22 @@ export default function MarketplaceV2() {
                     </div>
 
                     {viewMode === "grid" ? (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-3.5 sm:gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
                         {section.apps.map((app) => (
                           <AppCard
                             key={app.id}
                             app={app}
                             variant="default"
-                            showBadges
-                            showRating
-                            showInstalls
-                            showDescription
                           />
                         ))}
                       </div>
                     ) : (
-                      <div className="flex flex-col gap-2.5">
+                      <div className="flex flex-col gap-2">
                         {section.apps.map((app) => (
                           <AppCard
                             key={app.id}
                             app={app}
                             variant="horizontal"
-                            showBadges
-                            showRating
-                            showInstalls
-                            showDescription
                           />
                         ))}
                       </div>

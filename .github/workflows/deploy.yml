@@ -8,7 +8,8 @@ on:
     branches:
       - main
     paths-ignore:
-      - '*.md'
+      - '**/*.md'
+      - 'memory/**'
       - 'docs/**'
   workflow_dispatch:
     inputs:

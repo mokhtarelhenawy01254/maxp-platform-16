@@ -18,7 +18,7 @@ export const DentalPrecisionHero: React.FC<HeroVariantProps> = (props) => {
   const scannerBadges = ['3Shape TRIOS', 'iTero Element', 'Medit i700', 'CEREC Primescan'];
 
   return (
-    <section className="relative w-full overflow-hidden bg-gradient-to-b from-[#060913] via-[#0A101E] to-[#060913] py-14 sm:py-20 lg:py-24 text-white">
+    <section id="dental-hero" className="relative w-full overflow-hidden bg-gradient-to-b from-[#060913] via-[#0A101E] to-[#060913] pt-12 pb-20 sm:py-20 lg:py-24 text-white">
       {/* Precision Blueprint Grid Background */}
       <div 
         className="pointer-events-none absolute inset-0 opacity-[0.04]"

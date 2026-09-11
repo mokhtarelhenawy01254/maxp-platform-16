@@ -4,9 +4,13 @@ import {
   Briefcase,
   Grid3X3,
   Home,
+  Layers,
   MessageCircle,
+  Package,
   Search,
   ShoppingBag,
+  Sparkles,
+  Stethoscope,
   User,
   type LucideIcon,
 } from 'lucide-react';
@@ -47,6 +51,7 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
     theme.id === 'vela-fashion-eg' &&
     theme.header?.variant?.trim().toLowerCase() !== 'legacy-default-old';
   const isPharmacy = isPharmacyThemeId(theme.id);
+  const isDentalLab = theme.id === 'dental-lab-elite';
 
   const homePath = buildStorefrontPath(location.pathname, '/', location.search);
   const shopPath = buildStorefrontPath(location.pathname, '/shop', location.search);
@@ -223,6 +228,119 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
                   {item.key === 'cart' ? renderCartBadge() : null}
                 </div>
                 <span className="text-[10px] font-black leading-none tracking-[0.04em]">
+                  {label}
+                </span>
+              </>
+            );
+
+            if (item.href) {
+              return (
+                <Link key={item.key} to={item.href} aria-label={item.ariaLabel} className={className}>
+                  {content}
+                </Link>
+              );
+            }
+
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={item.onClick}
+                aria-label={item.ariaLabel}
+                className={className}
+              >
+                {content}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+    );
+  }
+
+  if (isDentalLab) {
+    const dentalLabItems: NavItem[] = [
+      {
+        key: 'home',
+        labelAr: 'الرئيسية',
+        labelEn: 'Home',
+        icon: Home,
+        active: isHome,
+        href: homePath,
+        ariaLabel: theme.direction === 'rtl' ? 'الرئيسية' : 'Home',
+      },
+      {
+        key: 'catalog',
+        labelAr: 'التركيبات',
+        labelEn: 'Solutions',
+        icon: Layers,
+        active: isShop,
+        href: shopPath,
+        ariaLabel: theme.direction === 'rtl' ? 'كتالوج التركيبات' : 'Dental Solutions',
+      },
+      {
+        key: '3d-lab',
+        labelAr: 'المحاكي 3D',
+        labelEn: '3D Lab',
+        icon: Sparkles,
+        active: false,
+        href: `${homePath}#dental-3d`,
+        ariaLabel: theme.direction === 'rtl' ? 'محاكي التركيبات 3D' : '3D Simulator',
+      },
+      {
+        key: 'portal',
+        labelAr: 'بوابة الأطباء',
+        labelEn: 'Portal',
+        icon: Stethoscope,
+        active: normalizedPath.includes('/dental-portal'),
+        emphasized: true,
+        href: '/dental-portal',
+        ariaLabel: theme.direction === 'rtl' ? 'دخول بوابة الأطباء' : 'Doctor Portal',
+      },
+      {
+        key: 'kit',
+        labelAr: 'طلب كيت',
+        labelEn: 'Kit',
+        icon: Package,
+        active: normalizedPath.includes('/contact'),
+        href: buildStorefrontPath(location.pathname, '/contact', location.search),
+        ariaLabel: theme.direction === 'rtl' ? 'طلب كيت عينات للعيادة' : 'Request Sample Kit',
+      },
+    ];
+
+    return (
+      <nav
+        dir={theme.direction}
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-[88] px-3 md:hidden"
+        style={defaultDockStyle}
+      >
+        <div className="pointer-events-auto mx-auto flex max-w-sm items-center justify-between gap-1 rounded-[1.8rem] border border-cyan-500/30 bg-[#060913]/96 p-1.5 shadow-[0_28px_90px_-26px_rgba(6,182,212,0.4)] backdrop-blur-2xl">
+          {dentalLabItems.map((item) => {
+            const Icon = item.icon;
+            const label = theme.direction === 'rtl' ? item.labelAr : item.labelEn;
+            const isPortal = item.key === 'portal';
+            const className = `relative flex min-h-[56px] flex-1 flex-col items-center justify-center gap-1 rounded-[1.2rem] px-1 py-1.5 transition-all duration-200 ${
+              isPortal
+                ? 'border border-cyan-500/40 bg-gradient-to-b from-cyan-950/60 to-slate-900/90 text-cyan-300 shadow-[0_8px_20px_-6px_rgba(6,182,212,0.5)]'
+                : item.active
+                  ? 'bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-bold shadow-[0_8px_20px_-6px_rgba(6,182,212,0.6)]'
+                  : 'text-slate-400 hover:text-white hover:bg-white/5'
+            }`;
+
+            const content = (
+              <>
+                <div className="relative">
+                  <Icon size={isPortal ? 20 : 18} strokeWidth={item.active || isPortal ? 2.4 : 1.9} />
+                  {isPortal && (
+                    <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
+                    </span>
+                  )}
+                </div>
+                <span className={`text-[9.5px] font-bold leading-none tracking-tight ${
+                  isPortal ? 'text-cyan-300' : ''
+                }`}>
                   {label}
                 </span>
               </>
