@@ -71,12 +71,22 @@ class _TemplateAdapter:
                 output_schema=None,
                 tool_choice=None,
             )
+        raw_policy = getattr(template, "model_policy", {}) or {}
+        if isinstance(raw_policy, str):
+            try:
+                import json
+                raw_policy = json.loads(raw_policy)
+            except Exception:
+                raw_policy = {}
+        if not isinstance(raw_policy, dict):
+            raw_policy = {}
+
         return cls(
             slug=getattr(template, "slug", slug),
             role=getattr(template, "role", slug.upper()),
             name=getattr(template, "name", slug),
             version=getattr(template, "version", "1.0.0"),
-            model_policy=getattr(template, "model_policy", {}) or {},
+            model_policy=raw_policy,
             allowed_tools=list(getattr(template, "allowed_tools", []) or []),
             allowed_skills=list(getattr(template, "allowed_skills", []) or []),
             guardrails=getattr(template, "guardrails", {}) or {},

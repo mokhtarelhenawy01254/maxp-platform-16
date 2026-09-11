@@ -223,10 +223,13 @@ class BaseAgent:
 
         profile = _TemplateAdapter.from_db_or_proxy(template, template_slug, company_id)
 
+        default_model = profile.model_policy.get("default") if isinstance(profile.model_policy, dict) else ""
+        fallback_model = profile.model_policy.get("model") if isinstance(profile.model_policy, dict) else ""
+
         resolved_model = (
             overrides.get("model")
-            or profile.model_policy.get("default")
-            or profile.model_policy.get("model")
+            or default_model
+            or fallback_model
             or ""
         )
 
@@ -416,7 +419,35 @@ class BaseAgent:
 
         # Step 2: Fallback logic using model_policy
         model_policy = self.policies.get("model_policy", {}) or {}
-        fallbacks = model_policy.get("fallback", [])
+        if isinstance(model_policy, str):
+            try:
+                import json
+                model_policy = json.loads(model_policy)
+            except Exception:
+                model_policy = {}
+        if not isinstance(model_policy, dict):
+            model_policy = {}
+
+        raw_fallbacks = model_policy.get("fallback", [])
+        if isinstance(raw_fallbacks, (str, dict)):
+            raw_fallbacks = [raw_fallbacks]
+        elif not isinstance(raw_fallbacks, list):
+            raw_fallbacks = []
+
+        fallbacks: list[dict[str, Any]] = []
+        for fb in raw_fallbacks:
+            if isinstance(fb, str):
+                fb_str = fb.strip()
+                if not fb_str:
+                    continue
+                if "/" in fb_str:
+                    p, m = fb_str.split("/", 1)
+                    fallbacks.append({"provider": p, "model": m})
+                else:
+                    fallbacks.append({"model": fb_str})
+            elif isinstance(fb, dict):
+                fallbacks.append(fb)
+
         logger.warning(
             "primary_model_failed_trying_fallbacks",
             agent_id=self.id,
@@ -425,8 +456,8 @@ class BaseAgent:
         )
 
         for i, fb in enumerate(fallbacks):
-            fb_model = fb.get("model", "")
-            fb_provider = fb.get("provider")
+            fb_model = fb.get("model", "") if isinstance(fb, dict) else str(fb)
+            fb_provider = fb.get("provider") if isinstance(fb, dict) else None
             if not fb_model:
                 continue
 
@@ -460,7 +491,35 @@ class BaseAgent:
                 self.model = fb_model
                 return client
 
-        # Step 3: If everything failed, raise RuntimeError
+        # Step 3: Platform DB-default fallback if primary & configured fallbacks failed
+        try:
+            from src.services.model_resolver import resolve_db_default_model
+
+            db_model = await resolve_db_default_model(self.company_id)
+            if db_model and db_model != self.model:
+                logger.warning(
+                    "trying_db_default_as_last_resort",
+                    agent_id=self.id,
+                    db_model=db_model,
+                )
+                client = await self._try_build_client(
+                    model=db_model,
+                    tools=tools,
+                    instructions=instructions,
+                )
+                if client:
+                    self._last_model_selection = {
+                        "model": db_model,
+                        "source": "db_default_last_resort",
+                        "original_model": self.model,
+                    }
+                    self.client = client
+                    self.model = db_model
+                    return client
+        except Exception as exc:
+            logger.warning("db_default_last_resort_failed", agent_id=self.id, error=str(exc)[:160])
+
+        # Step 4: If everything failed, raise RuntimeError
         raise RuntimeError(
             f"No LLM client available for model '{self.model}' (tried primary model + {len(fallbacks)} fallbacks). "
             f"Check active API keys in ai_keys table for agent {self.id}."

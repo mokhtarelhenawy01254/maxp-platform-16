@@ -4,8 +4,8 @@
   "role": "MEDIA_BUYER",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "claude-3-7-sonnet",
-    "fallback": "deepseek-v4-flash",
+    "default": "deepseek-v4-flash",
+    "fallback": "llama-3.3-70b-versatile",
     "allowModelFallback": true
   },
   "instructions": {

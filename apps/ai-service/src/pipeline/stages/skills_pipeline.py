@@ -119,13 +119,17 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
         # Call-time failover: retry with agent-configured fallback models
         # (model_policy.fallback) before surfacing an error to the customer.
-        fallbacks: list[dict] = []
+        raw_fallbacks = []
         if ctx.agent is not None and getattr(ctx.agent, "policies", None):
-            fallbacks = ((ctx.agent.policies or {}).get("model_policy") or {}).get("fallback") or []
+            raw_fallbacks = ((ctx.agent.policies or {}).get("model_policy") or {}).get("fallback") or []
+        if isinstance(raw_fallbacks, (str, dict)):
+            raw_fallbacks = [raw_fallbacks]
+        elif not isinstance(raw_fallbacks, list):
+            raw_fallbacks = []
 
         recovered = False
-        for fb in fallbacks:
-            fb_model = (fb or {}).get("model")
+        for fb in raw_fallbacks:
+            fb_model = fb.get("model") if isinstance(fb, dict) else (str(fb).split("/", 1)[-1] if "/" in str(fb) else str(fb))
             if not fb_model:
                 continue
             try:
