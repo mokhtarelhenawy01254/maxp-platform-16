@@ -161,7 +161,6 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
         return {"success": False, "error": "Database session unavailable"}
 
     run_id = f"run_{uuid.uuid4().hex[:16]}"
-    now = datetime.now(timezone.utc)
     first_angle = input_data.angles[0]
 
     async with sf() as session:
@@ -178,7 +177,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 :adAccountId, :pageId, :pixelId,
                 :requestedCampaignCount, :budgetAmount, :targetCountry,
                 :ageMin, :ageMax, 'PAUSED', 'COMPLETED',
-                :now, :now
+                NOW(), NOW()
             )
         """)
         await session.execute(run_insert_sql, {
@@ -194,7 +193,6 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
             "targetCountry": first_angle.target_country,
             "ageMin": first_angle.age_min,
             "ageMax": first_angle.age_max,
-            "now": now,
         })
 
         saved_drafts: list[dict[str, Any]] = []
@@ -238,7 +236,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                     :index, :angle, :campaignName, :adSetName, :adName,
                     :primaryText, :headline, :description, :callToAction,
                     :budgetAmount, :targetCountry, :ageMin, :ageMax,
-                    :notes, :createFullAdData, 'DRAFT', :now, :now
+                    :notes, CAST(:createFullAdData AS jsonb), 'DRAFT', NOW(), NOW()
                 )
             """)
             await session.execute(draft_insert_sql, {
@@ -261,7 +259,6 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "ageMax": angle.age_max,
                 "notes": angle.notes,
                 "createFullAdData": json.dumps(full_ad_data, ensure_ascii=False),
-                "now": now,
             })
 
             saved_drafts.append({
