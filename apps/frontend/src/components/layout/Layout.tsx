@@ -36,8 +36,8 @@ import ActiveUsersMonitor from "../ActiveUsersMonitor";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 import PageExplanations from "../common/PageExplanations";
 import { useTemplate } from "../../templates/useTemplate";
-import TemplateSlot from "../../templates/TemplateSlot";
 import { buildStoreUrl } from "../../utils/storeUrl";
+import { hasStoreApp } from "../../utils/storeShortcut";
 
 const SuperAdminLayout = React.lazy(() => import("./SuperAdminLayout"));
 const AppDashboardPage = React.lazy(() => import("./app-dashboard/AppDashboardPage"));
@@ -163,9 +163,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
   const companySettings = getCompanySettings();
   const hasEcommerce = user?.company?.activeApps?.includes('ecommerce-basic');
   const showSearchInHeader = companySettings.showOrderSearchInHeader !== false && !!hasEcommerce;
-  const hasStore = user?.company?.activeApps?.some((app) =>
-    ['store', 'store-basic', 'store-pro', 'ecommerce-basic', 'ecommerce-pro'].includes(app),
-  );
+  const hasStore = hasStoreApp(user?.company?.activeApps as string[]);
 
   const storeUrl = useMemo(() => {
     const slug = user?.company?.slug || "";

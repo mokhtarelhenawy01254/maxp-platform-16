@@ -16,17 +16,18 @@ describe("LandingPage Component", () => {
     );
 
     // Headline check
-    expect(screen.getByText(/كل مبيعاتك، مخازنك/i)).toBeInTheDocument();
-    expect(screen.getByText(/في نظام تشغيل واحد/i)).toBeInTheDocument();
+    expect(screen.getByText(/من أول رنة واتساب/i)).toBeInTheDocument();
+    expect(screen.getByText(/يسمّع في خزنتك/i)).toBeInTheDocument();
 
     // CTA check
     expect(screen.getAllByText(/ابدأ تجربة نشاطك مجاناً/i)[0]).toBeInTheDocument();
 
-    // Bento Grid check
-    expect(screen.getByText(/أدوات متصلة ببعضها/i)).toBeInTheDocument();
+    // 6 Systems Slider check
+    expect(screen.getByText(/6 أنظمة في مكان واحد/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/واتساب والسوشيال الذكي/i)[0]).toBeInTheDocument();
 
-    // Comparison check
-    expect(screen.getByText(/الفرق بين إطفاء حرائق التشغيل/i)).toBeInTheDocument();
+    // 24h Order Flow check
+    expect(screen.getByText(/دورة حياة الأوردر/i)).toBeInTheDocument();
 
     // ROI Calculator check
     expect(screen.getByText(/احسب كم ستوفر شهرياً/i)).toBeInTheDocument();

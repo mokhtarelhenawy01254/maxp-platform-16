@@ -33,137 +33,129 @@ export const LandingNav: React.FC<LandingNavProps> = ({
     };
 
   const navLinks = [
-    { label: "المنظومة", href: "#tools" },
-    { label: "جولة حية", href: "#modules" },
+    { label: "الأنظمة الستة", href: "#systems-slider" },
+    { label: "مسار اليوم 24h", href: "#order-flow" },
     { label: "التكاملات", href: "#integrations" },
-    { label: "الأثر والفرق", href: "#comparison" },
-    { label: "حاسبة الوفورات", href: "#calculator" },
+    { label: "حاسبة الوفر", href: "#calculator" },
     { label: "الأسئلة الشائعة", href: "#faq" },
   ];
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-4 sm:pt-6 pointer-events-none">
-      <div className="mx-auto max-w-5xl">
-        {/* Double-Bezel Island Nav */}
-        <div
-          className={`pointer-events-auto transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] rounded-full p-1 sm:p-1.5 ${
+    <header className="fixed top-0 left-0 right-0 z-50 px-4 sm:px-6 pt-3 sm:pt-5 pointer-events-none">
+      <div className="mx-auto max-w-6xl pointer-events-auto">
+        {/* Single-Depth Pure Glass Nav (Zero Double-Bezel) */}
+        <nav
+          className={`rounded-full px-4 sm:px-6 py-2.5 flex items-center justify-between transition-all duration-300 ${
             scrolled
-              ? "bg-white/[0.06] border border-white/[0.12] shadow-2xl shadow-black/70 backdrop-blur-2xl"
-              : "bg-white/[0.03] border border-white/[0.07] backdrop-blur-md"
+              ? "bg-black/80 border border-white/[0.12] shadow-2xl backdrop-blur-xl"
+              : "bg-black/40 border border-white/[0.06] backdrop-blur-md"
           }`}
+          aria-label="التنقل الرئيسي"
         >
-          <nav
-            className="rounded-full bg-zinc-950/80 px-4 sm:px-6 py-2 flex items-center justify-between"
-            aria-label="التنقل الرئيسي"
-          >
-            {/* Brand Logo */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="flex items-center justify-center w-8 h-8 rounded-full bg-zinc-900 border border-white/10 text-white font-black text-xs group-hover:border-white/25 transition-colors">
-                P
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold tracking-tight text-sm sm:text-base text-zinc-100 font-mono">
-                  MAX P
-                </span>
-                <span className="text-[10px] text-zinc-400 font-mono border-r border-zinc-800 pr-2 mr-1 hidden sm:inline-block">
-                  Business OS
-                </span>
-              </div>
+          {/* Brand Logo */}
+          <Link to="/" className="flex items-center gap-2.5 group">
+            <span className="w-8 h-8 rounded-full bg-white text-black font-black text-sm flex items-center justify-center tracking-tighter">
+              P
+            </span>
+            <div className="flex items-center gap-1.5">
+              <span className="font-black text-white text-base tracking-tight">
+                MAX P
+              </span>
+              <span className="text-[10px] font-mono text-zinc-400 bg-white/[0.06] px-2 py-0.5 rounded-full hidden sm:inline-block">
+                Business OS
+              </span>
+            </div>
+          </Link>
+
+          {/* Desktop Nav Links */}
+          <div className="hidden md:flex items-center gap-6">
+            {navLinks.map((link) => (
+              <a
+                key={link.label}
+                href={link.href}
+                className="text-xs font-medium text-zinc-400 hover:text-white transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+          </div>
+
+          {/* Action CTAs */}
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/login"
+              onClick={handleLeadClick("nav_login", "/login")}
+              onMouseEnter={onPreloadAuth}
+              onFocus={onPreloadAuth}
+              className="hidden sm:inline-flex text-xs font-medium text-zinc-300 hover:text-white px-3 py-1.5 transition-colors"
+            >
+              تسجيل الدخول
             </Link>
 
-            {/* Desktop Navigation Links */}
-            <div className="hidden lg:flex items-center gap-7">
-              {navLinks.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="text-xs font-medium text-zinc-400 hover:text-zinc-100 transition-colors duration-200"
-                >
-                  {link.label}
-                </a>
-              ))}
-            </div>
+            <Link
+              to="/auth/register"
+              onClick={handleLeadClick("nav_register", "/auth/register")}
+              onMouseEnter={onPreloadRegister}
+              onFocus={onPreloadRegister}
+              className="inline-flex items-center gap-1.5 rounded-full bg-white text-black font-bold px-4 py-1.5 text-xs hover:bg-zinc-200 transition-all active:scale-[0.98]"
+            >
+              <span>تجربة مجانية</span>
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </Link>
 
-            {/* Actions */}
-            <div className="flex items-center gap-3">
-              <Link
-                to="/auth/login"
-                className="hidden sm:inline-block text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors px-3 py-1.5"
-                onMouseEnter={onPreloadAuth}
-                onFocus={onPreloadAuth}
-              >
-                تسجيل الدخول
-              </Link>
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="فتح القائمة"
+              className="md:hidden w-8 h-8 rounded-full flex items-center justify-center text-zinc-300 hover:text-white transition-colors cursor-pointer"
+            >
+              {mobileMenuOpen ? (
+                <X className="w-4 h-4" />
+              ) : (
+                <Menu className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        </nav>
 
-              {/* Island Button with Nested Trailing Icon */}
-              <Link
-                to="/auth/register"
-                onClick={handleLeadClick("nav_cta_register", "/auth/register")}
-                className="group inline-flex items-center justify-between rounded-full bg-zinc-100 hover:bg-white text-zinc-950 font-bold px-4 sm:px-5 py-2 text-xs transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] shadow-md shadow-white/5"
-                onMouseEnter={onPreloadRegister}
-                onFocus={onPreloadRegister}
-              >
-                <span>تجربة مجانية</span>
-                <span className="w-5 h-5 rounded-full bg-zinc-900 text-white flex items-center justify-center mr-2 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-x-0.5">
-                  <ArrowLeft className="w-3 h-3" />
-                </span>
-              </Link>
-
-              {/* Mobile Menu Toggle */}
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 rounded-full text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
-                aria-label="القائمة"
-              >
-                {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-              </button>
-            </div>
-          </nav>
-        </div>
-
-        {/* Mobile Menu Dropdown */}
+        {/* Mobile Dropdown Menu (Clean & Open) */}
         <AnimatePresence>
           {mobileMenuOpen && (
             <motion.div
-              initial={{ opacity: 0, y: -8, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -8, scale: 0.98 }}
-              transition={{ duration: 0.25, ease: [0.32, 0.72, 0, 1] }}
-              className="pointer-events-auto lg:hidden mt-2 p-1.5 rounded-3xl bg-white/[0.06] border border-white/[0.1] backdrop-blur-2xl shadow-2xl"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="md:hidden mt-2 rounded-2xl bg-black/95 border border-white/10 backdrop-blur-2xl p-4 shadow-2xl space-y-3"
             >
-              <div className="rounded-[calc(1.5rem-0.375rem)] bg-zinc-950 p-5 space-y-4">
-                <div className="grid grid-cols-2 gap-2">
-                  {navLinks.map((link) => (
-                    <a
-                      key={link.href}
-                      href={link.href}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/5 text-xs font-medium text-zinc-300 hover:text-white hover:bg-white/10 transition-all text-center"
-                    >
-                      {link.label}
-                    </a>
-                  ))}
-                </div>
-                <div className="pt-3 border-t border-white/10 flex items-center gap-3">
-                  <Link
-                    to="/auth/login"
+              <div className="flex flex-col space-y-2">
+                {navLinks.map((link) => (
+                  <a
+                    key={link.label}
+                    href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex-1 py-2.5 text-center text-xs font-medium text-zinc-300 rounded-xl bg-white/5 border border-white/10"
+                    className="text-sm font-medium text-zinc-300 hover:text-white py-2 px-3 rounded-lg hover:bg-white/[0.05] transition-colors"
                   >
-                    تسجيل الدخول
-                  </Link>
-                  <Link
-                    to="/auth/register"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      handleLeadClick("nav_mobile_cta_register", "/auth/register")();
-                    }}
-                    className="flex-1 py-2.5 text-center text-xs font-bold text-zinc-950 rounded-xl bg-white hover:bg-zinc-100 shadow"
-                  >
-                    بدء التشغيل
-                  </Link>
-                </div>
+                    {link.label}
+                  </a>
+                ))}
+              </div>
+
+              <div className="pt-2 border-t border-white/[0.08] flex items-center justify-between">
+                <Link
+                  to="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-xs font-semibold text-zinc-400 hover:text-white"
+                >
+                  تسجيل الدخول
+                </Link>
+                <Link
+                  to="/auth/register"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="text-xs font-bold text-black bg-white px-4 py-2 rounded-full"
+                >
+                  ابدأ مجاناً
+                </Link>
               </div>
             </motion.div>
           )}
@@ -172,3 +164,5 @@ export const LandingNav: React.FC<LandingNavProps> = ({
     </header>
   );
 };
+
+export default LandingNav;

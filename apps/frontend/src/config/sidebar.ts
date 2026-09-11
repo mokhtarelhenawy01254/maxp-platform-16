@@ -2,6 +2,7 @@ import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../comp
 import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
+import { STORE_APP_SLUGS } from '../utils/storeShortcut';
 
 type SidebarCompany = {
     activeApps?: unknown[];
@@ -262,6 +263,7 @@ export const getSidebarConfig = (
         });
     };
     const isAnyAppActive = (slugs: string[]) => slugs.some((slug) => isAppActive(slug));
+    const isStoreActive = () => isAnyAppActive([...STORE_APP_SLUGS]);
     const hasMultipleCompanies = (user?.companies?.length ?? 0) > 1;
     const canManageTaskIntegrations = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER'].includes(user?.role || '');
     const isRadiologyManager = ['SUPER_ADMIN', 'COMPANY_ADMIN', 'OWNER', 'MANAGER'].includes(user?.role || '');
@@ -635,9 +637,9 @@ export const getSidebarConfig = (
                 { to: '/products/reviews', icon: Star, label: t('sidebar.productReviews'), requiredPermissions: ['orders.product-reviews.view'], hidden: !isAnyAppActive(['ugc-reviews-pro', 'store-pro']) },
                 { to: '/settings/orders', icon: Cog, label: t('sidebar.ordersSettings'), requiredPermissions: ['orders.settings.view'] },
                 { to: '/settings/customer-blocks', icon: ShieldAlert, label: t('sidebar.customerBlockSettings'), requiredPermissions: ['orders.customer-blocks.view'], hidden: !isAppActive('customer-blocks') },
-                { to: '/orders/shipments', icon: Truck, label: isEn ? 'Shipments & Delivery Logs' : 'سجلات الشحنات والتوصيل', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']) },
-                { to: '/shipping-companies', icon: Building, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']) },
-                { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']) },
+                { to: '/orders/shipments', icon: Truck, label: isEn ? 'Shipments & Delivery Logs' : 'سجلات الشحنات والتوصيل', requiredPermissions: ['orders.turbo.view', 'orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
+                { to: '/shipping-companies', icon: Building, label: t('sidebar.shippingCompanies'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
+                { to: '/shipping-settlement', icon: Banknote, label: t('sidebar.shippingSettlement'), requiredPermissions: ['orders.shipping.view'], hidden: !isAnyAppActive(['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'commerce-advanced', ...STORE_APP_SLUGS]) },
                 { to: '/returns', icon: CheckCircle2, label: t('sidebar.returnReviews'), requiredPermissions: ['orders.returns.view'], hidden: !isAnyAppActive(['returns-settings', 'store-pro']) },
                 { to: '/orders/bulk', icon: ListOrdered, label: t('sidebar.bulkOrders'), requiredPermissions: ['bulkOrders.view', 'orders.bulk.create'], hidden: !isAppActive('bulk-orders') },
                 { to: '/orders/bulk-status', icon: ArrowLeftRight, label: t('sidebar.bulkStatusUpdate'), requiredPermissions: ['orders.status.change'], hidden: !isAppActive('bulk-orders') },
@@ -651,7 +653,7 @@ export const getSidebarConfig = (
                 { to: '/orders/status-templates', icon: FileText, label: t('sidebar.orderStatusTemplates'), requiredPermissions: ['orders.whatsapp-notifications.view'], hidden: !isAppActive('whatsapp-business') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
+            hidden: user?.role === 'AFFILIATE' || !isStoreActive()
         },
 
         // 3️⃣.5 إحصائيات الطلبات
@@ -705,7 +707,7 @@ export const getSidebarConfig = (
                 { to: '/products/products-availability', icon: Table2, label: t('sidebar.productsAvailability'), requiredPermissions: ['products.view'] },
                 { to: '/categories', icon: Tag, label: t('sidebar.categories') },
             ],
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro'])
+            hidden: user?.role === 'AFFILIATE' || !isStoreActive()
         },
 
         // 4️⃣.0 المدونة والـ SEO (Blog & Affiliate) — mens-grooming-pro compatible
@@ -770,7 +772,7 @@ export const getSidebarConfig = (
                 { to: '/settings/store-payment-offers', icon: BadgePercent, label: t('sidebar.paymentOffers') },
             ],
             // 🔒 متاح للمالك والأدمن فقط لتغيير تصميم المتجر
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['store', 'store-basic', 'store-pro', 'conversion-suite'])
+            hidden: user?.role === 'AFFILIATE' || (!isStoreActive() && !isAppActive('conversion-suite'))
         },
 
         // 4️⃣.2 العملاء
@@ -886,7 +888,7 @@ export const getSidebarConfig = (
                 { to: '/inventory/reports', icon: BarChart3, label: t('sidebar.inventoryReports') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['inventory-pro', 'multi-warehouse-pro', 'store-pro', 'store', 'store-basic', 'ecommerce-basic'])
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['inventory-pro', 'multi-warehouse-pro', ...STORE_APP_SLUGS])
         },
 
         // 4️⃣.9️⃣ إدارة الوكالة (Agency OS)
@@ -1050,7 +1052,7 @@ export const getSidebarConfig = (
             icon: Building,
             items: [
                 { to: '/my-companies/hr', icon: BarChart3, label: t('sidebar.companiesDashboard'), hidden: !hasMultipleCompanies },
-                { to: '/my-companies/reports', icon: LineChart, label: t('sidebar.unifiedReports'), hidden: !hasMultipleCompanies || !isAnyAppActive(['store', 'store-basic', 'store-pro', 'pos']) },
+                { to: '/my-companies/reports', icon: LineChart, label: t('sidebar.unifiedReports'), hidden: !hasMultipleCompanies || !isAnyAppActive(['pos', ...STORE_APP_SLUGS]) },
                 { to: '/my-companies/attendance', icon: CheckCircle2, label: t('sidebar.attendanceReport'), hidden: !hasMultipleCompanies || !isAnyAppActive(['hr-basic', 'hr-core', 'hr-attendance-pro', 'hr-payroll', 'hr-assets', 'hr-recruitment']) },
                 { to: '/my-companies/links', icon: Building, label: t('sidebar.companyLinks') },
                 { to: '/users', icon: Users, label: t('sidebar.usersManagement') },

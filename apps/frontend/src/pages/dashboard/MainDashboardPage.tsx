@@ -21,6 +21,7 @@ import DateRangeToolbar from "./DateRangeToolbar";
 import { InstalledAppsDashboard } from "../../components/dashboard/InstalledAppsDashboard";
 import { SpecialtyDashboardHeader } from "../../components/dashboard/SpecialtyDashboardHeader";
 import { ChartBarSquareIcon, CubeIcon } from "@heroicons/react/24/outline";
+import { hasStoreApp as checkStoreApp } from "../../utils/storeShortcut";
 
 type PeriodPreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "thisWeek" | "thisMonth" | "thisYear" | "custom";
 
@@ -126,7 +127,7 @@ export default function MainDashboardPage() {
   }, [dashboard?.installedApps, activeApps]);
 
   const hasStoreApp = useMemo(() => {
-    return activeApps.some((a) => ["store", "store-basic", "store-pro"].includes(a.toLowerCase()));
+    return checkStoreApp(activeApps);
   }, [activeApps]);
 
   const getWidgetData = useCallback(

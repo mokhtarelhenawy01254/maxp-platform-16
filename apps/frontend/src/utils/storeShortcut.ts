@@ -1,12 +1,18 @@
 import { buildStoreUrl } from "./storeUrl";
 
-const STORE_APP_SLUGS = [
+export const STORE_APP_SLUGS = [
   "store",
   "store-basic",
   "store-pro",
   "ecommerce-basic",
   "ecommerce-pro",
-];
+] as const;
+
+export type StoreAppSlug = (typeof STORE_APP_SLUGS)[number];
+
+export const isStoreAppSlug = (slug?: string | null): boolean =>
+  Boolean(slug && STORE_APP_SLUGS.includes(String(slug).toLowerCase() as StoreAppSlug));
+
 
 export interface StoreShortcutInput {
   activeApps?: string[];

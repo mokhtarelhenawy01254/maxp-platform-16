@@ -19,6 +19,16 @@ import PerformanceOptimizer from "./components/PerformanceOptimizer";
 import { RoleProtectedRoute, PermissionProtectedRoute } from "./components/protection/CompanyProtectedRoute";
 import { AppAccessRoute } from "./components/protection/AppAccessRoute";
 import { DefaultPageRedirect } from "./components/routing/DefaultPageRedirect";
+import { STORE_APP_SLUGS } from "./utils/storeShortcut";
+
+const SHIPPING_APP_ACCESS_SLUGS = [
+  'order-shipping-turbo',
+  'order-shipping-hub',
+  'order-shipping-bosta',
+  'order-shipping-qpexpress',
+  'commerce-advanced',
+  ...STORE_APP_SLUGS,
+];
 
 const Layout = React.lazy(() => import("./components/layout/Layout"));
 const AuthLayout = React.lazy(() => import("./components/layout/AuthLayout"));
@@ -4765,7 +4775,7 @@ const AppContent = () => {
                   path="/orders/shipments"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
                         <UnifiedShipmentsPage />
                       </AppAccessRoute>
                     </Layout>
@@ -4775,7 +4785,7 @@ const AppContent = () => {
                   path="/orders/turbo-records"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
                         <UnifiedShipmentsPage />
                       </AppAccessRoute>
                     </Layout>
@@ -6385,7 +6395,7 @@ const AppContent = () => {
                   path="/shipping-companies"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
                         <ShippingCompanies />
                       </AppAccessRoute>
                     </Layout>
@@ -6395,7 +6405,7 @@ const AppContent = () => {
                   path="/shipping-companies/:id"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
                         <ShippingCompanyDetail />
                       </AppAccessRoute>
                     </Layout>
@@ -6405,7 +6415,7 @@ const AppContent = () => {
                   path="/shipping-settlement"
                   element={
                     <Layout>
-                      <AppAccessRoute requiredAppSlugs={['order-shipping-turbo', 'order-shipping-hub', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store', 'commerce-advanced', 'store-basic']}>
+                      <AppAccessRoute requiredAppSlugs={SHIPPING_APP_ACCESS_SLUGS}>
                         <ShippingSettlement />
                       </AppAccessRoute>
                     </Layout>

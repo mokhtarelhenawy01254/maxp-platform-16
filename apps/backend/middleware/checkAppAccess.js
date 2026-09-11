@@ -1,13 +1,16 @@
 const { getSharedPrismaClient, executeWithRetry } = require('../services/sharedDatabase');
 
+const STORE_APP_SLUGS = ['store-pro', 'store', 'store-basic', 'ecommerce-basic', 'ecommerce-pro'];
+const STORE_CORE_SLUGS = ['ecommerce-basic', 'store-basic', 'store'];
+
 const LEGACY_APP_SLUG_ALIASES = {
-  'order-core': ['ecommerce-basic', 'store-basic', 'store'],
-  'order-invoicing': ['ecommerce-basic', 'store-basic', 'store'],
+  'order-core': STORE_CORE_SLUGS,
+  'order-invoicing': STORE_CORE_SLUGS,
   // Grandfathering: companies with old monolithic store apps keep access to new granular apps
-  'pos-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
-  'coupons-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
-  'woocommerce-pro': ['store-pro', 'ecommerce-basic', 'store-basic', 'store'],
-  'inventory-pro': ['multi-warehouse-pro', 'store-pro', 'store', 'store-basic', 'ecommerce-basic'],
+  'pos-pro': STORE_APP_SLUGS,
+  'coupons-pro': STORE_APP_SLUGS,
+  'woocommerce-pro': STORE_APP_SLUGS,
+  'inventory-pro': ['multi-warehouse-pro', ...STORE_APP_SLUGS],
   'multi-warehouse-pro': ['inventory-pro', 'store-pro'],
   'procurement-pro': ['store-pro'],
   'order-accounting-sources': ['store-pro', 'order-source-tracking'],
@@ -53,11 +56,11 @@ const LEGACY_APP_SLUG_ALIASES = {
   'booking-app': ['service-request-app', 'service-requests'],
   'service-request-app': ['booking-app', 'service-requests'],
   // Shipping multi-carrier hub & carrier aliases:
-  'order-shipping-hub': ['order-shipping-turbo', 'order-shipping-bosta', 'order-shipping-qpexpress', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
-  'order-shipping-turbo': ['order-shipping-hub', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
-  'order-shipping-bosta': ['order-shipping-hub', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
-  'order-shipping-qpexpress': ['order-shipping-hub', 'order-shipping', 'store-pro', 'store-basic', 'store', 'ecommerce-basic'],
-  'order-shipping': ['order-shipping-hub', 'order-shipping-turbo', 'order-shipping-bosta', 'order-shipping-qpexpress', 'store-pro', 'store-basic', 'store', 'ecommerce-basic']
+  'order-shipping-hub': ['order-shipping-turbo', 'order-shipping-bosta', 'order-shipping-qpexpress', 'order-shipping', ...STORE_APP_SLUGS],
+  'order-shipping-turbo': ['order-shipping-hub', 'order-shipping', ...STORE_APP_SLUGS],
+  'order-shipping-bosta': ['order-shipping-hub', 'order-shipping', ...STORE_APP_SLUGS],
+  'order-shipping-qpexpress': ['order-shipping-hub', 'order-shipping', ...STORE_APP_SLUGS],
+  'order-shipping': ['order-shipping-hub', 'order-shipping-turbo', 'order-shipping-bosta', 'order-shipping-qpexpress', ...STORE_APP_SLUGS]
 };
 
 const getCandidateAppSlugs = (appSlug) => {
@@ -317,5 +320,7 @@ const checkWalletBalance = (minBalance = 0) => {
 module.exports = {
   checkAppAccess,
   checkWalletBalance,
-  getCandidateAppSlugs
+  getCandidateAppSlugs,
+  STORE_APP_SLUGS,
+  LEGACY_APP_SLUG_ALIASES
 };
