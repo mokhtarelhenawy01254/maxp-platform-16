@@ -1,5 +1,5 @@
 import React from "react";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import Layout from "../Layout";
 
@@ -267,5 +267,25 @@ describe("Layout mobile account visibility", () => {
 
     localStorage.removeItem("superAuth");
     localStorage.removeItem("superUser");
+  });
+
+  it("opens profile dropdown with left-0 in RTL mode to prevent overflowing off-screen", async () => {
+    const { container } = render(
+      <MemoryRouter initialEntries={["/company-dashboard"]}>
+        <Layout>
+          <div>Dashboard body</div>
+        </Layout>
+      </MemoryRouter>,
+    );
+
+    const profileButton = container.querySelector(".business-shell-profile-button");
+    expect(profileButton).toBeInTheDocument();
+
+    fireEvent.click(profileButton!);
+
+    const menu = container.querySelector(".business-shell-menu");
+    expect(menu).toBeInTheDocument();
+    expect(menu).toHaveClass("left-0");
+    expect(menu).not.toHaveClass("right-0");
   });
 });

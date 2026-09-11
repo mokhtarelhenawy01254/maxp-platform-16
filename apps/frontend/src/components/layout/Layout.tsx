@@ -517,7 +517,7 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
           />
           <div
             className={`business-shell-menu absolute mt-2 w-64 max-w-[calc(100vw-1.5rem)] z-50 rounded-2xl shadow-2xl border border-gray-200/90 dark:border-gray-700/80 bg-white dark:bg-gray-900 p-2 ${
-              i18n.dir() === 'rtl' ? 'right-0' : 'left-0 sm:right-0 sm:left-auto'
+              i18n.dir() === 'rtl' ? 'left-0' : 'right-0'
             }`}
             style={{
               maxHeight: 'calc(100vh - 4.5rem)',
