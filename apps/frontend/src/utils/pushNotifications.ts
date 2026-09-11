@@ -1,4 +1,4 @@
-import api from "../services/api";
+import { apiClient } from "../services/apiClient";
 
 export interface BrowserPushState {
   active: boolean;
@@ -278,7 +278,7 @@ const getOrCreateBrowserPushSubscription = async () => {
     throw new Error("push_not_supported");
   }
 
-  const publicKeyResponse = (await api.get("/notifications/push/public-key")) as any;
+  const publicKeyResponse = (await apiClient.get("/notifications/push/public-key")) as any;
   const publicKey = publicKeyResponse?.data?.data?.publicKey;
 
   if (!publicKey) {
@@ -326,7 +326,7 @@ export const subscribeToBrowserPush = async () => {
 
   const subscription = await getOrCreateBrowserPushSubscription();
 
-  await api.post("/notifications/push/subscriptions", {
+  await apiClient.post("/notifications/push/subscriptions", {
     subscription: subscription.toJSON(),
     userAgent: navigator.userAgent,
   });
@@ -347,7 +347,7 @@ export const unsubscribeFromBrowserPush = async () => {
   const endpoint = existingSubscription?.endpoint || currentState?.endpoint || null;
 
   if (endpoint) {
-    await api.delete("/notifications/push/subscriptions", {
+    await apiClient.delete("/notifications/push/subscriptions", {
       data: { endpoint },
     });
   }

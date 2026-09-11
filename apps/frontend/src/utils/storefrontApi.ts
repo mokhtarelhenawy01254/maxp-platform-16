@@ -1,8 +1,4 @@
 import { getApiUrl } from "../config/environment";
-import {
-  createMarketplacePreviewOrderResponse,
-  trackMarketplacePreviewOrder,
-} from "../storefront/preview/marketplacePreviewOrder";
 
 type QueryValue = string | number | boolean | null | undefined;
 type QueryParams = Record<string, QueryValue>;

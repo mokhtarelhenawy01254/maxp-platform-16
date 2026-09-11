@@ -54,6 +54,11 @@ const STOREFRONT_DEFERRED_PRELOAD_CHUNKS = [
   /(?:^|\/)tokenManager-/,
   /(?:^|\/)app-i18n-/,
   /(?:^|\/)route-storefront-studio-/,
+  /(?:^|\/)app-providers-core-/,
+  /(?:^|\/)app-route-guards-/,
+  /(?:^|\/)app-tracking-/,
+  /(?:^|\/)app-query-client-/,
+  /(?:^|\/)vendor-qrcode-/,
 ];
 const STOREFRONT_THEME_PRESET_MODULE_PATTERN = /\/src\/storefront\/themes\//;
 const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
@@ -61,7 +66,7 @@ const STOREFRONT_THEME_DEFAULTS_MODULE_PATTERN =
 const STOREFRONT_RUNTIME_THEME_MODULE_PATTERN =
   /\/src\/storefront\/themes\/(?:modern-minimal|khemet-luxe-eg|khemet-luxe-v2|khemet-fashion-eg)\.json(?:\?url)?$/;
 const APP_UI_PRIMITIVES_MODULE_PATTERN =
-  /\/src\/(?:components\/ui\/|lib\/utils\.ts$)/;
+  /\/src\/(?:components\/ui\/|components\/theme-provider\.tsx?$|hooks\/useTheme\.tsx?$|lib\/utils\.ts$)/;
 
 // Tiny admin bootstrap utilities. These are statically imported by the entry
 // chunk (main.tsx) and must never be absorbed into a big route chunk — doing
@@ -79,23 +84,28 @@ const APP_BOOTSTRAP_CORE_MODULE_PATTERN =
 const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
 
 // Shared HTTP layer + tiny cross-app utilities used by EVERY app page and by
-// the storefront. Default Rollup placement merged them into route chunks
-// (route-storefront, route-dashboard — their heaviest importers), which made
-// those route chunks static dependencies of nearly every page chunk: any page
-// importing useAuth/buildApiUrl pulled the whole 414KB route-dashboard chunk!
-// Keep them in tiny neutral chunks instead.
-// NOTE: STOREFRONT_DEFERRED_PRELOAD_CHUNKS already references /apiClient-/,
-// /tokenManager-/, /vendor-toast-/ and /vendor-icons-/ names, expecting these
-// to be standalone chunks.
+// the storefront.
 const APP_SHARED_CORE_MODULE_PATTERN =
-  /\/src\/(?:services\/(?:apiClient|uploadService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:tokenManager|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+  /\/src\/(?:services\/(?:api|apiClient|uploadService|pushNotificationService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+
+// Shared TanStack Query Client instances
+const APP_QUERY_CLIENT_MODULE_PATTERN =
+  /\/src\/(?:utils|config)\/queryClient\.ts$/;
+
+// Analytics & Pixel tracking (isolated so it never drags storefront preview into auth/landing)
+const APP_TRACKING_MODULE_PATTERN =
+  /\/src\/(?:utils\/(?:facebookPixel|platformSiteMetaPixel)|hooks\/usePlatformSiteMetaPixel|services\/platformSiteMetaPixelService)\.ts$/;
+
+// Core context providers and wrappers (isolated from route chunks)
+const APP_PROVIDERS_CORE_MODULE_PATTERN =
+  /\/src\/(?:providers\/AppProviders|contexts\/(?:CompanyContext|TimerContext|VisualThemeContext)|templates\/Template(?:Provider|ComponentRegistry|Slot)|components\/ErrorBoundary)\.tsx?$/;
+
+// Route guards and post-auth navigation utilities (isolated from page chunks)
+const APP_ROUTE_GUARDS_MODULE_PATTERN =
+  /\/src\/(?:components\/protection\/(?:CompanyProtectedRoute|AppAccessRoute|AccessDenied)|components\/routing\/DefaultPageRedirect|components\/PerformanceOptimizer|components\/common\/PageSkeleton|utils\/(?:merchantAccess|postAuthRouting|routeAccess))\.tsx?$/;
 
 // Shared business-page shell components (BusinessPageShell, BusinessSurface,
-// BusinessFilters, BusinessMetrics). Default placement merged them into the
-// route-admin chunk; every page importing them then became a static dependent
-// of a route chunk — the last edge that kept Rollup hosting those pages'
-// lazy-import facades in the entry (see check-entry-chunks.cjs). Neutral
-// chunk instead.
+// BusinessFilters, BusinessMetrics).
 const APP_BUSINESS_SHELL_MODULE_PATTERN = /\/src\/components\/business\//;
 
 const shouldFilterStorefrontPreloads = (
@@ -115,22 +125,16 @@ const filterStorefrontDeferredPreloads = (deps: string[]): string[] =>
     );
   });
 
-// Route chunks that are statically imported by the admin entry/App chunk and
-// therefore MUST execute during startup. All other route chunks are loaded
-// lazily on navigation, so we do not preload them (saves bandwidth + parse).
-// 2026-08 perf patch 2: dashboard/inbox removed from startup — they are lazy
-// for storefront visitors and save ~530KB initial preload (414KB inbox + 115KB dashboard).
-const ADMIN_STARTUP_ROUTE_CHUNK_PATTERN =
-  /^route-(?:storefront|auth|public)-/;
-
 const filterLazyRoutePreloads = (deps: string[]): string[] =>
   deps.filter((dep) => {
     const normalizedDep = dep.replace(/\\/g, '/');
     const basename = normalizedDep.split('/').pop() || '';
-    if (!/^route-[^/]+\.js$/.test(basename)) {
-      return true;
+    // Never preload storefront or route chunks during startup.
+    // All route chunks are loaded dynamically on demand when navigating.
+    if (/^(?:route-|storefront-)[^/]+\.js$/.test(basename)) {
+      return false;
     }
-    return ADMIN_STARTUP_ROUTE_CHUNK_PATTERN.test(basename);
+    return true;
   });
 
 const getPackageName = (normalizedId: string): string | null => {
@@ -272,6 +276,10 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
     packageName === '@headlessui/react'
   ) {
     return 'vendor-ui-framework';
+  }
+
+  if (packageName === 'qrcode.react' || packageName.startsWith('qrcode')) {
+    return 'vendor-qrcode';
   }
 
   return undefined;
@@ -683,6 +691,22 @@ export default defineConfig(({ mode }) => {
 
             if (APP_BUSINESS_SHELL_MODULE_PATTERN.test(normalizedId)) {
               return 'app-business-shell';
+            }
+
+            if (APP_QUERY_CLIENT_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-query-client';
+            }
+
+            if (APP_TRACKING_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-tracking';
+            }
+
+            if (APP_PROVIDERS_CORE_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-providers-core';
+            }
+
+            if (APP_ROUTE_GUARDS_MODULE_PATTERN.test(normalizedId)) {
+              return 'app-route-guards';
             }
 
             if (normalizedId.includes('@cornerstonejs') || normalizedId.includes(NODE_MODULES_SEGMENT + 'dicom-parser/')) return 'cornerstone';

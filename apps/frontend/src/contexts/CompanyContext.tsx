@@ -7,7 +7,7 @@ import React, {
   useCallback,
 } from "react";
 import { useAuth } from "../hooks/useAuthSimple";
-import api from "../services/api";
+import { apiClient } from "../services/apiClient";
 
 interface Company {
   id: string;
@@ -60,7 +60,7 @@ export const CompanyProvider: React.FC<{ children: ReactNode }> = ({
         ? { params: { _ts: Date.now() }, _skipErrorToast: true }
         : { _skipErrorToast: true };
 
-      const response = await api.get(
+      const response = await apiClient.get(
         "companies/current",
         requestConfig,
       );

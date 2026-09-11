@@ -24,13 +24,13 @@ const LandingPage: React.FC = () => {
   }, [revenue]);
 
   const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.1, delayChildren: 0.2 } }
+    hidden: { opacity: 1 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.05 } }
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
-    visible: { y: 0, opacity: 1, transition: { duration: 0.6 } }
+    hidden: { opacity: 1, y: 0 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.3 } }
   };
 
   return (
@@ -59,7 +59,7 @@ const LandingPage: React.FC = () => {
       </nav>
 
       {/* Hero Section */}
-      <header className="premium-container pt-32">
+      <header className="premium-container pt-20 sm:pt-28">
         <motion.div 
           className="hero-content"
           initial="hidden"
@@ -148,14 +148,7 @@ const LandingPage: React.FC = () => {
       </div>
 
       {/* Tools Showcase */}
-      <motion.section 
-        id="tools" 
-        className="premium-section"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section id="tools" className="premium-section">
         <div className="premium-container">
           <div className="section-head text-center">
             <span className="premium-kicker">20 أداة في اشتراك واحد</span>
@@ -200,35 +193,21 @@ const LandingPage: React.FC = () => {
                 <h3 className="tool-group-title">{group.cat}</h3>
                 <div className="tool-group-grid">
                   {group.items.map((tool, ti) => (
-                    <motion.div
-                      key={ti}
-                      className="tool-card"
-                      initial={{ opacity: 0 }}
-                      whileInView={{ opacity: 1 }}
-                      transition={{ delay: ti * 0.04, duration: 0.3 }}
-                      viewport={{ once: true }}
-                    >
+                    <div key={ti} className="tool-card">
                       <div className="tool-accent" />
                       <h4>{tool.name}</h4>
                       <p>{tool.desc}</p>
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </div>
             ))}
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* Module Explorer */}
-      <motion.section 
-        id="modules" 
-        className="premium-section mt-20"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section id="modules" className="premium-section mt-20">
         <div className="premium-container">
           <div className="section-head text-center">
             <span className="premium-kicker">جولة في المنصة</span>
@@ -486,16 +465,10 @@ const LandingPage: React.FC = () => {
             </motion.div>
           </AnimatePresence>
         </div>
-      </motion.section>
+      </section>
 
       {/* Platform Power Section */}
-      <motion.section 
-        className="premium-section bg-slate-950/50"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section className="premium-section bg-slate-950/50">
         <div className="premium-container">
           <div className="section-head text-center">
             <div className="sovereignty-badge">Business OS — مش مجرد أدوات</div>
@@ -554,16 +527,10 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* Partnership / White-label Section */}
-      <motion.section 
-        className="premium-section bg-slate-950/50"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section className="premium-section bg-slate-950/50">
         <div className="premium-container">
           <div className="section-head text-center">
             <span className="premium-kicker">شراكة وعلامة بيضاء</span>
@@ -586,17 +553,10 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* Comparison Section */}
-      <motion.section 
-        id="comparison" 
-        className="premium-section bg-slate-900/20"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section id="comparison" className="premium-section bg-slate-900/20">
         <div className="premium-container">
           <div className="section-head text-center">
             <h2 className="section-title">لماذا Max P هو الخيار الأفضل؟</h2>
@@ -637,7 +597,7 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* Integrations Strip */}
       <div className="integration-strip">
@@ -656,14 +616,7 @@ const LandingPage: React.FC = () => {
       </div>
 
       {/* Industries Section */}
-      <motion.section 
-        id="industries" 
-        className="premium-section"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section id="industries" className="premium-section">
         <div className="premium-container">
           <div className="section-head text-center">
             <span className="premium-kicker">من يستفيد؟</span>
@@ -689,17 +642,10 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* Testimonials Section */}
-      <motion.section 
-        id="testimonials" 
-        className="premium-section"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section id="testimonials" className="premium-section">
         <div className="premium-container">
           <div className="section-head text-center">
             <span className="premium-kicker">آراء العملاء</span>
@@ -748,17 +694,10 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* ROI Calculator */}
-      <motion.section 
-        id="calculator" 
-        className="premium-section bg-blue-600/5"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section id="calculator" className="premium-section bg-blue-600/5">
         <div className="premium-container">
           <div className="max-w-4xl mx-auto elite-card p-12">
             <h2 className="text-3xl font-black mb-8 text-center">احسب وفوراتك مع Max P</h2>
@@ -794,7 +733,7 @@ const LandingPage: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* CTA Final */}
       <section className="premium-section py-32 text-center">
@@ -813,14 +752,7 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* FAQ Section */}
-      <motion.section 
-        id="faq" 
-        className="premium-section"
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true, margin: "-60px" }}
-        transition={{ duration: 0.5 }}
-      >
+      <section id="faq" className="premium-section">
         <div className="premium-container">
           <div className="section-head text-center">
             <span className="premium-kicker">الأسئلة الشائعة</span>
@@ -860,7 +792,7 @@ const LandingPage: React.FC = () => {
             ))}
           </div>
         </div>
-      </motion.section>
+      </section>
 
       {/* Footer */}
       <footer className="py-20 border-t border-white/5">

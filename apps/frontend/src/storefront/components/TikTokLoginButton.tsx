@@ -1,6 +1,5 @@
 import React from "react";
 import { getTiktokLoginUrl } from "../../services/tiktokAuthService";
-import { getCompanyId } from "../../utils/storefrontApi";
 
 declare global {
   interface Window {
@@ -24,9 +23,19 @@ function resolveCompanyId(companyId?: string): string | null {
     return window.__MAXP_COMPANY_ID__;
   }
 
-  const globalCompanyId = getCompanyId();
-  if (globalCompanyId) {
-    return globalCompanyId;
+  if (typeof window !== "undefined") {
+    try {
+      const fromQuery = new URLSearchParams(window.location.search).get("companyId");
+      if (fromQuery && fromQuery.trim()) return fromQuery.trim();
+      const stored =
+        window.localStorage.getItem("storefront_companyId") ||
+        window.localStorage.getItem("currentCompanyId") ||
+        window.localStorage.getItem("maxp_companyId") ||
+        window.localStorage.getItem("companyId");
+      if (stored && stored.trim()) return stored.trim();
+    } catch {
+      // Ignore localStorage error
+    }
   }
 
   try {

@@ -1761,25 +1761,26 @@ const AppContent = () => {
   // Native Mobile Back Button & In-App Navigation (Android)
   useEffect(() => {
     let removeBackListener: (() => void) | undefined;
+    const win = window as any;
 
-    import("@capacitor/core").then(({ Capacitor }) => {
-      if (!Capacitor.isNativePlatform()) return;
-
-      import("@capacitor/app").then(({ App: CapApp }) => {
-        CapApp.addListener("backButton", ({ canGoBack }) => {
+    if (typeof win !== "undefined" && win.Capacitor?.isNativePlatform?.() && win.Capacitor?.Plugins?.App) {
+      try {
+        win.Capacitor.Plugins.App.addListener("backButton", ({ canGoBack }: any) => {
           const currentPath = window.location.pathname;
           if (currentPath === "/dashboard" || currentPath === "/" || currentPath === "/apps") {
-            CapApp.exitApp();
+            win.Capacitor.Plugins.App.exitApp();
           } else if (canGoBack || window.history.length > 1) {
             navigate(-1);
           } else {
             navigate("/dashboard");
           }
-        }).then((listener) => {
-          removeBackListener = () => listener.remove();
+        }).then((listener: any) => {
+          removeBackListener = () => listener?.remove?.();
         });
-      });
-    });
+      } catch (err) {
+        // Safe fallback if plugins not available
+      }
+    }
 
     const handleCustomNavigate = (e: Event) => {
       const customEvt = e as CustomEvent<string>;

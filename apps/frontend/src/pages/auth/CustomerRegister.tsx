@@ -5,7 +5,10 @@ import LoadingSpinner from "../../components/LoadingSpinner";
 import { tokenManager } from "../../utils/tokenManager";
 import { useCompanyBranding } from "../../hooks/useCompanyBranding";
 import { AuthNotice, AuthSurface } from "../../components/auth/AuthSurface";
-import TikTokLoginButton from "../../storefront/components/TikTokLoginButton";
+
+const TikTokLoginButton = React.lazy(
+  () => import("../../storefront/components/TikTokLoginButton"),
+);
 
 const CustomerRegister: React.FC = () => {
   const navigate = useNavigate();
@@ -236,11 +239,13 @@ const CustomerRegister: React.FC = () => {
         <span className="h-px flex-1 bg-gray-200" />
       </div>
 
-      <TikTokLoginButton
-        companyId={brandingCompanyId || undefined}
-        redirectPath="/account"
-        className="w-full"
-      />
+      <React.Suspense fallback={null}>
+        <TikTokLoginButton
+          companyId={brandingCompanyId || undefined}
+          redirectPath="/account"
+          className="w-full"
+        />
+      </React.Suspense>
     </AuthSurface>
   );
 };

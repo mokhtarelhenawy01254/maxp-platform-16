@@ -1,7 +1,11 @@
-import { Capacitor } from "@capacitor/core";
-import { PushNotifications } from "@capacitor/push-notifications";
 import { apiClient } from "./apiClient";
 import { tokenManager } from "../utils/tokenManager";
+
+const getCapacitor = () =>
+  typeof window !== "undefined" ? (window as any).Capacitor : undefined;
+const isNativePlatform = (): boolean =>
+  Boolean(getCapacitor()?.isNativePlatform?.());
+const getPushPlugin = () => getCapacitor()?.Plugins?.PushNotifications;
 
 class PushNotificationService {
   private isInitialized = false;
@@ -11,7 +15,7 @@ class PushNotificationService {
    * تهيئة خدمة الإشعارات النيتيف على الهاتف (أندرويد / آيفون)
    */
   async init(): Promise<void> {
-    if (!Capacitor.isNativePlatform()) {
+    if (!isNativePlatform()) {
       // ليس تطبيق موبايل نيتيف (متصفح عادي)
       return;
     }
@@ -35,13 +39,18 @@ class PushNotificationService {
    * طلب إذن الإشعارات من المستخدم وتسجيل الجهاز
    */
   async requestPermissionsAndRegister(): Promise<boolean> {
-    if (!Capacitor.isNativePlatform()) return false;
+    if (!isNativePlatform()) return false;
+    const pushPlugin = getPushPlugin();
+    if (!pushPlugin) return false;
 
     try {
-      let permStatus = await PushNotifications.checkPermissions();
+      let permStatus = await pushPlugin.checkPermissions();
 
-      if (permStatus.receive === "prompt" || permStatus.receive === "prompt-with-rationale") {
-        permStatus = await PushNotifications.requestPermissions();
+      if (
+        permStatus.receive === "prompt" ||
+        permStatus.receive === "prompt-with-rationale"
+      ) {
+        permStatus = await pushPlugin.requestPermissions();
       }
 
       if (permStatus.receive !== "granted") {
@@ -49,13 +58,13 @@ class PushNotificationService {
         return false;
       }
 
-      await PushNotifications.register();
+      await pushPlugin.register();
       console.log("✅ [PUSH] Registered with FCM service");
 
       // إنشاء قنوات الإشعارات لنظام أندرويد لتمكين التخصيص والتحكم في النغمات
       try {
         await Promise.all([
-          PushNotifications.createChannel({
+          pushPlugin.createChannel({
             id: "maxp_messages_channel",
             name: "رسائل العملاء والواتساب",
             description: "إشعارات رسائل الواتساب والعملاء الواردة",
@@ -65,7 +74,7 @@ class PushNotificationService {
             vibration: true,
             lights: true,
           }),
-          PushNotifications.createChannel({
+          pushPlugin.createChannel({
             id: "maxp_orders_channel",
             name: "الطلبات الجديدة وتغيير الحالة",
             description: "إشعارات إنشاء الطلبات وتحديثات الشحن والتوصيل",
@@ -75,7 +84,7 @@ class PushNotificationService {
             vibration: true,
             lights: true,
           }),
-          PushNotifications.createChannel({
+          pushPlugin.createChannel({
             id: "maxp_tasks_channel",
             name: "المهام والتذكيرات",
             description: "إشعارات تكليف ومتابعة المهام ومواعيد الاستحقاق",
@@ -85,7 +94,7 @@ class PushNotificationService {
             vibration: true,
             lights: true,
           }),
-          PushNotifications.createChannel({
+          pushPlugin.createChannel({
             id: "maxp_default_channel",
             name: "إشعارات MaxP العامة",
             description: "تنبيهات النظام العامة",
@@ -112,15 +121,18 @@ class PushNotificationService {
    * إعداد مستمعي أحداث الإشعارات (استلام، تسجيل، نقر)
    */
   private setupListeners(): void {
+    const pushPlugin = getPushPlugin();
+    if (!pushPlugin) return;
+
     // 1. استلام توكن الـ FCM من جوجل
-    PushNotifications.addListener("registration", async (token) => {
+    pushPlugin.addListener("registration", async (token: any) => {
       console.log("📲 [PUSH] FCM Device Token received:", token.value?.substring(0, 16) + "...");
       this.currentDeviceToken = token.value;
       await this.syncTokenWithBackend(token.value);
     });
 
     // 2. خطأ في التسجيل لدى FCM
-    PushNotifications.addListener("registrationError", (err) => {
+    pushPlugin.addListener("registrationError", (err: any) => {
       console.error("❌ [PUSH] Error registering device token:", err);
     });
 
@@ -148,7 +160,7 @@ class PushNotificationService {
     };
 
     // 3. وصول إشعار والتطبيق مفتوح في المقدمة (Foreground)
-    PushNotifications.addListener("pushNotificationReceived", async (notification) => {
+    pushPlugin.addListener("pushNotificationReceived", async (notification: any) => {
       console.log("🔔 [PUSH] Notification received in foreground:", notification.title);
       try {
         const { toast } = await import("sonner");
@@ -177,7 +189,7 @@ class PushNotificationService {
     });
 
     // 4. نقر المستخدم على الإشعار من شريط الهاتف أو شاشة القفل
-    PushNotifications.addListener("pushNotificationActionPerformed", (action) => {
+    pushPlugin.addListener("pushNotificationActionPerformed", (action: any) => {
       const data = action.notification?.data || {};
       console.log("👆 [PUSH] Notification clicked by user:", data);
 
@@ -209,7 +221,7 @@ class PushNotificationService {
     try {
       await apiClient.post("/notifications/device-token", {
         token: deviceToken,
-        platform: Capacitor.getPlatform(),
+        platform: getCapacitor()?.getPlatform?.() || "android",
         userAgent: navigator.userAgent,
       });
       console.log("✅ [PUSH] Device token successfully registered on MaxP backend");
