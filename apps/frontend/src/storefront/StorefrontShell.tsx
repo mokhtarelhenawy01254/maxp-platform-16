@@ -40,6 +40,7 @@ import type {
 import { useClarityAnalytics } from "../hooks/useClarityAnalytics";
 import { useFacebookPixel } from "../hooks/useFacebookPixel";
 import { useGoogleAnalytics } from "../hooks/useGoogleAnalytics";
+import { useTikTokPixel } from "../hooks/useTikTokPixel";
 import {
   isRevealEnabledTheme,
   resolveStorefrontPageLayout,
@@ -1479,6 +1480,7 @@ const StorefrontShell: React.FC<StorefrontShellProps> = ({
     [settings],
   );
   useFacebookPixel(settings?.storefrontSettings ?? null);
+  useTikTokPixel(settings?.company?.id);
   useGoogleAnalytics(settings?.storefrontSettings ?? null);
   useClarityAnalytics(settings?.storefrontSettings ?? null);
   useStorefrontVisitTracking(settings);
