@@ -151,28 +151,28 @@ export const MediaBuyerCopilotWidget: React.FC = () => {
   return (
     <>
       {/* Floating Action Button */}
-      <div className="fixed bottom-6 left-6 z-50">
+      <div className="fixed bottom-5 left-5 z-50">
         {!isOpen && (
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="group relative flex items-center gap-3 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 px-5 py-3.5 text-white shadow-2xl transition-all duration-300 hover:scale-105 hover:shadow-blue-500/25 active:scale-95"
+            className="group relative flex items-center gap-2.5 rounded-full bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 p-3 sm:px-4 sm:py-2.5 text-white shadow-xl transition-all duration-200 hover:scale-105 hover:shadow-blue-500/25 active:scale-95"
             aria-label="مساعد الميديا باير بالذكاء الاصطناعي"
           >
-            <span className="relative flex h-3 w-3">
+            <span className="relative flex h-2.5 w-2.5">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-400" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400" />
             </span>
-            <Bot className="h-6 w-6 transition-transform group-hover:rotate-12" />
-            <div className="text-right">
-              <span className="block text-sm font-black tracking-wide">
+            <Bot className="h-5 w-5 transition-transform group-hover:rotate-12" />
+            <div className="hidden sm:block text-right">
+              <span className="block text-xs font-black tracking-tight">
                 الميديا باير الذكي
               </span>
-              <span className="block text-[10px] font-medium text-blue-100 opacity-90">
-                DeepSeek-Flash Copilot
+              <span className="block text-[9px] font-medium text-blue-100/90">
+                DeepSeek Copilot
               </span>
             </div>
-            <Sparkles className="h-4 w-4 text-amber-300 animate-pulse" />
+            <Sparkles className="hidden sm:inline h-3.5 w-3.5 text-amber-300 animate-pulse" />
           </button>
         )}
       </div>

@@ -392,18 +392,20 @@ const FacebookAdsDashboard: React.FC = () => {
         </section>
 
         {/* 4 High-Impact KPI Cards */}
-        <section className="grid grid-cols-2 gap-2 sm:grid-cols-2 lg:grid-cols-4">
+        <section className="grid grid-cols-2 gap-2.5 sm:grid-cols-2 lg:grid-cols-4">
           <MetricCard
-            label={isEn ? "Spend (Period)" : "الإنفاق (الفترة)"}
+            label={isEn ? "Total Spend" : "إجمالي الإنفاق"}
             value={formatCurrency(performanceSummary?.totals.spend || 0, selectedCurrency)}
             icon={Wallet}
             variant="spend"
+            subtitle={isEn ? "Across selected date range" : "خلال الفترة الزمنية المحددة"}
           />
           <MetricCard
             label={isEn ? "Tracked Purchases" : "المبيعات المسجلة"}
             value={formatNumber(performanceSummary?.totals.purchases || 0)}
             icon={ShoppingBag}
             variant="results"
+            subtitle={isEn ? "Confirmed via local Pixel telemetry" : "طلبات مؤكدة من البيكسل المحلي"}
           />
           <MetricCard
             label={isEn ? "Blended ROAS" : "عائد الإنفاق ROAS"}
@@ -411,15 +413,28 @@ const FacebookAdsDashboard: React.FC = () => {
             icon={TrendingUp}
             variant="roas"
             badge={{
-              text: (performanceSummary?.totals.roas || 0) >= 3 ? (isEn ? "Profitable" : "رابح") : (isEn ? "Watch" : "متابعة"),
-              isPositive: (performanceSummary?.totals.roas || 0) >= 3,
+              text:
+                (performanceSummary?.totals.roas || 0) >= 2.5
+                  ? isEn
+                    ? "Profitable"
+                    : "أداء ممتاز"
+                  : (performanceSummary?.totals.roas || 0) >= 1.5
+                    ? isEn
+                      ? "Healthy"
+                      : "ضمن الحدود"
+                    : isEn
+                      ? "Watch"
+                      : "متابعة",
+              isPositive: (performanceSummary?.totals.roas || 0) >= 1.5,
             }}
+            subtitle={isEn ? "Revenue generated per currency unit spent" : "العائد لكل جنيه إنفاق إعلاني"}
           />
           <MetricCard
             label="CPA"
             value={formatCurrency(performanceSummary?.totals.cpa || 0, selectedCurrency)}
             icon={Target}
             variant="cpa"
+            subtitle={isEn ? "Average cost per confirmed acquisition" : "متوسط تكلفة الاستحواذ على الطلب"}
           />
         </section>
 
@@ -446,24 +461,24 @@ const FacebookAdsDashboard: React.FC = () => {
         ) : (
           <>
             {/* Specialized Tools Quick Access Hub */}
-            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white/95 p-2 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
-              <div className="flex flex-wrap items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <div className="flex items-center gap-1.5 rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-black text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
-                  <Layers className="h-4 w-4" />
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-slate-200/80 bg-white p-2 sm:px-3 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                <div className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs">
+                  <Layers className="h-3.5 w-3.5" />
                   <span>{isEn ? "Live Cockpit" : "قمرة الحملات المباشرة"}</span>
-                  <span className="rounded-full bg-blue-600 px-2 py-0.5 text-[10px] font-black text-white">
+                  <span className="rounded-full bg-white/20 px-1.5 py-0.2 text-[10px] font-black text-white">
                     {stats.total}
                   </span>
                 </div>
 
                 <Link
                   to={`/advertising/facebook-ads/budget-alerts${selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50/70 px-3 py-1.5 text-xs font-black text-emerald-800 transition-all hover:bg-emerald-100 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200/80 bg-emerald-50/50 px-3 py-1.5 text-xs font-bold text-emerald-800 transition-all hover:bg-emerald-100/60 dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-300"
                 >
-                  <BellRing className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                  <BellRing className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>{isEn ? "WhatsApp Alerts" : "تنبيهات WhatsApp"}</span>
                   {selectedAccountBalance !== null && (
-                    <span className="rounded-full bg-emerald-600 px-2 py-0.5 text-[10px] font-black text-white">
+                    <span className="rounded-full bg-emerald-600 px-1.5 py-0.2 text-[10px] font-black text-white">
                       {formatCurrency(selectedAccountBalance, selectedCurrency)}
                     </span>
                   )}
@@ -471,17 +486,17 @@ const FacebookAdsDashboard: React.FC = () => {
 
                 <Link
                   to={`/advertising/facebook-ads/decision-reports${selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                 >
-                  <Gauge className="h-4 w-4 text-blue-600" />
+                  <Gauge className="h-3.5 w-3.5 text-blue-600" />
                   <span>{isEn ? "Decisions & Reports" : "القرارات والتقارير الذكية"}</span>
                   {decisionCounts.warnings > 0 && (
-                    <span className="rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-black text-red-700 dark:bg-red-950/60 dark:text-red-300">
+                    <span className="rounded-full bg-rose-100 px-1.5 py-0.2 text-[10px] font-black text-rose-700 dark:bg-rose-950/60 dark:text-rose-300">
                       {decisionCounts.warnings}
                     </span>
                   )}
                   {decisionCounts.opportunities > 0 && (
-                    <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[10px] font-black text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <span className="rounded-full bg-emerald-100 px-1.5 py-0.2 text-[10px] font-black text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300">
                       +{decisionCounts.opportunities}
                     </span>
                   )}
@@ -489,9 +504,9 @@ const FacebookAdsDashboard: React.FC = () => {
 
                 <Link
                   to={`/advertising/facebook-ads/geo${selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""}`}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-700 transition-all hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 transition-all hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                 >
-                  <Globe2 className="h-4 w-4 text-slate-500" />
+                  <Globe2 className="h-3.5 w-3.5 text-slate-400" />
                   <span>{isEn ? "Geo Analytics" : "الأداء الجغرافي"}</span>
                 </Link>
               </div>
@@ -499,21 +514,21 @@ const FacebookAdsDashboard: React.FC = () => {
               <div className="ms-auto flex items-center gap-1.5">
                 <Link
                   to="/advertising/facebook-ads/audiences"
-                  className="hidden lg:inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-2.5 text-[11px] font-bold text-slate-600 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 transition-all"
+                  className="hidden lg:inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-2.5 text-[11px] font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 transition-all"
                 >
                   <Users className="h-3.5 w-3.5 text-slate-400" />
                   <span>{isEn ? "Audiences" : "الجماهير"}</span>
                 </Link>
                 <Link
                   to="/advertising/facebook-ads/catalogs"
-                  className="hidden lg:inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-2.5 text-[11px] font-bold text-slate-600 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 transition-all"
+                  className="hidden lg:inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-2.5 text-[11px] font-semibold text-slate-600 shadow-2xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 transition-all"
                 >
                   <ShoppingBag className="h-3.5 w-3.5 text-slate-400" />
                   <span>{isEn ? "Catalogs" : "الكتالوجات"}</span>
                 </Link>
                 <Link
                   to="/advertising/facebook-pixel"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-[11px] font-black text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 transition-all"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-[11px] font-bold text-slate-700 shadow-2xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 transition-all"
                 >
                   <Target className="h-3.5 w-3.5 text-slate-400" />
                   <span>{isEn ? "Pixel & CAPI" : "البيكسل و CAPI"}</span>
@@ -527,6 +542,7 @@ const FacebookAdsDashboard: React.FC = () => {
               decisionSummary={decisionSummary}
               performanceSummary={performanceSummary}
               selectedCurrency={selectedCurrency}
+              selectedAdAccountId={selectedAdAccountId}
             />
 
             {/* Live Interactive Campaigns List */}

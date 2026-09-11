@@ -285,13 +285,13 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
   const currentFilteredCampaignCount = filteredCampaigns.length;
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white/95 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
-      {/* Quick status chips and header */}
+    <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
+      {/* Integrated Unified Toolbar */}
       <div className="border-b border-slate-200/80 p-3 sm:p-4 dark:border-slate-800/80">
-        <div className="flex flex-col gap-2.5">
-          {/* Quick status chips */}
+        <div className="flex flex-col gap-3">
+          {/* Status Segmented Control & Summary Counter */}
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
               {statusChips.map((chip) => {
                 const isSelected = filters.statusFilter === chip.value;
                 return (
@@ -299,10 +299,10 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                     key={chip.value}
                     type="button"
                     onClick={() => updateFilters({ statusFilter: chip.value })}
-                    className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                    className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-bold transition-all ${
                       isSelected
                         ? "bg-blue-600 text-white shadow-xs shadow-blue-500/25"
-                        : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
+                        : "border border-slate-200/90 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-800"
                     }`}
                   >
                     {chip.label}
@@ -311,45 +311,58 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
               })}
             </div>
 
-            <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-              <span>{formatNumber(currentFilteredCampaignCount)} {isEn ? "campaigns" : "حملة"}</span>
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                {formatNumber(currentFilteredCampaignCount)} {isEn ? "campaigns" : "حملة"}
+              </span>
               <span>•</span>
-              <span dir="ltr">{selectedDateLabel}</span>
+              <span dir="ltr" className="text-[11px] font-semibold">{selectedDateLabel}</span>
             </div>
           </div>
 
-          <div className="grid gap-2.5 md:grid-cols-[2fr_1fr] xl:grid-cols-[2fr_1fr_auto]">
-            <label className="relative block">
-              <Search className="pointer-events-none absolute bottom-2.5 end-3 h-3.5 w-3.5 text-slate-400" />
+          {/* Search, Sort, and Collapsible Filter Controls */}
+          <div className="grid gap-2.5 sm:grid-cols-[1fr_auto_auto]">
+            <div className="relative min-w-0">
+              <Search className="pointer-events-none absolute bottom-2.5 end-3 h-4 w-4 text-slate-400" />
               <input
                 type="search"
                 value={filters.searchTerm}
                 onChange={(event) => updateFilters({ searchTerm: event.target.value })}
-                placeholder={isEn ? "Search campaign name, objective, or Meta ID..." : "ابحث باسم الحملة، الهدف، أو Meta ID..."}
-                className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-3 pe-9 text-xs font-bold text-slate-800 shadow-xs outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+                placeholder={
+                  isEn
+                    ? "Search campaigns by name, objective, or Meta ID..."
+                    : "ابحث باسم الحملة، الهدف الإعلاني، أو Meta ID..."
+                }
+                className="h-9 w-full rounded-xl border border-slate-200/90 bg-white px-3 pe-9 text-xs font-semibold text-slate-800 shadow-2xs outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
               />
-            </label>
+            </div>
 
-            <SelectFilter
-              icon={Clock3}
-              label={isEn ? "Sort By" : "الترتيب"}
-              value={filters.sortBy}
-              onChange={(value) => updateFilters({ sortBy: value as CampaignSortKey })}
-              options={getSortOptions(isEn)}
-            />
+            <div className="w-44 sm:w-48">
+              <SelectFilter
+                icon={Clock3}
+                label={isEn ? "Sort By" : "الترتيب"}
+                value={filters.sortBy}
+                onChange={(value) => updateFilters({ sortBy: value as CampaignSortKey })}
+                options={getSortOptions(isEn)}
+              />
+            </div>
 
             <button
               type="button"
               onClick={() => setShowExtraFilters((prev) => !prev)}
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
+              className={`inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border px-3 text-xs font-bold shadow-2xs transition-all ${
+                showExtraFilters
+                  ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
+                  : "border-slate-200/90 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-800"
+              }`}
             >
               <SlidersHorizontal className="h-3.5 w-3.5" />
-              {showExtraFilters ? (isEn ? "Fewer Filters" : "فلاتر أقل") : (isEn ? "More Filters" : "المزيد من الفلاتر")}
+              <span>{showExtraFilters ? (isEn ? "Fewer Filters" : "فلاتر أقل") : (isEn ? "More Filters" : "المزيد من الفلاتر")}</span>
             </button>
           </div>
 
           {showExtraFilters && (
-            <div className="mt-1 grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 pt-2 border-t border-slate-100 dark:border-slate-800">
+            <div className="grid gap-2.5 sm:grid-cols-2 pt-2.5 border-t border-slate-100 dark:border-slate-800">
               <SelectFilter
                 icon={Target}
                 label={isEn ? "Objective" : "الهدف الإعلاني"}
@@ -388,7 +401,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 shadow-xs">
             <Megaphone className="h-6 w-6" />
           </div>
-          <h3 className="text-base font-black text-slate-900 dark:text-white">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
             {isEn ? "No campaigns in this account yet" : "لا توجد حملات في هذا الحساب بعد"}
           </h3>
           <p className="text-xs text-slate-500 max-w-sm">
@@ -399,7 +412,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
           <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
             <Link
               to="/advertising/facebook-ads/create-ad"
-              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-black text-white shadow-xs hover:bg-blue-700 transition"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-bold text-white shadow-xs hover:bg-blue-700 transition"
             >
               <Sparkles className="h-4 w-4" />
               <span>{isEn ? "Create First Ad" : "إنشاء أول إعلان للمنتج"}</span>
@@ -409,138 +422,175 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
       ) : currentVisibleCampaignCount === 0 ? (
         <div className="flex flex-col items-center gap-3 p-12 text-center">
           <Search className="h-10 w-10 text-slate-300 dark:text-slate-600" />
-          <h3 className="text-base font-black text-slate-900 dark:text-white">
+          <h3 className="text-base font-bold text-slate-900 dark:text-white">
             {isEn ? "No matching campaigns" : "لا توجد حملات مطابقة"}
           </h3>
           <p className="text-xs text-slate-500">
             {isEn
-              ? "Try changing your search term or status filter."
-              : "جرب تغيير مصطلح البحث أو فلتر الحالة."}
+              ? "Try adjusting your search query or switching delivery status filters."
+              : "جرب تعديل كلمة البحث أو تغيير فلتر حالة التسليم."}
           </p>
           <button
             type="button"
             onClick={() => updateFilters(defaultFilters)}
-            className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 transition-all"
           >
-            {isEn ? "Clear Filters" : "إعادة ضبط الفلاتر"}
+            {isEn ? "Reset All Filters" : "إعادة ضبط جميع الفلاتر"}
           </button>
         </div>
       ) : (
-        <div className="divide-y divide-slate-100 dark:divide-slate-800">
-          {visibleCampaigns.map((campaign) => {
-            const performance = getCampaignPerformance(campaign);
-            const decision = getHealthDecision(performance);
-            const blockerText =
-              campaign.deliveryReadiness?.reasonText ||
-              campaign.deliveryReadiness?.reasons?.[0]?.label;
+        <div>
+          {/* Desktop Table Header - Columns for Vertical Scanning */}
+          <div className="hidden lg:grid grid-cols-12 items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/90 px-4 py-2 text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
+            <div className="col-span-4 flex items-center gap-2">
+              <span>{isEn ? "Campaign & Status" : "الحملة والحالة"}</span>
+            </div>
+            <div className="col-span-2 text-center">
+              <span>{isEn ? "Daily Budget" : "الميزانية اليومية"}</span>
+            </div>
+            <div className="col-span-1 text-center">
+              <span>{isEn ? "Spend" : "الإنفاق"}</span>
+            </div>
+            <div className="col-span-1 text-center">
+              <span>{isEn ? "Sales" : "المبيعات"}</span>
+            </div>
+            <div className="col-span-1 text-center">
+              <span>CPA</span>
+            </div>
+            <div className="col-span-1 text-center">
+              <span>ROAS</span>
+            </div>
+            <div className="col-span-1 text-center">
+              <span>Hook / Freq</span>
+            </div>
+            <div className="col-span-1 text-end">
+              <span>{isEn ? "Actions" : "الإجراء"}</span>
+            </div>
+          </div>
 
-            const effectiveStatus =
-              statusOverrides[campaign.id] || getCampaignEffectiveStatus(campaign);
-            const isActive = effectiveStatus === "ACTIVE";
-            const currentBudget = budgetOverrides[campaign.id] ?? campaign.budgetAmount;
-            const isEditingBudget = editingBudgetId === campaign.id;
-            const isToggling = togglingId === campaign.id;
+          {/* Campaigns Row List */}
+          <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
+            {visibleCampaigns.map((campaign) => {
+              const performance = getCampaignPerformance(campaign);
+              const decision = getHealthDecision(performance);
+              const blockerText =
+                campaign.deliveryReadiness?.reasonText ||
+                campaign.deliveryReadiness?.reasons?.[0]?.label;
 
-            return (
-              <article
-                key={campaign.id}
-                className="p-3 sm:px-4 sm:py-3 transition-colors hover:bg-blue-50/20 dark:hover:bg-slate-800/40"
-              >
-                {/* Desktop & Mobile Responsive Row */}
-                <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-                  {/* Left Section: Switch + Name + Badges */}
-                  <div className="flex items-start gap-2.5 min-w-0 flex-1">
-                    {/* Instant Status Toggle Switch */}
-                    <button
-                      type="button"
-                      onClick={() => handleToggleStatus(campaign)}
-                      disabled={isToggling}
-                      title={isActive ? (isEn ? "Pause Campaign" : "إيقاف الحملة") : (isEn ? "Resume Campaign" : "تنشيط الحملة")}
-                      className={`relative mt-0.5 inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
-                        isActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
-                      }`}
-                    >
-                      {isToggling ? (
-                        <span className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="h-3 w-3 animate-spin text-white" />
-                        </span>
-                      ) : (
-                        <span
-                          className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
-                            isActive ? "translate-x-5" : "translate-x-0"
-                          }`}
-                        />
-                      )}
-                    </button>
+              const effectiveStatus =
+                statusOverrides[campaign.id] || getCampaignEffectiveStatus(campaign);
+              const isActive = effectiveStatus === "ACTIVE";
+              const currentBudget = budgetOverrides[campaign.id] ?? campaign.budgetAmount;
+              const isEditingBudget = editingBudgetId === campaign.id;
+              const isToggling = togglingId === campaign.id;
 
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <h2 className="truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white max-w-[320px] sm:max-w-lg lg:max-w-xl">
-                          {campaign.name}
-                        </h2>
-                        <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
-                            isActive
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                              : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                          }`}
-                        >
-                          {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
-                        </span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${decision.className}`}>
-                          {isEn ? decision.labelEn : decision.label}
-                        </span>
-                      </div>
+              return (
+                <article
+                  key={campaign.id}
+                  className="p-3 sm:px-4 sm:py-3 transition-colors hover:bg-blue-50/20 dark:hover:bg-slate-800/30"
+                >
+                  {/* Desktop Grid Layout (lg+) */}
+                  <div className="hidden lg:grid grid-cols-12 items-center gap-2.5">
+                    {/* Col 1-4: Switch + Campaign Info */}
+                    <div className="col-span-4 flex items-start gap-2.5 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(campaign)}
+                        disabled={isToggling}
+                        title={isActive ? (isEn ? "Pause Campaign" : "إيقاف الحملة") : (isEn ? "Resume Campaign" : "تنشيط الحملة")}
+                        className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500/20 ${
+                          isActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                        }`}
+                      >
+                        {isToggling ? (
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <Loader2 className="h-2.5 w-2.5 animate-spin text-white" />
+                          </span>
+                        ) : (
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out ${
+                              isActive ? "translate-x-4" : "translate-x-0"
+                            }`}
+                          />
+                        )}
+                      </button>
 
-                      <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                        <span className="font-semibold text-slate-700 dark:text-slate-300">{getObjectiveLabel(campaign.objective)}</span>
-                        <span>•</span>
-                        <span className="inline-flex items-center gap-1">
-                          <span className={`inline-block h-1.5 w-1.5 rounded-full ${campaign.facebookCampaignId ? "bg-blue-500" : "bg-amber-500"}`} />
-                          {campaign.facebookCampaignId ? "Meta Synced" : (isEn ? "Local" : "محلي")}
-                        </span>
-                        {blockerText && !isCampaignDelivering(campaign) && (
-                          <>
-                            <span>•</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                          <Link
+                            to={`/advertising/facebook-ads/campaigns/${campaign.id}${
+                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
+                            }`}
+                            className="truncate text-xs font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 transition-colors"
+                            title={campaign.name}
+                          >
+                            {campaign.name}
+                          </Link>
+                          <span
+                            className={`shrink-0 rounded-md px-1.5 py-0.2 text-[9px] font-bold ${
+                              isActive
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            }`}
+                          >
+                            {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
+                          </span>
+                          <span className={`shrink-0 rounded-md px-1.5 py-0.2 text-[9px] font-bold ${decision.className}`}>
+                            {isEn ? decision.labelEn : decision.label}
+                          </span>
+                        </div>
+
+                        {/* Metadata sub-row */}
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-slate-500 dark:text-slate-400">
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">
+                            {getObjectiveLabel(campaign.objective)}
+                          </span>
+                          <span>•</span>
+                          <span className="inline-flex items-center gap-1">
                             <span
-                              title={blockerText}
-                              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 cursor-help transition-all hover:bg-amber-500/20"
-                            >
-                              <PauseCircle className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
-                              <span className="truncate max-w-[220px]">
-                                {blockerText.includes("لا توجد مجموعات") || campaign.adSets?.length === 0
-                                  ? (isEn ? "Awaiting Ad Sets Sync" : "بانتظار مزامنة المجموعات")
-                                  : blockerText}
+                              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                                campaign.facebookCampaignId ? "bg-blue-500" : "bg-amber-500"
+                              }`}
+                            />
+                            {campaign.facebookCampaignId ? "Meta Synced" : (isEn ? "Local" : "محلي")}
+                          </span>
+                          {blockerText && !isCampaignDelivering(campaign) && (
+                            <>
+                              <span>•</span>
+                              <span
+                                title={blockerText}
+                                className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400"
+                              >
+                                <PauseCircle className="h-3 w-3 shrink-0" />
+                                <span className="truncate max-w-[180px]">
+                                  {blockerText.includes("لا توجد مجموعات") || campaign.adSets?.length === 0
+                                    ? (isEn ? "Awaiting Ad Sets" : "بانتظار المجموعات")
+                                    : blockerText}
+                                </span>
                               </span>
-                            </span>
-                          </>
+                            </>
+                          )}
+                        </div>
+
+                        {/* Diagnostic Insight Note */}
+                        {performance && performance.impressions > 0 && decision.detail && (
+                          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-md px-2 py-0.5 border border-slate-200/60 dark:border-slate-800">
+                            <Sparkles className="h-3 w-3 shrink-0 text-blue-500" />
+                            <span className="truncate">{isEn ? decision.detailEn : decision.detail}</span>
+                          </div>
                         )}
                       </div>
-
-                      {/* Diagnostic Insight Note */}
-                      {performance && performance.impressions > 0 && decision.detail && (
-                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-lg px-2.5 py-1 border border-slate-200/70 dark:border-slate-800/80">
-                          <Sparkles className="h-3 w-3 shrink-0 text-blue-500" />
-                          <span>{isEn ? decision.detailEn : decision.detail}</span>
-                        </div>
-                      )}
                     </div>
-                  </div>
 
-                  {/* Right Section: Metrics + Inline Budget + Action */}
-                  <div className="flex flex-wrap items-center justify-between gap-2.5 lg:justify-end">
-                    {/* Inline Budget Editor */}
-                    <div className="flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 py-1 dark:border-slate-800 dark:bg-slate-800/60">
-                      <span className="text-[10px] font-medium text-slate-500">
-                        {isEn ? "Budget:" : "الميزانية:"}
-                      </span>
+                    {/* Col 5-6: Budget */}
+                    <div className="col-span-2 flex items-center justify-center">
                       {isEditingBudget ? (
                         <div className="flex items-center gap-1">
                           <input
                             type="number"
                             value={editBudgetValue}
                             onChange={(e) => setEditBudgetValue(e.target.value)}
-                            className="h-6 w-16 rounded-md border border-blue-400 bg-white px-1 text-xs font-semibold tabular-nums text-slate-900 outline-none dark:bg-slate-900 dark:text-white"
+                            className="h-6 w-20 rounded-md border border-blue-400 bg-white px-1 text-xs font-semibold tabular-nums text-slate-900 outline-none dark:bg-slate-900 dark:text-white"
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === "Enter") handleSaveBudget(campaign);
@@ -564,7 +614,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1" dir="ltr">
+                        <div className="group/b flex items-center gap-1.5 rounded-lg border border-slate-200/70 bg-slate-50/60 px-2 py-0.5 dark:border-slate-800 dark:bg-slate-800/40" dir="ltr">
                           <span className="text-xs font-bold tabular-nums text-slate-900 dark:text-white">
                             {formatCurrency(currentBudget, selectedCurrency)}
                           </span>
@@ -572,7 +622,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             type="button"
                             onClick={() => startEditBudget(campaign.id, currentBudget)}
                             title={isEn ? "Edit Budget" : "تعديل الميزانية"}
-                            className="rounded p-0.5 text-slate-400 hover:text-blue-600 transition-colors"
+                            className="rounded p-0.5 text-slate-400 opacity-0 group-hover/b:opacity-100 hover:text-blue-600 transition-all"
                           >
                             <Edit2 className="h-3 w-3" />
                           </button>
@@ -580,74 +630,183 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                       )}
                     </div>
 
-                    {/* Performance Chips Cluster with Diagnostic Metrics */}
-                    <div className="flex flex-wrap items-center rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/60 px-1 py-0.5 text-xs" dir="ltr">
-                      <div className="text-center px-2 py-0.5">
-                        <span className="block text-[9px] font-medium text-slate-500">{isEn ? "Spend" : "الإنفاق"}</span>
+                    {/* Col 7: Spend */}
+                    <div className="col-span-1 text-center" dir="ltr">
+                      <span className="text-xs font-bold tabular-nums text-slate-900 dark:text-white">
+                        {formatCurrency(performance?.spend || 0, selectedCurrency)}
+                      </span>
+                    </div>
+
+                    {/* Col 8: Purchases */}
+                    <div className="col-span-1 text-center" dir="ltr">
+                      <span className="text-xs font-bold tabular-nums text-slate-900 dark:text-white">
+                        {formatNumber(performance?.purchases || 0)}
+                      </span>
+                    </div>
+
+                    {/* Col 9: CPA */}
+                    <div className="col-span-1 text-center" dir="ltr">
+                      <span className="text-xs font-bold tabular-nums text-slate-900 dark:text-white">
+                        {formatCurrency(performance?.cpa || 0, selectedCurrency)}
+                      </span>
+                    </div>
+
+                    {/* Col 10: ROAS */}
+                    <div className="col-span-1 text-center" dir="ltr">
+                      <span
+                        className={`text-xs font-black tabular-nums ${
+                          (performance?.roas || 0) >= 2
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-slate-900 dark:text-white"
+                        }`}
+                      >
+                        {formatNumber(performance?.roas || 0, 2)}x
+                      </span>
+                    </div>
+
+                    {/* Col 11: Hook / Freq */}
+                    <div className="col-span-1 text-center text-[11px] font-semibold tabular-nums text-slate-600 dark:text-slate-400" dir="ltr">
+                      <span>{formatPercentage(performance?.ctr || 0)}</span>
+                      <span className="mx-0.5 text-slate-300 dark:text-slate-600">/</span>
+                      <span>{formatNumber(performance?.frequency || 0, 1)}x</span>
+                    </div>
+
+                    {/* Col 12: Action */}
+                    <div className="col-span-1 text-end">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/advertising/facebook-ads/campaigns/${campaign.id}${
+                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
+                            }`,
+                          )
+                        }
+                        className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-slate-200/90 bg-white px-2.5 text-[11px] font-bold text-slate-700 shadow-2xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
+                      >
+                        <span>{isEn ? "Details" : "تفاصيل"}</span>
+                        <ArrowUpRight className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mobile & Tablet Card Layout (< lg) */}
+                  <div className="flex flex-col gap-2.5 lg:hidden">
+                    {/* Top line: Switch + Title + Badges */}
+                    <div className="flex items-start gap-2 min-w-0">
+                      <button
+                        type="button"
+                        onClick={() => handleToggleStatus(campaign)}
+                        disabled={isToggling}
+                        className={`relative mt-0.5 inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                          isActive ? "bg-emerald-500" : "bg-slate-300 dark:bg-slate-700"
+                        }`}
+                      >
+                        {isToggling ? (
+                          <span className="absolute inset-0 flex items-center justify-center">
+                            <Loader2 className="h-2.5 w-2.5 animate-spin text-white" />
+                          </span>
+                        ) : (
+                          <span
+                            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-md transition duration-200 ease-in-out ${
+                              isActive ? "translate-x-4" : "translate-x-0"
+                            }`}
+                          />
+                        )}
+                      </button>
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          <Link
+                            to={`/advertising/facebook-ads/campaigns/${campaign.id}${
+                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
+                            }`}
+                            className="text-xs font-bold text-slate-900 dark:text-white"
+                          >
+                            {campaign.name}
+                          </Link>
+                          <span
+                            className={`rounded-md px-1.5 py-0.2 text-[9px] font-bold ${
+                              isActive
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            }`}
+                          >
+                            {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
+                          </span>
+                          <span className={`rounded-md px-1.5 py-0.2 text-[9px] font-bold ${decision.className}`}>
+                            {isEn ? decision.labelEn : decision.label}
+                          </span>
+                        </div>
+
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-slate-500 dark:text-slate-400">
+                          <span>{getObjectiveLabel(campaign.objective)}</span>
+                          <span>•</span>
+                          <span>{campaign.facebookCampaignId ? "Meta Synced" : "Local"}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Single-depth metric row for mobile */}
+                    <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-slate-200/70 bg-slate-50/50 p-2 text-center text-[10px] dark:border-slate-800 dark:bg-slate-800/30" dir="ltr">
+                      <div>
+                        <span className="block text-[9px] text-slate-400">{isEn ? "Spend" : "الإنفاق"}</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.spend || 0, selectedCurrency)}
                         </span>
                       </div>
-                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2 py-0.5">
-                        <span className="block text-[9px] font-medium text-slate-500">{isEn ? "Purchases" : "المبيعات"}</span>
+                      <div>
+                        <span className="block text-[9px] text-slate-400">{isEn ? "Purchases" : "المبيعات"}</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatNumber(performance?.purchases || 0)}
                         </span>
                       </div>
-                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2 py-0.5">
-                        <span className="block text-[9px] font-medium text-slate-500">ROAS</span>
-                        <span className={`font-bold tabular-nums ${(performance?.roas || 0) >= 2 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
+                      <div>
+                        <span className="block text-[9px] text-slate-400">ROAS</span>
+                        <span
+                          className={`font-black tabular-nums ${
+                            (performance?.roas || 0) >= 2 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"
+                          }`}
+                        >
                           {formatNumber(performance?.roas || 0, 2)}x
                         </span>
                       </div>
-                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2 py-0.5">
-                        <span className="block text-[9px] font-medium text-slate-500">CPA</span>
+                      <div>
+                        <span className="block text-[9px] text-slate-400">CPA</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.cpa || 0, selectedCurrency)}
                         </span>
                       </div>
-                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2 py-0.5" title={isEn ? "Click-Through Rate (Hook)" : "معدل النقر Hook"}>
-                        <span className="block text-[9px] font-medium text-slate-500">Hook</span>
-                        <span className={`font-bold tabular-nums ${(performance?.ctr || 0) >= 1 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
-                          {formatPercentage(performance?.ctr || 0)}
-                        </span>
-                      </div>
-                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2 py-0.5" title={isEn ? "Ad Frequency" : "تكرار المشاهدة"}>
-                        <span className="block text-[9px] font-medium text-slate-500">{isEn ? "Freq" : "تكرار"}</span>
-                        <span className={`font-bold tabular-nums ${(performance?.frequency || 0) >= 3 ? "text-orange-600 dark:text-orange-400" : "text-slate-900 dark:text-white"}`}>
-                          {formatNumber(performance?.frequency || 0, 1)}x
-                        </span>
-                      </div>
                     </div>
 
-                    {/* Details Link */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        navigate(
-                          `/advertising/facebook-ads/campaigns/${campaign.id}${
-                            selectedAdAccountId
-                              ? `?adAccountId=${selectedAdAccountId}`
-                              : ""
-                          }`,
-                        )
-                      }
-                      title={isEn ? "View Campaign Details" : "عرض تفاصيل الحملة"}
-                      className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
-                    >
-                      <span className="hidden sm:inline">{isEn ? "Details" : "تفاصيل"}</span>
-                      <ArrowUpRight className="h-3.5 w-3.5" />
-                    </button>
+                    {/* Mobile Footer with Details Link */}
+                    <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <div className="text-[10px] text-slate-500" dir="ltr">
+                        <span>{isEn ? "Budget: " : "الميزانية: "}</span>
+                        <span className="font-bold text-slate-900 dark:text-white">
+                          {formatCurrency(currentBudget, selectedCurrency)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigate(
+                            `/advertising/facebook-ads/campaigns/${campaign.id}${
+                              selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
+                            }`,
+                          )
+                        }
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                      >
+                        <span>{isEn ? "Details" : "تفاصيل"}</span>
+                        <ArrowUpRight className="h-3 w-3" />
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </article>
-            );
-          })}
+                </article>
+              );
+            })}
+          </div>
         </div>
       )}
 
