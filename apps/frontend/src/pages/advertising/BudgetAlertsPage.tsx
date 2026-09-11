@@ -1,16 +1,16 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import {
   BellRing,
-  Gauge,
+  Clock,
+  MessageSquare,
+  PhoneCall,
   RefreshCw,
   Send,
-  SlidersHorizontal,
+  ShieldAlert,
   Trash2,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
-import { tToast } from "../../utils/i18n-toast";
-import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
-import MiniMetric from "../../components/advertising/dashboard/MiniMetric";
 import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
@@ -45,27 +45,41 @@ const defaultBudgetAlertForm: BudgetAlertFormState = {
   cooldownMinutes: "720",
 };
 
-const budgetAlertMetricOptions: Record<
+const metricLabels: Record<FacebookAdsBudgetAlertMetric, string> = {
+  ACCOUNT_BALANCE: "رصيد الحساب الإعلاني",
+  SPEND_CAP_REMAINING: "المتبقي من حد إنفاق الحساب",
+  CAMPAIGN_BUDGET_REMAINING: "المتبقي من ميزانية الحملة",
+  CAMPAIGN_FINISHED: "عند انتهاء الحملة أو نفاد ميزانيتها",
+};
+
+const scopeOptions: Array<{ value: FacebookAdsBudgetAlertScope; label: string }> = [
+  { value: "AD_ACCOUNT", label: "الحساب الإعلاني (Account Level)" },
+  { value: "CAMPAIGN", label: "حملة محددة (Campaign Level)" },
+];
+
+const metricOptionsByScope: Record<
   FacebookAdsBudgetAlertScope,
   Array<{ value: FacebookAdsBudgetAlertMetric; label: string }>
 > = {
   AD_ACCOUNT: [
-    { value: "ACCOUNT_BALANCE", label: "رصيد الحساب الإعلاني" },
-    { value: "SPEND_CAP_REMAINING", label: "المتبقي من حد إنفاق الحساب" },
+    { value: "ACCOUNT_BALANCE", label: "رصيد الحساب أقل من..." },
+    { value: "SPEND_CAP_REMAINING", label: "المتبقي من حد الإنفاق أقل من..." },
   ],
   CAMPAIGN: [
-    { value: "CAMPAIGN_BUDGET_REMAINING", label: "المتبقي من ميزانية الحملة" },
-    { value: "CAMPAIGN_FINISHED", label: "عند انتهاء الحملة/نفاد الميزانية" },
+    { value: "CAMPAIGN_BUDGET_REMAINING", label: "المتبقي من ميزانية الحملة أقل من..." },
+    { value: "CAMPAIGN_FINISHED", label: "عند اكتمال الحملة أو نفاد الميزانية" },
   ],
 };
 
-const budgetAlertScopeOptions: Array<{
-  value: FacebookAdsBudgetAlertScope;
-  label: string;
-}> = [
-  { value: "AD_ACCOUNT", label: "الحساب الإعلاني" },
-  { value: "CAMPAIGN", label: "حملة محددة" },
+const cooldownOptions = [
+  { value: "15", label: "15 دقيقة (تنبيه متكرر سريع)" },
+  { value: "60", label: "ساعة واحدة" },
+  { value: "360", label: "6 ساعات" },
+  { value: "720", label: "12 ساعة (نصف يوم - موصى به)" },
+  { value: "1440", label: "24 ساعة (مرة يومياً)" },
 ];
+
+const thresholdPresets = ["50", "100", "250", "500", "1000"];
 
 const splitAlertPhones = (value: string) =>
   value
@@ -73,48 +87,15 @@ const splitAlertPhones = (value: string) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
-const getBudgetAlertMetricLabel = (metric: string) =>
-  Object.values(budgetAlertMetricOptions)
-    .flat()
-    .find((option) => option.value === metric)?.label || metric;
-
-const getBudgetAlertTargetName = (rule: FacebookAdsBudgetAlertRule) =>
-  rule.scope === "CAMPAIGN"
-    ? rule.campaign?.name || "حملة غير محددة"
-    : rule.adAccount?.name || "حساب إعلاني";
-
-const getRulePayload = (
-  rule: FacebookAdsBudgetAlertRule,
-  isEnabled = rule.isEnabled,
-) => ({
-  adAccountId: rule.adAccountId || null,
-  campaignId: rule.campaignId || null,
-  scope: rule.scope,
-  metric: rule.metric,
-  thresholdAmount: rule.thresholdAmount,
-  currency: rule.currency,
-  recipientPhones: rule.recipientPhones,
-  isEnabled,
-  cooldownMinutes: rule.cooldownMinutes,
-  settings: rule.settings,
-});
-
-const BudgetAlertsPage: React.FC = () => {
+export const BudgetAlertsPage: React.FC = () => {
   const accountContext = useFacebookAdsAccountContext();
   const [campaigns, setCampaigns] = useState<FacebookCampaign[]>([]);
-  const [budgetAlertRules, setBudgetAlertRules] = useState<
-    FacebookAdsBudgetAlertRule[]
-  >([]);
-  const [budgetAlertLogs, setBudgetAlertLogs] = useState<
-    FacebookAdsBudgetAlertLog[]
-  >([]);
-  const [budgetAlertForm, setBudgetAlertForm] =
-    useState<BudgetAlertFormState>(defaultBudgetAlertForm);
-  const [savingBudgetAlert, setSavingBudgetAlert] = useState(false);
-  const [testingBudgetAlertId, setTestingBudgetAlertId] = useState<string | null>(
-    null,
-  );
-  const [checkingBudgetAlerts, setCheckingBudgetAlerts] = useState(false);
+  const [budgetAlertRules, setBudgetAlertRules] = useState<FacebookAdsBudgetAlertRule[]>([]);
+  const [budgetAlertLogs, setBudgetAlertLogs] = useState<FacebookAdsBudgetAlertLog[]>([]);
+  const [form, setForm] = useState<BudgetAlertFormState>(defaultBudgetAlertForm);
+  const [savingAlert, setSavingAlert] = useState(false);
+  const [testingAlertId, setTestingAlertId] = useState<string | null>(null);
+  const [checkingAlerts, setCheckingAlerts] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const {
@@ -129,6 +110,7 @@ const BudgetAlertsPage: React.FC = () => {
     selectedAdAccount?.currency ||
     selectedAdAccount?.billingHealth?.currency ||
     "EGP";
+
   const selectedAccountBalance = selectedAdAccount?.billingHealth?.balance ?? null;
   const selectedSpendCapRemaining =
     selectedAdAccount?.billingHealth?.spendCap != null
@@ -149,18 +131,23 @@ const BudgetAlertsPage: React.FC = () => {
     [budgetAlertRules, selectedAdAccountId],
   );
 
+  const activeRulesCount = useMemo(
+    () => selectedAccountAlertRules.filter((r) => r.isEnabled).length,
+    [selectedAccountAlertRules],
+  );
+
   const businessGroups = useMemo(() => {
     const groups = new Map<string, { label: string; accounts: typeof adAccounts }>();
     adAccounts.forEach((account) => {
       const key = account.business?.id || "unassigned";
-      const label = account.business?.name || "حسابات بدون Business ظاهر";
+      const label = account.business?.name || "حسابات عامة";
       if (!groups.has(key)) groups.set(key, { label, accounts: [] });
       groups.get(key)!.accounts.push(account);
     });
     return Array.from(groups.entries());
   }, [adAccounts]);
 
-  const loadBudgetAlerts = useCallback(async () => {
+  const loadData = useCallback(async () => {
     if (!selectedAdAccountId) {
       setCampaigns([]);
       setBudgetAlertRules([]);
@@ -173,7 +160,7 @@ const BudgetAlertsPage: React.FC = () => {
       const [campaignData, rules, logs] = await Promise.all([
         facebookAdsService.getCampaigns(selectedAdAccountId),
         facebookAdsService.getBudgetAlertRules().catch(() => []),
-        facebookAdsService.getBudgetAlertLogs(20).catch(() => []),
+        facebookAdsService.getBudgetAlertLogs(30).catch(() => []),
       ]);
       setCampaigns(campaignData);
       setBudgetAlertRules(rules);
@@ -186,449 +173,614 @@ const BudgetAlertsPage: React.FC = () => {
   }, [selectedAdAccountId]);
 
   useEffect(() => {
-    if (contextLoading) return;
-    loadBudgetAlerts();
-  }, [contextLoading, loadBudgetAlerts]);
+    if (!contextLoading) {
+      loadData();
+    }
+  }, [contextLoading, loadData]);
 
-  const updateBudgetAlertForm = (patch: Partial<BudgetAlertFormState>) => {
-    setBudgetAlertForm((current) => {
-      const next = { ...current, ...patch };
-      if (patch.scope && patch.scope !== current.scope) {
-        next.metric =
-          budgetAlertMetricOptions[patch.scope]?.[0]?.value || current.metric;
-        next.campaignId = patch.scope === "CAMPAIGN" ? current.campaignId : "";
-        if (next.metric === "CAMPAIGN_FINISHED") {
-          next.thresholdAmount = "0";
-        }
-      }
-      if (patch.metric === "CAMPAIGN_FINISHED") {
-        next.thresholdAmount = "0";
-      }
-      return next;
-    });
-  };
-
-  const reloadBudgetAlerts = async () => {
+  const reloadRulesAndLogs = async () => {
     const [rules, logs] = await Promise.all([
-      facebookAdsService.getBudgetAlertRules(),
-      facebookAdsService.getBudgetAlertLogs(20),
+      facebookAdsService.getBudgetAlertRules().catch(() => []),
+      facebookAdsService.getBudgetAlertLogs(30).catch(() => []),
     ]);
     setBudgetAlertRules(rules);
     setBudgetAlertLogs(logs);
   };
 
-  const handleCreateBudgetAlert = async () => {
+  const handleCreateRule = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!selectedAdAccountId) {
-      tToast.error("BudgetAlertsPage.msg_c1b0");
+      toast.error("يرجى اختيار حساب إعلاني أولاً");
       return;
     }
 
-    const recipientPhones = splitAlertPhones(budgetAlertForm.recipientPhones);
-    if (recipientPhones.length === 0) {
-      tToast.error("BudgetAlertsPage.msg_74b3");
+    const phones = splitAlertPhones(form.recipientPhones);
+    if (phones.length === 0) {
+      toast.error("يرجى إدخال رقم هاتف واحد على الأقل لاستقبال رسائل الواتساب");
       return;
     }
 
-    if (budgetAlertForm.scope === "CAMPAIGN" && !budgetAlertForm.campaignId) {
-      tToast.error("BudgetAlertsPage.msg_0efb");
+    if (form.scope === "CAMPAIGN" && !form.campaignId) {
+      toast.error("يرجى اختيار الحملة المستهدفة للتنبيه");
       return;
     }
 
-    const thresholdAmount =
-      budgetAlertForm.metric === "CAMPAIGN_FINISHED"
-        ? 0
-        : Number(budgetAlertForm.thresholdAmount);
+    const threshold =
+      form.metric === "CAMPAIGN_FINISHED" ? 0 : Number(form.thresholdAmount);
 
-    if (!Number.isFinite(thresholdAmount)) {
-      tToast.error("BudgetAlertsPage.msg_fe1b");
+    if (!Number.isFinite(threshold) || threshold < 0) {
+      toast.error("يرجى إدخال قيمة حد صحيحة");
       return;
     }
 
     try {
-      setSavingBudgetAlert(true);
+      setSavingAlert(true);
       await facebookAdsService.createBudgetAlertRule({
         adAccountId: selectedAdAccountId,
-        campaignId:
-          budgetAlertForm.scope === "CAMPAIGN"
-            ? budgetAlertForm.campaignId
-            : null,
-        scope: budgetAlertForm.scope,
-        metric: budgetAlertForm.metric,
-        thresholdAmount,
+        campaignId: form.scope === "CAMPAIGN" ? form.campaignId : null,
+        scope: form.scope,
+        metric: form.metric,
+        thresholdAmount: threshold,
         currency: selectedCurrency,
-        recipientPhones,
-        cooldownMinutes: Number(budgetAlertForm.cooldownMinutes) || 720,
+        recipientPhones: phones,
+        cooldownMinutes: Number(form.cooldownMinutes) || 720,
         isEnabled: true,
       });
-      setBudgetAlertForm((current) => ({
+
+      toast.success("تم إنشاء وتفعيل تنبيه WhatsApp بنجاح");
+      setForm((prev) => ({
         ...defaultBudgetAlertForm,
-        recipientPhones: current.recipientPhones,
+        recipientPhones: prev.recipientPhones,
       }));
-      await reloadBudgetAlerts();
-      tToast.success("BudgetAlertsPage.success_create_2b78");
+      await reloadRulesAndLogs();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل إنشاء التنبيه"));
+      toast.error(getApiErrorMessage(error, "فشل حفظ التنبيه"));
     } finally {
-      setSavingBudgetAlert(false);
+      setSavingAlert(false);
     }
   };
 
-  const handleTestBudgetAlert = async (ruleId: string) => {
+  const handleTestRule = async (ruleId: string) => {
     try {
-      setTestingBudgetAlertId(ruleId);
+      setTestingAlertId(ruleId);
       await facebookAdsService.testBudgetAlertRule(ruleId);
-      await reloadBudgetAlerts();
-      tToast.success("BudgetAlertsPage.success_send_d688");
+      toast.success("تم إرسال رسالة تجريبية إلى أرقام WhatsApp المحددة بنجاح");
+      await reloadRulesAndLogs();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل اختبار التنبيه"));
+      toast.error(getApiErrorMessage(error, "فشل إرسال رسالة الاختبار"));
     } finally {
-      setTestingBudgetAlertId(null);
+      setTestingAlertId(null);
     }
   };
 
-  const handleToggleBudgetAlert = async (rule: FacebookAdsBudgetAlertRule) => {
-    if (!window.confirm(`هل أنت متأكد من ${rule.isEnabled ? "إيقاف" : "تفعيل"} هذا التنبيه؟`)) return;
+  const handleToggleRule = async (rule: FacebookAdsBudgetAlertRule) => {
     try {
-      await facebookAdsService.updateBudgetAlertRule(
-        rule.id,
-        getRulePayload(rule, !rule.isEnabled),
-      );
-      await reloadBudgetAlerts();
-      toast.success(rule.isEnabled ? "تم إيقاف التنبيه" : "تم تفعيل التنبيه");
+      await facebookAdsService.updateBudgetAlertRule(rule.id, {
+        adAccountId: rule.adAccountId || null,
+        campaignId: rule.campaignId || null,
+        scope: rule.scope,
+        metric: rule.metric,
+        thresholdAmount: rule.thresholdAmount,
+        currency: rule.currency,
+        recipientPhones: rule.recipientPhones,
+        isEnabled: !rule.isEnabled,
+        cooldownMinutes: rule.cooldownMinutes,
+        settings: rule.settings,
+      });
+      toast.success(rule.isEnabled ? "تم إيقاف التنبيه" : "تم تفعيل التنبيه بنجاح");
+      await reloadRulesAndLogs();
     } catch (error: unknown) {
-      toast.error(getApiErrorMessage(error, "فشل تحديث التنبيه"));
+      toast.error(getApiErrorMessage(error, "فشل تحديث حالة التنبيه"));
     }
   };
 
-  const handleDeleteBudgetAlert = async (ruleId: string) => {
-    if (!window.confirm("هل أنت متأكد من حذف هذا التنبيه؟")) return;
+  const handleDeleteRule = async (ruleId: string) => {
+    if (!window.confirm("هل أنت متأكد من حذف قاعدة التنبيه هذه نهائياً؟")) return;
     try {
       await facebookAdsService.deleteBudgetAlertRule(ruleId);
-      await reloadBudgetAlerts();
-      tToast.success("BudgetAlertsPage.success_delete_7527");
+      toast.success("تم حذف التنبيه بنجاح");
+      await reloadRulesAndLogs();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل حذف التنبيه"));
     }
   };
 
-  const handleRunBudgetAlertsNow = async () => {
+  const handleManualCheck = async () => {
     try {
-      setCheckingBudgetAlerts(true);
+      setCheckingAlerts(true);
       await facebookAdsService.runBudgetAlertRulesNow();
-      await reloadBudgetAlerts();
-      tToast.success("BudgetAlertsPage.msg_28e0");
+      toast.success("تم فحص ومطابقة جميع التنبيهات مع Meta بنجاح");
+      await reloadRulesAndLogs();
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشل فحص التنبيهات"));
     } finally {
-      setCheckingBudgetAlerts(false);
+      setCheckingAlerts(false);
     }
   };
 
-  if (loading || contextLoading) {
+  if (loading && !selectedAdAccount) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="h-9 w-9 animate-spin rounded-full border-2 border-slate-200 border-t-blue-600" />
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-9 w-9 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent" />
+          <p className="text-xs font-bold text-slate-500">جاري تحميل تنبيهات WhatsApp...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
-      <main className="mx-auto flex max-w-[1680px] flex-col gap-3 p-3 sm:p-4">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100" dir="rtl">
+      <main className="mx-auto flex max-w-[1600px] flex-col gap-3 p-2.5 sm:p-5">
         <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
-        <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <div className="grid gap-3 xl:grid-cols-[minmax(230px,0.65fr)_minmax(680px,1.8fr)] xl:items-end">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2 text-xs font-black text-blue-700 dark:text-blue-300">
-                <BellRing className="h-4 w-4" />
-                WhatsApp Budget Alerts
+
+        {/* Executive Header Banner */}
+        <section className="rounded-2xl border border-emerald-500/20 bg-gradient-to-r from-emerald-950/10 via-white to-white p-3.5 shadow-sm dark:border-emerald-500/30 dark:from-emerald-950/40 dark:via-slate-900 dark:to-slate-900 sm:p-5">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex items-start gap-3.5">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-md shadow-emerald-500/25">
+                <MessageSquare className="h-6 w-6" />
               </div>
-              <h1 className="mt-1 text-xl font-black leading-tight">
-                تنبيهات رصيد الإعلانات
-              </h1>
-              <p className="mt-1 text-xs font-bold leading-5 text-slate-500 dark:text-slate-400">
-                راقب رصيد الحساب وحد إنفاقه، أو المتبقي من ميزانية حملة محددة،
-                وابعت رسالة WhatsApp عند الوصول للحد المختار.
-              </p>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-black text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    WhatsApp Cloud Gateway
+                  </span>
+                  <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    <Clock className="h-3 w-3" /> فحص دوري آلي كل 15 دقيقة
+                  </span>
+                </div>
+                <h1 className="mt-1.5 text-lg font-black tracking-tight sm:text-xl">
+                  تنبيهات ميزانية ورصيد الإعلانات عبر WhatsApp
+                </h1>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  إشعارات فورية على هاتفك لتفادي توقف الإعلانات المفاجئ عند انخفاض الرصيد أو وصول الحملات لحدود الإنفاق.
+                </p>
+              </div>
             </div>
-            <label className="block">
-              <span className="mb-1 block text-[11px] font-black text-slate-500">
-                الحساب
-              </span>
-              <select
-                value={selectedAdAccountId}
-                onChange={(event) => setSelectedAdAccountId(event.target.value)}
-                className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+
+            <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+              <div className="min-w-[220px]">
+                <select
+                  value={selectedAdAccountId}
+                  onChange={(e) => setSelectedAdAccountId(e.target.value)}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 shadow-sm outline-none transition focus:border-emerald-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                >
+                  <option value="">-- اختار الحساب الإعلاني --</option>
+                  {businessGroups.map(([key, group]) => (
+                    <optgroup key={key} label={group.label}>
+                      {group.accounts.map((account) => (
+                        <option key={account.id} value={account.account_id || account.id}>
+                          {account.name}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleManualCheck}
+                disabled={checkingAlerts}
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-emerald-600 px-3.5 text-xs font-black text-white shadow-sm transition hover:bg-emerald-700 disabled:opacity-50"
               >
-                <option value="">اختار حساب إعلاني</option>
-                {businessGroups.map(([key, group]) => (
-                  <optgroup key={key} label={group.label}>
-                    {group.accounts.map((account) => (
-                      <option key={account.id} value={account.account_id || account.id}>
-                        {account.name}
-                      </option>
-                    ))}
-                  </optgroup>
-                ))}
-              </select>
-            </label>
+                <RefreshCw className={`h-3.5 w-3.5 ${checkingAlerts ? "animate-spin" : ""}`} />
+                <span>{checkingAlerts ? "جاري الفحص..." : "فحص Meta الآن"}</span>
+              </button>
+            </div>
           </div>
         </section>
 
-        <section className="grid gap-2 sm:grid-cols-2">
-          <MiniMetric
-            label="رصيد الحساب الحالي"
-            value={
-              selectedAccountBalance === null
-                ? "غير متاح من Meta"
-                : formatCurrency(selectedAccountBalance, selectedCurrency)
-            }
-          />
-          <MiniMetric
-            label="المتبقي من حد الإنفاق"
-            value={
-              selectedSpendCapRemaining === null
-                ? "غير متاح من Meta"
-                : formatCurrency(selectedSpendCapRemaining, selectedCurrency)
-            }
-          />
+        {/* 4 Sleek KPI Cards */}
+        <section className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span>رصيد الحساب المتاح</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+                <Zap className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-2 text-base font-black text-emerald-600 dark:text-emerald-400 sm:text-xl">
+              {selectedAccountBalance === null
+                ? "غير محدد"
+                : formatCurrency(selectedAccountBalance, selectedCurrency)}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">الرصيد الفعلي الجاري لدى Meta</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span>المتبقي من حد الإنفاق</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                <ShieldAlert className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-2 text-base font-black text-slate-800 dark:text-slate-200 sm:text-xl">
+              {selectedSpendCapRemaining === null
+                ? "غير محدد"
+                : formatCurrency(selectedSpendCapRemaining, selectedCurrency)}
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">Account Spend Cap Remaining</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span>قواعد التنبيه النشطة</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400">
+                <BellRing className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-2 text-base font-black text-slate-800 dark:text-slate-200 sm:text-xl">
+              {activeRulesCount} <span className="text-xs font-normal text-slate-400">من {selectedAccountAlertRules.length}</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">قواعد مراقبة فعالة حالياً</p>
+          </div>
+
+          <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+            <div className="flex items-center justify-between text-xs font-bold text-slate-500 dark:text-slate-400">
+              <span>إجمالي الرسائل المرسلة</span>
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-50 text-amber-600 dark:bg-amber-950/40 dark:text-amber-400">
+                <Send className="h-4 w-4" />
+              </div>
+            </div>
+            <div className="mt-2 text-base font-black text-slate-800 dark:text-slate-200 sm:text-xl">
+              {budgetAlertLogs.length} <span className="text-xs font-normal text-slate-400">تنبيه</span>
+            </div>
+            <p className="mt-1 text-[11px] text-slate-400">سجل الإرسال عبر البوابة</p>
+          </div>
         </section>
 
-        <div className="grid gap-3 xl:grid-cols-[0.9fr_1.1fr]">
-          <section className="rounded-xl border border-blue-200 bg-white p-3 shadow-sm dark:border-blue-900/50 dark:bg-slate-900">
-            <h2 className="text-base font-black">إنشاء تنبيه جديد</h2>
+        {/* Main Grid: Form + Rules & Logs */}
+        <div className="grid gap-3.5 lg:grid-cols-12">
+          {/* Create Alert Rule Form (Right on RTL, 5 cols) */}
+          <div className="lg:col-span-5">
+            <form
+              onSubmit={handleCreateRule}
+              className="flex flex-col gap-3 rounded-2xl border border-emerald-500/20 bg-white p-3.5 shadow-sm dark:border-emerald-500/30 dark:bg-slate-900 sm:p-4"
+            >
+              <div className="border-b border-slate-100 pb-2.5 dark:border-slate-800">
+                <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 sm:text-base">
+                  إنشاء تنبيه WhatsApp جديد
+                </h2>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  حدد شرط الإرسال ورقم الهاتف ليصلك إشعار فوري عند مطابقة الشرط
+                </p>
+              </div>
 
-            <div className="mt-3 grid gap-2 md:grid-cols-2">
-              <SelectFilter
-                icon={SlidersHorizontal}
-                label="نوع الرصيد"
-                value={budgetAlertForm.scope}
-                onChange={(value) =>
-                  updateBudgetAlertForm({
-                    scope: value as FacebookAdsBudgetAlertScope,
-                  })
-                }
-                options={budgetAlertScopeOptions}
-              />
-              <SelectFilter
-                icon={Gauge}
-                label="متى أرسل؟"
-                value={budgetAlertForm.metric}
-                onChange={(value) =>
-                  updateBudgetAlertForm({
-                    metric: value as FacebookAdsBudgetAlertMetric,
-                  })
-                }
-                options={budgetAlertMetricOptions[budgetAlertForm.scope]}
-              />
-            </div>
+              {/* Scope Selection */}
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  نطاق المراقبة (Scope)
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  {scopeOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          scope: opt.value,
+                          metric: metricOptionsByScope[opt.value][0].value,
+                          campaignId: opt.value === "CAMPAIGN" ? prev.campaignId : "",
+                        }))
+                      }
+                      className={`rounded-xl border px-2.5 py-2 text-center text-xs font-black transition ${
+                        form.scope === opt.value
+                          ? "border-emerald-500 bg-emerald-50 text-emerald-700 dark:border-emerald-400 dark:bg-emerald-950/40 dark:text-emerald-300"
+                          : "border-slate-200 bg-slate-50 text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-400"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-            {budgetAlertForm.scope === "CAMPAIGN" ? (
-              <label className="mt-2 block">
-                <span className="mb-1 block text-[11px] font-black text-slate-500">
-                  الحملة
-                </span>
+              {/* Campaign selector if scope is campaign */}
+              {form.scope === "CAMPAIGN" && (
+                <div>
+                  <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    الحملة الإعلانية المستهدفة
+                  </label>
+                  <select
+                    value={form.campaignId}
+                    onChange={(e) => setForm((prev) => ({ ...prev, campaignId: e.target.value }))}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                  >
+                    <option value="">-- اختار الحملة --</option>
+                    {campaigns.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({formatCurrency(c.budgetAmount, selectedCurrency)})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Metric Trigger */}
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  شرط إطلاق التنبيه (Trigger Condition)
+                </label>
                 <select
-                  value={budgetAlertForm.campaignId}
-                  onChange={(event) =>
-                    updateBudgetAlertForm({ campaignId: event.target.value })
+                  value={form.metric}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      metric: e.target.value as FacebookAdsBudgetAlertMetric,
+                      thresholdAmount: e.target.value === "CAMPAIGN_FINISHED" ? "0" : prev.thresholdAmount,
+                    }))
                   }
-                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                 >
-                  <option value="">اختار حملة</option>
-                  {campaigns.map((campaign) => (
-                    <option key={campaign.id} value={campaign.id}>
-                      {campaign.name} - {formatCurrency(campaign.budgetAmount, selectedCurrency)}
+                  {metricOptionsByScope[form.scope].map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
                     </option>
                   ))}
                 </select>
-              </label>
-            ) : null}
+              </div>
 
-            <div className="mt-2 grid gap-2 md:grid-cols-2">
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-black text-slate-500">
-                  قيمة التنبيه
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  value={budgetAlertForm.thresholdAmount}
-                  disabled={budgetAlertForm.metric === "CAMPAIGN_FINISHED"}
-                  onChange={(event) =>
-                    updateBudgetAlertForm({ thresholdAmount: event.target.value })
-                  }
-                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-slate-100 disabled:text-slate-400 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800"
-                />
-              </label>
-              <label className="block">
-                <span className="mb-1 block text-[11px] font-black text-slate-500">
-                  منع التكرار بالدقائق
-                </span>
-                <input
-                  type="number"
-                  min="15"
-                  step="15"
-                  value={budgetAlertForm.cooldownMinutes}
-                  onChange={(event) =>
-                    updateBudgetAlertForm({ cooldownMinutes: event.target.value })
-                  }
-                  className="h-9 w-full rounded-lg border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-                />
-              </label>
-            </div>
+              {/* Threshold Amount & Presets */}
+              {form.metric !== "CAMPAIGN_FINISHED" && (
+                <div>
+                  <div className="mb-1 flex items-center justify-between text-xs font-bold">
+                    <span className="text-slate-700 dark:text-slate-300">قيمة الحد الأدنى للتنبيه</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-black">{selectedCurrency}</span>
+                  </div>
+                  <input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={form.thresholdAmount}
+                    onChange={(e) => setForm((prev) => ({ ...prev, thresholdAmount: e.target.value }))}
+                    placeholder="مثال: 100"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm font-black text-slate-900 outline-none focus:border-emerald-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100"
+                  />
+                  <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] text-slate-400">مقترحات سريعة:</span>
+                    {thresholdPresets.map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setForm((prev) => ({ ...prev, thresholdAmount: val }))}
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-bold text-slate-600 hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                      >
+                        {val} {selectedCurrency}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
-            <label className="mt-2 block">
-              <span className="mb-1 block text-[11px] font-black text-slate-500">
-                أرقام WhatsApp المستقبلة
-              </span>
-              <textarea
-                rows={3}
-                value={budgetAlertForm.recipientPhones}
-                onChange={(event) =>
-                  updateBudgetAlertForm({ recipientPhones: event.target.value })
-                }
-                placeholder="مثال: 01000000000&#10;01200000000"
-                className="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-2 text-xs font-bold text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
-              />
-            </label>
-
-            <button
-              type="button"
-              onClick={handleCreateBudgetAlert}
-              disabled={savingBudgetAlert || !selectedAdAccountId}
-              className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-black text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <BellRing className="h-4 w-4" />
-              {savingBudgetAlert ? "جاري الحفظ..." : "إنشاء تنبيه WhatsApp"}
-            </button>
-          </section>
-
-          <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between gap-2">
+              {/* Cooldown minutes */}
               <div>
-                <h2 className="text-base font-black">التنبيهات المفعلة</h2>
-                <p className="mt-1 text-xs font-bold text-slate-500 dark:text-slate-400">
-                  يتم الفحص تلقائياً كل 15 دقيقة، مع منع تكرار الرسائل لنفس الحد.
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  منع التكرار (Anti-Spam Cooldown)
+                </label>
+                <select
+                  value={form.cooldownMinutes}
+                  onChange={(e) => setForm((prev) => ({ ...prev, cooldownMinutes: e.target.value }))}
+                  className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
+                >
+                  {cooldownOptions.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-[11px] text-slate-400">
+                  المدة الفاصلة قبل إرسال تنبيه جديد لنفس الحد لتفادي الإزعاج
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={handleRunBudgetAlertsNow}
-                disabled={checkingBudgetAlerts}
-                className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-2.5 text-[11px] font-black text-blue-700 hover:bg-blue-100 disabled:opacity-60 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200"
-              >
-                <RefreshCw
-                  className={`h-3.5 w-3.5 ${checkingBudgetAlerts ? "animate-spin" : ""}`}
+
+              {/* Recipient Phones */}
+              <div>
+                <label className="mb-1 block text-xs font-bold text-slate-700 dark:text-slate-300">
+                  أرقام WhatsApp المستلمة
+                </label>
+                <textarea
+                  rows={2}
+                  value={form.recipientPhones}
+                  onChange={(e) => setForm((prev) => ({ ...prev, recipientPhones: e.target.value }))}
+                  placeholder="01000000000، 01100000000 أو +201200000000"
+                  className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-bold text-slate-800 outline-none focus:border-emerald-500 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200"
                 />
-                افحص الآن
+                <p className="mt-0.5 text-[11px] text-slate-400">
+                  يمكن إدخال أكثر من رقم مفصولة بفاصلة أو سطر جديد
+                </p>
+              </div>
+
+              {/* Submit CTA Button */}
+              <button
+                type="submit"
+                disabled={savingAlert || !selectedAdAccountId}
+                className="mt-1 inline-flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-xs font-black text-white shadow-md shadow-emerald-600/20 transition hover:bg-emerald-700 disabled:opacity-50"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>{savingAlert ? "جاري الحفظ والربط..." : "حفظ وتفعيل تنبيه WhatsApp"}</span>
               </button>
-            </div>
+            </form>
+          </div>
 
-            <div className="mt-3 grid gap-2">
-              {selectedAccountAlertRules.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-slate-200 p-5 text-center text-xs font-bold text-slate-500 dark:border-slate-800 dark:text-slate-400">
-                  لا توجد تنبيهات بعد. أضف حد مثل 100 جنيه وسيتم الإرسال عند الوصول له.
-                </div>
-              ) : (
-                selectedAccountAlertRules.map((rule) => (
-                  <article
-                    key={rule.id}
-                    className="rounded-xl border border-slate-200 p-2.5 dark:border-slate-800"
-                  >
-                    <div className="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="truncate text-sm font-black">
-                            {getBudgetAlertTargetName(rule)}
-                          </h3>
-                          <span
-                            className={[
-                              "rounded-full px-2 py-0.5 text-[11px] font-black",
-                              rule.isEnabled
-                                ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/35 dark:text-emerald-200"
-                                : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300",
-                            ].join(" ")}
-                          >
-                            {rule.isEnabled ? "مفعل" : "متوقف"}
-                          </span>
-                          <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-black text-blue-700 dark:bg-blue-950/40 dark:text-blue-200">
-                            {getBudgetAlertMetricLabel(rule.metric)}
-                          </span>
-                        </div>
-                        <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
-                          <span>
-                            الحد: {formatCurrency(rule.thresholdAmount, rule.currency)}
-                          </span>
-                          <span>آخر قراءة: {rule.lastObservedLabel || "لم يتم الفحص"}</span>
-                          <span>
-                            الأرقام: {rule.recipientPhones.join("، ") || "غير محدد"}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap gap-1.5 lg:justify-end">
-                        <button
-                          type="button"
-                          onClick={() => handleTestBudgetAlert(rule.id)}
-                          disabled={testingBudgetAlertId === rule.id}
-                          className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-blue-200 px-2 text-[11px] font-black text-blue-700 hover:bg-blue-50 disabled:opacity-60 dark:border-blue-900/60 dark:text-blue-200 dark:hover:bg-blue-950/30"
-                        >
-                          <Send className="h-3.5 w-3.5" />
-                          اختبار
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleToggleBudgetAlert(rule)}
-                          className="inline-flex h-8 items-center justify-center rounded-lg border border-slate-300 px-2 text-[11px] font-black text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                        >
-                          {rule.isEnabled ? "إيقاف" : "تفعيل"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteBudgetAlert(rule.id)}
-                          className="inline-flex h-8 items-center justify-center gap-1 rounded-lg border border-red-200 px-2 text-[11px] font-black text-red-700 hover:bg-red-50 dark:border-red-900/60 dark:text-red-200 dark:hover:bg-red-950/30"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                          حذف
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))
-              )}
-            </div>
-
-            {budgetAlertLogs.length ? (
-              <div className="mt-3 rounded-xl bg-slate-50 p-2 dark:bg-slate-950">
-                <h3 className="mb-2 text-xs font-black text-slate-500 dark:text-slate-300">
-                  آخر رسائل WhatsApp
-                </h3>
-                <div className="grid gap-1.5">
-                  {budgetAlertLogs.slice(0, 4).map((log) => (
-                    <div
-                      key={log.id}
-                      className="flex flex-col gap-1 rounded-lg bg-white px-2 py-1.5 text-[11px] font-bold text-slate-600 dark:bg-slate-900 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                      <span className="truncate">
-                        {getBudgetAlertMetricLabel(log.metric)} → {log.recipientPhone}
-                      </span>
-                      <span
-                        className={
-                          log.status === "SENT"
-                            ? "text-emerald-600 dark:text-emerald-300"
-                            : "text-red-600 dark:text-red-300"
-                        }
-                      >
-                        {log.status} · {formatDate(log.createdAt)}
-                      </span>
-                    </div>
-                  ))}
+          {/* Active Rules & Log (Left on RTL, 7 cols) */}
+          <div className="flex flex-col gap-3.5 lg:col-span-7">
+            {/* Active Rules Card */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 dark:border-slate-800">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 sm:text-base">
+                    قواعد التنبيه الحالية ({selectedAccountAlertRules.length})
+                  </h2>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    القواعد التي تراقب رصيد الحساب وميزانيات الحملات دورياً
+                  </p>
                 </div>
               </div>
-            ) : null}
-          </section>
+
+              <div className="mt-3 flex flex-col gap-2.5">
+                {selectedAccountAlertRules.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-8 text-center dark:border-slate-800">
+                    <BellRing className="h-8 w-8 text-slate-300 dark:text-slate-600" />
+                    <p className="mt-2 text-xs font-bold text-slate-500">لا توجد قواعد تنبيه مفعلة لهذا الحساب بعد</p>
+                    <p className="text-[11px] text-slate-400">استخدم النموذج المقابل لإنشاء أول تنبيه WhatsApp</p>
+                  </div>
+                ) : (
+                  selectedAccountAlertRules.map((rule) => {
+                    const isCampaign = rule.scope === "CAMPAIGN";
+                    const title = isCampaign
+                      ? rule.campaign?.name || "حملة محددة"
+                      : rule.adAccount?.name || "الحساب الإعلاني";
+
+                    return (
+                      <div
+                        key={rule.id}
+                        className={`rounded-xl border p-3 transition ${
+                          rule.isEnabled
+                            ? "border-slate-200 bg-slate-50/50 dark:border-slate-800 dark:bg-slate-950/40"
+                            : "border-dashed border-slate-200 bg-slate-50/20 opacity-70 dark:border-slate-800"
+                        }`}
+                      >
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                          <div className="min-w-0">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <span
+                                className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                                  rule.isEnabled
+                                    ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                                    : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-400"
+                                }`}
+                              >
+                                {rule.isEnabled ? "نشط ومفعل" : "معطل"}
+                              </span>
+                              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[10px] font-bold text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
+                                {isCampaign ? "حملة" : "حساب إعلاني"}
+                              </span>
+                              <h3 className="truncate text-xs font-black text-slate-900 dark:text-slate-100 sm:text-sm">
+                                {title}
+                              </h3>
+                            </div>
+
+                            <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400">
+                              <span>
+                                الشرط: <strong className="text-slate-700 dark:text-slate-300">{metricLabels[rule.metric] || rule.metric}</strong>
+                              </span>
+                              <span>
+                                الحد: <strong className="text-emerald-600 dark:text-emerald-400">{formatCurrency(rule.thresholdAmount, rule.currency)}</strong>
+                              </span>
+                              <span>
+                                منع التكرار: <strong className="text-slate-700 dark:text-slate-300">{rule.cooldownMinutes} دقيقة</strong>
+                              </span>
+                            </div>
+
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                              <PhoneCall className="h-3 w-3 text-slate-400" />
+                              {rule.recipientPhones.map((ph, idx) => (
+                                <span
+                                  key={idx}
+                                  className="rounded-md bg-white px-1.5 py-0.5 text-[10px] font-bold text-slate-700 shadow-sm dark:bg-slate-800 dark:text-slate-300"
+                                >
+                                  {ph}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1.5 pt-1 sm:pt-0">
+                            <button
+                              type="button"
+                              onClick={() => handleTestRule(rule.id)}
+                              disabled={testingAlertId === rule.id}
+                              className="inline-flex h-8 items-center gap-1 rounded-lg border border-emerald-300 bg-emerald-50 px-2 text-[11px] font-bold text-emerald-700 transition hover:bg-emerald-100 disabled:opacity-50 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300"
+                              title="إرسال رسالة اختبارية فورية على واتساب"
+                            >
+                              <Send className="h-3 w-3" />
+                              <span>{testingAlertId === rule.id ? "جاري الإرسال..." : "اختبار حي"}</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleToggleRule(rule)}
+                              className="inline-flex h-8 items-center rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300"
+                            >
+                              {rule.isEnabled ? "إيقاف" : "تفعيل"}
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteRule(rule.id)}
+                              className="inline-flex h-8 items-center rounded-lg border border-red-200 bg-red-50 p-2 text-red-600 transition hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400"
+                              title="حذف القاعدة"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* Audit & Logs Card */}
+            <div className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5 dark:border-slate-800">
+                <h2 className="text-sm font-black text-slate-900 dark:text-slate-100 sm:text-base">
+                  سجل رسائل WhatsApp المرسلة
+                </h2>
+                <span className="text-[11px] font-bold text-slate-400">
+                  آخر {budgetAlertLogs.length} إشعار
+                </span>
+              </div>
+
+              <div className="mt-3 flex flex-col gap-2">
+                {budgetAlertLogs.length === 0 ? (
+                  <div className="py-6 text-center text-xs font-bold text-slate-400">
+                    لم يتم تسجيل أي رسائل مرسلة حتى الآن
+                  </div>
+                ) : (
+                  budgetAlertLogs.slice(0, 8).map((log) => {
+                    const isSuccess = log.status === "SENT";
+                    return (
+                      <div
+                        key={log.id}
+                        className="flex flex-col gap-1 rounded-xl bg-slate-50 p-2 text-xs font-bold dark:bg-slate-950 sm:flex-row sm:items-center sm:justify-between"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                              isSuccess
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                                : "bg-red-100 text-red-800 dark:bg-red-950/50 dark:text-red-300"
+                            }`}
+                          >
+                            {isSuccess ? "تم الإرسال" : log.status}
+                          </span>
+                          <span className="text-slate-800 dark:text-slate-200">
+                            {log.recipientPhone}
+                          </span>
+                          <span className="text-slate-400">·</span>
+                          <span className="text-slate-500 dark:text-slate-400">
+                            {metricLabels[log.metric] || log.metric}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400">
+                          {log.currentValue != null && (
+                            <span>القيمة: {formatCurrency(log.currentValue, log.currency)}</span>
+                          )}
+                          <span>{formatDate(log.createdAt)}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </main>
     </div>
