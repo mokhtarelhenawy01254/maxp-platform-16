@@ -30,6 +30,7 @@
     "inventory.check",
     "competitor.get_ads",
     "facebook_ad.create_full_draft",
+    "facebook_ad.publish_draft",
     "facebook_ad.analyze_product",
     "facebook_ad.get_decision",
     "generate_social_image",

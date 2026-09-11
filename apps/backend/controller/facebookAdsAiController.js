@@ -164,6 +164,56 @@ class FacebookAdsAiController {
       // Prepare complete payload and pipe into existing full-ad creation pipeline
       const fullAdPayload = facebookAdsAiDraftService.preparePublishPayload(draft, overrides);
 
+      // Auto-resolve pageId, adAccountId, and pixelId from company integrations if missing
+      const { getSharedPrismaClient } = require('../services/sharedDatabase');
+      const prisma = getSharedPrismaClient();
+      try {
+        if (!fullAdPayload.pageId) {
+          const connectedPage = await prisma.facebookPage.findFirst({
+            where: { companyId, status: 'connected' },
+            orderBy: { updatedAt: 'desc' }
+          });
+          if (connectedPage?.pageId) {
+            fullAdPayload.pageId = connectedPage.pageId;
+          }
+        }
+        if (!fullAdPayload.adAccountId) {
+          const defaultAccount = await prisma.facebookAdAccount.findFirst({
+            where: { companyId, isActive: true },
+            orderBy: { updatedAt: 'desc' }
+          });
+          if (defaultAccount?.accountId) {
+            fullAdPayload.adAccountId = defaultAccount.accountId;
+          }
+        }
+        if (!fullAdPayload.pixelId) {
+          const sfSettings = await prisma.storefrontSettings?.findFirst({
+            where: { companyId }
+          });
+          const pixelId = sfSettings?.facebookPixelId || sfSettings?.pixelId;
+          if (pixelId) {
+            fullAdPayload.pixelId = pixelId;
+          }
+        }
+      } catch (dbErr) {
+        console.warn('⚠️ Could not auto-resolve FB assets:', dbErr.message);
+      }
+
+      // If objective is OUTCOME_SALES but no pixel exists, change to OUTCOME_TRAFFIC so Meta doesn't reject it
+      if (!fullAdPayload.pixelId && fullAdPayload.objective === 'OUTCOME_SALES') {
+        fullAdPayload.objective = 'OUTCOME_TRAFFIC';
+      }
+
+      console.log('🚀 Publishing Full Ad Payload:', JSON.stringify({
+        campaignName: fullAdPayload.campaignName,
+        pageId: fullAdPayload.pageId,
+        adAccountId: fullAdPayload.adAccountId,
+        pixelId: fullAdPayload.pixelId,
+        budgetAmount: fullAdPayload.budgetAmount,
+        status: fullAdPayload.status,
+        linkUrl: fullAdPayload.linkUrl
+      }));
+
       // Create a mocked request to delegate to createFullAd safely
       const mockReq = {
         user: req.user,
@@ -224,6 +274,7 @@ class FacebookAdsAiController {
       }
 
       const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      const { getSharedPrismaClient } = require('../services/sharedDatabase');
       let targetAgentId = requestedAgentId;
 
       // 1. First attempt: Discover agent via AI Service Admin Client
@@ -244,8 +295,7 @@ class FacebookAdsAiController {
 
       // 2. Second attempt: Fallback query directly to PostgreSQL ai.agents
       if (!targetAgentId) {
-        const { PrismaClient } = require('@prisma/client');
-        const prisma = new PrismaClient();
+        const prisma = getSharedPrismaClient();
         try {
           const rows = await prisma.$queryRaw`
             SELECT id, name, role FROM ai.agents 
@@ -259,39 +309,134 @@ class FacebookAdsAiController {
           }
         } catch (err) {
           console.warn('[FacebookAdsAI] Could not query ai.agents table directly:', err.message);
-        } finally {
-          await prisma.$disconnect();
         }
       }
 
+      // 3. Third attempt: Auto-provision / lazy-spawn MEDIA_BUYER agent if not yet present
       if (!targetAgentId) {
-        return res.status(404).json({
-          success: false,
-          error: 'لم يتم العثور على وكيل ميديا باير مفعل للشركة. يرجى تفعيل الوكيل أولاً.',
-        });
+        try {
+          console.log(`[FacebookAdsAI] Auto-provisioning MEDIA_BUYER agent for company ${companyId}...`);
+          const spawned = await aiServiceAdminClient.spawnAgent({
+            companyId,
+            role: 'MEDIA_BUYER',
+            name: 'خبير إعلانات فيسبوك (Facebook Media Buyer)',
+            templateSlug: 'facebook-media-buyer-agent',
+            status: 'ACTIVE',
+            allowedTools: [
+              'product_search',
+              'inventory_check',
+              'facebook_ad_analyze_product',
+              'facebook_ad_create_full_draft',
+              'facebook_ad_publish_draft',
+              'facebook_ad_get_decision',
+              'competitor_get_ads',
+              'sales_revenue',
+              'company_snapshot',
+              'audit_read',
+              'generate_social_image',
+            ],
+          });
+          if (spawned?.id) {
+            targetAgentId = spawned.id;
+          }
+        } catch (spawnErr) {
+          console.warn('[FacebookAdsAI] Could not auto-spawn agent via aiServiceAdminClient:', spawnErr.message);
+        }
       }
 
-      const result = await aiServiceAdminClient.chatWithAgent({
-        companyId,
-        agentId: targetAgentId,
-        message,
-        threadId: `${threadId}_${companyId}`,
-      });
+      // Fallback agent identifier if DB records are still populating
+      if (!targetAgentId) {
+        targetAgentId = `media_buyer_${String(companyId).slice(-6)}`;
+      }
 
-      return res.json({
-        success: true,
-        reply: result?.reply || '',
-        status: result?.status || 'ok',
-        tool_calls: result?.tool_calls || [],
-        threadId: result?.thread_id || `${threadId}_${companyId}`,
-        draft_id: result?.draft_id || null,
-        agentId: targetAgentId,
-      });
-    } catch (error) {
-      console.error('❌ Error in Facebook Ads AI Copilot chat:', error);
+      try {
+        const result = await aiServiceAdminClient.chatWithAgent({
+          companyId,
+          agentId: targetAgentId,
+          message,
+          threadId: `${threadId}_${companyId}`,
+          channel: 'dashboard',
+        });
+
+        // Intercept quota / budget / uncharged error states inside response payload
+        const resErrorCode = result?.error_code || result?.errorCode;
+        const isQuotaState = (
+          result?.status === 'error' && (
+            resErrorCode === 'LLM_RATE_LIMITED' ||
+            resErrorCode === 'NO_ACTIVE_KEY' ||
+            resErrorCode === 'BUDGET_EXCEEDED' ||
+            String(result?.error || '').toLowerCase().includes('quota') ||
+            String(result?.error || '').toLowerCase().includes('budget') ||
+            String(result?.error || '').toLowerCase().includes('key')
+          )
+        );
+
+        if (isQuotaState) {
+          return res.status(200).json({
+            success: true,
+            status: 'NEEDS_RECHARGE',
+            reply: 'رصيد استهلاك باقة الذكاء الاصطناعي لحسابك بحاجة إلى تجديد لمواصلة إطلاق وتطوير الحملات الإعلانية. تم حفظ جميع المسودات والبيانات السابقة بأمان تام.',
+            recharge_action: {
+              url: '/settings/billing',
+              type: 'WALLET_RECHARGE',
+              action_label: 'شحن رصيد الذكاء الاصطناعي الآن'
+            },
+            threadId: result?.thread_id || `${threadId}_${companyId}`,
+            draft_id: null,
+            agentId: targetAgentId,
+          });
+        }
+
+        return res.json({
+          success: true,
+          reply: result?.reply || '',
+          status: result?.status || 'ok',
+          tool_calls: result?.tool_calls || [],
+          threadId: result?.thread_id || `${threadId}_${companyId}`,
+          draft_id: result?.draft_id || null,
+          agentId: targetAgentId,
+        });
+      } catch (chatError) {
+        const errMsg = String(chatError.message || '').toLowerCase();
+        const isUnchargedOrQuota = (
+          errMsg.includes('key') ||
+          errMsg.includes('quota') ||
+          errMsg.includes('balance') ||
+          errMsg.includes('rate limit') ||
+          errMsg.includes('credit') ||
+          errMsg.includes('budget') ||
+          errMsg.includes('502') ||
+          errMsg.includes('no llm client')
+        );
+
+        if (isUnchargedOrQuota) {
+          console.warn('[FacebookAdsAI] Graceful handling of uncharged/quota state for company:', companyId, chatError.message);
+          return res.status(200).json({
+            success: true,
+            status: 'NEEDS_RECHARGE',
+            reply: 'رصيد استهلاك باقة الذكاء الاصطناعي لحسابك بحاجة إلى تجديد لمواصلة إطلاق وتطوير الحملات الإعلانية. تم حفظ جميع المسودات والبيانات السابقة بأمان تام.',
+            recharge_action: {
+              url: '/settings/billing',
+              type: 'WALLET_RECHARGE',
+              action_label: 'شحن رصيد الذكاء الاصطناعي الآن'
+            },
+            threadId: `${threadId}_${companyId}`,
+            draft_id: null,
+            agentId: targetAgentId,
+          });
+        }
+
+        console.error('❌ Error in Facebook Ads AI Copilot chat:', chatError);
+        return res.status(500).json({
+          success: false,
+          error: chatError.message || 'Failed to communicate with AI Media Buyer',
+        });
+      }
+    } catch (outerError) {
+      console.error('❌ Unexpected error in Facebook Ads AI chat controller:', outerError);
       return res.status(500).json({
         success: false,
-        error: error.message || 'Failed to communicate with AI Media Buyer',
+        error: outerError.message || 'Unexpected server error',
       });
     }
   }

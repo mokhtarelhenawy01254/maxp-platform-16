@@ -185,6 +185,10 @@ class FacebookAdsAiDraftService {
    */
   preparePublishPayload(draft, overrides = {}) {
     const rawData = safeParseJson(draft.createFullAdData, {});
+    const budgetVal = Number(overrides.budgetAmount || overrides.budget || draft.budgetAmount || rawData.budgetAmount || rawData.budget) || 200;
+    const destUrl = overrides.linkUrl || overrides.productUrl || draft.productUrl || rawData.productUrl || rawData.linkUrl || '';
+    const imgUrl = overrides.imageUrl || draft.imageUrl || rawData.imageUrl || null;
+
     const payload = {
       ...rawData,
       ...overrides,
@@ -195,10 +199,16 @@ class FacebookAdsAiDraftService {
       primaryText: overrides.primaryText || draft.primaryText || rawData.primaryText,
       headline: overrides.headline || draft.headline || rawData.headline,
       description: overrides.description !== undefined ? overrides.description : (draft.description || rawData.description),
-      budget: Number(overrides.budget || draft.budgetAmount || rawData.budget) || 200,
+      budget: budgetVal,
+      budgetAmount: budgetVal,
+      budgetType: overrides.budgetType || rawData.budgetType || 'DAILY',
       country: overrides.country || draft.targetCountry || rawData.country || 'EG',
       callToAction: overrides.callToAction || draft.callToAction || rawData.callToAction || 'SHOP_NOW',
       status: overrides.status || 'PAUSED', // default PAUSED for safety
+      linkUrl: destUrl,
+      productUrl: destUrl,
+      creativeType: overrides.creativeType || rawData.creativeType || 'SINGLE_IMAGE',
+      imageUrl: imgUrl,
     };
 
     return payload;

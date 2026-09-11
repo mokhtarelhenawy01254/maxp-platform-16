@@ -75,6 +75,7 @@ roles:
     - company_snapshot
     - facebook_ad_create_draft
     - facebook_ad_create_full_draft
+    - facebook_ad_publish_draft
     - facebook_ad_analyze_product
     - facebook_ad_get_decision
     - competitor_get_ads
@@ -87,6 +88,7 @@ roles:
     - inventory_check
     - facebook_ad_analyze_product
     - facebook_ad_create_full_draft
+    - facebook_ad_publish_draft
     - facebook_ad_get_decision
     - competitor_get_ads
     - sales_revenue

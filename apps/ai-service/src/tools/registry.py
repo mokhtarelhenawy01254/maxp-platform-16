@@ -117,6 +117,7 @@ WRITE_TOOL_NAMES: set[str] = {
     "knowledge_create_policy",
     "facebook_ad_create_draft",
     "facebook_ad_create_full_draft",
+    "facebook_ad_publish_draft",
     "message_broadcast",
     "agent_spawn",
     "shipping_update",
@@ -128,6 +129,7 @@ DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "order_create_confirmed",
     "discount_create_draft",
     "facebook_ad_create_full_draft",
+    "facebook_ad_publish_draft",
     "knowledge_create_faq",
     "order_confirm",
     "order_update_details",
@@ -207,6 +209,7 @@ knowledge_create_faq_tool = _registry.resolve("knowledge_create_faq")
 knowledge_create_policy_tool = _registry.resolve("knowledge_create_policy")
 facebook_ad_create_draft_tool = _registry.resolve("facebook_ad_create_draft")
 facebook_ad_create_full_draft_tool = _registry.resolve("facebook_ad_create_full_draft")
+facebook_ad_publish_draft_tool = _registry.resolve("facebook_ad_publish_draft")
 facebook_ad_analyze_product_tool = _registry.resolve("facebook_ad_analyze_product")
 facebook_ad_get_decision_tool = _registry.resolve("facebook_ad_get_decision")
 message_broadcast_tool = _registry.resolve("message_broadcast")
@@ -284,6 +287,12 @@ from src.tools.definitions.governance import (  # noqa: E402 F401
     KnowledgeCreatePolicyInput,
     FacebookAdCreateDraftInput,
     MessageBroadcastInput,
+)
+from src.tools.definitions.facebook_ads import (  # noqa: E402 F401
+    FacebookAdAnalyzeProductInput,
+    FacebookAdCreateFullDraftInput,
+    FacebookAdPublishDraftInput,
+    FacebookAdGetDecisionInput,
 )
 from src.tools.definitions.facebook import (  # noqa: E402 F401
     FacebookReplyInput,
