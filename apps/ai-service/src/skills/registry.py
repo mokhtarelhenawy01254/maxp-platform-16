@@ -47,10 +47,11 @@ class SkillRegistry:
         return list(self._skills.keys()) + list(self._tools.keys())
 
     def get_all_tools(self) -> list[FunctionTool]:
-        tools = list(self._tools.values())
+        tools: dict[str, FunctionTool] = dict(self._tools)
         for skill in self._skills.values():
-            tools.append(self._skill_to_function_tool(skill))
-        return tools
+            if skill.name not in tools:
+                tools[skill.name] = self._skill_to_function_tool(skill)
+        return list(tools.values())
 
     def get_tools_for_group(self, group: str) -> list[FunctionTool]:
         names = self._groups.get(group, set())

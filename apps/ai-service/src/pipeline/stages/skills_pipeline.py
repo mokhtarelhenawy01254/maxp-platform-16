@@ -479,42 +479,52 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 
 
 def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:
-    tool_dicts = []
-    skill_names = set()
+    tool_dicts: list[dict] = []
+    seen_names: set[str] = set()
+
     for s in skills:
         s_name = getattr(s, "name", "").lower()
-        if s_name:
-            skill_names.add(s_name)
+        if not s_name or s_name in seen_names:
+            continue
         if hasattr(s, "to_openai_tool"):
-            tool_dicts.append(s.to_openai_tool())
+            spec = s.to_openai_tool()
         elif hasattr(s, "to_json_schema_spec"):
-            tool_dicts.append(s.to_json_schema_spec())
+            spec = s.to_json_schema_spec()
         elif hasattr(s, "to_dict"):
-            tool_dicts.append(s.to_dict())
+            spec = s.to_dict()
         else:
-            tool_dicts.append({
+            spec = {
                 "type": "function",
                 "function": {
                     "name": getattr(s, "name", ""),
                     "description": getattr(s, "description", ""),
                     "parameters": getattr(s, "parameters", {"type": "object", "properties": {}}),
                 },
-            })
+            }
+        fn_name = spec.get("function", {}).get("name", s_name).lower()
+        if fn_name not in seen_names:
+            seen_names.add(fn_name)
+            tool_dicts.append(spec)
 
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
     registry = get_skill_registry()
     for tool_name in allowed:
-        tname = tool_name.lower()
-        if tname not in skill_names:
+        tname = str(tool_name).lower().replace(".", "_")
+        if tname not in seen_names:
             tool = registry.resolve(tname)
             if tool:
-                tool_dicts.append(
+                spec = (
                     tool.to_json_schema_spec() if hasattr(tool, "to_json_schema_spec")
                     else {
                         "type": "function",
                         "function": {"name": tool.name, "description": getattr(tool, "description", ""), "parameters": {"type": "object", "properties": {}}}
                     }
                 )
+                fn_name = spec.get("function", {}).get("name", tname).lower()
+                if fn_name not in seen_names:
+                    seen_names.add(fn_name)
+                    tool_dicts.append(spec)
+
     return tool_dicts
 
 
