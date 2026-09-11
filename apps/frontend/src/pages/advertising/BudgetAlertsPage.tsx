@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import MiniMetric from "../../components/advertising/dashboard/MiniMetric";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
   type FacebookAdsBudgetAlertLog,
@@ -334,6 +335,7 @@ const BudgetAlertsPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white">
       <main className="mx-auto flex max-w-[1680px] flex-col gap-3 p-3 sm:p-4">
+        <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
         <section className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900">
           <div className="grid gap-3 xl:grid-cols-[minmax(230px,0.65fr)_minmax(680px,1.8fr)] xl:items-end">
             <div className="min-w-0">

@@ -20,6 +20,7 @@ import {
   BarChart3,
 } from "lucide-react";
 import { facebookAdsService } from "../../services/facebookAdsService";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 
 const AttributionSettings: React.FC = () => {
   const navigate = useNavigate();
@@ -87,6 +88,7 @@ const AttributionSettings: React.FC = () => {
 
   return (
     <div className="p-6 space-y-6" dir="rtl">
+      <FacebookAdsModuleNav />
       {/* Header */}
       <div className="flex items-center gap-4">
         <button

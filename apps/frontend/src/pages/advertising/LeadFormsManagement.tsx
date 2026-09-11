@@ -26,6 +26,7 @@ import {
   Search,
 } from "lucide-react";
 import { facebookAdsService } from "../../services/facebookAdsService";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 
 interface LeadForm {
   id: string;
@@ -209,6 +210,7 @@ const LeadFormsManagement: React.FC = () => {
       className="p-6 space-y-6 min-h-screen bg-gray-50 dark:bg-gray-900"
       dir="rtl"
     >
+      <FacebookAdsModuleNav />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

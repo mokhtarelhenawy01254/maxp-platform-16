@@ -21,6 +21,7 @@ import {
   facebookAdsService,
   FacebookAdTest,
 } from "../../services/facebookAdsService";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import { useTheme } from "../../hooks/useTheme";
 
 const ABTestsManagement: React.FC = () => {
@@ -143,6 +144,7 @@ const ABTestsManagement: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      <FacebookAdsModuleNav />
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

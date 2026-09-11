@@ -8,6 +8,7 @@ import {
   Calendar,
   DollarSign,
   Target,
+  Globe,
 } from "lucide-react";
 import type { FormData, AttributionWindowOption } from "../types";
 import type {

@@ -21,6 +21,7 @@ import {
   FacebookCustomAudience,
   FacebookLookalikeAudience,
 } from "../../services/facebookAdsService";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 
 const AudiencesManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -118,6 +119,7 @@ const AudiencesManagement: React.FC = () => {
 
   return (
     <div className="min-h-screen space-y-8 bg-[#f8fafc] px-4 py-8 dark:bg-[#030712] sm:px-6 lg:px-8">
+      <FacebookAdsModuleNav />
       {/* Elite Command Bar */}
       <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between rounded-3xl bg-white/70 p-6 backdrop-blur-xl border border-slate-200/60 shadow-sm dark:bg-slate-900/50 dark:border-slate-800/60">
         <div>

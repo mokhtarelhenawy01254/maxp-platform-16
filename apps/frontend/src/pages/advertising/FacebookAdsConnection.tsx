@@ -22,6 +22,7 @@ import {
   facebookAdsService,
   type FacebookAdsConnectionStatus,
 } from "../../services/facebookAdsService";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 
 const safeStr = (v: unknown): string =>
   v == null ? "" : typeof v === "string" ? v : String(v);
@@ -412,6 +413,7 @@ const FacebookAdsConnection: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/60 p-3 sm:p-6 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
       <div className="mx-auto flex max-w-6xl 2xl:max-w-7xl flex-col gap-4">
+        <FacebookAdsModuleNav />
         {/* Header Container */}
         <header className="flex flex-col gap-3.5 rounded-2xl border border-slate-200/80 bg-white/95 p-4 sm:p-5 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">

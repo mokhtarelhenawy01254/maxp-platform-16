@@ -139,12 +139,14 @@ export const BID_STRATEGIES = getBidStrategies(false);
 export const getCallToActions = (isEn: boolean) => [
   { value: "LEARN_MORE", label: isEn ? "Learn More" : "معرفة المزيد" },
   { value: "SHOP_NOW", label: isEn ? "Shop Now" : "تسوق الآن" },
+  { value: "ORDER_NOW", label: isEn ? "Order Now" : "اطلب الآن" },
+  { value: "WHATSAPP_MESSAGE", label: isEn ? "Send WhatsApp Message" : "إرسال رسالة واتساب" },
+  { value: "SEND_MESSAGE", label: isEn ? "Send Message" : "أرسل رسالة" },
   { value: "SIGN_UP", label: isEn ? "Sign Up" : "سجل الآن" },
   { value: "CONTACT_US", label: isEn ? "Contact Us" : "تواصل معنا" },
   { value: "DOWNLOAD", label: isEn ? "Download" : "تحميل" },
   { value: "GET_OFFER", label: isEn ? "Get Offer" : "احصل على العرض" },
   { value: "BOOK_NOW", label: isEn ? "Book Now" : "احجز الآن" },
-  { value: "SEND_MESSAGE", label: isEn ? "Send Message" : "أرسل رسالة" },
 ];
 
 export const CALL_TO_ACTIONS = getCallToActions(false);

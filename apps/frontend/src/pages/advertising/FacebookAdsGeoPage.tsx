@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Globe2, ArrowLeft, RefreshCw } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import {
   facebookAdsService,
   type FacebookGeoPerformanceBreakdown,
@@ -64,6 +65,7 @@ const FacebookAdsGeoPage: React.FC = () => {
 
   return (
     <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6" dir={isEn ? "ltr" : "rtl"}>
+      <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
