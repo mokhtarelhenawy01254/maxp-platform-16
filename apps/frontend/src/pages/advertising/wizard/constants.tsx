@@ -56,6 +56,7 @@ export const getWizardSteps = (isEn: boolean): WizardStep[] => [
 ];
 
 export const WIZARD_STEPS: WizardStep[] = getWizardSteps(false);
+export const DEFAULT_WIZARD_BUDGET_AMOUNT = 200;
 
 export const getObjectives = (isEn: boolean) => [
   {

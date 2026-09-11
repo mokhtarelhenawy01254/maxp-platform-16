@@ -64,6 +64,7 @@ import {
   CONVERSION_EVENTS,
   CONVERSION_LOCATIONS,
   ATTRIBUTION_WINDOWS,
+  DEFAULT_WIZARD_BUDGET_AMOUNT,
 } from "./wizard/constants";
 import {
   humanizeProductSlug,
