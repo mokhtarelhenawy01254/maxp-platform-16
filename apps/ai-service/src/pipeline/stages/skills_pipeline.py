@@ -77,30 +77,34 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             logger.warning("input_guardrail_blocked", guardrail=guardrail.name, reason=result.reason)
             return ctx
 
-    # 2. Get skills (filtered by agent's allowed_skills if present)
+    # 2. Get skills (filtered by agent's allowed_skills and allowed_tools if present)
     registry = get_skill_registry()
     skills = registry.get_all()
-    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
-        try:
-            allowed_names: set[str] = set()
-            for meta in _iter_skill_meta(set(ctx.agent.allowed_skills)):
-                allowed_names.update(t.lower() for t in meta.get("allowed_tools", []))
-            if allowed_names:
-                skills = [s for s in skills if s.name.lower() in allowed_names]
-                logger.info(
-                    "skills_filtered_by_agent",
-                    agent=str(ctx.agent.name or ctx.agent.id),
-                    total=len(registry.get_all()),
-                    filtered=len(skills),
-                )
-        except Exception as e:
-            logger.warning("skills_filter_failed", error=str(e))
+    if ctx.agent:
+        allowed_names: set[str] = set()
+        if hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
+            try:
+                for meta in _iter_skill_meta(set(ctx.agent.allowed_skills)):
+                    allowed_names.update(t.lower() for t in meta.get("allowed_tools", []))
+            except Exception as e:
+                logger.warning("skills_filter_failed", error=str(e))
+        if hasattr(ctx.agent, "allowed_tools") and ctx.agent.allowed_tools:
+            from src.tools.names import canonical_tool_name
+            allowed_names.update(canonical_tool_name(t).lower() for t in ctx.agent.allowed_tools)
+        if allowed_names:
+            skills = [s for s in skills if s.name.lower() in allowed_names]
+            logger.info(
+                "skills_filtered_by_agent",
+                agent=str(ctx.agent.name or ctx.agent.id),
+                total=len(registry.get_all()),
+                filtered=len(skills),
+            )
     if not skills:
         logger.warning("no_skills_available_using_allowed_tools_fallback")
 
     # 3. Build system prompt with agent instructions (soul/persona from DB agent)
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
-    base_prompt = ctx.system_prompt or agent_instructions or _generic_system_prompt()
+    base_prompt = agent_instructions or ctx.system_prompt or _generic_system_prompt()
     ctx.system_prompt = base_prompt
 
     system_prompt = f"{base_prompt}\n\n{_technical_formatting_constraints()}"
@@ -245,7 +249,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
         followup_messages = await _build_followup_messages(ctx, provider_response, executed)
         try:
-            final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+            tool_dicts = _build_skill_tool_dicts(skills, ctx)
+            final_response = await _raw_llm_call(ctx, followup_messages, tools=tool_dicts, tool_choice="auto")
             if final_response.tool_calls:
                 extra_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in final_response.tool_calls])
                 executed.extend(extra_results)
@@ -628,6 +633,13 @@ def get_agent_instructions(agent: Any) -> str:
     """Extract the agent's instructions/system prompt from various agent representations."""
     if not agent:
         return ""
+    if hasattr(agent, "_get_system_prompt"):
+        try:
+            prompt = agent._get_system_prompt()
+            if prompt:
+                return str(prompt)
+        except Exception:
+            pass
     if hasattr(agent, "instructions"):
         try:
             return str(agent.instructions or "")

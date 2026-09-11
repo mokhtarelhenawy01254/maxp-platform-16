@@ -5,8 +5,11 @@
   "description": "Create a Facebook ad draft from grounded product and campaign context.",
   "allowedTools": [
     "product_search",
-    "facebook_ad_create_draft"
+    "facebook_ad_create_draft",
+    "facebook_ad_analyze_product",
+    "facebook_ad_create_full_draft",
+    "facebook_ad_get_decision"
   ],
   "requiresHumanApproval": true,
-  "maxToolCount": 2
+  "maxToolCount": 6
 }
