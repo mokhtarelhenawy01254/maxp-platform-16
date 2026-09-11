@@ -25,6 +25,8 @@ type SidebarUser = {
     role?: string | null;
     permissions?: string[];
     settings?: string | Record<string, unknown> | null;
+    isDentalTechnician?: boolean;
+    dentalRole?: string;
 };
 
 const hasRoleAccess = (userRole: string | undefined | null, requiredRoles: string[] | undefined): boolean => {
@@ -314,6 +316,30 @@ export const getSidebarConfig = (
                 icon: CircleUser,
                 items: [
                     { to: '/profile', icon: CircleUser, label: t('sidebar.myProfile') },
+                ],
+            },
+        ];
+    }
+
+    // 🩺 قصر القائمة الجانبية لفني معمل الأسنان على ما يخصه فقط (Bench, Barcode, Wage, Profile)
+    if (user?.isDentalTechnician === true || user?.dentalRole === 'TECHNICIAN') {
+        return [
+            {
+                id: 'dental-technician-portal',
+                title: isEn ? 'Dental Lab Station' : t('sidebar.dentalLabTechnicianModule', 'محطة عمل الفني'),
+                icon: Stethoscope,
+                items: [
+                    { to: '/dental-lab', icon: ListChecks, label: isEn ? 'My Cases & Bench' : t('sidebar.dentalLabMyCases', 'حالاتي ومحطة الإنتاج') },
+                    { to: '/dental-lab/kiosk', icon: ScanLine, label: isEn ? 'Barcode Scanner' : t('sidebar.dentalLabKiosk', 'ماسح الباركود السريع') },
+                    { to: '/dental-lab/my-wage', icon: Wallet, label: isEn ? 'My Wage & Ledger' : t('sidebar.dentalLabMyWage', 'مستحقاتي وكشف الحساب') },
+                ],
+            },
+            {
+                id: 'technician-account',
+                title: isEn ? 'My Account' : t('sidebar.myAccountSection', 'حسابي'),
+                icon: CircleUser,
+                items: [
+                    { to: '/profile', icon: CircleUser, label: isEn ? 'My Profile' : t('sidebar.myProfile', 'الملف الشخصي') },
                 ],
             },
         ];
@@ -868,14 +894,20 @@ export const getSidebarConfig = (
                     label: isEn ? 'Facebook Ads Campaigns' : t('sidebar.facebookAds'),
                     hidden: false,
                     children: [
-                        { to: '/advertising/facebook-ads', label: isEn ? 'Dashboard & Campaigns' : 'لوحة التحكم والحملات' },
-                        { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : t('sidebar.audiences') },
+                        { to: '/advertising/facebook-ads', label: isEn ? 'Dashboard & Cockpit' : 'لوحة القيادة والمؤشرات' },
+                        { to: '/advertising/facebook-ads/create-ad', label: isEn ? 'Create Ad (Wizard)' : 'إنشاء إعلان جديد (سريع / كامل)' },
+                        { to: '/advertising/facebook-ads/campaigns', label: isEn ? 'Campaigns List' : 'قائمة الحملات الإعلانية' },
+                        { to: '/advertising/facebook-ads/automation-rules', label: isEn ? 'Automation Rules' : 'قواعد الأتمتة الإعلانية' },
+                        { to: '/advertising/facebook-ads/budget-alerts', label: isEn ? 'WhatsApp Budget Alerts' : 'تنبيهات الرصيد WhatsApp' },
+                        { to: '/advertising/facebook-ads/diagnosis', label: isEn ? 'Account & Pixel Health' : 'تشخيص الحساب والأخطاء' },
+                        { to: '/advertising/facebook-ads/geo', label: isEn ? 'Geographic Performance' : 'الأداء الجغرافي والمحافظات' },
+                        { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : 'الجماهير المخصصة والشبيهة' },
+                        { to: '/advertising/facebook-ads/catalogs', label: isEn ? 'Product Catalogs' : 'كتالوجات المنتجات (Catalog)' },
                         { to: '/advertising/facebook-ads/ad-library', label: isEn ? 'Ad Library & Creatives' : 'مكتبة الكرياتيف والإعلانات' },
-                        { to: '/advertising/facebook-ads/catalogs', label: isEn ? 'Product Catalogs' : t('sidebar.productCatalogs') },
+                        { to: '/advertising/facebook-ads/advantage-plus', label: isEn ? 'Advantage+ Shopping' : 'إعلانات Advantage+ والتسوق' },
                         { to: '/advertising/facebook-ads/decision-reports', label: isEn ? 'Decision Reports & Profit' : 'تقارير الأرباح والقرارات' },
+                        { to: '/advertising/facebook-ads/tests', label: isEn ? 'A/B Tests' : 'اختبارات A/B Tests' },
                         { to: '/advertising/facebook-ads/connection', label: isEn ? 'Accounts & Connection' : 'ربط الحسابات والإعدادات' },
-                        { to: '/advertising/facebook-ads/tests', label: isEn ? 'A/B Tests' : t('sidebar.abTests') },
-                        { to: '/advertising/facebook-ads/overlay-campaigns', label: isEn ? 'Overlay Campaigns' : t('sidebar.overlayCampaigns') },
                     ],
                 },
                 // 2. التتبع والبيانات (Tracking & Pixels)

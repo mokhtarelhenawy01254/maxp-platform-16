@@ -145,6 +145,7 @@ router.post('/cases/:id/refabrications/:refabId/resolve', verifyToken.authentica
 router.get('/me', verifyToken.authenticateToken, controller.getMyInfo);
 router.get('/my-cases', verifyToken.authenticateToken, dentalRoleGuard(['TECHNICIAN']), controller.getMyCases);
 router.get('/my-wage', verifyToken.authenticateToken, dentalRoleGuard(['TECHNICIAN']), controller.getMyWage);
+router.post('/my-wage/advance-request', verifyToken.authenticateToken, dentalRoleGuard(['TECHNICIAN']), controller.requestTechnicianAdvance);
 
 // Invoices
 router.get('/invoices', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT']), controller.listInvoices);

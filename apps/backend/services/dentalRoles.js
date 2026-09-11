@@ -38,4 +38,23 @@ const dentalRoleGuard = (allowed = []) => async (req, res, next) => {
   }
 };
 
-module.exports = { DENTAL_ROLES, resolveDentalRole, loadTeamRoles, dentalRoleGuard };
+async function checkDentalTechnicianUser(userId, companyId) {
+  if (!userId || !companyId) return { isTechnician: false, dentalRole: null };
+  try {
+    const prisma = getSharedPrismaClient();
+    const tech = await prisma.dentalTechnician.findFirst({
+      where: { companyId, userId, isActive: true },
+      select: { id: true, name: true, role: true },
+    });
+    if (tech) return { isTechnician: true, dentalRole: 'TECHNICIAN', technician: tech };
+    const teamRoles = await loadTeamRoles(companyId);
+    if (teamRoles && teamRoles[userId] === 'TECHNICIAN') {
+      return { isTechnician: true, dentalRole: 'TECHNICIAN', technician: null };
+    }
+    return { isTechnician: false, dentalRole: teamRoles ? teamRoles[userId] || null : null, technician: null };
+  } catch {
+    return { isTechnician: false, dentalRole: null, technician: null };
+  }
+}
+
+module.exports = { DENTAL_ROLES, resolveDentalRole, loadTeamRoles, dentalRoleGuard, checkDentalTechnicianUser };

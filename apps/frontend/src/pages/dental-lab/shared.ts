@@ -488,6 +488,7 @@ export interface MyCase {
   caseNumber?: string;
   patientName?: string;
   patientPhone?: string;
+  doctorName?: string;
   workTypeName?: string;
   teeth?: string;
   shade?: string;
@@ -496,8 +497,21 @@ export interface MyCase {
   priority?: string;
   dueDate?: string;
   notes?: string;
+  hasScan?: boolean;
+  attachments?: Array<{ id: string; fileName: string; storedPath: string; mimeType?: string; sizeBytes?: number; kind?: string }>;
   createdAt?: string;
-  myStage?: { id: string; name: string; status: string; assigneeName?: string; startedAt?: string };
+  myStage?: { id: string; name: string; status: string; assigneeName?: string; startedAt?: string; assignees?: Array<{ technicianId: string; technicianName?: string }> };
+}
+
+export interface MyWageStageLog {
+  id: string;
+  caseId: string;
+  caseNumber: string;
+  patientName?: string;
+  workTypeName?: string;
+  stageName: string;
+  completedAt: string;
+  wage: number;
 }
 
 export interface MyWage {
@@ -507,9 +521,15 @@ export interface MyWage {
   totalWage?: number;
   thisMonthStages?: number;
   thisMonthWage?: number;
+  todayStages?: number;
+  todayWage?: number;
   totalPaid?: number;
   totalAdvances?: number;
+  totalBonuses?: number;
+  totalDeductions?: number;
   balanceDue?: number;
+  payouts?: DentalTechnicianPayout[];
+  recentStages?: MyWageStageLog[];
 }
 
 export interface AgingBucket {
@@ -1032,6 +1052,16 @@ export const fetchMyInfo = async (): Promise<MyInfo> => unwrapEnvelope<MyInfo>(a
 export const fetchMyCases = async (): Promise<{ items: MyCase[]; technician?: { id: string; name: string } | null }> =>
   unwrapEnvelope<{ items: MyCase[]; technician?: { id: string; name: string } | null }>(await apiClient.get("/dental-lab/my-cases"));
 export const fetchMyWage = async (): Promise<MyWage> => unwrapEnvelope<MyWage>(await apiClient.get("/dental-lab/my-wage"));
+export const requestAdvance = async (body: { amount: number; notes?: string }): Promise<DentalTechnicianPayout> =>
+  unwrapEnvelope<DentalTechnicianPayout>(await apiClient.post("/dental-lab/my-wage/advance-request", body));
+export const scanKioskBarcode = async (body: { barcode: string; technicianId?: string }): Promise<{ case: DentalLabCase; nextStatus?: string; advancedStage?: unknown }> =>
+  unwrapEnvelope<{ case: DentalLabCase; nextStatus?: string; advancedStage?: unknown }>(await apiClient.post("/dental-lab/cases/kiosk-scan", body));
+export const uploadTechAttachment = async (caseId: string, formData: FormData): Promise<{ attachments: unknown[] }> => {
+  const res = await apiClient.post(`/dental-lab/cases/${caseId}/attachments`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+  return unwrapEnvelope<{ attachments: unknown[] }>(res);
+};
 
 export const fetchAgingReport = async (): Promise<{ buckets: AgingBucket[]; totalOutstanding?: number }> =>
   unwrapEnvelope<{ buckets: AgingBucket[]; totalOutstanding?: number }>(await apiClient.get("/dental-lab/reports/aging"));

@@ -38,16 +38,18 @@ export default function DentalLabManagementPage() {
     };
   }, []);
 
+  const urlTab = (path || "").split("/")[0] || "";
+  const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
+
   if (techPortal === true) {
     return (
-      <div className="p-4 md:p-6 lg:p-8 w-full h-full overflow-y-auto" dir="rtl">
-        <TabErrorBoundary tabLabel={t("dentalLab.myCases.title")}><DentalTechnicianPortal /></TabErrorBoundary>
+      <div className="p-3 sm:p-6 w-full h-full overflow-y-auto" dir="rtl">
+        <TabErrorBoundary tabLabel={t("dentalLab.myCases.title")}>
+          <DentalTechnicianPortal initialSection={urlTab} />
+        </TabErrorBoundary>
       </div>
     );
   }
-
-  const urlTab = (path || "").split("/")[0] || "";
-  const activeTab = (TABS.some(t => t.id === urlTab) ? urlTab : "dashboard") as TabId;
 
   if (fetchError) {
     return (

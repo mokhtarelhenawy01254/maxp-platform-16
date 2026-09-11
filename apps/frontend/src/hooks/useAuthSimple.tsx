@@ -61,6 +61,8 @@ interface User {
     canCreateOrdersForOthers?: boolean | null;
     canViewCustomerData?: boolean | null;
   } | null;
+  isDentalTechnician?: boolean;
+  dentalRole?: string;
 }
 
 interface LoginCredentials {

@@ -1144,6 +1144,48 @@ const recordTechnicianPayout = async (req, res) => {
   }
 };
 
+const requestTechnicianAdvance = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const prisma = getSharedPrismaClient();
+    const technician = await prisma.dentalTechnician.findFirst({
+      where: { companyId, userId: req.user?.id, isActive: true },
+    });
+    if (!technician) {
+      return res.status(403).json({ success: false, error: 'أنت غير مسجل كفني في هذا المعمل' });
+    }
+    const { amount, notes } = req.body || {};
+    const amt = Number(amount);
+    if (!amt || isNaN(amt) || amt <= 0) {
+      return res.status(400).json({ success: false, error: 'مبلغ السلفة يجب أن يكون أكبر من الصفر' });
+    }
+
+    const createdBy = req.user?.id || null;
+    const createdByName = req.user?.name || req.user?.email || technician.name;
+
+    const payout = await prisma.dentalTechnicianPayout.create({
+      data: {
+        companyId,
+        technicianId: technician.id,
+        type: 'ADVANCE',
+        amount: round2(amt),
+        paymentMethod: 'CASH',
+        reference: 'طلب سلفة',
+        notes: notes ? `طلب سلفة من الفني: ${String(notes).trim()}` : 'طلب سلفة من بوابة الفني',
+        paidAt: new Date(),
+        createdBy,
+        createdByName,
+      },
+    });
+
+    res.status(201).json({ success: true, data: payout, message: 'تم تسجيل وإرسال طلب السلفة بنجاح' });
+  } catch (error) {
+    console.error('Error requesting technician advance:', error);
+    res.status(500).json({ success: false, error: 'حدث خطأ أثناء تسجيل طلب السلفة' });
+  }
+};
+
 const deleteTechnicianPayout = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
@@ -4606,6 +4648,7 @@ const serializeTechCase = (c, technicianId = null) => {
     caseNumber: c.caseNumber,
     patientName: c.patientName,
     patientPhone: c.patientPhone,
+    doctorName: c.doctor?.name || c.doctorName || null,
     workTypeName: c.workTypeName,
     teeth: c.teeth,
     shade: c.shade,
@@ -4615,6 +4658,15 @@ const serializeTechCase = (c, technicianId = null) => {
     dueDate: c.dueDate,
     notes: c.notes,
     createdAt: c.createdAt,
+    hasScan: Boolean(c.hasScan || (c.attachments && c.attachments.some((a) => (a.fileName || '').toLowerCase().endsWith('.stl') || (a.fileName || '').toLowerCase().endsWith('.ply') || (a.fileName || '').toLowerCase().endsWith('.obj')))),
+    attachments: (c.attachments || []).map((a) => ({
+      id: a.id,
+      fileName: a.fileName,
+      storedPath: a.storedPath,
+      mimeType: a.mimeType,
+      sizeBytes: a.sizeBytes,
+      kind: a.kind,
+    })),
     myStage: activeStage
       ? {
           id: activeStage.id,
@@ -4653,6 +4705,8 @@ const getMyCases = async (req, res) => {
           },
         },
         include: {
+          doctor: { select: { id: true, name: true } },
+          attachments: true,
           stages: {
             orderBy: { sortOrder: 'asc' },
             include: { assignees: true },
@@ -4669,7 +4723,11 @@ const getMyCases = async (req, res) => {
           status: { notIn: ['DELIVERED', 'CLOSED'] },
           stages: { some: { assigneeId: technician.id, status: { in: ['IN_PROGRESS', 'PENDING'] } } },
         },
-        include: { stages: { orderBy: { sortOrder: 'asc' } } },
+        include: {
+          doctor: { select: { id: true, name: true } },
+          attachments: true,
+          stages: { orderBy: { sortOrder: 'asc' } },
+        },
         orderBy: { updatedAt: 'desc' },
         take: 200,
       });
@@ -4714,13 +4772,15 @@ const getMyWage = async (req, res) => {
     let totalAdvances = 0;
     let totalBonuses = 0;
     let totalDeductions = 0;
+    let detailedPayouts = [];
     if (prisma.dentalTechnicianPayout && typeof prisma.dentalTechnicianPayout.findMany === 'function') {
       try {
-        const payouts = (await prisma.dentalTechnicianPayout.findMany({
+        detailedPayouts = (await prisma.dentalTechnicianPayout.findMany({
           where: { companyId, technicianId: technician.id },
-          select: { type: true, amount: true },
+          orderBy: { paidAt: 'desc' },
+          take: 100,
         })) || [];
-        for (const p of payouts) {
+        for (const p of detailedPayouts) {
           const amt = Number(p.amount) || 0;
           if (p.type === 'PAYOUT') totalPaid += amt;
           else if (p.type === 'ADVANCE') totalAdvances += amt;
@@ -4734,6 +4794,66 @@ const getMyWage = async (req, res) => {
     const allPaid = round2(totalPaid + totalAdvances);
     const balanceDue = round2(((total.wage || 0) + totalBonuses) - (allPaid + totalDeductions));
 
+    // Load recent completed stages for itemized ledger breakdown
+    let recentStages = [];
+    try {
+      const stages = await prisma.dentalCaseStage.findMany({
+        where: {
+          status: 'DONE',
+          case: { companyId },
+          OR: [
+            { assigneeId: technician.id },
+            { assignees: { some: { technicianId: technician.id } } },
+          ],
+        },
+        include: {
+          case: { select: { id: true, caseNumber: true, patientName: true, workTypeName: true } },
+        },
+        orderBy: { completedAt: 'desc' },
+        take: 50,
+      });
+      recentStages = (stages || []).map((s) => ({
+        id: s.id,
+        caseId: s.caseId,
+        caseNumber: s.case?.caseNumber || '—',
+        patientName: s.case?.patientName || '—',
+        workTypeName: s.case?.workTypeName || '—',
+        stageName: s.name,
+        completedAt: s.completedAt,
+        wage: Number(s.wage ?? rate),
+      }));
+    } catch (_) {
+      try {
+        const stages = await prisma.dentalCaseStage.findMany({
+          where: {
+            status: 'DONE',
+            assigneeId: technician.id,
+            case: { companyId },
+          },
+          include: {
+            case: { select: { id: true, caseNumber: true, patientName: true, workTypeName: true } },
+          },
+          orderBy: { completedAt: 'desc' },
+          take: 50,
+        });
+        recentStages = (stages || []).map((s) => ({
+          id: s.id,
+          caseId: s.caseId,
+          caseNumber: s.case?.caseNumber || '—',
+          patientName: s.case?.patientName || '—',
+          workTypeName: s.case?.workTypeName || '—',
+          stageName: s.name,
+          completedAt: s.completedAt,
+          wage: Number(s.wage ?? rate),
+        }));
+      } catch (_) {}
+    }
+
+    const todayStart = getStartOfDayInTimezone(new Date());
+    const todayCompleted = recentStages.filter(s => s.completedAt && new Date(s.completedAt) >= todayStart);
+    const todayStages = todayCompleted.length;
+    const todayWage = round2(todayCompleted.reduce((sum, s) => sum + (s.wage || rate), 0));
+
     res.json({
       success: true,
       data: {
@@ -4743,9 +4863,15 @@ const getMyWage = async (req, res) => {
         totalWage: total.wage || 0,
         thisMonthStages: month.completedStages || 0,
         thisMonthWage: month.wage || 0,
+        todayStages,
+        todayWage,
         totalPaid: allPaid,
         totalAdvances: round2(totalAdvances),
+        totalBonuses: round2(totalBonuses),
+        totalDeductions: round2(totalDeductions),
         balanceDue,
+        payouts: detailedPayouts,
+        recentStages,
       },
     });
   } catch (error) {
@@ -5457,6 +5583,7 @@ module.exports = {
   getMyInfo,
   getMyCases,
   getMyWage,
+  requestTechnicianAdvance,
   getAgingReport,
   getCreditNotes,
   getInvoicePdf,

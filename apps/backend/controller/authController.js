@@ -877,6 +877,15 @@ const login = async (req, res) => {
       path: '/'
     });
 
+    let isDentalTechnician = false;
+    let dentalRole = null;
+    try {
+      const { checkDentalTechnicianUser } = require('../services/dentalRoles');
+      const dentalInfo = await checkDentalTechnicianUser(user.id, user.companyId);
+      isDentalTechnician = dentalInfo.isTechnician;
+      dentalRole = dentalInfo.dentalRole;
+    } catch (_) {}
+
     res.json({
       success: true,
       message: 'تم تسجيل الدخول بنجاح',
@@ -888,7 +897,9 @@ const login = async (req, res) => {
           company: companiesMap.get(user.companyId) || user.company,
           affiliate: affiliateProfile,
           companies: Array.from(companiesMap.values()),
-          hasMultipleCompanies: companiesMap.size > 1
+          hasMultipleCompanies: companiesMap.size > 1,
+          isDentalTechnician,
+          dentalRole,
         },
         token,
         refreshToken,
@@ -1135,6 +1146,15 @@ const me = async (req, res) => {
       }
     }
 
+    let isDentalTechnician = false;
+    let dentalRole = null;
+    try {
+      const { checkDentalTechnicianUser } = require('../services/dentalRoles');
+      const dentalInfo = await checkDentalTechnicianUser(user.id, decoded.companyId || user.companyId);
+      isDentalTechnician = dentalInfo.isTechnician;
+      dentalRole = dentalInfo.dentalRole;
+    } catch (_) {}
+
     res.json({
       success: true,
       data: {
@@ -1146,6 +1166,8 @@ const me = async (req, res) => {
         company: currentCompany, // âœ¦ Return the currently selected company
         companies: Array.from(companiesMap.values()),
         hasMultipleCompanies: companiesMap.size > 1,
+        isDentalTechnician,
+        dentalRole,
         devStats: user.dev_team_members?.[0] ? {
           xp: user.dev_team_members[0].xp,
           level: user.dev_team_members[0].level
@@ -1928,6 +1950,15 @@ const switchCompany = async (req, res) => {
       path: '/'
     });
 
+    let isDentalTechnician = false;
+    let dentalRole = null;
+    try {
+      const { checkDentalTechnicianUser } = require('../services/dentalRoles');
+      const dentalInfo = await checkDentalTechnicianUser(user.id, companyId);
+      isDentalTechnician = dentalInfo.isTechnician;
+      dentalRole = dentalInfo.dentalRole;
+    } catch (_) {}
+
     res.json({
       success: true,
       message: `تم التبديل إلى ${targetCompany.name} بنجاح`,
@@ -1939,6 +1970,8 @@ const switchCompany = async (req, res) => {
         permissions,
         companies: Array.from(companiesMap.values()),
         hasMultipleCompanies: companiesMap.size > 1,
+        isDentalTechnician,
+        dentalRole,
         expiresIn: '8h'
       }
     });
