@@ -153,6 +153,7 @@
   "facebookIntegrationSettings": "إعدادات التكاملات",
   "facebookBlocked": "العملاء المحظورين",
   "facebookConnect": "ربط فيسبوك وإنستجرام",
+  "metaAdsConnection": "ربط إعلانات Meta",
   "facebookPixel": "Facebook Pixel & CAPI",
   "googleTagManager": "مدير العلامات من Google",
   "googleAnalytics": "Google Analytics & Ads",

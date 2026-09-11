@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 
@@ -529,11 +529,12 @@ export const getSidebarConfig = (
                 { to: '/employee-stats', icon: BarChart3, label: t('sidebar.employeeStats') },
                 { to: '/sent-messages-stats', icon: BarChart3, label: t('sidebar.sentMessagesStats') },
                 { to: '/settings/facebook-oauth', icon: MessageSquare, label: t('sidebar.facebookConnect') },
+                { to: '/advertising/facebook-ads/connection', icon: PlugZap, label: isEn ? 'Meta Ads Connection' : (t('sidebar.metaAdsConnection') || 'ربط إعلانات Meta') },
                 { to: '/settings/facebook-blocked', icon: Ban, label: t('sidebar.facebookBlocked') },
                 { to: '/settings/smart-replies', icon: MessageSquare, label: t('sidebar.smartReplies') },
             ],
             // 🔒 إخفاء القسم للمسوقين أو إذا كان غير مفعل
-            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-pages-connect', 'crm-basic']),
+            hidden: user?.role === 'AFFILIATE' || !isAnyAppActive(['facebook-pages-connect', 'crm-basic', 'facebook-ads-pro']),
         },
 
         // 2️⃣.1 إنستجرام
@@ -906,6 +907,7 @@ export const getSidebarConfig = (
                     hidden: false,
                     children: [
                         { to: '/advertising/facebook-ads', label: isEn ? 'Dashboard & Cockpit' : 'لوحة القيادة والمؤشرات' },
+                        { to: '/advertising/facebook-ads/connection', label: isEn ? 'Meta Ads Connection' : (t('sidebar.metaAdsConnection') || 'ربط إعلانات Meta') },
                         { to: '/advertising/facebook-ads/create-ad', label: isEn ? 'Create Ad (Wizard)' : 'إنشاء إعلان جديد (سريع / كامل)' },
                         { to: '/advertising/facebook-ads/campaigns', label: isEn ? 'Campaigns List' : 'قائمة الحملات الإعلانية' },
                         { to: '/advertising/facebook-ads/automation-rules', label: isEn ? 'Automation Rules' : 'قواعد الأتمتة الإعلانية' },
@@ -914,7 +916,6 @@ export const getSidebarConfig = (
                         { to: '/advertising/facebook-ads/dco', label: isEn ? 'Dynamic Creative (DCO)' : 'التوليف الإبداعي الديناميكي (DCO)' },
                         { to: '/advertising/facebook-ads/advantage-plus', label: isEn ? 'Advantage+ Shopping' : 'إعلانات Advantage+ والتسوق' },
                         { to: '/advertising/facebook-ads/lead-forms', label: isEn ? 'Instant Lead Forms' : 'نماذج العملاء الفورية (Lead Forms)' },
-                        { to: '/advertising/facebook-ads/conversions', label: isEn ? 'Conversions API (CAPI)' : 'بوابة التحويلات (Conversions API)' },
                         { to: '/advertising/facebook-ads/attribution', label: isEn ? 'Attribution Settings' : 'إعدادات الإسناد ونوافذ التحويل' },
                         { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : 'الجماهير المخصصة والشبيهة' },
                         { to: '/advertising/facebook-ads/saved-audiences', label: isEn ? 'Saved Audiences' : 'الجماهير المحفوظة (Saved Audiences)' },
@@ -924,8 +925,13 @@ export const getSidebarConfig = (
                         { to: '/advertising/facebook-ads/ad-library', label: isEn ? 'Ad Library & Research' : 'مكتبة الكرياتيف والبحث' },
                         { to: '/advertising/facebook-ads/tests', label: isEn ? 'A/B Tests' : 'اختبارات A/B Tests' },
                         { to: '/advertising/facebook-ads/geo', label: isEn ? 'Geographic Performance' : 'الأداء الجغرافي والمحافظات' },
-                        { to: '/advertising/facebook-ads/connection', label: isEn ? 'Accounts & Connection' : 'ربط الحسابات والإعدادات' },
                     ],
+                },
+                // 1.5 ربط إعلانات Meta
+                {
+                    to: '/advertising/facebook-ads/connection',
+                    icon: PlugZap,
+                    label: isEn ? 'Meta Ads Connection' : (t('sidebar.metaAdsConnection') || 'ربط إعلانات Meta'),
                 },
                 // 2. التتبع والبيانات (Tracking & Pixels)
                 {

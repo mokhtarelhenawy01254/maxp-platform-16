@@ -12,7 +12,6 @@ import {
   ClipboardCheck,
   FlaskConical,
   Gauge,
-  Library,
   LineChart,
   Megaphone,
   MousePointerClick,
@@ -68,14 +67,6 @@ const navItems = [
     descriptionAr: "استهداف",
     descriptionEn: "Targeting",
     icon: Users,
-  },
-  {
-    to: "/advertising/facebook-ads/creative-formats",
-    labelAr: "الكرياتيف",
-    labelEn: "Creatives",
-    descriptionAr: "الصيغ والمكتبة",
-    descriptionEn: "Formats & Assets",
-    icon: Library,
   },
 ] as const;
 

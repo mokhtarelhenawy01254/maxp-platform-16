@@ -588,12 +588,6 @@ const DynamicCreativeOptimization = React.lazy(
 const AdvantagePlusShopping = React.lazy(
   () => import("./pages/advertising/AdvantagePlusShopping"),
 );
-const ConversionApiDashboard = React.lazy(
-  () => import("./pages/advertising/ConversionApiDashboard"),
-);
-const CreativeFormats = React.lazy(
-  () => import("./pages/advertising/CreativeFormats"),
-);
 const AdPreview = React.lazy(() => import("./pages/advertising/AdPreview"));
 const SavedAudiences = React.lazy(
   () => import("./pages/advertising/SavedAudiences"),
@@ -3912,17 +3906,13 @@ const AppContent = () => {
                 <Route
                   path="/advertising/facebook-ads/conversions"
                   element={
-                    <Layout>
-                      <ConversionApiDashboard />
-                    </Layout>
+                    <Navigate to="/advertising/facebook-pixel" replace />
                   }
                 />
                 <Route
                   path="/advertising/facebook-ads/creative-formats"
                   element={
-                    <Layout>
-                      <CreativeFormats />
-                    </Layout>
+                    <Navigate to="/advertising/facebook-ads" replace />
                   }
                 />
                 <Route
@@ -5990,17 +5980,13 @@ const AppContent = () => {
                 <Route
                   path="/advertising/facebook-ads/conversions"
                   element={
-                    <Layout>
-                      <ConversionApiDashboard />
-                    </Layout>
+                    <Navigate to="/advertising/facebook-pixel" replace />
                   }
                 />
                 <Route
                   path="/advertising/facebook-ads/creative-formats"
                   element={
-                    <Layout>
-                      <CreativeFormats />
-                    </Layout>
+                    <Navigate to="/advertising/facebook-ads" replace />
                   }
                 />
                 <Route
