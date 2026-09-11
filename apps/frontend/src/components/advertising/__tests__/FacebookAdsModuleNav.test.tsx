@@ -1,4 +1,6 @@
+/** @vitest-environment jsdom */
 import React from "react";
+import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import FacebookAdsModuleNav from "../FacebookAdsModuleNav";
@@ -29,7 +31,7 @@ describe("FacebookAdsModuleNav", () => {
       "/advertising/facebook-ads/decision-reports?adAccountId=act_123",
     );
     expect(screen.getByRole("link", { name: /نماذج العملاء/i })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Conversions API/i })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /Conversions API/i })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /الجماهير المحفوظة/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /معاينة الإعلان/i })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /DCO/i })).toBeInTheDocument();
@@ -50,9 +52,9 @@ describe("FacebookAdsModuleNav", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /الأدوات/i }));
 
-    expect(screen.getByRole("link", { name: /Conversions API/i })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: /الإسناد/i })).toHaveAttribute(
       "href",
-      "/advertising/facebook-ads/conversions?adAccountId=act_999",
+      "/advertising/facebook-ads/attribution?adAccountId=act_999",
     );
   });
 });

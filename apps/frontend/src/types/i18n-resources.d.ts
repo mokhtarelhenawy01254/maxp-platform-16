@@ -16927,6 +16927,7 @@ declare module 'react-i18next' {
         facebookIntegrationSettings: string;
         facebookBlocked: string;
         facebookConnect: string;
+        metaAdsConnection: string;
         facebookPixel: string;
         googleTagManager: string;
         googleAnalytics: string;

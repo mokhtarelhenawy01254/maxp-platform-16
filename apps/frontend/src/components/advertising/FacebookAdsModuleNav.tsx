@@ -130,14 +130,6 @@ const toolGroups = [
         icon: ClipboardCheck,
       },
       {
-        to: "/advertising/facebook-ads/conversions",
-        labelAr: "Conversions API",
-        labelEn: "Conversions API",
-        descriptionAr: "Pixel + CAPI وجودة الأحداث",
-        descriptionEn: "Pixel + CAPI & Event Quality",
-        icon: PlugZap,
-      },
-      {
         to: "/advertising/facebook-ads/attribution",
         labelAr: "الإسناد",
         labelEn: "Attribution",
