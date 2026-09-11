@@ -16,20 +16,20 @@ describe("LandingPage Component", () => {
     );
 
     // Headline check
-    expect(screen.getByText(/وداعاً لتشتت 10 أنظمة/i)).toBeInTheDocument();
-    expect(screen.getByText(/نظام واحد ذكي/i)).toBeInTheDocument();
+    expect(screen.getByText(/كل مبيعاتك، مخازنك/i)).toBeInTheDocument();
+    expect(screen.getByText(/في نظام تشغيل واحد/i)).toBeInTheDocument();
 
     // CTA check
-    expect(screen.getAllByText(/ابدأ تشغيل شركتك مجاناً/i)[0]).toBeInTheDocument();
+    expect(screen.getAllByText(/ابدأ تجربة نشاطك مجاناً/i)[0]).toBeInTheDocument();
 
     // Bento Grid check
-    expect(screen.getByText(/منظومة تشغيل متكاملة/i)).toBeInTheDocument();
+    expect(screen.getByText(/أدوات متصلة ببعضها/i)).toBeInTheDocument();
 
     // Comparison check
-    expect(screen.getByText(/لماذا يختار التجار ورواد الأعمال/i)).toBeInTheDocument();
+    expect(screen.getByText(/الفرق بين إطفاء حرائق التشغيل/i)).toBeInTheDocument();
 
     // ROI Calculator check
-    expect(screen.getByText(/حاسبة العائد الاستثماري التفاعلية/i)).toBeInTheDocument();
+    expect(screen.getByText(/احسب كم ستوفر شهرياً/i)).toBeInTheDocument();
 
     // FAQ check
     expect(screen.getAllByText(/الأسئلة الشائعة/i)[0]).toBeInTheDocument();

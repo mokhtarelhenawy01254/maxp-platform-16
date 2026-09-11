@@ -138,7 +138,7 @@ const BusinessTypeSelect: React.FC<BusinessTypeSelectProps> = ({
   );
 };
 
-const NEW_ACCOUNT_DESTINATION = "/my-apps";
+const NEW_ACCOUNT_DESTINATION = "/company-dashboard";
 
 const extractErrorMessage = (error: unknown, fallback: string) => {
   if (error instanceof Error && error.message) return error.message;

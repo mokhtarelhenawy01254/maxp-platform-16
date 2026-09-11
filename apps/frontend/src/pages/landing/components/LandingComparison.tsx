@@ -1,122 +1,115 @@
 import React from "react";
 import { motion } from "framer-motion";
-import { XCircle, CheckCircle2, ShieldAlert, Zap } from "lucide-react";
+import { X, Check } from "lucide-react";
 
 export const LandingComparison: React.FC = () => {
   const painPoints = [
-    "شراء ودفع 6 إلى 10 اشتراكات شهرية منفصلة (CRM، محاسبة، HR، متجر، واتساب بوت...)",
-    "بيانات العملاء متناثرة بين شيتات Excel، محادثات الواتساب، والرسائل الضائعة",
-    "تأخر الرد على العملاء لساعات فيفقد العميل حماسه ويشتري من المنافس",
-    "تضارب أرصدة المخازن بين الفروع والمتجر، وبيع بضاعة غير متوفرة بالفعل",
-    "صعوبة معرفة من في فريق العمل ينجز ومن يتكاسل، وضياع نسب العمولات",
-    "تسويات يدوية معقدة ومرهقة مع شركات الشحن والمناديب والمسوقين",
+    "شراء 5 إلى 8 اشتراكات لبرامج منفصلة (CRM، محاسبة، مخازن، شات بوت، HR) بفواتير شهرية تتجاوز 6,000 ج.م",
+    "تشتت رسائل العملاء بين واتساب وفيسبوك وإنستغرام وشيتات الإكسيل",
+    "تأخر الرد على العملاء لساعات فيفقد العميل حماسه ويشتري من المنافس الأسرع",
+    "تضارب أرصدة المخازن بين الفروع والمتجر، وبيع بضاعة غير متوفرة بالفعل للعملاء",
+    "صعوبة معرفة من في فريق العمل ينجز ومن يتكاسل، وضياع نسب وعمولات المبيعات",
+    "تسويات يدوية مرهقة ومعقدة مع شركات الشحن والمناديب والمسوقين في نهاية كل شهر",
   ];
 
   const gainPoints = [
-    "اشتراك موحد شامل يبدأ من 299 ج.م/شهر يغنيك عن 10 أنظمة وفواتير مبعثرة",
-    "سجل موحد 360 درجة لكل عميل: محادثاته، طلباته السابقة، وقوائم اهتماماته في شاشة واحدة",
-    "وكيل AI نشط 24/7 يرد في ثانيتين، يغلق الصفقات، ويؤكد عناوين التوصيل فوراً",
-    "تزامن فوري دقيق للمخازن يخصم الكميات لحظياً ويمنع البيع الوهمي وعجز البضاعة",
-    "لوحة قيادة تفاعلية توضح مبيعات وإنتاجية كل موظف بدقة وأمانة",
-    "تسويات مالية آلية 100% بمحفظة رقمية للمسوقين والمناديب دون حسابات يدوية",
+    "اشتراك موحد يبدأ من 299 ج.م شهرياً يغنيك عن شراء ودمج 8 برامج متفرقة",
+    "سجل موحد لكل عميل يجمع محادثاته، طلباته السابقة، ورقم هاتفه البديل في شاشة واحدة",
+    "رد ذكي فوري خلال ثانيتين في أوقات الذروة وخارج الدوام لتأكيد الطلبات فوراً",
+    "جرد لحظي بنظام الباركود يخصم الأرصدة تلقائياً ويمنع عجز البضاعة وسرقة الفواتير",
+    "لوحة أداء واضحة تبين مبيعات كل موظف، سرعة رده، والأوردرات المقفولة بأمانة",
+    "تسويات مالية آلية 100% بمحفظة رقمية مخصصة لتحصيلات COD وعمولات المسوقين",
   ];
 
   return (
-    <section id="comparison" className="relative py-20 sm:py-28">
+    <section id="comparison" className="relative py-24 sm:py-36">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         
         {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold mb-4">
-            <Zap className="w-3.5 h-3.5" />
-            <span>المقارنة الحاسمة بالأرقام والتجربة</span>
+        <div className="max-w-2xl mb-16 text-right">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-zinc-400 text-[11px] font-mono mb-4">
+            <span>مقارنة واقعية من صلب التشغيل</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight mb-4">
-            لماذا يختار التجار ورواد الأعمال
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.15] mb-4">
+            الفرق بين إطفاء حرائق التشغيل،
             <br />
-            <span className="bg-gradient-to-r from-red-500 to-amber-400 bg-clip-text text-transparent">
-              منصة Max P بديلاً عن أي حل آخر؟
-            </span>
+            <span className="text-zinc-400 font-normal">وبين التفرغ لمضاعفة أرباحك.</span>
           </h2>
-          <p className="text-sm sm:text-base text-slate-300">
-            الفرق بين أن تقضي يومك في إطفاء حرائق التشغيل، أو أن تمتلك نظاماً يعمل بكفاءة وأنت تركز على مضاعفة أرباحك.
+          <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
+            مقارنة مباشرة بالأرقام والتجربة بين فوضى البرامج المبعثرة، وبين امتلاك نظام تشغيل موحد يربط فريقك ومخازنك.
           </p>
         </div>
 
-        {/* 2-Column Comparison Cards */}
+        {/* 2-Column High-Contrast Comparison Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
           
-          {/* Old Way (Pain) */}
+          {/* Card 1: Separated Chaotic Software */}
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="rounded-3xl bg-red-950/20 border border-red-500/30 p-6 sm:p-8 space-y-6 flex flex-col justify-between"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5, ease: [0.32, 0.72, 0, 1] }}
+            className="p-1 rounded-[2.25rem] bg-white/[0.02] border border-white/[0.06] flex flex-col justify-between"
           >
-            <div>
-              <div className="flex items-center gap-3 pb-6 border-b border-red-500/20">
-                <div className="w-10 h-10 rounded-2xl bg-red-500/20 flex items-center justify-center text-red-400 shrink-0">
-                  <ShieldAlert className="w-5 h-5" />
+            <div className="rounded-[calc(2.25rem-0.25rem)] bg-zinc-950 p-6 sm:p-8 h-full flex flex-col justify-between space-y-6">
+              <div>
+                <div className="pb-6 border-b border-white/[0.06]">
+                  <div className="text-[11px] font-mono text-zinc-400 uppercase mb-1">الوضع اليدوي التقليدي</div>
+                  <h3 className="text-xl font-bold text-zinc-300">أدوات مبعثرة وتكاليف اشتراك متراكمة</h3>
                 </div>
-                <div>
-                  <h3 className="text-xl font-black text-white">الوضع التقليدي: أدوات مشتتة وفواتير متراكمة</h3>
-                  <div className="text-xs text-red-300 font-semibold">تكلفة باهظة + وقت مهدر + أخطاء بشرية متكررة</div>
+
+                <div className="space-y-4 pt-6">
+                  {painPoints.map((point, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-white/[0.04] text-zinc-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <X className="w-3 h-3" />
+                      </div>
+                      <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed">{point}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-4 pt-6">
-                {painPoints.map((point, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <XCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">{point}</p>
-                  </div>
-                ))}
+              <div className="pt-6 border-t border-white/[0.06] text-center">
+                <span className="text-xs font-mono text-zinc-400">
+                  متوسط التكلفة الشهرية: 4,500 – 8,000 ج.م لاشتراكات متفرقة
+                </span>
               </div>
-            </div>
-
-            <div className="pt-6 border-t border-red-500/20 text-center">
-              <span className="text-xs font-bold text-red-300 bg-red-500/10 px-4 py-2 rounded-full border border-red-500/20 inline-block">
-                متوسط التكلفة الشهرية: 4,500 - 8,000 ج.م لاشتراكات متفرقة
-              </span>
             </div>
           </motion.div>
 
-          {/* Max P Way (Gain) */}
+          {/* Card 2: Max P Unified OS */}
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            whileInView={{ opacity: 1, x: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
-            className="rounded-3xl bg-emerald-950/25 border border-emerald-500/40 p-6 sm:p-8 space-y-6 shadow-2xl shadow-emerald-950/30 flex flex-col justify-between relative overflow-hidden"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: "-80px" }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.32, 0.72, 0, 1] }}
+            className="p-1 rounded-[2.25rem] bg-white/[0.05] border border-white/[0.12] shadow-2xl flex flex-col justify-between"
           >
-            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-
-            <div>
-              <div className="flex items-center gap-3 pb-6 border-b border-emerald-500/20">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-500/25 flex items-center justify-center text-emerald-400 shrink-0">
-                  <Zap className="w-5 h-5" />
+            <div className="rounded-[calc(2.25rem-0.25rem)] bg-zinc-950 p-6 sm:p-8 h-full flex flex-col justify-between space-y-6">
+              <div>
+                <div className="pb-6 border-b border-white/[0.08]">
+                  <div className="text-[11px] font-mono text-emerald-400 uppercase mb-1">مع MAX P BUSINESS OS</div>
+                  <h3 className="text-xl font-bold text-white">نظام تشغيل موحد يربط كل التفاصيل</h3>
                 </div>
-                <div>
-                  <h3 className="text-xl font-black text-white">مع Max P: نظام تشغيل موحد بالذكاء الاصطناعي</h3>
-                  <div className="text-xs text-emerald-300 font-semibold">تحكم كامل + أتمتة فورية + توفير 60% من التكاليف</div>
+
+                <div className="space-y-4 pt-6">
+                  {gainPoints.map((point, idx) => (
+                    <div key={idx} className="flex items-start gap-3">
+                      <div className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+                        <Check className="w-3 h-3" />
+                      </div>
+                      <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed font-medium">{point}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="space-y-4 pt-6">
-                {gainPoints.map((point, idx) => (
-                  <div key={idx} className="flex items-start gap-3">
-                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
-                    <p className="text-xs sm:text-sm text-emerald-100 font-medium leading-relaxed">{point}</p>
-                  </div>
-                ))}
+              <div className="pt-6 border-t border-white/[0.08] text-center">
+                <span className="text-xs font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-4 py-1.5 rounded-full inline-block">
+                  اشتراك موحد يبدأ من 299 ج.م شهرياً شامل كل الأدوات
+                </span>
               </div>
-            </div>
-
-            <div className="pt-6 border-t border-emerald-500/20 text-center">
-              <span className="text-xs font-bold text-emerald-300 bg-emerald-500/20 px-4 py-2 rounded-full border border-emerald-500/40 inline-block">
-                اشتراك واحد موحد يبدأ من 299 ج.م/شهر فقط
-              </span>
             </div>
           </motion.div>
 

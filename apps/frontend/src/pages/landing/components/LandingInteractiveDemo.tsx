@@ -5,20 +5,17 @@ import {
   Boxes,
   Users,
   Wallet,
-  Bot,
+  Workflow,
+  Check,
   ArrowLeft,
-  CheckCircle2,
-  Sparkles,
-  TrendingUp,
 } from "lucide-react";
 
-type ModuleType = "ai-chat" | "crm" | "erp" | "growth" | "finance" | "hr";
+type ModuleType = "ai-chat" | "crm" | "erp" | "finance" | "hr";
 
 interface ModuleDetail {
   id: ModuleType;
   label: string;
-  badge: string;
-  icon: React.ElementType;
+  codeName: string;
   title: string;
   lead: string;
   bullets: string[];
@@ -32,43 +29,39 @@ export const LandingInteractiveDemo: React.FC = () => {
     {
       id: "ai-chat",
       label: "الرد الذكي وواتساب",
-      badge: "AI Powered",
-      icon: Bot,
-      title: "وكيل ذكاء اصطناعي يغلق صفقاتك على مدار الساعة",
-      lead: "تكامل مباشر مع WhatsApp Cloud API و Instagram Direct. الوكيل يفهم اللهجة الدارجة، يجيب على الأسئلة، يؤكد الطلبات، ويسجلها في السيستم فوراً.",
+      codeName: "WHATSAPP_AI_DISPATCH",
+      title: "إغلاق الصفقات عبر الواتساب في ثوانٍ",
+      lead: "الربط الرسمي مع WhatsApp Cloud API يضمن وصول رسائلك بدون حظر. يفهم النظام أسئلة العميل الدارجة، يعرض صور المنتجات المتاحة، ويؤكد عنوان الشحن ويجهزه للمخزن تلقائياً.",
       bullets: [
-        "رد في خلال 2 ثانية 24/7 دون تأخير",
-        "فهم سياق العميل وترشيح المنتجات البديلة",
-        "تأكيد أوتوماتيكي لعنوان الشحن ورقم الهاتف",
+        "رد فوري خلال ثانيتين في أوقات الذروة وخارج مواعيد العمل الرسمية",
+        "تأكيد تلقائي لبيانات التوصيل ورقم الهاتف البديل",
+        "تحويل مباشر لموظف المبيعات البشري عند الحاجة بدون قطع السياق",
       ],
       mockup: (
-        <div className="space-y-3 bg-slate-950/90 rounded-2xl border border-white/10 p-4">
-          <div className="flex items-center justify-between pb-3 border-b border-white/10 text-xs">
-            <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              محادثة واتساب نشطة الآن
+        <div className="space-y-3 bg-zinc-950 p-5 rounded-2xl border border-white/[0.06] text-xs font-sans">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] text-[11px] font-mono">
+            <span className="text-emerald-400 flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              محادثة واتساب نشطة
             </span>
-            <span className="text-[10px] text-slate-500 font-mono">ID: #WA-9041</span>
+            <span className="text-zinc-500">جلسة #WA-8819</span>
           </div>
-          <div className="space-y-2 text-xs">
-            <div className="bg-slate-900 p-2.5 rounded-xl text-slate-300 max-w-[80%]">
-              عايز أطلب قطعتين من العرض ويوصلوا بكرة مصر الجديدة، التكلفة كام؟
+          <div className="space-y-2.5">
+            <div className="bg-zinc-900/80 p-3 rounded-2xl rounded-tr-none text-zinc-300 max-w-[85%] leading-relaxed">
+              لو سمحت محتاج مقاس 43 كلاسيك أسود، والتوصيل لمصر الجديدة بكام وبياخد وقت أد إيه؟
             </div>
-            <div className="bg-emerald-950/40 border border-emerald-500/30 p-2.5 rounded-xl text-emerald-200 mr-auto max-w-[85%] space-y-1">
-              <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-400">
-                <Sparkles className="w-3 h-3" /> MaxP Auto-Closer
-              </div>
+            <div className="bg-zinc-900 border border-emerald-500/20 p-3 rounded-2xl rounded-tl-none text-zinc-200 mr-auto max-w-[90%] leading-relaxed space-y-1.5">
+              <div className="text-[10px] text-emerald-400 font-mono">رد آلي مباشر</div>
               <p>
-                تمام يا فندم! إجمالي القطعتين بعد الخصم 780 ج.م + الشحن السريع 40 ج.م = 820 ج.م.
-                هل نعتمد الشحن على العنوان المسجل لمصر الجديدة؟
+                أهلاً بحضرتك يا فندم! متاح مقاس 43 وجاهز للشحن الفوري. مصاريف الشحن 45 ج.م والاستلام خلال 24 ساعة مع إمكانية المعاينة قبل الدفع. تحب نعتمد الطلب؟
               </p>
             </div>
-            <div className="bg-slate-900 p-2.5 rounded-xl text-slate-300 max-w-[80%]">
-              أيوه تمام اعتمد.
+            <div className="bg-zinc-900/80 p-2.5 rounded-2xl rounded-tr-none text-zinc-300 max-w-[80%]">
+              تمام اعتمد الشحن، العنوان: شارع النزهة مصر الجديدة.
             </div>
-            <div className="bg-blue-950/40 border border-blue-500/30 p-2.5 rounded-xl text-blue-200 mr-auto max-w-[85%] text-[11px] flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-              <span>تم تحويل المحادثة إلى طلب مؤكد برقم #9921 وإخطار شركة الشحن تلقائياً!</span>
+            <div className="bg-zinc-900/90 border border-white/10 p-3 rounded-xl text-zinc-200 text-[11px] flex items-center gap-2 font-mono">
+              <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>تم إنشاء الطلب #8912، وإرسال بوليصة الشحن لشركة بوسطة، وحجز المخزون تلقائياً.</span>
             </div>
           </div>
         </div>
@@ -76,39 +69,38 @@ export const LandingInteractiveDemo: React.FC = () => {
     },
     {
       id: "crm",
-      label: "المبيعات و CRM",
-      badge: "Pipeline Flow",
-      icon: MessageSquare,
-      title: "مسارات مبيعات تفاعلية تُظهر حالة كل عميل",
-      lead: "لا تترك عميلاً منسياً. قسّم عملاءك إلى مراحل (Leads، تفاوض، مؤكد، مغلق) وتتبع أداء موظفي المبيعات لحظة بلحظة.",
+      label: "مسارات المبيعات (CRM)",
+      codeName: "PIPELINE_ENGINE",
+      title: "تتبع كل عميل من أول استفسار وحتى التسليم",
+      lead: "قسّم صفقاتك إلى مراحل واضحة: عميل جديد، استفسار عن سعر، منتظر التأكيد، ومكتمل. تخلص من نسيان العملاء المترددين بمتابعات آلية منظمة.",
       bullets: [
-        "سحب وإفلات الصفقات بين مراحل البيع",
-        "تذكيرات متابعة آلية للعملاء المترددين",
-        "تاريخ كامل لكل رسالة ومكالمة وطلب سابق",
+        "سحب وإفلات الصفقات بين مراحل البيع بسلاسة",
+        "تنبيهات فورية للمحادثات المعلقة التي لم يُرد عليها",
+        "سجل تاريخي كامل بمشتريات العميل السابقة وعنوانه وملاحظاته",
       ],
       mockup: (
-        <div className="space-y-3 bg-slate-950/90 rounded-2xl border border-white/10 p-4">
-          <div className="flex items-center justify-between text-xs pb-2 border-b border-white/10">
-            <span className="font-bold text-slate-300">مسار مبيعات: العملاء الجدد</span>
-            <span className="text-emerald-400 font-bold">128,400 ج.م صفقات</span>
+        <div className="space-y-3 bg-zinc-950 p-5 rounded-2xl border border-white/[0.06] text-xs font-mono">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] text-[11px]">
+            <span className="text-zinc-300">مسار المبيعات: طلبات الأسبوع</span>
+            <span className="text-emerald-400 font-bold">148,200 ج.م</span>
           </div>
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="bg-white/[0.03] border border-white/5 p-2 rounded-xl">
-              <div className="text-[10px] text-slate-400 font-bold mb-1">مهتم (34)</div>
-              <div className="bg-slate-900 p-1.5 rounded text-[10px] text-slate-300 border border-white/5">
-                مكتب النور — 14,000 ج
+          <div className="grid grid-cols-3 gap-2 text-center text-[11px]">
+            <div className="bg-white/[0.02] border border-white/5 p-2.5 rounded-xl space-y-1.5">
+              <div className="text-zinc-400 font-bold">مهتم (18)</div>
+              <div className="bg-zinc-900 p-2 rounded text-zinc-300 border border-white/5 text-[10px]">
+                طلب أ/ ماجد — 1,250 ج
               </div>
             </div>
-            <div className="bg-white/[0.03] border border-white/5 p-2 rounded-xl">
-              <div className="text-[10px] text-amber-400 font-bold mb-1">تفاوض (12)</div>
-              <div className="bg-amber-500/10 p-1.5 rounded text-[10px] text-amber-200 border border-amber-500/20">
-                براند ستايل — 32,500 ج
+            <div className="bg-white/[0.02] border border-white/5 p-2.5 rounded-xl space-y-1.5">
+              <div className="text-amber-400 font-bold">تفاوض (9)</div>
+              <div className="bg-zinc-900 p-2 rounded text-zinc-300 border border-white/5 text-[10px]">
+                شركة الأهرام — 8,400 ج
               </div>
             </div>
-            <div className="bg-white/[0.03] border border-white/5 p-2 rounded-xl">
-              <div className="text-[10px] text-emerald-400 font-bold mb-1">تم الإغلاق (58)</div>
-              <div className="bg-emerald-500/10 p-1.5 rounded text-[10px] text-emerald-200 border border-emerald-500/20">
-                عيادات الشفاء — 48,000 ج
+            <div className="bg-white/[0.02] border border-white/5 p-2.5 rounded-xl space-y-1.5">
+              <div className="text-emerald-400 font-bold">تم الشحن (42)</div>
+              <div className="bg-zinc-900 p-2 rounded text-zinc-300 border border-white/5 text-[10px]">
+                طلب د/ هبة — 2,100 ج
               </div>
             </div>
           </div>
@@ -117,36 +109,32 @@ export const LandingInteractiveDemo: React.FC = () => {
     },
     {
       id: "erp",
-      label: "العمليات والمخازن",
-      badge: "Real-time Stock",
-      icon: Boxes,
-      title: "تزامن فوري للمخازن يمنع نفاد البضاعة وتضارب الأرصدة",
-      lead: "اربط متجرك الإلكتروني، فروعك الفعلية، ومخازنك المركزية في مكان واحد. الخصم لحظي مع كل عملية بيع أونلاين أو أوفلاين.",
+      label: "المخازن والمشتريات",
+      codeName: "INVENTORY_SYNC",
+      title: "تزامن لحظي يمنع البيع الوهمي وتضارب المخزون",
+      lead: "اربط مستودعك المركزي بفروع المحلات ومتجرك الإلكتروني. كل حركة بيع في المحل تخصم من أونلاين فوراً، لمنع بيع منتج غير موجود فعلياً.",
       bullets: [
-        "إدارة مستودعات متعددة وفروع متعددة",
-        "أوامر شراء وإدارة مديونيات الموردين",
-        "طباعة فواتير ضريبية وبوالص شحن بنقرة زر",
+        "جرد لحظي بنظام الباركود عبر الموبايل أو قارئ الليزر",
+        "تنبيهات تلقائية عند وصول أي صنف لحد إعادة الطلب",
+        "إدارة فواتير الشراء، دفعات الموردين، وتكاليف النقل",
       ],
       mockup: (
-        <div className="space-y-3 bg-slate-950/90 rounded-2xl border border-white/10 p-4 text-xs">
-          <div className="flex items-center justify-between pb-2 border-b border-white/10">
-            <span className="font-bold text-slate-300">حالة المستودع الرئيسي</span>
-            <span className="text-blue-400 font-bold">1,820 قطعة متوفرة</span>
+        <div className="space-y-3 bg-zinc-950 p-5 rounded-2xl border border-white/[0.06] text-xs font-mono">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] text-[11px]">
+            <span className="text-zinc-300">حالة المستودع الرئيسي</span>
+            <span className="text-zinc-400">1,420 صنف مسجل</span>
           </div>
           <div className="space-y-2">
             {[
-              { name: "قميص قطن بريميوم", sku: "SH-90", stock: 140, status: "متوفر", color: "text-emerald-400" },
-              { name: "حذاء كاجوال جلد", sku: "SH-12", stock: 8, status: "أوشك على النفاد", color: "text-amber-400" },
-              { name: "ساعة كلاسيك سوداء", sku: "WT-04", stock: 0, status: "غير متوفر", color: "text-red-400" },
+              { name: "حذاء جلد كلاسيك أسود 43", stock: "17 قطعة", status: "متوفر", color: "text-emerald-400" },
+              { name: "قميص قطن أبيض مقاس L", stock: "3 قطع فقط", status: "قارب على النفاد", color: "text-amber-400" },
+              { name: "حقيبة لابتوب مقاومة للمياه", stock: "0 قطعة", status: "غير متوفر", color: "text-zinc-500" },
             ].map((item, idx) => (
-              <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5">
-                <div>
-                  <div className="font-bold text-slate-200">{item.name}</div>
-                  <div className="text-[10px] text-slate-500 font-mono">{item.sku}</div>
-                </div>
+              <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.02] border border-white/5 text-[11px]">
+                <span className="text-zinc-200">{item.name}</span>
                 <div className="text-right">
-                  <div className={`font-bold ${item.color}`}>{item.status}</div>
-                  <div className="text-[10px] text-slate-400">{item.stock} قطعة</div>
+                  <span className={`font-bold ${item.color}`}>{item.status}</span>
+                  <span className="text-zinc-500 mr-2">({item.stock})</span>
                 </div>
               </div>
             ))}
@@ -156,30 +144,31 @@ export const LandingInteractiveDemo: React.FC = () => {
     },
     {
       id: "finance",
-      label: "المالية والمحفظة",
-      badge: "Wallet Engine",
-      icon: Wallet,
-      title: "محفظة مالية رقمية وتسويات فورية دون حسابات معقدة",
-      lead: "تسوية حسابات المناديب، المسوقين، والموردين بضغطة زر واحدة. تتبع صافي أرباحك وتدفقاتك النقدية الحقيقية بعيداً عن مفاجآت الإكسيل.",
+      label: "المالية والتسويات",
+      codeName: "WALLET_SETTLEMENTS",
+      title: "تسويات مالية فورية مع شركات الشحن والمسوقين",
+      lead: "تتبع فلوس الـ COD المعلقة لدى شركات الشحن، واصرف عمولات المسوقين والمناديب بدقة بدون خلط الحسابات أو مفاجآت في الأرباح الصافية.",
       bullets: [
-        "محفظة داخلية لكل شريك ومسوق",
-        "تسويات فورية للتحصيلات ومدفوعات الـ COD",
-        "تقارير ربحية صافية بعد خصم تكلفة البضاعة والإعلانات والشحن",
+        "محفظة رقمية مخصصة لكل مندوب أو مسوق بالعمولة",
+        "حساب صافي الربح الحقيقي بعد خصم الإعلانات وتكلفة الشحن والمرتجعات",
+        "تقارير تدفق نقدي وأرباح يومية وشهرية بضغطة زر",
       ],
       mockup: (
-        <div className="space-y-4 bg-slate-950/90 rounded-2xl border border-white/10 p-5 text-xs">
-          <div className="text-center py-3 bg-gradient-to-br from-amber-500/10 to-red-500/10 rounded-xl border border-amber-500/20">
-            <div className="text-[10px] text-slate-400 font-bold uppercase mb-1">الرصيد المتاح للتشغيل</div>
-            <div className="text-2xl font-black text-white">482,900.00 <span className="text-xs text-amber-400">ج.م</span></div>
-          </div>
-          <div className="space-y-2">
-            <div className="flex items-center justify-between p-2 bg-white/[0.02] rounded-lg border border-white/5">
-              <span className="text-slate-300">تحصيل COD من شركة الشحن</span>
-              <span className="text-emerald-400 font-mono font-bold">+24,800 ج.م</span>
+        <div className="space-y-4 bg-zinc-950 p-5 rounded-2xl border border-white/[0.06] text-xs font-mono">
+          <div className="p-4 bg-white/[0.02] rounded-xl border border-white/5 text-center space-y-1">
+            <div className="text-[10px] text-zinc-400 uppercase">صافي الرصيد المتاح للتشغيل</div>
+            <div className="text-3xl font-black text-white">
+              342,850 <span className="text-xs text-zinc-400 font-normal">ج.م</span>
             </div>
-            <div className="flex items-center justify-between p-2 bg-white/[0.02] rounded-lg border border-white/5">
-              <span className="text-slate-300">صرف عمولات مسوقين آلياً</span>
-              <span className="text-red-400 font-mono font-bold">-3,450 ج.م</span>
+          </div>
+          <div className="space-y-2 text-[11px]">
+            <div className="flex justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5">
+              <span className="text-zinc-300">تحصيل COD شركة بوسطة (#8821)</span>
+              <span className="text-emerald-400 font-bold">+18,400 ج.م</span>
+            </div>
+            <div className="flex justify-between p-2 rounded-lg bg-white/[0.02] border border-white/5">
+              <span className="text-zinc-300">صرف عمولات مبيعات المندوبين</span>
+              <span className="text-zinc-400 font-bold">-2,950 ج.م</span>
             </div>
           </div>
         </div>
@@ -187,33 +176,32 @@ export const LandingInteractiveDemo: React.FC = () => {
     },
     {
       id: "hr",
-      label: "الموظفين و HR",
-      badge: "Productivity Score",
-      icon: Users,
-      title: "ربط إنتاجية الموظف بالمبيعات الفعلية مباشرة",
-      lead: "اعرف مَن في فريقك يحقق أعلى مبيعات وأفضل خدمة عملاء. تتبع شفتات العمل، الحضور، والمكافآت بنظام عادل وشفاف.",
+      label: "فريق العمل والموظفين",
+      codeName: "STAFF_PRODUCTIVITY",
+      title: "ربط إنتاجية موظفيك بالمبيعات الفعلية",
+      lead: "تعرف على مَن في فريقك يجيب على العملاء بأسرع وقت ويحقق أعلى نسبة إغلاق، مع تنظيم مواعيد العمل والورديات بكل سهولة.",
       bullets: [
-        "متابعة الحضور وساعات الدوام",
-        "توزيع المهام ومتابعة إنجاز الـ KPIs",
-        "احتساب آلي لعمولات المبيعات ونسب المندوبين",
+        "إحصائيات فورية لعدد المحادثات والطلبات المقفولة لكل موظف",
+        "توزيع عادل وتلقائي للعملاء على الموظفين المتاحين",
+        "نظام احتساب آلي لعمولات المبيعات لتحفيز الفريق",
       ],
       mockup: (
-        <div className="space-y-3 bg-slate-950/90 rounded-2xl border border-white/10 p-4 text-xs">
-          <div className="flex items-center justify-between pb-2 border-b border-white/10">
-            <span className="font-bold text-slate-300">فريق المبيعات والدعم</span>
-            <span className="text-purple-400 font-bold">4 موظفين نشطين</span>
+        <div className="space-y-3 bg-zinc-950 p-5 rounded-2xl border border-white/[0.06] text-xs font-mono">
+          <div className="flex items-center justify-between pb-3 border-b border-white/[0.06] text-[11px]">
+            <span className="text-zinc-300">لوحة إنتاجية موظفي المبيعات</span>
+            <span className="text-emerald-400">4 موظفين نشطين</span>
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
             {[
-              { name: "سارة محمود", role: "Sales Lead", sales: "38 طلب", rate: "98%" },
-              { name: "كريم يوسف", role: "Customer Care", sales: "24 طلب", rate: "94%" },
+              { name: "سارة أحمد", orders: "31 طلب مؤكد", rev: "38,400 ج", speed: "1.2 دقيقة" },
+              { name: "خالد محمود", orders: "26 طلب مؤكد", rev: "29,100 ج", speed: "1.8 دقيقة" },
             ].map((emp, i) => (
-              <div key={i} className="p-2.5 rounded-xl bg-white/[0.02] border border-white/5 space-y-1">
-                <div className="font-bold text-white">{emp.name}</div>
-                <div className="text-[10px] text-slate-400">{emp.role}</div>
-                <div className="text-[10px] text-emerald-400 font-bold pt-1 border-t border-white/5 flex justify-between">
-                  <span>{emp.sales}</span>
-                  <span>رضا {emp.rate}</span>
+              <div key={i} className="p-3 rounded-xl bg-white/[0.02] border border-white/5 space-y-1.5">
+                <div className="font-bold text-white font-sans">{emp.name}</div>
+                <div className="text-emerald-400">{emp.orders}</div>
+                <div className="text-[10px] text-zinc-500 flex justify-between pt-1 border-t border-white/5">
+                  <span>{emp.rev}</span>
+                  <span>متوسط: {emp.speed}</span>
                 </div>
               </div>
             ))}
@@ -226,99 +214,96 @@ export const LandingInteractiveDemo: React.FC = () => {
   const currentModule = modules.find((m) => m.id === activeTab) || modules[0];
 
   return (
-    <section id="modules" className="relative py-20 sm:py-28 bg-slate-950/60 border-t border-white/10">
+    <section id="modules" className="relative py-24 sm:py-36 border-t border-white/[0.06] bg-zinc-950/40">
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         
         {/* Section Heading */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-xs font-bold mb-4">
-            <TrendingUp className="w-3.5 h-3.5" />
-            <span>جولة حية داخل كونسول التشغيل</span>
+        <div className="max-w-2xl mb-14 text-right">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/[0.04] border border-white/10 text-zinc-400 text-[11px] font-mono mb-4">
+            <span>جولة حية داخل الأقسام</span>
           </div>
-          <h2 className="text-3xl sm:text-5xl font-black text-white leading-tight mb-4">
-            تصفّح المنصة وتخيّل
+          <h2 className="text-3xl sm:text-5xl font-black text-white tracking-tight leading-[1.15] mb-4">
+            شاهد كيف يعمل النظام،
             <br />
-            <span className="bg-gradient-to-r from-red-500 via-amber-400 to-amber-200 bg-clip-text text-transparent">
-              كيف سيبدو يوم عملك بدون فوضى
-            </span>
+            <span className="text-zinc-400 font-normal">وكيف يدير تفاصيل يومك.</span>
           </h2>
-          <p className="text-sm sm:text-base text-slate-300">
-            انقر على أي قسم وشاهد كيف يتولى النظام إدارة المهام المعقدة بذكاء وسلاسة.
+          <p className="text-sm sm:text-base text-zinc-300 leading-relaxed">
+            اختر أي قسم لتستعرض سيناريو تشغيل حي يوضح كيف يربط Max P دورة البيع والتشغيل دون أخطاء.
           </p>
         </div>
 
-        {/* Modular Tabs Navigation */}
-        <div className="flex items-center justify-center gap-2 flex-wrap mb-12">
+        {/* Tactile Tab Selector (Emil-Style Physics) */}
+        <div className="flex items-center justify-start gap-2 flex-wrap mb-10">
           {modules.map((tab) => {
-            const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all ${
+                className={`px-4 py-2.5 rounded-full text-xs font-medium transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] active:scale-[0.98] ${
                   isActive
-                    ? "bg-gradient-to-r from-red-600 to-amber-600 text-white shadow-lg shadow-red-600/30 scale-105"
-                    : "bg-white/[0.04] hover:bg-white/[0.08] text-slate-300 border border-white/5"
+                    ? "bg-zinc-100 text-zinc-950 font-bold shadow-md shadow-white/5"
+                    : "bg-white/[0.03] text-zinc-400 hover:text-zinc-200 border border-white/5 hover:border-white/15"
                 }`}
               >
-                <Icon className="w-4 h-4" />
-                <span>{tab.label}</span>
+                {tab.label}
               </button>
             );
           })}
         </div>
 
-        {/* Dynamic Display Panel with AnimatePresence */}
-        <div className="relative rounded-3xl bg-slate-900/90 border border-white/10 p-6 sm:p-10 shadow-2xl overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentModule.id}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -15 }}
-              transition={{ duration: 0.35 }}
-              className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 items-center"
-            >
-              {/* Left Side: Descriptive Info */}
-              <div className="lg:col-span-7 space-y-6 text-right">
-                <span className="inline-block text-xs font-bold px-3 py-1 rounded-md bg-white/5 text-amber-400 border border-amber-400/20">
-                  {currentModule.badge}
-                </span>
-                <h3 className="text-2xl sm:text-4xl font-black text-white leading-tight">
-                  {currentModule.title}
-                </h3>
-                <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-                  {currentModule.lead}
-                </p>
+        {/* Double-Bezel Display Panel */}
+        <div className="p-1 sm:p-1.5 rounded-[2.5rem] bg-white/[0.03] border border-white/[0.08] shadow-[inset_0_1px_1px_rgba(255,255,255,0.06)] shadow-2xl">
+          <div className="rounded-[calc(2.5rem-0.375rem)] bg-zinc-950 p-6 sm:p-10">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentModule.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -12 }}
+                transition={{ duration: 0.35, ease: [0.32, 0.72, 0, 1] }}
+                className="grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-12 items-center"
+              >
+                {/* Descriptive Info */}
+                <div className="lg:col-span-7 space-y-6 text-right">
+                  <span className="inline-block text-[11px] font-mono text-zinc-400 px-3 py-1 rounded-md bg-white/[0.03] border border-white/10">
+                    MODULE: {currentModule.codeName}
+                  </span>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
+                    {currentModule.title}
+                  </h3>
+                  <p className="text-zinc-300 text-xs sm:text-sm leading-relaxed">
+                    {currentModule.lead}
+                  </p>
 
-                <ul className="space-y-3 pt-2">
-                  {currentModule.bullets.map((bullet, idx) => (
-                    <li key={idx} className="flex items-center gap-2.5 text-xs sm:text-sm text-slate-200">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
+                  <ul className="space-y-3 pt-2">
+                    {currentModule.bullets.map((bullet, idx) => (
+                      <li key={idx} className="flex items-start gap-3 text-xs sm:text-sm text-zinc-200">
+                        <Check className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="leading-relaxed">{bullet}</span>
+                      </li>
+                    ))}
+                  </ul>
 
-                <div className="pt-4">
-                  <a
-                    href="#calculator"
-                    className="inline-flex items-center gap-2 text-xs font-bold text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    <span>احسب كم ستوفر شهرياً مع هذا القسم</span>
-                    <ArrowLeft className="w-4 h-4" />
-                  </a>
+                  <div className="pt-2">
+                    <a
+                      href="#calculator"
+                      className="inline-flex items-center gap-2 text-xs font-mono text-zinc-300 hover:text-white transition-colors"
+                    >
+                      <span>احسب الوفر المالي لشركتك من هذا القسم</span>
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 </div>
-              </div>
 
-              {/* Right Side: Interactive Mockup Screen */}
-              <div className="lg:col-span-5">
-                {currentModule.mockup}
-              </div>
-            </motion.div>
-          </AnimatePresence>
+                {/* Simulated Screen */}
+                <div className="lg:col-span-5">
+                  {currentModule.mockup}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
         </div>
 
       </div>

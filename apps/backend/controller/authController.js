@@ -400,20 +400,43 @@ const register = async (req, res) => {
       console.error('[REGISTER] Failed to queue WhatsApp registration notifications:', notificationError);
     });
 
-    const responseCompany = buildCompanyResponseWithOnboarding(
-      {
-        id: company.id,
-        name: company.name,
-        slug: company.slug,
-        logo: company.logo,
-        currency: company.currency,
-        isActive: company.isActive,
-        sidebarLayout: company.sidebarLayout,
-        businessSpecialty: selectedSpecialty,
-        settings: company.settings
-      },
-      user
-    );
+    let registeredActiveApps = [];
+    try {
+      const installedApps = await prisma.companyApp.findMany({
+        where: {
+          companyId: company.id,
+          status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] }
+        },
+        select: {
+          app: { select: { slug: true } }
+        }
+      });
+      registeredActiveApps = installedApps.map(ca => ca.app?.slug).filter(Boolean);
+      if (registeredActiveApps.length === 0 && specialtyAppSlugs.length > 0) {
+        registeredActiveApps = specialtyAppSlugs;
+      }
+    } catch (appsErr) {
+      console.warn('[REGISTER] Could not fetch installed apps:', appsErr.message);
+      registeredActiveApps = specialtyAppSlugs;
+    }
+
+    const responseCompany = {
+      ...buildCompanyResponseWithOnboarding(
+        {
+          id: company.id,
+          name: company.name,
+          slug: company.slug,
+          logo: company.logo,
+          currency: company.currency,
+          isActive: company.isActive,
+          sidebarLayout: company.sidebarLayout,
+          businessSpecialty: selectedSpecialty,
+          settings: company.settings
+        },
+        user
+      ),
+      activeApps: registeredActiveApps
+    };
 
     res.cookie('refreshToken', refreshToken, {
       httpOnly: true,
@@ -436,11 +459,13 @@ const register = async (req, res) => {
           companyId: user.companyId,
           company: {
             ...responseCompany,
+            activeApps: registeredActiveApps,
             signupCouponCode: appliedSignupCoupon?.code || null
           },
           companies: [
             {
               ...responseCompany,
+              activeApps: registeredActiveApps,
               role: user.role,
               isDefault: true,
               isCurrent: true
@@ -451,6 +476,7 @@ const register = async (req, res) => {
           dentalRole: null
         },
         token,
+        refreshToken,
         signupCoupon: appliedSignupCoupon
       }
     });
@@ -613,7 +639,7 @@ const login = async (req, res) => {
                 }
               },
               installedApps: {
-                where: { status: { in: ['ACTIVE', 'TRIAL'] } },
+                where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
                 select: { app: { select: { slug: true } } }
               }
             }
@@ -650,7 +676,7 @@ const login = async (req, res) => {
                     }
                   },
                   installedApps: {
-                    where: { status: { in: ['ACTIVE', 'TRIAL'] } },
+                    where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
                     select: { app: { select: { slug: true } } }
                   }
                 }
@@ -817,7 +843,10 @@ const login = async (req, res) => {
     if (user.company) {
       const roleInPrimary = findRoleInCompany(user.companyId);
       const activeApps = user.company.installedApps?.map(ca => ca.app.slug) || [];
-      const responseCompany = buildCompanyResponseWithOnboarding(user.company, user);
+      const responseCompany = {
+        ...buildCompanyResponseWithOnboarding(user.company, user),
+        activeApps
+      };
       user.company = responseCompany;
       companiesMap.set(user.companyId, {
         ...responseCompany,
@@ -838,7 +867,10 @@ const login = async (req, res) => {
         if (uc.company && uc.company.isActive) {
           if (!companiesMap.has(uc.companyId)) {
             const activeApps = uc.company.installedApps?.map(ca => ca.app.slug) || [];
-            const responseCompany = buildCompanyResponseWithOnboarding(uc.company, user);
+            const responseCompany = {
+              ...buildCompanyResponseWithOnboarding(uc.company, user),
+              activeApps
+            };
             companiesMap.set(uc.companyId, {
               ...responseCompany,
               activeApps,
@@ -851,6 +883,19 @@ const login = async (req, res) => {
         }
       }
     }
+
+    // Ensure at least one company is marked as isCurrent: true
+    const hasCurrentCompany = Array.from(companiesMap.values()).some(c => c.isCurrent);
+    if (!hasCurrentCompany && companiesMap.size > 0) {
+      const firstCompanyId = companiesMap.keys().next().value;
+      const firstCompany = companiesMap.get(firstCompanyId);
+      if (firstCompany) {
+        firstCompany.isCurrent = true;
+      }
+    }
+
+    const effectiveCompanyId = user.companyId || user.company?.id || (user.userCompanies && user.userCompanies[0]?.companyId);
+    const currentCompany = (effectiveCompanyId && companiesMap.get(effectiveCompanyId)) || user.company || Array.from(companiesMap.values())[0] || null;
 
     // Return user data without password
     const { password: _, userCompanies: __, ...userWithoutSensitive } = user;
@@ -896,7 +941,7 @@ const login = async (req, res) => {
           ...userWithoutSensitive,
           role: currentActiveRole,
           permissions,
-          company: companiesMap.get(user.companyId) || user.company,
+          company: currentCompany,
           affiliate: affiliateProfile,
           companies: Array.from(companiesMap.values()),
           hasMultipleCompanies: companiesMap.size > 1,
@@ -984,7 +1029,7 @@ const me = async (req, res) => {
               }
             },
             installedApps: {
-              where: { status: { in: ['ACTIVE', 'TRIAL'] } },
+              where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
               select: { app: { select: { slug: true } } }
             }
           }
@@ -1015,7 +1060,7 @@ const me = async (req, res) => {
                   }
                 },
                 installedApps: {
-                  where: { status: { in: ['ACTIVE', 'TRIAL'] } },
+                  where: { status: { in: ['ACTIVE', 'TRIAL', 'active', 'trial'] } },
                   select: { app: { select: { slug: true } } }
                 }
               }
@@ -1081,11 +1126,15 @@ const me = async (req, res) => {
     if (user.company) {
       const roleInPrimary = findRoleInCompany(user.companyId);
       const activeApps = user.company.installedApps?.map(ca => ca.app.slug) || [];
-      const responseCompany = buildCompanyResponseWithOnboarding(user.company, user);
+      const responseCompany = {
+        ...buildCompanyResponseWithOnboarding(user.company, user),
+        activeApps
+      };
+      user.company = responseCompany;
 
       // DEBUG: Log the found role
       if (user.email === 'mokhtar@mokhtar.com') {
-        console.log(`ÃƒÂ°Ã…Â¸Ã¢â‚¬ÂÃ‚Â [ME-DEBUG] User: ${user.email}, Primary: ${user.company.name}, Found Role: ${roleInPrimary}, Global Role: ${user.role}`);
+        console.log(`🔍 [ME-DEBUG] User: ${user.email}, Primary: ${user.company.name}, Found Role: ${roleInPrimary}, Global Role: ${user.role}`);
       }
 
       companiesMap.set(user.companyId, {
@@ -1108,7 +1157,10 @@ const me = async (req, res) => {
       if (uc.company && uc.company.isActive) {
         if (!companiesMap.has(uc.companyId)) {
           const activeApps = uc.company.installedApps?.map(ca => ca.app.slug) || [];
-          const responseCompany = buildCompanyResponseWithOnboarding(uc.company, user);
+          const responseCompany = {
+            ...buildCompanyResponseWithOnboarding(uc.company, user),
+            activeApps
+          };
           companiesMap.set(uc.companyId, {
             ...responseCompany,
             activeApps,
