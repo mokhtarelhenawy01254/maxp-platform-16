@@ -73,11 +73,12 @@ const defaultFilters: DashboardFilters = {
 
 const FacebookAdsDashboard: React.FC = () => {
   const { i18n } = useTranslation();
-  const isEn =
-    i18n.language === "en" ||
-    (typeof window !== "undefined" &&
-      (localStorage.getItem("language") === "en" ||
-        localStorage.getItem("i18nextLng")?.startsWith("en")));
+  const isEn = Boolean(
+    i18n.language?.startsWith("en") ||
+      (typeof window !== "undefined" &&
+        localStorage.getItem("language") === "en" &&
+        document.documentElement.lang !== "ar")
+  );
 
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -394,7 +395,7 @@ const FacebookAdsDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
                   <Megaphone className="h-3.5 w-3.5" />
-                  Meta Ads Cockpit
+                  {isEn ? "Meta Ads Cockpit" : "لوحة تحكم إعلانات Meta"}
                 </div>
                 {selectedAccountBalance != null && (
                   <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">

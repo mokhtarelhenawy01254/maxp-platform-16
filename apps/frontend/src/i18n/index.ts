@@ -106,6 +106,7 @@ const initialLanguage = savedLanguage || "ar";
 
 // Ensure localStorage is set BEFORE detector runs so it never falls through to navigator.language
 localStorage.setItem("language", initialLanguage);
+localStorage.setItem("i18nextLng", initialLanguage);
 
 // تهيئة i18n متزامنة أولية (لضمان جاهزية الترجمات عند التحميل الأول)
 i18n
@@ -150,6 +151,7 @@ if (!savedLanguage) {
           }
           await i18n.changeLanguage(detectedLanguage);
           localStorage.setItem("language", detectedLanguage);
+          localStorage.setItem("i18nextLng", detectedLanguage);
           document.documentElement.dir = detectedLanguage === "ar" ? "rtl" : "ltr";
           document.documentElement.lang = detectedLanguage;
         })();
@@ -175,6 +177,7 @@ export const changeLanguage = async (language: string) => {
   }
   await i18n.changeLanguage(language);
   localStorage.setItem("language", language);
+  localStorage.setItem("i18nextLng", language);
   document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
   document.documentElement.lang = language;
   // إعادة تحميل الصفحة لتطبيق التغييرات على جميع المكونات

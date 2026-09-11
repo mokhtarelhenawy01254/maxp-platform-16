@@ -16,11 +16,12 @@ import {
 
 const FacebookAdsGeoPage: React.FC = () => {
   const { i18n } = useTranslation();
-  const isEn =
-    i18n.language === "en" ||
-    (typeof window !== "undefined" &&
-      (localStorage.getItem("language") === "en" ||
-        localStorage.getItem("i18nextLng")?.startsWith("en")));
+  const isEn = Boolean(
+    i18n.language?.startsWith("en") ||
+      (typeof window !== "undefined" &&
+        localStorage.getItem("language") === "en" &&
+        document.documentElement.lang !== "ar")
+  );
 
   const accountContext = useFacebookAdsAccountContext();
   const { selectedAdAccountId, selectedAdAccount } = accountContext;

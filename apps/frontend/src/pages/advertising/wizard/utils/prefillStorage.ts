@@ -162,4 +162,6 @@ export {
   buildPrefilledCarouselCards,
   getProductLaunchPrefillPayload,
   buildStoredPrefillCarouselCards,
+  getSafePrefillImageUrls,
+  createClientRequestId,
 };

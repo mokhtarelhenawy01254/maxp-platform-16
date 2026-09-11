@@ -206,8 +206,13 @@ export const getSidebarConfig = (
     userSidebarSettings?: { enabled: boolean; sections: Record<string, SidebarSectionSettings> },
     assignedApps?: string[],
 ): SidebarSection[] => {
-    const isEn = Boolean(
-        (typeof window !== 'undefined' && (localStorage.getItem('language') === 'en' || localStorage.getItem('i18nextLng')?.startsWith('en') || document.documentElement.lang === 'en')) ||
+    const savedLang = typeof window !== 'undefined' ? localStorage.getItem('language') : null;
+    const docLang = typeof document !== 'undefined' ? document.documentElement.lang : null;
+    const isExplicitAr = savedLang === 'ar' || docLang === 'ar';
+
+    const isEn = !isExplicitAr && Boolean(
+        savedLang === 'en' ||
+        docLang === 'en' ||
         (typeof t === 'function' && t('sidebar.marketingSection') === 'Marketing & Advertising')
     );
 
