@@ -260,6 +260,17 @@ class LLMClient:
             meta: dict = {"parser": parser_key}
             if response.usage:
                 meta["tokens"] = response.usage
+                if response.usage.get("prompt_cache_hit_tokens"):
+                    meta["cache_hit_tokens"] = response.usage["prompt_cache_hit_tokens"]
+                    meta["cache_hit_ratio"] = response.usage.get("cache_hit_ratio", 0.0)
+                    logger.info(
+                        "llm_cache_hit",
+                        provider=self.provider,
+                        model=self.model,
+                        prompt_tokens=response.usage.get("prompt_tokens", 0),
+                        cached_tokens=response.usage["prompt_cache_hit_tokens"],
+                        hit_ratio=response.usage.get("cache_hit_ratio", 0.0),
+                    )
             if response.text:
                 meta["response"] = response.text[:5000]
             await self._write_provider_log(
@@ -438,6 +449,21 @@ class LLMClient:
                 })
 
         usage = response.usage.model_dump() if response.usage else None
+        if usage:
+            # Extract DeepSeek / OpenAI prompt caching metrics
+            cache_hit = (
+                usage.get("prompt_cache_hit_tokens")
+                or (usage.get("prompt_tokens_details") or {}).get("cached_tokens")
+                or 0
+            )
+            cache_miss = (
+                usage.get("prompt_cache_miss_tokens")
+                or (max(0, usage.get("prompt_tokens", 0) - cache_hit) if cache_hit else usage.get("prompt_tokens", 0))
+            )
+            usage["prompt_cache_hit_tokens"] = cache_hit
+            usage["prompt_cache_miss_tokens"] = cache_miss
+            if usage.get("prompt_tokens", 0) > 0:
+                usage["cache_hit_ratio"] = round(cache_hit / usage["prompt_tokens"], 4)
         finish_reason = choice.finish_reason
         reasoning_content = (
             getattr(message, "reasoning_content", None)

@@ -324,6 +324,18 @@ async def _llm_call(ctx: PipelineContext, system_prompt: str, skills: list) -> P
 
     from src.context.multimodal import build_user_content
     user_content = build_user_content(ctx.message, ctx.attachments)
+    from datetime import datetime as _dt_now
+    _now = _dt_now.now()
+    time_ctx = f"[Time: {_now.strftime('%H:%M')} UTC]"
+    if isinstance(user_content, str):
+        user_content = f"{user_content}\n\n{time_ctx}"
+    elif isinstance(user_content, list):
+        for part in user_content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                part["text"] = f"{part.get('text', '')}\n\n{time_ctx}"
+                break
+        else:
+            user_content.insert(0, {"type": "text", "text": time_ctx})
     messages.append({"role": "user", "content": user_content})
 
     # Token budget: drop oldest history messages if over budget
@@ -558,32 +570,42 @@ def _format_tool_results(executed: list[dict]) -> str:
 async def _build_followup_messages(
     ctx: PipelineContext, first_response: ProviderResponse, executed: list[dict]
 ) -> list[dict]:
-    """Build messages for the follow-up LLM call after tool execution."""
+    """Build messages for the follow-up LLM call after tool execution.
+    
+    Preserves exact system_prompt and conversation prefix from the initial call
+    to guarantee a near-100% KV Cache Hit with DeepSeek and OpenAI-compatible providers.
+    """
     agent_instructions = get_agent_instructions(ctx.agent) if ctx.agent else ""
-    base_prompt = ctx.system_prompt or agent_instructions or _generic_system_prompt()
+    # Reuse the exact enriched system prompt from _llm_call to preserve prefix cache
+    system_prompt = ctx.system_prompt or agent_instructions or _generic_system_prompt()
     followup_directive = _get_followup_directive(ctx.agent)
-    system_prompt = f"{base_prompt}\n\n{followup_directive}"
-
-    # Inject SKILL.md instructions (same as primary _llm_call)
-    if ctx.agent and hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
-        skills_block = get_skills_block(ctx.agent.allowed_skills)
-        if skills_block:
-            system_prompt += f"\n\n{skills_block}"
 
     messages = [
         {"role": "system", "content": system_prompt},
     ]
 
-    # Add DB-backed conversation history (same as primary _llm_call)
+    # Add DB-backed conversation history (exact same as primary _llm_call)
     from src.context.assembler import ContextAssembler
     assembler = ContextAssembler()
     history = await assembler.fetch_message_history(ctx, limit=50)
     for msg in history:
         messages.append({"role": msg["role"], "content": msg.get("content", "")})
 
-    # Current user message — multipart if attachments present
+    # Current user message — matches primary _llm_call exactly
     from src.context.multimodal import build_user_content
     user_content = build_user_content(ctx.message, ctx.attachments)
+    from datetime import datetime as _dt_now
+    _now = _dt_now.now()
+    time_ctx = f"[Time: {_now.strftime('%H:%M')} UTC]"
+    if isinstance(user_content, str):
+        user_content = f"{user_content}\n\n{time_ctx}"
+    elif isinstance(user_content, list):
+        for part in user_content:
+            if isinstance(part, dict) and part.get("type") == "text":
+                part["text"] = f"{part.get('text', '')}\n\n{time_ctx}"
+                break
+        else:
+            user_content.insert(0, {"type": "text", "text": time_ctx})
     messages.append({"role": "user", "content": user_content})
 
     # Assistant response with tool_calls (required by DeepSeek API)
@@ -606,25 +628,29 @@ async def _build_followup_messages(
         error = item.get("error", "")
 
         tc_id = tool_calls[idx].get("id", f"call_{idx}") if idx < len(tool_calls) else f"call_{idx}"
+        is_last = (idx == len(executed) - 1)
 
         if status == "success":
+            content_str = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder)
+            if is_last and followup_directive:
+                content_str += f"\n\n[Directive]: {followup_directive}"
             messages.append(
                 {
                     "role": "tool",
                     "tool_call_id": tc_id,
-                    "content": json.dumps(result, ensure_ascii=False, cls=DecimalEncoder),
+                    "content": content_str,
                 }
             )
         else:
+            err_dict = {"error": error or "Execution failed"}
+            err_str = json.dumps(err_dict, ensure_ascii=False, cls=DecimalEncoder)
+            if is_last and followup_directive:
+                err_str += f"\n\n[Directive]: {followup_directive}"
             messages.append(
                 {
                     "role": "tool",
                     "tool_call_id": tc_id,
-                    "content": json.dumps(
-                        {"error": error or "Execution failed"},
-                        ensure_ascii=False,
-                        cls=DecimalEncoder,
-                    ),
+                    "content": err_str,
                 }
             )
 

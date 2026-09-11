@@ -1,0 +1,12 @@
+{
+  "id": "course-coaching",
+  "displayName": "Course Coaching",
+  "version": "1.0.0",
+  "description": "Provide grounded coaching and answers based on lesson scripts and course outlines.",
+  "allowedTools": [
+    "get_current_lesson_script",
+    "get_course_outline"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 5
+}

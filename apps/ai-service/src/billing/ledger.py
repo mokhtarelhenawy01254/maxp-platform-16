@@ -50,6 +50,10 @@ def get_model_cost(model: str) -> dict[str, float]:
         "claude-3-5-sonnet": {"input": 0.003, "output": 0.015},
         "gpt-4o": {"input": 0.005, "output": 0.015},
         "gpt-4o-mini": {"input": 0.00015, "output": 0.0006},
+        "deepseek-flash": {"input": 0.00000015, "cache_input": 0.000000003, "output": 0.0000006},
+        "deepseek-v4-flash": {"input": 0.00000015, "cache_input": 0.000000003, "output": 0.0000006},
+        "deepseek-chat": {"input": 0.00000014, "cache_input": 0.000000014, "output": 0.00000028},
+        "deepseek-reasoner": {"input": 0.00000055, "cache_input": 0.00000014, "output": 0.00000219},
     }
     return MODEL_COSTS.get(model, FALLBACK_COST)
 
@@ -558,7 +562,10 @@ class BudgetLedgerService:
         provider = str((options or {}).get("provider") or "UNKNOWN").upper()
         model = str((options or {}).get("model") or "default")
         price = get_model_cost(model)
-        estimated_cost = token_increment * price["input"]
+        cached_tokens = max(0, int(increments.get("cached_tokens") or increments.get("prompt_cache_hit_tokens") or 0))
+        standard_tokens = max(0, token_increment - cached_tokens)
+        cache_price = price.get("cache_input", price["input"] * 0.1)
+        estimated_cost = (standard_tokens * price["input"]) + (cached_tokens * cache_price)
 
         now = int((options or {}).get("now") or time.time() * 1000)
         windows = self._get_window_keys(BudgetIdentity(provider="", model="", key_id="", hash=f"company:{company_id}", raw=""), now)

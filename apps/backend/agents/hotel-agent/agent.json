@@ -25,7 +25,6 @@
   },
   "allowedTools": [
     "hotel_info",
-    "hotel_search_rooms",
     "hotel_check_availability",
     "hotel_reserve",
     "hotel_cancel_reservation",

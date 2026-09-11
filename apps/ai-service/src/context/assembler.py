@@ -222,42 +222,38 @@ You are continuing an existing conversation on Facebook Messenger that was previ
 - Your role is to provide seamless continuity so the customer does not notice any transition
 </continuation>"""
 
-        sections: list[tuple[str, str]] = []  # (section_name, xml_content)
+        # ─── Context Caching Optimized Prompt Assembly ───
+        # Static sections (Prefix): Invariant across turns -> Maximize KV Cache Hits (DeepSeek/OpenAI/Gemini)
+        static_sections: list[tuple[str, str]] = []
+        # Dynamic sections (Tail): Query/turn-dependent -> Appended at the end
+        dynamic_sections: list[tuple[str, str]] = []
 
-        # 0. Current datetime — helps LLM with date math and relative day names
+        # 1. Skills Instructions (Static per agent — largest block, high cache priority)
+        # Always inject full skill instructions right after base instructions so this large block
+        # is part of the fixed cacheable prefix across all turns.
+        agent = ctx.agent
+        if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
+            from src.skills.integration import get_skills_block
+            full_skills_block = get_skills_block(agent.allowed_skills)
+            if full_skills_block:
+                static_sections.append(("skills", full_skills_block))
+                logger.info(
+                    "injected_full_skills",
+                    skill_count=len(agent.allowed_skills),
+                    skills=sorted(agent.allowed_skills),
+                )
+
+        # 2. Current Date (Prefix-stable: Date only, avoids minute-by-minute cache invalidation)
         from datetime import datetime as _dt_now
         _now = _dt_now.now()
-        sections.append(("current_datetime",
+        static_sections.append(("current_datetime",
             f"\n<current_datetime>\n"
             f"  Today: {_now.strftime('%A, %Y-%m-%d')}\n"
-            f"  Current Time: {_now.strftime('%H:%M')}\n"
             f"  Timezone: UTC\n"
             f"</current_datetime>"
         ))
 
-        # 1.5 Merchant Guardrails (Dynamic rules matching)
-        _agent = ctx.agent
-        if _agent and ctx.session:
-            try:
-                from src.guardrails.merchant_rules import MerchantRuleGuardrail
-                guardrail = MerchantRuleGuardrail()
-                matched_rules = await guardrail.get_relevant_rules(
-                    session=ctx.session,
-                    agent_id=_agent.id,
-                    message=ctx.message,
-                    top_k=5,
-                )
-                if matched_rules:
-                    guardrails_block = guardrail.format_as_prompt_block(matched_rules)
-                    sections.append(("merchant_guardrails", f"\n{guardrails_block}"))
-                    
-                    if ctx.session_state is None:
-                        ctx.session_state = {}
-                    ctx.session_state["applied_guardrail_ids"] = [r["id"] for r in matched_rules]
-            except Exception as e:
-                logger.warning("failed to fetch merchant guardrails", error=str(e))
-
-        # 1. Customer profile
+        # 3. Customer Profile (Static per customer conversation)
         customer = await self.fetch_customer_profile(ctx)
         if customer:
             full_name = f"{customer['first_name']} {customer['last_name']}".strip()
@@ -268,9 +264,13 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                 f"  Email: {customer['email'] or 'N/A'}\n"
                 "</customer_profile>"
             )
-            sections.append(("customer_profile", profile_xml))
+            static_sections.append(("customer_profile", profile_xml))
 
-        # 2. Session state (Working Memory)
+        # ─── Dynamic Sections (Tail) ───
+
+        # 4. Session State (Working Memory — Cart, active filters, last shown products)
+        # Note: recentMessages is omitted here because message history is already passed
+        # in the messages array. Omitting it prevents mutating the system prompt on every turn.
         session_state = await self.fetch_session_state(ctx)
         if session_state:
             state_lines = []
@@ -294,29 +294,39 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                 if desc:
                     state_lines.append(f"  Referred Product Description: {desc[:240]}")
 
-            if session_state.get("recentMessages"):
-                recent_messages = []
-                for message in session_state["recentMessages"][-6:]:
-                    if not isinstance(message, dict):
-                        continue
-                    role = str(message.get("role") or "user")
-                    content = self._sanitize_content(str(message.get("content") or "").strip())
-                    if content:
-                        recent_messages.append(f"{role}: {content[:240]}")
-                if recent_messages:
-                    state_lines.append("  Recent Messages: " + " | ".join(recent_messages))
-
             if state_lines:
                 state_xml = "\n<session_state>\n" + "\n".join(state_lines) + "\n</session_state>"
-                sections.append(("session_state", state_xml))
+                dynamic_sections.append(("session_state", state_xml))
 
-        # 3. RAG evidence (Company Knowledge)
+        # 5. Merchant Guardrails (Dynamic rules matching current user query)
+        _agent = ctx.agent
+        if _agent and ctx.session:
+            try:
+                from src.guardrails.merchant_rules import MerchantRuleGuardrail
+                guardrail = MerchantRuleGuardrail()
+                matched_rules = await guardrail.get_relevant_rules(
+                    session=ctx.session,
+                    agent_id=_agent.id,
+                    message=ctx.message,
+                    top_k=5,
+                )
+                if matched_rules:
+                    guardrails_block = guardrail.format_as_prompt_block(matched_rules)
+                    dynamic_sections.append(("merchant_guardrails", f"\n{guardrails_block}"))
+                    
+                    if ctx.session_state is None:
+                        ctx.session_state = {}
+                    ctx.session_state["applied_guardrail_ids"] = [r["id"] for r in matched_rules]
+            except Exception as e:
+                logger.warning("failed to fetch merchant guardrails", error=str(e))
+
+        # 6. RAG evidence (Company Knowledge — query dependent)
         if ctx.rag_evidence:
             sanitized_knowledge = self._sanitize_content(ctx.rag_evidence)
             knowledge_xml = f"\n<company_knowledge>\n{sanitized_knowledge}\n</company_knowledge>"
-            sections.append(("company_knowledge", knowledge_xml))
+            dynamic_sections.append(("company_knowledge", knowledge_xml))
 
-        # 4. Episodic memories
+        # 7. Episodic memories (Customer specific & query matched)
         if ctx.episodic_memories:
             memory_lines = []
             for mem in ctx.episodic_memories[:5]:
@@ -327,26 +337,13 @@ You are continuing an existing conversation on Facebook Messenger that was previ
 
             if memory_lines:
                 memories_xml = "\n<relevant_memories>\n" + "\n".join(memory_lines) + "\n</relevant_memories>"
-                sections.append(("relevant_memories", memories_xml))
+                dynamic_sections.append(("relevant_memories", memories_xml))
 
-        # 5. Skills — always inject full skill instructions when the agent has
-        #    skills, so the LLM follows the skill playbooks directly and knows
-        #    exactly which tools to use without needing to call load_skill().
-        agent = ctx.agent
-        if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
-            from src.skills.integration import get_skills_block
-            full_skills_block = get_skills_block(agent.allowed_skills)
-            if full_skills_block:
-                sections.append(("skills", full_skills_block))
-                logger.info(
-                    "injected_full_skills",
-                    skill_count=len(agent.allowed_skills),
-                    skills=sorted(agent.allowed_skills),
-                )
-
-        # Combine base + sections
+        # Combine base + static prefix + dynamic tail
         full_prompt = base_prompt
-        for _name, xml_content in sections:
+        for _name, xml_content in static_sections:
+            full_prompt += xml_content
+        for _name, xml_content in dynamic_sections:
             full_prompt += xml_content
 
         return full_prompt

@@ -200,7 +200,7 @@ async def test_context_assembler_injects_external_session_state():
     assert "<session_state>" in messages[0]["content"]
     assert "prod_1" in messages[0]["content"]
     assert "black" in messages[0]["content"]
-    assert "Recent Messages" in messages[0]["content"]
+    # recentMessages is preserved in the messages history array to avoid cache-busting the system prompt prefix
     assert any(message["content"] == "show black shoes" for message in messages)
 
 
@@ -316,3 +316,56 @@ async def test_non_facebook_channel_does_not_inject_continuation():
     prompt = await assembler.build_system_prompt(ctx)
 
     assert "<continuation>" not in prompt
+
+
+@pytest.mark.asyncio
+async def test_context_caching_prefix_invariance_across_turns():
+    """Verify that the system prompt prefix is 100% invariant across turns for DeepSeek KV caching."""
+    agent = MagicMock()
+    agent.id = "agent_1"
+    agent._db_rules = "Never offer discounts above 20%"
+    agent.allowed_skills = []
+
+    # Turn 1
+    ctx1 = MagicMock(spec=PipelineContext)
+    ctx1.message = "What shoes do you have?"
+    ctx1.thread_id = "conv_123"
+    ctx1.customer_id = "cust_123"
+    ctx1.company_id = "company_abc"
+    ctx1.system_prompt = "You are Yasmine, an AI sales assistant."
+    ctx1.channel = "web"
+    ctx1.agent = agent
+    ctx1.rag_evidence = "Knowledge about shoes"
+    ctx1.episodic_memories = [{"content": "Customer asked about shoes", "similarity": 0.88}]
+    ctx1.session_state = {"cart": ["shoe_1"]}
+    ctx1.session = AsyncMock(spec=AsyncSession)
+
+    assembler = ContextAssembler()
+    prompt1 = await assembler.build_system_prompt(ctx1)
+
+    # Turn 2 (Customer asks something completely different, different RAG, different cart)
+    ctx2 = MagicMock(spec=PipelineContext)
+    ctx2.message = "How much is shipping to Cairo?"
+    ctx2.thread_id = "conv_123"
+    ctx2.customer_id = "cust_123"
+    ctx2.company_id = "company_abc"
+    ctx2.system_prompt = "You are Yasmine, an AI sales assistant."
+    ctx2.channel = "web"
+    ctx2.agent = agent
+    ctx2.rag_evidence = "Knowledge about shipping to Cairo"
+    ctx2.episodic_memories = [{"content": "Customer asked about shipping", "similarity": 0.92}]
+    ctx2.session_state = {"cart": ["shoe_1", "shirt_2"]}
+    ctx2.session = AsyncMock(spec=AsyncSession)
+
+    prompt2 = await assembler.build_system_prompt(ctx2)
+
+    # 1. Verify that dynamic minute is NOT in current_datetime (to avoid breaking cache every 60s)
+    assert "<current_datetime>" in prompt1
+    assert "Today:" in prompt1
+    assert "Current Time:" not in prompt1  # Time moved to user turn
+
+    # 2. Verify that the static prefix (base prompt + rules + current date) is 100% identical between turns
+    prefix_cut = prompt1.find("<session_state>")
+    assert prefix_cut != -1
+    assert prompt1[:prefix_cut] == prompt2[:prefix_cut]
+
