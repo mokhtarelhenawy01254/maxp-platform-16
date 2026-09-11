@@ -26,6 +26,15 @@ const variants = {
     value: "text-slate-950 dark:text-white",
     glow: "from-emerald-500/10 to-transparent",
   },
+  results: {
+    container:
+      "border-emerald-200/80 bg-gradient-to-br from-emerald-50/60 via-white to-white dark:border-emerald-900/40 dark:from-emerald-950/20 dark:via-slate-900 dark:to-slate-900",
+    iconBg:
+      "bg-emerald-500/15 text-emerald-600 dark:bg-emerald-400/20 dark:text-emerald-300",
+    label: "text-emerald-700 dark:text-emerald-300",
+    value: "text-slate-950 dark:text-white",
+    glow: "from-emerald-500/10 to-transparent",
+  },
   roas: {
     container:
       "border-violet-200/80 bg-gradient-to-br from-violet-50/60 via-white to-white dark:border-violet-900/40 dark:from-violet-950/20 dark:via-slate-900 dark:to-slate-900",
@@ -52,16 +61,19 @@ export default function MetricCard({
   icon: Icon,
   variant = "default",
   delta,
+  badge,
   subtitle,
 }: {
   label: string;
   value: string;
-  icon: React.ComponentType<{ className?: string }>;
-  variant?: "default" | "spend" | "purchases" | "roas" | "cpa";
+  icon?: React.ComponentType<{ className?: string }>;
+  variant?: "default" | "spend" | "purchases" | "results" | "roas" | "cpa" | string;
   delta?: { text: string; isPositive?: boolean };
+  badge?: { text: string; isPositive?: boolean };
   subtitle?: string;
 }) {
-  const v = variants[variant];
+  const v = (variant && variants[variant as keyof typeof variants]) || variants.default;
+  const tag = badge || delta;
   return (
     <div
       className={`group relative overflow-hidden rounded-2xl border p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${v.container}`}
@@ -71,11 +83,13 @@ export default function MetricCard({
       />
       <div className="flex items-center justify-between gap-2">
         <span className={`text-xs font-semibold ${v.label}`}>{label}</span>
-        <span
-          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-transform group-hover:scale-110 ${v.iconBg}`}
-        >
-          <Icon className="h-4 w-4" />
-        </span>
+        {Icon && (
+          <span
+            className={`flex h-7 w-7 items-center justify-center rounded-lg transition-transform group-hover:scale-110 ${v.iconBg}`}
+          >
+            <Icon className="h-4 w-4" />
+          </span>
+        )}
       </div>
       <div className="mt-2 flex items-baseline justify-between gap-2">
         <p
@@ -84,16 +98,16 @@ export default function MetricCard({
         >
           {value}
         </p>
-        {delta && (
+        {tag && (
           <span
             className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
-              delta.isPositive
+              tag.isPositive
                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                 : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
             }`}
           >
-            {delta.isPositive ? "▲ " : "▼ "}
-            {delta.text}
+            {tag.isPositive ? "▲ " : "▼ "}
+            {tag.text}
           </span>
         )}
       </div>

@@ -15,7 +15,7 @@ export function MiniStat({ label, value, helper, valueClassName, variant = "defa
   }
 
   return (
-    <div className={cn("rounded-lg p-4", variants[variant])}>
+    <div className={cn("rounded-lg p-4", variants[variant] || variants.default)}>
       <p className="text-xs font-semibold text-muted-foreground">{label}</p>
       <p className={cn("mt-1 text-lg font-bold text-foreground", valueClassName)}>
         {value}
