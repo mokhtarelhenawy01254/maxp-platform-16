@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { apiClient } from "../../services/apiClient";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 import {
   Package, Loader2,
   Layers3, Sparkles, PackageX, X, Zap,
