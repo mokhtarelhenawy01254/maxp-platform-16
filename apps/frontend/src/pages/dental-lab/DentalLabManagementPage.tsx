@@ -26,7 +26,23 @@ export default function DentalLabManagementPage() {
     fetchMyInfo()
       .then((info) => {
         if (mounted) {
-          setTechPortal(info.dentalRole === "TECHNICIAN");
+          const isTech = info.dentalRole === "TECHNICIAN";
+          setTechPortal(isTech);
+          if (isTech) {
+            try {
+              sessionStorage.setItem("dentalRole", "TECHNICIAN");
+              localStorage.setItem("dentalRole", "TECHNICIAN");
+              const raw = localStorage.getItem("user");
+              if (raw) {
+                const u = JSON.parse(raw);
+                if (!u.isDentalTechnician || u.dentalRole !== "TECHNICIAN") {
+                  u.isDentalTechnician = true;
+                  u.dentalRole = "TECHNICIAN";
+                  localStorage.setItem("user", JSON.stringify(u));
+                }
+              }
+            } catch (_) {}
+          }
           setFetchError(false);
         }
       })

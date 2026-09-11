@@ -322,7 +322,19 @@ export const getSidebarConfig = (
     }
 
     // 🩺 قصر القائمة الجانبية لفني معمل الأسنان على ما يخصه فقط (Bench, Barcode, Wage, Profile)
-    if (user?.isDentalTechnician === true || user?.dentalRole === 'TECHNICIAN') {
+    const isTechFromStorage = typeof window !== 'undefined' && (() => {
+        try {
+            const raw = localStorage.getItem('user');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (parsed?.isDentalTechnician === true || parsed?.dentalRole === 'TECHNICIAN') return true;
+            }
+            if (sessionStorage.getItem('dentalRole') === 'TECHNICIAN' || localStorage.getItem('dentalRole') === 'TECHNICIAN') return true;
+        } catch { return false; }
+        return false;
+    })();
+
+    if (user?.isDentalTechnician === true || user?.dentalRole === 'TECHNICIAN' || isTechFromStorage) {
         return [
             {
                 id: 'dental-technician-portal',
