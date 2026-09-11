@@ -249,22 +249,50 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
                     provider_response.tool_calls = []
                 provider_response.tool_calls.append(tc_msg["tool_calls"][0])
 
-        followup_messages = await _build_followup_messages(ctx, provider_response, executed)
         try:
             tool_dicts = _build_skill_tool_dicts(skills, ctx)
-            final_response = await _raw_llm_call(ctx, followup_messages, tools=tool_dicts, tool_choice="auto")
-            if final_response.tool_calls:
-                extra_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in final_response.tool_calls])
-                executed.extend(extra_results)
-                for item in extra_results:
-                    if item["status"] == "success":
-                        ctx.tool_evidence.append({"tool": item["tool"], "result": item["result"]})
-                followup_messages = await _build_followup_messages(ctx, final_response, extra_results)
-                final_response = await _raw_llm_call(ctx, followup_messages, tool_choice="none")
+            followup_messages = await _build_followup_messages(ctx, provider_response, executed)
+            max_rounds = 4
+            current_round = 0
+            final_response = provider_response
+            while current_round < max_rounds:
+                current_round += 1
+                final_response = await _raw_llm_call(ctx, followup_messages, tools=tool_dicts, tool_choice="auto")
+                if final_response.tool_calls:
+                    extra_results = await asyncio.gather(*[_execute_one_tool(ctx, registry, tc) for tc in final_response.tool_calls])
+                    executed.extend(extra_results)
+                    for item in extra_results:
+                        if item["status"] == "success":
+                            ctx.tool_evidence.append({"tool": item["tool"], "result": item["result"]})
+                    # Append assistant message with its tool_calls
+                    asst_msg: dict[str, Any] = {
+                        "role": "assistant",
+                        "content": final_response.text or "",
+                        "tool_calls": final_response.tool_calls,
+                    }
+                    if getattr(final_response, "reasoning_content", None):
+                        asst_msg["reasoning_content"] = final_response.reasoning_content
+                    followup_messages.append(asst_msg)
+                    # Append matching tool results
+                    for idx, tc in enumerate(final_response.tool_calls):
+                        res_item = extra_results[idx] if idx < len(extra_results) else {}
+                        status = res_item.get("status", "unknown")
+                        result_content = res_item.get("result", {}) if status == "success" else {"error": res_item.get("error", "Failed")}
+                        followup_messages.append({
+                            "role": "tool",
+                            "tool_call_id": tc.get("id", f"call_{current_round}_{idx}"),
+                            "content": json.dumps(result_content, ensure_ascii=False, cls=DecimalEncoder),
+                        })
+                else:
+                    break
+
             if not final_response.text:
                 logger.warning("skills_pipeline_followup_empty_retrying")
-                text_messages = _strip_tool_messages(followup_messages, executed)
-                final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice=None)
+                final_response = await _raw_llm_call(ctx, followup_messages, tools=[], tool_choice="none")
+                if not final_response.text:
+                    text_messages = _strip_tool_messages(followup_messages, executed)
+                    final_response = await _raw_llm_call(ctx, text_messages, tools=[], tool_choice=None)
+
             ctx.final_reply = final_response.text or _format_tool_results(executed)
             ctx.llm_response = final_response.text or ""
         except Exception as e:
@@ -620,15 +648,16 @@ async def _build_followup_messages(
         assistant_msg["reasoning_content"] = reasoning
     messages.append(assistant_msg)
 
-    # Tool results — match by index to avoid duplicate tool_call_id when same skill is called twice
+    # Tool results — iterate over tool_calls so every tool message matches an id in assistant.tool_calls
     tool_calls = first_response.tool_calls or []
-    for idx, item in enumerate(executed):
+    for idx, tc in enumerate(tool_calls):
+        item = executed[idx] if idx < len(executed) else {}
         status = item.get("status", "unknown")
         result = item.get("result", {})
         error = item.get("error", "")
 
-        tc_id = tool_calls[idx].get("id", f"call_{idx}") if idx < len(tool_calls) else f"call_{idx}"
-        is_last = (idx == len(executed) - 1)
+        tc_id = tc.get("id", f"call_{idx}")
+        is_last = (idx == len(tool_calls) - 1)
 
         if status == "success":
             content_str = json.dumps(result, ensure_ascii=False, cls=DecimalEncoder)

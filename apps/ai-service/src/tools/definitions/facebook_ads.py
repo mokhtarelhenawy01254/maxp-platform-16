@@ -70,7 +70,7 @@ async def facebook_ad_analyze_product(input_data: FacebookAdAnalyzeProductInput)
     async with sf() as session:
         query_sql = """
             SELECT p.id, p.name, p.description, p.price, p."comparePrice", p.cost, p.images, p."mainImage", p.stock, p.slug, p."isActive",
-                   c.currency, c.domain, c.subdomain
+                   c.currency, c."customDomain", c.slug as "companySlug"
             FROM public.products p
             LEFT JOIN public.companies c ON c.id = p."companyId"
             WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
@@ -110,7 +110,7 @@ async def facebook_ad_analyze_product(input_data: FacebookAdAnalyzeProductInput)
 
     # Determine storefront product URL
     slug = product.get("slug") or product.get("id")
-    domain = product.get("domain") or (f"{product.get('subdomain')}.maxp.online" if product.get("subdomain") else "store.maxp.online")
+    domain = product.get("customDomain") or (f"{product.get('companySlug')}.maxp.online" if product.get("companySlug") else "store.maxp.online")
     product_url = f"https://{domain}/product/{slug}"
 
     # Unit Economics calculations
@@ -191,7 +191,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
         if not resolved_product_id or not resolved_product_url:
             prod_row = await session.execute(
                 text("""
-                    SELECT p.id, p.slug, c.domain, c.subdomain
+                    SELECT p.id, p.slug, c."customDomain", c.slug as "companySlug"
                     FROM public.products p
                     LEFT JOIN public.companies c ON c.id = p."companyId"
                     WHERE p."companyId" = :cid AND (p."deletedAt" IS NULL)
@@ -205,7 +205,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 if not resolved_product_id:
                     resolved_product_id = fp.get("id") or ""
                 if not resolved_product_url:
-                    dom = fp.get("domain") or (f"{fp.get('subdomain')}.maxp.online" if fp.get("subdomain") else "store.maxp.online")
+                    dom = fp.get("customDomain") or (f"{fp.get('companySlug')}.maxp.online" if fp.get("companySlug") else "store.maxp.online")
                     resolved_product_url = f"https://{dom}/product/{fp.get('slug') or resolved_product_id}"
 
         resolved_product_url = resolved_product_url or "https://store.maxp.online"

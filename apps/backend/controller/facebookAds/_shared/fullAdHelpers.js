@@ -163,7 +163,10 @@ function collectProductLaunchImages(product, origin) {
 }
 
 function normalizeFullAdCreativeType(creativeType) {
-  return String(creativeType || "SINGLE_IMAGE").trim().toUpperCase();
+  const upper = String(creativeType || "SINGLE_IMAGE").trim().toUpperCase();
+  if (upper === "IMAGE") return "SINGLE_IMAGE";
+  if (upper === "VIDEO") return "SINGLE_VIDEO";
+  return upper;
 }
 
 function normalizeFullAdBidStrategy(bidStrategy) {

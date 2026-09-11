@@ -185,7 +185,8 @@ class FacebookAdsAiDraftService {
    */
   preparePublishPayload(draft, overrides = {}) {
     const rawData = safeParseJson(draft.createFullAdData, {});
-    const budgetVal = Number(overrides.budgetAmount || overrides.budget || draft.budgetAmount || rawData.budgetAmount || rawData.budget) || 200;
+    const rawBudget = Number(overrides.budgetAmount || overrides.budget || draft.budgetAmount || rawData.budgetAmount || rawData.budget) || 200;
+    const budgetVal = Math.max(200, rawBudget);
     const destUrl = overrides.linkUrl || overrides.productUrl || draft.productUrl || rawData.productUrl || rawData.linkUrl || '';
     const imgUrl = overrides.imageUrl || draft.imageUrl || rawData.imageUrl || null;
 

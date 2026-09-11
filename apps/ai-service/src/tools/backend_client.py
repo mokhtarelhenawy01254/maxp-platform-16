@@ -19,7 +19,10 @@ class BackendClient:
 
     def __init__(self) -> None:
         settings = get_settings()
-        self.base_url = settings.maxp_api_url.rstrip("/")
+        api_url = settings.maxp_api_url.rstrip("/")
+        if "mokhtarelhenawy.online" in api_url or "localhost" in api_url:
+            api_url = "http://127.0.0.1:3007"
+        self.base_url = api_url
         self.token = settings.maxp_service_token
         self._client: httpx.AsyncClient | None = None
 
@@ -31,8 +34,9 @@ class BackendClient:
                     "Authorization": f"Bearer {self.token}",
                     "Content-Type": "application/json",
                 },
-                timeout=30.0,
+                timeout=60.0,
                 trust_env=False,
+                verify=False,
             )
         return self._client
 
@@ -42,13 +46,20 @@ class BackendClient:
         path: str,
         params: dict[str, Any] | None = None,
         json_body: dict[str, Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> dict[str, Any]:
         """Make an HTTP request with retry logic."""
         client = await self._get_client()
         last_error: Exception | None = None
         for attempt in range(3):
             try:
-                response = await client.request(method, path, params=params, json=json_body)
+                response = await client.request(
+                    method,
+                    path,
+                    params=params,
+                    json=json_body,
+                    headers=headers,
+                )
                 response.raise_for_status()
                 return response.json()  # type: ignore[no-any-return]
             except httpx.HTTPStatusError as e:
@@ -697,11 +708,21 @@ class BackendClient:
     async def bulk_delete_booking_appointments(self, company_id: str, ids: list[str]) -> dict[str, Any]:
         return await self._request("POST", "/api/v1/booking/appointments/bulk-delete", json_body={"companyId": company_id, "ids": ids})
 
-    # ── Booking Admin APIs (reports) ──
+    # ── Facebook Ads APIs ──
 
-    async def get_booking_reports_summary(self, company_id: str, period: str = "today") -> dict[str, Any]:
-        result = await self._request("GET", "/api/v1/booking/reports/summary", params={"companyId": company_id, "period": period})
-        return result.get("data", {})
+    async def publish_facebook_ad_draft(
+        self,
+        company_id: str,
+        draft_id: str,
+        overrides: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Publish an approved Facebook ad draft to Meta Marketing API via Node.js backend."""
+        return await self._request(
+            "POST",
+            f"/api/v1/facebook-ads/ai/drafts/{draft_id}/publish",
+            json_body=overrides or {},
+            headers={"X-Company-Id": company_id},
+        )
 
 
 _backend_client: BackendClient | None = None

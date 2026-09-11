@@ -17,9 +17,9 @@ class InventoryRepository(BaseRepository):
             WHERE "companyId" = :company_id
               AND "deletedAt" IS NULL
               AND "isActive" = TRUE
-              AND (name ILIKE :pattern OR sku ILIKE :pattern)
+              AND (name ILIKE :pattern OR sku ILIKE :pattern OR id = :exact)
             ORDER BY
-              CASE WHEN sku ILIKE :exact THEN 0 WHEN name ILIKE :exact THEN 1 ELSE 2 END,
+              CASE WHEN id = :exact THEN 0 WHEN sku ILIKE :exact THEN 1 WHEN name ILIKE :exact THEN 2 ELSE 3 END,
               "updatedAt" DESC
             LIMIT 1
         """), {"company_id": company_id, "pattern": pattern, "exact": product_name})

@@ -20,6 +20,8 @@
  * ═══════════════════════════════════════════════════
  */
 
+const fs = require('fs');
+const path = require('path');
 const axios = require('axios');
 const FormData = require('form-data');
 const dns = require('dns').promises;
@@ -1809,15 +1811,58 @@ class FacebookAdsService {
    */
   async uploadImage(imageUrl) {
     try {
-      // أولاً: تحميل الصورة من URL
-      const imageResponse = await fetchSafeRemoteMedia(imageUrl, {
-        label: 'Image',
-        responseType: 'arraybuffer',
-        maxBytes: MAX_REMOTE_AD_IMAGE_BYTES
-      });
+      let buffer = null;
+      let contentType = 'image/jpeg';
 
-      let buffer = Buffer.from(imageResponse.data);
-      let contentType = imageResponse.headers?.['content-type'] || 'image/jpeg';
+      // 1. If image is in local uploads folder (standard store products), read directly from disk
+      if (typeof imageUrl === 'string') {
+        try {
+          const urlObj = imageUrl.startsWith('http') ? new URL(imageUrl) : null;
+          const relativePath = urlObj ? urlObj.pathname : imageUrl;
+          if (relativePath.includes('/uploads/')) {
+            const diskSubPath = relativePath.slice(relativePath.indexOf('/uploads/') + 1);
+            const possibleDiskPaths = [
+              path.resolve(process.cwd(), diskSubPath),
+              path.resolve(__dirname, '..', diskSubPath),
+              path.resolve('/var/www/backend2', diskSubPath),
+            ];
+            for (const p of possibleDiskPaths) {
+              if (fs.existsSync(p)) {
+                buffer = fs.readFileSync(p);
+                const ext = path.extname(p).toLowerCase();
+                if (ext === '.png') contentType = 'image/png';
+                else if (ext === '.webp') contentType = 'image/webp';
+                else contentType = 'image/jpeg';
+                break;
+              }
+            }
+          }
+        } catch (localReadErr) {
+          // ignore and fall back to network fetch
+        }
+      }
+
+      // 2. Otherwise download over network
+      if (!buffer) {
+        let imageResponse;
+        try {
+          imageResponse = await fetchSafeRemoteMedia(imageUrl, {
+            label: 'Image',
+            responseType: 'arraybuffer',
+            maxBytes: MAX_REMOTE_AD_IMAGE_BYTES
+          });
+        } catch (fetchErr) {
+          // Resilient fallback with axios ignoring internal loopback TLS issues
+          imageResponse = await axios.get(imageUrl, {
+            responseType: 'arraybuffer',
+            timeout: 15000,
+            httpsAgent: new https.Agent({ rejectUnauthorized: false }),
+          });
+        }
+
+        buffer = Buffer.from(imageResponse.data);
+        contentType = imageResponse.headers?.['content-type'] || 'image/jpeg';
+      }
 
       if (!contentType.startsWith('image/') || buffer.length < 64) {
         return {
