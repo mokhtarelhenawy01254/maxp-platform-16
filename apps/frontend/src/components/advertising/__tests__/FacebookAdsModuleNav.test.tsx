@@ -1,12 +1,15 @@
 /** @vitest-environment jsdom */
 import React from "react";
-import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen, within } from "@testing-library/react";
-import "@testing-library/jest-dom/vitest";
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import FacebookAdsModuleNav from "../FacebookAdsModuleNav";
 
 describe("FacebookAdsModuleNav", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
   it("keeps the primary navigation compact and exposes routed Meta Ads tools in the launcher", () => {
     render(
       <MemoryRouter initialEntries={["/advertising/facebook-ads"]}>
