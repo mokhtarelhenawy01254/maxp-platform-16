@@ -17,40 +17,26 @@ const renderLandingPage = () =>
     </MemoryRouter>,
   );
 
-describe("LandingPage hero console tabs", () => {
-  it("switches the hero console content when the top buttons are clicked", async () => {
+describe("LandingPage open-canvas Egyptian commercial OS", () => {
+  it("renders headline, 6-systems slider, and switches active system story", async () => {
     const user = userEvent.setup();
-
     renderLandingPage();
 
-    const liveTab = screen.getByRole("tab", { name: /Live Operations/i });
-    const enterpriseTab = screen.getByRole("tab", {
-      name: /Enterprise Grade/i,
-    });
-
-    expect(liveTab).toHaveAttribute("aria-selected", "true");
+    // Verify main hook
     expect(
-      screen.getByText(
-        "المبيعات والعمليات والموظفون والمحادثات في لوحة تنفيذ واحدة.",
-      ),
+      screen.getByText(/من أول رنة واتساب/i),
     ).toBeInTheDocument();
 
-    await user.click(enterpriseTab);
+    // Verify systems slider tabs exist
+    const whatsappTab = screen.getByRole("button", { name: /واتساب والسوشيال الذكي/i });
+    const shippingTab = screen.getByRole("button", { name: /الكول سنتر والشحن الفوري/i });
+    expect(whatsappTab).toBeInTheDocument();
+    expect(shippingTab).toBeInTheDocument();
 
-    expect(enterpriseTab).toHaveAttribute("aria-selected", "true");
-    expect(liveTab).toHaveAttribute("aria-selected", "false");
+    // Click shipping tab and verify story changes
+    await user.click(shippingTab);
     expect(
-      screen.getByText(
-        "حوكمة، صلاحيات، وتكاملات تجعل التوسع أسرع وأكثر أمانًا من أول فريق حتى التشغيل الكامل.",
-      ),
+      screen.getByText(/بوالص الشحن بضغطة زر/i),
     ).toBeInTheDocument();
-    expect(screen.getByText("Governance Layer")).toBeInTheDocument();
-    expect(screen.getByText("ضبط الصلاحيات")).toBeInTheDocument();
-
-    await user.click(liveTab);
-
-    expect(liveTab).toHaveAttribute("aria-selected", "true");
-    expect(screen.getAllByText("Platform Suite").length).toBeGreaterThan(0);
-    expect(screen.getByText("Automation Timeline")).toBeInTheDocument();
   });
 });

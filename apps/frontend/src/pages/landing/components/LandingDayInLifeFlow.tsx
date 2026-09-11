@@ -72,39 +72,39 @@ export const LandingDayInLifeFlow: React.FC = () => {
           </p>
         </div>
 
-        {/* 4 Steps Timeline Grid — Open Single Depth Surface */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-12">
+        {/* 4 Steps Timeline Rail — Clean Open Surface */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-12">
           {ORDER_STEPS.map((step, idx) => {
             const isCurrent = idx === activeStep;
             return (
-              <div
+              <button
                 key={step.time}
                 onClick={() => setActiveStep(idx)}
-                className={`p-5 rounded-2xl transition-all cursor-pointer border ${
+                className={`text-right transition-all cursor-pointer border-t-2 pt-4 group ${
                   isCurrent
-                    ? "bg-white/[0.05] border-white/25 shadow-xl"
-                    : "bg-transparent border-white/[0.06] hover:border-white/15"
+                    ? "border-emerald-400"
+                    : "border-white/[0.08] hover:border-white/20"
                 }`}
               >
-                <div className="flex items-center justify-between mb-3 text-xs font-mono">
-                  <span className="font-bold text-white px-2 py-0.5 rounded bg-white/10">
+                <div className="flex items-center justify-between mb-2 text-xs font-mono">
+                  <span className={`font-bold transition-colors ${isCurrent ? "text-emerald-400" : "text-zinc-400 group-hover:text-white"}`}>
                     {step.time}
                   </span>
-                  <span className="text-zinc-400 text-[11px]">{step.stage}</span>
+                  <span className="text-zinc-500 text-[11px]">{step.stage}</span>
                 </div>
-                <h3 className="text-sm font-bold text-white mb-2 leading-snug">
+                <h3 className={`text-sm font-bold mb-1.5 leading-snug transition-colors ${isCurrent ? "text-white" : "text-zinc-400 group-hover:text-zinc-200"}`}>
                   {step.title}
                 </h3>
-                <span className="inline-block text-[10px] font-semibold text-emerald-400">
+                <span className="inline-block text-[11px] font-medium text-emerald-400/90">
                   {step.badge}
                 </span>
-              </div>
+              </button>
             );
           })}
         </div>
 
-        {/* Detailed Breakdown for Active Step */}
-        <div className="p-6 sm:p-8 rounded-2xl bg-zinc-950/70 border border-white/[0.08] grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        {/* Detailed Breakdown for Active Step — Open Single Depth Surface */}
+        <div className="pt-8 border-t border-white/[0.06] grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
           <div className="lg:col-span-8 space-y-4">
             <div className="flex items-center gap-2 text-xs font-mono text-zinc-400">
               <span className="text-white font-bold">{ORDER_STEPS[activeStep].time}</span>
@@ -112,7 +112,7 @@ export const LandingDayInLifeFlow: React.FC = () => {
               <span className="text-emerald-400 font-semibold">{ORDER_STEPS[activeStep].stage}</span>
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-black text-white">
+            <h3 className="text-2xl sm:text-3xl font-black text-white leading-tight">
               {ORDER_STEPS[activeStep].title}
             </h3>
 
@@ -120,19 +120,19 @@ export const LandingDayInLifeFlow: React.FC = () => {
               {ORDER_STEPS[activeStep].description}
             </p>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-              <div className="p-3 rounded-xl bg-red-950/20 border-r-2 border-red-500/50 text-xs">
-                <span className="font-bold text-red-400 block mb-1">الوضع التقليدي (قبل MaxP)</span>
-                <span className="text-zinc-300">{ORDER_STEPS[activeStep].merchantPain}</span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-3">
+              <div className="border-r-2 border-red-500/50 pr-4 py-1">
+                <span className="font-bold text-red-400 block text-xs mb-1">الوضع التقليدي (قبل MaxP)</span>
+                <p className="text-zinc-300 text-xs leading-relaxed">{ORDER_STEPS[activeStep].merchantPain}</p>
               </div>
-              <div className="p-3 rounded-xl bg-emerald-950/20 border-r-2 border-emerald-500/50 text-xs">
-                <span className="font-bold text-emerald-400 block mb-1">مع نظام MaxP الموحد</span>
-                <span className="text-zinc-300">{ORDER_STEPS[activeStep].maxpImpact}</span>
+              <div className="border-r-2 border-emerald-500/60 pr-4 py-1">
+                <span className="font-bold text-emerald-400 block text-xs mb-1">مع نظام MaxP الموحد</span>
+                <p className="text-zinc-300 text-xs leading-relaxed">{ORDER_STEPS[activeStep].maxpImpact}</p>
               </div>
             </div>
           </div>
 
-          <div className="lg:col-span-4 text-center sm:text-left flex flex-col items-start sm:items-end justify-center">
+          <div className="lg:col-span-4 flex flex-col items-start lg:items-end justify-center">
             <Link
               to="/auth/register"
               onClick={() =>
