@@ -271,6 +271,30 @@ const withJsonBody = (
   body: JSON.stringify(body || {}),
 });
 
+const getMarketplacePreviewOrderHandler = async () => {
+  const isTest =
+    typeof process !== "undefined" &&
+    (process.env.NODE_ENV === "test" || Boolean(process.env.VITEST));
+  const isBrowserPreview =
+    typeof window !== "undefined" &&
+    typeof window.location?.search === "string" &&
+    window.location.search.includes("theme-marketplace-preview");
+
+  if (!isBrowserPreview && !isTest) {
+    return null;
+  }
+
+  try {
+    return await import("../storefront/preview/marketplacePreviewOrder");
+  } catch (error) {
+    console.warn(
+      "[storefrontApi] Failed to load marketplace preview handler:",
+      error,
+    );
+    return null;
+  }
+};
+
 export const storefrontApi = {
   getProducts: async (params: QueryParams = {}) => {
     return storefrontFetch("/products", { query: params });
@@ -513,9 +537,20 @@ export const storefrontApi = {
   },
 
   createOrder: async (payload: Record<string, unknown>) => {
-    const previewResponse = createMarketplacePreviewOrderResponse(payload);
-    if (previewResponse) {
-      return previewResponse;
+    try {
+      const previewModule = await getMarketplacePreviewOrderHandler();
+      if (previewModule?.createMarketplacePreviewOrderResponse) {
+        const previewResponse =
+          previewModule.createMarketplacePreviewOrderResponse(payload);
+        if (previewResponse) {
+          return previewResponse;
+        }
+      }
+    } catch (previewErr) {
+      console.warn(
+        "[storefrontApi] Marketplace preview order check bypassed:",
+        previewErr,
+      );
     }
 
     return storefrontFetch(
@@ -586,9 +621,20 @@ export const storefrontApi = {
   },
 
   trackOrder: async (orderNumber: string, phoneNumber: string) => {
-    const previewResponse = trackMarketplacePreviewOrder(orderNumber, phoneNumber);
-    if (previewResponse) {
-      return previewResponse;
+    try {
+      const previewModule = await getMarketplacePreviewOrderHandler();
+      if (previewModule?.trackMarketplacePreviewOrder) {
+        const previewResponse =
+          previewModule.trackMarketplacePreviewOrder(orderNumber, phoneNumber);
+        if (previewResponse) {
+          return previewResponse;
+        }
+      }
+    } catch (previewErr) {
+      console.warn(
+        "[storefrontApi] Marketplace preview track check bypassed:",
+        previewErr,
+      );
     }
 
     return storefrontFetch("/orders/track", {

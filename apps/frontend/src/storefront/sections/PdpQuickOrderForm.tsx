@@ -943,13 +943,20 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         quickOrderFingerprint &&
         trackedCheckoutFingerprintRef.current !== quickOrderFingerprint
       ) {
-        const eventId = trackInitiateCheckoutEvent({
-          items: checkoutItems,
-          total: resolvedSubtotal,
-        });
+        try {
+          const eventId = trackInitiateCheckoutEvent({
+            items: checkoutItems,
+            total: resolvedSubtotal,
+          });
 
-        if (eventId !== undefined) {
-          trackedCheckoutFingerprintRef.current = quickOrderFingerprint;
+          if (eventId !== undefined) {
+            trackedCheckoutFingerprintRef.current = quickOrderFingerprint;
+          }
+        } catch (trackErr) {
+          console.warn(
+            "[PdpQuickOrderForm] Failed to track initiate checkout:",
+            trackErr,
+          );
         }
       }
 
@@ -994,51 +1001,65 @@ const PdpQuickOrderForm: React.FC<PdpQuickOrderFormProps> = ({
         pixelEventId,
       );
 
-      const previewResponse = marketplacePreviewThemeId
-        ? (
-            await import("../preview/marketplacePreviewOrder")
-          ).createMarketplacePreviewOrderResponse(
-              {
-                guestName: resolvedFullName || fallbackCustomerName,
-                guestEmail: "",
-                guestPhone: contactPhone,
-                guestPhone2:
-                  effectiveAlternatePhoneField.enabled && resolvedAlternatePhone
-                    ? resolvedAlternatePhone
-                    : undefined,
-                paymentMethod,
-                notes: payload.notes,
-                shippingAddress: {
-                  governorate: resolvedGovernorate || undefined,
-                  city: resolvedGovernorate || undefined,
-                  street: resolvedAddress || undefined,
-                  address: resolvedAddress || undefined,
-                  addressLine1: resolvedAddress || undefined,
-                  phone2:
+      let previewResponse: PublicOrderResponse | null = null;
+      if (marketplacePreviewThemeId) {
+        try {
+          const previewModule = await import(
+            "../preview/marketplacePreviewOrder"
+          );
+          if (previewModule?.createMarketplacePreviewOrderResponse) {
+            previewResponse =
+              previewModule.createMarketplacePreviewOrderResponse(
+                {
+                  guestName: resolvedFullName || fallbackCustomerName,
+                  guestEmail: "",
+                  guestPhone: contactPhone,
+                  guestPhone2:
                     effectiveAlternatePhoneField.enabled && resolvedAlternatePhone
                       ? resolvedAlternatePhone
                       : undefined,
+                  paymentMethod,
+                  notes: payload.notes,
+                  shippingAddress: {
+                    governorate: resolvedGovernorate || undefined,
+                    city: resolvedGovernorate || undefined,
+                    street: resolvedAddress || undefined,
+                    address: resolvedAddress || undefined,
+                    addressLine1: resolvedAddress || undefined,
+                    phone2:
+                      effectiveAlternatePhoneField.enabled &&
+                      resolvedAlternatePhone
+                        ? resolvedAlternatePhone
+                        : undefined,
+                  },
+                  items: quickOrderItems.map((item) => ({
+                    productId: item.productId,
+                    variantId: item.variantId || undefined,
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    image: item.imageUrl,
+                    productImage: item.imageUrl,
+                    attributes: item.attributes || {},
+                    quantityOffer: item.quantityOffer || undefined,
+                  })),
+                  subtotal: resolvedSubtotal,
+                  shippingCost,
+                  total,
                 },
-                items: quickOrderItems.map((item) => ({
-                  productId: item.productId,
-                  variantId: item.variantId || undefined,
-                  name: item.name,
-                  quantity: item.quantity,
-                  price: item.price,
-                  image: item.imageUrl,
-                  productImage: item.imageUrl,
-                  attributes: item.attributes || {},
-                  quantityOffer: item.quantityOffer || undefined,
-                })),
-                subtotal: resolvedSubtotal,
-                shippingCost,
-                total,
-              },
-              marketplacePreviewThemeId,
-            )
-        : null;
+                marketplacePreviewThemeId,
+              ) as PublicOrderResponse | null;
+          }
+        } catch (previewErr) {
+          console.warn(
+            "[PdpQuickOrderForm] preview order simulation failed, falling back to storefrontApi:",
+            previewErr,
+          );
+        }
+      }
+
       const response = previewResponse
-        ? (previewResponse as PublicOrderResponse)
+        ? previewResponse
         : ((await storefrontApi.createOrder(payload)) as PublicOrderResponse);
       if (!response?.success) {
         throw new Error(
