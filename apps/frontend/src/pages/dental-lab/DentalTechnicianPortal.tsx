@@ -128,7 +128,13 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
         fetchMyCases(),
         fetchMyWage(),
       ]);
-      setCases(casesRes || []);
+      const rawCases =
+        casesRes && Array.isArray((casesRes as any).items)
+          ? (casesRes as any).items
+          : Array.isArray(casesRes)
+          ? (casesRes as any)
+          : [];
+      setCases(rawCases);
       setWage(wageRes || null);
     } catch (err) {
       console.error("Failed to load technician portal data:", err);
@@ -267,12 +273,14 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
   }, []);
 
   const overdueCasesList = useMemo(() => {
-    return cases.filter(isCaseOverdue);
+    const list = Array.isArray(cases) ? cases : [];
+    return list.filter(isCaseOverdue);
   }, [cases, isCaseOverdue]);
 
   // Filtered cases for bench
   const filteredCases = useMemo(() => {
-    let list = [...cases];
+    const base = Array.isArray(cases) ? cases : [];
+    let list = [...base];
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       list = list.filter(
@@ -311,7 +319,7 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
 
   // Reports data filtered by period
   const reportFilteredStages = useMemo(() => {
-    const stages = wage?.recentStages || [];
+    const stages = Array.isArray(wage?.recentStages) ? wage.recentStages : [];
     if (reportPeriod === "ALL") return stages;
 
     const now = new Date();
@@ -392,7 +400,9 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
             <ListChecks className="w-4 h-4 text-blue-500" />
           </div>
           <div className="mt-1 flex items-baseline gap-1">
-            <span className="text-2xl font-bold text-gray-900 dark:text-white">{cases.length}</span>
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">
+              {Array.isArray(cases) ? cases.length : 0}
+            </span>
             <span className="text-xs text-gray-500">حالة</span>
           </div>
         </div>

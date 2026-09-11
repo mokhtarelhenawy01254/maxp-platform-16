@@ -29,6 +29,7 @@ import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import CampaignsListSection from "../../components/advertising/dashboard/CampaignsListSection";
 import DecisionSummarySection from "../../components/advertising/dashboard/DecisionSummarySection";
 import BudgetAlertsPanel from "../../components/advertising/dashboard/BudgetAlertsPanel";
+import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MediaBuyerCopilotWidget from "../../components/advertising/MediaBuyerCopilotWidget";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
@@ -388,6 +389,9 @@ const FacebookAdsDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-950 dark:bg-slate-950 dark:text-white font-sans">
       <main className="w-full max-w-[1780px] mx-auto flex flex-col gap-3.5 p-3 sm:p-5 lg:p-6">
+        {/* Module Navigation Bar */}
+        <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
+
         {/* Compact Operational Header */}
         <section className="rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 sm:p-4 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
