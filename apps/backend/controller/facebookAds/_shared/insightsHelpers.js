@@ -196,12 +196,18 @@ function buildPerformanceRecommendations(summary, campaigns) {
     });
   }
 
-  const campaignsMissingPixel = campaigns.filter(
-    (campaign) =>
-      /SALES|CONVERSIONS/i.test(campaign.objective || "") &&
-      !campaign.pixelId &&
-      campaign.performanceSource !== "META",
-  );
+  // Only flag missing pixel for purely local campaigns with zero purchases recorded
+  const hasTrackedPurchases = (summary.purchases || 0) > 0;
+  const campaignsMissingPixel = hasTrackedPurchases
+    ? []
+    : campaigns.filter(
+        (campaign) =>
+          /SALES|CONVERSIONS/i.test(campaign.objective || "") &&
+          !campaign.pixelId &&
+          !campaign.facebookCampaignId &&
+          campaign.performanceSource !== "META" &&
+          (campaign.performance?.spend || 0) > 0,
+      );
 
   if (campaignsMissingPixel.length > 0) {
     recommendations.push({

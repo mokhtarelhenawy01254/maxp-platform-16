@@ -516,7 +516,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                       </button>
 
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-2">
                           <Link
                             to={`/advertising/facebook-ads/campaigns/${campaign.id}${
                               selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
@@ -526,18 +526,16 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           >
                             {campaign.name}
                           </Link>
-                          <span
-                            className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
-                              isActive
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                            }`}
-                          >
-                            {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
-                          </span>
-                          <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
-                            {isEn ? decision.labelEn : decision.label}
-                          </span>
+                          {decision.label && decision.label !== "مستقر" && (
+                            <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
+                              {isEn ? decision.labelEn : decision.label}
+                            </span>
+                          )}
+                          {!isActive && (
+                            <span className="shrink-0 rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              {isEn ? "Paused" : "متوقف"}
+                            </span>
+                          )}
                         </div>
 
                         {/* Metadata sub-row */}
@@ -545,15 +543,15 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           <span className="font-semibold text-slate-700 dark:text-slate-300">
                             {getObjectiveLabel(campaign.objective)}
                           </span>
-                          <span>•</span>
-                          <span className="inline-flex items-center gap-1">
-                            <span
-                              className={`inline-block h-1.5 w-1.5 rounded-full ${
-                                campaign.facebookCampaignId ? "bg-blue-500" : "bg-amber-500"
-                              }`}
-                            />
-                            {campaign.facebookCampaignId ? "Meta Synced" : (isEn ? "Local" : "محلي")}
-                          </span>
+                          {!campaign.facebookCampaignId && (
+                            <>
+                              <span>•</span>
+                              <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
+                                <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
+                                {isEn ? "Local" : "محلي"}
+                              </span>
+                            </>
+                          )}
                           {blockerText && !isCampaignDelivering(campaign) && (
                             <>
                               <span>•</span>
@@ -571,14 +569,6 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             </>
                           )}
                         </div>
-
-                        {/* Diagnostic Insight Note */}
-                        {performance && performance.impressions > 0 && decision.detail && (
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-md px-2 py-0.5 border border-slate-200/60 dark:border-slate-800">
-                            <Sparkles className="h-3 w-3 shrink-0 text-blue-500" />
-                            <span className="truncate">{isEn ? decision.detailEn : decision.detail}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
 
@@ -725,24 +715,26 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           >
                             {campaign.name}
                           </Link>
-                          <span
-                            className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
-                              isActive
-                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
-                            }`}
-                          >
-                            {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
-                          </span>
-                          <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
-                            {isEn ? decision.labelEn : decision.label}
-                          </span>
+                          {decision.label && decision.label !== "مستقر" && (
+                            <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
+                              {isEn ? decision.labelEn : decision.label}
+                            </span>
+                          )}
+                          {!isActive && (
+                            <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[11px] font-bold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                              {isEn ? "Paused" : "متوقف"}
+                            </span>
+                          )}
                         </div>
 
                         <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500 dark:text-slate-400">
                           <span>{getObjectiveLabel(campaign.objective)}</span>
-                          <span>•</span>
-                          <span>{campaign.facebookCampaignId ? "Meta Synced" : "Local"}</span>
+                          {!campaign.facebookCampaignId && (
+                            <>
+                              <span>•</span>
+                              <span className="text-amber-600 font-bold">{isEn ? "Local" : "محلي"}</span>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
