@@ -77,6 +77,11 @@ router.post('/record-rule', resolveTenant, async (req, res) => {
       triggerKeywords,
       metadata,
     });
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
 /**
  * POST /api/tenant-skills/learned/:id/approve
  * Approve a pending learned rule (Hermes write_approval gate).
