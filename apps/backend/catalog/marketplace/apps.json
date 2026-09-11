@@ -1770,6 +1770,65 @@
     "updatedAt": "2026-08-27T00:00:00Z"
   },
   {
+    "id": "cat-app-dental-materials-pro",
+    "slug": "dental-materials-pro",
+    "name": "إدارة خامات وموردي معمل الأسنان",
+    "nameEn": "Dental Lab Materials & Lot Tracking Pro",
+    "description": "نظام متقدم لإدارة وتتبع خامات معامل الأسنان — أقراص الزيركونيا CAD/CAM، البلوكات، قطع الزرعات، سنابل التفريز، تتبع أرقام التشغيلات الطبية (Lot #)، شهادات الضمان، وإدارة حسابات الموردين وتوريدات الخامات.",
+    "descriptionEn": "Advanced dental lab inventory & procurement system — CAD/CAM zirconia discs, blocks, implant parts, milling burs, medical lot tracking, warranty certificates, and suppliers ledger.",
+    "category": "MEDICAL",
+    "pricingModel": "SUBSCRIPTION",
+    "monthlyPrice": 99,
+    "yearlyPrice": 990,
+    "unitPrice": null,
+    "unitName": null,
+    "trialDays": 14,
+    "requiredApps": [
+      "dental-lab-app"
+    ],
+    "positioning": {
+      "audience": "معامل الأسنان ومراكز التفريز الرقمي CAD/CAM التي تدير خامات وأقراص وتصدر شهادات ضمان للعيادات.",
+      "surface": "تبويب الخامات والمخازن وتتبع التشغيلات الطبية في شاشة تفاصيل الحالات.",
+      "outcome": "تتبع كامل لأرقام التشغيلات، منع هدر الأقراص، إدارة أرصدة الموردين، وإصدار شهادات ضمان موثقة للمرضى."
+    },
+    "features": {
+      "materialsStock": {
+        "enabled": true,
+        "name": "مخازن الخامات والأقراص",
+        "description": "جرد دقيق لأقراص الزيركونيا والبلوكات والزرعات والسنابل بالسمك واللون وتنبيهات النواقص.",
+        "access": "PAID"
+      },
+      "lotTracking": {
+        "enabled": true,
+        "name": "تتبع التشغيلات الطبية والضمان",
+        "description": "ربط رقم تشغيلة القرص الطبي (Lot #) بحالة المريض وطباعتها على شهادة الضمان.",
+        "access": "PAID"
+      },
+      "suppliersLedger": {
+        "enabled": true,
+        "name": "الموردون وفواتير التوريد",
+        "description": "تسجيل أسعار التوريد، فواتير الشراء، ومتابعة أرصدة وكشوف حسابات الموردين.",
+        "access": "PAID"
+      },
+      "automatedConsumption": {
+        "enabled": true,
+        "name": "الخصم التلقائي عند الإنتاج",
+        "description": "خصم وحدات التيجان المستهلكة من القرص مباشرة أثناء مراحل تصنيع الحالة.",
+        "access": "PAID"
+      }
+    },
+    "isActive": true,
+    "isPublic": true,
+    "isFeatured": true,
+    "isPopular": true,
+    "icon": "Package",
+    "logo": null,
+    "coverImage": null,
+    "engineCompatibility": null,
+    "createdAt": "2026-09-12T00:00:00Z",
+    "updatedAt": "2026-09-12T00:00:00Z"
+  },
+  {
     "id": "cat-app-academy-app",
     "slug": "academy-app",
     "name": "أكاديمية ماكس بي",

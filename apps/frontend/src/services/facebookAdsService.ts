@@ -3497,6 +3497,7 @@ export const facebookAdsService = {
 
   // Sync
   syncFromFacebook,
+  syncAdAccountCampaigns: syncFromFacebook,
 
   // Ad Accounts
   getAdAccounts,
