@@ -226,6 +226,30 @@ const OrderHeader: React.FC<OrderHeaderProps> = ({
                     </div>
                   )}
                 </div>
+
+                {/* Payment Status Pill */}
+                {(() => {
+                  const pStatus = String(order.paymentStatus || "").toUpperCase();
+                  const isPaid = pStatus === "COMPLETED";
+                  const isFailed = pStatus === "FAILED";
+                  const hasKashier = Boolean(order.kashierPayment || (order.metadata as any)?.kashierPayment);
+
+                  return (
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${
+                        isPaid
+                          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800"
+                          : isFailed
+                          ? "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 border border-rose-300 dark:border-rose-800"
+                          : "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-300 dark:border-amber-800"
+                      }`}
+                    >
+                      <span>💳</span>
+                      <span>{isPaid ? "مدفوع بالكامل" : isFailed ? "فشل الدفع" : "بانتظار الدفع"}</span>
+                      {hasKashier && <span className="opacity-75 font-normal">(كاشير)</span>}
+                    </span>
+                  );
+                })()}
               </div>
             )}
           </div>

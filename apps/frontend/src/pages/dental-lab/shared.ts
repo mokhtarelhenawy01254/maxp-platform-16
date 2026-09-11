@@ -89,6 +89,8 @@ export interface DentalTechnician {
   phone?: string;
   role: DentalTechnicianRole;
   userId?: string;
+  userEmail?: string;
+  user?: { id: string; email: string; firstName?: string; lastName?: string } | null;
   wagePerStage?: number;
   isActive: boolean;
   createdAt?: string;
@@ -783,8 +785,8 @@ export const deleteWorkType = async (id: string): Promise<void> => { await apiCl
 
 export const fetchTechnicians = async (): Promise<{ items: DentalTechnician[]; wageDefaults?: { defaultPerStage?: number } }> =>
   unwrapEnvelope<{ items: DentalTechnician[]; wageDefaults?: { defaultPerStage?: number } }>(await apiClient.get("/dental-lab/technicians"));
-export const createTechnician = async (body: Partial<DentalTechnician>): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.post("/dental-lab/technicians", body));
-export const updateTechnician = async (id: string, body: Partial<DentalTechnician>): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.put(`/dental-lab/technicians/${id}`, body));
+export const createTechnician = async (body: Partial<DentalTechnician> & { email?: string; password?: string }): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.post("/dental-lab/technicians", body));
+export const updateTechnician = async (id: string, body: Partial<DentalTechnician> & { email?: string; password?: string }): Promise<DentalTechnician> => unwrapEnvelope<DentalTechnician>(await apiClient.put(`/dental-lab/technicians/${id}`, body));
 export const deleteTechnician = async (id: string): Promise<void> => { await apiClient.delete(`/dental-lab/technicians/${id}`); };
 
 export const fetchTechnicianPayouts = async (technicianId: string, params?: { type?: string; from?: string; to?: string }): Promise<{

@@ -86,6 +86,24 @@ export interface OrderDetailsType {
     verifiedAt?: string;
     rejectReason?: string;
   } | null;
+  kashierPayment?: {
+    transactionId?: string | null;
+    orderReference?: string | null;
+    kashierOrderId?: string | null;
+    status?: string | null;
+    method?: string | null;
+    amount?: number | null;
+    currency?: string | null;
+    payerAccount?: string | null;
+    payerType?: string | null;
+    vat?: string | number | null;
+    sellingRate?: number | null;
+    totalSellingFees?: string | number | null;
+    settledAmount?: string | number | null;
+    transactionResponseCode?: string | null;
+    transactionResponseMessage?: string | null;
+    confirmedAt?: string | null;
+  } | null;
   items: OrderItem[];
   subtotal: number;
   discount: number;

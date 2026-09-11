@@ -172,25 +172,87 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
 
 router.post('/kashier/webhook', async (req, res) => {
   try {
-    const payload = req.body;
-    console.log('[KASHIER-WEBHOOK] Received:', JSON.stringify(payload));
+    const rawBody = req.body || {};
+    console.log('[KASHIER-WEBHOOK] Received:', JSON.stringify(rawBody));
 
-    const sessionId = payload._id || payload.sessionId || payload.data?.sessionId;
-    const status = payload.status || payload.data?.status;
+    // Support all possible Kashier payload wrappers:
+    // 1) Kashier delivery log: { payload: { data: { ... } } }
+    // 2) Direct payload: { platform: "kashier", event: "pay", data: { ... } }
+    // 3) Direct data: { data: { ... } }
+    // 4) Flat: { ... }
+    const eventData = rawBody.payload?.data || rawBody.data || rawBody.payload || rawBody;
+    const metaData = eventData.metaData || rawBody.metaData || rawBody.payload?.metaData || {};
 
-    if (!sessionId || !status) {
+    const rawStatus = (
+      eventData.status ||
+      eventData.paymentStatus ||
+      rawBody.status ||
+      rawBody.paymentStatus ||
+      (rawBody.eventType === 'pay' && eventData.transactionResponseCode === '00' ? 'SUCCESS' : '') ||
+      ''
+    ).toString().toUpperCase();
+
+    const orderNumber = (
+      eventData.merchantOrderId ||
+      metaData.orderId ||
+      rawBody.merchantOrderId ||
+      eventData.orderId ||
+      eventData.order ||
+      null
+    );
+
+    const sessionId = (
+      eventData.sessionId ||
+      eventData._id ||
+      eventData.kashierOrderId ||
+      rawBody.sessionId ||
+      rawBody._id ||
+      null
+    );
+
+    const transactionId = (
+      eventData.transactionId ||
+      rawBody.resourceId ||
+      (rawBody.notificationKey ? rawBody.notificationKey.split('::')[0] : null) ||
+      null
+    );
+
+    const orderReference = (
+      eventData.orderReference ||
+      eventData.merchantReference ||
+      null
+    );
+
+    if (!rawStatus && !transactionId && !orderNumber && !sessionId) {
+      console.warn('[KASHIER-WEBHOOK] Empty or unrecognizable payload:', JSON.stringify(rawBody));
       return res.status(400).json({ success: false, error: 'Invalid webhook payload' });
     }
 
-    const prisma = getPrisma();
-    const paymentStatus = status === 'CAPTURED' || status === 'SUCCESS' ? 'COMPLETED' : 'FAILED';
+    const isSuccess = rawStatus === 'SUCCESS' || rawStatus === 'CAPTURED' || eventData.transactionResponseCode === '00';
+    const paymentStatus = isSuccess ? 'COMPLETED' : 'FAILED';
 
-    // Check if this is a wallet recharge via customer reference
-    const customerRef = payload.data?.customer?.reference || payload.customer?.reference || '';
-    if (customerRef.startsWith('wallet:')) {
-      const parts = customerRef.split(':');
-      const walletCompanyId = parts[1];
-      const rechargeAmount = parseFloat(parts[2]);
+    const prisma = getPrisma();
+
+    // 1. Check if this is a wallet recharge via customer reference or orderNumber
+    const customerRef = (
+      eventData.customer?.reference ||
+      rawBody.customer?.reference ||
+      eventData.customerReference ||
+      metaData.customerReference ||
+      ''
+    );
+
+    if (customerRef.startsWith('wallet:') || (orderNumber && orderNumber.startsWith('WLT-'))) {
+      let walletCompanyId = null;
+      let rechargeAmount = 0;
+
+      if (customerRef.startsWith('wallet:')) {
+        const parts = customerRef.split(':');
+        walletCompanyId = parts[1];
+        rechargeAmount = parseFloat(parts[2]);
+      } else {
+        rechargeAmount = parseFloat(eventData.amount || rawBody.amount || 0);
+      }
 
       if (paymentStatus === 'COMPLETED' && walletCompanyId && rechargeAmount > 0) {
         const companyWallet = await prisma.companyWallet.upsert({
@@ -206,7 +268,7 @@ router.post('/kashier/webhook', async (req, res) => {
             amount: rechargeAmount,
             status: 'COMPLETED',
             description: `شحن المحفظة عبر كاشير: ${rechargeAmount} جنيه`,
-            referenceId: sessionId,
+            referenceId: transactionId || sessionId || orderNumber,
           },
         });
 
@@ -214,8 +276,8 @@ router.post('/kashier/webhook', async (req, res) => {
         try {
           const pendingBillingService = require('../services/pendingBillingService');
           const pendingResult = await pendingBillingService.processPendingUsageCharges(walletCompanyId);
-          if (pendingResult.processed > 0) {
-            console.log(`✅ [KASHIER-WEBHOOK] Auto-collected ${pendingResult.processed} pending charge(s), released ${pendingResult.released.length} order(s) for company ${walletCompanyId}`);
+          if (pendingResult?.processed > 0) {
+            console.log(`✅ [KASHIER-WEBHOOK] Auto-collected ${pendingResult.processed} pending charge(s), released ${pendingResult.released?.length || 0} order(s) for company ${walletCompanyId}`);
           }
         } catch (pendingError) {
           console.error('⚠️ [KASHIER-WEBHOOK] Error processing pending charges:', pendingError.message);
@@ -227,33 +289,131 @@ router.post('/kashier/webhook', async (req, res) => {
       return res.json({ success: true, message: 'Wallet recharge processed' });
     }
 
-    // Existing order flow
-    const orders = await prisma.order.findMany({
-      where: { metadata: { contains: sessionId } },
-    });
+    // 2. Order flow: Find order by orderNumber, or sessionId in metadata
+    let order = null;
+    let isGuest = false;
 
-    if (orders.length === 0) {
-      console.warn('[KASHIER-WEBHOOK] No order or recharge found for session:', sessionId);
-      return res.status(200).json({ success: true, message: 'Not found, acknowledged' });
+    if (orderNumber) {
+      order = await prisma.order.findFirst({
+        where: { orderNumber },
+      });
+      if (!order) {
+        order = await prisma.guestOrder.findFirst({
+          where: { orderNumber },
+        });
+        if (order) isGuest = true;
+      }
     }
 
-    const order = orders[0];
+    if (!order && sessionId) {
+      order = await prisma.order.findFirst({
+        where: { metadata: { contains: sessionId } },
+      });
+      if (!order) {
+        order = await prisma.guestOrder.findFirst({
+          where: { metadata: { contains: sessionId } },
+        });
+        if (order) isGuest = true;
+      }
+    }
 
-    await prisma.order.update({
-      where: { id: order.id },
-      data: {
-        paymentStatus,
-        ...(paymentStatus === 'COMPLETED' ? { status: 'CONFIRMED' } : {}),
-        metadata: JSON.stringify({
-          ...JSON.parse(order.metadata || '{}'),
-          kashierWebhookStatus: status,
-          kashierConfirmedAt: new Date().toISOString(),
-        }),
-      },
+    if (!order) {
+      console.warn('[KASHIER-WEBHOOK] No order found for orderNumber:', orderNumber, 'or sessionId:', sessionId);
+      return res.status(200).json({ success: true, message: 'Order not found, acknowledged' });
+    }
+
+    // Resolve payment method (WALLET, CREDIT_CARD)
+    const rawMethod = String(eventData.method || eventData.sourceOfFunds?.type || '').toLowerCase();
+    let resolvedPaymentMethod = 'CREDIT_CARD';
+    if (rawMethod.includes('wallet')) {
+      resolvedPaymentMethod = 'WALLET';
+    } else if (rawMethod.includes('card') || rawMethod.includes('visa') || rawMethod.includes('mastercard')) {
+      resolvedPaymentMethod = 'CREDIT_CARD';
+    }
+
+    // Build rich structured kashierPayment metadata
+    const kashierPayment = {
+      transactionId: transactionId || eventData.transactionId || null,
+      orderReference: orderReference || eventData.orderReference || null,
+      kashierOrderId: eventData.kashierOrderId || sessionId || null,
+      status: rawStatus || (isSuccess ? 'SUCCESS' : 'FAILED'),
+      method: rawMethod || (resolvedPaymentMethod === 'WALLET' ? 'wallet' : 'card'),
+      amount: Number(eventData.amount) || Number(order.total) || 0,
+      currency: eventData.currency || order.currency || 'EGP',
+      payerAccount: eventData.sourceOfFunds?.walletInfo?.payerAccount || eventData.card?.maskedCardNumber || null,
+      payerType: eventData.sourceOfFunds?.type || (resolvedPaymentMethod === 'WALLET' ? 'Wallet' : 'Card'),
+      vat: eventData.settlementInfo?.vat || null,
+      sellingRate: eventData.settlementInfo?.sellingRate || null,
+      totalSellingFees: eventData.settlementInfo?.totalSellingFees || null,
+      settledAmount: eventData.settlementInfo?.settledAmount || null,
+      transactionResponseCode: eventData.transactionResponseCode || null,
+      transactionResponseMessage: eventData.transactionResponseMessage?.ar || eventData.transactionResponseMessage?.en || 'Approved',
+      confirmedAt: eventData.creationDate || new Date().toISOString(),
+    };
+
+    const existingMeta = typeof order.metadata === 'string'
+      ? (() => { try { return JSON.parse(order.metadata); } catch { return {}; } })()
+      : (order.metadata || {});
+
+    const updatedMetadata = JSON.stringify({
+      ...existingMeta,
+      kashierSessionId: sessionId || existingMeta.kashierSessionId,
+      kashierTransactionId: transactionId,
+      kashierWebhookStatus: rawStatus || (isSuccess ? 'SUCCESS' : 'FAILED'),
+      kashierConfirmedAt: new Date().toISOString(),
+      kashierPayment,
     });
 
-    console.log(`[KASHIER-WEBHOOK] Order ${order.orderNumber} updated to ${paymentStatus}`);
-    res.json({ success: true, message: 'Webhook processed' });
+    const updateData = {
+      paymentStatus,
+      paymentMethod: resolvedPaymentMethod,
+      ...(paymentStatus === 'COMPLETED' && order.status === 'PENDING' ? { status: 'CONFIRMED' } : {}),
+      metadata: updatedMetadata,
+    };
+
+    if (isGuest) {
+      await prisma.guestOrder.update({
+        where: { id: order.id },
+        data: updateData,
+      });
+    } else {
+      await prisma.order.update({
+        where: { id: order.id },
+        data: updateData,
+      });
+
+      // Add a clear order note for activity trail
+      try {
+        const methodArabic = resolvedPaymentMethod === 'WALLET' ? 'المحفظة الإلكترونية' : 'البطاقة البنكية';
+        const payerInfo = kashierPayment.payerAccount ? ` (رقم الدافع: ${kashierPayment.payerAccount})` : '';
+        const txInfo = transactionId ? ` (رقم المعاملة: ${transactionId})` : '';
+        const noteText = isSuccess
+          ? `✅ تم الدفع إلكترونياً عبر كاشير بنجاح: ${kashierPayment.amount} ${kashierPayment.currency} عن طريق ${methodArabic}${payerInfo}${txInfo}`
+          : `❌ فشلت عملية الدفع عبر كاشير${txInfo}`;
+
+        await prisma.orderNote.create({
+          data: {
+            orderId: order.id,
+            note: noteText,
+            isInternal: true,
+          },
+        });
+      } catch (noteErr) {
+        console.warn('[KASHIER-WEBHOOK] Could not create order note:', noteErr.message);
+      }
+    }
+
+    console.log(`✅ [KASHIER-WEBHOOK] Order ${order.orderNumber} updated to ${paymentStatus} via ${resolvedPaymentMethod} (Tx: ${transactionId})`);
+    return res.json({
+      success: true,
+      message: 'Webhook processed',
+      data: {
+        orderNumber: order.orderNumber,
+        paymentStatus,
+        paymentMethod: resolvedPaymentMethod,
+        transactionId,
+      },
+    });
   } catch (error) {
     console.error('[KASHIER-WEBHOOK] Error:', error);
     res.status(500).json({ success: false, error: 'Webhook processing failed' });

@@ -5653,6 +5653,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         // ✅ Wallet payment proof (screenshot + transfer details) for manual verification
         walletPaymentProof:
           safeParseOrderMetadata(guestOrder.metadata)?.walletPaymentProof || null,
+        // ✅ Kashier online payment details
+        kashierPayment:
+          safeParseOrderMetadata(guestOrder.metadata)?.kashierPayment || null,
         // ✅ Turbo Shipping Fields - Get from GuestOrder
         turboShipmentId: guestOrder.turboShipmentId || null,
         turboTrackingNumber: guestOrder.turboTrackingNumber || null,
@@ -5822,6 +5825,9 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         // ✅ Wallet payment proof (screenshot + transfer details) for manual verification
         walletPaymentProof:
           orderMetadata?.walletPaymentProof || null,
+        // ✅ Kashier online payment details
+        kashierPayment:
+          orderMetadata?.kashierPayment || null,
         // Turbo Shipping Fields
         turboShipmentId: order.turboShipmentId,
         turboTrackingNumber: order.turboTrackingNumber,

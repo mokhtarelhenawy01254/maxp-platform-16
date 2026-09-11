@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const { getStartOfDayInTimezone, getEndOfDayInTimezone } = require('../utils/dateUtils');
 const {
@@ -663,6 +664,21 @@ const listTechnicians = async (req, res) => {
     const earnings = await computeTechnicianEarnings(prisma, companyId, { from, to });
     const earningById = new Map(earnings.map((e) => [e.technicianId, e]));
 
+    // Fetch linked user accounts for portal login details
+    const userIds = items.map((t) => t.userId).filter(Boolean);
+    let userMap = new Map();
+    if (userIds.length > 0) {
+      try {
+        const users = await prisma.user.findMany({
+          where: { id: { in: userIds } },
+          select: { id: true, email: true, firstName: true, lastName: true },
+        });
+        userMap = new Map(users.map((u) => [u.id, u]));
+      } catch (userErr) {
+        console.warn('Could not fetch user details for technicians:', userErr.message);
+      }
+    }
+
     let payoutAggByTech = new Map();
     if (prisma.dentalTechnicianPayout && typeof prisma.dentalTechnicianPayout.findMany === 'function') {
       try {
@@ -692,8 +708,11 @@ const listTechnicians = async (req, res) => {
       const wage = round2(e.wage || 0);
       const totalPaid = round2(pAgg.paid);
       const balanceDue = round2((wage + pAgg.bonuses) - (totalPaid + pAgg.deductions));
+      const linkedUser = t.userId ? userMap.get(t.userId) : null;
       return {
         ...t,
+        user: linkedUser || null,
+        userEmail: linkedUser?.email || null,
         completedStages: e.completedStages || 0,
         totalEarnings: wage,
         totalPaid,
@@ -715,7 +734,7 @@ const createTechnician = async (req, res) => {
     const body = req.body || {};
     const name = typeof body.name === 'string' ? body.name.trim() : '';
     if (!name) return res.status(400).json({ success: false, error: 'اسم الفني مطلوب' });
-    const role = typeof body.role === 'string' && body.role.trim() ? body.role.trim() : 'TECHNICIAN';
+    const role = typeof body.role === 'string' && body.role.trim() ? body.role.trim() : 'GENERAL_TECHNICIAN';
     let wagePerStage = null;
     if (body.wagePerStage !== undefined && body.wagePerStage !== null && body.wagePerStage !== '') {
       const wr = toNonNegativeNumber(body.wagePerStage, 0);
@@ -724,21 +743,117 @@ const createTechnician = async (req, res) => {
     }
 
     const prisma = getSharedPrismaClient();
+
+    // Direct User Account creation for Technician
+    let userId = body.userId ? String(body.userId).trim() : null;
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
+
+    if (!userId && (email || password)) {
+      if (!email) {
+        return res.status(400).json({ success: false, error: 'البريد الإلكتروني مطلوب لإنشاء حساب الفني' });
+      }
+      if (!password || password.length < 6) {
+        return res.status(400).json({ success: false, error: 'كلمة المرور يجب ألا تقل عن 6 أحرف' });
+      }
+
+      // Check if user already exists
+      const existingUser = await prisma.user.findFirst({ where: { email } });
+      if (existingUser) {
+        // Verify if user is already tied to another active technician in this company
+        const existingTech = await prisma.dentalTechnician.findFirst({
+          where: { companyId, userId: existingUser.id, isActive: true },
+        });
+        if (existingTech) {
+          return res.status(400).json({ success: false, error: 'هذا البريد الإلكتروني مرتبط بالفعل بعضو آخر في فريق العمل' });
+        }
+        userId = existingUser.id;
+
+        // Ensure user is linked in userCompany for this company
+        const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
+        if (!uc) {
+          await prisma.userCompany.create({
+            data: {
+              userId: existingUser.id,
+              companyId,
+              role: 'STAFF',
+              isActive: true,
+              isDefault: false,
+            },
+          });
+        }
+      } else {
+        // Create new User record
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const nameParts = name.split(/\s+/);
+        const firstName = nameParts[0] || name;
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const newUser = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phone: body.phone ? String(body.phone).trim() : null,
+            role: 'STAFF',
+            isActive: true,
+            companyId,
+          },
+        });
+
+        await prisma.userCompany.create({
+          data: {
+            userId: newUser.id,
+            companyId,
+            role: 'STAFF',
+            isActive: true,
+            isDefault: true,
+          },
+        });
+
+        userId = newUser.id;
+      }
+
+      // Assign dental role 'TECHNICIAN' in dental settings
+      if (userId) {
+        try {
+          const dentalRoles = require('../services/dentalRoles');
+          const teamRoles = { ...(await dentalRoles.loadTeamRoles(companyId)) };
+          teamRoles[userId] = 'TECHNICIAN';
+          await prisma.dentalSetting.upsert({
+            where: { companyId_key: { companyId, key: 'teamRoles' } },
+            update: { value: teamRoles },
+            create: { companyId, key: 'teamRoles', value: teamRoles },
+          });
+        } catch (roleErr) {
+          console.warn('Could not set dental role for technician user:', roleErr.message);
+        }
+      }
+    }
+
     const technician = await prisma.dentalTechnician.create({
       data: {
         companyId,
-        userId: body.userId ? String(body.userId) : null,
+        userId,
         name,
-        phone: body.phone ? String(body.phone) : null,
+        phone: body.phone ? String(body.phone).trim() : null,
         role,
         wagePerStage,
         isActive: normalizeBool(body.isActive, true),
       },
     });
-    res.json({ success: true, data: technician });
+
+    res.json({
+      success: true,
+      data: {
+        ...technician,
+        userEmail: email || null,
+      },
+    });
   } catch (error) {
     console.error('Error creating dental technician:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الفني' });
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ في إنشاء الفني' });
   }
 };
 
@@ -763,9 +878,9 @@ const updateTechnician = async (req, res) => {
       if (!name) return res.status(400).json({ success: false, error: 'اسم الفني مطلوب' });
       data.name = name;
     }
-    if ('phone' in data) data.phone = data.phone ? String(data.phone) : null;
-    if ('role' in data) data.role = data.role ? String(data.role) : 'TECHNICIAN';
-    if ('userId' in data) data.userId = data.userId ? String(data.userId) : null;
+    if ('phone' in data) data.phone = data.phone ? String(data.phone).trim() : null;
+    if ('role' in data) data.role = data.role ? String(data.role).trim() : 'GENERAL_TECHNICIAN';
+    if ('userId' in data) data.userId = data.userId ? String(data.userId).trim() : null;
     if ('wagePerStage' in data) {
       if (data.wagePerStage === null || data.wagePerStage === undefined || data.wagePerStage === '') {
         data.wagePerStage = null;
@@ -777,11 +892,87 @@ const updateTechnician = async (req, res) => {
     }
     if ('isActive' in data) data.isActive = normalizeBool(data.isActive, true);
 
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+    const password = typeof body.password === 'string' ? body.password : '';
+
+    // Handle password update if technician already has a linked user
+    const targetUserId = data.userId || existing.userId;
+    if (password && password.length >= 6 && targetUserId) {
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await prisma.user.update({
+        where: { id: targetUserId },
+        data: { password: hashedPassword },
+      });
+    }
+
+    // If technician had no linked user, and email + password provided: create and link!
+    if (!targetUserId && email && password && password.length >= 6) {
+      const existingUser = await prisma.user.findFirst({ where: { email } });
+      if (existingUser) {
+        data.userId = existingUser.id;
+        const uc = await prisma.userCompany.findFirst({ where: { userId: existingUser.id, companyId } });
+        if (!uc) {
+          await prisma.userCompany.create({
+            data: {
+              userId: existingUser.id,
+              companyId,
+              role: 'STAFF',
+              isActive: true,
+              isDefault: false,
+            },
+          });
+        }
+      } else {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const nameParts = (data.name || existing.name).split(/\s+/);
+        const firstName = nameParts[0] || existing.name;
+        const lastName = nameParts.slice(1).join(' ') || '';
+
+        const newUser = await prisma.user.create({
+          data: {
+            email,
+            password: hashedPassword,
+            firstName,
+            lastName,
+            phone: data.phone || existing.phone,
+            role: 'STAFF',
+            isActive: true,
+            companyId,
+          },
+        });
+        await prisma.userCompany.create({
+          data: {
+            userId: newUser.id,
+            companyId,
+            role: 'STAFF',
+            isActive: true,
+            isDefault: true,
+          },
+        });
+        data.userId = newUser.id;
+      }
+
+      if (data.userId) {
+        try {
+          const dentalRoles = require('../services/dentalRoles');
+          const teamRoles = { ...(await dentalRoles.loadTeamRoles(companyId)) };
+          teamRoles[data.userId] = 'TECHNICIAN';
+          await prisma.dentalSetting.upsert({
+            where: { companyId_key: { companyId, key: 'teamRoles' } },
+            update: { value: teamRoles },
+            create: { companyId, key: 'teamRoles', value: teamRoles },
+          });
+        } catch (roleErr) {
+          console.warn('Could not set dental role for technician user:', roleErr.message);
+        }
+      }
+    }
+
     const technician = await prisma.dentalTechnician.update({ where: { id }, data });
     res.json({ success: true, data: technician });
   } catch (error) {
     console.error('Error updating dental technician:', error);
-    res.status(500).json({ success: false, error: 'حدث خطأ في تحديث الفني' });
+    res.status(500).json({ success: false, error: error.message || 'حدث خطأ في تحديث الفني' });
   }
 };
 

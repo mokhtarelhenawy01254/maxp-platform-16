@@ -349,14 +349,30 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
             ? parsedFinalTotal
             : Math.max(0, parsedSubtotal + resolvedShipping + parsedTax - parsedDiscount);
 
+        const kashierPaymentData =
+          simpleOrder.kashierPayment ||
+          (simpleOrder.metadata as any)?.kashierPayment ||
+          null;
+
         const enhancedOrder: OrderDetailsType = {
           ...simpleOrder,
           status: (simpleOrder.status || "").toUpperCase(),
+          kashierPayment: kashierPaymentData,
           paymentStatus: (() => {
             const rawStatus = String(
               simpleOrder.paymentStatus ||
                 (simpleOrder.metadata?.isGuestOrder ? "UNAVAILABLE" : "PENDING"),
             ).toUpperCase();
+
+            // Kashier confirmed payment
+            if (
+              kashierPaymentData &&
+              (String(kashierPaymentData.status).toUpperCase() === "SUCCESS" ||
+                String(kashierPaymentData.status).toUpperCase() === "CAPTURED")
+            ) {
+              return "COMPLETED";
+            }
+
             if (
               (rawStatus === "PENDING" ||
                 rawStatus === "UNAVAILABLE" ||

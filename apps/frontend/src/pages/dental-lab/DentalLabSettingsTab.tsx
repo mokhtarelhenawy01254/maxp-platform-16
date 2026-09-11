@@ -1,16 +1,15 @@
-﻿import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Plus, RefreshCw, Save, ShieldCheck, Trash2, X as XMarkIcon, CreditCard, Coins, BellRing, Building2, Workflow, MessageSquareText, FilePlus2, CheckCircle2 } from "lucide-react";
+import { Loader2, Plus, RefreshCw, Save, Trash2, X as XMarkIcon, CreditCard, Coins, BellRing, Building2, Workflow, MessageSquareText, FilePlus2, CheckCircle2 } from "lucide-react";
 import {
   DentalCustomFieldDef, fetchSettings, saveSettings,
   fetchCustomFields, createCustomField, updateCustomField, deleteCustomField,
-  fetchTeam, setTeamRole, TeamMember, DentalTeamRole,
   WORK_TYPE_CATEGORIES, tKey, MODAL_INPUT_CLS, BillingPolicy, DentalInvoiceMode, DentalLabSettings,
 } from "./shared";
 
-type SettingsSectionId = "general" | "stages" | "whatsapp" | "fields" | "wages" | "dunning" | "billing" | "team";
+type SettingsSectionId = "general" | "stages" | "whatsapp" | "fields" | "wages" | "dunning" | "billing";
 
 const SETTINGS_SECTIONS: { id: SettingsSectionId; labelKey: string; icon: typeof Building2 }[] = [
   { id: "general", labelKey: "dentalLab.settings.sections.general", icon: Building2 },
@@ -20,7 +19,6 @@ const SETTINGS_SECTIONS: { id: SettingsSectionId; labelKey: string; icon: typeof
   { id: "wages", labelKey: "dentalLab.settings.sections.wages", icon: Coins },
   { id: "dunning", labelKey: "dentalLab.settings.sections.dunning", icon: BellRing },
   { id: "billing", labelKey: "dentalLab.settings.sections.billing", icon: CreditCard },
-  { id: "team", labelKey: "dentalLab.settings.sections.team", icon: ShieldCheck },
 ];
 
 const CATEGORY_LABEL = (t: (key: never) => unknown, cat: string) => {
@@ -30,14 +28,6 @@ const CATEGORY_LABEL = (t: (key: never) => unknown, cat: string) => {
 };
 
 const FIELD_TYPES = ["TEXT", "NUMBER", "DATE", "SELECT"];
-
-const TEAM_ROLES: { id: DentalTeamRole; labelKey: string }[] = [
-  { id: "OWNER", labelKey: "dentalLab.settings.teamRoles.roleOptions.OWNER" },
-  { id: "MANAGER", labelKey: "dentalLab.settings.teamRoles.roleOptions.MANAGER" },
-  { id: "RECEPTION", labelKey: "dentalLab.settings.teamRoles.roleOptions.RECEPTION" },
-  { id: "TECHNICIAN", labelKey: "dentalLab.settings.teamRoles.roleOptions.TECHNICIAN" },
-  { id: "ACCOUNTANT", labelKey: "dentalLab.settings.teamRoles.roleOptions.ACCOUNTANT" },
-];
 
 const INVOICE_MODES: { id: DentalInvoiceMode; labelKey: string; hintKey: string }[] = [
   { id: "AUTO_ON_RECEIPT", labelKey: "dentalLab.settings.billingPolicy.modes.AUTO_ON_RECEIPT", hintKey: "dentalLab.settings.billingPolicy.modes.AUTO_ON_RECEIPT_hint" },
@@ -83,8 +73,6 @@ export default function DentalLabSettingsTab() {
   const [receivedTemplate, setReceivedTemplate] = useState("");
   const [overdueTemplate, setOverdueTemplate] = useState("");
   const [customFields, setCustomFields] = useState<DentalCustomFieldDef[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>([]);
-  const [teamBusyId, setTeamBusyId] = useState<string | null>(null);
   const [billingPolicy, setBillingPolicy] = useState<BillingPolicy>({
     invoiceMode: "AUTO_ON_DELIVERY",
     requireInvoiceBeforeDelivery: true,
@@ -141,10 +129,9 @@ export default function DentalLabSettingsTab() {
     setLoading(true);
     setError(null);
     try {
-      const [settings, fields, teamRows] = await Promise.all([
+      const [settings, fields] = await Promise.all([
         fetchSettings(),
         fetchCustomFields().catch(() => [] as DentalCustomFieldDef[]),
-        fetchTeam().catch(() => [] as TeamMember[]),
       ]);
       const labN = settings.workOrderHeader?.labName ?? "";
       const addr = settings.workOrderHeader?.address ?? "";
@@ -169,7 +156,6 @@ export default function DentalLabSettingsTab() {
       setReceivedTemplate(settings.whatsappTemplates?.received ?? "");
       setOverdueTemplate(settings.whatsappTemplates?.overdue ?? "");
       setCustomFields(fields);
-      setTeam(teamRows);
       setBillingPolicy(bp);
       setWageDefault(wage);
       setDunningEnabled(dunningEnabledVal);
@@ -287,23 +273,6 @@ export default function DentalLabSettingsTab() {
       setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
     } finally {
       setFieldBusyId(null);
-    }
-  };
-
-  const changeRole = async (member: TeamMember, role: DentalTeamRole) => {
-    if (teamBusyId) return;
-    if (role === "OWNER" && !window.confirm(String(t("dentalLab.settings.teamRoles.confirmOwner")))) return;
-    setTeamBusyId(member.userId);
-    try {
-      const updated = await setTeamRole(member.userId, role);
-      setTeam(updated);
-      toast.success(t("dentalLab.settings.teamRoles.updated"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
-      const fresh = await fetchTeam().catch(() => [] as TeamMember[]);
-      setTeam(fresh);
-    } finally {
-      setTeamBusyId(null);
     }
   };
 
@@ -618,53 +587,6 @@ export default function DentalLabSettingsTab() {
                   onChange={v => setBillingPolicy(prev => ({ ...prev, enforceCreditLimit: v }))}
                 />
               </div>
-            </div>
-          )}
-
-          {activeSection === "team" && (
-            <div className={`${sectionCls} space-y-4`}>
-              <div className="flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-                <div>
-                  <h3 className="font-semibold">{t("dentalLab.settings.teamRoles.title")}</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t("dentalLab.settings.teamRoles.hint")}</p>
-                </div>
-              </div>
-              {team.length === 0 ? (
-                <p className="text-sm text-gray-400 dark:text-gray-500">{t("dentalLab.common.noData")}</p>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="border-b dark:border-gray-700 text-gray-500 dark:text-gray-300">
-                        <th className="text-right py-2 px-2">{t("dentalLab.common.name")}</th>
-                        <th className="text-right py-2 px-2">{t("dentalLab.settings.teamRoles.email")}</th>
-                        <th className="text-right py-2 px-2">{t("dentalLab.settings.teamRoles.platformRole")}</th>
-                        <th className="text-right py-2 px-2">{t("dentalLab.settings.teamRoles.dentalRole")}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {team.map(member => (
-                        <tr key={member.userId} className="border-b dark:border-gray-700 last:border-b-0">
-                          <td className="py-2 px-2 font-medium">{member.name || member.userId}</td>
-                          <td className="py-2 px-2" dir="ltr">{member.email || "—"}</td>
-                          <td className="py-2 px-2">{member.platformRole || "—"}</td>
-                          <td className="py-2 px-2">
-                            <select
-                              className={`${MODAL_INPUT_CLS} text-sm max-w-[180px]`}
-                              value={member.dentalRole || "RECEPTION"}
-                              disabled={teamBusyId !== null}
-                              onChange={e => changeRole(member, e.target.value as DentalTeamRole)}
-                            >
-                              {TEAM_ROLES.map(r => <option key={r.id} value={r.id}>{t(r.labelKey)}</option>)}
-                            </select>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
             </div>
           )}
             </>

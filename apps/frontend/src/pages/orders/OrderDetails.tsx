@@ -15,6 +15,7 @@ import OrderPartnerOperationsCard from "../../components/orders/OrderPartnerOper
 import OrderHeader from "./components/OrderHeader";
 import OrderItemsCard from "./components/OrderItemsCard";
 import CustomerInfoCard from "./components/CustomerInfoCard";
+import OrderPaymentCard from "./components/OrderPaymentCard";
 import TurboShippingPanel from "./components/TurboShippingPanel";
 import BostaShippingPanel from "./components/BostaShippingPanel";
 import UnifiedShippingCard from "./components/UnifiedShippingCard";
@@ -1034,6 +1035,12 @@ const OrderDetails: React.FC = () => {
             selectedGovernmentId={selectedGovernmentId}
             setSelectedGovernmentId={setSelectedGovernmentId}
             handleGovernmentChange={handleGovernmentChange}
+          />
+
+          <OrderPaymentCard
+            order={order}
+            canUpdatePaymentStatus={canUpdatePaymentStatus}
+            onOpenPaymentModal={() => setShowPaymentModal(true)}
           />
 
           {showOrderSourceCard && <OrderSourceCard order={order} />}
