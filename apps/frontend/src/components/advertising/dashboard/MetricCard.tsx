@@ -79,6 +79,7 @@ export default function MetricCard({
       </div>
       <div className="mt-2 flex items-baseline justify-between gap-2">
         <p
+          dir="ltr"
           className={`truncate text-lg font-black tracking-tight ${v.value}`}
         >
           {value}

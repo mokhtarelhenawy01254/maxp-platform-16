@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, CheckCircle2, Gauge, Loader2 } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, CheckCircle2, Gauge, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   type FacebookAdsDecisionSummary,
@@ -31,10 +31,19 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
 
   const [executedActions, setExecutedActions] = useState<Record<string, boolean>>({});
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+  const [dismissedRecs, setDismissedRecs] = useState<Record<string, boolean>>({});
 
   const topDecisionRows = useMemo(
     () => (decisionSummary?.rows || []).slice(0, 4),
     [decisionSummary?.rows],
+  );
+
+  const activeRecs = useMemo(
+    () =>
+      (performanceSummary?.recommendations || []).filter(
+        (rec) => !dismissedRecs[rec.title],
+      ),
+    [dismissedRecs, performanceSummary?.recommendations],
   );
 
   const handleExecuteDecision = async (
@@ -123,7 +132,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                   <p className="mt-1.5 truncate text-[11px] font-bold opacity-90">
                     {row.ad.name}
                   </p>
-                  <div className="mt-2 grid grid-cols-3 gap-1 border-t border-current/10 pt-2 text-[10px] font-black">
+                  <div className="mt-2 grid grid-cols-3 gap-1 border-t border-current/10 pt-2 text-[10px] font-black" dir="ltr">
                     <span>CPA: {formatCurrency(row.decision.metrics.cpa || 0, selectedCurrency)}</span>
                     <span>ROAS: {formatNumber(row.decision.metrics.roas || 0, 2)}x</span>
                     <span>{isEn ? "Profit" : "ربح"}: {formatCurrency(row.decision.metrics.estimatedProfit || 0, selectedCurrency)}</span>
@@ -161,24 +170,55 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
         </section>
       ) : null}
 
-      {performanceSummary?.recommendations?.length ? (
-        <section className="grid gap-2.5 lg:grid-cols-3">
-          {performanceSummary.recommendations.slice(0, 3).map((item) => (
+      {activeRecs.length > 0 ? (
+        <div className="space-y-2">
+          {activeRecs.slice(0, 2).map((item) => (
             <div
               key={`${item.title}-${item.priority}`}
-              className="rounded-2xl border border-amber-200/70 bg-gradient-to-br from-amber-50/60 via-white to-white p-3.5 shadow-xs dark:border-amber-900/40 dark:from-amber-950/20 dark:via-slate-900 dark:to-slate-900 text-amber-900 dark:text-amber-200"
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-amber-50/40 to-white p-2.5 sm:px-3.5 shadow-xs dark:border-amber-900/50 dark:from-amber-950/30 dark:to-slate-900"
             >
-              <div className="flex items-center gap-1.5 text-[11px] font-black">
-                <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-                {item.priority}
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300">
+                  <AlertTriangle className="h-4 w-4" />
+                </span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="rounded-md bg-amber-200/70 dark:bg-amber-900/50 px-1.5 py-0.5 text-[10px] font-black text-amber-900 dark:text-amber-200">
+                      {item.priority === "HIGH" ? (isEn ? "High Priority" : "أولوية عالية") : item.priority}
+                    </span>
+                    <h3 className="truncate text-xs font-black text-slate-900 dark:text-white">
+                      {item.title}
+                    </h3>
+                  </div>
+                  <p className="mt-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 line-clamp-1">
+                    {item.message}
+                  </p>
+                </div>
               </div>
-              <h3 className="mt-1 text-xs font-black text-slate-950 dark:text-white">{item.title}</h3>
-              <p className="mt-1 line-clamp-2 text-[11px] leading-4 text-slate-600 dark:text-slate-300">
-                {item.message}
-              </p>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                {item.title.toLowerCase().includes("pixel") && (
+                  <button
+                    type="button"
+                    onClick={() => navigate("/advertising/facebook-ads/diagnosis")}
+                    className="inline-flex h-7 items-center gap-1 rounded-lg bg-amber-600 px-2.5 text-[11px] font-bold text-white shadow-xs hover:bg-amber-700 transition-all"
+                  >
+                    <span>{isEn ? "Diagnose & Connect" : "فحص وربط البيكسل"}</span>
+                    <ArrowUpRight className="h-3 w-3" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setDismissedRecs((prev) => ({ ...prev, [item.title]: true }))}
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 hover:bg-amber-100/60 hover:text-slate-600 dark:hover:bg-amber-950/60 transition-colors"
+                  title={isEn ? "Dismiss" : "إخفاء"}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
           ))}
-        </section>
+        </div>
       ) : null}
     </>
   );

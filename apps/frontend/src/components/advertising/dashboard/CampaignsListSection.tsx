@@ -492,22 +492,35 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                         </span>
                       </div>
 
-                      <div className="mt-1 flex flex-wrap gap-x-2.5 gap-y-0.5 text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                        <span>{getObjectiveLabel(campaign.objective)}</span>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[10px] sm:text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                        <span className="font-semibold text-slate-700 dark:text-slate-300">{getObjectiveLabel(campaign.objective)}</span>
                         <span>•</span>
-                        <span>{campaign.facebookCampaignId ? "Meta Synced" : (isEn ? "Local" : "محلي")}</span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className={`inline-block h-1.5 w-1.5 rounded-full ${campaign.facebookCampaignId ? "bg-blue-500" : "bg-amber-500"}`} />
+                          {campaign.facebookCampaignId ? "Meta Synced" : (isEn ? "Local" : "محلي")}
+                        </span>
                         {blockerText && !isCampaignDelivering(campaign) && (
-                          <span className="inline-flex items-center gap-1 text-amber-600 dark:text-amber-400 font-bold">
-                            <PauseCircle className="h-3 w-3" />
-                            {blockerText}
-                          </span>
+                          <>
+                            <span>•</span>
+                            <span
+                              title={blockerText}
+                              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 cursor-help transition-all hover:bg-amber-500/20"
+                            >
+                              <PauseCircle className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
+                              <span className="truncate max-w-[220px]">
+                                {blockerText.includes("لا توجد مجموعات") || campaign.adSets?.length === 0
+                                  ? (isEn ? "Awaiting Ad Sets Sync" : "بانتظار مزامنة المجموعات")
+                                  : blockerText}
+                              </span>
+                            </span>
+                          </>
                         )}
                       </div>
                     </div>
                   </div>
 
                   {/* Right Section: Metrics + Inline Budget + Action */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 lg:justify-end">
+                  <div className="flex flex-wrap items-center justify-between gap-2.5 lg:justify-end">
                     {/* Inline Budget Editor */}
                     <div className="flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 py-1 dark:border-slate-800 dark:bg-slate-800/60">
                       <span className="text-[10px] font-bold text-slate-500">
@@ -543,7 +556,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           </button>
                         </div>
                       ) : (
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-1" dir="ltr">
                           <span className="text-xs font-black text-slate-900 dark:text-white">
                             {formatCurrency(currentBudget, selectedCurrency)}
                           </span>
@@ -559,21 +572,23 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                       )}
                     </div>
 
-                    {/* Performance Chips */}
-                    <div className="flex items-center gap-2 text-xs">
-                      <div className="text-center px-1.5">
+                    {/* Performance Chips Cluster */}
+                    <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/60 px-1 py-0.5 text-xs" dir="ltr">
+                      <div className="text-center px-2 py-0.5">
                         <span className="block text-[9px] font-bold text-slate-500">{isEn ? "Spend" : "الإنفاق"}</span>
                         <span className="font-black text-slate-900 dark:text-white">
                           {formatCurrency(performance?.spend || 0, selectedCurrency)}
                         </span>
                       </div>
-                      <div className="text-center px-1.5">
+                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+                      <div className="text-center px-2 py-0.5">
                         <span className="block text-[9px] font-bold text-slate-500">ROAS</span>
                         <span className={`font-black ${(performance?.roas || 0) >= 3 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
                           {formatNumber(performance?.roas || 0, 2)}x
                         </span>
                       </div>
-                      <div className="text-center px-1.5">
+                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+                      <div className="text-center px-2 py-0.5">
                         <span className="block text-[9px] font-bold text-slate-500">CPA</span>
                         <span className="font-black text-slate-900 dark:text-white">
                           {formatCurrency(performance?.cpa || 0, selectedCurrency)}
@@ -594,10 +609,10 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                         )
                       }
                       title={isEn ? "View Campaign Details" : "عرض تفاصيل الحملة"}
-                      className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-slate-200/90 bg-white px-2.5 text-[11px] font-bold text-slate-700 shadow-xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
+                      className="inline-flex h-8 items-center justify-center gap-1 rounded-xl border border-slate-200/90 bg-white px-3 text-xs font-bold text-slate-700 shadow-xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
                     >
                       <span className="hidden sm:inline">{isEn ? "Details" : "تفاصيل"}</span>
-                      <ArrowUpRight className="h-3 w-3" />
+                      <ArrowUpRight className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
