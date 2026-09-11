@@ -12,7 +12,21 @@ class TenantSkillsService {
     this.prisma = null;
     // In-memory fallback if Prisma client or DB is unavailable in test environments
     this._memoryStore = new Map();
+    // Merchant approval policy: defaults to true (Hermes skills.write_approval standard)
+    this._approvalPolicy = new Map();
   }
+
+  isWriteApprovalRequired(companyId) {
+    if (this._approvalPolicy.has(companyId)) {
+      return Boolean(this._approvalPolicy.get(companyId));
+    }
+    return true; // Safe by default
+  }
+
+  setWriteApprovalRequired(companyId, required) {
+    this._approvalPolicy.set(companyId, Boolean(required));
+  }
+
 
   _getPrisma() {
     if (!this.prisma) {
@@ -29,10 +43,24 @@ class TenantSkillsService {
    * List all learned rules / skills for a specific merchant.
    * Enforces strict multi-tenant isolation by companyId.
    */
-  async listLearnedRules(companyId, { skillType = null, enabled = null } = {}) {
+  async listLearnedRules(companyId, { skillType = null, enabled = null, status = null, agentRole = null } = {}) {
     if (!companyId) {
       throw new Error('companyId is required');
     }
+
+    const roleDomainMap = {
+      SUPPORT: ['CUSTOMER_SUPPORT', 'SUPPORT', 'GENERAL'],
+      CUSTOMER_SUPPORT: ['CUSTOMER_SUPPORT', 'SUPPORT', 'GENERAL'],
+      SALES: ['SALES', 'SALES_CLOSING', 'GENERAL'],
+      MEDIA_BUYER: ['MEDIA_BUYER', 'GENERAL'],
+      INVENTORY: ['INVENTORY', 'OPERATIONS', 'GENERAL'],
+      CLINIC: ['CLINIC', 'GENERAL'],
+      HOTEL: ['HOTEL', 'GENERAL'],
+      DENTAL_LAB: ['DENTAL_LAB', 'OPERATIONS', 'GENERAL'],
+      OPERATIONS: ['OPERATIONS', 'INVENTORY', 'GENERAL'],
+    };
+
+    const allowedDomains = agentRole ? (roleDomainMap[String(agentRole).toUpperCase()] || [String(agentRole).toUpperCase(), 'GENERAL']) : null;
 
     const prisma = this._getPrisma();
     if (prisma && prisma.companySkill) {
@@ -58,9 +86,11 @@ class TenantSkillsService {
               name: r.name,
               description: r.description,
               instructions: r.instructions,
+              triggerPhrases: r.triggerPhrases || '',
               enabled: r.enabled,
               priority: r.priority,
               skillType: meta.skill_type || 'MEDIA_BUYER',
+              status: meta.status || (r.enabled ? 'ACTIVE' : 'PENDING_APPROVAL'),
               source: meta.source || 'AUTONOMOUS_LEARNED',
               rulesCount: meta.rules_count || 1,
               metadata: meta,
@@ -68,7 +98,9 @@ class TenantSkillsService {
               updatedAt: r.updatedAt,
             };
           })
-          .filter(r => (skillType ? r.skillType === skillType : true));
+          .filter(r => (skillType ? r.skillType === skillType : true))
+          .filter(r => (allowedDomains ? allowedDomains.includes(r.skillType) : true))
+          .filter(r => (status ? r.status === status : true));
       } catch (err) {
         console.warn('[TenantSkillsService] DB query failed, using memory store:', err.message);
       }
@@ -79,7 +111,89 @@ class TenantSkillsService {
     let list = Array.from(tenantMap.values());
     if (enabled !== null) list = list.filter(r => r.enabled === enabled);
     if (skillType) list = list.filter(r => r.skillType === skillType);
+    if (allowedDomains) list = list.filter(r => allowedDomains.includes(r.skillType));
+    if (status) list = list.filter(r => (r.status || (r.enabled ? 'ACTIVE' : 'PENDING_APPROVAL')) === status);
     return list;
+  }
+
+  /**
+   * Approve a pending learned skill / rule (Hermes write_approval gate).
+   */
+  async approveSkill(companyId, skillId) {
+    if (!companyId || !skillId) throw new Error('companyId and skillId are required');
+
+    const prisma = this._getPrisma();
+    if (prisma && prisma.companySkill) {
+      try {
+        const existing = await prisma.companySkill.findFirst({ where: { companyId, id: skillId } });
+        if (existing) {
+          let meta = {};
+          try { meta = existing.metadata ? JSON.parse(existing.metadata) : {}; } catch { meta = {}; }
+          meta.status = 'ACTIVE';
+          meta.approvedAt = new Date().toISOString();
+
+          await prisma.companySkill.update({
+            where: { id: existing.id },
+            data: { enabled: true, metadata: JSON.stringify(meta), updatedAt: new Date() },
+          });
+          return { success: true, skillId, status: 'ACTIVE', enabled: true };
+        }
+      } catch (err) {
+        console.warn('[TenantSkillsService] DB approve failed, using memory store:', err.message);
+      }
+    }
+
+    const tenantMap = this._memoryStore.get(companyId);
+    if (tenantMap && tenantMap.has(skillId)) {
+      const item = tenantMap.get(skillId);
+      item.status = 'ACTIVE';
+      item.enabled = true;
+      item.approvedAt = new Date().toISOString();
+      item.updatedAt = new Date();
+      return { success: true, skillId, status: 'ACTIVE', enabled: true };
+    }
+
+    return { success: false, error: 'Skill not found for tenant' };
+  }
+
+  /**
+   * Reject a pending learned skill / rule.
+   */
+  async rejectSkill(companyId, skillId) {
+    if (!companyId || !skillId) throw new Error('companyId and skillId are required');
+
+    const prisma = this._getPrisma();
+    if (prisma && prisma.companySkill) {
+      try {
+        const existing = await prisma.companySkill.findFirst({ where: { companyId, id: skillId } });
+        if (existing) {
+          let meta = {};
+          try { meta = existing.metadata ? JSON.parse(existing.metadata) : {}; } catch { meta = {}; }
+          meta.status = 'REJECTED';
+          meta.rejectedAt = new Date().toISOString();
+
+          await prisma.companySkill.update({
+            where: { id: existing.id },
+            data: { enabled: false, metadata: JSON.stringify(meta), updatedAt: new Date() },
+          });
+          return { success: true, skillId, status: 'REJECTED', enabled: false };
+        }
+      } catch (err) {
+        console.warn('[TenantSkillsService] DB reject failed, using memory store:', err.message);
+      }
+    }
+
+    const tenantMap = this._memoryStore.get(companyId);
+    if (tenantMap && tenantMap.has(skillId)) {
+      const item = tenantMap.get(skillId);
+      item.status = 'REJECTED';
+      item.enabled = false;
+      item.rejectedAt = new Date().toISOString();
+      item.updatedAt = new Date();
+      return { success: true, skillId, status: 'REJECTED', enabled: false };
+    }
+
+    return { success: false, error: 'Skill not found for tenant' };
   }
 
   /**
@@ -161,7 +275,7 @@ class TenantSkillsService {
       skillType: 'MEDIA_BUYER',
       ruleText,
       ruleType,
-      metrics: { adName, angle, spend, revenue, purchases, roas, cpa, frequency, ctr },
+      metrics: { adName, angle, spend, revenue, purchases, roas, cpa, frequency, ctr, autoApprove: true },
     });
   }
 
@@ -186,7 +300,7 @@ class TenantSkillsService {
       skillType: 'SALES_CLOSING',
       ruleText,
       ruleType: isSuccess ? 'SUCCESSFUL_CLOSING' : 'ABANDONED_OBJECTION',
-      metrics: { outcome, objection, closingAngle, productName },
+      metrics: { outcome, objection, closingAngle, productName, autoApprove: true },
     });
   }
 
@@ -232,8 +346,14 @@ class TenantSkillsService {
     });
   }
 
-  async _saveLearnedRule({ companyId, skillId, skillName, skillType, ruleText, ruleType, metrics }) {
+  async _saveLearnedRule({ companyId, skillId, skillName, skillType, ruleText, ruleType, metrics = {} }) {
     const baseHeader = `# ${skillName} (${companyId})\n> مهارة تم استخلاصها وتطويرها ذاتياً بناءً على تجارب المتجر الفعلية (Hermes Self-Learning Engine).\n\n## القواعد والدروس التشغيلية المعتمدة:\n`;
+
+    const requiresApproval = this.isWriteApprovalRequired(companyId);
+    const initialStatus = metrics.autoApprove ? 'ACTIVE' : (requiresApproval ? 'PENDING_APPROVAL' : 'ACTIVE');
+    const isEnabled = initialStatus === 'ACTIVE';
+
+    const cleanDescription = (metrics.title || skillName).slice(0, 60);
 
     const prisma = this._getPrisma();
     if (prisma && prisma.companySkill) {
@@ -250,6 +370,7 @@ class TenantSkillsService {
           meta = {
             source: 'AUTONOMOUS_LEARNED',
             skill_type: skillType,
+            status: initialStatus,
             rules_count: 1,
             history: [{ ruleType, metrics, learnedAt: new Date().toISOString() }],
           };
@@ -258,15 +379,15 @@ class TenantSkillsService {
             data: {
               companyId,
               name: skillName,
-              description: `مهارة تشغيلية متعلمة ذاتياً لمتجر ${companyId}`,
-              triggerPhrases: 'حملة,إعلان,تقرير,مبيعات,استهداف,أداء,خصم,شحن',
+              description: cleanDescription,
+              triggerPhrases: metrics.triggerKeywords || 'حملة,إعلان,تقرير,مبيعات,استهداف,أداء,خصم,شحن',
               instructions: updatedInstructions,
               priority: 10,
-              enabled: true,
+              enabled: isEnabled,
               metadata: JSON.stringify(meta),
             },
           });
-          return { success: true, skillId: created.id, ruleAdded: ruleText, totalRules: 1 };
+          return { success: true, skillId: created.id, ruleAdded: ruleText, totalRules: 1, status: initialStatus, enabled: isEnabled };
         } else {
           const lines = (existing.instructions || baseHeader).split('\n').map(l => l.trim()).filter(Boolean);
           if (!lines.includes(ruleText.trim())) {
@@ -284,6 +405,7 @@ class TenantSkillsService {
           meta.history = history.slice(-25);
           meta.rules_count = updatedInstructions.split('\n').filter(l => l.trim().startsWith('- [')).length;
           meta.skill_type = skillType;
+          meta.status = existing.enabled ? 'ACTIVE' : initialStatus;
           meta.last_updated_at = new Date().toISOString();
 
           await prisma.companySkill.update({
@@ -294,7 +416,7 @@ class TenantSkillsService {
               updatedAt: new Date(),
             },
           });
-          return { success: true, skillId: existing.id, ruleAdded: ruleText, totalRules: meta.rules_count };
+          return { success: true, skillId: existing.id, ruleAdded: ruleText, totalRules: meta.rules_count, status: meta.status, enabled: existing.enabled };
         }
       } catch (err) {
         console.warn('[TenantSkillsService] Prisma save failed, using memory store:', err.message);
@@ -314,8 +436,11 @@ class TenantSkillsService {
         companyId,
         name: skillName,
         skillType,
+        description: cleanDescription,
+        triggerPhrases: metrics.triggerKeywords || 'حملة,إعلان,تقرير,مبيعات,استهداف,أداء,خصم,شحن',
         instructions: `${baseHeader}\n${ruleText}\n`,
-        enabled: true,
+        enabled: isEnabled,
+        status: initialStatus,
         priority: 10,
         rulesCount: 1,
         source: 'AUTONOMOUS_LEARNED',
@@ -331,6 +456,7 @@ class TenantSkillsService {
       }
       record.history.push({ ruleType, metrics, learnedAt: new Date().toISOString() });
       record.rulesCount = record.instructions.split('\n').filter(l => l.trim().startsWith('- [')).length;
+      record.status = record.enabled ? 'ACTIVE' : initialStatus;
       record.updatedAt = new Date();
     }
 
@@ -339,9 +465,132 @@ class TenantSkillsService {
       skillId,
       ruleAdded: ruleText,
       totalRules: record.rulesCount,
+      status: record.status,
       enabled: record.enabled,
     };
+  }
+
+  /**
+   * Hermes Progressive Disclosure - Level 0: Compact Index (< 60 chars description)
+   */
+  async getL0Index(companyId, { agentRole = null } = {}) {
+    const activeSkills = await this.listLearnedRules(companyId, { enabled: true, status: 'ACTIVE', agentRole });
+    return activeSkills.map(s => ({
+      id: s.id,
+      name: s.name,
+      description: String(s.description || s.name).slice(0, 60),
+      triggerPhrases: s.triggerPhrases || '',
+      skillType: s.skillType,
+    }));
+  }
+
+  /**
+   * Hermes Progressive Disclosure - Level 1: Just-In-Time Active Skill Injection
+   */
+  async getL1ActiveInstructions(companyId, { agentRole = null, userMessage = '' } = {}) {
+    const activeSkills = await this.listLearnedRules(companyId, { enabled: true, status: 'ACTIVE', agentRole });
+    if (!userMessage) return [];
+
+    const matched = [];
+    const lowerMsg = userMessage.toLowerCase();
+
+    for (const skill of activeSkills) {
+      const triggers = (skill.triggerPhrases || '')
+        .split(/[,|\n]/)
+        .map(t => t.trim().toLowerCase())
+        .filter(Boolean);
+
+      const hit = triggers.some(t => lowerMsg.includes(t));
+      if (hit) {
+        matched.push({
+          id: skill.id,
+          name: skill.name,
+          instructions: skill.instructions,
+        });
+      }
+    }
+    return matched;
+  }
+
+  /**
+   * Hermes Post-Turn Background Review Worker (equivalent to agent/background_review.py)
+   * Separates execution from reflection, inspects trajectory, rejects prompt injection,
+   * and abstracts ground-truth validated playbooks into PENDING_APPROVAL status.
+   */
+  async triggerBackgroundReview(companyId, { agentRole = 'GENERAL', trajectory = [], groundTruthOutcome = 'SUCCESS', metadata = {} } = {}) {
+    if (!companyId) throw new Error('companyId is required');
+
+    // 1. Prompt Injection & Poisoning Guard
+    const injectionPatterns = [
+      /ignore\s+(all\s+)?previous\s+instructions/i,
+      /system\s+prompt/i,
+      /admin\s+override/i,
+      /jailbreak/i,
+      /free\s+shipping\s+for\s+all/i,
+      /give\s+me\s+90%/i,
+      /خصم\s+90%/i,
+      /شحن\s+مجاني\s+لكل\s+العملاء/i,
+      /تجاهل\s+التعليمات/i,
+      /أنا\s+(المدير|المالك|الإدارة)\s+التنفيذي/i,
+    ];
+
+    const conversationText = Array.isArray(trajectory)
+      ? trajectory.map(t => (typeof t === 'string' ? t : (t.content || t.text || ''))).join(' ')
+      : String(trajectory || '');
+
+    for (const pattern of injectionPatterns) {
+      if (pattern.test(conversationText)) {
+        console.warn(`[BackgroundReview] Potential Prompt Injection blocked for tenant ${companyId}:`, pattern);
+        return {
+          success: false,
+          blocked: true,
+          error: 'POTENTIAL_INJECTION_DETECTED',
+          reason: 'Trajectory contained forbidden instruction override attempt',
+        };
+      }
+    }
+
+    // 2. Ground-Truth Outcome Validation
+    const isSuccess = ['SUCCESS', 'CONFIRMED', 'ORDER_CREATED', 'ROAS_HIT', 'OBJECTION_RESOLVED'].includes(
+      String(groundTruthOutcome).toUpperCase()
+    );
+
+    const categoryMap = {
+      SUPPORT: 'CUSTOMER_SUPPORT',
+      CUSTOMER_SUPPORT: 'CUSTOMER_SUPPORT',
+      SALES: 'SALES',
+      MEDIA_BUYER: 'MEDIA_BUYER',
+      INVENTORY: 'INVENTORY',
+      CLINIC: 'CLINIC',
+      HOTEL: 'HOTEL',
+      DENTAL_LAB: 'DENTAL_LAB',
+      OPERATIONS: 'OPERATIONS',
+      GENERAL: 'GENERAL',
+    };
+    const category = categoryMap[String(agentRole).toUpperCase()] || 'GENERAL';
+
+    const ruleTitle = metadata.ruleTitle || (isSuccess ? `تكتيك ناجح: ${category}` : `إجراء تصحيحي: ${category}`);
+    const ruleInstruction = metadata.ruleInstructions || (
+      isSuccess
+        ? `أثبت التفاعل نجاح مسار الإجراء في تأكيد الطلب؛ اعتمد هذا الأسلوب عند تكرار نفس المعطيات.`
+        : `تجنب التكرار المباشر عند فشل المعالجة؛ وجه العميل لخيار بديل أو تصعيد مباشر.`
+    );
+
+    return await this.recordUniversalRule(companyId, {
+      category,
+      ruleTitle,
+      ruleInstructions: ruleInstruction,
+      triggerKeywords: metadata.triggerKeywords || '',
+      metadata: {
+        source: 'HERMES_BACKGROUND_REVIEW',
+        groundTruthOutcome,
+        agentRole,
+        evaluatedAt: new Date().toISOString(),
+        ...metadata,
+      },
+    });
   }
 }
 
 module.exports = new TenantSkillsService();
+

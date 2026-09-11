@@ -236,7 +236,14 @@ You are continuing an existing conversation on Facebook Messenger that was previ
         agent = ctx.agent
         if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
             from src.skills.integration import get_skills_block
-            full_skills_block = get_skills_block(agent.allowed_skills, company_id=getattr(ctx, "company_id", None))
+            agent_role = getattr(agent, "role", None) or getattr(agent, "name", None)
+            user_msg = getattr(ctx, "user_message", None)
+            full_skills_block = get_skills_block(
+                agent.allowed_skills,
+                company_id=getattr(ctx, "company_id", None),
+                agent_role=agent_role,
+                user_message=user_msg,
+            )
             if full_skills_block:
                 static_sections.append(("skills", full_skills_block))
                 logger.info(

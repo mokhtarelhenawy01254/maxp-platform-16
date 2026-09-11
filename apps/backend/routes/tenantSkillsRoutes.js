@@ -77,6 +77,61 @@ router.post('/record-rule', resolveTenant, async (req, res) => {
       triggerKeywords,
       metadata,
     });
+/**
+ * POST /api/tenant-skills/learned/:id/approve
+ * Approve a pending learned rule (Hermes write_approval gate).
+ */
+router.post('/learned/:id/approve', resolveTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await tenantSkillsService.approveSkill(req.companyId, id);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/tenant-skills/learned/:id/reject
+ * Reject a pending learned rule.
+ */
+router.post('/learned/:id/reject', resolveTenant, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await tenantSkillsService.rejectSkill(req.companyId, id);
+    return res.status(200).json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * GET /api/tenant-skills/l0-index
+ * Progressive disclosure Level 0 compact index for system prompt injection.
+ */
+router.get('/l0-index', resolveTenant, async (req, res) => {
+  try {
+    const { agentRole } = req.query;
+    const skills = await tenantSkillsService.getL0Index(req.companyId, { agentRole });
+    return res.status(200).json({ success: true, count: skills.length, data: skills });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+/**
+ * POST /api/tenant-skills/trigger-review
+ * Hermes Post-Turn Background Review (decoupled reflection worker).
+ */
+router.post('/trigger-review', resolveTenant, async (req, res) => {
+  try {
+    const { agentRole, trajectory, groundTruthOutcome, metadata } = req.body;
+    const result = await tenantSkillsService.triggerBackgroundReview(req.companyId, {
+      agentRole,
+      trajectory,
+      groundTruthOutcome,
+      metadata,
+    });
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -84,3 +139,4 @@ router.post('/record-rule', resolveTenant, async (req, res) => {
 });
 
 module.exports = router;
+

@@ -236,7 +236,25 @@ def resolve_skill_context(
     }
 
 
-def get_skills_block(allowed_skills: set[str] | None, company_id: str | None = None) -> str:
+ROLE_DOMAIN_MAP: dict[str, set[str]] = {
+    "SUPPORT": {"CUSTOMER_SUPPORT", "SUPPORT", "GENERAL"},
+    "CUSTOMER_SUPPORT": {"CUSTOMER_SUPPORT", "SUPPORT", "GENERAL"},
+    "SALES": {"SALES", "SALES_CLOSING", "GENERAL"},
+    "MEDIA_BUYER": {"MEDIA_BUYER", "GENERAL"},
+    "INVENTORY": {"INVENTORY", "OPERATIONS", "GENERAL"},
+    "CLINIC": {"CLINIC", "GENERAL"},
+    "HOTEL": {"HOTEL", "GENERAL"},
+    "DENTAL_LAB": {"DENTAL_LAB", "OPERATIONS", "GENERAL"},
+    "OPERATIONS": {"OPERATIONS", "INVENTORY", "GENERAL"},
+}
+
+
+def get_skills_block(
+    allowed_skills: set[str] | None,
+    company_id: str | None = None,
+    agent_role: str | None = None,
+    user_message: str | None = None,
+) -> str:
     lines: list[str] = []
     if allowed_skills:
         for meta in _iter_allowed_skills_meta(allowed_skills):
@@ -252,35 +270,81 @@ def get_skills_block(allowed_skills: set[str] | None, company_id: str | None = N
             lines.append(meta["instructions"])
             lines.append("</skill>")
 
-    # Hermes Multi-Tenant Learned Playbook Injection
-    tenant_playbook_parts: list[str] = []
+    # Hermes Multi-Tenant Progressive Disclosure (L0 Index vs L1 Active Skills)
+    l0_index_parts: list[str] = []
+    l1_active_parts: list[str] = []
+
     if company_id:
+        allowed_domains = ROLE_DOMAIN_MAP.get(agent_role.upper(), {agent_role.upper(), "GENERAL"}) if agent_role else None
         tenant_skills = get_tenant_skills_from_cache(company_id)
+        lower_user_msg = (user_message or "").lower()
+
         for t_skill in tenant_skills:
             if not t_skill.get("enabled", True):
                 continue
-            instr = t_skill.get("instructions") or t_skill.get("content") or ""
-            if instr:
-                tenant_playbook_parts.append(
-                    f'<merchant_playbook skill_id="{t_skill.get("id")}" name="{t_skill.get("name")}">'
-                    f'\n{instr.strip()}\n'
-                    f'</merchant_playbook>'
+
+            meta = t_skill.get("skill_metadata") or {}
+            # Verify status is ACTIVE (or not PENDING/REJECTED)
+            status = meta.get("status") or ("ACTIVE" if t_skill.get("enabled") else "PENDING_APPROVAL")
+            if status != "ACTIVE":
+                continue
+
+            skill_domain = (meta.get("skill_type") or "GENERAL").upper()
+            if allowed_domains and skill_domain not in allowed_domains:
+                continue  # Role-based domain isolation: skip non-matching skills
+
+            skill_id = t_skill.get("id") or ""
+            skill_name = t_skill.get("name") or "مهارة تشغيلية"
+            # Hermes standard: description <= 60 chars ending with a period
+            raw_desc = t_skill.get("description") or skill_name
+            desc_60 = raw_desc[:59].strip()
+            if not desc_60.endswith("."):
+                desc_60 = f"{desc_60}."
+
+            triggers_str = meta.get("trigger_keywords") or t_skill.get("trigger_phrases") or ""
+            triggers = [t.strip().lower() for t in triggers_str.replace("\n", ",").split(",") if t.strip()]
+
+            # Check for JIT L1 match against incoming message
+            is_hit = any(trig in lower_user_msg for trig in triggers) if (lower_user_msg and triggers) else False
+
+            if is_hit:
+                instr = t_skill.get("instructions") or t_skill.get("content") or ""
+                if instr:
+                    l1_active_parts.append(
+                        f'<active_skill id="{skill_id}" name="{skill_name}">'
+                        f'\n{instr.strip()}\n'
+                        f'</active_skill>'
+                    )
+            else:
+                # Level 0 (L0) compact index: consumes almost 0 tokens
+                triggers_repr = ", ".join(triggers[:4]) if triggers else "عام"
+                l0_index_parts.append(
+                    f'  <skill id="{skill_id}" name="{skill_name}" description="{desc_60}" triggers="{triggers_repr}" />'
                 )
 
-    if not lines and not tenant_playbook_parts:
+    if not lines and not l0_index_parts and not l1_active_parts:
         return ""
 
     result = []
     if lines:
         result.append("<skills>\n" + "\n".join(lines) + "\n</skills>")
-    if tenant_playbook_parts:
+
+    if l0_index_parts:
         result.append(
-            f'<tenant_learned_playbook company_id="{company_id}">\n'
-            + "\n".join(tenant_playbook_parts)
-            + "\n</tenant_learned_playbook>"
+            f'<available_skills company_id="{company_id}">\n'
+            + "\n".join(l0_index_parts)
+            + "\n</available_skills>"
+        )
+
+    if l1_active_parts:
+        result.append(
+            f'<active_tenant_skills company_id="{company_id}">\n'
+            + "\n".join(l1_active_parts)
+            + "\n</active_tenant_skills>"
         )
 
     return "\n\n" + "\n\n".join(result)
+
 
 
 def get_l1_skills_block(allowed_skills: set[str] | None) -> str:
