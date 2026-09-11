@@ -5519,6 +5519,7 @@ const listMaterials = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
     const includeInactive = req.query.includeInactive === 'true';
     const category = req.query.category;
 
@@ -5561,6 +5562,7 @@ const createMaterial = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
     const {
       name,
       category = 'MILLING_DISC',
@@ -5613,6 +5615,7 @@ const updateMaterial = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
     const { id } = req.params;
     const existing = await prisma.dentalMaterial.findFirst({ where: { id, companyId } });
     if (!existing) {
@@ -5651,6 +5654,7 @@ const deleteMaterial = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
     const { id } = req.params;
     const existing = await prisma.dentalMaterial.findFirst({ where: { id, companyId } });
     if (!existing) {
@@ -5673,6 +5677,7 @@ const recordMaterialStockIn = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
     const {
       materialId,
       lotNumber,
@@ -5736,6 +5741,7 @@ const recordCaseMaterialConsumption = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
     const { caseId } = req.params;
     const {
       materialId,
@@ -5774,8 +5780,8 @@ const recordCaseMaterialConsumption = async (req, res) => {
     const userName = req.user?.name || req.user?.email || 'فني المعمل';
     const userId = req.user?.id || null;
 
-    const [usage] = await prisma.$transaction([
-      prisma.dentalCaseMaterialUsage.create({
+    const usage = await prisma.$transaction(async (tx) => {
+      const createdUsage = await tx.dentalCaseMaterialUsage.create({
         data: {
           companyId,
           caseId,
@@ -5789,26 +5795,31 @@ const recordCaseMaterialConsumption = async (req, res) => {
           recordedBy: userId,
           recordedByName: userName,
         },
-      }),
-      ...(resolvedStock ? [
-        prisma.dentalMaterialStock.update({
+      });
+
+      if (resolvedStock) {
+        const remaining = Math.max(0, resolvedStock.remainingUnits - usedUnitsCount);
+        await tx.dentalMaterialStock.update({
           where: { id: resolvedStock.id },
           data: {
-            remainingUnits: Math.max(0, resolvedStock.remainingUnits - usedUnitsCount),
-            isDepleted: (resolvedStock.remainingUnits - usedUnitsCount) <= 0,
-            depletedAt: (resolvedStock.remainingUnits - usedUnitsCount) <= 0 ? new Date() : null,
+            remainingUnits: remaining,
+            isDepleted: remaining <= 0,
+            depletedAt: remaining <= 0 ? new Date() : null,
           },
-        })
-      ] : []),
-      prisma.dentalLabCase.update({
+        });
+      }
+
+      await tx.dentalLabCase.update({
         where: { id: caseId },
         data: {
           material: material.name,
           materialBrand: material.brand || undefined,
           lotNumber: finalLot || undefined,
         },
-      }),
-    ]);
+      });
+
+      return createdUsage;
+    });
 
     return res.status(201).json({ success: true, data: usage });
   } catch (error) {
@@ -5821,6 +5832,7 @@ const deleteCaseMaterialUsage = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
     const { caseId, usageId } = req.params;
 
     const usage = await prisma.dentalCaseMaterialUsage.findFirst({
@@ -5858,6 +5870,7 @@ const listDentalSuppliers = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
 
     const suppliers = await prisma.supplier.findMany({
       where: { companyId, isActive: true },
@@ -5884,6 +5897,7 @@ const getMaterialsDashboardSummary = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
     if (!companyId) return;
+    const prisma = getSharedPrismaClient();
 
     const [materials, totalActiveStocks, recentUsages] = await Promise.all([
       prisma.dentalMaterial.findMany({
