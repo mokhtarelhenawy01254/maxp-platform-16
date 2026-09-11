@@ -154,39 +154,13 @@ const checkAppAccess = (appSlug) => {
           });
         });
 
-        // 🛡️ Auto-heal / grant if company is in active trial mode
-        if (isCompanyInActiveTrial) {
-          if (!companyAppRecord || companyAppRecord.status === 'EXPIRED' || (companyAppRecord.status === 'TRIAL' && companyAppRecord.trialEndsAt && new Date() > new Date(companyAppRecord.trialEndsAt))) {
-            const updatedRecord = await executeWithRetry(async () => {
-              return await getSharedPrismaClient().companyApp.upsert({
-                where: {
-                  companyId_appId: { companyId, appId: candidateApp.id }
-                },
-                create: {
-                  companyId,
-                  appId: candidateApp.id,
-                  status: 'TRIAL',
-                  trialEndsAt: company.trialEndsAt
-                },
-                update: {
-                  status: 'TRIAL',
-                  trialEndsAt: company.trialEndsAt
-                }
-              });
-            });
-            req.companyApp = updatedRecord;
-            req.marketplaceApp = candidateApp;
-            return next();
-          }
-        }
-
         if (!companyAppRecord) {
           continue;
         }
 
         if (!['TRIAL', 'ACTIVE'].includes(companyAppRecord.status)) {
           // Track the best error to show later (prefer primary app error)
-          if (!matchedApp) {
+          if (!matchedApp || candidateApp.slug === primarySlug) {
             matchedApp = candidateApp;
             matchedCompanyApp = companyAppRecord;
           }
@@ -197,13 +171,29 @@ const checkAppAccess = (appSlug) => {
         if (companyAppRecord.status === 'TRIAL' && companyAppRecord.trialEndsAt) {
           const now = new Date();
           if (now > companyAppRecord.trialEndsAt) {
+            // If company itself is still in active company-wide trial, auto-renew trial for this existing active record
+            if (isCompanyInActiveTrial && companyAppRecord.status !== 'CANCELLED') {
+              const updatedRecord = await executeWithRetry(async () => {
+                return await getSharedPrismaClient().companyApp.update({
+                  where: { id: companyAppRecord.id },
+                  data: {
+                    status: 'TRIAL',
+                    trialEndsAt: company.trialEndsAt
+                  }
+                });
+              });
+              req.companyApp = updatedRecord;
+              req.marketplaceApp = candidateApp;
+              return next();
+            }
+
             await executeWithRetry(async () => {
               return await getSharedPrismaClient().companyApp.update({
                 where: { id: companyAppRecord.id },
                 data: { status: 'EXPIRED' }
               });
             });
-            if (!matchedApp) {
+            if (!matchedApp || candidateApp.slug === primarySlug) {
               matchedApp = candidateApp;
               matchedCompanyApp = { ...companyAppRecord, status: 'EXPIRED' };
             }
@@ -215,6 +205,59 @@ const checkAppAccess = (appSlug) => {
         req.companyApp = companyAppRecord;
         req.marketplaceApp = candidateApp;
         return next();
+      }
+
+      // 🛡️ Auto-grant if company is in active trial mode.
+      // CRITICAL RULES:
+      // 1. MUST ONLY apply to the PRIMARY requested app (primarySlug), NEVER to fallback/legacy aliases.
+      //    Auto-granting aliases was polluting tenant accounts with legacy monolithic apps (e.g. store-basic).
+      // 2. MUST NEVER grant if the user explicitly CANCELLED the app (status === 'CANCELLED').
+      //    User cancellation must always be respected!
+      if (isCompanyInActiveTrial) {
+        const primaryApp = candidateApps.find((a) => a.slug === primarySlug);
+        if (primaryApp) {
+          const primaryRecord = await executeWithRetry(async () => {
+            return await getSharedPrismaClient().companyApp.findUnique({
+              where: {
+                companyId_appId: { companyId, appId: primaryApp.id }
+              }
+            });
+          });
+
+          // If the user explicitly cancelled this app, respect their choice and do NOT auto-heal!
+          if (primaryRecord?.status === 'CANCELLED') {
+            return res.status(403).json({
+              success: false,
+              message: `تم إلغاء تفعيل هذه الأداة (${primaryApp.name}). يمكنك إعادة تفعيلها من متجر التطبيقات.`,
+              code: 'APP_CANCELLED',
+              appSlug: primarySlug,
+              currentStatus: 'CANCELLED'
+            });
+          }
+
+          if (!primaryRecord || primaryRecord.status === 'EXPIRED') {
+            const updatedRecord = await executeWithRetry(async () => {
+              return await getSharedPrismaClient().companyApp.upsert({
+                where: {
+                  companyId_appId: { companyId, appId: primaryApp.id }
+                },
+                create: {
+                  companyId,
+                  appId: primaryApp.id,
+                  status: 'TRIAL',
+                  trialEndsAt: company.trialEndsAt
+                },
+                update: {
+                  status: 'TRIAL',
+                  trialEndsAt: company.trialEndsAt
+                }
+              });
+            });
+            req.companyApp = updatedRecord;
+            req.marketplaceApp = primaryApp;
+            return next();
+          }
+        }
       }
 
       // No valid app found — return the best error message

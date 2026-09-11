@@ -8,6 +8,7 @@ const mockPrisma = {
   companyApp: {
     findUnique: jest.fn(),
     update: jest.fn(),
+    upsert: jest.fn(),
   },
 };
 
@@ -164,4 +165,44 @@ describe("checkAppAccess middleware", () => {
     });
     expect(next).not.toHaveBeenCalled();
   });
+
+  it("does NOT auto-heal legacy aliases or resurrect cancelled apps when user explicitly cancelled the app", async () => {
+    const req = {
+      user: {
+        companyId: "company-1",
+      },
+    };
+    const res = createResponse();
+    const next = jest.fn();
+
+    mockPrisma.company.findUnique.mockResolvedValue({
+      trialModeEnabled: true,
+      trialEndsAt: new Date(Date.now() + 86400000),
+    });
+
+    mockPrisma.marketplaceApp.findMany.mockResolvedValue([
+      { id: "app-core", slug: "order-core", name: "إدارة الطلبات" },
+      { id: "app-store", slug: "store-basic", name: "المتجر" },
+    ]);
+
+    // Primary app is cancelled
+    mockPrisma.companyApp.findUnique.mockImplementation(async ({ where }) => {
+      if (where.companyId_appId.appId === "app-core") {
+        return { id: "ca-1", status: "CANCELLED" };
+      }
+      return null;
+    });
+
+    await checkAppAccess("order-core")(req, res, next);
+
+    expect(mockPrisma.companyApp.upsert).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        code: "APP_CANCELLED",
+      }),
+    );
+    expect(next).not.toHaveBeenCalled();
+  });
 });
+
