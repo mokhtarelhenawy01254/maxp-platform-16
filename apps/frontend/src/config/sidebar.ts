@@ -1172,6 +1172,7 @@ export const getSidebarConfig = (
                 { to: '/dental-lab/cases', icon: ListChecks, label: t('sidebar.dentalLabCases') },
                 { to: '/dental-lab/doctors', icon: Users, label: t('sidebar.dentalLabDoctors') },
                 { to: '/dental-lab/work-types', icon: Tag, label: t('sidebar.dentalLabWorkTypes') },
+                { to: '/dental-lab/materials', icon: Package, label: t('sidebar.dentalLabMaterials', 'الخامات والمخزون') },
                 { to: '/dental-lab/technicians', icon: Users, label: t('sidebar.dentalLabTechnicians') },
                 { to: '/dental-lab/invoices', icon: CreditCard, label: t('sidebar.dentalLabInvoices') },
                 { to: '/dental-lab/settings', icon: Settings, label: t('sidebar.dentalLabSettings') },
