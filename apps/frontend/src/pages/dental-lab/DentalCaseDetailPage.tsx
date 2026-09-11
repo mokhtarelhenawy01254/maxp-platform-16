@@ -6,19 +6,20 @@ import DentalModelViewer from "./DentalModelViewer";
 import OdontogramChart from "./OdontogramChart";
 import {
   AlertTriangle, ArrowRightCircle, ArrowRight, BadgeCheck, Banknote, Box, Calendar, CheckCircle2, CreditCard, Download, Eye, FileDown, FileText, History,
-  Image as ImageIcon, Loader2, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, Users, UserPlus, X as XMarkIcon, XCircle,
+  Image as ImageIcon, Loader2, Package, Pencil, Plus, Receipt, RefreshCw, RotateCcw, Trash2, Upload, UploadCloud, UserCheck, Users, UserPlus, X as XMarkIcon, XCircle,
 } from "lucide-react";
 import {
   CASE_STATUSES, CASE_STATUS_MAP, PRIORITY_CONFIG, PAYMENT_STATUS_MAP, ROLE_CONFIG, STAGE_STATUS_MAP,
   DentalCaseHistoryEntry, DentalCaseStage, DentalStageAssignee, DentalCaseAttachment, DentalInvoice, DentalTechnician,
   DentalQualityCheck, DentalRefabrication, DentalCaseStatus, DentalLabCaseDetail, RefabricationStage, CreditNote,
-  DentalLabDoctor, DentalWorkType, DentalCasePriority,
+  DentalLabDoctor, DentalWorkType, DentalCasePriority, DentalMaterial, DentalCaseMaterialUsage,
   fetchCaseDetail, advanceCase, updateCase, deleteCaseAttachment,
   addInvoicePayment, fetchTechnicians, fetchDoctors, fetchWorkTypes, addStageAssignee, removeStageAssignee,
   fetchCaseFileBlob, fetchWorkOrderPdf, fetchPanLabelPdf, fetchWarrantyCertificatePdf,
   sendCaseToTryIn, returnCaseFromTryIn, downloadAllFiles,
   recordQualityCheck, flagRefabrication, resolveRefabrication,
   trashCase, restoreCase, permanentDeleteCase,
+  consumeDentalCaseMaterial, deleteDentalCaseMaterialUsage, fetchDentalMaterials,
   inferAttachmentKind,
   fmtMoney, fmtDate, fmtDateTime, nextStatusOf,
   MODAL_CONTENT_CLS, MODAL_INPUT_CLS,
@@ -637,6 +638,72 @@ export default function DentalCaseDetailPage() {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const designReviewInputRef = useRef<HTMLInputElement | null>(null);
 
+  const [materialConsumeOpen, setMaterialConsumeOpen] = useState(false);
+  const [materialsList, setMaterialsList] = useState<DentalMaterial[]>([]);
+  const [selectedMatId, setSelectedMatId] = useState("");
+  const [selectedStockId, setSelectedStockId] = useState("");
+  const [consumeUnits, setConsumeUnits] = useState(1);
+  const [consumeNotes, setConsumeNotes] = useState("");
+  const [materialBusy, setMaterialBusy] = useState(false);
+
+  const handleOpenMaterialConsume = async () => {
+    try {
+      const mats = await fetchDentalMaterials();
+      setMaterialsList(mats);
+      if (mats.length > 0) {
+        setSelectedMatId(mats[0].id);
+        const stocks = mats[0].stocks || [];
+        setSelectedStockId(stocks.length > 0 ? stocks[0].id : "");
+      }
+    } catch (e) {
+      console.error("Failed to fetch materials", e);
+    }
+    setMaterialConsumeOpen(true);
+  };
+
+  const handleConsumeSubmit = async () => {
+    if (!id || !selectedMatId) {
+      toast.error("يرجى اختيار المادة الخام");
+      return;
+    }
+    if (consumeUnits <= 0) {
+      toast.error("يرجى إدخال عدد وحدات صحيح");
+      return;
+    }
+    setMaterialBusy(true);
+    try {
+      await consumeDentalCaseMaterial(id, {
+        materialId: selectedMatId,
+        materialStockId: selectedStockId || undefined,
+        unitsUsed: Number(consumeUnits),
+        notes: consumeNotes.trim() || undefined,
+      });
+      toast.success("تم تسجيل استهلاك الخامة بنجاح وخصمها من الرصيد والتشغيلة");
+      setMaterialConsumeOpen(false);
+      setConsumeNotes("");
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل تسجيل استهلاك الخامة");
+    } finally {
+      setMaterialBusy(false);
+    }
+  };
+
+  const handleDeleteMaterialUsage = async (usageId: string) => {
+    if (!id || materialBusy) return;
+    if (!window.confirm("هل أنت متأكد من إلغاء هذا الاستهلاك واستعادة الرصيد للمخزن؟")) return;
+    setMaterialBusy(true);
+    try {
+      await deleteDentalCaseMaterialUsage(id, usageId);
+      toast.success("تم إلغاء الاستهلاك واسترجاع الرصيد بنجاح");
+      await refresh();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "فشل إلغاء الاستهلاك");
+    } finally {
+      setMaterialBusy(false);
+    }
+  };
+
   const handleDesignReviewUpload = (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -1018,6 +1085,7 @@ export default function DentalCaseDetailPage() {
   const qualityChecks = (c.qualityChecks ?? []) as DentalQualityCheck[];
   const refabrications = (c.refabrications ?? []) as DentalRefabrication[];
   const creditNotes = (c.creditNotes ?? []) as CreditNote[];
+  const materialUsages = (c.materialUsages ?? []) as DentalCaseMaterialUsage[];
   const latestCheck = qualityChecks.length > 0
     ? [...qualityChecks].sort((a, b) => new Date(b.checkedAt ?? 0).getTime() - new Date(a.checkedAt ?? 0).getTime())[0]
     : undefined;
@@ -1510,6 +1578,86 @@ export default function DentalCaseDetailPage() {
             )}
           </Card>
 
+          <Card
+            title="الخامات المستخدمة وتتبع التشغيلة (Materials & Lot Traceability)"
+            icon={<Package className="w-5 h-5" />}
+            action={
+              !c.isDeleted ? (
+                <button
+                  type="button"
+                  onClick={handleOpenMaterialConsume}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700 shadow-sm transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  تسجيل استهلاك خام
+                </button>
+              ) : null
+            }
+          >
+            {materialUsages.length === 0 ? (
+              <div className="text-center py-5 text-gray-400 dark:text-gray-500 text-xs">
+                <Package className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                لم يتم تسجيل استهلاك خامات أو ربط قرص تفريز / تشغيلة بهذه الحالة حتى الآن.
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {materialUsages.map((usage) => (
+                  <div
+                    key={usage.id}
+                    className="border dark:border-gray-700 rounded-xl p-3 bg-gray-50/50 dark:bg-gray-800/50 flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-bold text-gray-900 dark:text-gray-100 text-sm">
+                          {usage.material?.name || "مادة خام"}
+                        </span>
+                        {usage.material?.category && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 font-semibold">
+                            {usage.material.category}
+                          </span>
+                        )}
+                        {usage.material?.shade && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-mono text-[10px]">
+                            {usage.material.shade}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400 text-[11px] flex-wrap">
+                        <span>الكمية: <strong className="text-gray-800 dark:text-gray-200 font-semibold">{usage.unitsUsed} {usage.material?.unit || "وحدة"}</strong></span>
+                        {usage.lotNumber && (
+                          <span>رقم التشغيلة (Lot #): <code className="bg-gray-200 dark:bg-gray-700 px-1 py-0.5 rounded font-mono text-gray-800 dark:text-gray-200 font-bold">{usage.lotNumber}</code></span>
+                        )}
+                        {usage.materialStock?.expiryDate && (
+                          <span>انتهاء: {fmtDate(usage.materialStock.expiryDate)}</span>
+                        )}
+                        {usage.consumedByName && (
+                          <span>بواسطة: {usage.consumedByName}</span>
+                        )}
+                        <span>{fmtDateTime(usage.consumedAt)}</span>
+                      </div>
+                      {usage.notes && (
+                        <p className="text-gray-600 dark:text-gray-300 text-[11px] mt-0.5">
+                          📝 {usage.notes}
+                        </p>
+                      )}
+                    </div>
+                    {!c.isDeleted && (
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteMaterialUsage(usage.id)}
+                        disabled={materialBusy}
+                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/40 rounded-lg transition disabled:opacity-50"
+                        title="إلغاء الاستهلاك واسترجاع الرصيد للمخزن"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
           <Card title={t("dentalLab.creditNotes.title")} icon={<Receipt className="w-5 h-5" />}>
             {creditNotes.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500">{t("dentalLab.detail.noCreditNotes")}</p>
@@ -1802,6 +1950,134 @@ export default function DentalCaseDetailPage() {
 
       {refabOpen && (
         <RefabricationModal caseId={c.id} onClose={() => setRefabOpen(false)} onSaved={() => { setRefabOpen(false); refresh(); }} />
+      )}
+
+      {materialConsumeOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
+          onClick={() => !materialBusy && setMaterialConsumeOpen(false)}
+        >
+          <div className={`${MODAL_CONTENT_CLS} max-w-lg w-full`} onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4 border-b dark:border-gray-700 pb-3">
+              <h3 className="text-base font-bold flex items-center gap-2 text-gray-900 dark:text-gray-100">
+                <Package className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                تسجيل استهلاك خامات وتتبع التشغيلة (Lot Traceability)
+              </h3>
+              <button
+                type="button"
+                onClick={() => !materialBusy && setMaterialConsumeOpen(false)}
+                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+              >
+                <XMarkIcon className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  المادة الخام المستهلكة *
+                </label>
+                <select
+                  className={MODAL_INPUT_CLS}
+                  value={selectedMatId}
+                  onChange={e => {
+                    const mId = e.target.value;
+                    setSelectedMatId(mId);
+                    const mat = materialsList.find(m => m.id === mId);
+                    const stocks = mat?.stocks || [];
+                    setSelectedStockId(stocks.length > 0 ? stocks[0].id : "");
+                  }}
+                >
+                  <option value="">— اختر المادة الخام —</option>
+                  {materialsList.map(m => (
+                    <option key={m.id} value={m.id}>
+                      {m.name} ({m.category}) {m.shade ? `· لون: ${m.shade}` : ""} · الرصيد: {m.currentStock} {m.unit}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {selectedMatId && (
+                <div>
+                  <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    التشغيلة أو القرص المحدد (Lot / Disc) *
+                  </label>
+                  {(() => {
+                    const mat = materialsList.find(m => m.id === selectedMatId);
+                    const stocks = mat?.stocks || [];
+                    if (stocks.length === 0) {
+                      return (
+                        <div className="p-2.5 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 text-amber-800 dark:text-amber-300 text-xs">
+                          لا توجد شحنات مسجلة برقم تشغيلة لهذه الخامة. سيتم الصرف مباشرة من الرصيد العام.
+                        </div>
+                      );
+                    }
+                    return (
+                      <select
+                        className={MODAL_INPUT_CLS}
+                        value={selectedStockId}
+                        onChange={e => setSelectedStockId(e.target.value)}
+                      >
+                        <option value="">— خصم من الرصيد العام بدون تشغيلة محددة —</option>
+                        {stocks.map(s => (
+                          <option key={s.id} value={s.id}>
+                            Lot: {s.lotNumber || "عام"} · المتبقي: {s.remainingUnits} {mat?.unit} {s.expiryDate ? `· انتهاء: ${fmtDate(s.expiryDate)}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    );
+                  })()}
+                </div>
+              )}
+
+              <div>
+                <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  الكمية المستهلكة (عدد التيجان / الجرامات / الوحدات) *
+                </label>
+                <input
+                  className={MODAL_INPUT_CLS}
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  value={consumeUnits}
+                  onChange={e => setConsumeUnits(Number(e.target.value))}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  ملاحظات الاستهلاك (اختياري)
+                </label>
+                <input
+                  className={MODAL_INPUT_CLS}
+                  value={consumeNotes}
+                  onChange={e => setConsumeNotes(e.target.value)}
+                  placeholder="مثال: تفريز جسر 3 وحدات فك علوي..."
+                />
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6 pt-3 border-t dark:border-gray-700">
+              <button
+                type="button"
+                onClick={() => setMaterialConsumeOpen(false)}
+                disabled={materialBusy}
+                className="px-4 py-2 border rounded-lg text-xs text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 disabled:opacity-50"
+              >
+                إلغاء
+              </button>
+              <button
+                type="button"
+                onClick={handleConsumeSubmit}
+                disabled={materialBusy || !selectedMatId}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-sm disabled:opacity-50"
+              >
+                {materialBusy && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                تسجيل وخصم من المخزن
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {selectedModel && (

@@ -9,6 +9,7 @@ import DentalDoctorsTab from "./DentalDoctorsTab";
 import DentalWorkTypesTab from "./DentalWorkTypesTab";
 import DentalTechniciansTab from "./DentalTechniciansTab";
 import DentalInvoicesTab from "./DentalInvoicesTab";
+import DentalMaterialsTab from "./DentalMaterialsTab";
 import DentalLabSettingsTab from "./DentalLabSettingsTab";
 import DentalLabNotificationsTab from "./DentalLabNotificationsTab";
 import DentalLabReportsTab from "./DentalLabReportsTab";
@@ -104,6 +105,7 @@ export default function DentalLabManagementPage() {
           {activeTab === "doctors" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.doctors")}><DentalDoctorsTab /></TabErrorBoundary>}
           {activeTab === "work-types" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.work-types")}><DentalWorkTypesTab /></TabErrorBoundary>}
           {activeTab === "technicians" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.technicians")}><DentalTechniciansTab /></TabErrorBoundary>}
+          {activeTab === "materials" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.materials", "الخامات والمخازن")}><DentalMaterialsTab /></TabErrorBoundary>}
           {activeTab === "invoices" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.invoices")}><DentalInvoicesTab /></TabErrorBoundary>}
           {activeTab === "settings" && <TabErrorBoundary tabLabel={t("dentalLab.tabs.settings")}><DentalLabSettingsTab /></TabErrorBoundary>}
           {activeTab === "notifications" && <TabErrorBoundary tabLabel={t("dentalLab.notifications.title")}><DentalLabNotificationsTab /></TabErrorBoundary>}

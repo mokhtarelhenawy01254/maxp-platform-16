@@ -1240,6 +1240,7 @@ const CASE_DETAIL_INCLUDE = {
   qualityChecks: { orderBy: { checkedAt: 'desc' } },
   refabrications: { orderBy: { createdAt: 'desc' } },
   creditNotes: { orderBy: { createdAt: 'desc' } },
+  materialUsages: { include: { material: true, stock: true }, orderBy: { recordedAt: 'desc' } },
 };
 
 const listCases = async (req, res) => {
@@ -5510,6 +5511,422 @@ const getRemakesAnalysisReport = async (req, res) => {
     console.error('Error generating remakes analysis report:', error);
     return res.status(500).json({ success: false, error: 'حدث خطأ في استخراج تقرير الإعادات' });
   }
+// ==================== Dental Materials & Inventory Harmonization ====================
+
+const listMaterials = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const includeInactive = req.query.includeInactive === 'true';
+    const category = req.query.category;
+
+    const where = { companyId };
+    if (!includeInactive) where.isActive = true;
+    if (category) where.category = category;
+
+    const materials = await prisma.dentalMaterial.findMany({
+      where,
+      include: {
+        stocks: {
+          where: { isDepleted: false },
+          orderBy: [{ expiryDate: 'asc' }, { createdAt: 'desc' }],
+        },
+      },
+      orderBy: [{ category: 'asc' }, { name: 'asc' }],
+    });
+
+    const enriched = materials.map((m) => {
+      const activeStocks = m.stocks || [];
+      const totalAvailableUnits = activeStocks.reduce((sum, s) => sum + (s.remainingUnits || 0), 0);
+      const activeLotsCount = activeStocks.length;
+      const isLowStock = totalAvailableUnits <= (m.minStockAlert || 2);
+      return {
+        ...m,
+        totalAvailableUnits,
+        activeLotsCount,
+        isLowStock,
+      };
+    });
+
+    return res.json({ success: true, data: enriched });
+  } catch (error) {
+    console.error('Error listing dental materials:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في جلب قائمة الخامات' });
+  }
+};
+
+const createMaterial = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const {
+      name,
+      category = 'MILLING_DISC',
+      brand,
+      supplierId,
+      supplierName,
+      defaultShade,
+      unitName = 'قرص',
+      standardCapacity = 20,
+      costPerItem = 0,
+      costPerUnit = 0,
+      minStockAlert = 2,
+      notes,
+    } = req.body || {};
+
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ success: false, error: 'اسم الخامة مطلوب' });
+    }
+
+    const calcCostPerUnit = Number(costPerUnit) > 0
+      ? Number(costPerUnit)
+      : (Number(standardCapacity) > 0 ? round2(Number(costPerItem) / Number(standardCapacity)) : 0);
+
+    const material = await prisma.dentalMaterial.create({
+      data: {
+        companyId,
+        name: String(name).trim(),
+        category,
+        brand: brand ? String(brand).trim() : null,
+        supplierId: supplierId || null,
+        supplierName: supplierName ? String(supplierName).trim() : null,
+        defaultShade: defaultShade ? String(defaultShade).trim() : null,
+        unitName: unitName ? String(unitName).trim() : 'قرص',
+        standardCapacity: Number(standardCapacity) || 20,
+        costPerItem: round2(Number(costPerItem) || 0),
+        costPerUnit: calcCostPerUnit,
+        minStockAlert: Number(minStockAlert) || 2,
+        notes: notes ? String(notes).trim() : null,
+      },
+    });
+
+    return res.status(201).json({ success: true, data: material });
+  } catch (error) {
+    console.error('Error creating dental material:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في إنشاء الخامة' });
+  }
+};
+
+const updateMaterial = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const existing = await prisma.dentalMaterial.findFirst({ where: { id, companyId } });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'الخامة غير موجودة' });
+    }
+
+    const body = req.body || {};
+    const data = {};
+    if ('name' in body) data.name = String(body.name).trim();
+    if ('category' in body) data.category = body.category;
+    if ('brand' in body) data.brand = body.brand ? String(body.brand).trim() : null;
+    if ('supplierId' in body) data.supplierId = body.supplierId || null;
+    if ('supplierName' in body) data.supplierName = body.supplierName ? String(body.supplierName).trim() : null;
+    if ('defaultShade' in body) data.defaultShade = body.defaultShade ? String(body.defaultShade).trim() : null;
+    if ('unitName' in body) data.unitName = String(body.unitName).trim();
+    if ('standardCapacity' in body) data.standardCapacity = Number(body.standardCapacity) || 1;
+    if ('costPerItem' in body) data.costPerItem = round2(Number(body.costPerItem) || 0);
+    if ('costPerUnit' in body) data.costPerUnit = round2(Number(body.costPerUnit) || 0);
+    if ('minStockAlert' in body) data.minStockAlert = Number(body.minStockAlert) || 0;
+    if ('isActive' in body) data.isActive = Boolean(body.isActive);
+    if ('notes' in body) data.notes = body.notes ? String(body.notes).trim() : null;
+
+    const updated = await prisma.dentalMaterial.update({
+      where: { id },
+      data,
+    });
+
+    return res.json({ success: true, data: updated });
+  } catch (error) {
+    console.error('Error updating dental material:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في تحديث بيانات الخامة' });
+  }
+};
+
+const deleteMaterial = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { id } = req.params;
+    const existing = await prisma.dentalMaterial.findFirst({ where: { id, companyId } });
+    if (!existing) {
+      return res.status(404).json({ success: false, error: 'الخامة غير موجودة' });
+    }
+
+    await prisma.dentalMaterial.update({
+      where: { id },
+      data: { isActive: false },
+    });
+
+    return res.json({ success: true, message: 'تم إيقاف تفعيل الخامة بنجاح' });
+  } catch (error) {
+    console.error('Error deleting dental material:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في إيقاف الخامة' });
+  }
+};
+
+const recordMaterialStockIn = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const {
+      materialId,
+      lotNumber,
+      shade,
+      thicknessMm,
+      diameterMm = 98,
+      initialUnits,
+      unitCost,
+      totalCost,
+      supplierId,
+      supplierName,
+      purchaseDate,
+      expiryDate,
+      notes,
+    } = req.body || {};
+
+    if (!materialId) {
+      return res.status(400).json({ success: false, error: 'معرف الخامة مطلوب' });
+    }
+    if (!lotNumber || !String(lotNumber).trim()) {
+      return res.status(400).json({ success: false, error: 'رقم التشغيلة (Lot Number) مطلوب لضمان الجودة والتتبع الطبي' });
+    }
+
+    const material = await prisma.dentalMaterial.findFirst({ where: { id: materialId, companyId } });
+    if (!material) {
+      return res.status(404).json({ success: false, error: 'الخامة غير موجودة' });
+    }
+
+    const unitsCount = Number(initialUnits) > 0 ? Number(initialUnits) : (material.standardCapacity || 20);
+    const calculatedTotal = Number(totalCost) > 0 ? Number(totalCost) : material.costPerItem;
+    const calculatedUnitCost = Number(unitCost) > 0 ? Number(unitCost) : (unitsCount > 0 ? round2(calculatedTotal / unitsCount) : 0);
+
+    const stock = await prisma.dentalMaterialStock.create({
+      data: {
+        companyId,
+        materialId,
+        lotNumber: String(lotNumber).trim(),
+        shade: shade ? String(shade).trim() : material.defaultShade,
+        thicknessMm: thicknessMm ? Number(thicknessMm) : null,
+        diameterMm: diameterMm ? Number(diameterMm) : 98,
+        initialUnits: unitsCount,
+        remainingUnits: unitsCount,
+        unitCost: round2(calculatedUnitCost),
+        totalCost: round2(calculatedTotal),
+        supplierId: supplierId || material.supplierId || null,
+        supplierName: supplierName ? String(supplierName).trim() : material.supplierName || null,
+        purchaseDate: purchaseDate ? new Date(purchaseDate) : new Date(),
+        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        notes: notes ? String(notes).trim() : null,
+      },
+    });
+
+    return res.status(201).json({ success: true, data: stock });
+  } catch (error) {
+    console.error('Error recording dental material stock in:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في توريد رصيد الخامة' });
+  }
+};
+
+const recordCaseMaterialConsumption = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseId } = req.params;
+    const {
+      materialId,
+      stockId,
+      lotNumber,
+      unitsUsed = 1,
+      notes,
+    } = req.body || {};
+
+    if (!materialId) {
+      return res.status(400).json({ success: false, error: 'الخامة مطلوبة' });
+    }
+
+    const dentalCase = await prisma.dentalLabCase.findFirst({ where: { id: caseId, companyId } });
+    if (!dentalCase) {
+      return res.status(404).json({ success: false, error: 'حالة المعمل غير موجودة' });
+    }
+
+    const material = await prisma.dentalMaterial.findFirst({ where: { id: materialId, companyId } });
+    if (!material) {
+      return res.status(404).json({ success: false, error: 'الخامة غير موجودة' });
+    }
+
+    let resolvedStock = null;
+    if (stockId) {
+      resolvedStock = await prisma.dentalMaterialStock.findFirst({
+        where: { id: stockId, materialId, companyId },
+      });
+    }
+
+    const usedUnitsCount = Math.max(1, Number(unitsUsed) || 1);
+    const finalLot = resolvedStock ? resolvedStock.lotNumber : (lotNumber ? String(lotNumber).trim() : null);
+    const unitPriceRecorded = resolvedStock ? resolvedStock.unitCost : material.costPerUnit;
+    const totalCostRecorded = round2(unitPriceRecorded * usedUnitsCount);
+
+    const userName = req.user?.name || req.user?.email || 'فني المعمل';
+    const userId = req.user?.id || null;
+
+    const [usage] = await prisma.$transaction([
+      prisma.dentalCaseMaterialUsage.create({
+        data: {
+          companyId,
+          caseId,
+          materialId,
+          stockId: resolvedStock ? resolvedStock.id : null,
+          lotNumber: finalLot,
+          materialName: material.name,
+          unitsUsed: usedUnitsCount,
+          costRecorded: totalCostRecorded,
+          notes: notes ? String(notes).trim() : null,
+          recordedBy: userId,
+          recordedByName: userName,
+        },
+      }),
+      ...(resolvedStock ? [
+        prisma.dentalMaterialStock.update({
+          where: { id: resolvedStock.id },
+          data: {
+            remainingUnits: Math.max(0, resolvedStock.remainingUnits - usedUnitsCount),
+            isDepleted: (resolvedStock.remainingUnits - usedUnitsCount) <= 0,
+            depletedAt: (resolvedStock.remainingUnits - usedUnitsCount) <= 0 ? new Date() : null,
+          },
+        })
+      ] : []),
+      prisma.dentalLabCase.update({
+        where: { id: caseId },
+        data: {
+          material: material.name,
+          materialBrand: material.brand || undefined,
+          lotNumber: finalLot || undefined,
+        },
+      }),
+    ]);
+
+    return res.status(201).json({ success: true, data: usage });
+  } catch (error) {
+    console.error('Error recording case material consumption:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في تسجيل استهلاك الخامة على الحالة' });
+  }
+};
+
+const deleteCaseMaterialUsage = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const { caseId, usageId } = req.params;
+
+    const usage = await prisma.dentalCaseMaterialUsage.findFirst({
+      where: { id: usageId, caseId, companyId },
+    });
+    if (!usage) {
+      return res.status(404).json({ success: false, error: 'سجل استهلاك الخامة غير موجود' });
+    }
+
+    await prisma.$transaction(async (tx) => {
+      if (usage.stockId) {
+        const stock = await tx.dentalMaterialStock.findUnique({ where: { id: usage.stockId } });
+        if (stock) {
+          await tx.dentalMaterialStock.update({
+            where: { id: stock.id },
+            data: {
+              remainingUnits: stock.remainingUnits + (usage.unitsUsed || 1),
+              isDepleted: false,
+              depletedAt: null,
+            },
+          });
+        }
+      }
+      await tx.dentalCaseMaterialUsage.delete({ where: { id: usageId } });
+    });
+
+    return res.json({ success: true, message: 'تم حذف استهلاك الخامة وإعادة الرصيد للقرص بنجاح' });
+  } catch (error) {
+    console.error('Error deleting case material usage:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في إلغاء استهلاك الخامة' });
+  }
+};
+
+const listDentalSuppliers = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+
+    const suppliers = await prisma.supplier.findMany({
+      where: { companyId, isActive: true },
+      select: {
+        id: true,
+        name: true,
+        contactPerson: true,
+        phone: true,
+        mobile: true,
+        city: true,
+        currentBalance: true,
+      },
+      orderBy: { name: 'asc' },
+    });
+
+    return res.json({ success: true, data: suppliers });
+  } catch (error) {
+    console.error('Error listing dental suppliers:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في جلب قائمة الموردين' });
+  }
+};
+
+const getMaterialsDashboardSummary = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+
+    const [materials, totalActiveStocks, recentUsages] = await Promise.all([
+      prisma.dentalMaterial.findMany({
+        where: { companyId, isActive: true },
+        include: {
+          stocks: {
+            where: { isDepleted: false },
+          },
+        },
+      }),
+      prisma.dentalMaterialStock.count({
+        where: { companyId, isDepleted: false },
+      }),
+      prisma.dentalCaseMaterialUsage.findMany({
+        where: { companyId },
+        take: 10,
+        orderBy: { recordedAt: 'desc' },
+      }),
+    ]);
+
+    let lowStockCount = 0;
+    let totalStockUnits = 0;
+
+    materials.forEach((m) => {
+      const units = (m.stocks || []).reduce((sum, s) => sum + (s.remainingUnits || 0), 0);
+      totalStockUnits += units;
+      if (units <= (m.minStockAlert || 2)) {
+        lowStockCount++;
+      }
+    });
+
+    return res.json({
+      success: true,
+      data: {
+        totalMaterials: materials.length,
+        totalActiveStocks,
+        totalStockUnits,
+        lowStockCount,
+        recentUsages,
+      },
+    });
+  } catch (error) {
+    console.error('Error getting materials dashboard summary:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في جلب إحصائيات الخامات' });
+  }
 };
 
 module.exports = {
@@ -5602,4 +6019,13 @@ module.exports = {
   bulkUpdatePriority,
   bulkTrashCases,
   bulkRestoreCases,
+  listMaterials,
+  createMaterial,
+  updateMaterial,
+  deleteMaterial,
+  recordMaterialStockIn,
+  recordCaseMaterialConsumption,
+  deleteCaseMaterialUsage,
+  listDentalSuppliers,
+  getMaterialsDashboardSummary,
 };

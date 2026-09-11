@@ -197,6 +197,17 @@ router.delete('/custom-fields/:id', verifyToken.authenticateToken, dentalRoleGua
 
 // Notifications
 router.get('/notifications/schedule', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.getNotificationSchedule);
+
+// Materials & Inventory Harmonization (خامات معمل الأسنان والموردين)
+router.get('/materials/summary', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION']), controller.getMaterialsDashboardSummary);
+router.get('/materials/suppliers', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION']), controller.listDentalSuppliers);
+router.get('/materials', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION', 'TECHNICIAN']), controller.listMaterials);
+router.post('/materials', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.createMaterial);
+router.put('/materials/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateMaterial);
+router.delete('/materials/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteMaterial);
+router.post('/materials/stock-in', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION']), controller.recordMaterialStockIn);
+router.post('/cases/:caseId/materials/consume', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'RECEPTION', 'TECHNICIAN']), controller.recordCaseMaterialConsumption);
+router.delete('/cases/:caseId/materials/:usageId', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.deleteCaseMaterialUsage);
 router.put('/notifications/schedule', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateNotificationSchedule);
 router.post('/notifications/scan-overdue', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.scanOverdueNotifications);
 router.post('/notifications/run-dunning', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), async (req, res) => {

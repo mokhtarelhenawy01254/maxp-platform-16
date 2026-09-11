@@ -1,10 +1,10 @@
 import { apiClient } from "@/services/api";
 import { config } from "@/config";
 import type { AxiosResponse } from "axios";
-import { LayoutDashboard, ListChecks, Users, CreditCard, Settings, Wrench, Bell, BarChart3 } from "lucide-react";
+import { LayoutDashboard, ListChecks, Users, CreditCard, Settings, Wrench, Bell, BarChart3, Package } from "lucide-react";
 
 export type TabId =
-  | "dashboard" | "cases" | "doctors" | "work-types" | "technicians" | "invoices" | "settings" | "notifications" | "reports";
+  | "dashboard" | "cases" | "doctors" | "work-types" | "technicians" | "invoices" | "materials" | "settings" | "notifications" | "reports";
 
 export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] = [
   { id: "dashboard", label: "dentalLab.tabs.dashboard", icon: LayoutDashboard },
@@ -12,6 +12,7 @@ export const TABS: { id: TabId; label: string; icon: typeof LayoutDashboard }[] 
   { id: "doctors", label: "dentalLab.tabs.doctors", icon: Users },
   { id: "work-types", label: "dentalLab.tabs.work-types", icon: Wrench },
   { id: "technicians", label: "dentalLab.tabs.team", icon: Users },
+  { id: "materials", label: "dentalLab.tabs.materials", icon: Package },
   { id: "invoices", label: "dentalLab.tabs.invoices", icon: CreditCard },
   { id: "settings", label: "dentalLab.tabs.settings", icon: Settings },
   { id: "notifications", label: "dentalLab.notifications.title", icon: Bell },
@@ -466,6 +467,7 @@ export interface DentalLabCaseDetail extends DentalLabCase {
   qualityChecks: DentalQualityCheck[];
   refabrications: DentalRefabrication[];
   creditNotes: CreditNote[];
+  materialUsages?: DentalCaseMaterialUsage[];
 }
 
 export type DentalInvoiceMode = "AUTO_ON_RECEIPT" | "AUTO_ON_DELIVERY" | "MANUAL";
@@ -1198,3 +1200,138 @@ export const tKey = (t: (key: never) => unknown, key: string): string => String(
 
 export const MODAL_CONTENT_CLS = "bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-6 w-full max-w-xl mx-4";
 export const MODAL_INPUT_CLS = "w-full border rounded-lg px-3 py-2 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100";
+
+// ==================== Dental Materials & Suppliers API ====================
+
+export type DentalMaterialCategory = "MILLING_DISC" | "MILLING_BLOCK" | "IMPLANT_PART" | "CONSUMABLE" | "TOOL_BUR";
+
+export interface DentalMaterialStock {
+  id: string;
+  materialId: string;
+  lotNumber: string;
+  shade?: string | null;
+  thicknessMm?: number | null;
+  diameterMm?: number | null;
+  initialUnits: number;
+  remainingUnits: number;
+  unitCost: number;
+  totalCost: number;
+  supplierId?: string | null;
+  supplierName?: string | null;
+  purchaseDate?: string;
+  expiryDate?: string | null;
+  isDepleted: boolean;
+  notes?: string | null;
+}
+
+export interface DentalMaterial {
+  id: string;
+  name: string;
+  category: DentalMaterialCategory;
+  brand?: string | null;
+  supplierId?: string | null;
+  supplierName?: string | null;
+  defaultShade?: string | null;
+  unitName: string;
+  standardCapacity: number;
+  costPerItem: number;
+  costPerUnit: number;
+  minStockAlert: number;
+  isActive: boolean;
+  notes?: string | null;
+  stocks?: DentalMaterialStock[];
+  totalAvailableUnits?: number;
+  activeLotsCount?: number;
+  isLowStock?: boolean;
+}
+
+export interface DentalCaseMaterialUsage {
+  id: string;
+  caseId: string;
+  materialId: string;
+  stockId?: string | null;
+  lotNumber?: string | null;
+  materialName: string;
+  unitsUsed: number;
+  costRecorded: number;
+  notes?: string | null;
+  recordedBy?: string | null;
+  recordedByName?: string | null;
+  recordedAt: string;
+  stock?: DentalMaterialStock | null;
+  material?: DentalMaterial | null;
+}
+
+export interface DentalSupplier {
+  id: string;
+  name: string;
+  contactPerson?: string | null;
+  phone?: string | null;
+  mobile?: string | null;
+  city?: string | null;
+  currentBalance?: number;
+}
+
+export interface DentalMaterialsSummary {
+  totalMaterials: number;
+  totalActiveStocks: number;
+  totalStockUnits: number;
+  lowStockCount: number;
+  recentUsages: DentalCaseMaterialUsage[];
+}
+
+export const fetchDentalMaterials = async (category?: string, includeInactive?: boolean): Promise<DentalMaterial[]> => {
+  const params: Record<string, string> = {};
+  if (category) params.category = category;
+  if (includeInactive) params.includeInactive = "true";
+  return unwrapListEnvelope<DentalMaterial>(await apiClient.get("/dental-lab/materials", { params }));
+};
+
+export const createDentalMaterial = async (body: Partial<DentalMaterial>): Promise<DentalMaterial> =>
+  unwrapEnvelope<DentalMaterial>(await apiClient.post("/dental-lab/materials", body));
+
+export const updateDentalMaterial = async (id: string, body: Partial<DentalMaterial>): Promise<DentalMaterial> =>
+  unwrapEnvelope<DentalMaterial>(await apiClient.put(`/dental-lab/materials/${id}`, body));
+
+export const deleteDentalMaterial = async (id: string): Promise<void> => {
+  await apiClient.delete(`/dental-lab/materials/${id}`);
+};
+
+export const recordDentalMaterialStockIn = async (body: {
+  materialId: string;
+  lotNumber: string;
+  shade?: string;
+  thicknessMm?: number;
+  diameterMm?: number;
+  initialUnits?: number;
+  unitCost?: number;
+  totalCost?: number;
+  supplierId?: string;
+  supplierName?: string;
+  purchaseDate?: string;
+  expiryDate?: string;
+  notes?: string;
+}): Promise<DentalMaterialStock> =>
+  unwrapEnvelope<DentalMaterialStock>(await apiClient.post("/dental-lab/materials/stock-in", body));
+
+export const consumeDentalCaseMaterial = async (
+  caseId: string,
+  body: {
+    materialId: string;
+    stockId?: string;
+    lotNumber?: string;
+    unitsUsed?: number;
+    notes?: string;
+  },
+): Promise<DentalCaseMaterialUsage> =>
+  unwrapEnvelope<DentalCaseMaterialUsage>(await apiClient.post(`/dental-lab/cases/${caseId}/materials/consume`, body));
+
+export const deleteDentalCaseMaterialUsage = async (caseId: string, usageId: string): Promise<void> => {
+  await apiClient.delete(`/dental-lab/cases/${caseId}/materials/${usageId}`);
+};
+
+export const fetchDentalSuppliers = async (): Promise<DentalSupplier[]> =>
+  unwrapListEnvelope<DentalSupplier>(await apiClient.get("/dental-lab/materials/suppliers"));
+
+export const fetchDentalMaterialsSummary = async (): Promise<DentalMaterialsSummary> =>
+  unwrapEnvelope<DentalMaterialsSummary>(await apiClient.get("/dental-lab/materials/summary"));
