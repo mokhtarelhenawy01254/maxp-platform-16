@@ -59,6 +59,12 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - `trash` > `rm` (recoverable beats gone forever)
 - When in doubt, ask.
 
+## 🧱 Rule: Modular Independent Screens (Ban Monolithic "All-in-One-Page" Aggregation)
+- **Ban Monolithic God-Components**: NEVER combine multiple distinct screens/tabs/domains (such as production bench, barcode kiosk, earnings ledger, alerts, and reports) into a single giant monolithic file. Each functional screen MUST be an independent, modular component in its own file (under 300-400 lines max).
+- **Clarification on Single-Depth**: "Single-Depth" is strictly a CSS visual styling rule for container borders and nested box padding (preventing card-in-card cramping on mobile). It DOES NOT mean cramming every feature onto one page or avoiding dedicated sub-pages.
+- **Dedicated Route & State Isolation**: Each screen MUST maintain its own localized state, data fetching, and Error Boundary. A crash or edge-case error in one screen (e.g. reports or vouchers) must NEVER take down or degrade other independent screens (such as the technician's active case bench).
+- **Clean File Structure**: Group related domain screens under a dedicated feature folder (e.g. `pages/dental-lab/technician/` containing `DentalTechBenchTab.tsx`, `DentalTechKioskTab.tsx`, `DentalTechWageTab.tsx`, `DentalTechNotificationsTab.tsx`, `DentalTechReportsTab.tsx`).
+
 ## 🚀 Post-Task Automatic Git Push Rule
 
 - **Mandatory Action:** After completing **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar267/maxp-platform-6` (`mokhtar267` remote).
