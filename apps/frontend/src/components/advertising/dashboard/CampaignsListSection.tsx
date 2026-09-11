@@ -285,7 +285,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
   const currentFilteredCampaignCount = filteredCampaigns.length;
 
   return (
-    <section className="rounded-2xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
+    <section className="rounded-xl border border-slate-200/80 bg-white shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
       {/* Integrated Unified Toolbar */}
       <div className="border-b border-slate-200/80 p-3 sm:p-4 dark:border-slate-800/80">
         <div className="flex flex-col gap-3">
@@ -312,11 +312,11 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
             </div>
 
             <div className="flex items-center gap-2 text-xs font-bold text-slate-500 dark:text-slate-400">
-              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-extrabold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <span className="rounded-md bg-slate-100 px-2 py-0.5 text-xs font-extrabold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 {formatNumber(currentFilteredCampaignCount)} {isEn ? "campaigns" : "حملة"}
               </span>
               <span>•</span>
-              <span dir="ltr" className="text-[11px] font-semibold">{selectedDateLabel}</span>
+              <span dir="ltr" className="text-xs font-semibold">{selectedDateLabel}</span>
             </div>
           </div>
 
@@ -397,7 +397,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
 
       {/* Campaigns Listing */}
       {campaigns.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 p-12 text-center">
+        <div className="flex flex-col items-center gap-3 p-6 sm:p-12 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 shadow-xs">
             <Megaphone className="h-6 w-6" />
           </div>
@@ -420,7 +420,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
           </div>
         </div>
       ) : currentVisibleCampaignCount === 0 ? (
-        <div className="flex flex-col items-center gap-3 p-12 text-center">
+        <div className="flex flex-col items-center gap-3 p-6 sm:p-12 text-center">
           <Search className="h-10 w-10 text-slate-300 dark:text-slate-600" />
           <h3 className="text-base font-bold text-slate-900 dark:text-white">
             {isEn ? "No matching campaigns" : "لا توجد حملات مطابقة"}
@@ -441,7 +441,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
       ) : (
         <div>
           {/* Desktop Table Header - Columns for Vertical Scanning */}
-          <div className="hidden lg:grid grid-cols-12 items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/90 px-4 py-2 text-[11px] font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
+          <div className="hidden lg:grid grid-cols-12 items-center gap-2.5 border-b border-slate-200/80 bg-slate-50/90 px-4 py-2 text-xs font-bold text-slate-500 dark:border-slate-800 dark:bg-slate-950/60 dark:text-slate-400">
             <div className="col-span-4 flex items-center gap-2">
               <span>{isEn ? "Campaign & Status" : "الحملة والحالة"}</span>
             </div>
@@ -527,7 +527,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             {campaign.name}
                           </Link>
                           <span
-                            className={`shrink-0 rounded-md px-1.5 py-0.2 text-[9px] font-bold ${
+                            className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
                               isActive
                                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                                 : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -535,13 +535,13 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           >
                             {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
                           </span>
-                          <span className={`shrink-0 rounded-md px-1.5 py-0.2 text-[9px] font-bold ${decision.className}`}>
+                          <span className={`shrink-0 rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
                             {isEn ? decision.labelEn : decision.label}
                           </span>
                         </div>
 
                         {/* Metadata sub-row */}
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-slate-500 dark:text-slate-400">
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500 dark:text-slate-400">
                           <span className="font-semibold text-slate-700 dark:text-slate-300">
                             {getObjectiveLabel(campaign.objective)}
                           </span>
@@ -559,7 +559,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                               <span>•</span>
                               <span
                                 title={blockerText}
-                                className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400"
+                                className="inline-flex items-center gap-1 text-xs font-bold text-amber-600 dark:text-amber-400"
                               >
                                 <PauseCircle className="h-3 w-3 shrink-0" />
                                 <span className="truncate max-w-[180px]">
@@ -574,7 +574,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
 
                         {/* Diagnostic Insight Note */}
                         {performance && performance.impressions > 0 && decision.detail && (
-                          <div className="mt-1 flex items-center gap-1.5 text-[10px] text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-md px-2 py-0.5 border border-slate-200/60 dark:border-slate-800">
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-md px-2 py-0.5 border border-slate-200/60 dark:border-slate-800">
                             <Sparkles className="h-3 w-3 shrink-0 text-blue-500" />
                             <span className="truncate">{isEn ? decision.detailEn : decision.detail}</span>
                           </div>
@@ -665,7 +665,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                     </div>
 
                     {/* Col 11: Hook / Freq */}
-                    <div className="col-span-1 text-center text-[11px] font-semibold tabular-nums text-slate-600 dark:text-slate-400" dir="ltr">
+                    <div className="col-span-1 text-center text-xs font-semibold tabular-nums text-slate-600 dark:text-slate-400" dir="ltr">
                       <span>{formatPercentage(performance?.ctr || 0)}</span>
                       <span className="mx-0.5 text-slate-300 dark:text-slate-600">/</span>
                       <span>{formatNumber(performance?.frequency || 0, 1)}x</span>
@@ -682,7 +682,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             }`,
                           )
                         }
-                        className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-slate-200/90 bg-white px-2.5 text-[11px] font-bold text-slate-700 shadow-2xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
+                        className="inline-flex h-7 items-center justify-center gap-1 rounded-lg border border-slate-200/90 bg-white px-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:border-blue-500 hover:text-blue-600 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all"
                       >
                         <span>{isEn ? "Details" : "تفاصيل"}</span>
                         <ArrowUpRight className="h-3 w-3" />
@@ -726,7 +726,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             {campaign.name}
                           </Link>
                           <span
-                            className={`rounded-md px-1.5 py-0.2 text-[9px] font-bold ${
+                            className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${
                               isActive
                                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                                 : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -734,12 +734,12 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           >
                             {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
                           </span>
-                          <span className={`rounded-md px-1.5 py-0.2 text-[9px] font-bold ${decision.className}`}>
+                          <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-bold ${decision.className}`}>
                             {isEn ? decision.labelEn : decision.label}
                           </span>
                         </div>
 
-                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[10px] text-slate-500 dark:text-slate-400">
+                        <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-slate-500 dark:text-slate-400">
                           <span>{getObjectiveLabel(campaign.objective)}</span>
                           <span>•</span>
                           <span>{campaign.facebookCampaignId ? "Meta Synced" : "Local"}</span>
@@ -748,21 +748,21 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                     </div>
 
                     {/* Single-depth metric row for mobile */}
-                    <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-slate-200/70 bg-slate-50/50 p-2 text-center text-[10px] dark:border-slate-800 dark:bg-slate-800/30" dir="ltr">
+                    <div className="grid grid-cols-4 gap-1.5 rounded-lg border border-slate-200/70 bg-slate-50/50 p-2 text-center text-xs dark:border-slate-800 dark:bg-slate-800/30" dir="ltr">
                       <div>
-                        <span className="block text-[9px] text-slate-400">{isEn ? "Spend" : "الإنفاق"}</span>
+                        <span className="block text-[11px] text-slate-400">{isEn ? "Spend" : "الإنفاق"}</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.spend || 0, selectedCurrency)}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-[9px] text-slate-400">{isEn ? "Purchases" : "المبيعات"}</span>
+                        <span className="block text-[11px] text-slate-400">{isEn ? "Purchases" : "المبيعات"}</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatNumber(performance?.purchases || 0)}
                         </span>
                       </div>
                       <div>
-                        <span className="block text-[9px] text-slate-400">ROAS</span>
+                        <span className="block text-[11px] text-slate-400">ROAS</span>
                         <span
                           className={`font-black tabular-nums ${
                             (performance?.roas || 0) >= 2 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"
@@ -772,7 +772,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                         </span>
                       </div>
                       <div>
-                        <span className="block text-[9px] text-slate-400">CPA</span>
+                        <span className="block text-[11px] text-slate-400">CPA</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.cpa || 0, selectedCurrency)}
                         </span>
@@ -781,7 +781,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
 
                     {/* Mobile Footer with Details Link */}
                     <div className="flex items-center justify-between gap-2 pt-1 border-t border-slate-100 dark:border-slate-800">
-                      <div className="text-[10px] text-slate-500" dir="ltr">
+                      <div className="text-xs text-slate-500" dir="ltr">
                         <span>{isEn ? "Budget: " : "الميزانية: "}</span>
                         <span className="font-bold text-slate-900 dark:text-white">
                           {formatCurrency(currentBudget, selectedCurrency)}
@@ -796,7 +796,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             }`,
                           )
                         }
-                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-[11px] font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
+                        className="inline-flex h-7 items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                       >
                         <span>{isEn ? "Details" : "تفاصيل"}</span>
                         <ArrowUpRight className="h-3 w-3" />

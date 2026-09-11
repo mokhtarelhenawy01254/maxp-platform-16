@@ -76,31 +76,31 @@ export default function MetricCard({
   const tag = badge || delta;
   return (
     <div
-      className={`group relative overflow-hidden rounded-2xl border p-3.5 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${v.container}`}
+      className={`group relative overflow-hidden rounded-xl border p-3 shadow-xs transition-shadow duration-150 hover:shadow-sm ${v.container}`}
     >
       <div
-        className={`pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${v.glow} blur-xl`}
+        className={`pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-gradient-to-br ${v.glow} blur-xl`}
       />
       <div className="flex items-center justify-between gap-2">
         <span className={`text-xs font-semibold ${v.label}`}>{label}</span>
         {Icon && (
           <span
-            className={`flex h-7 w-7 items-center justify-center rounded-lg transition-transform group-hover:scale-110 ${v.iconBg}`}
+            className={`flex h-6 w-6 items-center justify-center rounded-md ${v.iconBg}`}
           >
-            <Icon className="h-4 w-4" />
+            <Icon className="h-3.5 w-3.5" />
           </span>
         )}
       </div>
-      <div className="mt-2 flex items-baseline justify-between gap-2">
+      <div className="mt-1.5 flex items-baseline justify-between gap-2">
         <p
           dir="ltr"
-          className={`truncate text-xl sm:text-2xl font-bold tracking-tight tabular-nums ${v.value}`}
+          className={`truncate text-lg sm:text-xl font-bold tracking-tight tabular-nums ${v.value}`}
         >
           {value}
         </p>
         {tag && (
           <span
-            className={`inline-flex items-center text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+            className={`inline-flex items-center text-[11px] font-bold px-1.5 py-0.5 rounded-md ${
               tag.isPositive
                 ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                 : "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300"
@@ -112,7 +112,7 @@ export default function MetricCard({
         )}
       </div>
       {subtitle && (
-        <p className="mt-1 text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 truncate">
           {subtitle}
         </p>
       )}

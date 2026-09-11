@@ -135,7 +135,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
   return (
     <div className="space-y-3">
       {/* Actionable Decisions Hub */}
-      <section className="rounded-2xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
+      <section className="rounded-xl border border-slate-200/80 bg-white p-3.5 sm:p-4 shadow-xs dark:border-slate-800/80 dark:bg-slate-900">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300">
@@ -147,14 +147,14 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                   {isEn ? "AI Media Buying Decisions" : "قرارات Media Buying الذكية"}
                 </h2>
                 {actionableRows.length > 0 && (
-                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                  <span className="rounded-full bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
                     {actionableRows.length} {isEn ? "ready to execute" : "مطلوب إجراء فوري"}
                   </span>
                 )}
               </div>
             </div>
           </div>
-          <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
             {isEn
               ? "Automated signals based on real profit margins and Meta telemetry"
               : "توصيات فورية مبنية على هوامش الربح الحقيقية وقراءات Meta"}
@@ -186,7 +186,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                 <div
                   key={row.ad.id}
                   onClick={() => navigate(`/advertising/facebook-ads/ads/${row.ad.id}`)}
-                  className={`group relative flex flex-col justify-between rounded-xl border p-3.5 text-start transition-all hover:shadow-md cursor-pointer ${
+                  className={`group relative flex flex-col justify-between rounded-lg border p-3 text-start transition-all hover:shadow-md cursor-pointer ${
                     isKill
                       ? "border-rose-200/90 bg-rose-50/40 hover:border-rose-300 dark:border-rose-900/40 dark:bg-rose-950/20"
                       : "border-emerald-200/90 bg-emerald-50/40 hover:border-emerald-300 dark:border-emerald-900/40 dark:bg-emerald-950/20"
@@ -195,7 +195,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                   <div>
                     <div className="flex items-center justify-between gap-2">
                       <span
-                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-[11px] font-bold ${
+                        className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-bold ${
                           isKill
                             ? "bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-200"
                             : "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-200"
@@ -203,32 +203,32 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                       >
                         {row.decision.label}
                       </span>
-                      <span className="shrink-0 rounded-md bg-white/80 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600 shadow-2xs dark:bg-slate-800/80 dark:text-slate-300">
+                      <span className="shrink-0 rounded-md bg-white/80 px-1.5 py-0.5 text-xs font-semibold text-slate-600 shadow-2xs dark:bg-slate-800/80 dark:text-slate-300">
                         {formatNumber(row.decision.confidence.score)}% {isEn ? "conf." : "ثقة"}
                       </span>
                     </div>
 
-                    <h3 className="mt-2 truncate text-xs font-bold text-slate-900 dark:text-white" title={row.ad.name}>
+                    <h3 className="mt-2 truncate text-sm font-bold text-slate-900 dark:text-white" title={row.ad.name}>
                       {row.ad.name}
                     </h3>
 
-                    <p className="mt-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-400 line-clamp-2">
+                    <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-400 line-clamp-2">
                       {row.decision.reason || (isScale ? "أداء ممتاز أعلى من أهداف الربحية." : "تجاوز حد الأمان المالي.")}
                     </p>
                   </div>
 
                   <div className="mt-3 border-t border-slate-200/60 pt-2.5 dark:border-slate-800">
-                    <div className="grid grid-cols-3 gap-1 text-[10px] font-bold text-slate-700 dark:text-slate-300" dir="ltr">
+                    <div className="grid grid-cols-3 gap-1 text-xs font-bold text-slate-700 dark:text-slate-300" dir="ltr">
                       <div>
-                        <span className="block text-[9px] font-normal text-slate-400">ROAS</span>
+                        <span className="block text-[11px] font-normal text-slate-400">ROAS</span>
                         <span className={roas >= 2 ? "text-emerald-600 font-extrabold" : ""}>{formatNumber(roas, 2)}x</span>
                       </div>
                       <div>
-                        <span className="block text-[9px] font-normal text-slate-400">CPA</span>
+                        <span className="block text-[11px] font-normal text-slate-400">CPA</span>
                         <span>{formatCurrency(cpa, selectedCurrency)}</span>
                       </div>
                       <div>
-                        <span className="block text-[9px] font-normal text-slate-400">{isEn ? "Purchases" : "المبيعات"}</span>
+                        <span className="block text-[11px] font-normal text-slate-400">{isEn ? "Purchases" : "المبيعات"}</span>
                         <span>{formatNumber(purchases)}</span>
                       </div>
                     </div>
@@ -263,7 +263,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
             })}
           </div>
         ) : (
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border border-slate-200/70 bg-slate-50/70 p-3.5 sm:px-4 dark:border-slate-800/80 dark:bg-slate-800/40">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-lg border border-slate-200/70 bg-slate-50/70 p-3.5 sm:px-4 dark:border-slate-800/80 dark:bg-slate-800/40">
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:bg-emerald-400/15 dark:text-emerald-300">
                 <CheckCircle2 className="h-4 w-4" />
@@ -274,7 +274,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                     ? "Campaigns are stable — no urgent interventions required"
                     : "حالة الحملات مستقرة — لا توجد تدخلات فورية مطلوبة حالياً"}
                 </h3>
-                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   {isEn
                     ? "Active ads are running within safety thresholds or collecting telemetry (Learning Phase). Scaling and budget protection decisions trigger automatically when statistical confidence is reached."
                     : "الإعلانات النشطة تعمل ضمن الحدود الآمنة أو لا تزال في مرحلة تجميع البيانات (Learning Phase). ستظهر قرارات التوسيع أو الإيقاف هنا تلقائياً عند اكتمال الدقة الإحصائية."}
@@ -291,7 +291,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                   }`,
                 )
               }
-              className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 transition-all"
+              className="inline-flex shrink-0 items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 transition-all"
             >
               <span>{isEn ? "Deep Decision Analysis" : "عرض سجل القرارات والتقارير"}</span>
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -306,7 +306,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
           {activeRecs.slice(0, 2).map((item) => (
             <div
               key={`${item.title}-${item.priority}`}
-              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-amber-50/40 to-white p-3 sm:px-4 shadow-xs dark:border-amber-900/50 dark:from-amber-950/30 dark:to-slate-900"
+              className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 rounded-lg border border-amber-200/90 bg-gradient-to-r from-amber-50/90 via-amber-50/40 to-white p-3 sm:px-4 shadow-xs dark:border-amber-900/50 dark:from-amber-950/30 dark:to-slate-900"
             >
               <div className="flex items-center gap-2.5 min-w-0 flex-1">
                 <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-500/15 text-amber-700 dark:bg-amber-500/25 dark:text-amber-300">
@@ -314,14 +314,14 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                 </span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="rounded-md bg-amber-200/70 dark:bg-amber-900/50 px-1.5 py-0.5 text-[10px] font-bold text-amber-900 dark:text-amber-200">
+                    <span className="rounded-md bg-amber-200/70 dark:bg-amber-900/50 px-1.5 py-0.5 text-xs font-bold text-amber-900 dark:text-amber-200">
                       {item.priority === "HIGH" ? (isEn ? "High Priority" : "أولوية عالية") : item.priority}
                     </span>
                     <h3 className="truncate text-xs font-bold text-slate-900 dark:text-white">
                       {item.title}
                     </h3>
                   </div>
-                  <p className="mt-0.5 text-[11px] font-medium text-slate-600 dark:text-slate-300 line-clamp-1">
+                  <p className="mt-0.5 text-xs font-medium text-slate-600 dark:text-slate-300 line-clamp-1">
                     {item.message}
                   </p>
                 </div>
@@ -332,7 +332,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                   <button
                     type="button"
                     onClick={() => navigate("/advertising/facebook-pixel")}
-                    className="inline-flex h-8 items-center gap-1.5 rounded-xl bg-amber-600 px-3 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-all"
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-amber-600 px-3 text-xs font-bold text-white shadow-xs hover:bg-amber-700 transition-all"
                   >
                     <span>{isEn ? "Diagnose & Connect" : "فحص وربط البيكسل"}</span>
                     <ArrowUpRight className="h-3.5 w-3.5" />
@@ -341,7 +341,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                 <button
                   type="button"
                   onClick={() => setDismissedRecs((prev) => ({ ...prev, [item.title]: true }))}
-                  className="flex h-8 w-8 items-center justify-center rounded-xl text-slate-400 hover:bg-amber-100/60 hover:text-slate-600 dark:hover:bg-amber-950/60 transition-colors"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-amber-100/60 hover:text-slate-600 dark:hover:bg-amber-950/60 transition-colors"
                   title={isEn ? "Dismiss" : "إخفاء"}
                 >
                   <X className="h-4 w-4" />
