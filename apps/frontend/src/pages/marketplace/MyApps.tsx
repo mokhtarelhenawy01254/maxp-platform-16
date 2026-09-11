@@ -16,6 +16,13 @@ import {
   Download, Trash2, CheckSquare, Square
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getAppSystemHub, SYSTEM_HUBS } from "@/utils/marketplaceSystems";
+import {
+  categoryIcons,
+  appIcons,
+  appIconsBySlug,
+  shouldUseTextIcon,
+} from "@/utils/marketplace";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -206,6 +213,7 @@ export function MyApps() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+  const [selectedHub, setSelectedHub] = useState<string>("ALL");
   const [categoryFilter, setCategoryFilter] = useState<string>("ALL");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
@@ -329,6 +337,29 @@ export function MyApps() {
     toast.success("تم تصدير ملخص الأدوات المحددة بنجاح");
   };
 
+  // Hub counts & available hubs
+  const hubCounts = useMemo(() => {
+    const counts: Record<string, number> = { ALL: apps.length };
+    for (const hub of SYSTEM_HUBS) {
+      if (hub.id === "ALL") continue;
+      counts[hub.id] = 0;
+    }
+    for (const a of apps) {
+      if (!a.app) continue;
+      const hub = getAppSystemHub(a.app as any);
+      if (counts[hub.id] !== undefined) {
+        counts[hub.id]++;
+      }
+    }
+    return counts;
+  }, [apps]);
+
+  const availableHubs = useMemo(() => {
+    return SYSTEM_HUBS.filter(
+      (hub) => hub.id === "ALL" || (hubCounts[hub.id] && hubCounts[hub.id] > 0)
+    );
+  }, [hubCounts]);
+
   // Extract categories dynamically
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
@@ -365,6 +396,10 @@ export function MyApps() {
     return apps
       .filter((a) => {
         if (statusFilter !== "ALL" && a.status !== statusFilter) return false;
+        if (selectedHub !== "ALL") {
+          const hub = getAppSystemHub(a.app as any);
+          if (hub.id !== selectedHub) return false;
+        }
         if (categoryFilter !== "ALL" && a.app?.category?.toUpperCase() !== categoryFilter) return false;
         if (search.trim()) {
           const q = search.toLowerCase();
@@ -372,7 +407,15 @@ export function MyApps() {
           const nameEn = (a.app?.nameEn || "").toLowerCase();
           const desc = (a.app?.description || "").toLowerCase();
           const slug = (a.app?.slug || "").toLowerCase();
-          if (!name.includes(q) && !nameEn.includes(q) && !desc.includes(q) && !slug.includes(q)) {
+          const hub = getAppSystemHub(a.app as any);
+          const hubName = (hub.nameAr || "").toLowerCase();
+          if (
+            !name.includes(q) &&
+            !nameEn.includes(q) &&
+            !desc.includes(q) &&
+            !slug.includes(q) &&
+            !hubName.includes(q)
+          ) {
             return false;
           }
         }
@@ -395,7 +438,7 @@ export function MyApps() {
         // default "newest"
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
-  }, [apps, statusFilter, categoryFilter, search, sortBy]);
+  }, [apps, statusFilter, selectedHub, categoryFilter, search, sortBy]);
 
   const isAllVisibleSelected = useMemo(() => {
     if (filteredApps.length === 0) return false;
@@ -670,8 +713,47 @@ export function MyApps() {
             </div>
           </div>
 
-          {/* Status & Category Pills (Horizontal Scroll on Mobile) */}
-          <div className="flex flex-col gap-2">
+          {/* Hubs, Status & Category Pills (Horizontal Scroll on Mobile) */}
+          <div className="flex flex-col gap-2.5">
+            {/* System Hub Filter Bar */}
+            {availableHubs.length > 1 && (
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                {availableHubs.map((hub) => {
+                  const HubIcon = hub.icon;
+                  const active = selectedHub === hub.id;
+                  const count = hubCounts[hub.id] ?? 0;
+
+                  return (
+                    <button
+                      key={hub.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedHub(hub.id);
+                        setCategoryFilter("ALL");
+                      }}
+                      className={cn(
+                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0",
+                        active
+                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                          : "bg-card/60 border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
+                      )}
+                    >
+                      <HubIcon size={13} className={active ? "text-primary-foreground" : "text-primary/80"} />
+                      <span>{hub.nameAr}</span>
+                      <span
+                        className={cn(
+                          "text-[10px] px-1.5 py-0.2 rounded-full font-extrabold",
+                          active ? "bg-white/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                        )}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Status Pills */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
               {(["ALL", "ACTIVE", "TRIAL", "CANCELLED"] as StatusFilter[]).map((status) => {
@@ -688,10 +770,10 @@ export function MyApps() {
                     type="button"
                     onClick={() => setStatusFilter(status)}
                     className={cn(
-                      "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0",
+                      "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all border shrink-0",
                       active
-                        ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                        : "bg-card/60 border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
+                        ? "bg-foreground text-background border-foreground shadow-sm"
+                        : "bg-muted/40 border-border/30 text-muted-foreground hover:border-border hover:text-foreground"
                     )}
                   >
                     <span>
@@ -704,7 +786,7 @@ export function MyApps() {
                     <span
                       className={cn(
                         "text-[10px] px-1.5 py-0.2 rounded-full font-extrabold",
-                        active ? "bg-white/20 text-primary-foreground" : "bg-muted text-muted-foreground"
+                        active ? "bg-background/20 text-background" : "bg-muted text-muted-foreground"
                       )}
                     >
                       {count}
@@ -714,20 +796,20 @@ export function MyApps() {
               })}
             </div>
 
-            {/* Category Filter Pills (if multiple categories exist) */}
-            {availableCategories.length > 1 && (
+            {/* Subcategory Filter Pills (if multiple categories exist and hub is not isolating a single category) */}
+            {selectedHub === "ALL" && availableCategories.length > 1 && (
               <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
                 <button
                   type="button"
                   onClick={() => setCategoryFilter("ALL")}
                   className={cn(
-                    "px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0",
+                    "px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all shrink-0",
                     categoryFilter === "ALL"
-                      ? "bg-foreground text-background"
-                      : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                      ? "bg-muted text-foreground"
+                      : "text-muted-foreground hover:text-foreground"
                   )}
                 >
-                  جميع الفئات
+                  جميع الأقسام
                 </button>
                 {availableCategories.map((cat) => {
                   const conf = CATEGORY_CONFIG[cat];
@@ -740,10 +822,10 @@ export function MyApps() {
                       type="button"
                       onClick={() => setCategoryFilter(cat)}
                       className={cn(
-                        "flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all shrink-0",
+                        "flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all shrink-0",
                         active
-                          ? "bg-foreground text-background"
-                          : "bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
+                          ? "bg-muted text-foreground font-black"
+                          : "text-muted-foreground hover:text-foreground"
                       )}
                     >
                       <span>{label}</span>
@@ -839,6 +921,7 @@ export function MyApps() {
                 onClick={() => {
                   setSearch("");
                   setStatusFilter("ALL");
+                  setSelectedHub("ALL");
                   setCategoryFilter("ALL");
                 }}
               >
@@ -848,228 +931,45 @@ export function MyApps() {
             </div>
           </div>
         ) : viewMode === "grid" ? (
-          /* Grid View */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          /* Grid View - High-Density SaaS App Tiles */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2.5 sm:gap-3">
             {filteredApps.map((installed) => {
               const statusConf = STATUS_CONFIG[installed.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.ACTIVE;
               const StatusIcon = statusConf.icon;
               const isTrial = installed.status === "TRIAL";
               const trialDays = getDaysRemaining(installed.trialEndsAt);
               const destination = getAppDestination(installed.app);
-              const catConf = CATEGORY_CONFIG[installed.app.category?.toUpperCase() || ""];
               const isSelected = selectedIds.has(installed.id);
+
+              const BrandIcon = installed.app.slug ? appIconsBySlug[installed.app.slug] : undefined;
+              const appIconKey = installed.app.icon?.trim().toLowerCase();
+              const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
+              const Icon = AppIcon || categoryIcons[installed.app.category] || Package;
+              const textIcon = shouldUseTextIcon(installed.app.icon) ? installed.app.icon?.trim() : null;
+              const systemHub = getAppSystemHub(installed.app as any);
+              const SystemIcon = systemHub.icon;
 
               return (
                 <div
                   key={installed.id}
+                  onClick={() => navigate(destination)}
                   className={cn(
-                    "group relative rounded-2xl border transition-all duration-200 flex flex-col justify-between overflow-hidden",
+                    "group relative flex items-center justify-between gap-3 p-3 rounded-2xl border transition-all duration-150 select-none cursor-pointer",
+                    "bg-card hover:bg-accent/[0.04] hover:shadow-sm",
                     isSelected
-                      ? "border-primary ring-2 ring-primary/20 bg-primary/[0.03] shadow-md"
-                      : "border-border/30 bg-card hover:shadow-md hover:border-border/60"
+                      ? "border-primary ring-2 ring-primary/20 bg-primary/[0.03]"
+                      : installed.status === "ACTIVE"
+                      ? "border-emerald-500/25 hover:border-emerald-500/50 bg-emerald-500/[0.015]"
+                      : installed.status === "TRIAL"
+                      ? "border-amber-500/25 hover:border-amber-500/50 bg-amber-500/[0.015]"
+                      : "border-border/40 hover:border-primary/50"
                   )}
                 >
-                  {/* Status Indicator Bar */}
-                  <div className={cn("h-1 w-full shrink-0", statusConf.barClass)} />
-
-                  <div className="p-4 sm:p-5 flex flex-col flex-1 justify-between gap-3">
-                    {/* Header */}
-                    <div>
-                      <div className="flex items-start justify-between gap-2 mb-2.5">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div
-                            onClick={(e) => toggleSelectApp(installed.id, e)}
-                            className="cursor-pointer shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors"
-                            title={isSelected ? "إلغاء تحديد الأداة" : "تحديد الأداة"}
-                          >
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={() => toggleSelectApp(installed.id)}
-                              className="size-4 rounded-md cursor-pointer"
-                            />
-                          </div>
-                          <div className={cn("size-11 rounded-2xl flex items-center justify-center shrink-0 border border-border/30 bg-muted/30 overflow-hidden")}>
-                            {installed.app.icon && installed.app.icon.startsWith("http") ? (
-                              <img src={installed.app.icon} alt="" className="size-7 object-contain rounded" />
-                            ) : installed.app.logo && installed.app.logo.startsWith("http") ? (
-                              <img src={installed.app.logo} alt="" className="size-7 object-contain rounded" />
-                            ) : (
-                              <Package className="size-5 text-primary" />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <h3 className="text-sm font-black text-foreground truncate group-hover:text-primary transition-colors">
-                              {installed.app.name}
-                            </h3>
-                            {catConf && (
-                              <span className="text-[10px] font-semibold text-muted-foreground block truncate">
-                                {catConf.labelAr}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Status Badge */}
-                        <Badge
-                          variant="outline"
-                          className={cn("gap-1 text-[10px] font-bold px-2 py-0.5 shrink-0", statusConf.badgeClass)}
-                        >
-                          <StatusIcon size={10} />
-                          <span>{t(`marketplace.${statusConf.labelKey}`, statusConf.fallbackLabel)}</span>
-                        </Badge>
-                      </div>
-
-                      {/* Description */}
-                      <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed min-h-[2.5rem]">
-                        {installed.app.description || "لا يوجد وصف متاح لهذا التطبيق."}
-                      </p>
-                    </div>
-
-                    {/* Metadata & Tags */}
-                    <div className="space-y-2 pt-2 border-t border-border/30">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-muted-foreground bg-muted/60 rounded-md px-2 py-0.5">
-                          <CreditCard size={10} />
-                          <span>
-                            {installed.activePricingModel === "FREE"
-                              ? "مجاني"
-                              : installed.activePricingModel === "PAY_PER_USE"
-                              ? "حسب الاستخدام"
-                              : "شهري"}
-                          </span>
-                        </span>
-
-                        {installed.monthlyUsage && Number(installed.monthlyUsage.totalCost) > 0 && (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-500/10 rounded-md px-2 py-0.5">
-                            <Activity size={10} />
-                            <span>{Number(installed.monthlyUsage.totalCost).toFixed(2)} ج.م</span>
-                          </span>
-                        )}
-
-                        {isTrial && trialDays !== null && (
-                          <span
-                            className={cn(
-                              "inline-flex items-center gap-1 text-[10px] font-bold rounded-md px-2 py-0.5",
-                              trialDays <= 3
-                                ? "bg-destructive/10 text-destructive"
-                                : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                            )}
-                          >
-                            <Clock size={10} />
-                            <span>
-                              {trialDays === 0
-                                ? "تنتهي اليوم"
-                                : trialDays === 1
-                                ? "متبقي يوم"
-                                : trialDays === 2
-                                ? "متبقي يومان"
-                                : `متبقي ${trialDays} أيام`}
-                            </span>
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Action Bar */}
-                      <div className="flex items-center gap-1.5 pt-1">
-                        <Button
-                          size="sm"
-                          className="flex-1 h-9 rounded-xl text-xs font-bold gap-1.5"
-                          onClick={() => navigate(destination)}
-                        >
-                          <ArrowUpRight size={14} />
-                          <span>تشغيل الأداة</span>
-                        </Button>
-
-                        <DropdownMenu>
-                          <DropdownMenuTrigger
-                            className="size-9 p-0 rounded-xl shrink-0 text-muted-foreground hover:text-foreground inline-flex items-center justify-center border border-border bg-background hover:bg-muted transition-colors cursor-pointer"
-                          >
-                            <MoreVertical size={15} />
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="start" className="w-48 rounded-xl text-right">
-                            <DropdownMenuLabel className="text-xs font-bold text-muted-foreground">
-                              خيارات {installed.app.name}
-                            </DropdownMenuLabel>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="gap-2 cursor-pointer text-xs font-semibold"
-                              onClick={() => navigate(destination)}
-                            >
-                              <Zap size={14} className="text-primary" />
-                              <span>فتح التطبيق</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2 cursor-pointer text-xs font-semibold"
-                              onClick={() => navigate(`/my-apps/${installed.app.slug}/settings`)}
-                            >
-                              <Settings2 size={14} />
-                              <span>إعدادات الأداة</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2 cursor-pointer text-xs font-semibold"
-                              onClick={() => setSelectedAppForDrawer(installed)}
-                            >
-                              <Activity size={14} />
-                              <span>تفاصيل وسجل الاستهلاك</span>
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              className="gap-2 cursor-pointer text-xs font-semibold"
-                              onClick={() => navigate(`/marketplace/apps/${installed.app.slug}`)}
-                            >
-                              <ExternalLink size={14} />
-                              <span>عرض في المتجر</span>
-                            </DropdownMenuItem>
-                            {installed.status === "TRIAL" && (
-                              <DropdownMenuItem
-                                className="gap-2 cursor-pointer text-xs font-semibold text-primary"
-                                onClick={() => navigate(`/my-apps/${installed.app.slug}/upgrade`)}
-                              >
-                                <Sparkles size={14} />
-                                <span>ترقية الاشتراك</span>
-                              </DropdownMenuItem>
-                            )}
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem
-                              className="gap-2 cursor-pointer text-xs font-semibold text-destructive focus:text-destructive"
-                              onClick={() => setConfirmUninstall(installed)}
-                              disabled={uninstallingId === installed.id}
-                            >
-                              <X size={14} />
-                              <span>إلغاء التفعيل</span>
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          /* List View */
-          <div className="rounded-2xl border border-border/30 bg-card overflow-hidden divide-y divide-border/20">
-            {filteredApps.map((installed) => {
-              const statusConf = STATUS_CONFIG[installed.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.ACTIVE;
-              const StatusIcon = statusConf.icon;
-              const isTrial = installed.status === "TRIAL";
-              const trialDays = getDaysRemaining(installed.trialEndsAt);
-              const destination = getAppDestination(installed.app);
-              const catConf = CATEGORY_CONFIG[installed.app.category?.toUpperCase() || ""];
-              const isSelected = selectedIds.has(installed.id);
-
-              return (
-                <div
-                  key={installed.id}
-                  className={cn(
-                    "p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors",
-                    isSelected ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-muted/20"
-                  )}
-                >
-                  <div className="flex items-center gap-3 min-w-0">
+                  {/* Right: Checkbox + Icon + Name + System Hub */}
+                  <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
                     <div
                       onClick={(e) => toggleSelectApp(installed.id, e)}
-                      className="cursor-pointer shrink-0 p-0.5 rounded hover:bg-muted/50 transition-colors"
+                      className="cursor-pointer shrink-0 p-1 rounded-md hover:bg-muted/60 transition-colors"
                       title={isSelected ? "إلغاء تحديد الأداة" : "تحديد الأداة"}
                     >
                       <Checkbox
@@ -1078,42 +978,212 @@ export function MyApps() {
                         className="size-4 rounded-md cursor-pointer"
                       />
                     </div>
-                    <div className="size-10 rounded-xl bg-muted/40 border border-border/30 flex items-center justify-center shrink-0">
-                      {installed.app.icon && installed.app.icon.startsWith("http") ? (
-                        <img src={installed.app.icon} alt="" className="size-6 object-contain rounded" />
+
+                    <div className="size-11 sm:size-12 rounded-xl bg-muted/60 dark:bg-muted/30 border border-border/30 flex items-center justify-center shrink-0 overflow-hidden transition-transform duration-150 group-hover:scale-105">
+                      {installed.app.logo && installed.app.logo.startsWith("http") ? (
+                        <img src={installed.app.logo} alt={installed.app.name} className="size-full object-cover" loading="lazy" />
+                      ) : installed.app.icon && installed.app.icon.startsWith("http") ? (
+                        <img src={installed.app.icon} alt={installed.app.name} className="size-full object-cover" loading="lazy" />
+                      ) : BrandIcon ? (
+                        <BrandIcon className="size-5 sm:size-6 text-foreground" />
+                      ) : textIcon ? (
+                        <span className="text-base sm:text-lg font-bold">{textIcon}</span>
                       ) : (
-                        <Package className="size-5 text-primary" />
+                        <Icon size={22} className="text-foreground/80" />
+                      )}
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5">
+                        <h3 dir="auto" className="text-sm font-bold text-foreground group-hover:text-primary transition-colors truncate" title={installed.app.name}>
+                          {installed.app.name}
+                        </h3>
+                      </div>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-muted-foreground truncate">
+                          <SystemIcon size={11} className="shrink-0 text-primary/70" />
+                          <span className="truncate">{systemHub.nameAr}</span>
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Left: Status + Pricing/Usage + More Menu */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex flex-col items-end justify-center text-left rtl:text-right gap-1">
+                      <Badge
+                        variant="outline"
+                        className={cn("gap-1 text-[10px] font-bold px-2 py-0.5 shrink-0", statusConf.badgeClass)}
+                      >
+                        <StatusIcon size={10} />
+                        <span>
+                          {isTrial && trialDays !== null
+                            ? (trialDays === 0 ? "تنتهي اليوم" : trialDays === 1 ? "متبقي يوم" : `متبقي ${trialDays} أيام`)
+                            : t(`marketplace.${statusConf.labelKey}`, statusConf.fallbackLabel)}
+                        </span>
+                      </Badge>
+
+                      <span className="text-xs font-bold text-foreground/80 tabular-nums">
+                        {installed.monthlyUsage && Number(installed.monthlyUsage.totalCost) > 0
+                          ? `${Number(installed.monthlyUsage.totalCost).toFixed(2)} ج.م`
+                          : installed.activePricingModel === "FREE"
+                          ? "مجاني"
+                          : installed.activePricingModel === "PAY_PER_USE"
+                          ? "حسب الاستخدام"
+                          : "شهري"}
+                      </span>
+                    </div>
+
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger
+                          className="size-8 rounded-xl text-muted-foreground hover:text-foreground inline-flex items-center justify-center hover:bg-muted/80 transition-colors cursor-pointer border border-transparent hover:border-border/50"
+                        >
+                          <MoreVertical size={15} />
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48 rounded-xl text-right" dir="rtl">
+                          <DropdownMenuLabel className="text-xs font-bold text-muted-foreground truncate">
+                            {installed.app.name}
+                          </DropdownMenuLabel>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="gap-2 cursor-pointer text-xs font-semibold"
+                            onClick={() => navigate(destination)}
+                          >
+                            <Zap size={14} className="text-primary" />
+                            <span>فتح التطبيق</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 cursor-pointer text-xs font-semibold"
+                            onClick={() => navigate(`/my-apps/${installed.app.slug}/settings`)}
+                          >
+                            <Settings2 size={14} />
+                            <span>إعدادات الأداة</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 cursor-pointer text-xs font-semibold"
+                            onClick={() => setSelectedAppForDrawer(installed)}
+                          >
+                            <Activity size={14} />
+                            <span>تفاصيل وسجل الاستهلاك</span>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="gap-2 cursor-pointer text-xs font-semibold"
+                            onClick={() => navigate(`/marketplace/apps/${installed.app.slug}`)}
+                          >
+                            <ExternalLink size={14} />
+                            <span>عرض في المتجر</span>
+                          </DropdownMenuItem>
+                          {installed.status === "TRIAL" && (
+                            <DropdownMenuItem
+                              className="gap-2 cursor-pointer text-xs font-semibold text-primary"
+                              onClick={() => navigate(`/my-apps/${installed.app.slug}/upgrade`)}
+                            >
+                              <Sparkles size={14} />
+                              <span>ترقية الاشتراك</span>
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="gap-2 cursor-pointer text-xs font-semibold text-destructive focus:text-destructive"
+                            onClick={() => setConfirmUninstall(installed)}
+                            disabled={uninstallingId === installed.id}
+                          >
+                            <X size={14} />
+                            <span>إلغاء التفعيل</span>
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          /* List View - High-Density Rows */
+          <div className="rounded-2xl border border-border/30 bg-card overflow-hidden divide-y divide-border/20">
+            {filteredApps.map((installed) => {
+              const statusConf = STATUS_CONFIG[installed.status as keyof typeof STATUS_CONFIG] || STATUS_CONFIG.ACTIVE;
+              const StatusIcon = statusConf.icon;
+              const isTrial = installed.status === "TRIAL";
+              const trialDays = getDaysRemaining(installed.trialEndsAt);
+              const destination = getAppDestination(installed.app);
+              const isSelected = selectedIds.has(installed.id);
+
+              const BrandIcon = installed.app.slug ? appIconsBySlug[installed.app.slug] : undefined;
+              const appIconKey = installed.app.icon?.trim().toLowerCase();
+              const AppIcon = appIconKey ? appIcons[appIconKey] : undefined;
+              const Icon = AppIcon || categoryIcons[installed.app.category] || Package;
+              const textIcon = shouldUseTextIcon(installed.app.icon) ? installed.app.icon?.trim() : null;
+              const systemHub = getAppSystemHub(installed.app as any);
+              const SystemIcon = systemHub.icon;
+
+              return (
+                <div
+                  key={installed.id}
+                  onClick={() => navigate(destination)}
+                  className={cn(
+                    "p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 transition-colors select-none cursor-pointer",
+                    isSelected ? "bg-primary/[0.04] hover:bg-primary/[0.07]" : "hover:bg-muted/30"
+                  )}
+                >
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div
+                      onClick={(e) => toggleSelectApp(installed.id, e)}
+                      className="cursor-pointer shrink-0 p-1 rounded-md hover:bg-muted/50 transition-colors"
+                      title={isSelected ? "إلغاء تحديد الأداة" : "تحديد الأداة"}
+                    >
+                      <Checkbox
+                        checked={isSelected}
+                        onCheckedChange={() => toggleSelectApp(installed.id)}
+                        className="size-4 rounded-md cursor-pointer"
+                      />
+                    </div>
+                    <div className="size-10 rounded-xl bg-muted/60 dark:bg-muted/30 border border-border/30 flex items-center justify-center shrink-0 overflow-hidden">
+                      {installed.app.logo && installed.app.logo.startsWith("http") ? (
+                        <img src={installed.app.logo} alt={installed.app.name} className="size-full object-cover" loading="lazy" />
+                      ) : installed.app.icon && installed.app.icon.startsWith("http") ? (
+                        <img src={installed.app.icon} alt={installed.app.name} className="size-full object-cover" loading="lazy" />
+                      ) : BrandIcon ? (
+                        <BrandIcon className="size-5 text-foreground" />
+                      ) : textIcon ? (
+                        <span className="text-sm font-bold">{textIcon}</span>
+                      ) : (
+                        <Icon size={18} className="text-foreground/80" />
                       )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="font-black text-sm text-foreground truncate">{installed.app.name}</h4>
-                        <Badge
-                          variant="outline"
-                          className={cn("gap-1 text-[10px] font-bold px-1.5 py-0.2", statusConf.badgeClass)}
-                        >
-                          <StatusIcon size={9} />
-                          <span>{t(`marketplace.${statusConf.labelKey}`, statusConf.fallbackLabel)}</span>
-                        </Badge>
+                        <h4 className="font-bold text-sm text-foreground truncate group-hover:text-primary">{installed.app.name}</h4>
+                        <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded">
+                          <SystemIcon size={10} className="text-primary/70" />
+                          <span>{systemHub.nameAr}</span>
+                        </span>
                       </div>
-                      <p className="text-xs text-muted-foreground truncate max-w-xl">
-                        {installed.app.description}
-                      </p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-border/20">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                      {catConf && (
-                        <span className="hidden md:inline-block bg-muted/60 px-2 py-0.5 rounded text-[11px]">
-                          {catConf.labelAr}
-                        </span>
-                      )}
-                      {installed.monthlyUsage && Number(installed.monthlyUsage.totalCost) > 0 && (
-                        <span className="text-blue-600 dark:text-blue-400 font-bold">
-                          {Number(installed.monthlyUsage.totalCost).toFixed(2)} ج.م
-                        </span>
-                      )}
+                    <div className="flex items-center gap-2.5 text-xs font-semibold text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className={cn("gap-1 text-[10px] font-bold px-1.5 py-0.5", statusConf.badgeClass)}
+                      >
+                        <StatusIcon size={9} />
+                        <span>{t(`marketplace.${statusConf.labelKey}`, statusConf.fallbackLabel)}</span>
+                      </Badge>
+
+                      <span className="text-xs font-bold text-foreground/80 tabular-nums">
+                        {installed.monthlyUsage && Number(installed.monthlyUsage.totalCost) > 0
+                          ? `${Number(installed.monthlyUsage.totalCost).toFixed(2)} ج.م`
+                          : installed.activePricingModel === "FREE"
+                          ? "مجاني"
+                          : installed.activePricingModel === "PAY_PER_USE"
+                          ? "حسب الاستخدام"
+                          : "شهري"}
+                      </span>
+
                       {isTrial && trialDays !== null && (
                         <span className={cn("text-[11px] font-bold", trialDays <= 3 ? "text-destructive" : "text-amber-600")}>
                           {trialDays <= 3 ? `باقي ${trialDays}ي` : `تجربة (${trialDays}ي)`}
@@ -1121,7 +1191,7 @@ export function MyApps() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
                       <Button
                         size="sm"
                         className="h-8 rounded-xl text-xs font-bold gap-1 px-3"
@@ -1137,7 +1207,7 @@ export function MyApps() {
                         >
                           <MoreVertical size={14} />
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="w-48 rounded-xl text-right">
+                        <DropdownMenuContent align="end" className="w-48 rounded-xl text-right" dir="rtl">
                           <DropdownMenuItem
                             className="gap-2 cursor-pointer text-xs font-semibold"
                             onClick={() => navigate(destination)}

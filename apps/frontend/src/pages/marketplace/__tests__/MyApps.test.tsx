@@ -30,6 +30,14 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
+vi.mock("../../../hooks/useAuthSimple", () => ({
+  useAuth: () => ({
+    user: { id: "test-user", name: "Test User" },
+    company: { id: "test-company", name: "Test Company" },
+    refreshUser: vi.fn(),
+  }),
+}));
+
 const mockApps = [
   {
     id: "app-inst-1",
