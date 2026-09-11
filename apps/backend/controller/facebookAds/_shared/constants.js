@@ -34,9 +34,11 @@ const PRODUCT_LAUNCH_METADATA_PRODUCT_SELECT = Object.freeze({
     where: { isActive: true },
     orderBy: { sortOrder: "asc" },
     select: {
-      image: true,
-      mainImage: true,
-      images: true,
+      id: true,
+      name: true,
+      sku: true,
+      price: true,
+      metadata: true,
     },
   },
 });

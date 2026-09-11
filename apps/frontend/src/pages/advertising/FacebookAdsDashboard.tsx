@@ -13,10 +13,13 @@ import {
   Megaphone,
   Plus,
   RefreshCw,
+  ShoppingBag,
   Sparkles,
   Target,
   TrendingUp,
+  Users,
   Wallet,
+  Zap,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -456,16 +459,25 @@ const FacebookAdsDashboard: React.FC = () => {
                 <span className="hidden sm:inline">{isEn ? "Sync Meta" : "مزامنة Meta"}</span>
               </button>
 
-              {/* Create Campaign CTA */}
+              {/* Quick Campaign CTA */}
               <button
                 type="button"
                 onClick={handleCreateCampaign}
                 disabled={!selectedAdAccountId}
-                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 text-xs font-black text-white shadow-xs shadow-blue-500/25 hover:from-blue-700 hover:to-indigo-700 disabled:cursor-not-allowed disabled:opacity-50 transition-all"
+                className="hidden sm:inline-flex h-9 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200 transition-all shadow-xs"
               >
-                <Plus className="h-4 w-4" />
-                <span>{isEn ? "Create Ad" : "إنشاء حملة"}</span>
+                <Plus className="h-3.5 w-3.5" />
+                <span>{isEn ? "Quick Campaign" : "حملة سريعة"}</span>
               </button>
+
+              {/* Create Full Ad CTA */}
+              <Link
+                to="/advertising/facebook-ads/create-ad"
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 text-xs font-black text-white shadow-xs shadow-blue-500/25 hover:from-blue-700 hover:to-indigo-700 transition-all"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span>{isEn ? "Create Full Ad" : "إنشاء إعلان كامل"}</span>
+              </Link>
             </div>
           </div>
 
@@ -565,6 +577,113 @@ const FacebookAdsDashboard: React.FC = () => {
             </div>
           </div>
         </section>
+
+        {/* Quick Tools & Command Deck */}
+        {selectedAdAccountId && (
+          <section className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+            <Link
+              to="/advertising/facebook-ads/create-ad"
+              className="group flex flex-col items-start justify-between rounded-2xl border border-blue-200/70 bg-gradient-to-br from-blue-50/70 to-indigo-50/50 p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-blue-900/50 dark:from-blue-950/30 dark:to-indigo-950/20"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-xs">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="mt-2.5">
+                <span className="block text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition">
+                  {isEn ? "Create Full Ad" : "إنشاء إعلان كامل"}
+                </span>
+                <span className="block text-[10px] font-bold text-slate-500">
+                  {isEn ? "Wizard & Carousel" : "معالج المنتجات والكروسيل"}
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              to="/advertising/facebook-ads/audiences"
+              className="group flex flex-col items-start justify-between rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-50 text-violet-600 dark:bg-violet-950/50 dark:text-violet-300">
+                <Users className="h-4 w-4" />
+              </div>
+              <div className="mt-2.5">
+                <span className="block text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition">
+                  {isEn ? "Audiences" : "الجماهير المخصصة"}
+                </span>
+                <span className="block text-[10px] font-bold text-slate-500">
+                  {isEn ? "Lookalike & Custom" : "الشبيهة ومخصصة المتجر"}
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              to="/advertising/facebook-ads/automation-rules"
+              className="group flex flex-col items-start justify-between rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-300">
+                <Zap className="h-4 w-4" />
+              </div>
+              <div className="mt-2.5">
+                <span className="block text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition">
+                  {isEn ? "Automation Rules" : "قواعد الأتمتة"}
+                </span>
+                <span className="block text-[10px] font-bold text-slate-500">
+                  {isEn ? "Auto Scale & Pause" : "مضاعفة وإيقاف تلقائي"}
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              to="/advertising/facebook-ads/catalogs"
+              className="group flex flex-col items-start justify-between rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-300">
+                <ShoppingBag className="h-4 w-4" />
+              </div>
+              <div className="mt-2.5">
+                <span className="block text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition">
+                  {isEn ? "Product Catalogs" : "كتالوجات المنتجات"}
+                </span>
+                <span className="block text-[10px] font-bold text-slate-500">
+                  {isEn ? "Dynamic Ads (DPA)" : "إعلانات ديناميكية DPA"}
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              to="/advertising/facebook-ads/geo"
+              className="group flex flex-col items-start justify-between rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-sky-50 text-sky-600 dark:bg-sky-950/50 dark:text-sky-300">
+                <Globe2 className="h-4 w-4" />
+              </div>
+              <div className="mt-2.5">
+                <span className="block text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition">
+                  {isEn ? "Geo Performance" : "الأداء الجغرافي"}
+                </span>
+                <span className="block text-[10px] font-bold text-slate-500">
+                  {isEn ? "Governorates & Cities" : "المحافظات والمناطق"}
+                </span>
+              </div>
+            </Link>
+
+            <Link
+              to="/advertising/facebook-ads/diagnosis"
+              className="group flex flex-col items-start justify-between rounded-2xl border border-slate-200/80 bg-white p-3 shadow-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-slate-800/80 dark:bg-slate-900"
+            >
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300">
+                <Target className="h-4 w-4" />
+              </div>
+              <div className="mt-2.5">
+                <span className="block text-xs font-black text-slate-900 dark:text-white group-hover:text-blue-600 transition">
+                  {isEn ? "Account Health" : "تشخيص الحساب"}
+                </span>
+                <span className="block text-[10px] font-bold text-slate-500">
+                  {isEn ? "Pixel & Health Check" : "صحة البيكسل والربط"}
+                </span>
+              </div>
+            </Link>
+          </section>
+        )}
 
         {!selectedAdAccountId ? (
           <section className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-blue-200/90 bg-white p-8 text-center dark:border-blue-900/60 dark:bg-slate-900 shadow-xs">

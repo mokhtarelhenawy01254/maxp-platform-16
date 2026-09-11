@@ -170,17 +170,24 @@ export const formatCurrency = (value?: number | null, currency = "EGP") => {
     return "غير متاح";
   }
 
-  return new Intl.NumberFormat("ar-EG", {
-    style: "currency",
-    currency,
+  const num = Number(value);
+  if (isNaN(num)) return "0.00 ج.م";
+
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
     maximumFractionDigits: 2,
-  }).format(value);
+  }).format(num);
+
+  const symbol = currency === "EGP" ? "ج.م" : currency;
+  return `${formatted} ${symbol}`;
 };
 
-export const formatNumber = (value?: number, maximumFractionDigits = 0) =>
-  new Intl.NumberFormat("ar-EG", {
+export const formatNumber = (value?: number, maximumFractionDigits = 0) => {
+  const num = Number(value || 0);
+  return new Intl.NumberFormat("en-US", {
     maximumFractionDigits,
-  }).format(value || 0);
+  }).format(num);
+};
 
 export const formatPercentage = (value?: number) =>
   `${formatNumber(value || 0, 2)}%`;
@@ -188,7 +195,7 @@ export const formatPercentage = (value?: number) =>
 export const formatDate = (date?: string) => {
   if (!date) return "غير متاح";
 
-  return new Intl.DateTimeFormat("ar-EG", {
+  return new Intl.DateTimeFormat("en-GB", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -214,12 +221,15 @@ export const getApiErrorMessage = (error: unknown, fallback: string) => {
 // ─── ROAS Color Coding ──────────────────────────────────
 
 export const getRoasColor = (roas: number) => {
+  if (!roas || roas <= 0) return "text-slate-500 dark:text-slate-400";
   if (roas >= 2) return "text-emerald-600 dark:text-emerald-400";
   if (roas >= 1) return "text-amber-600 dark:text-amber-400";
   return "text-red-600 dark:text-red-400";
 };
 
 export const getRoasBg = (roas: number) => {
+  if (!roas || roas <= 0)
+    return "bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800";
   if (roas >= 2)
     return "bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-900/50";
   if (roas >= 1)

@@ -1,5 +1,6 @@
 const PUBLIC_SUBDOMAIN_BYPASS_PREFIXES = [
   "/affiliate-register",
+  "/dental-portal",
 ];
 
 const PUBLIC_SUBDOMAIN_BYPASS_PATHS = new Set([

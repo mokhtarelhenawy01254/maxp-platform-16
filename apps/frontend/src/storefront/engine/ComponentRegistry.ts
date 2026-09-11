@@ -66,6 +66,7 @@ const LookMosaic = React.lazy(() => import('../sections/LookMosaic'));
 const LookPlanner = React.lazy(() => import('../sections/LookPlanner'));
 const LookProgress = React.lazy(() => import('../sections/LookProgress'));
 const Dental3DShowcase = React.lazy(() => import('../sections/Dental3DShowcase'));
+const DentalSampleKit = React.lazy(() => import('../sections/DentalSampleKit'));
 
 const baseComponentRegistry: Record<
   string,
@@ -134,6 +135,7 @@ const baseComponentRegistry: Record<
   'look-planner': LookPlanner,
   'look-progress': LookProgress,
   'dental-3d-showcase': Dental3DShowcase,
+  'dental-sample-kit': DentalSampleKit,
 };
 
 /**

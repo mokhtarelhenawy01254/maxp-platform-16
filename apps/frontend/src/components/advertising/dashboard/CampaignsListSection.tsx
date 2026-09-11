@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowUpRight,
@@ -8,9 +8,11 @@ import {
   Edit2,
   Filter,
   Loader2,
+  Megaphone,
   PauseCircle,
   Search,
   SlidersHorizontal,
+  Sparkles,
   Target,
   X,
 } from "lucide-react";
@@ -381,7 +383,30 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
       </div>
 
       {/* Campaigns Listing */}
-      {currentVisibleCampaignCount === 0 ? (
+      {campaigns.length === 0 ? (
+        <div className="flex flex-col items-center gap-3 p-12 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 shadow-xs">
+            <Megaphone className="h-6 w-6" />
+          </div>
+          <h3 className="text-base font-black text-slate-900 dark:text-white">
+            {isEn ? "No campaigns in this account yet" : "لا توجد حملات في هذا الحساب بعد"}
+          </h3>
+          <p className="text-xs text-slate-500 max-w-sm">
+            {isEn
+              ? "Start launching your first product ad campaign or sync your existing campaigns from Meta."
+              : "ابدأ بإطلاق أول حملة إعلانية لمنتجاتك أو قم بمزامنة حملاتك الحالية من Meta."}
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-2">
+            <Link
+              to="/advertising/facebook-ads/create-ad"
+              className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 text-xs font-black text-white shadow-xs hover:bg-blue-700 transition"
+            >
+              <Sparkles className="h-4 w-4" />
+              <span>{isEn ? "Create First Ad" : "إنشاء أول إعلان للمنتج"}</span>
+            </Link>
+          </div>
+        </div>
+      ) : currentVisibleCampaignCount === 0 ? (
         <div className="flex flex-col items-center gap-3 p-12 text-center">
           <Search className="h-10 w-10 text-slate-300 dark:text-slate-600" />
           <h3 className="text-base font-black text-slate-900 dark:text-white">

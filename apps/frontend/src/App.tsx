@@ -503,6 +503,9 @@ const FacebookAdsConnection = React.lazy(
 const BudgetAlertsPage = React.lazy(
   () => import("./pages/advertising/BudgetAlertsPage"),
 );
+const FacebookAdsGeoPage = React.lazy(
+  () => import("./pages/advertising/FacebookAdsGeoPage"),
+);
 const AdLibraryResearch = React.lazy(
   () => import("./pages/advertising/AdLibraryResearch"),
 );
@@ -3962,6 +3965,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/advertising/facebook-ads/geo"
+                  element={
+                    <Layout>
+                      <FacebookAdsGeoPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/reminders"
                   element={
                     <Layout>
@@ -6016,6 +6027,30 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AttributionSettings />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/diagnosis"
+                  element={
+                    <Layout>
+                      <FacebookAdsDiagnosis />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/budget-alerts"
+                  element={
+                    <Layout>
+                      <BudgetAlertsPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/facebook-ads/geo"
+                  element={
+                    <Layout>
+                      <FacebookAdsGeoPage />
                     </Layout>
                   }
                 />

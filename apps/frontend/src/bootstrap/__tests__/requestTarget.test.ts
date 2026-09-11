@@ -23,6 +23,18 @@ describe("shouldBootstrapStorefront", () => {
         "/affiliate-register",
       ),
     ).toBe(false);
+    expect(
+      shouldBootstrapStorefront(
+        "swan.maxp.online",
+        "/dental-portal/login",
+      ),
+    ).toBe(false);
+    expect(
+      shouldBootstrapStorefront(
+        "swan.maxp.online",
+        "/dental-portal",
+      ),
+    ).toBe(false);
   });
 
   test("does not treat localhost admin pages as storefront requests", () => {

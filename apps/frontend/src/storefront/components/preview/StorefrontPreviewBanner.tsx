@@ -1425,6 +1425,10 @@ const StorefrontProductPreviewBanner: React.FC<{
     location.search,
   );
 
+  if (theme.id === "dental-lab-elite" || (!productRouteKey && !previewProductId)) {
+    return null;
+  }
+
   if (isVelaFashion) {
     return (
       <div className="pointer-events-none fixed bottom-3 end-3 z-[75]">
