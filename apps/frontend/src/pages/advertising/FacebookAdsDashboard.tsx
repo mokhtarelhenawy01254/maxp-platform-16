@@ -29,6 +29,7 @@ import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import CampaignsListSection from "../../components/advertising/dashboard/CampaignsListSection";
 import DecisionSummarySection from "../../components/advertising/dashboard/DecisionSummarySection";
 import BudgetAlertsPanel from "../../components/advertising/dashboard/BudgetAlertsPanel";
+import MediaBuyerCopilotWidget from "../../components/advertising/MediaBuyerCopilotWidget";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
   type FacebookAdsDecisionSummary,
@@ -941,6 +942,9 @@ const FacebookAdsDashboard: React.FC = () => {
           </>
         )}
       </main>
+
+      {/* Floating AI Media Buyer Copilot Widget */}
+      <MediaBuyerCopilotWidget />
     </div>
   );
 };

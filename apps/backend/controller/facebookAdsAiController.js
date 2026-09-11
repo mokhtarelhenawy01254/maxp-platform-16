@@ -206,6 +206,66 @@ class FacebookAdsAiController {
       });
     }
   }
+
+  /**
+   * POST /api/v1/facebook-ads/ai/chat
+   * Chat directly with the Facebook Media Buyer Agent from the dashboard
+   */
+  async chat(req, res) {
+    try {
+      const companyId = req.user?.companyId;
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const { message, threadId = 'facebook_ads_copilot_thread' } = req.body || {};
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ success: false, error: 'message is required' });
+      }
+
+      const { PrismaClient } = require('@prisma/client');
+      const prisma = new PrismaClient();
+      let agent = null;
+      try {
+        const rows = await prisma.$queryRaw`
+          SELECT id, name, role, model FROM agents 
+          WHERE role = 'MEDIA_BUYER' 
+            AND (company_id = ${companyId} OR company_id IS NULL)
+          ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
+          LIMIT 1
+        `;
+        if (rows && rows.length > 0) {
+          agent = rows[0];
+        }
+      } catch (err) {
+        console.warn('Could not query agents table directly:', err.message);
+      } finally {
+        await prisma.$disconnect();
+      }
+
+      const agentId = agent?.id || 'agent_facebook_media_buyer';
+      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      const result = await aiServiceAdminClient.chatWithAgent({
+        companyId,
+        agentId,
+        message,
+        threadId: `${threadId}_${companyId}`,
+      });
+
+      return res.json({
+        success: true,
+        reply: result?.reply || '',
+        status: result?.status || 'ok',
+        tool_calls: result?.tool_calls || [],
+      });
+    } catch (error) {
+      console.error('❌ Error in Facebook Ads AI Copilot chat:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to communicate with AI Media Buyer',
+      });
+    }
+  }
 }
 
 module.exports = new FacebookAdsAiController();

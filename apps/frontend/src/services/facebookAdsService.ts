@@ -3653,4 +3653,52 @@ export async function getFacebookPixels(
   }
 }
 
+/**
+ * محادثة إيجنت الميديا باير بالذكاء الاصطناعي
+ */
+export async function chatWithMediaBuyer(
+  message: string,
+  threadId?: string,
+): Promise<{
+  success: boolean;
+  reply: string;
+  status: string;
+  tool_calls?: any[];
+  error?: string;
+}> {
+  const response = await apiClient.post<{
+    success: boolean;
+    reply: string;
+    status: string;
+    tool_calls?: any[];
+    error?: string;
+  }>("/facebook-ads/ai/chat", { message, threadId });
+  return response.data;
+}
+
+/**
+ * جلب مسودات الحملات الإعلانية المنشأة بالذكاء الاصطناعي
+ */
+export async function getAiDraftRuns(limit = 10): Promise<{ success: boolean; data: any[] }> {
+  const response = await apiClient.get<{ success: boolean; data: any[] }>(
+    "/facebook-ads/ai/drafts",
+    { params: { limit } },
+  );
+  return response.data;
+}
+
+/**
+ * نشر مسودة معتمدة إلى Meta Graph API
+ */
+export async function publishAiDraft(
+  draftId: string,
+  overrides?: Record<string, any>,
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  const response = await apiClient.post<{ success: boolean; data?: any; error?: string }>(
+    `/facebook-ads/ai/drafts/${draftId}/publish`,
+    overrides || {},
+  );
+  return response.data;
+}
+
 export default facebookAdsService;
