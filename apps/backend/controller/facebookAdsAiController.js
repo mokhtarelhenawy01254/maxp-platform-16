@@ -218,36 +218,62 @@ class FacebookAdsAiController {
         return res.status(401).json({ success: false, error: 'Company ID is required' });
       }
 
-      const { message, threadId = 'facebook_ads_copilot_thread' } = req.body || {};
+      const { message, threadId = 'facebook_ads_copilot_thread', agentId: requestedAgentId } = req.body || {};
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ success: false, error: 'message is required' });
       }
 
-      const { PrismaClient } = require('@prisma/client');
-      const prisma = new PrismaClient();
-      let agent = null;
-      try {
-        const rows = await prisma.$queryRaw`
-          SELECT id, name, role, model FROM agents 
-          WHERE role = 'MEDIA_BUYER' 
-            AND (company_id = ${companyId} OR company_id IS NULL)
-          ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
-          LIMIT 1
-        `;
-        if (rows && rows.length > 0) {
-          agent = rows[0];
+      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      let targetAgentId = requestedAgentId;
+
+      // 1. First attempt: Discover agent via AI Service Admin Client
+      if (!targetAgentId) {
+        try {
+          const agents = await aiServiceAdminClient.listAgents(companyId);
+          if (Array.isArray(agents) && agents.length > 0) {
+            const mediaBuyer = agents.find(a => a.role === 'MEDIA_BUYER' && (a.status === 'ACTIVE' || !a.status))
+              || agents.find(a => a.role === 'MEDIA_BUYER');
+            if (mediaBuyer?.id) {
+              targetAgentId = mediaBuyer.id;
+            }
+          }
+        } catch (err) {
+          console.warn('[FacebookAdsAI] Could not list agents from aiServiceAdminClient:', err.message);
         }
-      } catch (err) {
-        console.warn('Could not query agents table directly:', err.message);
-      } finally {
-        await prisma.$disconnect();
       }
 
-      const agentId = agent?.id || 'agent_facebook_media_buyer';
-      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      // 2. Second attempt: Fallback query directly to PostgreSQL ai.agents
+      if (!targetAgentId) {
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        try {
+          const rows = await prisma.$queryRaw`
+            SELECT id, name, role FROM ai.agents 
+            WHERE role = 'MEDIA_BUYER' 
+              AND (company_id = ${companyId} OR company_id IS NULL)
+            ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
+            LIMIT 1
+          `;
+          if (rows && rows.length > 0) {
+            targetAgentId = rows[0].id;
+          }
+        } catch (err) {
+          console.warn('[FacebookAdsAI] Could not query ai.agents table directly:', err.message);
+        } finally {
+          await prisma.$disconnect();
+        }
+      }
+
+      if (!targetAgentId) {
+        return res.status(404).json({
+          success: false,
+          error: 'لم يتم العثور على وكيل ميديا باير مفعل للشركة. يرجى تفعيل الوكيل أولاً.',
+        });
+      }
+
       const result = await aiServiceAdminClient.chatWithAgent({
         companyId,
-        agentId,
+        agentId: targetAgentId,
         message,
         threadId: `${threadId}_${companyId}`,
       });
@@ -257,6 +283,9 @@ class FacebookAdsAiController {
         reply: result?.reply || '',
         status: result?.status || 'ok',
         tool_calls: result?.tool_calls || [],
+        threadId: result?.thread_id || `${threadId}_${companyId}`,
+        draft_id: result?.draft_id || null,
+        agentId: targetAgentId,
       });
     } catch (error) {
       console.error('❌ Error in Facebook Ads AI Copilot chat:', error);
