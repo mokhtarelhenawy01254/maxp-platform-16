@@ -199,7 +199,13 @@ const Categories: React.FC = () => {
                   <div className="cat-card-top">
                     <div className="cat-image-cell">
                       {cat.image ? (
-                        <img src={getImageUrl(cat.image) || ""} alt={cat.name} className="cat-thumbnail" />
+                        <img
+                          src={getImageUrl(cat.image, "thumbnail") || ""}
+                          alt={cat.name}
+                          loading="lazy"
+                          decoding="async"
+                          className="cat-thumbnail"
+                        />
                       ) : (
                         <div className="cat-placeholder-thumbnail">
                           <ImageIcon size={20} />
@@ -259,7 +265,13 @@ const Categories: React.FC = () => {
                       <td>
                         <div className="cat-image-cell">
                           {cat.image ? (
-                            <img src={getImageUrl(cat.image) || ""} alt={cat.name} className="cat-thumbnail" />
+                            <img
+                              src={getImageUrl(cat.image, "thumbnail") || ""}
+                              alt={cat.name}
+                              loading="lazy"
+                              decoding="async"
+                              className="cat-thumbnail"
+                            />
                           ) : (
                             <div className="cat-placeholder-thumbnail">
                               <ImageIcon size={20} />

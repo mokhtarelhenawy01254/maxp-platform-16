@@ -87,9 +87,20 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
   const activeRecs = useMemo(
     () =>
       (performanceSummary?.recommendations || []).filter(
-        (rec) => !dismissedRecs[rec.title],
+        (rec) => {
+          if (dismissedRecs[rec.title]) return false;
+          if (rec.priority !== "HIGH") return false;
+          // Filter out false pixel warnings if purchases are actively tracked
+          if (
+            rec.title.includes("Pixel") &&
+            (performanceSummary?.totals?.purchases || 0) > 0
+          ) {
+            return false;
+          }
+          return true;
+        },
       ),
-    [dismissedRecs, performanceSummary?.recommendations],
+    [dismissedRecs, performanceSummary?.recommendations, performanceSummary?.totals?.purchases],
   );
 
   const handleExecuteDecision = async (

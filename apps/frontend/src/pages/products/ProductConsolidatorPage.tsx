@@ -239,7 +239,13 @@ const ProductConsolidatorPage: React.FC = () => {
                   >
                     <div className="flex items-start gap-3">
                       {item.images?.[0] ? (
-                        <img src={getImageUrl(item.images[0])} alt="" className="w-14 h-14 object-cover rounded-lg" />
+                        <img
+                          src={getImageUrl(item.images[0], "thumbnail") || ""}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          className="w-14 h-14 object-cover rounded-lg"
+                        />
                       ) : (
                         <div className="w-14 h-14 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center text-gray-400 text-xs">
                           لا توجد صورة

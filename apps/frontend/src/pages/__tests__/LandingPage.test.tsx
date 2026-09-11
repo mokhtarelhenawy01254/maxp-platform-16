@@ -17,19 +17,24 @@ const renderLandingPage = () =>
     </MemoryRouter>,
   );
 
-describe("LandingPage open-canvas Egyptian commercial OS", () => {
-  it("renders headline, 6-systems slider, and switches active system story", async () => {
+describe("LandingPage Next-Gen Enterprise Living OS", () => {
+  it("renders cockpit headline, systems showcase, and switches active system", async () => {
     const user = userEvent.setup();
     renderLandingPage();
 
-    // Verify main hook
+    // Verify main cockpit headline
     expect(
-      screen.getByText(/من أول رنة واتساب/i),
+      screen.getByText(/ودّع تشتت 6 برامج وشيتات إكسيل/i),
     ).toBeInTheDocument();
 
-    // Verify systems slider tabs exist
-    const whatsappTab = screen.getByRole("button", { name: /واتساب والسوشيال الذكي/i });
-    const shippingTab = screen.getByRole("button", { name: /الكول سنتر والشحن الفوري/i });
+    // Verify 4-layer architecture matrix exists
+    expect(
+      screen.getByText(/4 طبقات تشغيلية مترابطة/i),
+    ).toBeInTheDocument();
+
+    // Verify systems showcase tabs exist
+    const whatsappTab = screen.getByRole("button", { name: /01\. واتساب والسوشيال الذكي/i });
+    const shippingTab = screen.getByRole("button", { name: /02\. الكول سنتر والشحن الفوري/i });
     expect(whatsappTab).toBeInTheDocument();
     expect(shippingTab).toBeInTheDocument();
 
@@ -37,6 +42,16 @@ describe("LandingPage open-canvas Egyptian commercial OS", () => {
     await user.click(shippingTab);
     expect(
       screen.getByText(/بوالص الشحن بضغطة زر/i),
+    ).toBeInTheDocument();
+
+    // Verify live playground exists
+    expect(
+      screen.getByText(/ملعب التجربة الحية/i),
+    ).toBeInTheDocument();
+
+    // Verify industry profiles section exists
+    expect(
+      screen.getByText(/حلول مفصلة حسب نشاطك/i),
     ).toBeInTheDocument();
   });
 });

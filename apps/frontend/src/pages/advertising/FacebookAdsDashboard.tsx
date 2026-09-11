@@ -27,7 +27,6 @@ import MetricCard from "../../components/advertising/dashboard/MetricCard";
 import SelectFilter from "../../components/advertising/dashboard/SelectFilter";
 import CampaignsListSection from "../../components/advertising/dashboard/CampaignsListSection";
 import DecisionSummarySection from "../../components/advertising/dashboard/DecisionSummarySection";
-import FacebookAdsModuleNav from "../../components/advertising/FacebookAdsModuleNav";
 import MediaBuyerCopilotWidget from "../../components/advertising/MediaBuyerCopilotWidget";
 import { useFacebookAdsAccountContext } from "../../hooks/useFacebookAdsAccountContext";
 import {
@@ -177,7 +176,15 @@ const FacebookAdsDashboard: React.FC = () => {
     [dateRange.endDate, dateRange.startDate, selectedAdAccountId],
   );
 
+  const queryAdAccountId = searchParams.get("adAccountId");
+  const activeAdAccountId = selectedAdAccountId || queryAdAccountId || "";
+
   useEffect(() => {
+    if (activeAdAccountId) {
+      loadCampaigns(activeAdAccountId);
+      return;
+    }
+
     if (contextLoading) return;
 
     if (accountContext.requiresAdAccountSelection) {
@@ -188,9 +195,12 @@ const FacebookAdsDashboard: React.FC = () => {
       return;
     }
 
-    loadCampaigns(selectedAdAccountId);
+    if (selectedAdAccountId) {
+      loadCampaigns(selectedAdAccountId);
+    }
   }, [
     accountContext.requiresAdAccountSelection,
+    activeAdAccountId,
     contextLoading,
     loadCampaigns,
     selectedAdAccountId,
@@ -306,8 +316,6 @@ const FacebookAdsDashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-white" dir={isEn ? "ltr" : "rtl"}>
       <main className="mx-auto flex max-w-7xl flex-col gap-3 p-3 sm:p-5">
-        <FacebookAdsModuleNav selectedAdAccountId={selectedAdAccountId} />
-
         {/* Executive Header Controls */}
         <section className="rounded-xl border border-slate-200/80 bg-white/95 p-3 sm:p-4 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">

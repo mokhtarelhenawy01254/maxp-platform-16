@@ -167,12 +167,47 @@ const resolveOptimizedUploadVariant = async ({
   };
 };
 
+const COMMON_PREGEN_VARIANTS = [
+  { width: 160, quality: 75, format: 'webp' }, // Thumbnail for table rows, cart items, mini cards
+  { width: 320, quality: 75, format: 'webp' }, // Small mobile cards
+  { width: 420, quality: 75, format: 'webp' }, // Catalog preload target
+  { width: 560, quality: 76, format: 'webp' }, // Default Storefront product image
+  { width: 720, quality: 78, format: 'webp' }, // Mobile hero / large card
+  { width: 960, quality: 80, format: 'webp' }, // Desktop PDP hero / zoom
+];
+
+const pregenerateCommonUploadVariants = async (sourceFilePath) => {
+  if (!isOptimizableUploadImage(sourceFilePath) || !fs.existsSync(sourceFilePath)) {
+    return [];
+  }
+
+  const generated = [];
+  for (const variant of COMMON_PREGEN_VARIANTS) {
+    try {
+      const variantFilePath = buildOptimizedVariantPath(sourceFilePath, variant);
+      if (!isVariantFresh(sourceFilePath, variantFilePath)) {
+        await writeOptimizedVariant(sourceFilePath, variantFilePath, variant);
+      }
+      generated.push(variantFilePath);
+    } catch (error) {
+      console.warn(
+        `[IMAGE_OPTIMIZER] Failed to pregenerate ${variant.width}w for ${path.basename(sourceFilePath)}:`,
+        error.message,
+      );
+    }
+  }
+
+  return generated;
+};
+
 module.exports = {
+  COMMON_PREGEN_VARIANTS,
   DEFAULT_FORMAT,
   DEFAULT_QUALITY,
   DEFAULT_WIDTH,
   buildOptimizedVariantPath,
   isOptimizableUploadImage,
   parseUploadOptimizationQuery,
+  pregenerateCommonUploadVariants,
   resolveOptimizedUploadVariant,
 };

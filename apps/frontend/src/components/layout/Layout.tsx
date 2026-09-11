@@ -36,6 +36,7 @@ import ActiveUsersMonitor from "../ActiveUsersMonitor";
 import { SidebarSettingsProvider, useSidebarSettings } from "../../contexts/SidebarSettingsContext";
 import PageExplanations from "../common/PageExplanations";
 import { useTemplate } from "../../templates/useTemplate";
+import TemplateSlot from "../../templates/TemplateSlot";
 import { buildStoreUrl } from "../../utils/storeUrl";
 import { hasStoreApp } from "../../utils/storeShortcut";
 

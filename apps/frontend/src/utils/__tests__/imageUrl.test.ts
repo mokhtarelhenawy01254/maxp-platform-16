@@ -106,4 +106,20 @@ describe("imageUrl helpers", () => {
       sizes: "45vw",
     });
   });
+
+  it("applies size presets in getImageUrl", () => {
+    expect(getImageUrl("/uploads/products/item.jpg", "thumbnail")).toBe(
+      "http://localhost:3007/uploads/products/item.jpg?w=160&q=75&format=webp",
+    );
+    expect(getImageUrl("/uploads/products/item.jpg", "small")).toBe(
+      "http://localhost:3007/uploads/products/item.jpg?w=320&q=75&format=webp",
+    );
+    expect(getImageUrl("/uploads/products/item.jpg", 200)).toBe(
+      "http://localhost:3007/uploads/products/item.jpg?w=200&q=75&format=webp",
+    );
+    // Legacy call without size still gets ?v=2
+    expect(getImageUrl("/uploads/products/item.jpg")).toBe(
+      "http://localhost:3007/uploads/products/item.jpg?v=2",
+    );
+  });
 });

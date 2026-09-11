@@ -4,6 +4,7 @@ const path = require('path');
 const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 const verifyToken = require("../utils/verifyToken");
+const { pregenerateCommonUploadVariants } = require("../utils/uploadImageOptimizer");
 
 const router = express.Router();
 
@@ -123,8 +124,12 @@ router.post('/single', upload.single('image'), (req, res) => {
     }
 
     const imageUrl = `/uploads/products/${req.file.filename}`;
-    
-    //console.log('Image uploaded successfully:', imageUrl);
+    const filePath = req.file.path || path.join(productsDir, req.file.filename);
+    setImmediate(() => {
+      pregenerateCommonUploadVariants(filePath).catch((err) => {
+        console.warn('[UPLOAD] Background variant generation failed:', err.message);
+      });
+    });
 
     res.json({
       success: true,
@@ -156,6 +161,12 @@ router.post('/multiple', upload.array('images', 10), (req, res) => {
     }
 
     const uploadedFiles = req.files.map(file => {
+      const filePath = file.path || path.join(productsDir, file.filename);
+      setImmediate(() => {
+        pregenerateCommonUploadVariants(filePath).catch((err) => {
+          console.warn('[UPLOAD] Background variant generation failed:', err.message);
+        });
+      });
       const imageUrl = `/uploads/products/${file.filename}`;
       return {
         filename: file.filename,
@@ -302,6 +313,15 @@ router.post('/media', mediaUpload.single('media'), (req, res) => {
 
     const mediaUrl = `/uploads/media/${req.file.filename}`;
     const isVideo = req.file.mimetype.startsWith('video/');
+
+    if (!isVideo) {
+      const filePath = req.file.path || path.join(mediaDir, req.file.filename);
+      setImmediate(() => {
+        pregenerateCommonUploadVariants(filePath).catch((err) => {
+          console.warn('[UPLOAD] Background media variant generation failed:', err.message);
+        });
+      });
+    }
 
     res.json({
       success: true,

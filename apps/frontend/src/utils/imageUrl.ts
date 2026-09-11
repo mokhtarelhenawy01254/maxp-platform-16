@@ -270,13 +270,66 @@ export const buildProxyImageUrl = (
   return query ? `${getProxyImageBaseUrl()}?${query}` : "";
 };
 
+export type ImageSizePreset =
+  | "thumbnail" // 160w
+  | "small" // 320w
+  | "medium" // 560w
+  | "large" // 960w
+  | number
+  | { width?: number; quality?: number; format?: "webp" };
+
+const resolveSizeParams = (
+  preset?: ImageSizePreset,
+): { w?: number; q?: number; format?: string } | null => {
+  if (!preset) return null;
+  if (preset === "thumbnail") return { w: 160, q: 75, format: "webp" };
+  if (preset === "small") return { w: 320, q: 75, format: "webp" };
+  if (preset === "medium") return { w: 560, q: 76, format: "webp" };
+  if (preset === "large") return { w: 960, q: 80, format: "webp" };
+  if (typeof preset === "number" && preset > 0)
+    return { w: Math.round(preset), q: 75, format: "webp" };
+  if (typeof preset === "object") {
+    return {
+      w: preset.width ? Math.round(preset.width) : undefined,
+      q: preset.quality || 76,
+      format: preset.format || "webp",
+    };
+  }
+  return null;
+};
+
+const applyOptimizationToUrl = (
+  targetUrl: string,
+  sizeParams: { w?: number; q?: number; format?: string } | null,
+): string => {
+  if (!sizeParams) return targetUrl;
+  try {
+    const isAbsolute = /^https?:\/\//i.test(targetUrl);
+    const baseOrigin =
+      typeof window !== "undefined" && window.location?.origin
+        ? window.location.origin
+        : "https://app.local";
+    const parsed = new URL(targetUrl, baseOrigin);
+    if (sizeParams.w) parsed.searchParams.set("w", String(sizeParams.w));
+    if (sizeParams.q) parsed.searchParams.set("q", String(sizeParams.q));
+    if (sizeParams.format) parsed.searchParams.set("format", sizeParams.format);
+    return isAbsolute
+      ? parsed.toString()
+      : `${parsed.pathname}${parsed.search}${parsed.hash}`;
+  } catch {
+    return targetUrl;
+  }
+};
+
 /**
- * بناء URL كامل للصور من المسار النسبي
+ * بناء URL كامل للصور من المسار النسبي مع دعم اختياري للأبعاد المصغرة
  * @param relativePath - المسار النسبي للصورة (مثل: /uploads/companies/logo.png)
+ * @param size - مقاس الصورة المطلوب ('thumbnail' | 'small' | 'medium' | 'large' | number)
  * @returns URL كامل للصورة
  */
 export const getImageUrl = (
   relativePath: string | null | undefined,
+  size?: ImageSizePreset,
 ): string | null => {
   // التحقق من أن المسار نص
   if (typeof relativePath !== "string") return null;
@@ -298,6 +351,8 @@ export const getImageUrl = (
     return trimmedPath.startsWith("/") ? trimmedPath : `/${trimmedPath}`;
   }
 
+  const sizeParams = resolveSizeParams(size);
+
   // إذا كان المسار كامل بالفعل (يبدأ بـ http أو https)
   if (
     trimmedPath.startsWith("http://") ||
@@ -314,7 +369,10 @@ export const getImageUrl = (
     if (!isInternalUrl && trimmedPath.startsWith("https://")) {
       // التحقق من أن الرابط يحتاج بروكسي (fbcdn, fbsbx, إلخ)
       if (shouldProxyRemoteImageUrl(trimmedPath)) {
-        return buildProxyImageUrl(trimmedPath);
+        return buildProxyImageUrl(
+          trimmedPath,
+          sizeParams ? { width: sizeParams.w, quality: sizeParams.q } : undefined,
+        );
       }
       return trimmedPath;
     }
@@ -325,14 +383,15 @@ export const getImageUrl = (
       hasWindow &&
       window.location.protocol === "https:"
     ) {
-      return trimmedPath.replace("http://", "https://");
+      const upgraded = trimmedPath.replace("http://", "https://");
+      return sizeParams ? applyOptimizationToUrl(upgraded, sizeParams) : upgraded;
     }
 
     if (!isInternalUrl) {
       return trimmedPath;
     }
 
-    return trimmedPath;
+    return sizeParams ? applyOptimizationToUrl(trimmedPath, sizeParams) : trimmedPath;
   }
 
   // إزالة الـ slash الأولى إذا كانت موجودة لتجنب التكرار
@@ -340,13 +399,19 @@ export const getImageUrl = (
     ? trimmedPath.substring(1)
     : trimmedPath;
 
-  // بناء URL كامل مع معلمة تحديث للـ uploads لتجاوز كاش Cloudflare القديم
-  const fullUrl = `${envConfig.backendUrl}/${cleanPath}`;
-  if (cleanPath.startsWith("uploads/") && !cleanPath.includes("?")) {
-    return `${fullUrl}?v=2`;
+  // مسارات الـ uploads
+  if (cleanPath.startsWith("uploads/")) {
+    const baseUploadUrl = `${envConfig.backendUrl}/${cleanPath}`;
+    if (sizeParams) {
+      return applyOptimizationToUrl(baseUploadUrl, sizeParams);
+    }
+    if (!cleanPath.includes("?")) {
+      return `${baseUploadUrl}?v=2`;
+    }
+    return baseUploadUrl;
   }
 
-  return fullUrl;
+  return `${envConfig.backendUrl}/${cleanPath}`;
 };
 
 export const getInboxMessageMediaUrl = (

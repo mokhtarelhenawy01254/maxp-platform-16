@@ -779,7 +779,11 @@ app.use("/uploads", async (req, res, next) => {
     const cacheControl =
       optimizedVariant?.cacheControl || "public, max-age=2592000, immutable";
 
-    res.setHeader("Vary", "Accept");
+    // Only vary by Accept if the format wasn't explicitly requested in query params.
+    // Unconditional "Vary: Accept" forces Cloudflare to treat images as DYNAMIC and bypass Edge Cache.
+    if (!req.query.format && !req.query.fm) {
+      res.setHeader("Vary", "Accept");
+    }
     res.setHeader("Cache-Control", cacheControl);
     if (optimizedVariant?.contentType) {
       res.setHeader("Content-Type", optimizedVariant.contentType);

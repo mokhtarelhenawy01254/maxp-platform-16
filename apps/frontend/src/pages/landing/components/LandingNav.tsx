@@ -33,11 +33,13 @@ export const LandingNav: React.FC<LandingNavProps> = ({
     };
 
   const navLinks = [
-    { label: "الأنظمة الستة", href: "#systems-slider" },
+    { label: "الكونسول الحي", href: "#cockpit" },
+    { label: "المعمارية", href: "#architecture" },
+    { label: "الأنظمة الستة", href: "#systems" },
+    { label: "جرّب بنفسك", href: "#playground" },
+    { label: "تخصصك", href: "#industries" },
     { label: "مسار اليوم 24h", href: "#order-flow" },
-    { label: "التكاملات", href: "#integrations" },
     { label: "حاسبة الوفر", href: "#calculator" },
-    { label: "الأسئلة الشائعة", href: "#faq" },
   ];
 
   return (

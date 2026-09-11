@@ -1,9 +1,12 @@
 import React, { useEffect } from "react";
 import "./landing/platformLanding.css";
 import { LandingNav } from "./landing/components/LandingNav";
-import { LandingHero } from "./landing/components/LandingHero";
+import { LandingHeroCockpit } from "./landing/components/LandingHeroCockpit";
 import { LandingMarquee } from "./landing/components/LandingMarquee";
-import { LandingSystemStorySlider } from "./landing/components/LandingSystemStorySlider";
+import { LandingArchitectureMatrix } from "./landing/components/LandingArchitectureMatrix";
+import { LandingSystemsShowcase } from "./landing/components/LandingSystemsShowcase";
+import { LandingLivePlayground } from "./landing/components/LandingLivePlayground";
+import { LandingIndustryProfiles } from "./landing/components/LandingIndustryProfiles";
 import { LandingDayInLifeFlow } from "./landing/components/LandingDayInLifeFlow";
 import { LandingRoiCalculator } from "./landing/components/LandingRoiCalculator";
 import { LandingFaq } from "./landing/components/LandingFaq";
@@ -43,25 +46,34 @@ const LandingPage: React.FC = () => {
 
       {/* Main Open Content Sections (Zero Box-in-Box) */}
       <main className="relative z-10">
-        {/* 1. Open Hero with Live Operations Telemetry */}
-        <LandingHero onPreloadRegister={preloadRegister} />
+        {/* 1. Living Business Cockpit with Synchronized 3-Device Telemetry */}
+        <LandingHeroCockpit />
 
         {/* 2. Seamless Monochrome Integrations Ticker */}
         <LandingMarquee />
 
-        {/* 3. The 6 Systems Storytelling Slider with Generated Artworks */}
-        <LandingSystemStorySlider />
+        {/* 3. The 4-Layer Operating Matrix (Architecture Overview) */}
+        <LandingArchitectureMatrix />
 
-        {/* 4. 24-Hour Order Lifecycle: From WhatsApp to Vault Cash */}
+        {/* 4. Panoramic 6 Core Systems Deep Dive */}
+        <LandingSystemsShowcase />
+
+        {/* 5. Live Interactive Playground (WhatsApp AI, Bosta Waybill, Barcode Sync) */}
+        <LandingLivePlayground />
+
+        {/* 6. Industry Operating Profiles (Fashion, Electronics, Retail, Medical) */}
+        <LandingIndustryProfiles />
+
+        {/* 7. 24-Hour Order Lifecycle: From WhatsApp to Vault Cash */}
         <LandingDayInLifeFlow />
 
-        {/* 5. Realistic Egyptian Merchant ROI Calculator (EGP) */}
+        {/* 8. Realistic Egyptian Merchant ROI Calculator (EGP) */}
         <LandingRoiCalculator />
 
-        {/* 6. Open Hairline FAQ for Egyptian Merchants */}
+        {/* 9. Open Hairline FAQ for Egyptian Merchants */}
         <LandingFaq />
 
-        {/* 7. Open Pre-Footer Action & Footer */}
+        {/* 10. Open Pre-Footer Action & Footer */}
         <LandingFooter onPreloadRegister={preloadRegister} />
       </main>
 

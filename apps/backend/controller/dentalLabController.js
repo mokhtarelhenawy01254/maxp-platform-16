@@ -5511,6 +5511,8 @@ const getRemakesAnalysisReport = async (req, res) => {
     console.error('Error generating remakes analysis report:', error);
     return res.status(500).json({ success: false, error: 'حدث خطأ في استخراج تقرير الإعادات' });
   }
+};
+
 // ==================== Dental Materials & Inventory Harmonization ====================
 
 const listMaterials = async (req, res) => {

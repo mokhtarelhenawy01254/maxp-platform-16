@@ -4,9 +4,11 @@ const path = require('path');
 const sharp = require('sharp');
 
 const {
+  COMMON_PREGEN_VARIANTS,
   buildOptimizedVariantPath,
   isOptimizableUploadImage,
   parseUploadOptimizationQuery,
+  pregenerateCommonUploadVariants,
   resolveOptimizedUploadVariant,
 } = require('../../utils/uploadImageOptimizer');
 
@@ -77,6 +79,30 @@ describe('uploadImageOptimizer', () => {
     expect(metadata.format).toBe('webp');
     expect(metadata.width).toBeLessThanOrEqual(800);
     expect(metadata.height).toBeGreaterThan(0);
+  });
 
+  it('pregenerates all standard variants on upload', async () => {
+    const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'upload-pregen-test-'));
+    const sourceFilePath = path.join(tempDir, 'sample-item.png');
+
+    await sharp({
+      create: {
+        width: 1200,
+        height: 800,
+        channels: 4,
+        background: { r: 255, g: 100, b: 50, alpha: 1 },
+      },
+    })
+      .png()
+      .toFile(sourceFilePath);
+
+    const generated = await pregenerateCommonUploadVariants(sourceFilePath);
+    expect(generated.length).toBe(COMMON_PREGEN_VARIANTS.length);
+
+    for (const variantPath of generated) {
+      expect(fs.existsSync(variantPath)).toBe(true);
+      const meta = await sharp(variantPath).metadata();
+      expect(meta.format).toBe('webp');
+    }
   });
 });

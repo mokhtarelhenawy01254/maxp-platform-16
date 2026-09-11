@@ -468,8 +468,10 @@ const Products: React.FC = () => {
                   >
                     {product.mainImage || (product.images && product.images.length > 0) ? (
                       <img
-                        src={getImageUrl(product.mainImage || product.images[0]) || ""}
+                        src={getImageUrl(product.mainImage || product.images[0], "small") || ""}
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                         className="w-full h-48 object-cover"
                         onError={(e) => { e.currentTarget.style.display = "none"; }}
                       />

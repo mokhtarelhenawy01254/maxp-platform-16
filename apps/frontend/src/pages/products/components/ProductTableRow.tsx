@@ -220,7 +220,7 @@ const ProductTableRow: React.FC<ProductTableRowProps> = ({
           >
             {hasImage && !imageError ? (
               <img
-                src={getImageUrl(product.mainImage || product.images[0]) || ""}
+                src={getImageUrl(product.mainImage || product.images[0], "thumbnail") || ""}
                 alt={product.name}
                 loading="lazy"
                 decoding="async"
