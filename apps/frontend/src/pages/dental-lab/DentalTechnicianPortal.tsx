@@ -3,15 +3,21 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
+  AlertCircle,
+  AlertTriangle,
   ArrowUpCircle,
   Banknote,
+  BarChart3,
+  Bell,
   Box,
   Calendar,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
   Eye,
   FileText,
+  Filter,
   Flame,
   HelpCircle,
   History,
@@ -20,17 +26,18 @@ import {
   Loader2,
   Pause,
   Play,
-  Plus,
+  Printer,
   QrCode,
   Receipt,
   RefreshCw,
   RotateCcw,
   ScanLine,
   Search,
-  Send,
   ShieldAlert,
   Sparkles,
+  Stethoscope,
   Table as TableIcon,
+  TrendingUp,
   UploadCloud,
   User,
   Wallet,
@@ -49,7 +56,6 @@ import {
   fmtDate,
   fmtMoney,
   nextStatusOf,
-  requestAdvance,
   scanKioskBarcode,
   uploadTechAttachment,
 } from "./shared";
@@ -59,7 +65,7 @@ interface Props {
   initialSection?: string;
 }
 
-type PortalSection = "bench" | "wage" | "kiosk";
+export type PortalSection = "bench" | "wage" | "kiosk" | "notifications" | "reports";
 
 export default function DentalTechnicianPortal({ initialSection }: Props) {
   const { t } = useTranslation();
@@ -68,6 +74,8 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
   const deriveSection = (sec?: string): PortalSection => {
     if (sec === "kiosk") return "kiosk";
     if (sec === "my-wage" || sec === "wage") return "wage";
+    if (sec === "notifications") return "notifications";
+    if (sec === "reports") return "reports";
     return "bench";
   };
 
@@ -85,9 +93,9 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // Search and view mode
+  // Search and view mode in bench
   const [search, setSearch] = useState("");
-  const [filterPriority, setFilterPriority] = useState<"ALL" | "URGENT" | "SCAN">("ALL");
+  const [filterPriority, setFilterPriority] = useState<"ALL" | "OVERDUE" | "URGENT" | "SCAN">("ALL");
   const [viewMode, setViewMode] = useState<"CARDS" | "TABLE">("CARDS");
 
   // Bench Stage Timers (caseId -> { running: boolean, elapsedSeconds: number })
@@ -99,57 +107,56 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [uploadFile, setUploadFile] = useState<File | null>(null);
 
-  const [advanceModalOpen, setAdvanceModalOpen] = useState(false);
-  const [advanceAmount, setAdvanceAmount] = useState("");
-  const [advanceNotes, setAdvanceNotes] = useState("");
-  const [submittingAdvance, setSubmittingAdvance] = useState(false);
-
   // Kiosk mode state
   const [kioskInput, setKioskInput] = useState("");
   const [kioskLoading, setKioskLoading] = useState(false);
   const [kioskResult, setKioskResult] = useState<any | null>(null);
   const kioskInputRef = useRef<HTMLInputElement>(null);
 
-  // Ledger subtab
-  const [ledgerSubTab, setLedgerSubTab] = useState<"VOUCHERS" | "STAGES">("VOUCHERS");
+  // Ledger subtab in wage
+  const [ledgerSubTab, setLedgerSubTab] = useState<"VOUCHERS" | "STAGES">("STAGES");
+
+  // Reports tab state
+  const [reportPeriod, setReportPeriod] = useState<"TODAY" | "7DAYS" | "MONTH" | "ALL">("MONTH");
 
   // Load Data
   const load = useCallback(async (quiet = false) => {
     if (!quiet) setLoading(true);
     setError(null);
     try {
-      const [c, w] = await Promise.all([fetchMyCases(), fetchMyWage()]);
-      setCases(c.items || []);
-      setWage(w);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+      const [casesRes, wageRes] = await Promise.all([
+        fetchMyCases(),
+        fetchMyWage(),
+      ]);
+      setCases(casesRes || []);
+      setWage(wageRes || null);
+    } catch (err) {
+      console.error("Failed to load technician portal data:", err);
+      setError(err instanceof Error ? err.message : "تعذر جلب بيانات المحطة");
     } finally {
       if (!quiet) setLoading(false);
     }
-  }, [t]);
+  }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  // Stage timer interval
+  // Stopwatch ticker for active timers
   useEffect(() => {
-    const hasRunningTimer = Object.values(timers).some((t) => t.running);
-    if (!hasRunningTimer) return;
+    const hasRunningTimers = Object.values(timers).some((t) => t.running);
+    if (!hasRunningTimers) return;
 
     const interval = setInterval(() => {
       setTimers((prev) => {
         const next = { ...prev };
         let changed = false;
-        Object.keys(next).forEach((id) => {
-          if (next[id]?.running) {
-            next[id] = {
-              ...next[id],
-              elapsedSeconds: next[id].elapsedSeconds + 1,
-            };
+        for (const [id, state] of Object.entries(next)) {
+          if (state.running) {
+            next[id] = { ...state, elapsedSeconds: state.elapsedSeconds + 1 };
             changed = true;
           }
-        });
+        }
         return changed ? next : prev;
       });
     }, 1000);
@@ -159,18 +166,12 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
 
   const toggleTimer = (caseId: string) => {
     setTimers((prev) => {
-      const current = prev[caseId] || { running: false, elapsedSeconds: 0 };
-      const isRunning = !current.running;
-      if (isRunning) {
-        toast.info(`تم بدء مؤقت العمل للحالة`, { duration: 1500 });
-      } else {
-        toast.info(`تم إيقاف مؤقت العمل مؤقتاً`, { duration: 1500 });
-      }
+      const curr = prev[caseId] || { running: false, elapsedSeconds: 0 };
       return {
         ...prev,
         [caseId]: {
-          running: isRunning,
-          elapsedSeconds: current.elapsedSeconds,
+          running: !curr.running,
+          elapsedSeconds: curr.elapsedSeconds,
         },
       };
     });
@@ -183,82 +184,52 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
     }));
   };
 
-  const formatTimer = (totalSeconds: number) => {
-    const hrs = Math.floor(totalSeconds / 3600);
-    const mins = Math.floor((totalSeconds % 3600) / 60);
-    const secs = totalSeconds % 60;
-    if (hrs > 0) {
-      return `${hrs.toString().padStart(2, "0")}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
-    }
-    return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  const fmtTimer = (seconds: number) => {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    const pad = (n: number) => n.toString().padStart(2, "0");
+    if (hrs > 0) return `${hrs}:${pad(mins)}:${pad(secs)}`;
+    return `${pad(mins)}:${pad(secs)}`;
   };
 
-  // Complete current stage
-  const completeMyStage = async (c: MyCase) => {
-    if (busyId) return;
-    const next = nextStatusOf(c.status || "");
+  // Advance case to next stage
+  const handleAdvance = async (c: MyCase) => {
+    const next = nextStatusOf(c.status);
     if (!next) return;
     setBusyId(c.id);
     try {
-      await advanceCase(c.id, { to: next });
-      toast.success(`تم إكمال المرحلة وتسليم الحالة بنجاح (${c.caseNumber})`);
-      if (timers[c.id]) {
-        resetTimer(c.id);
+      await advanceCase(c.id, next);
+      toast.success(`تم إنهاء مرحلة [${c.workTypeName || c.caseNumber}] ونقلها للمرحلة التالية بنجاح`);
+      if (timers[c.id]?.running) {
+        toggleTimer(c.id);
       }
       await load(true);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("dentalLab.common.noData"));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "فشل في تحديث حالة الشغل");
     } finally {
       setBusyId(null);
     }
   };
 
-  // Kiosk scan handler
-  const handleKioskScan = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
+  // Kiosk barcode scanner
+  const handleKioskScan = async (e: React.FormEvent) => {
+    e.preventDefault();
     const barcode = kioskInput.trim();
     if (!barcode) return;
     setKioskLoading(true);
+    setKioskResult(null);
     try {
-      const res = await scanKioskBarcode({
-        barcode,
-        technicianId: wage?.technician?.id,
-      });
+      const res = await scanKioskBarcode(barcode);
       setKioskResult(res);
-      toast.success(`تم مسح وتحديث الحالة بنجاح!`);
+      toast.success(res.message || "تم تسجيل ونقل الحالة بنجاح");
       setKioskInput("");
       await load(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "لم يتم العثور على أي حالة مطابقة");
+      toast.error(err instanceof Error ? err.message : "تعذر قراءة الباركود أو تحديث الحالة");
     } finally {
       setKioskLoading(false);
-      kioskInputRef.current?.focus();
-    }
-  };
-
-  // Advance request submit
-  const handleAdvanceSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const amt = parseFloat(advanceAmount);
-    if (isNaN(amt) || amt <= 0) {
-      toast.error("يرجى إدخال مبلغ صحيح أكبر من الصفر");
-      return;
-    }
-    setSubmittingAdvance(true);
-    try {
-      await requestAdvance({
-        amount: amt,
-        notes: advanceNotes.trim() || undefined,
-      });
-      toast.success("تم إرسال وتسجيل طلب السلفة بنجاح للإدارة");
-      setAdvanceModalOpen(false);
-      setAdvanceAmount("");
-      setAdvanceNotes("");
-      await load(true);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "حدث خطأ أثناء إرسال طلب السلفة");
-    } finally {
-      setSubmittingAdvance(false);
+      setTimeout(() => kioskInputRef.current?.focus(), 100);
     }
   };
 
@@ -283,7 +254,23 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
     }
   };
 
-  // Filtered cases
+  // Overdue helpers
+  const isCaseOverdue = useCallback((c: MyCase) => {
+    if (!c.dueDate || c.isDeleted || ["DELIVERED", "CLOSED"].includes(c.status)) return false;
+    return new Date(c.dueDate) < new Date();
+  }, []);
+
+  const getOverdueDays = useCallback((c: MyCase) => {
+    if (!c.dueDate) return 0;
+    const diff = Date.now() - new Date(c.dueDate).getTime();
+    return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  }, []);
+
+  const overdueCasesList = useMemo(() => {
+    return cases.filter(isCaseOverdue);
+  }, [cases, isCaseOverdue]);
+
+  // Filtered cases for bench
   const filteredCases = useMemo(() => {
     let list = [...cases];
     if (search.trim()) {
@@ -297,13 +284,24 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
           (c.shade || "").toLowerCase().includes(q)
       );
     }
-    if (filterPriority === "URGENT") {
+    if (filterPriority === "OVERDUE") {
+      list = list.filter(isCaseOverdue);
+    } else if (filterPriority === "URGENT") {
       list = list.filter((c) => c.priority === "URGENT" || c.priority === "RUSH" || c.priority === "IMMEDIATE");
     } else if (filterPriority === "SCAN") {
       list = list.filter((c) => c.hasScan || (c.attachments && c.attachments.length > 0));
     }
-    return list;
-  }, [cases, search, filterPriority]);
+
+    // Sort: overdue cases first, then urgent, then by createdAt desc
+    return list.sort((a, b) => {
+      const aOver = isCaseOverdue(a) ? 1 : 0;
+      const bOver = isCaseOverdue(b) ? 1 : 0;
+      if (aOver !== bOver) return bOver - aOver;
+      const aUrg = a.priority === "URGENT" ? 1 : 0;
+      const bUrg = b.priority === "URGENT" ? 1 : 0;
+      return bUrg - aUrg;
+    });
+  }, [cases, search, filterPriority, isCaseOverdue]);
 
   const technicianRoleLabel = useMemo(() => {
     if (!wage?.technician?.role) return "فني معمل أسنان";
@@ -311,398 +309,529 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
     return meta ? meta.label : wage.technician.role;
   }, [wage]);
 
+  // Reports data filtered by period
+  const reportFilteredStages = useMemo(() => {
+    const stages = wage?.recentStages || [];
+    if (reportPeriod === "ALL") return stages;
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const sevenDaysAgo = todayStart - 7 * 24 * 60 * 60 * 1000;
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+
+    return stages.filter((st) => {
+      const t = st.completedAt ? new Date(st.completedAt).getTime() : 0;
+      if (reportPeriod === "TODAY") return t >= todayStart;
+      if (reportPeriod === "7DAYS") return t >= sevenDaysAgo;
+      if (reportPeriod === "MONTH") return t >= monthStart;
+      return true;
+    });
+  }, [wage?.recentStages, reportPeriod]);
+
+  const reportStats = useMemo(() => {
+    const stages = reportFilteredStages;
+    const totalEarned = stages.reduce((sum, s) => sum + (s.wageAmount || 0), 0);
+    const uniqueCases = new Set(stages.map((s) => s.caseId)).size;
+    return {
+      stagesCount: stages.length,
+      casesCount: uniqueCases,
+      totalEarned,
+      overdueRemaining: overdueCasesList.length,
+    };
+  }, [reportFilteredStages, overdueCasesList]);
+
   return (
-    <div className="space-y-5 pb-10" dir="rtl">
-      {/* 🌟 1. Top Daily Performance Summary Hero (شريط الإنجاز اليومي ومحطة الفني) */}
-      <div className="bg-gradient-to-l from-blue-700 via-blue-600 to-indigo-700 rounded-2xl p-4 sm:p-6 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute -left-10 -bottom-10 w-48 h-48 bg-white/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="flex flex-wrap items-center justify-between gap-4 relative z-10">
-          <div>
-            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-xs font-semibold mb-2">
-              <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
-              <span>{technicianRoleLabel}</span>
-            </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tight">
-              أهلاً بك، {wage?.technician?.name || "عضو فريق المعمل"} 👋
-            </h1>
-            <p className="text-blue-100 text-xs sm:text-sm mt-1">
-              محطة تشغيل الفني الذكية لعام 2026 — استلام المهام، قياس الوقت، ومتابعة الأجور وسندات الصرف
-            </p>
+    <div className="space-y-4 pb-12" dir="rtl">
+      {/* 🌟 1. Compact Single-Depth Header (رأس محطة العمل الخفيف بدون بنر ضخم) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-800">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+            <Stethoscope className="w-5 h-5" />
           </div>
-
-          <div className="flex flex-wrap items-center gap-2">
-            <button
-              onClick={() => setSection("kiosk")}
-              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold shadow-sm transition-all ${
-                section === "kiosk"
-                  ? "bg-white text-blue-700 shadow-md scale-105"
-                  : "bg-white/15 hover:bg-white/25 text-white backdrop-blur-sm border border-white/20"
-              }`}
-            >
-              <ScanLine className="w-4 h-4 text-emerald-300" />
-              <span>ماسح الباركود 📷</span>
-            </button>
-
-            <button
-              onClick={() => setAdvanceModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs sm:text-sm font-bold shadow-md transition-all active:scale-95"
-            >
-              <Banknote className="w-4 h-4" />
-              <span>طلب سلفة</span>
-            </button>
-
-            <button
-              onClick={() => load(true)}
-              className="p-2 bg-white/15 hover:bg-white/25 rounded-xl text-white transition-all"
-              title="تحديث البيانات"
-            >
-              <RefreshCw className="w-4 h-4" />
-            </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
+                {wage?.technician?.name ? `محطة عمل: ${wage.technician.name}` : "محطة عمل الفني"}
+              </h1>
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300">
+                <Sparkles className="w-3 h-3" />
+                {technicianRoleLabel}
+              </span>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              استلام الحالات ومراحل الإنتاج، قياس الوقت، ومتابعة المستحقات وسندات الصرف
+            </p>
           </div>
         </div>
 
-        {/* Quick KPI Counters */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5 pt-4 border-t border-white/15 text-white">
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-            <p className="text-[11px] text-blue-100 font-medium">إنجاز اليوم</p>
-            <p className="text-lg sm:text-xl font-extrabold mt-0.5 text-emerald-300">
-              {wage?.todayStages ?? 0} <span className="text-xs text-blue-200">مراحل</span>
-            </p>
+        <div className="flex items-center gap-2 self-end sm:self-auto">
+          <button
+            onClick={() => setSection("kiosk")}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 transition shadow-xs"
+          >
+            <ScanLine className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span>ماسح الباركود 📷</span>
+          </button>
+          <button
+            onClick={() => load(false)}
+            disabled={loading}
+            className="p-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300 transition"
+            title="تحديث البيانات"
+          >
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* 📊 2. Single-Depth Direct KPI Row (كروت المؤشرات المباشرة بدون مربعات داخل مربعات) */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {/* Card 1: Active Cases */}
+        <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+          <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+            <span className="text-xs font-medium">حالات قيد العمل</span>
+            <ListChecks className="w-4 h-4 text-blue-500" />
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-            <p className="text-[11px] text-blue-100 font-medium">أجر اليوم المكتسب</p>
-            <p className="text-lg sm:text-xl font-extrabold mt-0.5 text-yellow-300">
-              {fmtMoney(wage?.todayWage ?? 0)} <span className="text-xs text-blue-200">ج.م</span>
-            </p>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-2xl font-bold text-gray-900 dark:text-white">{cases.length}</span>
+            <span className="text-xs text-gray-500">حالة</span>
           </div>
-          <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/10">
-            <p className="text-[11px] text-blue-100 font-medium">حالات قيد الانتظار</p>
-            <p className="text-lg sm:text-xl font-extrabold mt-0.5">
-              {cases.length} <span className="text-xs text-blue-200">حالة</span>
-            </p>
+        </div>
+
+        {/* Card 2: Overdue Cases (Highlighted) */}
+        <div
+          onClick={() => {
+            setSection("bench");
+            setFilterPriority("OVERDUE");
+          }}
+          className={`p-3.5 rounded-xl border cursor-pointer transition shadow-xs ${
+            overdueCasesList.length > 0
+              ? "border-rose-300 dark:border-rose-900/80 bg-rose-50/50 dark:bg-rose-950/20 hover:bg-rose-50"
+              : "border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className={`text-xs font-bold ${overdueCasesList.length > 0 ? "text-rose-700 dark:text-rose-400" : "text-gray-500"}`}>
+              حالات متأخرة ⚠️
+            </span>
+            <ShieldAlert className={`w-4 h-4 ${overdueCasesList.length > 0 ? "text-rose-600 animate-pulse" : "text-gray-400"}`} />
           </div>
-          <div className="bg-white/15 backdrop-blur-md rounded-xl p-3 border-2 border-emerald-300/40">
-            <p className="text-[11px] text-emerald-200 font-semibold">مستحقاتك المتبقية</p>
-            <p className="text-lg sm:text-xl font-black mt-0.5 text-emerald-300">
-              {fmtMoney(wage?.balanceDue ?? 0)} <span className="text-xs text-emerald-200">ج.م</span>
-            </p>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className={`text-2xl font-black ${overdueCasesList.length > 0 ? "text-rose-600 dark:text-rose-400" : "text-gray-900 dark:text-white"}`}>
+              {overdueCasesList.length}
+            </span>
+            <span className={`text-xs ${overdueCasesList.length > 0 ? "text-rose-600 font-semibold" : "text-gray-500"}`}>
+              {overdueCasesList.length > 0 ? "تحتاج تدخلاً سريعاً" : "لا يوجد تأخير"}
+            </span>
+          </div>
+        </div>
+
+        {/* Card 3: Today's Completed Stages */}
+        <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+          <div className="flex items-center justify-between text-gray-500 dark:text-gray-400">
+            <span className="text-xs font-medium">إنجاز اليوم</span>
+            <Zap className="w-4 h-4 text-emerald-500" />
+          </div>
+          <div className="mt-1 flex items-baseline justify-between">
+            <div>
+              <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{wage?.todayStages ?? 0}</span>
+              <span className="text-xs text-gray-500 mr-1">مراحل</span>
+            </div>
+            <span className="text-xs font-bold text-gray-600 dark:text-gray-300">
+              +{fmtMoney(wage?.todayWage ?? 0)} ج.م
+            </span>
+          </div>
+        </div>
+
+        {/* Card 4: Net Wage Due */}
+        <div className="p-3.5 rounded-xl border border-blue-200 dark:border-blue-900/60 bg-blue-50/40 dark:bg-blue-950/20 shadow-xs">
+          <div className="flex items-center justify-between text-blue-700 dark:text-blue-300">
+            <span className="text-xs font-semibold">مستحقاتك الحالية</span>
+            <Wallet className="w-4 h-4 text-blue-600" />
+          </div>
+          <div className="mt-1 flex items-baseline gap-1">
+            <span className="text-2xl font-black text-blue-700 dark:text-blue-300">{fmtMoney(wage?.balance ?? 0)}</span>
+            <span className="text-xs text-blue-600 dark:text-blue-400">ج.م</span>
           </div>
         </div>
       </div>
 
-      {/* 🧭 2. Section Navigation Tabs */}
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b dark:border-gray-800 pb-3">
-        <div className="inline-flex bg-gray-100 dark:bg-gray-800/80 p-1 rounded-xl border dark:border-gray-700/80">
+      {/* 🧭 3. Clean Responsive Navigation Tabs (تبويبات المحطة الخمس) */}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 dark:border-gray-800 pb-2">
+        <div className="inline-flex flex-wrap bg-gray-100 dark:bg-gray-800/80 p-1 rounded-xl border border-gray-200 dark:border-gray-700/80 text-xs sm:text-sm font-bold">
           <button
             onClick={() => setSection("bench")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               section === "bench"
-                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
             }`}
           >
             <ListChecks className="w-4 h-4" />
-            <span>محطة العمل والحالات ({cases.length})</span>
+            <span>حالاتي والإنتاج ({cases.length})</span>
           </button>
+
+          <button
+            onClick={() => setSection("kiosk")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              section === "kiosk"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            }`}
+          >
+            <ScanLine className="w-4 h-4" />
+            <span>ماسح الباركود</span>
+          </button>
+
           <button
             onClick={() => setSection("wage")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
               section === "wage"
-                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
             }`}
           >
             <Wallet className="w-4 h-4" />
-            <span>كشف الحساب والمستحقات</span>
+            <span>مستحقاتي وسجل الصرف</span>
           </button>
+
           <button
-            onClick={() => setSection("kiosk")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-bold transition-all ${
-              section === "kiosk"
-                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm"
+            onClick={() => setSection("notifications")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all relative ${
+              section === "notifications"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs"
                 : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
             }`}
           >
-            <QrCode className="w-4 h-4" />
-            <span>ماسح الباركود السريع</span>
+            <Bell className="w-4 h-4" />
+            <span>إشعاراتي وتنبيهات العمل</span>
+            {overdueCasesList.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white animate-pulse" />
+            )}
+          </button>
+
+          <button
+            onClick={() => setSection("reports")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
+              section === "reports"
+                ? "bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-xs"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900"
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>تقرير الإنتاجية والأداء</span>
           </button>
         </div>
 
+        {/* Bench view switcher */}
         {section === "bench" && (
-          <div className="flex items-center gap-2">
-            <div className="inline-flex bg-gray-100 dark:bg-gray-800 p-1 rounded-lg border dark:border-gray-700">
-              <button
-                onClick={() => setViewMode("CARDS")}
-                className={`p-1.5 rounded ${viewMode === "CARDS" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-400"}`}
-                title="عرض بطاقات محطة العمل اللمسية"
-              >
-                <Layers className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setViewMode("TABLE")}
-                className={`p-1.5 rounded ${viewMode === "TABLE" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-400"}`}
-                title="عرض جدول تفصيلي"
-              >
-                <TableIcon className="w-4 h-4" />
-              </button>
-            </div>
+          <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-lg border dark:border-gray-700">
+            <button
+              onClick={() => setViewMode("CARDS")}
+              className={`p-1.5 rounded ${viewMode === "CARDS" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-400 hover:text-gray-600"}`}
+              title="عرض البطاقات التفاعلية"
+            >
+              <Layers className="w-4 h-4" />
+            </button>
+            <button
+              onClick={() => setViewMode("TABLE")}
+              className={`p-1.5 rounded ${viewMode === "TABLE" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-400 hover:text-gray-600"}`}
+              title="عرض الجدول السريع"
+            >
+              <TableIcon className="w-4 h-4" />
+            </button>
           </div>
         )}
       </div>
 
-      {error && (
-        <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-xl text-sm border border-red-200 dark:border-red-800 flex items-center justify-between">
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="p-1 hover:bg-red-100 rounded">
-            <XMarkIcon className="w-4 h-4" />
-          </button>
-        </div>
-      )}
-
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
-          <p className="text-xs text-gray-500">جاري تحميل بيانات محطة العمل...</p>
-        </div>
-      ) : section === "bench" ? (
-        /* ==================== 🛠️ BENCH STATION (حالاتي ومحطة الإنتاج) ==================== */
+      {/* ==================== TAB 1: 📋 BENCH & MY CASES ==================== */}
+      {section === "bench" && (
         <div className="space-y-4">
-          {/* Controls: Search & Filters */}
-          <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-800 p-3 rounded-xl border dark:border-gray-700 shadow-xs">
-            <div className="relative flex-1 min-w-[240px] max-w-md">
-              <Search className="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-3 text-gray-400 pointer-events-none" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="بحث برقم الحالة، اسم الطبيب، المريض، أو اللون..."
-                className="w-full pr-9 pl-4 py-1.5 text-xs sm:text-sm rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex items-center gap-1.5 overflow-x-auto">
+          {/* Quick Filters + Search */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {/* Filter pills */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs">
               <button
                 onClick={() => setFilterPriority("ALL")}
-                className={`px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg font-bold transition whitespace-nowrap ${
                   filterPriority === "ALL"
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-gray-900 text-white dark:bg-white dark:text-gray-900"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
                 }`}
               >
                 الكل ({cases.length})
               </button>
+
+              <button
+                onClick={() => setFilterPriority("OVERDUE")}
+                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition whitespace-nowrap ${
+                  filterPriority === "OVERDUE"
+                    ? "bg-rose-600 text-white"
+                    : overdueCasesList.length > 0
+                    ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 hover:bg-rose-100"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-500"
+                }`}
+              >
+                <AlertTriangle className="w-3.5 h-3.5" />
+                <span>المتأخرة ({overdueCasesList.length})</span>
+              </button>
+
               <button
                 onClick={() => setFilterPriority("URGENT")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition whitespace-nowrap ${
                   filterPriority === "URGENT"
-                    ? "bg-rose-50 text-rose-600 dark:bg-rose-900/40 dark:text-rose-300 border border-rose-200 dark:border-rose-800"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-amber-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
                 }`}
               >
-                <Flame className="w-3 h-3 text-rose-500" />
+                <Flame className="w-3.5 h-3.5 text-amber-500" />
                 <span>المستعجل والطارئ</span>
               </button>
+
               <button
                 onClick={() => setFilterPriority("SCAN")}
-                className={`flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-colors ${
+                className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1 transition whitespace-nowrap ${
                   filterPriority === "SCAN"
-                    ? "bg-indigo-50 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200"
                 }`}
               >
-                <Box className="w-3 h-3 text-indigo-500" />
+                <Box className="w-3.5 h-3.5 text-indigo-500" />
                 <span>تحتوي ملفات 3D</span>
               </button>
             </div>
+
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 text-gray-400 absolute right-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                placeholder="بحث برقم الحالة، اسم الطبيب، المريض..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-3 pr-9 py-1.5 text-xs rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
 
-          {filteredCases.length === 0 ? (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-12 text-center text-gray-400">
-              <CheckCircle2 className="w-12 h-12 mx-auto mb-3 text-emerald-500" />
-              <h3 className="text-base font-bold text-gray-700 dark:text-gray-200">لا توجد حالات مسندة حالياً</h3>
-              <p className="text-xs text-gray-400 mt-1">
-                جميع مراحل الإنتاج الخاصة بك مكتملة أو لم يتم إسناد حالات جديدة بعد.
+          {/* Overdue Banner if there are late cases and filter is not overdue */}
+          {overdueCasesList.length > 0 && filterPriority !== "OVERDUE" && (
+            <div className="bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/60 rounded-xl p-3 flex items-center justify-between text-xs text-rose-800 dark:text-rose-200">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>
+                  يوجد لديك <b>{overdueCasesList.length}</b> حالة متأخرة عن موعد التسليم المقرر للطبيب. يرجى البدء بها فوراً.
+                </span>
+              </div>
+              <button
+                onClick={() => setFilterPriority("OVERDUE")}
+                className="underline font-bold hover:text-rose-950 shrink-0"
+              >
+                عرض المتأخرات فقط
+              </button>
+            </div>
+          )}
+
+          {/* Cases Content */}
+          {loading ? (
+            <div className="py-20 flex flex-col items-center justify-center gap-3 text-gray-400">
+              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+              <p className="text-xs">جاري تحميل حالات محطة العمل...</p>
+            </div>
+          ) : filteredCases.length === 0 ? (
+            <div className="py-16 text-center border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-2xl p-8">
+              <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">
+                {filterPriority === "OVERDUE"
+                  ? "ممتاز! لا توجد أي حالات متأخرة في مرحلتك حالياً 🎉"
+                  : "محطة العمل جاهزة — لا توجد حالات تنتظر العمل في مرحلتك الآن"}
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                {filterPriority === "OVERDUE"
+                  ? "جميع الحالات تسير وفق المواعيد المقررة."
+                  : "عند إسناد حالات جديدة أو نقل شغل لمرحلتك ستظهر هنا فوراً."}
               </p>
+              {filterPriority !== "ALL" && (
+                <button
+                  onClick={() => setFilterPriority("ALL")}
+                  className="mt-3 px-3 py-1.5 text-xs bg-gray-100 dark:bg-gray-800 rounded-lg font-semibold"
+                >
+                  عرض جميع الحالات
+                </button>
+              )}
             </div>
           ) : viewMode === "CARDS" ? (
-            /* 🗂️ Touch-friendly Bench Cards View */
+            /* ==================== 🎴 CARDS VIEW ==================== */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredCases.map((c) => {
-                const next = nextStatusOf(c.status || "");
+                const isOverdue = isCaseOverdue(c);
+                const overdueDays = getOverdueDays(c);
                 const timer = timers[c.id] || { running: false, elapsedSeconds: 0 };
-                const stlAttachment = c.attachments?.find((a) =>
-                  (a.fileName || "").toLowerCase().endsWith(".stl") ||
-                  (a.fileName || "").toLowerCase().endsWith(".ply") ||
-                  (a.fileName || "").toLowerCase().endsWith(".obj")
+                const nextStatus = nextStatusOf(c.status);
+                const scanAttachments = (c.attachments || []).filter(
+                  (a) => a.kind === "SCAN" || a.fileName?.toLowerCase().endsWith(".stl") || a.fileName?.toLowerCase().endsWith(".ply")
                 );
-
-                const isUrgent = c.priority === "URGENT" || c.priority === "RUSH" || c.priority === "IMMEDIATE";
 
                 return (
                   <div
                     key={c.id}
-                    className={`bg-white dark:bg-gray-800 rounded-2xl border transition-all hover:shadow-md flex flex-col justify-between ${
-                      isUrgent
-                        ? "border-rose-300 dark:border-rose-900/60 shadow-xs"
-                        : "border-gray-200 dark:border-gray-700"
+                    className={`rounded-2xl border transition-all duration-200 bg-white dark:bg-gray-900 shadow-xs flex flex-col justify-between overflow-hidden ${
+                      isOverdue
+                        ? "border-rose-300 dark:border-rose-800/80 ring-1 ring-rose-400/30"
+                        : c.priority === "URGENT"
+                        ? "border-amber-300 dark:border-amber-800"
+                        : "border-gray-200 dark:border-gray-800 hover:border-blue-300 dark:hover:border-blue-700"
                     }`}
                   >
-                    {/* Card Header */}
-                    <div className="p-4 border-b dark:border-gray-700/80">
+                    {/* Overdue Top Strip if late */}
+                    {isOverdue && (
+                      <div className="bg-rose-50 dark:bg-rose-950/50 border-b border-rose-200 dark:border-rose-900 px-3 py-1.5 flex items-center justify-between text-xs text-rose-700 dark:text-rose-300 font-bold">
+                        <div className="flex items-center gap-1">
+                          <ShieldAlert className="w-3.5 h-3.5 text-rose-600 animate-pulse" />
+                          <span>متأخرة عن التسليم منذ {overdueDays} يوم</span>
+                        </div>
+                        <span className="text-[11px] font-normal text-rose-600 dark:text-rose-400">
+                          استحقاق: {fmtDate(c.dueDate)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="p-4 space-y-3">
+                      {/* Card Header: Case Number & Priority */}
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <div className="flex items-center gap-1.5">
-                            <Link
-                              to={`/dental-lab/cases/${c.id}`}
-                              className="font-bold text-base text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-                              title="فتح تفاصيل الحالة الكاملة"
-                            >
-                              <span>{c.caseNumber || "بدون رقم"}</span>
-                              <ExternalLink className="w-3.5 h-3.5 opacity-60" />
-                            </Link>
-                            {isUrgent && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300">
-                                <Flame className="w-3 h-3" /> طارئ
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-sm text-gray-900 dark:text-white">
+                              {c.caseNumber}
+                            </span>
+                            {c.priority === "URGENT" && (
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300 flex items-center gap-0.5">
+                                <Flame className="w-3 h-3 text-amber-500" />
+                                طارئ
                               </span>
                             )}
                           </div>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                            د. {c.doctorName || "—"} • {c.patientName ? `المريض: ${c.patientName}` : "مريض غير محدد"}
+                          <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 mt-0.5">
+                            {c.patientName ? `المريض: ${c.patientName}` : "مريض غير محدد"}
                           </p>
                         </div>
 
-                        {/* Shade Box */}
-                        {c.shade && (
-                          <div className="text-center px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800 rounded-lg shrink-0">
-                            <span className="text-[10px] block text-amber-700 dark:text-amber-400 font-medium">اللون</span>
-                            <span className="text-xs font-black text-amber-900 dark:text-amber-200 tracking-wider">
-                              {c.shade}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Work type & teeth */}
-                      <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
-                        <span className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 font-semibold">
-                          {c.workTypeName || "عمل غير محدد"}
-                        </span>
-                        {c.teeth && (
-                          <span className="px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 font-mono" dir="ltr">
-                            🦷 {c.teeth}
-                          </span>
-                        )}
-                        {c.material && (
-                          <span className="px-2 py-0.5 rounded bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-400 text-[11px]">
-                            {c.material}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Stage & Timer Section */}
-                    <div className="p-4 space-y-3 bg-gray-50/50 dark:bg-gray-800/40 flex-1">
-                      {/* Current Stage */}
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-gray-500 dark:text-gray-400">مرحلتك الحالية:</span>
-                        <span className="font-bold text-blue-700 dark:text-blue-300 bg-blue-100/70 dark:bg-blue-900/50 px-2 py-0.5 rounded-md">
-                          {c.myStage?.name || "المرحلة التشغيلية"}
+                        <span className="px-2.5 py-1 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 border border-blue-100 dark:border-blue-800">
+                          {c.activeStageName || c.status}
                         </span>
                       </div>
 
-                      {/* Stage Stopwatch (مؤقت وقت العمل الحي) */}
-                      <div className="p-2.5 rounded-xl bg-white dark:bg-gray-700/70 border dark:border-gray-600 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Clock className={`w-4 h-4 ${timer.running ? "text-emerald-500 animate-pulse" : "text-gray-400"}`} />
-                          <div>
-                            <span className="text-[10px] text-gray-400 block leading-tight">وقت العمل للمرحلة</span>
-                            <span className="font-mono text-sm font-bold text-gray-800 dark:text-gray-200">
-                              {formatTimer(timer.elapsedSeconds)}
-                            </span>
-                          </div>
+                      {/* Work Details */}
+                      <div className="bg-gray-50 dark:bg-gray-800/50 rounded-xl p-2.5 space-y-1 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-gray-500">نوع الشغل:</span>
+                          <span className="font-bold text-gray-800 dark:text-gray-200">{c.workTypeName || "—"}</span>
                         </div>
+                        {c.doctorName && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">الطبيب:</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">د. {c.doctorName}</span>
+                          </div>
+                        )}
+                        {(c.shade || c.teeth) && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-500">اللون / الأسنان:</span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              {c.shade ? `لون: ${c.shade}` : ""} {c.teeth ? `| سن: ${c.teeth}` : ""}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between pt-1 border-t border-gray-200 dark:border-gray-700">
+                          <span className="text-gray-500">التسليم المقرر:</span>
+                          <span className={`font-semibold ${isOverdue ? "text-rose-600 font-bold" : "text-gray-700 dark:text-gray-300"}`}>
+                            {fmtDate(c.dueDate)}
+                          </span>
+                        </div>
+                      </div>
 
+                      {/* 3D Attachments Quick Action */}
+                      {scanAttachments.length > 0 && (
+                        <div className="flex flex-wrap items-center gap-1.5">
+                          {scanAttachments.map((att) => {
+                            const ext = (att.fileName || "").split(".").pop()?.toLowerCase() || "stl";
+                            return (
+                              <button
+                                key={att.id}
+                                onClick={() =>
+                                  setActive3DAttachment({
+                                    url: att.url || `/api/v1/dental-lab/files/${att.storedPath}`,
+                                    ext,
+                                    fileName: att.fileName || "3D Scan",
+                                  })
+                                }
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 transition"
+                              >
+                                <Box className="w-3.5 h-3.5 text-indigo-500" />
+                                <span>معاينة 3D ({ext.toUpperCase()})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {/* Bench Stopwatch Timer */}
+                      <div className="flex items-center justify-between bg-slate-900 text-white rounded-xl px-3 py-2 text-xs">
+                        <div className="flex items-center gap-2 font-mono text-sm font-bold">
+                          <Clock className={`w-4 h-4 ${timer.running ? "text-emerald-400 animate-pulse" : "text-gray-400"}`} />
+                          <span>{fmtTimer(timer.elapsedSeconds)}</span>
+                        </div>
                         <div className="flex items-center gap-1">
                           <button
                             onClick={() => toggleTimer(c.id)}
-                            className={`p-1.5 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors ${
+                            className={`p-1.5 rounded-lg transition ${
                               timer.running
-                                ? "bg-amber-100 text-amber-700 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300"
-                                : "bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300"
+                                ? "bg-amber-500/20 text-amber-300 hover:bg-amber-500/30"
+                                : "bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
                             }`}
-                            title={timer.running ? "إيقاف مؤقت" : "بدء العمل على الصينية"}
+                            title={timer.running ? "إيقاف مؤقت" : "بدء قياس وقت المرحلة"}
                           >
                             {timer.running ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                            <span>{timer.running ? "إيقاف" : "بدء"}</span>
                           </button>
                           {timer.elapsedSeconds > 0 && !timer.running && (
                             <button
                               onClick={() => resetTimer(c.id)}
-                              className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
-                              title="إعادة تعيين المؤقت"
+                              className="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300"
+                              title="تصفير المؤقت"
                             >
                               <RotateCcw className="w-3 h-3" />
                             </button>
                           )}
                         </div>
                       </div>
-
-                      {/* Due Date & Attachments quick actions */}
-                      <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-1">
-                        <div className="flex items-center gap-1">
-                          <Calendar className="w-3.5 h-3.5" />
-                          <span>التسليم: {fmtDate(c.dueDate)}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                          {stlAttachment && (
-                            <button
-                              onClick={() =>
-                                setActive3DAttachment({
-                                  url: `/api/v1/dental-lab/files/${stlAttachment.storedPath}`,
-                                  ext: stlAttachment.fileName.split(".").pop() || "stl",
-                                  fileName: stlAttachment.fileName,
-                                })
-                              }
-                              className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline bg-indigo-50 dark:bg-indigo-900/30 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800"
-                              title="عرض ملف الـ 3D التفاعلي"
-                            >
-                              <Eye className="w-3 h-3" /> 3D
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => setUploadCaseId(c.id)}
-                            className="inline-flex items-center gap-1 text-[11px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 px-2 py-0.5 rounded border dark:border-gray-600"
-                            title="رفع ملف تصميم أو صورة جودة"
-                          >
-                            <UploadCloud className="w-3 h-3" />
-                            <span>رفع</span>
-                          </button>
-                        </div>
-                      </div>
                     </div>
 
-                    {/* Card Footer Actions */}
-                    <div className="p-3 border-t dark:border-gray-700 bg-white dark:bg-gray-800 rounded-b-2xl flex items-center justify-between gap-2">
-                      <Link
-                        to={`/dental-lab/cases/${c.id}`}
-                        className="text-xs text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-                      >
-                        تفاصيل الأوردر ↗
-                      </Link>
-
-                      {next ? (
-                        <button
-                          onClick={() => completeMyStage(c)}
-                          disabled={busyId !== null}
-                          className="flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all active:scale-95 disabled:opacity-50"
+                    {/* Card Actions Footer */}
+                    <div className="p-3 bg-gray-50/70 dark:bg-gray-800/30 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1">
+                        <Link
+                          to={`/dental-lab/cases/${c.id}`}
+                          className="p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-white dark:hover:bg-gray-700 transition"
+                          title="تفاصيل الحالة الكاملة"
                         >
-                          {busyId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <ArrowUpCircle className="w-4 h-4" />}
-                          <span>إنهاء وتسليم للمحطة التالية ✔</span>
+                          <Eye className="w-4 h-4" />
+                        </Link>
+                        <button
+                          onClick={() => setUploadCaseId(c.id)}
+                          className="p-2 text-gray-500 hover:text-blue-600 rounded-lg hover:bg-white dark:hover:bg-gray-700 transition"
+                          title="رفع ملف تصميم أو صور المرحلة"
+                        >
+                          <UploadCloud className="w-4 h-4" />
                         </button>
-                      ) : (
-                        <span className="text-xs text-emerald-600 font-bold">جاهز للتسليم النهائي</span>
+                      </div>
+
+                      {nextStatus && (
+                        <button
+                          onClick={() => handleAdvance(c)}
+                          disabled={busyId === c.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition shadow-xs disabled:opacity-50"
+                        >
+                          {busyId === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle2 className="w-3.5 h-3.5" />}
+                          <span>إنهاء المرحلة وتسليمها</span>
+                        </button>
                       )}
                     </div>
                   </div>
@@ -710,293 +839,557 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
               })}
             </div>
           ) : (
-            /* 📋 Compact Table View */
-            <div className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 overflow-x-auto shadow-xs">
-              <table className="w-full text-xs sm:text-sm">
-                <thead>
-                  <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-right">
-                    <th className="py-3 px-3">رقم الحالة</th>
-                    <th className="py-3 px-3">الطبيب / المريض</th>
-                    <th className="py-3 px-3">نوع الشغل</th>
-                    <th className="py-3 px-3">الأسنان</th>
-                    <th className="py-3 px-3">اللون</th>
-                    <th className="py-3 px-3">مرحلتك الحالية</th>
-                    <th className="py-3 px-3">موعد التسليم</th>
-                    <th className="py-3 px-3">الإجراءات</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredCases.map((c) => {
-                    const next = nextStatusOf(c.status || "");
-                    return (
-                      <tr key={c.id} className="border-b dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                        <td className="py-3 px-3 font-bold">
-                          <Link to={`/dental-lab/cases/${c.id}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                            {c.caseNumber}
-                          </Link>
-                        </td>
-                        <td className="py-3 px-3">
-                          <p className="font-semibold text-gray-900 dark:text-gray-100">د. {c.doctorName || "—"}</p>
-                          <p className="text-[11px] text-gray-400">{c.patientName || "—"}</p>
-                        </td>
-                        <td className="py-3 px-3">{c.workTypeName || "—"}</td>
-                        <td className="py-3 px-3 font-mono" dir="ltr">{c.teeth || "—"}</td>
-                        <td className="py-3 px-3 font-bold text-amber-700 dark:text-amber-400">{c.shade || "—"}</td>
-                        <td className="py-3 px-3 font-bold text-blue-600 dark:text-blue-400">
-                          {c.myStage?.name || "—"}
-                        </td>
-                        <td className="py-3 px-3 text-gray-500">{fmtDate(c.dueDate)}</td>
-                        <td className="py-3 px-3">
-                          {next && (
-                            <button
-                              onClick={() => completeMyStage(c)}
-                              disabled={busyId !== null}
-                              className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-40 flex items-center gap-1"
-                            >
-                              {busyId === c.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ArrowUpCircle className="w-3.5 h-3.5" />}
-                              <span>إنهاء المرحلة</span>
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+            /* ==================== 📋 TABLE VIEW ==================== */
+            <div className="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden bg-white dark:bg-gray-900 shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-right">
+                  <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th className="py-3 px-3">رقم الحالة</th>
+                      <th className="py-3 px-3">المريض</th>
+                      <th className="py-3 px-3">الطبيب</th>
+                      <th className="py-3 px-3">نوع الشغل</th>
+                      <th className="py-3 px-3">المرحلة الحالية</th>
+                      <th className="py-3 px-3">تاريخ الاستحقاق</th>
+                      <th className="py-3 px-3">الوقت والملفات</th>
+                      <th className="py-3 px-3 text-center">الإجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {filteredCases.map((c) => {
+                      const isOverdue = isCaseOverdue(c);
+                      const overdueDays = getOverdueDays(c);
+                      const timer = timers[c.id] || { running: false, elapsedSeconds: 0 };
+                      const nextStatus = nextStatusOf(c.status);
+
+                      return (
+                        <tr
+                          key={c.id}
+                          className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition ${
+                            isOverdue ? "bg-rose-50/30 dark:bg-rose-950/20" : ""
+                          }`}
+                        >
+                          <td className="py-3 px-3 font-mono font-bold">
+                            <div className="flex items-center gap-1.5">
+                              {isOverdue && <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />}
+                              <Link to={`/dental-lab/cases/${c.id}`} className="hover:text-blue-600">
+                                {c.caseNumber}
+                              </Link>
+                              {c.priority === "URGENT" && <Flame className="w-3.5 h-3.5 text-amber-500" />}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 font-medium text-gray-900 dark:text-white">{c.patientName || "—"}</td>
+                          <td className="py-3 px-3 text-gray-600 dark:text-gray-400">{c.doctorName ? `د. ${c.doctorName}` : "—"}</td>
+                          <td className="py-3 px-3 text-gray-700 dark:text-gray-300 font-semibold">{c.workTypeName || "—"}</td>
+                          <td className="py-3 px-3">
+                            <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                              {c.activeStageName || c.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-3">
+                            {isOverdue ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md font-bold text-rose-700 bg-rose-100 dark:bg-rose-900/60 dark:text-rose-300">
+                                <AlertTriangle className="w-3 h-3" />
+                                متأخرة ({fmtDate(c.dueDate)})
+                              </span>
+                            ) : (
+                              <span className="text-gray-500">{fmtDate(c.dueDate)}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-gray-700 dark:text-gray-300">{fmtTimer(timer.elapsedSeconds)}</span>
+                              <button
+                                onClick={() => toggleTimer(c.id)}
+                                className={`p-1 rounded ${timer.running ? "text-amber-500" : "text-gray-400 hover:text-emerald-500"}`}
+                              >
+                                {timer.running ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center">
+                            {nextStatus ? (
+                              <button
+                                onClick={() => handleAdvance(c)}
+                                disabled={busyId === c.id}
+                                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold transition shadow-xs disabled:opacity-50"
+                              >
+                                {busyId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : "إنهاء المرحلة"}
+                              </button>
+                            ) : (
+                              <span className="text-gray-400 text-xs">مكتملة</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
         </div>
-      ) : section === "kiosk" ? (
-        /* ==================== 📷 KIOSK BARCODE SCANNER (كشك ومسح الباركود) ==================== */
-        <div className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 p-6 shadow-sm max-w-2xl mx-auto space-y-6">
-          <div className="text-center space-y-2">
-            <div className="w-14 h-14 mx-auto bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-300 rounded-2xl flex items-center justify-center shadow-inner">
+      )}
+
+      {/* ==================== TAB 2: 📷 KIOSK BARCODE SCANNER ==================== */}
+      {section === "kiosk" && (
+        <div className="max-w-xl mx-auto space-y-4 py-4">
+          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-6 shadow-xs text-center space-y-4">
+            <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 rounded-2xl mx-auto flex items-center justify-center">
               <ScanLine className="w-8 h-8" />
             </div>
-            <h2 className="text-lg sm:text-xl font-black">ماسح الباركود السريع لمحطة العمل</h2>
-            <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 max-w-md mx-auto">
-              امسح باركود صينية الحالة بقارئ الليزر (Scanner) أو أدخل رقم الحالة وسيتم تحديث وإنهاء مرحلتك فورياً.
-            </p>
-          </div>
+            <div>
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">ماسح الباركود السريع لطاولة العمل</h3>
+              <p className="text-xs text-gray-500 mt-1">
+                وجّه قارئ الباركود نحو بطاقة البان (Pan Card) لنقل الحالة للمرحلة التالية وتسجيلها باسمك فوراً
+              </p>
+            </div>
 
-          <form onSubmit={handleKioskScan} className="space-y-4">
-            <div className="relative">
+            <form onSubmit={handleKioskScan} className="space-y-3">
               <input
                 ref={kioskInputRef}
                 type="text"
                 value={kioskInput}
                 onChange={(e) => setKioskInput(e.target.value)}
-                placeholder="امسح الباركود أو اكتب رقم الحالة (مثال: DL-1001)..."
+                placeholder="امسح الباركود أو اكتب رقم الحالة..."
                 autoFocus
-                className="w-full text-center text-lg sm:text-xl font-mono py-3.5 px-4 rounded-xl border-2 border-blue-500/50 dark:border-blue-500 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-500/20"
+                className="w-full text-center font-mono text-base tracking-wider py-3 px-4 rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               />
-            </div>
-            <button
-              type="submit"
-              disabled={kioskLoading || !kioskInput.trim()}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm shadow-md transition-all disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {kioskLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-              <span>تنفيذ وترقية المرحلة بنقرة واحدة</span>
-            </button>
-          </form>
-
-          {kioskResult && (
-            <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 rounded-xl space-y-2 animate-in fade-in">
-              <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold">
-                <CheckCircle2 className="w-5 h-5" />
-                <span>تمت معالجة الحالة بنجاح!</span>
-              </div>
-              <p className="text-xs text-gray-600 dark:text-gray-300">
-                الحالة: <strong className="font-mono">{kioskResult.case?.caseNumber}</strong> • المريض: {kioskResult.case?.patientName || "—"}
-              </p>
-              {kioskResult.nextStatus && (
-                <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
-                  المرحلة القادمة: {kioskResult.nextStatus}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      ) : (
-        /* ==================== 💰 FINANCIAL LEDGER & WAGE (كشف الحساب وسجل السندات) ==================== */
-        <div className="space-y-6">
-          {/* Summary Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400">أجر المرحلة المعتمد</p>
-              <p className="text-lg sm:text-xl font-bold mt-1">{fmtMoney(wage?.rate)} ج.م</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400">أجر الشهر الحالي</p>
-              <p className="text-lg sm:text-xl font-bold mt-1 text-blue-600 dark:text-blue-400">
-                {fmtMoney(wage?.thisMonthWage)} ج.م
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{wage?.thisMonthStages ?? 0} مراحل منجزة</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي الأجر المكتسب</p>
-              <p className="text-lg sm:text-xl font-bold mt-1 text-indigo-600 dark:text-indigo-400">
-                {fmtMoney(wage?.totalWage)} ج.م
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">{wage?.completedStages ?? 0} مرحلة كلياً</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border dark:border-gray-700 p-4">
-              <p className="text-xs text-gray-500 dark:text-gray-400">إجمالي المنصرف والسلف</p>
-              <p className="text-lg sm:text-xl font-bold mt-1 text-purple-600 dark:text-purple-400">
-                {fmtMoney(wage?.totalPaid ?? 0)} ج.م
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">سلف: {fmtMoney(wage?.totalAdvances ?? 0)} ج.م</p>
-            </div>
-            <div className="bg-white dark:bg-gray-800 rounded-xl border-2 border-emerald-500/60 p-4 col-span-2 sm:col-span-1 shadow-xs">
-              <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300">صافي رصيدك القائم</p>
-              <p className="text-xl font-black mt-1 text-emerald-600 dark:text-emerald-400">
-                {fmtMoney(wage?.balanceDue ?? 0)} ج.م
-              </p>
-              <p className="text-[11px] text-gray-400 mt-0.5">جاهزة للصرف</p>
-            </div>
-          </div>
-
-          {/* Ledger Sub-tabs */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border dark:border-gray-700 overflow-hidden shadow-xs">
-            <div className="flex flex-wrap items-center justify-between p-4 border-b dark:border-gray-700 gap-3">
-              <div className="inline-flex bg-gray-100 dark:bg-gray-700/60 p-1 rounded-lg">
-                <button
-                  onClick={() => setLedgerSubTab("VOUCHERS")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                    ledgerSubTab === "VOUCHERS"
-                      ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-300 shadow-xs"
-                      : "text-gray-500 hover:text-gray-800"
-                  }`}
-                >
-                  <Receipt className="w-3.5 h-3.5" />
-                  <span>سجل السندات والعمليات المالية ({wage?.payouts?.length || 0})</span>
-                </button>
-                <button
-                  onClick={() => setLedgerSubTab("STAGES")}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-bold transition-all ${
-                    ledgerSubTab === "STAGES"
-                      ? "bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-300 shadow-xs"
-                      : "text-gray-500 hover:text-gray-800"
-                  }`}
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>كشف الحالات والمراحل المكتسبة ({wage?.recentStages?.length || 0})</span>
-                </button>
-              </div>
-
               <button
-                onClick={() => setAdvanceModalOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold shadow-xs"
+                type="submit"
+                disabled={kioskLoading || !kioskInput.trim()}
+                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-sm transition shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>طلب سلفة جديدة</span>
+                {kioskLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ScanLine className="w-4 h-4" />}
+                <span>تسجيل وتأكيد المسح</span>
               </button>
-            </div>
+            </form>
 
-            {ledgerSubTab === "VOUCHERS" ? (
-              /* 📜 Vouchers & Payouts Statement */
-              <div className="overflow-x-auto">
-                {(!wage?.payouts || wage.payouts.length === 0) ? (
-                  <div className="p-10 text-center text-gray-400">
-                    <Receipt className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                    <p className="text-xs">لا توجد سندات أو حركات صرف مسجلة حتى الآن.</p>
-                  </div>
-                ) : (
-                  <table className="w-full text-xs sm:text-sm">
-                    <thead>
-                      <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-right">
-                        <th className="py-3 px-3">التاريخ</th>
-                        <th className="py-3 px-3">نوع الحركة</th>
-                        <th className="py-3 px-3">رقم السند / الإيصال</th>
-                        <th className="py-3 px-3">طريقة الصرف</th>
-                        <th className="py-3 px-3">المبلغ</th>
-                        <th className="py-3 px-3">البيان والملاحظات</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {wage.payouts.map((p) => {
-                        const typeBadge =
-                          p.type === "PAYOUT"
-                            ? { text: "دفعة نقدية", cls: "bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" }
-                            : p.type === "ADVANCE"
-                            ? { text: "سلفة", cls: "bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300" }
-                            : p.type === "BONUS"
-                            ? { text: "مكافأة", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300" }
-                            : { text: "خصم", cls: "bg-rose-100 text-rose-800 dark:bg-rose-900/40 dark:text-rose-300" };
-
-                        return (
-                          <tr key={p.id} className="border-b dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                            <td className="py-3 px-3 whitespace-nowrap">{fmtDate(p.paidAt || p.createdAt)}</td>
-                            <td className="py-3 px-3 whitespace-nowrap">
-                              <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${typeBadge.cls}`}>
-                                {typeBadge.text}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3 font-mono text-gray-500">{p.reference || "—"}</td>
-                            <td className="py-3 px-3 text-gray-600 dark:text-gray-300">{p.paymentMethod || "CASH"}</td>
-                            <td className="py-3 px-3 font-black text-gray-900 dark:text-gray-100">
-                              {fmtMoney(p.amount)} ج.م
-                            </td>
-                            <td className="py-3 px-3 text-gray-500 text-xs">{p.notes || "—"}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                )}
-              </div>
-            ) : (
-              /* 🦷 Completed Stages Log */
-              <div className="overflow-x-auto">
-                {(!wage?.recentStages || wage.recentStages.length === 0) ? (
-                  <div className="p-10 text-center text-gray-400">
-                    <CheckCircle2 className="w-10 h-10 mx-auto mb-2 opacity-40" />
-                    <p className="text-xs">لم يتم تسجيل مراحل مكتملة معتمدة بعد.</p>
-                  </div>
-                ) : (
-                  <table className="w-full text-xs sm:text-sm">
-                    <thead>
-                      <tr className="border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 text-right">
-                        <th className="py-3 px-3">رقم الحالة</th>
-                        <th className="py-3 px-3">المريض</th>
-                        <th className="py-3 px-3">نوع الشغل</th>
-                        <th className="py-3 px-3">المرحلة المنجزة</th>
-                        <th className="py-3 px-3">تاريخ الإنجاز</th>
-                        <th className="py-3 px-3">الأجر المستحق</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {wage.recentStages.map((s) => (
-                        <tr key={s.id} className="border-b dark:border-gray-700/60 hover:bg-gray-50 dark:hover:bg-gray-700/30">
-                          <td className="py-3 px-3 font-bold">
-                            <Link to={`/dental-lab/cases/${s.caseId}`} className="text-blue-600 dark:text-blue-400 hover:underline">
-                              {s.caseNumber}
-                            </Link>
-                          </td>
-                          <td className="py-3 px-3">{s.patientName || "—"}</td>
-                          <td className="py-3 px-3 text-gray-500">{s.workTypeName || "—"}</td>
-                          <td className="py-3 px-3 font-semibold text-emerald-700 dark:text-emerald-400">{s.stageName}</td>
-                          <td className="py-3 px-3 text-gray-400 text-xs">{fmtDate(s.completedAt)}</td>
-                          <td className="py-3 px-3 font-bold text-blue-600 dark:text-blue-400">
-                            {fmtMoney(s.wage)} ج.م
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
+            {kioskResult && (
+              <div className="mt-4 p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 text-right space-y-1">
+                <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-bold text-sm">
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>تم مسح الحالة بنجاح!</span>
+                </div>
+                <p className="text-xs text-gray-700 dark:text-gray-300">
+                  الحالة: <b>{kioskResult.caseNumber || kioskResult.case?.caseNumber}</b>
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  المرحلة السابقة: {kioskResult.previousStatus} ⬅️ المرحلة الحالية: <b>{kioskResult.newStatus}</b>
+                </p>
               </div>
             )}
           </div>
         </div>
       )}
 
-      {/* ==================== 🕶️ 3D MODEL VIEWER MODAL ==================== */}
+      {/* ==================== TAB 3: 💰 MY WAGE & LEDGER (مستحقاتي وسجل الصرف) ==================== */}
+      {section === "wage" && (
+        <div className="space-y-4">
+          {/* Financial Scorecard */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+              <p className="text-xs text-gray-500 font-medium">إجمالي أجور المراحل المنجزة</p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                {fmtMoney(wage?.totalEarned ?? 0)} <span className="text-xs text-gray-500">ج.م</span>
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1">أجر ثابت عن كل مرحلة إنتاج مكتملة</p>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+              <p className="text-xs text-gray-500 font-medium">إجمالي المقبوض بسندات الصرف</p>
+              <p className="text-2xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+                {fmtMoney(wage?.totalPaid ?? 0)} <span className="text-xs text-gray-500">ج.م</span>
+              </p>
+              <p className="text-[11px] text-gray-400 mt-1">سندات صرف المعمل المسجلة رسمياً</p>
+            </div>
+
+            <div className="p-4 rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 shadow-xs">
+              <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold">صافي المستحقات المتبقية</p>
+              <p className="text-2xl font-black text-blue-700 dark:text-blue-300 mt-1">
+                {fmtMoney(wage?.balance ?? 0)} <span className="text-xs">ج.م</span>
+              </p>
+              <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-1">الرصيد المستحق الصافي في ذمة المعمل</p>
+            </div>
+          </div>
+
+          {/* Ledger Switcher: Completed Stages vs Payout Vouchers */}
+          <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-800 pb-2">
+            <button
+              onClick={() => setLedgerSubTab("STAGES")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                ledgerSubTab === "STAGES"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+              }`}
+            >
+              سجل مراحل العمل المنجزة ({wage?.recentStages?.length ?? 0})
+            </button>
+            <button
+              onClick={() => setLedgerSubTab("VOUCHERS")}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                ledgerSubTab === "VOUCHERS"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300"
+              }`}
+            >
+              سندات الصرف والمدفوعات ({wage?.payouts?.length ?? 0})
+            </button>
+          </div>
+
+          {/* SubTab Content */}
+          {ledgerSubTab === "STAGES" ? (
+            <div className="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden bg-white dark:bg-gray-900 shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-right">
+                  <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th className="py-3 px-3">تاريخ الإنجاز</th>
+                      <th className="py-3 px-3">رقم الحالة</th>
+                      <th className="py-3 px-3">المرحلة المنفذة</th>
+                      <th className="py-3 px-3">نوع الشغل</th>
+                      <th className="py-3 px-3">الطبيب</th>
+                      <th className="py-3 px-3 text-left">الأجر المحسوب</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {(wage?.recentStages || []).length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-10 text-center text-gray-400">
+                          لا توجد مراحل مسجلة باسمك بعد
+                        </td>
+                      </tr>
+                    ) : (
+                      (wage?.recentStages || []).map((st) => (
+                        <tr key={st.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                          <td className="py-2.5 px-3 text-gray-500">{fmtDate(st.completedAt)}</td>
+                          <td className="py-2.5 px-3 font-mono font-bold">{st.caseNumber}</td>
+                          <td className="py-2.5 px-3 font-medium text-gray-900 dark:text-white">{st.stageName}</td>
+                          <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{st.workTypeName || "—"}</td>
+                          <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{st.doctorName || "—"}</td>
+                          <td className="py-2.5 px-3 text-left font-bold text-emerald-600 dark:text-emerald-400">
+                            +{fmtMoney(st.wageAmount)} ج.م
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden bg-white dark:bg-gray-900 shadow-xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-right">
+                  <thead className="bg-gray-50 dark:bg-gray-800/60 text-gray-500 border-b border-gray-200 dark:border-gray-700">
+                    <tr>
+                      <th className="py-3 px-3">تاريخ الصرف</th>
+                      <th className="py-3 px-3">المبلغ المصروف</th>
+                      <th className="py-3 px-3">طريقة الصرف</th>
+                      <th className="py-3 px-3">البيان والملاحظات</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                    {(wage?.payouts || []).length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="py-10 text-center text-gray-400">
+                          لا توجد سندات صرف مسجلة حتى الآن
+                        </td>
+                      </tr>
+                    ) : (
+                      (wage?.payouts || []).map((p) => (
+                        <tr key={p.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                          <td className="py-2.5 px-3 text-gray-500">{fmtDate(p.createdAt)}</td>
+                          <td className="py-2.5 px-3 font-bold text-amber-600 dark:text-amber-400">
+                            -{fmtMoney(p.amount)} ج.م
+                          </td>
+                          <td className="py-2.5 px-3 text-gray-700 dark:text-gray-300 font-medium">
+                            {p.method === "CASH" ? "نقدي" : p.method === "BANK" ? "تحويل بنكي" : "محفظة إلكترونية"}
+                          </td>
+                          <td className="py-2.5 px-3 text-gray-600 dark:text-gray-400">{p.notes || "سند صرف مستحقات"}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ==================== TAB 4: 🔔 MY NOTIFICATIONS & OVERDUE ALERTS ==================== */}
+      {section === "notifications" && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-gray-800">
+            <div>
+              <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
+                تنبيهات وإشعارات العمل المباشرة
+              </h3>
+              <p className="text-xs text-gray-500">
+                متابعة الحالات المتأخرة، الحالات المسندة حديثاً، وسندات الصرف المقيدة لحسابك
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {/* 1. Overdue Cases Alerts */}
+            {overdueCasesList.length > 0 && (
+              <div className="space-y-2">
+                <h4 className="text-xs font-bold text-rose-700 dark:text-rose-400 flex items-center gap-1.5">
+                  <ShieldAlert className="w-4 h-4 text-rose-600" />
+                  <span>حالات متأخرة عن موعد التسليم المقرر ({overdueCasesList.length})</span>
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                  {overdueCasesList.map((c) => (
+                    <div
+                      key={c.id}
+                      className="p-3 rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/50 dark:bg-rose-950/30 flex items-center justify-between gap-3 text-xs"
+                    >
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-rose-900 dark:text-rose-200">{c.caseNumber}</span>
+                          <span className="font-semibold text-rose-700">{c.workTypeName}</span>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-400 mt-0.5">
+                          الطبيب: {c.doctorName || "—"} | متأخرة منذ {getOverdueDays(c)} يوم
+                        </p>
+                      </div>
+                      <Link
+                        to={`/dental-lab/cases/${c.id}`}
+                        className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg font-bold shrink-0 shadow-xs"
+                      >
+                        عرض الحالة
+                      </Link>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 2. New Assignments */}
+            <div className="space-y-2 pt-2">
+              <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <ListChecks className="w-4 h-4 text-blue-600" />
+                <span>الحالات قيد التنفيذ بمحطتك ({cases.length})</span>
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                {cases.slice(0, 6).map((c) => (
+                  <div
+                    key={c.id}
+                    className="p-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex items-center justify-between gap-3 text-xs shadow-xs"
+                  >
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-bold">{c.caseNumber}</span>
+                        <span className="text-gray-700 dark:text-gray-300">{c.workTypeName}</span>
+                      </div>
+                      <p className="text-gray-500 mt-0.5">
+                        المرحلة: <b>{c.activeStageName || c.status}</b> | استحقاق: {fmtDate(c.dueDate)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setSection("bench");
+                        setSearch(c.caseNumber || "");
+                      }}
+                      className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg font-semibold shrink-0"
+                    >
+                      انتقال للكرت
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 3. Recent Payout Vouchers */}
+            <div className="space-y-2 pt-2">
+              <h4 className="text-xs font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
+                <Receipt className="w-4 h-4 text-amber-600" />
+                <span>آخر سندات الصرف المقيدة ({wage?.payouts?.length || 0})</span>
+              </h4>
+              <div className="border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden bg-white dark:bg-gray-900">
+                {(wage?.payouts || []).length === 0 ? (
+                  <p className="p-4 text-xs text-gray-400 text-center">لا توجد سندات صرف بعد</p>
+                ) : (
+                  (wage?.payouts || []).slice(0, 4).map((p) => (
+                    <div
+                      key={p.id}
+                      className="p-3 border-b last:border-0 border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs"
+                    >
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-white">
+                          سند صرف: <span className="text-amber-600">{fmtMoney(p.amount)} ج.م</span>
+                        </p>
+                        <p className="text-gray-500 text-[11px]">{p.notes || "صرف مستحقات إنتاج معمل الأسنان"}</p>
+                      </div>
+                      <span className="text-gray-400 text-[11px]">{fmtDate(p.createdAt)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB 5: 📊 MY PERFORMANCE & PRODUCTIVITY REPORT ==================== */}
+      {section === "reports" && (
+        <div className="space-y-4">
+          {/* Report Header & Filters */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-gray-200 dark:border-gray-800">
+            <div>
+              <h3 className="font-bold text-base text-gray-900 dark:text-white">
+                تقرير إنتاجية وأداء الفني
+              </h3>
+              <p className="text-xs text-gray-500">
+                كشف إحصائي وتحليلي لحجم الإنتاج، المراحل المنفذة، والأجور المكتسبة
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <div className="inline-flex bg-gray-100 dark:bg-gray-800 p-1 rounded-xl text-xs font-bold border border-gray-200 dark:border-gray-700">
+                <button
+                  onClick={() => setReportPeriod("TODAY")}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    reportPeriod === "TODAY" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-500"
+                  }`}
+                >
+                  اليوم
+                </button>
+                <button
+                  onClick={() => setReportPeriod("7DAYS")}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    reportPeriod === "7DAYS" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-500"
+                  }`}
+                >
+                  آخر 7 أيام
+                </button>
+                <button
+                  onClick={() => setReportPeriod("MONTH")}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    reportPeriod === "MONTH" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-500"
+                  }`}
+                >
+                  هذا الشهر
+                </button>
+                <button
+                  onClick={() => setReportPeriod("ALL")}
+                  className={`px-3 py-1 rounded-lg transition ${
+                    reportPeriod === "ALL" ? "bg-white dark:bg-gray-700 text-blue-600 shadow-xs" : "text-gray-500"
+                  }`}
+                >
+                  الكل
+                </button>
+              </div>
+
+              <button
+                onClick={() => window.print()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 text-xs font-bold text-gray-700 dark:text-gray-200 shadow-xs"
+              >
+                <Printer className="w-3.5 h-3.5" />
+                <span>طباعة الكشف</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Report Scorecards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+              <span className="text-xs text-gray-500 font-medium">المراحل المنفذة</span>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-blue-600 dark:text-blue-400">{reportStats.stagesCount}</span>
+                <span className="text-xs text-gray-500">مرحلة</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+              <span className="text-xs text-gray-500 font-medium">عدد الحالات المنجزة</span>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-gray-900 dark:text-white">{reportStats.casesCount}</span>
+                <span className="text-xs text-gray-500">حالة</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+              <span className="text-xs text-gray-500 font-medium">إجمالي أجر الفترة</span>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">{fmtMoney(reportStats.totalEarned)}</span>
+                <span className="text-xs text-gray-500">ج.م</span>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 shadow-xs">
+              <span className="text-xs text-gray-500 font-medium">المتأخرات الحالية</span>
+              <div className="mt-1 flex items-baseline gap-1">
+                <span className={`text-2xl font-bold ${reportStats.overdueRemaining > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                  {reportStats.overdueRemaining}
+                </span>
+                <span className="text-xs text-gray-500">حالة</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Detailed Itemized Production Table */}
+          <div className="border border-gray-200 dark:border-gray-800 rounded-2xl overflow-hidden bg-white dark:bg-gray-900 shadow-xs">
+            <div className="p-3 bg-gray-50 dark:bg-gray-800/60 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+              <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                جدول كشف الإنتاج التفصيلي حسب الفترة المختارة
+              </h4>
+              <span className="text-[11px] text-gray-500 font-medium">
+                عدد البنود: {reportFilteredStages.length}
+              </span>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-right">
+                <thead className="bg-gray-50/50 dark:bg-gray-800/30 text-gray-500 border-b border-gray-100 dark:border-gray-800">
+                  <tr>
+                    <th className="py-2.5 px-3">التاريخ والوقت</th>
+                    <th className="py-2.5 px-3">رقم الحالة</th>
+                    <th className="py-2.5 px-3">نوع الشغل</th>
+                    <th className="py-2.5 px-3">الطبيب</th>
+                    <th className="py-2.5 px-3">المرحلة المنجزة</th>
+                    <th className="py-2.5 px-3 text-left">الأجر المكتسب</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {reportFilteredStages.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-gray-400">
+                        لا توجد مراحل مسجلة خلال هذه الفترة
+                      </td>
+                    </tr>
+                  ) : (
+                    reportFilteredStages.map((st) => (
+                      <tr key={st.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-800/30">
+                        <td className="py-2 px-3 text-gray-500">{fmtDate(st.completedAt)}</td>
+                        <td className="py-2 px-3 font-mono font-bold">{st.caseNumber}</td>
+                        <td className="py-2 px-3 font-semibold text-gray-800 dark:text-gray-200">{st.workTypeName || "—"}</td>
+                        <td className="py-2 px-3 text-gray-600 dark:text-gray-400">{st.doctorName ? `د. ${st.doctorName}` : "—"}</td>
+                        <td className="py-2 px-3">
+                          <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">
+                            {st.stageName}
+                          </span>
+                        </td>
+                        <td className="py-2 px-3 text-left font-bold text-emerald-600 dark:text-emerald-400">
+                          +{fmtMoney(st.wageAmount)} ج.م
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== 👓 3D MODEL VIEWER MODAL ==================== */}
       {active3DAttachment && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl w-full max-w-4xl overflow-hidden border dark:border-gray-700 shadow-2xl flex flex-col h-[80vh]">
-            <div className="flex items-center justify-between p-4 border-b dark:border-gray-800">
+        <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-2 sm:p-6 backdrop-blur-xs">
+          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-4xl w-full h-[80vh] flex flex-col overflow-hidden shadow-2xl border dark:border-gray-800">
+            <div className="p-3.5 border-b dark:border-gray-800 flex justify-between items-center bg-gray-50 dark:bg-gray-800/60">
               <div className="flex items-center gap-2">
                 <Box className="w-5 h-5 text-indigo-500" />
                 <h3 className="font-bold text-sm sm:text-base text-gray-900 dark:text-white">
@@ -1067,72 +1460,6 @@ export default function DentalTechnicianPortal({ initialSection }: Props) {
                 >
                   {uploadingFile ? <Loader2 className="w-4 h-4 animate-spin" /> : <UploadCloud className="w-4 h-4" />}
                   <span>رفع وتأكيد</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ==================== 💸 REQUEST ADVANCE MODAL ==================== */}
-      {advanceModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 backdrop-blur-xs">
-          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 border dark:border-gray-700 shadow-xl space-y-4">
-            <div className="flex justify-between items-center border-b pb-3 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <Banknote className="w-5 h-5 text-amber-500" />
-                <h3 className="font-bold text-base">تقديم طلب سلفة مالية</h3>
-              </div>
-              <button onClick={() => setAdvanceModalOpen(false)} className="text-gray-400 hover:text-gray-600">
-                <XMarkIcon className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleAdvanceSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  المبلغ المطلوب (ج.م) *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  step="1"
-                  value={advanceAmount}
-                  onChange={(e) => setAdvanceAmount(e.target.value)}
-                  placeholder="مثال: 500"
-                  className="w-full px-3 py-2 text-sm rounded-xl border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
-                  السبب أو الملاحظات (اختياري)
-                </label>
-                <textarea
-                  rows={3}
-                  value={advanceNotes}
-                  onChange={(e) => setAdvanceNotes(e.target.value)}
-                  placeholder="توضيح سبب السلفة..."
-                  className="w-full px-3 py-2 text-xs rounded-xl border dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2 border-t dark:border-gray-700">
-                <button
-                  type="button"
-                  onClick={() => setAdvanceModalOpen(false)}
-                  className="px-4 py-2 border rounded-xl text-xs font-semibold hover:bg-gray-50 dark:hover:bg-gray-700"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingAdvance || !advanceAmount}
-                  className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold disabled:opacity-50 flex items-center gap-1.5 shadow-xs"
-                >
-                  {submittingAdvance ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                  <span>إرسال الطلب</span>
                 </button>
               </div>
             </form>

@@ -17001,6 +17001,8 @@ declare module 'react-i18next' {
         dentalLabMyCases: string;
         dentalLabKiosk: string;
         dentalLabMyWage: string;
+        dentalLabNotifications: string;
+        dentalLabReports: string;
         dentalLabDashboard: string;
         dentalLabCases: string;
         dentalLabDoctors: string;
@@ -17008,8 +17010,6 @@ declare module 'react-i18next' {
         dentalLabTechnicians: string;
         dentalLabInvoices: string;
         dentalLabSettings: string;
-        dentalLabNotifications: string;
-        dentalLabReports: string;
         labTests: string;
         labReception: string;
         labOrders: string;

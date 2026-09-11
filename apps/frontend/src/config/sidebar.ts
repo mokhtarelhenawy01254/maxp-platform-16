@@ -348,15 +348,9 @@ export const getSidebarConfig = (
                 items: [
                     { to: '/dental-lab', icon: ListChecks, label: isEn ? 'My Cases & Bench' : t('sidebar.dentalLabMyCases', 'حالاتي ومحطة الإنتاج') },
                     { to: '/dental-lab/kiosk', icon: ScanLine, label: isEn ? 'Barcode Scanner' : t('sidebar.dentalLabKiosk', 'ماسح الباركود السريع') },
-                    { to: '/dental-lab/my-wage', icon: Wallet, label: isEn ? 'My Wage & Ledger' : t('sidebar.dentalLabMyWage', 'مستحقاتي وكشف الحساب') },
-                ],
-            },
-            {
-                id: 'technician-account',
-                title: isEn ? 'My Account' : t('sidebar.myAccountSection', 'حسابي'),
-                icon: CircleUser,
-                items: [
-                    { to: '/profile', icon: CircleUser, label: isEn ? 'My Profile' : t('sidebar.myProfile', 'الملف الشخصي') },
+                    { to: '/dental-lab/my-wage', icon: Wallet, label: isEn ? 'My Wage & Ledger' : t('sidebar.dentalLabMyWage', 'مستحقاتي وسجل الصرف') },
+                    { to: '/dental-lab/notifications', icon: Bell, label: isEn ? 'My Alerts & Overdue' : t('sidebar.dentalLabNotifications', 'إشعاراتي وتنبيهات العمل') },
+                    { to: '/dental-lab/reports', icon: BarChart3, label: isEn ? 'Productivity Report' : t('sidebar.dentalLabReports', 'تقرير الإنتاجية والأداء') },
                 ],
             },
         ];
