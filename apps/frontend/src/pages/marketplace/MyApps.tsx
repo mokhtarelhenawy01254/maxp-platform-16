@@ -16,7 +16,7 @@ import {
   Download, Trash2, CheckSquare, Square
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAppSystemHub, SYSTEM_HUBS } from "@/utils/marketplaceSystems";
+import { getAppSystemHub, SYSTEM_HUBS, resolveRecommendedSystemHub } from "@/utils/marketplaceSystems";
 import {
   categoryIcons,
   appIcons,
@@ -206,7 +206,10 @@ const STARTER_APPS = [
 export function MyApps() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
+
+  const companySpecialtySlug = user?.company?.businessSpecialty?.slug;
+  const recommendedHub = resolveRecommendedSystemHub(companySpecialtySlug);
 
   const [apps, setApps] = useState<InstalledApp[]>([]);
   const [loading, setLoading] = useState(true);
@@ -364,10 +367,16 @@ export function MyApps() {
   const availableCategories = useMemo(() => {
     const cats = new Set<string>();
     apps.forEach((a) => {
-      if (a.app?.category) cats.add(a.app.category.toUpperCase());
+      if (a.app?.category) {
+        if (selectedHub !== "ALL") {
+          const hub = getAppSystemHub(a.app as any);
+          if (hub.id !== selectedHub) return;
+        }
+        cats.add(a.app.category.toUpperCase());
+      }
     });
     return Array.from(cats);
-  }, [apps]);
+  }, [apps, selectedHub]);
 
   // Statistics
   const stats = useMemo(() => {
@@ -464,8 +473,8 @@ export function MyApps() {
   }, [filteredApps, selectedIds]);
 
   const renderSkeleton = () => (
-    <div className="min-h-full bg-background">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">
+    <div className="min-h-full bg-background" dir="rtl">
+      <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-2">
             <Skeleton className="h-8 w-48 rounded-xl" />
@@ -482,9 +491,9 @@ export function MyApps() {
           ))}
         </div>
         <div className="h-11 rounded-2xl bg-muted/40 animate-pulse" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
           {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-border/20 bg-card p-5 space-y-3">
+            <div key={i} className="rounded-2xl border border-border/20 bg-card p-4 space-y-3">
               <div className="flex items-center gap-3">
                 <Skeleton className="size-11 rounded-2xl" />
                 <div className="space-y-1.5 flex-1">
@@ -493,10 +502,6 @@ export function MyApps() {
                 </div>
               </div>
               <Skeleton className="h-10 w-full rounded" />
-              <div className="flex gap-2 pt-2">
-                <Skeleton className="h-9 flex-1 rounded-xl" />
-                <Skeleton className="h-9 w-9 rounded-xl" />
-              </div>
             </div>
           ))}
         </div>
@@ -510,10 +515,10 @@ export function MyApps() {
 
   return (
     <div className="min-h-full bg-background" dir="rtl">
-      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 space-y-6">
+      <div className="mx-auto max-w-[1600px] px-3 sm:px-6 lg:px-8 py-4 sm:py-6 space-y-4 sm:space-y-5">
 
         {/* 1. Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-border/40">
           <div className="flex items-start sm:items-center gap-3.5">
             <div className="p-3 rounded-2xl bg-primary/10 text-primary border border-primary/20 shrink-0">
               <Package className="size-6" />
@@ -554,9 +559,51 @@ export function MyApps() {
           </div>
         </div>
 
-        {/* 2. Quick Stats KPI Bar (Mobile-first single depth) */}
+        {/* 2. Recommended Specialty Hub Callout (if company has specialty) */}
+        {recommendedHub && (
+          <div className="flex items-center justify-between gap-3 p-3.5 rounded-2xl border border-primary/20 bg-primary/[0.03] text-xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <Sparkles size={16} />
+              </div>
+              <div>
+                <p className="font-bold text-foreground">
+                  منظومة مخصصة لنشاط حسابك: <span className="text-primary">{user?.company?.businessSpecialty?.nameAr || recommendedHub.nameAr}</span>
+                </p>
+                <p className="text-[11px] text-muted-foreground line-clamp-1">
+                  {recommendedHub.descriptionAr}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedHub(selectedHub === recommendedHub.id ? "ALL" : recommendedHub.id);
+                setCategoryFilter("ALL");
+              }}
+              className={cn(
+                "px-3.5 py-1.5 rounded-xl font-bold shrink-0 transition-colors text-xs",
+                selectedHub === recommendedHub.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-background border border-border/40 hover:border-primary/40 text-foreground"
+              )}
+            >
+              {selectedHub === recommendedHub.id ? "معروضة حالياً ✓" : `عرض أدوات ${recommendedHub.nameAr}`}
+            </button>
+          </div>
+        )}
+
+        {/* 3. Quick Stats KPI Bar (Interactive Filter Triggers) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div className="rounded-2xl border border-border/40 bg-card/60 p-4 transition-all hover:bg-card">
+          <div
+            onClick={() => setStatusFilter("ALL")}
+            className={cn(
+              "rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer select-none",
+              statusFilter === "ALL"
+                ? "border-primary/50 bg-primary/[0.04] ring-1 ring-primary/20 shadow-sm"
+                : "border-border/40 bg-card/60 hover:bg-card hover:border-border/70"
+            )}
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground">إجمالي الأدوات</span>
               <div className="size-8 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
@@ -569,7 +616,15 @@ export function MyApps() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/40 bg-card/60 p-4 transition-all hover:bg-card">
+          <div
+            onClick={() => setStatusFilter(statusFilter === "ACTIVE" ? "ALL" : "ACTIVE")}
+            className={cn(
+              "rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer select-none",
+              statusFilter === "ACTIVE"
+                ? "border-emerald-500/50 bg-emerald-500/[0.04] ring-1 ring-emerald-500/20 shadow-sm"
+                : "border-border/40 bg-card/60 hover:bg-card hover:border-border/70"
+            )}
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground">الاشتراكات النشطة</span>
               <div className="size-8 rounded-xl bg-emerald-500/10 text-emerald-600 flex items-center justify-center">
@@ -582,7 +637,15 @@ export function MyApps() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/40 bg-card/60 p-4 transition-all hover:bg-card">
+          <div
+            onClick={() => setStatusFilter(statusFilter === "TRIAL" ? "ALL" : "TRIAL")}
+            className={cn(
+              "rounded-2xl border p-3.5 sm:p-4 transition-all cursor-pointer select-none",
+              statusFilter === "TRIAL"
+                ? "border-amber-500/50 bg-amber-500/[0.04] ring-1 ring-amber-500/20 shadow-sm"
+                : "border-border/40 bg-card/60 hover:bg-card hover:border-border/70"
+            )}
+          >
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground">فترات تجريبية</span>
               <div className="size-8 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center">
@@ -601,7 +664,7 @@ export function MyApps() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border/40 bg-card/60 p-4 transition-all hover:bg-card">
+          <div className="rounded-2xl border border-border/40 bg-card/60 p-3.5 sm:p-4 transition-all hover:bg-card">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-muted-foreground">استهلاك الشهر</span>
               <div className="size-8 rounded-xl bg-blue-500/10 text-blue-600 flex items-center justify-center">
@@ -617,225 +680,257 @@ export function MyApps() {
           </div>
         </div>
 
-        {/* 3. Search & Control Toolbar */}
-        <div className="space-y-3 pt-1">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-            {/* Search Input */}
-            <div className="relative flex-1">
-              <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-              <Input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="ابحث بالاسم، الفئة، أو الوصف..."
-                className="h-11 pr-10 pl-10 rounded-2xl bg-card/60 border-border/50 text-xs sm:text-sm focus-visible:ring-primary/20"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch("")}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 size-6 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
+        {/* 4. System Hubs Switcher (Multi-System Solution Selector) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-2 border-b border-border/20">
+          {SYSTEM_HUBS.map((hub) => {
+            const HubIcon = hub.icon;
+            const active = selectedHub === hub.id;
+            const isRecommended = recommendedHub?.id === hub.id;
+            const count = hubCounts[hub.id] ?? 0;
 
-            {/* Sort & View Mode */}
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl border border-border/50 bg-card/60 text-xs font-bold text-muted-foreground">
-                <ArrowUpDown size={14} className="text-muted-foreground shrink-0" />
-                <select
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as SortOption)}
-                  className="bg-transparent text-foreground font-semibold focus:outline-none cursor-pointer py-1"
-                >
-                  <option value="newest">الأحدث تثبيتاً</option>
-                  <option value="name">أبجدياً (أ-ي)</option>
-                  <option value="usage">الأعلى استهلاكاً</option>
-                  <option value="trial_ending">أقرب لانتهاء التجربة</option>
-                </select>
-              </div>
-
-              {/* View Toggle */}
-              <div className="flex items-center rounded-2xl border border-border/50 bg-card/60 p-1">
-                <button
-                  type="button"
-                  data-testid="grid-view-btn"
-                  onClick={() => setViewMode("grid")}
+            return (
+              <button
+                key={hub.id}
+                type="button"
+                onClick={() => {
+                  setSelectedHub(hub.id);
+                  setCategoryFilter("ALL");
+                }}
+                className={cn(
+                  "flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 shrink-0",
+                  active
+                    ? "bg-foreground text-background shadow-sm"
+                    : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
+                )}
+              >
+                <HubIcon size={14} className={active ? "text-background" : "text-primary"} />
+                <span>{hub.nameAr}</span>
+                <span
                   className={cn(
-                    "p-1.5 rounded-xl transition-all",
-                    viewMode === "grid" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                    "text-[10px] tabular-nums px-1.5 py-0.2 rounded-full",
+                    active ? "bg-background/20 text-background font-semibold" : "bg-muted text-muted-foreground"
                   )}
-                  title="عرض الشبكة"
                 >
-                  <LayoutGrid size={16} />
-                </button>
-                <button
-                  type="button"
-                  data-testid="list-view-btn"
-                  onClick={() => setViewMode("list")}
-                  className={cn(
-                    "p-1.5 rounded-xl transition-all",
-                    viewMode === "list" ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                  )}
-                  title="عرض القائمة"
-                >
-                  <List size={16} />
-                </button>
-              </div>
-
-              {/* Select All Visible */}
-              {filteredApps.length > 0 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={toggleSelectAllVisible}
-                  data-testid="select-all-btn"
-                  className={cn(
-                    "h-9 rounded-2xl text-xs font-bold gap-1.5 px-3 border-border/50 transition-all",
-                    isAllVisibleSelected
-                      ? "bg-primary/10 text-primary border-primary/30"
-                      : "text-muted-foreground hover:text-foreground"
-                  )}
-                  title={isAllVisibleSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
-                >
-                  {isAllVisibleSelected ? (
-                    <CheckSquare size={14} className="text-primary" />
-                  ) : (
-                    <Square size={14} />
-                  )}
-                  <span className="hidden sm:inline">
-                    {isAllVisibleSelected ? "إلغاء التحديد" : "تحديد الكل"}
+                  {count}
+                </span>
+                {isRecommended && (
+                  <span className="text-[9px] font-extrabold px-1.5 py-0.2 rounded-full bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                    موصى به
                   </span>
-                </Button>
-              )}
-            </div>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* 5. Search, Status Segmented Controls, Sort & View Mode */}
+        <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
+          {/* Search Bar */}
+          <div className="relative flex-1 min-w-[220px]">
+            <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ابحث بالاسم، الفئة، أو الوصف..."
+              className="h-10 pr-10 pl-10 rounded-xl bg-card border-border/40 text-xs sm:text-sm focus-visible:ring-primary/20"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="absolute left-3 top-1/2 -translate-y-1/2 size-5 flex items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
 
-          {/* Hubs, Status & Category Pills (Horizontal Scroll on Mobile) */}
-          <div className="flex flex-col gap-2.5">
-            {/* System Hub Filter Bar */}
-            {availableHubs.length > 1 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                {availableHubs.map((hub) => {
-                  const HubIcon = hub.icon;
-                  const active = selectedHub === hub.id;
-                  const count = hubCounts[hub.id] ?? 0;
-
-                  return (
-                    <button
-                      key={hub.id}
-                      type="button"
-                      onClick={() => {
-                        setSelectedHub(hub.id);
-                        setCategoryFilter("ALL");
-                      }}
-                      className={cn(
-                        "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border shrink-0",
-                        active
-                          ? "bg-primary text-primary-foreground border-primary shadow-sm"
-                          : "bg-card/60 border-border/40 text-muted-foreground hover:border-border hover:text-foreground"
-                      )}
-                    >
-                      <HubIcon size={13} className={active ? "text-primary-foreground" : "text-primary/80"} />
-                      <span>{hub.nameAr}</span>
-                      <span
-                        className={cn(
-                          "text-[10px] px-1.5 py-0.2 rounded-full font-extrabold",
-                          active ? "bg-white/20 text-primary-foreground" : "bg-muted text-muted-foreground"
-                        )}
-                      >
-                        {count}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
+          {/* Status Segmented Buttons */}
+          <div className="flex items-center p-1 rounded-xl bg-muted/50 border border-border/30 shrink-0 text-xs font-semibold">
+            <button
+              type="button"
+              onClick={() => setStatusFilter("ALL")}
+              className={cn(
+                "px-3 py-1.5 rounded-lg transition-all",
+                statusFilter === "ALL" ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              الكل ({apps.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("ACTIVE")}
+              className={cn(
+                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1",
+                statusFilter === "ACTIVE" ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <CheckCircle2 size={12} />
+              النشطة ({stats.active})
+            </button>
+            <button
+              type="button"
+              onClick={() => setStatusFilter("TRIAL")}
+              className={cn(
+                "px-3 py-1.5 rounded-lg transition-all flex items-center gap-1",
+                statusFilter === "TRIAL" ? "bg-background text-amber-600 dark:text-amber-400 shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+              )}
+            >
+              <Clock size={12} />
+              تجريبية ({stats.trial})
+            </button>
+            {apps.some((a) => a.status === "CANCELLED") && (
+              <button
+                type="button"
+                onClick={() => setStatusFilter("CANCELLED")}
+                className={cn(
+                  "px-3 py-1.5 rounded-lg transition-all",
+                  statusFilter === "CANCELLED" ? "bg-background text-foreground shadow-sm font-bold" : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                ملغاة ({apps.filter((a) => a.status === "CANCELLED").length})
+              </button>
             )}
+          </div>
 
-            {/* Status Pills */}
-            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-              {(["ALL", "ACTIVE", "TRIAL", "CANCELLED"] as StatusFilter[]).map((status) => {
-                const count =
-                  status === "ALL"
-                    ? apps.length
-                    : apps.filter((a) => a.status === status).length;
-                const active = statusFilter === status;
-                const conf = status !== "ALL" ? STATUS_CONFIG[status] : null;
+          {/* Sort Dropdown */}
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-border/40 bg-card text-xs font-bold text-muted-foreground shrink-0">
+            <ArrowUpDown size={13} className="text-muted-foreground shrink-0" />
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortOption)}
+              className="bg-transparent text-foreground font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="newest">الأحدث تثبيتاً</option>
+              <option value="name">أبجدياً (أ-ي)</option>
+              <option value="usage">الأعلى استهلاكاً</option>
+              <option value="trial_ending">أقرب لانتهاء التجربة</option>
+            </select>
+          </div>
 
-                return (
-                  <button
-                    key={status}
-                    type="button"
-                    onClick={() => setStatusFilter(status)}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap transition-all border shrink-0",
-                      active
-                        ? "bg-foreground text-background border-foreground shadow-sm"
-                        : "bg-muted/40 border-border/30 text-muted-foreground hover:border-border hover:text-foreground"
-                    )}
-                  >
-                    <span>
-                      {status === "ALL"
-                        ? "جميع الحالات"
-                        : conf
-                        ? t(`marketplace.${conf.labelKey}`, conf.fallbackLabel)
-                        : status}
-                    </span>
+          {/* View Mode Switcher */}
+          <div className="hidden sm:flex items-center p-1 rounded-xl bg-muted/50 border border-border/30 shrink-0">
+            <button
+              type="button"
+              data-testid="grid-view-btn"
+              onClick={() => setViewMode("grid")}
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                viewMode === "grid" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="عرض شبكي (Grid View)"
+            >
+              <LayoutGrid size={15} />
+            </button>
+            <button
+              type="button"
+              data-testid="list-view-btn"
+              onClick={() => setViewMode("list")}
+              className={cn(
+                "p-1.5 rounded-lg transition-all",
+                viewMode === "list" ? "bg-background text-primary shadow-sm" : "text-muted-foreground hover:text-foreground"
+              )}
+              title="عرض قائمة (List View)"
+            >
+              <List size={15} />
+            </button>
+          </div>
+
+          {/* Bulk Select Visible */}
+          {filteredApps.length > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={toggleSelectAllVisible}
+              data-testid="select-all-btn"
+              className={cn(
+                "h-10 rounded-xl text-xs font-bold gap-1.5 px-3 border-border/40 transition-all shrink-0",
+                isAllVisibleSelected
+                  ? "bg-primary/10 text-primary border-primary/30"
+                  : "text-muted-foreground hover:text-foreground bg-card"
+              )}
+              title={isAllVisibleSelected ? "إلغاء تحديد الكل" : "تحديد الكل"}
+            >
+              {isAllVisibleSelected ? (
+                <CheckSquare size={14} className="text-primary" />
+              ) : (
+                <Square size={14} />
+              )}
+              <span className="hidden sm:inline">
+                {isAllVisibleSelected ? "إلغاء التحديد" : "تحديد الكل"}
+              </span>
+            </Button>
+          )}
+        </div>
+
+        {/* 6. Subcategory Filter Pills */}
+        {availableCategories.length > 1 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none pb-1">
+            <button
+              type="button"
+              onClick={() => setCategoryFilter("ALL")}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 shrink-0",
+                categoryFilter === "ALL"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
+              )}
+            >
+              <span>كل الأقسام</span>
+              <span
+                className={cn(
+                  "text-[10px] tabular-nums px-1.5 py-0.2 rounded-full",
+                  categoryFilter === "ALL" ? "bg-primary-foreground/20 text-primary-foreground font-semibold" : "bg-muted text-muted-foreground"
+                )}
+              >
+                {selectedHub === "ALL" ? apps.length : hubCounts[selectedHub] ?? 0}
+              </span>
+            </button>
+
+            {availableCategories.map((cat) => {
+              const conf = CATEGORY_CONFIG[cat];
+              const label = conf?.labelAr || cat;
+              const active = categoryFilter === cat;
+              const Icon = categoryIcons[cat] || Package;
+              const count = apps.filter((a) => {
+                if ((a.app?.category || "").toUpperCase() !== cat) return false;
+                if (selectedHub !== "ALL") {
+                  const hub = getAppSystemHub(a.app as any);
+                  if (hub.id !== selectedHub) return false;
+                }
+                return true;
+              }).length;
+
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCategoryFilter(active ? "ALL" : cat)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 shrink-0",
+                    active
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/40 text-muted-foreground hover:bg-muted hover:text-foreground border border-border/30"
+                  )}
+                >
+                  <Icon size={13} className="shrink-0" />
+                  <span>{label}</span>
+                  {count > 0 && (
                     <span
                       className={cn(
-                        "text-[10px] px-1.5 py-0.2 rounded-full font-extrabold",
-                        active ? "bg-background/20 text-background" : "bg-muted text-muted-foreground"
+                        "text-[10px] tabular-nums px-1.5 py-0.2 rounded-full",
+                        active ? "bg-primary-foreground/20 text-primary-foreground font-semibold" : "bg-muted text-muted-foreground"
                       )}
                     >
                       {count}
                     </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Subcategory Filter Pills (if multiple categories exist and hub is not isolating a single category) */}
-            {selectedHub === "ALL" && availableCategories.length > 1 && (
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                <button
-                  type="button"
-                  onClick={() => setCategoryFilter("ALL")}
-                  className={cn(
-                    "px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all shrink-0",
-                    categoryFilter === "ALL"
-                      ? "bg-muted text-foreground"
-                      : "text-muted-foreground hover:text-foreground"
                   )}
-                >
-                  جميع الأقسام
                 </button>
-                {availableCategories.map((cat) => {
-                  const conf = CATEGORY_CONFIG[cat];
-                  const label = conf?.labelAr || cat;
-                  const active = categoryFilter === cat;
-
-                  return (
-                    <button
-                      key={cat}
-                      type="button"
-                      onClick={() => setCategoryFilter(cat)}
-                      className={cn(
-                        "flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold whitespace-nowrap transition-all shrink-0",
-                        active
-                          ? "bg-muted text-foreground font-black"
-                          : "text-muted-foreground hover:text-foreground"
-                      )}
-                    >
-                      <span>{label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
+              );
+            })}
           </div>
-        </div>
+        )}
 
         {/* 4. Main Content: Empty States or Grid/List */}
         {apps.length === 0 ? (
@@ -909,26 +1004,62 @@ export function MyApps() {
             <div className="size-14 rounded-2xl bg-muted/60 text-muted-foreground flex items-center justify-center mx-auto mb-2">
               <Search size={24} />
             </div>
-            <h3 className="text-base font-bold text-foreground">لا توجد تطبيقات مطابقة لبحثك</h3>
-            <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-              لم نعثر على أي أدوات مطابقة لمعايير البحث الحالية. جرّب مسح البحث أو تغيير الفلتر.
-            </p>
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 rounded-xl font-bold text-xs"
-                onClick={() => {
-                  setSearch("");
-                  setStatusFilter("ALL");
-                  setSelectedHub("ALL");
-                  setCategoryFilter("ALL");
-                }}
-              >
-                <X size={14} />
-                <span>إعادة تعيين الفلاتر</span>
-              </Button>
-            </div>
+            {selectedHub !== "ALL" && (!hubCounts[selectedHub] || hubCounts[selectedHub] === 0) ? (
+              <>
+                <h3 className="text-base font-bold text-foreground">
+                  لم تقم بتفعيل أي أدوات في {SYSTEM_HUBS.find((h) => h.id === selectedHub)?.nameAr} بعد
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  تصفح متجر التطبيقات لاكتشاف الأدوات والأنظمة المخصصة لهذا القطاع وتفعيلها لمتجرك.
+                </p>
+                <div className="pt-2 flex items-center justify-center gap-2 flex-wrap">
+                  <Button
+                    size="sm"
+                    className="gap-1.5 rounded-xl font-bold text-xs shadow-sm"
+                    onClick={() => navigate(`/marketplace?hub=${selectedHub}`)}
+                  >
+                    <Store size={14} />
+                    <span>استعراض حلول {SYSTEM_HUBS.find((h) => h.id === selectedHub)?.nameAr} في المتجر</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 rounded-xl font-bold text-xs"
+                    onClick={() => {
+                      setSearch("");
+                      setStatusFilter("ALL");
+                      setSelectedHub("ALL");
+                      setCategoryFilter("ALL");
+                    }}
+                  >
+                    <span>عرض كل أدواتي</span>
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-base font-bold text-foreground">لا توجد تطبيقات مطابقة لبحثك</h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+                  لم نعثر على أي أدوات مطابقة لمعايير البحث الحالية. جرّب مسح البحث أو تغيير الفلتر.
+                </p>
+                <div className="pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 rounded-xl font-bold text-xs"
+                    onClick={() => {
+                      setSearch("");
+                      setStatusFilter("ALL");
+                      setSelectedHub("ALL");
+                      setCategoryFilter("ALL");
+                    }}
+                  >
+                    <X size={14} />
+                    <span>إعادة تعيين الفلاتر</span>
+                  </Button>
+                </div>
+              </>
+            )}
           </div>
         ) : viewMode === "grid" ? (
           /* Grid View - High-Density SaaS App Tiles */
