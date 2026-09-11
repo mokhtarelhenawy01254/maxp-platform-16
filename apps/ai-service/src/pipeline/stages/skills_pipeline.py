@@ -79,7 +79,8 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
 
     # 2. Get skills (filtered by agent's allowed_skills and allowed_tools if present)
     registry = get_skill_registry()
-    skills = registry.get_all()
+    all_available = registry.get_all_tools()
+    skills = all_available
     if ctx.agent:
         allowed_names: set[str] = set()
         if hasattr(ctx.agent, "allowed_skills") and ctx.agent.allowed_skills:
@@ -92,12 +93,13 @@ async def process_with_skills(ctx: PipelineContext) -> PipelineContext:
             from src.tools.names import canonical_tool_name
             allowed_names.update(canonical_tool_name(t).lower() for t in ctx.agent.allowed_tools)
         if allowed_names:
-            skills = [s for s in skills if s.name.lower() in allowed_names]
+            skills = [s for s in all_available if s.name.lower() in allowed_names]
             logger.info(
                 "skills_filtered_by_agent",
                 agent=str(ctx.agent.name or ctx.agent.id),
-                total=len(registry.get_all()),
+                total=len(all_available),
                 filtered=len(skills),
+                filtered_names=[s.name for s in skills],
             )
     if not skills:
         logger.warning("no_skills_available_using_allowed_tools_fallback")
@@ -477,8 +479,28 @@ async def _raw_llm_call(ctx: PipelineContext, messages: list[dict], tools: list 
 
 
 def _build_skill_tool_dicts(skills: list, ctx: PipelineContext) -> list[dict]:
-    tool_dicts = [s.to_openai_tool() for s in skills]
-    skill_names = {s.name.lower() for s in skills}
+    tool_dicts = []
+    skill_names = set()
+    for s in skills:
+        s_name = getattr(s, "name", "").lower()
+        if s_name:
+            skill_names.add(s_name)
+        if hasattr(s, "to_openai_tool"):
+            tool_dicts.append(s.to_openai_tool())
+        elif hasattr(s, "to_json_schema_spec"):
+            tool_dicts.append(s.to_json_schema_spec())
+        elif hasattr(s, "to_dict"):
+            tool_dicts.append(s.to_dict())
+        else:
+            tool_dicts.append({
+                "type": "function",
+                "function": {
+                    "name": getattr(s, "name", ""),
+                    "description": getattr(s, "description", ""),
+                    "parameters": getattr(s, "parameters", {"type": "object", "properties": {}}),
+                },
+            })
+
     allowed = getattr(ctx.agent, "allowed_tools", None) or []
     registry = get_skill_registry()
     for tool_name in allowed:
