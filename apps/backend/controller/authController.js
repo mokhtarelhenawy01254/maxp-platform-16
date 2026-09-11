@@ -446,7 +446,9 @@ const register = async (req, res) => {
               isCurrent: true
             }
           ],
-          hasMultipleCompanies: false
+          hasMultipleCompanies: false,
+          isDentalTechnician: false,
+          dentalRole: null
         },
         token,
         signupCoupon: appliedSignupCoupon

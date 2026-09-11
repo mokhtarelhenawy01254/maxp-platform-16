@@ -42,6 +42,13 @@ async function checkDentalTechnicianUser(userId, companyId) {
   if (!userId || !companyId) return { isTechnician: false, dentalRole: null };
   try {
     const prisma = getSharedPrismaClient();
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (user && PLATFORM_OWNER_ROLES.includes(user.role)) {
+      return { isTechnician: false, dentalRole: 'OWNER', technician: null };
+    }
     const tech = await prisma.dentalTechnician.findFirst({
       where: { companyId, userId, isActive: true },
       select: { id: true, name: true, role: true },

@@ -42,6 +42,20 @@ export default function DentalLabManagementPage() {
                 }
               }
             } catch (_) {}
+          } else {
+            try {
+              sessionStorage.removeItem("dentalRole");
+              localStorage.removeItem("dentalRole");
+              const raw = localStorage.getItem("user");
+              if (raw) {
+                const u = JSON.parse(raw);
+                if (u.isDentalTechnician || u.dentalRole === "TECHNICIAN") {
+                  delete u.isDentalTechnician;
+                  delete u.dentalRole;
+                  localStorage.setItem("user", JSON.stringify(u));
+                }
+              }
+            } catch (_) {}
           }
           setFetchError(false);
         }

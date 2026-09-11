@@ -327,19 +327,30 @@ export const getSidebarConfig = (
     }
 
     // 🩺 قصر القائمة الجانبية لفني معمل الأسنان على ما يخصه فقط (Bench, Barcode, Wage, Profile)
-    const isTechFromStorage = typeof window !== 'undefined' && (() => {
+    // 🛡️ لا يطبق إطلاقاً على مالكي الشركات أو المديرين (OWNER, COMPANY_ADMIN, SUPER_ADMIN)
+    const isPlatformOwnerOrAdmin = ['OWNER', 'COMPANY_ADMIN', 'SUPER_ADMIN'].includes(user?.role || '');
+
+    const isTechFromStorage = !isPlatformOwnerOrAdmin && typeof window !== 'undefined' && (() => {
         try {
             const raw = localStorage.getItem('user');
             if (raw) {
                 const parsed = JSON.parse(raw);
-                if (parsed?.isDentalTechnician === true || parsed?.dentalRole === 'TECHNICIAN') return true;
+                // تحقق دقيق: يجب أن يطابق معرف المستخدم الحالي لضمان عدم تسريب بيانات جلسات سابقة
+                if (parsed?.id && user?.id && parsed.id === user.id) {
+                    if (parsed?.isDentalTechnician === true || parsed?.dentalRole === 'TECHNICIAN') return true;
+                }
             }
-            if (sessionStorage.getItem('dentalRole') === 'TECHNICIAN' || localStorage.getItem('dentalRole') === 'TECHNICIAN') return true;
         } catch { return false; }
         return false;
     })();
 
-    if (user?.isDentalTechnician === true || user?.dentalRole === 'TECHNICIAN' || isTechFromStorage) {
+    const isTechnicianOnlyUser = !isPlatformOwnerOrAdmin && (
+        user?.isDentalTechnician === true ||
+        user?.dentalRole === 'TECHNICIAN' ||
+        isTechFromStorage
+    );
+
+    if (isTechnicianOnlyUser) {
         return [
             {
                 id: 'dental-technician-portal',

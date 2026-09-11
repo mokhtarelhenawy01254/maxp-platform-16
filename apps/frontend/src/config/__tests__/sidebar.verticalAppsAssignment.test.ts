@@ -111,4 +111,63 @@ describe('Vertical Apps & Per-User AssignedApps Gating', () => {
 
     expect(sectionIds).toContain('hotel');
   });
+
+  it('guarantees OWNER never gets restricted to dental-technician-portal even if dentalRole or isDentalTechnician is set', () => {
+    const ownerUser = {
+      id: 'user-owner-new',
+      role: 'OWNER',
+      dentalRole: 'TECHNICIAN',
+      isDentalTechnician: true,
+      company: {
+        id: 'comp-new-1',
+        name: 'New Company',
+        activeApps: [],
+      },
+      companies: [
+        {
+          id: 'comp-new-1',
+          name: 'New Company',
+          isCurrent: true,
+          activeApps: [],
+        },
+      ],
+    };
+
+    const config = getSidebarConfig(t, ownerUser, undefined, undefined, []);
+    const sectionIds = config.map((s) => s.id);
+
+    expect(sectionIds).not.toContain('dental-technician-portal');
+    expect(sectionIds).toContain('company');
+    expect(sectionIds).toContain('settings');
+  });
+
+  it('restricts non-owner technician employee to dental-technician-portal only', () => {
+    const techUser = {
+      id: 'user-tech-only',
+      role: 'EMPLOYEE',
+      dentalRole: 'TECHNICIAN',
+      isDentalTechnician: true,
+      company: {
+        id: 'comp-dental-lab',
+        name: 'Apex Lab',
+        activeApps: ['dental-lab-app'],
+      },
+      companies: [
+        {
+          id: 'comp-dental-lab',
+          name: 'Apex Lab',
+          isCurrent: true,
+          activeApps: ['dental-lab-app'],
+        },
+      ],
+    };
+
+    const config = getSidebarConfig(t, techUser, undefined, undefined, ['dental-lab-app']);
+    const sectionIds = config.map((s) => s.id);
+
+    expect(sectionIds).toEqual(['dental-technician-portal']);
+    expect(config[0].items.map((i) => i.to)).toContain('/dental-lab');
+    expect(config[0].items.map((i) => i.to)).toContain('/dental-lab/kiosk');
+    expect(config[0].items.map((i) => i.to)).toContain('/dental-lab/my-wage');
+  });
 });

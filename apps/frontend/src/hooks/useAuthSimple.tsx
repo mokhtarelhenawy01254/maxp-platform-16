@@ -171,6 +171,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const clearStoredAuth = useCallback(() => {
     tokenManager.clearTokens();
     localStorage.removeItem('user');
+    localStorage.removeItem('dentalRole');
+    sessionStorage.removeItem('dentalRole');
+    localStorage.removeItem('maxp-default-page');
   }, []);
 
   useEffect(() => {
@@ -459,6 +462,10 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Store user data in localStorage for Socket.IO connection
         localStorage.setItem('user', JSON.stringify(userData));
+        if (!userData?.isDentalTechnician && userData?.dentalRole !== 'TECHNICIAN') {
+          localStorage.removeItem('dentalRole');
+          sessionStorage.removeItem('dentalRole');
+        }
         setIsLoading(false);
 
         // 🔌 Reconnect socket with new authentication token
@@ -513,6 +520,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             : repairMojibakeText(result.message, 'فشل في إنشاء الحساب'),
         );
       }
+
+      // 🧹 Purge any lingering technician/session role artifacts before establishing new account
+      localStorage.removeItem('dentalRole');
+      sessionStorage.removeItem('dentalRole');
+      localStorage.removeItem('maxp-default-page');
 
       // Store token and user data
       bumpAuthStateVersion();
@@ -583,6 +595,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem('user');
       localStorage.removeItem('superAuth');
       localStorage.removeItem('superUser');
+      localStorage.removeItem('dentalRole');
+      sessionStorage.removeItem('dentalRole');
+      localStorage.removeItem('maxp-default-page');
       setUser(null);
 
       // 🔌 Disconnect socket to force fresh connection on next login

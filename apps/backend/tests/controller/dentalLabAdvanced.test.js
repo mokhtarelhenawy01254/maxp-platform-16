@@ -9,7 +9,7 @@ jest.mock('../../services/dentalWorkOrderService', () => ({
 const { getSharedPrismaClient } = require('../../services/sharedDatabase');
 const { generateWorkOrderPdf } = require('../../services/dentalWorkOrderService');
 const controller = require('../../controller/dentalLabController');
-const { dentalRoleGuard } = require('../../services/dentalRoles');
+const { dentalRoleGuard, checkDentalTechnicianUser } = require('../../services/dentalRoles');
 
 const createResponse = () => {
   const response = {
@@ -94,6 +94,10 @@ dentalRefabrication: {
     },
     dentalLabDoctor: {
       findMany: jest.fn(),
+      findFirst: jest.fn(),
+    },
+    user: {
+      findUnique: jest.fn(),
       findFirst: jest.fn(),
     },
     dentalTechnician: {
@@ -513,6 +517,30 @@ describe('dentalLabController advanced features', () => {
       await guard(req({ user: { companyId: 'company-1', id: 'user-2', role: 'AGENT' } }), resManager, nextManager);
       expect(nextManager).toHaveBeenCalled();
       expect(resManager.statusCode).toBe(200);
+    });
+
+    test('checkDentalTechnicianUser guarantees OWNER is never flagged as a technician', async () => {
+      const prisma = createPrisma();
+      prisma.user.findUnique.mockResolvedValue({ role: 'OWNER' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const result = await checkDentalTechnicianUser('owner-id', 'company-1');
+      expect(result).toEqual({ isTechnician: false, dentalRole: 'OWNER', technician: null });
+      expect(prisma.dentalTechnician.findFirst).not.toHaveBeenCalled();
+    });
+
+    test('checkDentalTechnicianUser detects technician for non-owner users', async () => {
+      const prisma = createPrisma();
+      prisma.user.findUnique.mockResolvedValue({ role: 'AGENT' });
+      prisma.dentalTechnician.findFirst.mockResolvedValue({ id: 'tech-1', name: 'أحمد فني', role: 'TECHNICIAN' });
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const result = await checkDentalTechnicianUser('agent-id', 'company-1');
+      expect(result).toEqual({
+        isTechnician: true,
+        dentalRole: 'TECHNICIAN',
+        technician: { id: 'tech-1', name: 'أحمد فني', role: 'TECHNICIAN' },
+      });
     });
   });
 
