@@ -41,6 +41,6 @@ describe("LandingPage Component", () => {
     expect(screen.getByText(/احسب كم ستوفر شهرياً/i)).toBeInTheDocument();
 
     // FAQ check
-    expect(screen.getByText(/الأسئلة الشائعة/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/الأسئلة الشائعة/i)[0]).toBeInTheDocument();
   });
 });
