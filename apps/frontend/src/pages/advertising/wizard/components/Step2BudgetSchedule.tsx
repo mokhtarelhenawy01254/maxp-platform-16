@@ -9,6 +9,7 @@ import {
   DollarSign,
   Target,
   Globe,
+  Zap,
 } from "lucide-react";
 import type { FormData, AttributionWindowOption } from "../types";
 import type {
@@ -21,7 +22,12 @@ import {
   CONVERSION_EVENTS,
   CONVERSION_LOCATIONS,
   ATTRIBUTION_WINDOWS,
+  PERFORMANCE_GOALS,
 } from "../constants";
+import {
+  getFullAdMinimumBudgetAmount,
+  isCappedBidStrategy,
+} from "../../CreateAdWizard.helpers";
 
 interface Step2BudgetScheduleProps {
   formData: FormData;
@@ -36,16 +42,16 @@ interface Step2BudgetScheduleProps {
   setPublishAccountConfirmed: (val: boolean) => void;
   setFacebookPixels: React.Dispatch<React.SetStateAction<FacebookPixel[]>>;
   loadPagesAndPixels: (adAccountId?: string) => Promise<void>;
-  adAccountsByBusiness: [string, FacebookAdAccount[]][];
-  selectedAdAccount: FacebookAdAccount | undefined;
+  adAccountsByBusiness?: [string, FacebookAdAccount[]][];
+  selectedAdAccount?: FacebookAdAccount | undefined;
   savedAdAccounts: FacebookSavedAdAccount[];
   syncingAdAccount: boolean;
   handleActivateSelectedAdAccount: () => Promise<void>;
   loadingPixels: boolean;
   facebookPixels: FacebookPixel[];
   selectedAdAccountCurrency: string;
-  minimumDailyBudgetAmount: number;
-  minimumLifetimeBudgetAmount: number;
+  minimumDailyBudgetAmount?: number;
+  minimumLifetimeBudgetAmount?: number;
   compatibleAttributionWindows: AttributionWindowOption[];
 }
 
@@ -62,18 +68,95 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
   setPublishAccountConfirmed,
   setFacebookPixels,
   loadPagesAndPixels,
-  adAccountsByBusiness,
-  selectedAdAccount,
   savedAdAccounts,
   syncingAdAccount,
   handleActivateSelectedAdAccount,
   loadingPixels,
   facebookPixels,
   selectedAdAccountCurrency,
-  minimumDailyBudgetAmount,
-  minimumLifetimeBudgetAmount,
   compatibleAttributionWindows,
 }) => {
+  const resolveAdAccountId = (
+    account:
+      | Pick<FacebookAdAccount, "id" | "account_id">
+      | Pick<FacebookSavedAdAccount, "accountId">,
+  ) =>
+    "accountId" in account
+      ? account.accountId
+      : account.account_id || account.id.replace(/^act_/, "");
+
+  const activeSavedAdAccount = savedAdAccounts.find((a) => a.isActive);
+  const activeSavedAdAccountId = activeSavedAdAccount?.accountId || "";
+
+  const selectedSavedAdAccount =
+    savedAdAccounts.find(
+      (account) => account.accountId === selectedAdAccountId,
+    ) || null;
+
+  const selectedRemoteAdAccount =
+    adAccounts.find(
+      (account) => resolveAdAccountId(account) === selectedAdAccountId,
+    ) || null;
+
+  const getAdAccountBusinessKey = (account: FacebookAdAccount) =>
+    account.business?.id ||
+    account.billingHealth?.business?.id ||
+    "unassigned-business";
+
+  const getAdAccountBusinessName = (account: FacebookAdAccount) =>
+    account.business?.name ||
+    account.billingHealth?.business?.name ||
+    "حسابات بدون Business واضح";
+
+  const adAccountBusinessGroups = adAccounts.reduce<
+    Array<{
+      businessKey: string;
+      businessName: string;
+      accounts: FacebookAdAccount[];
+    }>
+  >((groups, account) => {
+    const businessKey = getAdAccountBusinessKey(account);
+    const existingGroup = groups.find(
+      (group) => group.businessKey === businessKey,
+    );
+
+    if (existingGroup) {
+      existingGroup.accounts.push(account);
+      return groups;
+    }
+
+    groups.push({
+      businessKey,
+      businessName: getAdAccountBusinessName(account),
+      accounts: [account],
+    });
+    return groups;
+  }, []);
+
+  const selectedBusinessName = selectedRemoteAdAccount
+    ? getAdAccountBusinessName(selectedRemoteAdAccount)
+    : "غير محدد";
+
+  const selectedAdAccountName =
+    selectedSavedAdAccount?.name ||
+    selectedRemoteAdAccount?.name ||
+    selectedAdAccountId ||
+    "غير محدد";
+
+  const selectedAccountHealthLabel =
+    selectedRemoteAdAccount?.billingHealth?.accountStatusLabel ||
+    (selectedAdAccountIsActive ? "مفعل داخل MaxP" : "يحتاج تفعيل");
+
+  const minimumWizardBudget = getFullAdMinimumBudgetAmount(
+    selectedAdAccountCurrency,
+  );
+
+  const formatSelectedAdAccountCurrency = (value?: number) =>
+    new Intl.NumberFormat("ar-EG", {
+      style: "currency",
+      currency: selectedAdAccountCurrency || "EGP",
+      maximumFractionDigits: 2,
+    }).format(value || 0);
   return (
     <div className="space-y-6">
       <div className="bg-white border border-gray-200 rounded-xl p-5">

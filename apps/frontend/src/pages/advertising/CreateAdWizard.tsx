@@ -1057,6 +1057,7 @@ const CreateAdWizard: React.FC = () => {
   const selectedRemoteAdAccount =
     adAccounts.find((account) => resolveAdAccountId(account) === selectedAdAccountId) ||
     null;
+  const selectedAdAccount = selectedRemoteAdAccount || undefined;
   const selectedAdAccountCurrency =
     selectedSavedAdAccount?.currency || selectedRemoteAdAccount?.currency || "EGP";
   const minimumWizardBudget = getFullAdMinimumBudgetAmount(selectedAdAccountCurrency);
@@ -1753,7 +1754,6 @@ const CreateAdWizard: React.FC = () => {
               setPublishAccountConfirmed={setPublishAccountConfirmed}
               setFacebookPixels={setFacebookPixels}
               loadPagesAndPixels={loadPagesAndPixels}
-              adAccountsByBusiness={adAccountsByBusiness}
               selectedAdAccount={selectedAdAccount}
               savedAdAccounts={savedAdAccounts}
               syncingAdAccount={syncingAdAccount}
@@ -1761,8 +1761,6 @@ const CreateAdWizard: React.FC = () => {
               loadingPixels={loadingPixels}
               facebookPixels={facebookPixels}
               selectedAdAccountCurrency={selectedAdAccountCurrency}
-              minimumDailyBudgetAmount={minimumDailyBudgetAmount}
-              minimumLifetimeBudgetAmount={minimumLifetimeBudgetAmount}
               compatibleAttributionWindows={compatibleAttributionWindows}
             />
           )}
