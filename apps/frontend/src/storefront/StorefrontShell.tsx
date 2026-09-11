@@ -1396,14 +1396,14 @@ const StorefrontLayout: React.FC<{ previewThemeId?: string | null }> = ({
         </div>
       )}
 
+      {showPreviewThemeBanner && previewThemeId ? (
+        <StorefrontPreviewBanner previewThemeId={previewThemeId} />
+      ) : null}
       {!isProductImageLandingPage ? (
         <MemoStorefrontHeader isMinimal={isMinimal} search={search} />
       ) : null}
       {isProductPreview ? (
         <StorefrontProductPreviewBanner previewProductId={previewProductId} />
-      ) : null}
-      {showPreviewThemeBanner && previewThemeId ? (
-        <StorefrontPreviewBanner previewThemeId={previewThemeId} />
       ) : null}
       {isGracefulTheme ? <GracefulScrollTop /> : null}
       {!isProductImageLandingPage && !isFastlyTheme && !isElessiPackTheme && !isGracefulTheme ? <StorePromotionBar /> : null}

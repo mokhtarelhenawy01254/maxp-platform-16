@@ -79,59 +79,34 @@ const StorefrontPreviewBanner: React.FC<{ previewThemeId: string }> = ({
     return null;
   }
 
-  if (isDentalLab && isMobileViewport) {
+  if (isDentalLab) {
     return (
-      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-[76] flex justify-end px-3">
-        <div className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-cyan-500/40 bg-[#060913]/95 p-1.5 shadow-[0_20px_60px_-20px_rgba(6,182,212,0.4)] backdrop-blur-2xl">
-          <Link
-            to={marketplaceThemesUrl}
-            aria-label="العودة إلى متجر القوالب"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-bold shadow-[0_0_20px_rgba(6,182,212,0.6)] transition-transform hover:-translate-y-0.5"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="rtl:rotate-180"
+      <aside aria-label="شريط معاينة القالب" className="w-full border-b border-cyan-500/20 bg-[#060913] text-slate-300 py-2 px-3 sm:px-6 relative z-[75]">
+        <div className="mx-auto max-w-7xl flex flex-wrap items-center justify-between gap-2.5 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-400" />
+            </span>
+            <span className="font-semibold text-white">معاينة: معمل أسنان رقمي CAD/CAM 2026</span>
+            <span className="text-[11px] text-slate-400 hidden sm:inline">— استعراض حي قبل التطبيق</span>
+          </div>
+          <div className="flex items-center gap-2 ms-auto">
+            <Link
+              to={marketplaceThemesUrl}
+              className="inline-flex items-center justify-center rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold px-3 py-1.5 text-xs shadow-sm transition-colors"
             >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-          </Link>
-          <Link
-            to={storefrontSettingsUrl}
-            aria-label="تخصيص سريع"
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-cyan-500/30 bg-slate-900/80 text-cyan-300 transition-transform hover:-translate-y-0.5 hover:border-cyan-400"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="15"
-              height="15"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.1"
-              strokeLinecap="round"
-              strokeLinejoin="round"
+              العودة للقوالب
+            </Link>
+            <Link
+              to={storefrontSettingsUrl}
+              className="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-900 hover:bg-slate-800 text-slate-200 font-medium px-3 py-1.5 text-xs transition-colors"
             >
-              <path d="M12 3v4" />
-              <path d="M12 17v4" />
-              <path d="M3 12h4" />
-              <path d="M17 12h4" />
-              <path d="m5.64 5.64 2.83 2.83" />
-              <path d="m15.53 15.53 2.83 2.83" />
-              <path d="m5.64 18.36 2.83-2.83" />
-              <path d="m15.53 8.47 2.83-2.83" />
-              <circle cx="12" cy="12" r="3.2" />
-            </svg>
-          </Link>
+              تخصيص
+            </Link>
+          </div>
         </div>
-      </div>
+      </aside>
     );
   }
 
@@ -339,68 +314,6 @@ const StorefrontPreviewBanner: React.FC<{ previewThemeId: string }> = ({
         >
           العودة إلى متجر القوالب
         </Link>
-      </div>
-    );
-  }
-
-  if (isDentalLab) {
-    return (
-      <div className="pointer-events-none fixed inset-x-0 top-20 z-[76] flex justify-end px-3 md:top-24 md:px-6">
-        <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-cyan-500/30 bg-[#060913]/95 p-1.5 shadow-[0_25px_60px_-20px_rgba(6,182,212,0.3)] backdrop-blur-2xl">
-          <span className="hidden items-center gap-2 rounded-full bg-cyan-500/10 px-3 py-2 text-[10px] font-black tracking-[0.2em] text-cyan-300 sm:inline-flex">
-            <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
-            معاينة CAD/CAM 2026
-          </span>
-          <Link
-            to={marketplaceThemesUrl}
-            aria-label="العودة إلى متجر القوالب"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 text-slate-950 font-bold shadow-[0_0_25px_rgba(6,182,212,0.5)] transition-transform hover:-translate-y-0.5 md:h-auto md:w-auto md:gap-2 md:px-4 md:py-2.5"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.4"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="rtl:rotate-180"
-            >
-              <path d="m15 18-6-6 6-6" />
-            </svg>
-            <span className="hidden text-sm font-bold md:inline">متجر القوالب</span>
-          </Link>
-          <Link
-            to={storefrontSettingsUrl}
-            aria-label="تخصيص سريع"
-            className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-cyan-500/30 bg-slate-900/80 text-cyan-300 transition-transform hover:-translate-y-0.5 hover:border-cyan-400 md:h-auto md:w-auto md:gap-2 md:px-4 md:py-2.5"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.1"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <path d="M12 3v4" />
-              <path d="M12 17v4" />
-              <path d="M3 12h4" />
-              <path d="M17 12h4" />
-              <path d="m5.64 5.64 2.83 2.83" />
-              <path d="m15.53 15.53 2.83 2.83" />
-              <path d="m5.64 18.36 2.83-2.83" />
-              <path d="m15.53 8.47 2.83-2.83" />
-              <circle cx="12" cy="12" r="3.2" />
-            </svg>
-            <span className="hidden text-sm font-bold md:inline">تخصيص</span>
-          </Link>
-        </div>
       </div>
     );
   }
