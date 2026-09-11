@@ -74,7 +74,23 @@ roles:
     - sales_revenue
     - company_snapshot
     - facebook_ad_create_draft
+    - facebook_ad_create_full_draft
+    - facebook_ad_analyze_product
+    - facebook_ad_get_decision
+    - competitor_get_ads
     - message_broadcast
+    - audit_read
+    - generate_social_image
+
+  MEDIA_BUYER:
+    - product_search
+    - inventory_check
+    - facebook_ad_analyze_product
+    - facebook_ad_create_full_draft
+    - facebook_ad_get_decision
+    - competitor_get_ads
+    - sales_revenue
+    - company_snapshot
     - audit_read
     - generate_social_image
 

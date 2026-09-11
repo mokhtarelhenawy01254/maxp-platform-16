@@ -81,6 +81,8 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "competitor_get_ads",
     "audit_read",
     "hr_attendance_today",
+    "facebook_ad_analyze_product",
+    "facebook_ad_get_decision",
     # Smart Seller analytics
     "lead_score",
     "abandoned_carts",
@@ -114,6 +116,7 @@ WRITE_TOOL_NAMES: set[str] = {
     "knowledge_create_faq",
     "knowledge_create_policy",
     "facebook_ad_create_draft",
+    "facebook_ad_create_full_draft",
     "message_broadcast",
     "agent_spawn",
     "shipping_update",
@@ -124,6 +127,7 @@ WRITE_TOOL_NAMES: set[str] = {
 DIRECT_WRITE_TOOL_NAMES: set[str] = {
     "order_create_confirmed",
     "discount_create_draft",
+    "facebook_ad_create_full_draft",
     "knowledge_create_faq",
     "order_confirm",
     "order_update_details",
@@ -202,6 +206,9 @@ scheduler_create_job_tool = _registry.resolve("scheduler_create_job")
 knowledge_create_faq_tool = _registry.resolve("knowledge_create_faq")
 knowledge_create_policy_tool = _registry.resolve("knowledge_create_policy")
 facebook_ad_create_draft_tool = _registry.resolve("facebook_ad_create_draft")
+facebook_ad_create_full_draft_tool = _registry.resolve("facebook_ad_create_full_draft")
+facebook_ad_analyze_product_tool = _registry.resolve("facebook_ad_analyze_product")
+facebook_ad_get_decision_tool = _registry.resolve("facebook_ad_get_decision")
 message_broadcast_tool = _registry.resolve("message_broadcast")
 agent_spawn_tool = _registry.resolve("agent_spawn")
 agent_handoff_to_tool = _registry.resolve("agent_handoff_to")

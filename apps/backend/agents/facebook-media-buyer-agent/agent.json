@@ -1,0 +1,52 @@
+{
+  "slug": "facebook-media-buyer-agent",
+  "name": "Facebook Media Buyer Agent",
+  "role": "MEDIA_BUYER",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "claude-3-7-sonnet",
+    "fallback": "deepseek-v4-flash",
+    "allowModelFallback": true
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian",
+    "tone": "professional",
+    "formality": "semi-formal"
+  },
+  "guardrails": {
+    "requireDraftOrders": true,
+    "requireDraftAds": true,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "product.search",
+    "inventory.check",
+    "competitor.get_ads",
+    "facebook_ad.create_full_draft",
+    "facebook_ad.analyze_product",
+    "facebook_ad.get_decision",
+    "social_image.generate",
+    "audit.read",
+    "agent.handoff"
+  ],
+  "allowedSkills": [
+    "catalog-search",
+    "facebook-ad-draft",
+    "campaign-report"
+  ],
+  "channels": [
+    "dashboard",
+    "chat"
+  ],
+  "budget": {
+    "dailyUsd": 5,
+    "maxToolCallsPerRun": 8
+  }
+}

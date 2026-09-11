@@ -13,6 +13,7 @@ const facebookAdsController = require('../controller/facebookAdsController');
 const facebookAdsBudgetAlertController = require('../controller/facebookAdsBudgetAlertController');
 const facebookAudiencesController = require('../controller/facebookAudiencesController');
 const facebookCatalogController = require('../controller/facebookCatalogController');
+const facebookAdsAiController = require('../controller/facebookAdsAiController');
 
 // Apply authentication middleware to all routes
 router.use(verifyToken.authenticateToken);
@@ -64,6 +65,24 @@ router.get('/ad-library/search', facebookAdsController.searchAdLibrary);
 
 // POST /api/v1/facebook-ads/bulk/status - تحديث حالة عدة عناصر بأمان
 router.post('/bulk/status', facebookAdsController.bulkUpdateStatus);
+
+/**
+ * ============================================
+ * 🤖 AI Ad Drafts & Multi-Angle Publishing
+ * ============================================
+ */
+
+// POST /api/v1/facebook-ads/ai/drafts - إنشاء مسودات إعلانية متعددة الزوايا
+router.post('/ai/drafts', facebookAdsAiController.createDraftRun);
+
+// GET /api/v1/facebook-ads/ai/drafts - جلب جميع مسودات الذكاء الاصطناعي
+router.get('/ai/drafts', facebookAdsAiController.listDraftRuns);
+
+// GET /api/v1/facebook-ads/ai/drafts/:runId - جلب تفاصيل جلسة المسودات وزواياها
+router.get('/ai/drafts/:runId', facebookAdsAiController.getDraftRun);
+
+// POST /api/v1/facebook-ads/ai/drafts/:draftId/publish - نشر مسودة محددة بعد اعتماد التاجر
+router.post('/ai/drafts/:draftId/publish', facebookAdsAiController.publishDraft);
 
 /**
  * ============================================
