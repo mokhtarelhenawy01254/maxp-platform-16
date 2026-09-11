@@ -1,4 +1,5 @@
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   ExternalLink,
@@ -50,6 +51,7 @@ export const Step6Review: React.FC<Step6ReviewProps> = ({
   selectedLookalikeAudiences,
   lookalikeAudiences,
 }) => {
+  const navigate = useNavigate();
   return (
     <div className="space-y-6">
       {createdFullAd && (
