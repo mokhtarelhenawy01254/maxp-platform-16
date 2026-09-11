@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { apiClient } from "../../../services/apiClient";
+import { queryClient } from "../../../config/queryClient";
 import {
   Product,
   SortField,
@@ -73,14 +74,29 @@ const buildPreviewPath = (productId: string, companyId?: string | null): string 
 };
 
 export const useProducts = () => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const initialCacheKey = [
+    "products-list-cache",
+    user?.companyId,
+    1,
+    10,
+    "createdAt",
+    "desc",
+    false,
+  ];
+  const initialCachedData = queryClient.getQueryData<{
+    products: Product[];
+    totalItems: number;
+    publishedCount: number;
+  }>(initialCacheKey);
+
+  const [products, setProducts] = useState<Product[]>(() => initialCachedData?.products || []);
+  const [isLoading, setIsLoading] = useState(() => !initialCachedData?.products?.length);
   const [error, setError] = useState<string | null>(null);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [duplicatingProductId, setDuplicatingProductId] = useState<string | null>(null);
   const [workflowLoadingId, setWorkflowLoadingId] = useState<string | null>(null);
 
-  const { user } = useAuth();
   const isAdmin = canManageProductWorkflowByRole(user?.role);
   const canSubmitProductReview = canSubmitProductReviewByRole(user?.role);
   const isMerchant = user?.role === "MERCHANT";
@@ -90,8 +106,8 @@ export const useProducts = () => {
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [totalItems, setTotalItems] = useState(0);
-  const [publishedCount, setPublishedCount] = useState(0);
+  const [totalItems, setTotalItems] = useState(() => initialCachedData?.totalItems || 0);
+  const [publishedCount, setPublishedCount] = useState(() => initialCachedData?.publishedCount || 0);
 
   // Sorting
   const [sortField, setSortField] = useState<SortField>("createdAt");
@@ -281,10 +297,32 @@ export const useProducts = () => {
 
   const loadProducts = useCallback(async () => {
     try {
-      setIsLoading(true);
-      setError(null);
       const limit = hasActiveFilters ? 500 : itemsPerPage;
       const page = hasActiveFilters ? 1 : currentPage;
+      const cacheKey = [
+        "products-list-cache",
+        user?.companyId,
+        page,
+        limit,
+        sortField,
+        sortDirection,
+        hasActiveFilters,
+      ];
+      const cached = queryClient.getQueryData<{
+        products: Product[];
+        totalItems: number;
+        publishedCount: number;
+      }>(cacheKey);
+
+      if (cached && cached.products.length > 0) {
+        setProducts(cached.products);
+        setTotalItems(cached.totalItems);
+        setPublishedCount(cached.publishedCount);
+        setIsLoading(false);
+      } else if (products.length === 0) {
+        setIsLoading(true);
+      }
+      setError(null);
 
       const response = await apiClient.get("products", {
         params: { page, limit, sortBy: sortField, sortOrder: sortDirection },
@@ -295,8 +333,15 @@ export const useProducts = () => {
       if (data.success && data.data) {
         const transformed = data.data.map((p: any) => transformProduct(p));
         setProducts(transformed);
-        setTotalItems(data.pagination?.total || transformed.length);
-        setPublishedCount(data.publishedCount ?? 0);
+        const nextTotal = data.pagination?.total || transformed.length;
+        const nextPublished = data.publishedCount ?? 0;
+        setTotalItems(nextTotal);
+        setPublishedCount(nextPublished);
+        queryClient.setQueryData(cacheKey, {
+          products: transformed,
+          totalItems: nextTotal,
+          publishedCount: nextPublished,
+        });
       } else {
         setError("فشل في تحميل المنتجات");
       }
@@ -313,6 +358,8 @@ export const useProducts = () => {
     sortDirection,
     hasActiveFilters,
     transformProduct,
+    user?.companyId,
+    products.length,
   ]);
 
   useEffect(() => {

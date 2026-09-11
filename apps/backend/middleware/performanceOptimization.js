@@ -185,6 +185,13 @@ const invalidateCompanyDashboardCache = (companyId) => {
   );
 };
 
+const invalidateMerchantPortalCache = (userId, companyId) => {
+  return globalCache.deleteMatching((key) =>
+    key.includes('/merchant-portal') &&
+    ((userId && key.includes(`_${userId}_`)) || (companyId && (key.endsWith(`_${companyId}`) || key.includes(`_${companyId}`))))
+  );
+};
+
 /**
  * Caching middleware for GET requests
  */
@@ -268,5 +275,6 @@ module.exports = {
   globalCache,
   invalidateCompanySettingsCache,
   invalidateCompanyDashboardCache,
+  invalidateMerchantPortalCache,
   isResponsePatched
 };

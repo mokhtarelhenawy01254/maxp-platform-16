@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { tToast } from "../../utils/i18n-toast";
 import { Link, Navigate, useLocation } from "react-router-dom";
@@ -120,50 +121,50 @@ const MerchantPortalDashboard: React.FC = () => {
   const location = useLocation();
   const normalizedPathname = location.pathname.replace(/\/+$/, "") || "/";
   const activeSectionId = resolveActiveSection(location.pathname, location.hash);
-  const [loading, setLoading] = useState(true);
   const [requestingPayout, setRequestingPayout] = useState(false);
-  const [accessError, setAccessError] = useState("");
-  const [profile, setProfile] = useState<MerchantProfile | null>(null);
-  const [operationsSummary, setOperationsSummary] =
-    useState<MerchantOperationsSummary | null>(null);
-  const [payoutSummary, setPayoutSummary] = useState<MerchantPayoutSummary | null>(
-    null,
-  );
+
+  const profileQuery = useQuery({
+    queryKey: ["merchant-portal-me"],
+    queryFn: async () => (await apiClient.get<ApiResponse<MerchantProfile>>("/merchant-portal/me")).data.data,
+    staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+  const operationsQuery = useQuery({
+    queryKey: ["merchant-portal-operations-summary"],
+    queryFn: async () => (await apiClient.get<ApiResponse<MerchantOperationsSummary>>("/merchant-portal/operations-summary")).data.data,
+    staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+  const payoutQuery = useQuery({
+    queryKey: ["merchant-portal-payout-summary"],
+    queryFn: async () => (await apiClient.get<ApiResponse<MerchantPayoutSummary>>("/merchant-portal/payout-summary")).data.data,
+    staleTime: 60 * 1000,
+    placeholderData: (prev) => prev,
+  });
+
+  const profile = profileQuery.data ?? null;
+  const operationsSummary = operationsQuery.data ?? null;
+  const payoutSummary = payoutQuery.data ?? null;
+  const loading = (profileQuery.isLoading && !profile) || (operationsQuery.isLoading && !operationsSummary) || (payoutQuery.isLoading && !payoutSummary);
+  const accessError = profileQuery.error
+    ? getApiErrorMessage(profileQuery.error, "تعذر تحميل بورتال التاجر")
+    : operationsQuery.error
+      ? getApiErrorMessage(operationsQuery.error, "تعذر تحميل بورتال التاجر")
+      : "";
 
   const cardClass = isDark
     ? "border-slate-700 bg-slate-900/75 text-slate-100"
     : "border-stone-200 bg-white text-stone-900";
 
   const loadPortal = async () => {
-    setLoading(true);
-    setAccessError("");
-    try {
-      const [profileRes, operationsRes, payoutRes] =
-        await Promise.all([
-        apiClient.get<ApiResponse<MerchantProfile>>("/merchant-portal/me"),
-        apiClient.get<ApiResponse<MerchantOperationsSummary>>(
-          "/merchant-portal/operations-summary",
-        ),
-        apiClient.get<ApiResponse<MerchantPayoutSummary>>(
-          "/merchant-portal/payout-summary",
-        ),
-      ]);
-
-      setProfile(profileRes.data.data);
-      setOperationsSummary(operationsRes.data.data);
-      setPayoutSummary(payoutRes.data.data);
-    } catch (error: unknown) {
-      const message = getApiErrorMessage(error, "تعذر تحميل بورتال التاجر");
-      setAccessError(message);
-      toast.error(message);
-    } finally {
-      setLoading(false);
-    }
+    await Promise.all([
+      profileQuery.refetch(),
+      operationsQuery.refetch(),
+      payoutQuery.refetch(),
+    ]);
   };
-
-  useEffect(() => {
-    loadPortal();
-  }, []);
 
   useEffect(() => {
     if (loading || (accessError && !profile)) return undefined;

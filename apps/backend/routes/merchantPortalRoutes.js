@@ -5,6 +5,7 @@ const { getSharedPrismaClient } = require('../services/sharedDatabase');
 const merchantService = require('../services/merchantService');
 const fulfillmentService = require('../services/fulfillmentService');
 const commissionService = require('../services/commissionService');
+const { cacheMiddleware, invalidateMerchantPortalCache } = require('../middleware/performanceOptimization');
 
 const MERCHANT_ORDER_STATUSES = new Set([
   'PENDING',
@@ -83,7 +84,7 @@ const requireMerchantAccount = async (req, res, next) => {
 
 router.use(verifyToken.authenticateToken, requireMerchantAccount);
 
-router.get('/me', async (req, res) => {
+router.get('/me', cacheMiddleware(60000), async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const merchant = await prisma.merchant.findFirst({
@@ -234,6 +235,7 @@ router.patch('/products/:merchantProductId', async (req, res) => {
     });
 
     await merchantService.updateProductDropshippingPrice(merchantProduct.productId);
+    invalidateMerchantPortalCache(req.user?.id, req.user?.companyId);
 
     res.json({
       success: true,
@@ -278,7 +280,7 @@ router.get('/orders', async (req, res) => {
   }
 });
 
-router.get('/operations-summary', async (req, res) => {
+router.get('/operations-summary', cacheMiddleware(30000), async (req, res) => {
   try {
     const summary = await merchantService.getMerchantOperationsSummary(
       req.merchant.id,
@@ -302,7 +304,7 @@ router.get('/operations-summary', async (req, res) => {
   }
 });
 
-router.get('/payout-summary', async (req, res) => {
+router.get('/payout-summary', cacheMiddleware(30000), async (req, res) => {
   try {
     const summary = await commissionService.getMerchantPayoutSummary(req.merchant.id);
 
@@ -330,6 +332,8 @@ router.post('/payout-request', async (req, res) => {
       }
     );
 
+    invalidateMerchantPortalCache(req.user?.id, req.user?.companyId);
+
     res.status(201).json({
       success: true,
       message: 'تم إنشاء طلب سحب مستحقات التاجر بنجاح',
@@ -344,7 +348,7 @@ router.post('/payout-request', async (req, res) => {
   }
 });
 
-router.get('/payouts', async (req, res) => {
+router.get('/payouts', cacheMiddleware(30000), async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
     const payouts = await prisma.merchantPayout.findMany({

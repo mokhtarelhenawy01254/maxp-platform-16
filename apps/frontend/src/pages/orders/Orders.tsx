@@ -9,6 +9,7 @@ import { format, subDays } from "date-fns";
 import { useAuth } from "../../hooks/useAuthSimple";
 import { useCompany } from "../../contexts/CompanyContext";
 import { apiClient } from "../../services/apiClient";
+import { queryClient } from "../../config/queryClient";
 import { toast } from "sonner";
 import { getOrderStatusDisplay, getStatusDisplay } from "../../utils/statusRegistry";
 import {
@@ -1086,13 +1087,38 @@ const HeldOrdersBanner: React.FC = () => {
 };
 
 const Orders: React.FC = () => {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const ordersRef = useRef(orders);
-  ordersRef.current = orders;
-  const [loading, setLoading] = useState(true);
-  const [ordersLoadError, setOrdersLoadError] = useState<string | null>(null);
   const { user } = useAuth();
   const { company } = useCompany();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
+  const initialListViewState = useRef<OrdersListViewState | null>(null);
+  if (!initialListViewState.current) {
+    initialListViewState.current = getInitialOrdersListViewState(searchParams);
+  }
+  const restoredListViewState = initialListViewState.current!;
+
+  const initialCacheKey = useMemo(
+    () => [
+      "orders-page-cache",
+      user?.companyId || company?.id || "default",
+      restoredListViewState.page,
+      restoredListViewState.limit,
+      { ...restoredListViewState.filters, search: restoredListViewState.filters.search },
+    ],
+    [user?.companyId, company?.id, restoredListViewState]
+  );
+  const initialCachedData = queryClient.getQueryData<{
+    orders: Order[];
+    totalPages: number;
+    totalOrders: number;
+  }>(initialCacheKey);
+
+  const [orders, setOrders] = useState<Order[]>(() => initialCachedData?.orders || []);
+  const ordersRef = useRef(orders);
+  ordersRef.current = orders;
+  const [loading, setLoading] = useState(() => !initialCachedData?.orders?.length);
+  const [ordersLoadError, setOrdersLoadError] = useState<string | null>(null);
   const isAdmin = ["OWNER", "COMPANY_ADMIN", "SUPER_ADMIN", "MANAGER"].includes(
     user?.role || "",
   );
@@ -1100,18 +1126,11 @@ const Orders: React.FC = () => {
   const canSelectOrders = isAdmin && !isMerchant;
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [showOrderModal, setShowOrderModal] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  const initialListViewState = useRef<OrdersListViewState | null>(null);
   const fetchOrdersRef = useRef<() => Promise<void>>(async () => undefined);
-  if (!initialListViewState.current) {
-    initialListViewState.current = getInitialOrdersListViewState(searchParams);
-  }
-  const restoredListViewState = initialListViewState.current!;
   const [page, setPage] = useState(restoredListViewState.page);
   const [limit, setLimit] = useState(restoredListViewState.limit);
-  const [totalOrders, setTotalOrders] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(() => initialCachedData?.totalOrders || 0);
+  const [totalPages, setTotalPages] = useState(() => initialCachedData?.totalPages || 0);
   const [selectedOrders, setSelectedOrders] = useState<string[]>([]);
   const [bulkProcessing, setBulkProcessing] = useState(false);
   const [printingInvoices, setPrintingInvoices] = useState(false);
@@ -1387,21 +1406,30 @@ const Orders: React.FC = () => {
   // Socket.IO Integration
   const { socket, isConnected } = useSocket();
 
+  const companyId = user?.companyId || company?.id || "default";
+
   useEffect(() => {
     let isMounted = true;
 
     const fetchOrderStatuses = async () => {
       try {
-        const response = await apiClient.get("/order-status", {
-          _skipErrorToast: true,
-        });
-        if (!response.data?.success) {
-          return;
-        }
+        const cacheKey = ["order-statuses", companyId];
+        let fetchedStatuses = queryClient.getQueryData<Array<Partial<OrderStatusDefinition> & { statusType?: string }>>(cacheKey);
 
-        const fetchedStatuses = Array.isArray(response.data.data)
-          ? (response.data.data as Array<Partial<OrderStatusDefinition> & { statusType?: string }>)
-          : [];
+        if (!fetchedStatuses || fetchedStatuses.length === 0) {
+          const response = await apiClient.get("/order-status", {
+            _skipErrorToast: true,
+          });
+          if (!response.data?.success) {
+            return;
+          }
+          fetchedStatuses = Array.isArray(response.data.data)
+            ? (response.data.data as Array<Partial<OrderStatusDefinition> & { statusType?: string }>)
+            : [];
+          if (fetchedStatuses.length > 0) {
+            queryClient.setQueryData(cacheKey, fetchedStatuses);
+          }
+        }
 
         // 🛡️ (deleted-status-dropdowns): رد الـ API هو مصدر الحقيقة — الحالات
         // الافتراضية المدمجة كانت بترجّع حالات التاجر حذفها من إدارة الحالات.
@@ -1449,7 +1477,7 @@ const Orders: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, []);
+  }, [companyId]);
 
   useEffect(() => {
     if (!isAdmin || isMerchant) {
@@ -1461,6 +1489,16 @@ const Orders: React.FC = () => {
     let isMounted = true;
 
     const fetchUnifiedOperationOptions = async () => {
+      const cacheKey = ["unified-operation-options", companyId];
+      const cached = queryClient.getQueryData<{ merchants: MerchantFilterOption[]; affiliates: AffiliateFilterOption[] }>(cacheKey);
+      if (cached) {
+        if (isMounted) {
+          setMerchantOptions(cached.merchants || []);
+          setAffiliateOptions(cached.affiliates || []);
+        }
+        return;
+      }
+
       const [merchantsResult, affiliatesResult] = await Promise.allSettled([
         apiClient.get<{ success: boolean; data?: MerchantFilterOption[] }>(
           "/merchants",
@@ -1474,20 +1512,22 @@ const Orders: React.FC = () => {
 
       if (!isMounted) return;
 
-      setMerchantOptions(
+      const merchants =
         merchantsResult.status === "fulfilled" &&
-          merchantsResult.value.data.success &&
-          Array.isArray(merchantsResult.value.data.data)
+        merchantsResult.value.data.success &&
+        Array.isArray(merchantsResult.value.data.data)
           ? merchantsResult.value.data.data
-          : [],
-      );
-      setAffiliateOptions(
+          : [];
+      const affiliates =
         affiliatesResult.status === "fulfilled" &&
-          affiliatesResult.value.data.success &&
-          Array.isArray(affiliatesResult.value.data.data)
+        affiliatesResult.value.data.success &&
+        Array.isArray(affiliatesResult.value.data.data)
           ? affiliatesResult.value.data.data
-          : [],
-      );
+          : [];
+
+      queryClient.setQueryData(cacheKey, { merchants, affiliates });
+      setMerchantOptions(merchants);
+      setAffiliateOptions(affiliates);
 
       if (
         merchantsResult.status === "rejected" ||
@@ -1508,12 +1548,19 @@ const Orders: React.FC = () => {
 
     void fetchUnifiedOperationOptions();
 
-  }, [isAdmin, isMerchant]);
+  }, [isAdmin, isMerchant, companyId]);
  
   useEffect(() => {
     if (!canSelectOrders) return;
     let isMounted = true;
     const fetchActiveCarriers = async () => {
+      const cacheKey = ["active-carriers", companyId];
+      const cached = queryClient.getQueryData<Array<{ id: string; name?: string; slug?: string; providerKey?: string; isActive?: boolean }>>(cacheKey);
+      if (cached && cached.length > 0) {
+        if (isMounted) setActiveCarriers(cached);
+        return;
+      }
+
       try {
         let activeList: Array<{ id: string; name?: string; slug?: string; providerKey?: string; isActive?: boolean }> = [];
         try {
@@ -1534,6 +1581,7 @@ const Orders: React.FC = () => {
           }
         }
         if (!isMounted) return;
+        queryClient.setQueryData(cacheKey, activeList);
         setActiveCarriers(activeList);
       } catch {
         // Silently ignore
@@ -1543,7 +1591,7 @@ const Orders: React.FC = () => {
     return () => {
       isMounted = false;
     };
-  }, [canSelectOrders]);
+  }, [canSelectOrders, companyId]);
 
   useEffect(() => {
     const selectedMerchantId = filters.merchantId[0] || "";
@@ -1684,7 +1732,27 @@ const Orders: React.FC = () => {
 
   const fetchOrders = useCallback(async () => {
     try {
-      setLoading(true);
+      const orderListCacheKey = [
+        "orders-page-cache",
+        companyId,
+        page,
+        limit,
+        effectiveFilters,
+      ];
+      const cached = queryClient.getQueryData<{
+        orders: Order[];
+        totalPages: number;
+        totalOrders: number;
+      }>(orderListCacheKey);
+
+      if (cached && cached.orders.length > 0) {
+        setOrders(cached.orders);
+        setTotalPages(cached.totalPages);
+        setTotalOrders(cached.totalOrders);
+        setLoading(false);
+      } else if (ordersRef.current.length === 0) {
+        setLoading(true);
+      }
       setOrdersLoadError(null);
 
       // Merchants use the same core Orders screen, scoped by the simple orders API.
@@ -1764,6 +1832,11 @@ const Orders: React.FC = () => {
           setOrders(transformedOrders);
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
+          queryClient.setQueryData(orderListCacheKey, {
+            orders: transformedOrders,
+            totalPages: nextTotalPages,
+            totalOrders: nextTotalOrders,
+          });
           setSelectedOrders([]);
           setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
@@ -1833,6 +1906,11 @@ const Orders: React.FC = () => {
           setOrders(transformedOrders);
           setTotalPages(nextTotalPages);
           setTotalOrders(nextTotalOrders);
+          queryClient.setQueryData(orderListCacheKey, {
+            orders: transformedOrders,
+            totalPages: nextTotalPages,
+            totalOrders: nextTotalOrders,
+          });
           setSelectedOrders([]);
           setLastUpdatedAt(new Date());
           setOrdersLoadError(null);
