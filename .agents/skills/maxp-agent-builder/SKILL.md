@@ -128,9 +128,21 @@ apps/ai-service/src/                        <-- المحرك التنفيذي ل
 
 ## ❷ هندسة التخزين المؤقت للبرومبت (Prompt Caching Architecture)
 
-مع استخدام نماذج مثل **DeepSeek-V3/V4** و **OpenAI GPT-4o**، يوفر الـ Prompt Caching ما بين **50% إلى 85% من تكلفة التوكنز ويخفض زمن الاستجابة إلى النصف**.
+المنصة تحتوي بالفعل على نظام متكامل للتخزين المؤقت تم تطويره في الكود على 3 مستويات:
 
-### القاعدة الذهبية لترتيب البرومبت:
+1. **كاش تجميع البرومبت المحلي (`BaseAgent._system_prompt_cache`):**
+   * كود: [`apps/ai-service/src/agents/base.py`](file:///h:/maxp-platform/apps/ai-service/src/agents/base.py)
+   * مدة الصلاحية: `SYSTEM_PROMPT_CACHE_TTL_SECONDS = 300` (5 دقائق).
+   * يقوم بتخزين البرومبت بعد معالجته بـ Jinja2 لتفادي إعادة قراءة الملفات في كل رسالة. مع وجود دالة `clear_prompt_cache()`.
+2. **خدمة كاش النماذج السحابية (`PromptCacheService`):**
+   * كود: [`apps/ai-service/src/services/prompt_cache_service.py`](file:///h:/maxp-platform/apps/ai-service/src/services/prompt_cache_service.py)
+   * مدة الصلاحية: `PROMPT_CACHE_TTL = 1800` (30 دقيقة افتراضياً).
+   * توليد مفتاح تجزئة فريد عبر SHA-256 لكل `company_id + prompt_type + instructions`، والتكامل مع Google Gemini `cachedContent` API.
+3. **تتبع التوكنز والفوترة (`llm/client.py` & `billing/ledger.py`):**
+   * استخراج `prompt_cache_hit_tokens` و `prompt_cache_miss_tokens` واحتساب خصومات الكاش تلقائياً في سجل الفوترة لكل تاجر.
+
+### القاعدة الذهبية لكتابة البرومبت لضمان الاستفادة الكاملة من الكاش (Cache Hit):
+لضمان عمل `PromptCacheService` و Provider Caching بكفاءة 80%+:
 ```
 [1. Static Prefix — الجزء الثابت 100% (يُحفظ في الـ Cache)]
 ├── محتوى SOUL.md العام (الهوية، القواعد، وأسلوب الحوار)
