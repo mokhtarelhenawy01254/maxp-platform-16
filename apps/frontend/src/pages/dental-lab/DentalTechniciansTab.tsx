@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { Loader2, Pencil, Plus, RefreshCw, Search, Sparkles, Trash2, Users, Wallet, Receipt, Printer, X as XMarkIcon } from "lucide-react";
+import { Loader2, Lock, Mail, Pencil, Plus, RefreshCw, Search, ShieldCheck, Sparkles, Trash2, Users, Wallet, Receipt, Printer, X as XMarkIcon } from "lucide-react";
 import {
   DentalTechnician, DentalTechnicianRole, DentalTechnicianPayout, TechnicianPayoutType, TechnicianPayoutSummary,
   fetchTechnicians, createTechnician, updateTechnician, deleteTechnician,
@@ -14,6 +14,8 @@ interface TechnicianForm {
   id?: string;
   name: string;
   phone: string;
+  email: string;
+  password: string;
   role: DentalTechnicianRole;
   userId: string;
   wagePerStage: string;
@@ -69,15 +71,27 @@ export default function DentalTechniciansTab() {
 
   const openCreate = () => {
     setError(null);
-    setModal({ name: "", phone: "", role: "CAD_DESIGNER", userId: "", wagePerStage: "", isActive: true });
+    setModal({
+      name: "",
+      phone: "",
+      email: "",
+      password: "",
+      role: "CAD_DESIGNER",
+      userId: "",
+      wagePerStage: "",
+      isActive: true,
+    });
   };
 
   const openEdit = (x: DentalTechnician) => {
     setError(null);
+    const existingEmail = x.userEmail || x.user?.email || (team.find(mm => mm.userId === x.userId)?.email) || "";
     setModal({
       id: x.id,
       name: x.name,
       phone: x.phone || "",
+      email: existingEmail,
+      password: "",
       role: x.role || "GENERAL_TECHNICIAN",
       userId: x.userId || "",
       wagePerStage: x.wagePerStage != null ? String(x.wagePerStage) : "",
@@ -89,12 +103,28 @@ export default function DentalTechniciansTab() {
     if (!modal || saving) return;
     setError(null);
     if (!modal.name.trim()) { setError("اسم عضو الفريق مطلوب"); return; }
+    if (!modal.id) {
+      if (!modal.email.trim()) {
+        setError("البريد الإلكتروني مطلوب لإنشاء حساب الفني");
+        return;
+      }
+      if (!modal.password || modal.password.length < 6) {
+        setError("كلمة المرور مطلوبة ويجب ألا تقل عن 6 أحرف");
+        return;
+      }
+    } else if (modal.password && modal.password.length < 6) {
+      setError("كلمة المرور يجب ألا تقل عن 6 أحرف");
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
         name: modal.name.trim(),
         phone: modal.phone.trim() || undefined,
         role: modal.role,
+        email: modal.email.trim() || undefined,
+        password: modal.password.trim() || undefined,
         userId: modal.userId.trim() || undefined,
         wagePerStage: modal.wagePerStage.trim() === "" ? undefined : Number(modal.wagePerStage),
       };
@@ -103,7 +133,7 @@ export default function DentalTechniciansTab() {
         toast.success("تم تحديث بيانات عضو فريق العمل بنجاح");
       } else {
         await createTechnician({ ...payload, isActive: true });
-        toast.success("تمت إضافة عضو جديد لفريق العمل بنجاح");
+        toast.success("تمت إضافة الفني وإنشاء حسابه بالمنصة بنجاح");
       }
       setModal(null);
       await load(true);
@@ -258,7 +288,25 @@ export default function DentalTechniciansTab() {
                     <td className={`py-3 px-3 font-bold ${(x.balanceDue ?? 0) > 0 ? "text-emerald-600 dark:text-emerald-400" : "text-gray-600 dark:text-gray-300"}`}>
                       {fmtMoney(x.balanceDue ?? 0)} ج.م
                     </td>
-                    <td className="py-3 px-3 text-xs text-gray-500 dark:text-gray-400">{teamName(x.userId)}</td>
+                    <td className="py-3 px-3 text-xs">
+                      {x.userEmail || x.user?.email || (x.userId && teamName(x.userId) !== "—") ? (
+                        <div className="inline-flex items-center gap-1.5 font-mono text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2.5 py-1 rounded-lg border border-blue-200 dark:border-blue-800">
+                          <ShieldCheck className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 shrink-0" />
+                          <span className="truncate max-w-[170px]" title={x.userEmail || x.user?.email || teamName(x.userId)}>
+                            {x.userEmail || x.user?.email || teamName(x.userId)}
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => openEdit(x)}
+                          className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-900/30 px-2 py-0.5 rounded border border-amber-200 dark:border-amber-800 hover:bg-amber-100"
+                          title="اضغط لإنشاء أو ربط حساب المنصة"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>إنشاء حساب دخول</span>
+                        </button>
+                      )}
+                    </td>
                     <td className="py-3 px-3">
                       <button
                         onClick={() => toggleActive(x)}
@@ -300,33 +348,35 @@ export default function DentalTechniciansTab() {
       </div>
 
       {modal && (
-        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-3" onClick={() => !saving && setModal(null)}>
-          <div className={MODAL_CONTENT_CLS} onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5 border-b pb-3 dark:border-gray-700">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-bold">{modal.id ? "تعديل بيانات عضو الفريق" : "إضافة عضو جديد لفريق العمل"}</h3>
-              </div>
-              <button onClick={() => !saving && setModal(null)} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg dark:text-gray-300">
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className={`${MODAL_CONTENT_CLS} max-w-lg w-full`}>
+            <div className="flex justify-between items-center mb-4 border-b pb-3 dark:border-gray-700">
+              <h3 className="font-semibold text-lg">{modal.id ? "تعديل بيانات عضو فريق العمل" : "إضافة فني جديد وحساب المنصة"}</h3>
+              <button onClick={() => setModal(null)} className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
                 <XMarkIcon className="w-5 h-5" />
               </button>
             </div>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg text-sm border border-red-200 dark:border-red-800">
+                {error}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls}>{t("dentalLab.common.name")} *</label>
-                <input className={inputCls} placeholder="مثال: أحمد محمود" value={modal.name} onChange={e => setModal({ ...modal, name: e.target.value })} />
+                <label className={labelCls}>اسم الفني / العضو *</label>
+                <input className={inputCls} value={modal.name} onChange={e => setModal({ ...modal, name: e.target.value })} placeholder="مثال: أحمد مصطفى" />
               </div>
               <div>
-                <label className={labelCls}>{t("dentalLab.common.phone")}</label>
-                <input className={inputCls} placeholder="01xxxxxxxxx" value={modal.phone} onChange={e => setModal({ ...modal, phone: e.target.value })} dir="ltr" />
+                <label className={labelCls}>رقم الهاتف</label>
+                <input className={inputCls} value={modal.phone} onChange={e => setModal({ ...modal, phone: e.target.value })} placeholder="01xxxxxxxxx" dir="ltr" />
               </div>
               <div>
-                <label className={labelCls}>التخصص / المحطة الأساسية *</label>
+                <label className={labelCls}>التخصص / المحطة التشغيلية</label>
                 <select className={inputCls} value={modal.role} onChange={e => setModal({ ...modal, role: e.target.value as DentalTechnicianRole })}>
-                  <option value="CAD_DESIGNER">مصمم CAD/CAM (CAD Designer)</option>
-                  <option value="CERAMIST">فني خزف وبورسلين (Ceramist)</option>
-                  <option value="MODEL_WAX">فني شمع وموديلات (Model & Wax Tech)</option>
-                  <option value="METAL_CASTING">فني ميتال وكاستينج (Metal & Casting)</option>
+                  <option value="CAD_DESIGNER">مصمم CAD/CAM (تصميم ثلاثي الأبعاد)</option>
+                  <option value="CERAMIST">فني سيراميك وبورسلين (Ceramist)</option>
+                  <option value="MODEL_WAX">فني كاستات وشمع (Model & Wax)</option>
+                  <option value="METAL_CASTING">فني صب معادن وسباكة (Casting)</option>
                   <option value="FINISHING_POLISHING">فني فينشنج وتلميع (Finishing & Polish)</option>
                   <option value="QC_INSPECTOR">أخصائي مراقبة جودة (QC Inspector)</option>
                   <option value="RECEPTION_LOGISTICS">استقبال ولوجستيات (Reception)</option>
@@ -338,15 +388,52 @@ export default function DentalTechniciansTab() {
                 <label className={labelCls}>أجر المرحلة المكتملة (ج.م)</label>
                 <input className={inputCls} type="number" min="0" value={modal.wagePerStage} onChange={e => setModal({ ...modal, wagePerStage: e.target.value })} placeholder="فارغ = المعدل الافتراضي" />
               </div>
-              <div className="sm:col-span-2">
-                <label className={labelCls}>ربط بحساب مستخدم بالمنصة (اختياري)</label>
-                <select className={inputCls} value={modal.userId} onChange={e => setModal({ ...modal, userId: e.target.value })}>
-                  <option value="">بدون حساب منصة مرتبط</option>
-                  {team.map(m => (
-                    <option key={m.userId} value={m.userId}>{m.name || m.email || m.userId}</option>
-                  ))}
-                </select>
-                <p className="text-xs text-gray-400 mt-1">يتيح للعضو تسجيل الدخول لبوابة الفنيين ومسح باركود الحالات.</p>
+
+              {/* Direct User Account Section (معايير 2026 لإنشاء الحساب المباشر) */}
+              <div className="sm:col-span-2 border-t dark:border-gray-700/80 pt-4 mt-2">
+                <div className="flex items-center gap-2 mb-3">
+                  <ShieldCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                  <h4 className="text-xs font-bold text-gray-900 dark:text-gray-100">
+                    بيانات تسجيل الدخول لحساب الفني بالمنصة (Portal Login Account)
+                  </h4>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className={labelCls}>البريد الإلكتروني / اسم الدخول *</label>
+                    <div className="relative">
+                      <Mail className="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-3 text-gray-400 pointer-events-none" />
+                      <input
+                        className={`${inputCls} pr-9`}
+                        type="email"
+                        value={modal.email}
+                        onChange={e => setModal({ ...modal, email: e.target.value })}
+                        placeholder="technician@lab.com"
+                        dir="ltr"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls}>
+                      {modal.id ? "تحديث كلمة المرور (فارغ للإبقاء)" : "كلمة المرور للدخول *"}
+                    </label>
+                    <div className="relative">
+                      <Lock className="w-4 h-4 absolute top-1/2 -translate-y-1/2 right-3 text-gray-400 pointer-events-none" />
+                      <input
+                        className={`${inputCls} pr-9`}
+                        type="password"
+                        value={modal.password}
+                        onChange={e => setModal({ ...modal, password: e.target.value })}
+                        placeholder={modal.id ? "•••••••• (فارغ للإبقاء)" : "6 أحرف على الأقل"}
+                        dir="ltr"
+                        required={!modal.id}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-2">
+                  يتم إنشاء وتفعيل حساب المستخدم فورياً لتمكين الفني من الدخول لبوابة المعمل ومسح باركود الحالات وتتبع مهامه.
+                </p>
               </div>
               {modal.id && (
                 <div className="sm:col-span-2 flex items-center gap-2 pt-2">
