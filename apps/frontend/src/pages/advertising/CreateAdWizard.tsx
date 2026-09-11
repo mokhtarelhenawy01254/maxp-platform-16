@@ -107,6 +107,14 @@ const CreateAdWizard: React.FC = () => {
     searchParams.get("productTitle") ||
     humanizeProductSlug(prefillProductSlug) ||
     "المنتج";
+  const isStorefrontProductLaunch = Boolean(
+    isAiDraftPrefill ||
+      prefillProductUrl ||
+      prefillProductId ||
+      prefillProductSlug
+  );
+  const launchPrefillProductTitle = prefillProductTitle;
+  const productLaunchUrl = prefillProductUrl;
   const prefillBudget =
     Number(
       storedLaunchPrefill?.budget ||
