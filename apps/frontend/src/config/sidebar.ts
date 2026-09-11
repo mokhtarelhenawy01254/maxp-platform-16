@@ -920,7 +920,6 @@ export const getSidebarConfig = (
                         { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : 'الجماهير المخصصة والشبيهة' },
                         { to: '/advertising/facebook-ads/saved-audiences', label: isEn ? 'Saved Audiences' : 'الجماهير المحفوظة (Saved Audiences)' },
                         { to: '/advertising/facebook-ads/catalogs', label: isEn ? 'Product Catalogs' : 'كتالوجات المنتجات (Catalog)' },
-                        { to: '/advertising/facebook-ads/creative-formats', label: isEn ? 'Creative Formats & Assets' : 'صيغ ومكتبة الكرياتيف' },
                         { to: '/advertising/facebook-ads/ad-preview', label: isEn ? 'Ad Preview & QA' : 'معاينة الإعلانات (Ad Preview)' },
                         { to: '/advertising/facebook-ads/ad-library', label: isEn ? 'Ad Library & Research' : 'مكتبة الكرياتيف والبحث' },
                         { to: '/advertising/facebook-ads/tests', label: isEn ? 'A/B Tests' : 'اختبارات A/B Tests' },
