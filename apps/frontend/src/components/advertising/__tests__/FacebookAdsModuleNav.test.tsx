@@ -2,6 +2,7 @@
 import React from "react";
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
+import "@testing-library/jest-dom/vitest";
 import { MemoryRouter } from "react-router-dom";
 import FacebookAdsModuleNav from "../FacebookAdsModuleNav";
 
