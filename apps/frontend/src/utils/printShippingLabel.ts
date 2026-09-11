@@ -289,9 +289,21 @@ function resolveLabelContext(order: OrderDetailsType) {
     total,
     addressText,
     governorate,
-    city,
+    curLabel,
     fm,
     itemsRows,
+    isPaid: (() => {
+      const pStatus = String(order.paymentStatus || "").toUpperCase();
+      const pMethod = String(order.paymentMethod || "").toUpperCase();
+      return (
+        pStatus === "COMPLETED" ||
+        pStatus === "PAID" ||
+        Boolean(order.kashierPayment || (order.metadata as any)?.kashierPayment) ||
+        ["CREDIT_CARD", "WALLET", "KASHIER", "ONLINE", "VODAFONE_CASH", "INSTAPAY"].some((m) =>
+          pMethod.includes(m),
+        )
+      );
+    })(),
   };
 }
 
@@ -597,7 +609,10 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
         <!-- Row 5: Notes -->
         <div class="label-notes">
           <div class="cell-title">ملاحظات</div>
-          <div style="flex:1"></div>
+          <div style="flex:1;font-size:12px;font-weight:700;color:#000;">
+            ${ctx.isPaid ? '<span style="color:#059669;font-weight:800;display:inline-block;margin-left:6px;">⚠️ الطلب مدفوع مسبقاً (لا يتم تحصيل أي مبالغ من العميل).</span>' : ''}
+            ${escapeHtml(order.notes || '')}
+          </div>
         </div>
 
         <!-- Row 6: Footer -->
@@ -611,7 +626,9 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
           </div>
           <div class="footer-cell">
             <div class="cell-title">المبلغ المطلوب تحصيله</div>
-            <div class="cell-value total">${escapeHtml(ctx.fm(ctx.total))}</div>
+            <div class="cell-value total" style="${ctx.isPaid ? 'color:#059669;' : ''}">
+              ${ctx.isPaid ? `0 ${escapeHtml(ctx.curLabel)} <span style="display:block;font-size:11px;font-weight:800;color:#059669;margin-top:2px;">(مدفوع إلكترونياً بالكامل ✅)</span>` : escapeHtml(ctx.fm(ctx.total))}
+            </div>
           </div>
         </div>
       </div>
