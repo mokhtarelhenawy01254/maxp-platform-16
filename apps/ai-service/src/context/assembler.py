@@ -236,13 +236,14 @@ You are continuing an existing conversation on Facebook Messenger that was previ
         agent = ctx.agent
         if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
             from src.skills.integration import get_skills_block
-            full_skills_block = get_skills_block(agent.allowed_skills)
+            full_skills_block = get_skills_block(agent.allowed_skills, company_id=getattr(ctx, "company_id", None))
             if full_skills_block:
                 static_sections.append(("skills", full_skills_block))
                 logger.info(
                     "injected_full_skills",
                     skill_count=len(agent.allowed_skills),
                     skills=sorted(agent.allowed_skills),
+                    company_id=getattr(ctx, "company_id", None),
                 )
 
         # 2. Current Date (Prefix-stable: Date only, avoids minute-by-minute cache invalidation)

@@ -583,6 +583,68 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
             "evaluated_ads_count": len(rows),
         }
 
+        # Hermes Autonomous Learning: Automatically distill high-confidence decisions into the merchant's playbook
+        if decision in ("SCALE", "KILL", "FIX_OFFER", "FIX_CREATIVE"):
+            try:
+                from src.skills.learner import autonomous_skill_learner
+                distill_res = await autonomous_skill_learner.distill_ad_performance(
+                    company_id=company_id,
+                    ad_metrics={
+                        "ad_name": primary_row.get("name"),
+                        "product_name": primary_row.get("product_name"),
+                        "spend": spend,
+                        "revenue": revenue,
+                        "purchases": purchases,
+                        "ctr": ctr,
+                        "cpa": cpa,
+                        "roas": roas,
+                        "target_cpa": target_cpa,
+                        "currency": currency,
+                    },
+                    session=session,
+                )
+                if distill_res.get("success"):
+                    response_payload["learned_rule"] = distill_res.get("rule_added")
+                    response_payload["playbook_updated"] = True
+            except Exception as distill_err:
+                logger.warning("auto_distill_on_decision_failed", error=str(distill_err))
+
+        return response_payload
+
+
+class FacebookAdRecordLearnedRuleInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    skill_type: Literal["MEDIA_BUYER", "SALES_CLOSING"] = Field(default="MEDIA_BUYER", description="Category of rule")
+    rule_title: str = Field(description="Brief title of the learned rule")
+    rule_instructions: str = Field(description="Specific operational instruction to remember for future campaigns or chats")
+    metrics_summary: dict[str, Any] | None = Field(default=None, description="Optional supporting metrics (ROAS, CPA, etc.)")
+
+
+async def facebook_ad_record_learned_rule(input_data: FacebookAdRecordLearnedRuleInput) -> dict[str, Any]:
+    """Hermes /learn command for Media Buyer & Sales: record an explicit rule into the merchant's persistent playbook."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    from src.skills.learner import autonomous_skill_learner
+    formatted_rule = f"- [{input_data.rule_title}] {input_data.rule_instructions}"
+    skill_id = f"media_buyer_playbook_{company_id}" if input_data.skill_type == "MEDIA_BUYER" else f"sales_closing_playbook_{company_id}"
+    skill_name = "كتيب استراتيجيات إعلانات المتجر" if input_data.skill_type == "MEDIA_BUYER" else "كتيب إغلاق المبيعات والرد على الاعتراضات"
+
+    return await autonomous_skill_learner._upsert_playbook_rule(
+        company_id=company_id,
+        skill_id=skill_id,
+        skill_name=skill_name,
+        skill_type=input_data.skill_type,
+        new_rule_line=formatted_rule,
+        rule_metadata={
+            "source": "AGENT_EXPLICIT_LEARN",
+            "title": input_data.rule_title,
+            "metrics": input_data.metrics_summary or {},
+            "learned_at": datetime.now(timezone.utc).isoformat(),
+        },
+    )
+
 
 # ── Tool Definitions ─────────────────────────────────────────────────────────
 
@@ -614,9 +676,17 @@ facebook_ad_get_decision_tool = FunctionTool(
     input_model=FacebookAdGetDecisionInput,
 )
 
+facebook_ad_record_learned_rule_tool = FunctionTool(
+    name="facebook_ad_record_learned_rule",
+    description="Record a newly learned operational rule or insight into the merchant's persistent playbook (Hermes self-learning).",
+    func=facebook_ad_record_learned_rule,
+    input_model=FacebookAdRecordLearnedRuleInput,
+)
+
 __all_tools__ = [
     facebook_ad_analyze_product_tool,
     facebook_ad_create_full_draft_tool,
     facebook_ad_publish_draft_tool,
     facebook_ad_get_decision_tool,
+    facebook_ad_record_learned_rule_tool,
 ]

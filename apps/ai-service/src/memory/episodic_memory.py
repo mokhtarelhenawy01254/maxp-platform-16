@@ -266,6 +266,25 @@ class EpisodicMemoryService:
             "metadata": metadata,
         }
 
+    async def store_fact(
+        self,
+        company_id: str,
+        customer_id: str,
+        text: str,
+        metadata: dict | None = None,
+        session: AsyncSession | None = None,
+    ) -> dict:
+        """Convenience alias for store_episode, handling session creation if omitted."""
+        if session is not None:
+            return await self.store_episode(session, company_id, customer_id, text, metadata)
+
+        import src.db.session as _db_mod
+        sf = _db_mod.async_session
+        if not sf:
+            return {"id": "", "content": text, "error": "Database session unavailable"}
+        async with sf() as new_session:
+            return await self.store_episode(new_session, company_id, customer_id, text, metadata)
+
     async def search_similar(
         self,
         session: AsyncSession,

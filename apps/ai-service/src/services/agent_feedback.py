@@ -130,19 +130,23 @@ class AgentFeedbackTracker:
             logger.warning("failed to write learning to file", error=str(exc))
 
         try:
-            from src.memory.episodic_memory import EpisodicMemoryService
-            memory = EpisodicMemoryService()
+            import src.db.session as _db_mod
+            from src.memory.episodic_memory import episodic_memory_service
             fact_text = (
                 f"Signal: {learning['type']}. "
                 f"Agent {self.agent_name} ({self.agent_role}) "
                 f"used tools [{', '.join(learning['tools_used'])}] "
                 f"with context: {learning['context_preview']}"
             )
-            await memory.store_fact(
-                company_id=self.company_id,
-                customer_id="__system__",
-                text=fact_text,
-                metadata={"source": "feedback_loop", "signal": learning["type"], "learning_id": learning_id},
-            )
+            sf = _db_mod.async_session
+            if sf:
+                async with sf() as db_session:
+                    await episodic_memory_service.store_episode(
+                        session=db_session,
+                        company_id=self.company_id,
+                        customer_id="__system__",
+                        content=fact_text,
+                        metadata={"source": "feedback_loop", "signal": learning["type"], "learning_id": learning_id},
+                    )
         except Exception as exc:
             logger.warning("failed to store episodic memory", error=str(exc))

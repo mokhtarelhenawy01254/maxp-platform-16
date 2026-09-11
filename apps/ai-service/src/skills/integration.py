@@ -28,6 +28,10 @@ logger = structlog.get_logger(__name__)
 # Key = skill_id, Value = normalized metadata dict.
 _db_skills_cache: dict[str, dict[str, Any]] = {}
 
+# ── Tenant-scoped learned skills cache (Hermes Multi-Tenant Engine) ──────────
+# Key = company_id, Value = dict[skill_id, normalized metadata dict].
+_tenant_skills_cache: dict[str, dict[str, dict[str, Any]]] = {}
+
 # ── TTL File Cache (fallback) ────────────────────────────────────────────────
 _skill_meta_cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
 _skill_json_cache: dict[str, tuple[float, dict[str, Any] | None]] = {}
@@ -46,8 +50,31 @@ def _cache_set(cache: dict[str, tuple[float, Any]], key: str, value: Any) -> Non
     cache[key] = (time.monotonic(), value)
 
 
-def clear_skills_cache(skill_id: str | None = None) -> None:
+def register_tenant_skill_in_cache(company_id: str, skill_meta: dict[str, Any]) -> None:
+    """Registers a dynamically learned skill for a specific merchant tenant."""
+    if not company_id or not skill_meta:
+        return
+    if company_id not in _tenant_skills_cache:
+        _tenant_skills_cache[company_id] = {}
+    skill_id = skill_meta.get("id") or skill_meta.get("skill_id")
     if skill_id:
+        _tenant_skills_cache[company_id][skill_id] = skill_meta
+
+
+def get_tenant_skills_from_cache(company_id: str) -> list[dict[str, Any]]:
+    """Returns all cached learned skills for a specific merchant tenant."""
+    if not company_id or company_id not in _tenant_skills_cache:
+        return []
+    return list(_tenant_skills_cache[company_id].values())
+
+
+def clear_skills_cache(skill_id: str | None = None, company_id: str | None = None) -> None:
+    if company_id:
+        if skill_id and company_id in _tenant_skills_cache:
+            _tenant_skills_cache[company_id].pop(skill_id, None)
+        else:
+            _tenant_skills_cache.pop(company_id, None)
+    elif skill_id:
         _skill_meta_cache.pop(skill_id, None)
         _skill_json_cache.pop(skill_id, None)
         _skill_md_cache.pop(skill_id, None)
@@ -57,6 +84,7 @@ def clear_skills_cache(skill_id: str | None = None) -> None:
         _skill_json_cache.clear()
         _skill_md_cache.clear()
         _db_skills_cache.clear()
+        _tenant_skills_cache.clear()
 
 
 async def preload_skills_from_db(session: Any) -> None:
@@ -208,25 +236,51 @@ def resolve_skill_context(
     }
 
 
-def get_skills_block(allowed_skills: set[str] | None) -> str:
-    if not allowed_skills:
-        return ""
+def get_skills_block(allowed_skills: set[str] | None, company_id: str | None = None) -> str:
     lines: list[str] = []
-    for meta in _iter_allowed_skills_meta(allowed_skills):
-        lines.append(f'<skill id="{meta["id"]}">')
-        lines.append(f'<name>{meta["name"]}</name>')
-        lines.append(f'<description>{meta["description"]}</description>')
-        triggers = meta.get("trigger_phrases", [])
-        if triggers:
-            lines.append(f'<trigger_phrases>{" | ".join(triggers[:10])}</trigger_phrases>')
-        allowed = meta.get("allowed_tools", [])
-        if allowed:
-            lines.append(f'<allowed_tools>{" ".join(allowed)}</allowed_tools>')
-        lines.append(meta["instructions"])
-        lines.append("</skill>")
-    if not lines:
+    if allowed_skills:
+        for meta in _iter_allowed_skills_meta(allowed_skills):
+            lines.append(f'<skill id="{meta["id"]}">')
+            lines.append(f'<name>{meta["name"]}</name>')
+            lines.append(f'<description>{meta["description"]}</description>')
+            triggers = meta.get("trigger_phrases", [])
+            if triggers:
+                lines.append(f'<trigger_phrases>{" | ".join(triggers[:10])}</trigger_phrases>')
+            allowed = meta.get("allowed_tools", [])
+            if allowed:
+                lines.append(f'<allowed_tools>{" ".join(allowed)}</allowed_tools>')
+            lines.append(meta["instructions"])
+            lines.append("</skill>")
+
+    # Hermes Multi-Tenant Learned Playbook Injection
+    tenant_playbook_parts: list[str] = []
+    if company_id:
+        tenant_skills = get_tenant_skills_from_cache(company_id)
+        for t_skill in tenant_skills:
+            if not t_skill.get("enabled", True):
+                continue
+            instr = t_skill.get("instructions") or t_skill.get("content") or ""
+            if instr:
+                tenant_playbook_parts.append(
+                    f'<merchant_playbook skill_id="{t_skill.get("id")}" name="{t_skill.get("name")}">'
+                    f'\n{instr.strip()}\n'
+                    f'</merchant_playbook>'
+                )
+
+    if not lines and not tenant_playbook_parts:
         return ""
-    return "\n\n" + "\n".join(["<skills>", *lines, "</skills>"])
+
+    result = []
+    if lines:
+        result.append("<skills>\n" + "\n".join(lines) + "\n</skills>")
+    if tenant_playbook_parts:
+        result.append(
+            f'<tenant_learned_playbook company_id="{company_id}">\n'
+            + "\n".join(tenant_playbook_parts)
+            + "\n</tenant_learned_playbook>"
+        )
+
+    return "\n\n" + "\n\n".join(result)
 
 
 def get_l1_skills_block(allowed_skills: set[str] | None) -> str:

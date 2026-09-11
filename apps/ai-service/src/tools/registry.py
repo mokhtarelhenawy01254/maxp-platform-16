@@ -83,6 +83,7 @@ ADVANCED_TOOL_NAMES: set[str] = {
     "hr_attendance_today",
     "facebook_ad_analyze_product",
     "facebook_ad_get_decision",
+    "facebook_ad_record_learned_rule",
     # Smart Seller analytics
     "lead_score",
     "abandoned_carts",
@@ -212,6 +213,7 @@ facebook_ad_create_full_draft_tool = _registry.resolve("facebook_ad_create_full_
 facebook_ad_publish_draft_tool = _registry.resolve("facebook_ad_publish_draft")
 facebook_ad_analyze_product_tool = _registry.resolve("facebook_ad_analyze_product")
 facebook_ad_get_decision_tool = _registry.resolve("facebook_ad_get_decision")
+facebook_ad_record_learned_rule_tool = _registry.resolve("facebook_ad_record_learned_rule")
 message_broadcast_tool = _registry.resolve("message_broadcast")
 agent_spawn_tool = _registry.resolve("agent_spawn")
 agent_handoff_to_tool = _registry.resolve("agent_handoff_to")

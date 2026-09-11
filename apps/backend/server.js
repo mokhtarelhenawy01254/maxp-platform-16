@@ -310,6 +310,7 @@ const facebookOAuthRoutes = require("./routes/facebookOAuthRoutes");
 const footerSettingsRoutes = require("./routes/footerSettingsRoutes");
 const geolocationRoutes = require("./routes/geolocation");
 const healthRoute = require("./routes/healthRoute");
+const tenantSkillsRoutes = require("./routes/tenantSkillsRoutes");
 console.log(
   "🚀 [SERVER-BOOT] Applying Latest CORS Headers v2 (with x-company-slug)",
 );
@@ -908,6 +909,8 @@ app.use("/api/v1/admin/facebook-oauth", facebookOAuthRoutes);
 app.use("/api/v1/overlay-campaigns", overlayCampaignRoutes);
 app.use("/api/v1/google-sheets", googleSheetsRoutes);
 app.use("/api/v1/easy-orders", easyOrdersRoutes);
+app.use("/api/v1/tenant-skills", tenantSkillsRoutes);
+app.use("/api/tenant-skills", tenantSkillsRoutes);
 app.use("/api/v1/proxy-image", proxyRoutes);
 app.use("/api/proxy-image", proxyRoutes);
 app.use("/api/v1/import-jobs", importJobRoutes);
