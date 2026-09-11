@@ -53,14 +53,14 @@
     "showCart": false,
     "announcementText": "🟢 استقبال مسحات الـ STL وPLY الرقمية على مدار الساعة لجميع عيادات الأسنان.",
     "navigation": [
-      { "label": "الرئيسية", "to": "/" },
-      { "label": "كتالوج التركيبات والحلول", "to": "/shop" },
-      { "label": "التكنولوجيا الرقمية 3D", "to": "/about" },
-      { "label": "طلب عينات للعيادة", "to": "/contact" }
+      { "label": "الرئيسية", "to": "/#dental-hero" },
+      { "label": "كتالوج التركيبات والحلول", "to": "/#dental-restorations" },
+      { "label": "التكنولوجيا الرقمية 3D", "to": "/#dental-3d" },
+      { "label": "طلب عينات للعيادة", "to": "/#dental-kit" }
     ],
     "actions": [
       { "label": "بوابة الأطباء 🩺", "to": "/dental-portal", "style": "secondary" },
-      { "label": "طلب كيت عينات مجاني 📦", "to": "/contact", "style": "primary" }
+      { "label": "طلب كيت عينات مجاني 📦", "to": "/#dental-kit", "style": "primary" }
     ]
   },
   "footer": {
@@ -114,7 +114,7 @@
             "shippingLabel": "توصيل سريع",
             "returnLabel": "ضمان 5 سنوات",
             "ctaText": "انضم كطبيب معتمد",
-            "ctaLink": "/contact"
+            "ctaLink": "/#dental-kit"
           }
         },
         {
@@ -125,7 +125,7 @@
             "title": "دقة هندسية وجمال طبيعي لأرقى عيادات الأسنان",
             "subtitle": "نحول مسحاتك الفموية الرقمية إلى تركيبات زيركون وإيماكس متناهية الدقة بهندسة CAD/CAM خماسية المحاور، لتضمن انطباقاً ميكرونياً خالياً من التعديل من أول جلسة.",
             "ctaText": "طلب كيت عينات مجاني للعيادة 📦",
-            "ctaLink": "/contact",
+            "ctaLink": "/#dental-kit",
             "secondaryCtaText": "دخول بوابة الأطباء 🩺",
             "secondaryCtaLink": "/dental-portal",
             "image": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?auto=format&fit=crop&q=80&w=1200",
@@ -142,7 +142,7 @@
             "title": "معاينة التركيبات ثلاثية الأبعاد بدقة الميكرون",
             "subtitle": "اختبر دقة محاكاة الخزف الرقمي، وتدرج شفافية الزيركون وتطابق الألوان بدقة هندسية حقيقية قبل بدء التفريز.",
             "ctaText": "طلب كيت عينات للعيادة 📦",
-            "ctaLink": "/contact"
+            "ctaLink": "/#dental-kit"
           }
         },
         {
@@ -223,33 +223,91 @@
               "ضمان استبدال وإعادة تصنيع|5 سنوات كاملة"
             ],
             "ctaText": "انضم إلى شبكة الأطباء المعتمدين",
-            "ctaLink": "/contact"
+            "ctaLink": "/#dental-kit"
+          }
+        },
+        {
+          "type": "dental-sample-kit",
+          "settings": {
+            "badge": "خدمة حصرية للأطباء والعيادات",
+            "title": "طلب كيت عينات مجاني للعيادة 📦",
+            "subtitle": "نرسل لعيادتك كيت متكامل يحتوي على نماذج تفريز زيركون خماسي الطبقات 5Y-PSZ، وعدسات إيماكس معتمدة، ودليل درجات الألوان VITA، ومستند الشحن المجاني لأول 3 حالات."
           }
         }
       ]
     },
     "shop": {
-      "layoutHint": "commerce-3col",
+      "layoutHint": "portfolio-catalog",
       "pageGoal": "discovery",
       "sections": [
         {
-          "type": "shop-command-bar",
-          "variant": "default-discovery"
-        },
-        {
-          "type": "filters-sidebar",
+          "type": "promo-strip",
+          "variant": "standard",
           "settings": {
-            "badge": "كتالوج خدمات المعمل",
-            "title": "حلول وتركيبات الأسنان الرقمية",
-            "subtitle": "تصفح أنواع التركيبات والخامات المعتمدة مع بيان مدد التنفيذ والمواصفات الفنية."
+            "badge": "CAD/CAM Restorations 2026",
+            "message": "كتالوج حلول وتركيبات الأسنان الرقمية — دقة ميكرونية خماسية المحاور وضمان رسمي 5 سنوات",
+            "saleLabel": "دقة ميكرونية",
+            "shippingLabel": "توصيل سريع",
+            "returnLabel": "ضمان 5 سنوات",
+            "ctaText": "طلب كيت عينات للعيادة",
+            "ctaLink": "/#dental-kit"
           }
         },
         {
-          "type": "product-grid",
-          "variant": "standard",
+          "type": "tech-grid",
           "settings": {
-            "title": "جميع أنواع الشغل والتركيبات",
-            "subtitle": "اختر نوع التركيبة للاطلاع على التفاصيل وإرسال أمر الشغل عبر بوابة الطبيب."
+            "badge": "حلول التركيبات الرقمية",
+            "title": "أحدث خامات وتقنيات الأسنان المعتمدة عالمياً",
+            "subtitle": "نعتمد فقط أفضل الخامات الطبية المتوافقة حيوياً لتلبية متطلبات الحالات التجميلية والعلاجية المعقدة.",
+            "viewAllText": "طلب كيت العينات المجاني",
+            "itemCtaText": "استعراض المواصفات الفنية",
+            "borderGlow": true,
+            "blur": 16,
+            "items": [
+              {
+                "title": "زيركون متعدد الطبقات 5Y-PSZ",
+                "price": "دقة تفريز ±5µm",
+                "image": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?auto=format&fit=crop&q=80&w=600",
+                "description": "تدرج شفافية طبيعي يماثل المينا العاجية مع مقاومة انحناء تتجاوز 1200 ميجاباسكال."
+              },
+              {
+                "title": "عدسات إيماكس التجميلية IPS e.max",
+                "price": "سماكة فائقة 0.3mm",
+                "image": "https://images.unsplash.com/photo-1598256989800-fe5f95da9787?auto=format&fit=crop&q=80&w=600",
+                "description": "خزف زجاجي فائق الشفافية يعكس الضوء بحيوية طبيعية تامة للحالات الأمامية وابتسامة هوليوود."
+              },
+              {
+                "title": "دعامات الزراعة المخصصة Titanium Custom",
+                "price": "ملف تتبع طبيعي",
+                "image": "https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=600",
+                "description": "تصميم خط لثوي تشريحي مخصص يضمن نمو اللثة وحمايتها من الالتهابات حول الزرعة."
+              },
+              {
+                "title": "أطقم هجينة All-on-4 / All-on-6",
+                "price": "ثبات وهيكل متين",
+                "image": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=600",
+                "description": "إعادة تأهيل الفك الكامل بهيكل زيركون مقوى أو بييك طبي فائق الخفة والصلابة."
+              }
+            ]
+          }
+        },
+        {
+          "type": "dental-3d-showcase",
+          "variant": "interactive-3d",
+          "settings": {
+            "badge": "Digital CAD/CAM Laboratory 2026",
+            "title": "معاينة التركيبات ثلاثية الأبعاد بدقة الميكرون",
+            "subtitle": "اختبر دقة محاكاة الخزف الرقمي، وتدرج شفافية الزيركون وتطابق الألوان بدقة هندسية حقيقية قبل بدء التفريز.",
+            "ctaText": "طلب كيت عينات للعيادة 📦",
+            "ctaLink": "/#dental-kit"
+          }
+        },
+        {
+          "type": "dental-sample-kit",
+          "settings": {
+            "badge": "خدمة حصرية للأطباء والعيادات",
+            "title": "طلب كيت عينات مجاني للعيادة 📦",
+            "subtitle": "نرسل لعيادتك كيت متكامل يحتوي على نماذج تفريز زيركون خماسي الطبقات 5Y-PSZ، وعدسات إيماكس معتمدة، ودليل درجات الألوان VITA."
           }
         }
       ]

@@ -16997,6 +16997,10 @@ declare module 'react-i18next' {
         labModule: string;
         labDashboard: string;
         dentalLabModule: string;
+        dentalLabTechnicianModule: string;
+        dentalLabMyCases: string;
+        dentalLabKiosk: string;
+        dentalLabMyWage: string;
         dentalLabDashboard: string;
         dentalLabCases: string;
         dentalLabDoctors: string;

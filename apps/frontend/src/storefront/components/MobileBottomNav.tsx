@@ -274,8 +274,8 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
         labelAr: 'التركيبات',
         labelEn: 'Solutions',
         icon: Layers,
-        active: isShop,
-        href: shopPath,
+        active: false,
+        href: `${homePath}#dental-restorations`,
         ariaLabel: theme.direction === 'rtl' ? 'كتالوج التركيبات' : 'Dental Solutions',
       },
       {
@@ -302,8 +302,8 @@ const MobileBottomNav: React.FC<MobileBottomNavProps> = ({ onSearchOpen }) => {
         labelAr: 'طلب كيت',
         labelEn: 'Kit',
         icon: Package,
-        active: normalizedPath.includes('/contact'),
-        href: buildStorefrontPath(location.pathname, '/contact', location.search),
+        active: false,
+        href: `${homePath}#dental-kit`,
         ariaLabel: theme.direction === 'rtl' ? 'طلب كيت عينات للعيادة' : 'Request Sample Kit',
       },
     ];
