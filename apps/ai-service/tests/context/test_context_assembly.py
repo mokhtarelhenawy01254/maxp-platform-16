@@ -330,7 +330,7 @@ async def test_context_caching_prefix_invariance_across_turns():
     ctx1 = MagicMock(spec=PipelineContext)
     ctx1.message = "What shoes do you have?"
     ctx1.thread_id = "conv_123"
-    ctx1.customer_id = "cust_123"
+    ctx1.customer_id = None
     ctx1.company_id = "company_abc"
     ctx1.system_prompt = "You are Yasmine, an AI sales assistant."
     ctx1.channel = "web"
@@ -338,7 +338,8 @@ async def test_context_caching_prefix_invariance_across_turns():
     ctx1.rag_evidence = "Knowledge about shoes"
     ctx1.episodic_memories = [{"content": "Customer asked about shoes", "similarity": 0.88}]
     ctx1.session_state = {"cart": ["shoe_1"]}
-    ctx1.session = AsyncMock(spec=AsyncSession)
+    ctx1.external_memory_context = {"cart": ["shoe_1"]}
+    ctx1.session = None
 
     assembler = ContextAssembler()
     prompt1 = await assembler.build_system_prompt(ctx1)
@@ -347,7 +348,7 @@ async def test_context_caching_prefix_invariance_across_turns():
     ctx2 = MagicMock(spec=PipelineContext)
     ctx2.message = "How much is shipping to Cairo?"
     ctx2.thread_id = "conv_123"
-    ctx2.customer_id = "cust_123"
+    ctx2.customer_id = None
     ctx2.company_id = "company_abc"
     ctx2.system_prompt = "You are Yasmine, an AI sales assistant."
     ctx2.channel = "web"
@@ -355,7 +356,8 @@ async def test_context_caching_prefix_invariance_across_turns():
     ctx2.rag_evidence = "Knowledge about shipping to Cairo"
     ctx2.episodic_memories = [{"content": "Customer asked about shipping", "similarity": 0.92}]
     ctx2.session_state = {"cart": ["shoe_1", "shirt_2"]}
-    ctx2.session = AsyncMock(spec=AsyncSession)
+    ctx2.external_memory_context = {"cart": ["shoe_1", "shirt_2"]}
+    ctx2.session = None
 
     prompt2 = await assembler.build_system_prompt(ctx2)
 

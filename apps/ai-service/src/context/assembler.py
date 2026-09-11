@@ -152,6 +152,8 @@ class ContextAssembler:
 
     async def fetch_session_state(self, ctx: PipelineContext) -> dict[str, Any] | None:
         """Fetch current working memory session state (cart, search filters, etc.)."""
+        if getattr(ctx, "session_state", None):
+            return ctx.session_state
         external_memory = getattr(ctx, "external_memory_context", None) or {}
         if external_memory:
             filtered = {k: v for k, v in external_memory.items() if v}
