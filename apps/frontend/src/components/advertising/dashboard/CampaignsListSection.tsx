@@ -299,7 +299,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                     key={chip.value}
                     type="button"
                     onClick={() => updateFilters({ statusFilter: chip.value })}
-                    className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-black transition-all ${
+                    className={`inline-flex items-center rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
                       isSelected
                         ? "bg-blue-600 text-white shadow-xs shadow-blue-500/25"
                         : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -475,11 +475,11 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
 
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <h2 className="truncate text-xs sm:text-sm font-black text-slate-950 dark:text-white max-w-[280px] sm:max-w-md">
+                        <h2 className="truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white max-w-[320px] sm:max-w-lg lg:max-w-xl">
                           {campaign.name}
                         </h2>
                         <span
-                          className={`rounded-full px-2 py-0.5 text-[10px] font-black ${
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                             isActive
                               ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                               : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
@@ -487,7 +487,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                         >
                           {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
                         </span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${decision.className}`}>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${decision.className}`}>
                           {decision.label}
                         </span>
                       </div>
@@ -504,7 +504,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             <span>•</span>
                             <span
                               title={blockerText}
-                              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 cursor-help transition-all hover:bg-amber-500/20"
+                              className="inline-flex items-center gap-1 rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-medium text-amber-700 dark:bg-amber-500/20 dark:text-amber-300 cursor-help transition-all hover:bg-amber-500/20"
                             >
                               <PauseCircle className="h-3 w-3 shrink-0 text-amber-600 dark:text-amber-400" />
                               <span className="truncate max-w-[220px]">
@@ -523,7 +523,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                   <div className="flex flex-wrap items-center justify-between gap-2.5 lg:justify-end">
                     {/* Inline Budget Editor */}
                     <div className="flex items-center gap-1.5 rounded-xl border border-slate-200/90 bg-slate-50/80 px-2.5 py-1 dark:border-slate-800 dark:bg-slate-800/60">
-                      <span className="text-[10px] font-bold text-slate-500">
+                      <span className="text-[10px] font-medium text-slate-500">
                         {isEn ? "Budget:" : "الميزانية:"}
                       </span>
                       {isEditingBudget ? (
@@ -532,7 +532,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                             type="number"
                             value={editBudgetValue}
                             onChange={(e) => setEditBudgetValue(e.target.value)}
-                            className="h-6 w-16 rounded-md border border-blue-400 bg-white px-1 text-xs font-black text-slate-900 outline-none dark:bg-slate-900 dark:text-white"
+                            className="h-6 w-16 rounded-md border border-blue-400 bg-white px-1 text-xs font-semibold tabular-nums text-slate-900 outline-none dark:bg-slate-900 dark:text-white"
                             autoFocus
                             onKeyDown={(e) => {
                               if (e.key === "Enter") handleSaveBudget(campaign);
@@ -557,7 +557,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                         </div>
                       ) : (
                         <div className="flex items-center gap-1" dir="ltr">
-                          <span className="text-xs font-black text-slate-900 dark:text-white">
+                          <span className="text-xs font-bold tabular-nums text-slate-900 dark:text-white">
                             {formatCurrency(currentBudget, selectedCurrency)}
                           </span>
                           <button
@@ -574,23 +574,23 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
 
                     {/* Performance Chips Cluster */}
                     <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/60 px-1 py-0.5 text-xs" dir="ltr">
-                      <div className="text-center px-2 py-0.5">
-                        <span className="block text-[9px] font-bold text-slate-500">{isEn ? "Spend" : "الإنفاق"}</span>
-                        <span className="font-black text-slate-900 dark:text-white">
+                      <div className="text-center px-2.5 py-0.5">
+                        <span className="block text-[9px] font-medium text-slate-500">{isEn ? "Spend" : "الإنفاق"}</span>
+                        <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.spend || 0, selectedCurrency)}
                         </span>
                       </div>
                       <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2 py-0.5">
-                        <span className="block text-[9px] font-bold text-slate-500">ROAS</span>
-                        <span className={`font-black ${(performance?.roas || 0) >= 3 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
+                      <div className="text-center px-2.5 py-0.5">
+                        <span className="block text-[9px] font-medium text-slate-500">ROAS</span>
+                        <span className={`font-bold tabular-nums ${(performance?.roas || 0) >= 3 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
                           {formatNumber(performance?.roas || 0, 2)}x
                         </span>
                       </div>
                       <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2 py-0.5">
-                        <span className="block text-[9px] font-bold text-slate-500">CPA</span>
-                        <span className="font-black text-slate-900 dark:text-white">
+                      <div className="text-center px-2.5 py-0.5">
+                        <span className="block text-[9px] font-medium text-slate-500">CPA</span>
+                        <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.cpa || 0, selectedCurrency)}
                         </span>
                       </div>

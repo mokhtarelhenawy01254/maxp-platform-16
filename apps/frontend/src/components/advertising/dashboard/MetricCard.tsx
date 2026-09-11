@@ -70,7 +70,7 @@ export default function MetricCard({
         className={`pointer-events-none absolute -right-6 -top-6 h-20 w-20 rounded-full bg-gradient-to-br ${v.glow} blur-xl`}
       />
       <div className="flex items-center justify-between gap-2">
-        <span className={`text-[11px] font-black ${v.label}`}>{label}</span>
+        <span className={`text-xs font-semibold ${v.label}`}>{label}</span>
         <span
           className={`flex h-7 w-7 items-center justify-center rounded-lg transition-transform group-hover:scale-110 ${v.iconBg}`}
         >
@@ -80,7 +80,7 @@ export default function MetricCard({
       <div className="mt-2 flex items-baseline justify-between gap-2">
         <p
           dir="ltr"
-          className={`truncate text-lg font-black tracking-tight ${v.value}`}
+          className={`truncate text-xl sm:text-2xl font-bold tracking-tight tabular-nums ${v.value}`}
         >
           {value}
         </p>

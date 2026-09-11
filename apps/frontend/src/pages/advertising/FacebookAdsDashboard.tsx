@@ -386,30 +386,30 @@ const FacebookAdsDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-slate-50/70 text-slate-950 dark:bg-slate-950 dark:text-white font-sans">
-      <main className="mx-auto flex max-w-[1400px] flex-col gap-3 p-3 sm:p-4">
+      <main className="w-full max-w-[1780px] mx-auto flex flex-col gap-3.5 p-3 sm:p-5 lg:p-6">
         {/* Compact Operational Header */}
         <section className="rounded-2xl border border-slate-200/80 bg-white/95 p-3.5 sm:p-4 shadow-xs backdrop-blur-md dark:border-slate-800/80 dark:bg-slate-900/95">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             {/* Title & Date display */}
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-bold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-blue-200/70 bg-blue-50/80 px-2.5 py-0.5 text-xs font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-950/40 dark:text-blue-300">
                   <Megaphone className="h-3.5 w-3.5" />
                   {isEn ? "Meta Ads Cockpit" : "لوحة تحكم إعلانات Meta"}
                 </div>
                 {selectedAccountBalance != null && (
-                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                  <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
                     <Wallet className="h-3 w-3" />
-                    {isEn ? "Balance:" : "الرصيد المتاح:"} {formatCurrency(selectedAccountBalance, selectedCurrency)}
+                    {isEn ? "Balance:" : "الرصيد المتاح:"} <span dir="ltr" className="tabular-nums font-bold">{formatCurrency(selectedAccountBalance, selectedCurrency)}</span>
                   </span>
                 )}
               </div>
-              <h1 className="mt-1 truncate text-lg sm:text-xl font-black leading-tight tracking-tight">
+              <h1 className="mt-1 truncate text-xl sm:text-2xl font-bold tracking-tight text-slate-950 dark:text-white">
                 {isEn ? "Ad Campaigns Center" : "مركز الحملات الإعلانية"}
               </h1>
               <p className="mt-0.5 text-xs font-medium text-slate-500 dark:text-slate-400">
                 <span>{selectedDateLabel}: </span>
-                <span dir="ltr" className="font-semibold">{dateRange.startDate} → {dateRange.endDate}</span>
+                <span dir="ltr" className="font-semibold tabular-nums">{dateRange.startDate} → {dateRange.endDate}</span>
               </p>
             </div>
 
@@ -545,7 +545,7 @@ const FacebookAdsDashboard: React.FC = () => {
             }`}
           >
             <div className="flex items-center justify-between gap-2">
-              <span className="text-[11px] font-black text-slate-500 dark:text-slate-400">
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                 {isEn ? "Active Delivery" : "تسليم الحملات"}
               </span>
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/15 text-blue-600 dark:bg-blue-400/20 dark:text-blue-300">
@@ -562,15 +562,15 @@ const FacebookAdsDashboard: React.FC = () => {
                   className={stats.activeButBlocked > 0 ? "text-amber-500" : "text-emerald-500"} />
               </svg>
               <div>
-                <p className="text-lg font-black tracking-tight text-slate-950 dark:text-white">
+                <p dir="ltr" className="text-xl sm:text-2xl font-bold tracking-tight text-slate-950 dark:text-white tabular-nums">
                   {formatNumber(stats.delivering)} / {formatNumber(stats.total)}
                 </p>
                 {stats.activeButBlocked > 0 ? (
-                  <span className="block text-[11px] font-bold text-amber-600 dark:text-amber-400 hover:underline">
+                  <span className="block text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline">
                     ⚠️ {formatNumber(stats.activeButBlocked)} {isEn ? "blocked" : "محظور (انقر للفلترة)"}
                   </span>
                 ) : (
-                  <span className="block text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="block text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
                     {isEn ? "All delivering smoothly" : "كل شيء يعمل بكفاءة"}
                   </span>
                 )}
