@@ -910,7 +910,6 @@ export const getSidebarConfig = (
                         { to: '/advertising/facebook-ads/campaigns', label: isEn ? 'Campaigns List' : 'قائمة الحملات الإعلانية' },
                         { to: '/advertising/facebook-ads/automation-rules', label: isEn ? 'Automation Rules' : 'قواعد الأتمتة الإعلانية' },
                         { to: '/advertising/facebook-ads/budget-alerts', label: isEn ? 'WhatsApp Budget Alerts' : 'تنبيهات الرصيد WhatsApp' },
-                        { to: '/advertising/facebook-ads/diagnosis', label: isEn ? 'Account & Pixel Health' : 'تشخيص الحساب والأخطاء' },
                         { to: '/advertising/facebook-ads/geo', label: isEn ? 'Geographic Performance' : 'الأداء الجغرافي والمحافظات' },
                         { to: '/advertising/facebook-ads/audiences', label: isEn ? 'Audiences' : 'الجماهير المخصصة والشبيهة' },
                         { to: '/advertising/facebook-ads/catalogs', label: isEn ? 'Product Catalogs' : 'كتالوجات المنتجات (Catalog)' },

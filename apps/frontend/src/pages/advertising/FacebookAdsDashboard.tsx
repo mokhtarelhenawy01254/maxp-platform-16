@@ -698,13 +698,11 @@ const FacebookAdsDashboard: React.FC = () => {
               <span>{isEn ? "Catalogs" : "الكتالوجات"}</span>
             </Link>
             <Link
-              to={`/advertising/facebook-ads/diagnosis${
-                selectedAdAccountId ? `?adAccountId=${selectedAdAccountId}` : ""
-              }`}
+              to="/advertising/facebook-pixel"
               className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-3 text-[11px] font-black text-slate-700 shadow-xs hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-200 transition-all"
             >
               <Target className="h-3.5 w-3.5 text-slate-400" />
-              <span>{isEn ? "Account Diagnosis" : "تشخيص الحساب"}</span>
+              <span>{isEn ? "Pixel & CAPI" : "البيكسل و CAPI"}</span>
               <ArrowUpRight className="h-3.5 w-3.5 text-slate-400" />
             </Link>
           </div>

@@ -200,7 +200,7 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
                 {item.title.toLowerCase().includes("pixel") && (
                   <button
                     type="button"
-                    onClick={() => navigate("/advertising/facebook-ads/diagnosis")}
+                    onClick={() => navigate("/advertising/facebook-pixel")}
                     className="inline-flex h-7 items-center gap-1 rounded-lg bg-amber-600 px-2.5 text-[11px] font-bold text-white shadow-xs hover:bg-amber-700 transition-all"
                   >
                     <span>{isEn ? "Diagnose & Connect" : "فحص وربط البيكسل"}</span>

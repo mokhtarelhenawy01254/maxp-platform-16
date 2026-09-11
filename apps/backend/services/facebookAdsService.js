@@ -949,8 +949,8 @@ class FacebookAdsService {
     const spec = {};
 
     // Age targeting
-    if (targeting.ageMin) spec.age_min = targeting.ageMin;
-    if (targeting.ageMax) spec.age_max = targeting.ageMax;
+    if (targeting.ageMin || targeting.age_min) spec.age_min = targeting.ageMin || targeting.age_min;
+    if (targeting.ageMax || targeting.age_max) spec.age_max = targeting.ageMax || targeting.age_max;
     
     // Gender targeting (1 = male, 2 = female)
     if (targeting.genders && targeting.genders.length > 0) {
@@ -971,9 +971,16 @@ class FacebookAdsService {
 
     // Meta rejects overlapping geo targets, so countries are only sent when
     // the ad set is not already scoped to child regions/cities.
+    const resolvedCountries = (
+      (Array.isArray(targeting.locations) && targeting.locations.length > 0 ? targeting.locations : null) ||
+      (Array.isArray(targeting.countries) && targeting.countries.length > 0 ? targeting.countries : null) ||
+      (Array.isArray(targeting.geo_locations?.countries) && targeting.geo_locations.countries.length > 0 ? targeting.geo_locations.countries : null) ||
+      (hasLocalGeoTargets ? null : ['EG'])
+    );
+
     const geoLocations = {};
-    if (!hasLocalGeoTargets && targeting.locations && targeting.locations.length > 0) {
-      geoLocations.countries = targeting.locations;
+    if (!hasLocalGeoTargets && resolvedCountries && resolvedCountries.length > 0) {
+      geoLocations.countries = resolvedCountries;
     }
     if (regions.length > 0) {
       geoLocations.regions = regions;
@@ -983,7 +990,7 @@ class FacebookAdsService {
     }
     if (Object.keys(geoLocations).length > 0) {
       geoLocations.location_types = this.normalizeLocationTypes(
-        targeting.locationTypes,
+        targeting.locationTypes || targeting.location_types || targeting.geo_locations?.location_types,
         hasLocalGeoTargets ? ['home'] : ['home', 'recent']
       );
       spec.geo_locations = geoLocations;
@@ -1021,9 +1028,18 @@ class FacebookAdsService {
       spec.excluded_custom_audiences = targeting.excludedAudiences.map(aud => ({ id: aud }));
     }
 
-    // Meta v24 requires this flag to be present as either enabled or disabled.
+    // Meta rule: When Advantage+ Audience (advantage_audience: 1) is active,
+    // Meta strictly forbids age_max < 65. If the user specified a custom age_max < 65,
+    // advantage_audience must be 0 to allow standard custom demographic targeting.
+    const isCustomAgeCap = Boolean(spec.age_max && spec.age_max < 65);
+    const resolvedAdvantageAudience = isCustomAgeCap
+      ? 0
+      : targeting.advantageAudience === false
+        ? 0
+        : 1;
+
     spec.targeting_automation = {
-      advantage_audience: targeting.advantageAudience === false ? 0 : 1
+      advantage_audience: resolvedAdvantageAudience
     };
 
     // ✅ v22.0: Audience Expansion Settings
@@ -1800,8 +1816,8 @@ class FacebookAdsService {
         maxBytes: MAX_REMOTE_AD_IMAGE_BYTES
       });
 
-      const buffer = Buffer.from(imageResponse.data);
-      const contentType = imageResponse.headers?.['content-type'] || 'image/jpeg';
+      let buffer = Buffer.from(imageResponse.data);
+      let contentType = imageResponse.headers?.['content-type'] || 'image/jpeg';
 
       if (!contentType.startsWith('image/') || buffer.length < 64) {
         return {
@@ -1825,11 +1841,24 @@ class FacebookAdsService {
         };
       }
 
+      // Meta adimages endpoint only supports JPEG, PNG, GIF, BMP (not WebP).
+      // If the incoming image is WebP or another format, convert it to JPEG via sharp.
+      if (
+        contentType.includes('webp') ||
+        (!contentType.includes('jpeg') && !contentType.includes('jpg') && !contentType.includes('png') && !contentType.includes('gif'))
+      ) {
+        try {
+          const sharp = require('sharp');
+          buffer = await sharp(buffer).jpeg({ quality: 90 }).toBuffer();
+          contentType = 'image/jpeg';
+        } catch (sharpError) {
+          console.warn('⚠️ Could not convert webp/unsupported image to jpeg via sharp:', sharpError.message);
+        }
+      }
+
       const extension = contentType.includes('png')
         ? 'png'
-        : contentType.includes('webp')
-          ? 'webp'
-          : 'jpg';
+        : 'jpg';
 
       // Meta AdImages expects a file upload field. Sending the binary buffer
       // through the `bytes` field can be interpreted as an invalid tiny file.
@@ -1881,8 +1910,8 @@ class FacebookAdsService {
    */
   async uploadImageBuffer(buffer, imageData = {}) {
     try {
-      const fileBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || []);
-      const contentType = imageData.contentType || 'image/jpeg';
+      let fileBuffer = Buffer.isBuffer(buffer) ? buffer : Buffer.from(buffer || []);
+      let contentType = imageData.contentType || 'image/jpeg';
 
       if (!contentType.startsWith('image/') || fileBuffer.length < 64) {
         return {
@@ -1895,7 +1924,22 @@ class FacebookAdsService {
         };
       }
 
-      const filename = imageData.filename || 'ad-image.jpg';
+      // Meta adimages endpoint only supports JPEG, PNG, GIF, BMP (not WebP).
+      if (
+        contentType.includes('webp') ||
+        (!contentType.includes('jpeg') && !contentType.includes('jpg') && !contentType.includes('png') && !contentType.includes('gif'))
+      ) {
+        try {
+          const sharp = require('sharp');
+          fileBuffer = await sharp(fileBuffer).jpeg({ quality: 90 }).toBuffer();
+          contentType = 'image/jpeg';
+        } catch (sharpError) {
+          console.warn('⚠️ Could not convert webp/unsupported image buffer to jpeg via sharp:', sharpError.message);
+        }
+      }
+
+      const extension = contentType.includes('png') ? 'png' : 'jpg';
+      const filename = imageData.filename || `ad-image.${extension}`;
       const formData = new FormData();
       formData.append('filename', fileBuffer, {
         filename,

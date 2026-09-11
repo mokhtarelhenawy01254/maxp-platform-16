@@ -46,14 +46,6 @@ const navItems = [
     icon: PlugZap,
   },
   {
-    to: "/advertising/facebook-ads/diagnosis",
-    labelAr: "التشخيص",
-    labelEn: "Diagnosis",
-    descriptionAr: "تحليل الأداء",
-    descriptionEn: "Performance",
-    icon: Search,
-  },
-  {
     to: "/advertising/facebook-ads/campaigns",
     labelAr: "الحملات",
     labelEn: "Campaigns",

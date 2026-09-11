@@ -488,7 +488,7 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           {isActive ? (isEn ? "Active" : "نشط") : (isEn ? "Paused" : "متوقف")}
                         </span>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${decision.className}`}>
-                          {decision.label}
+                          {isEn ? decision.labelEn : decision.label}
                         </span>
                       </div>
 
@@ -516,6 +516,14 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                           </>
                         )}
                       </div>
+
+                      {/* Diagnostic Insight Note */}
+                      {performance && performance.impressions > 0 && decision.detail && (
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px] sm:text-[11px] font-medium text-slate-600 dark:text-slate-300 bg-slate-50 dark:bg-slate-800/60 rounded-lg px-2.5 py-1 border border-slate-200/70 dark:border-slate-800/80">
+                          <Sparkles className="h-3 w-3 shrink-0 text-blue-500" />
+                          <span>{isEn ? decision.detailEn : decision.detail}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -572,26 +580,47 @@ const CampaignsListSection: React.FC<CampaignsListSectionProps> = ({
                       )}
                     </div>
 
-                    {/* Performance Chips Cluster */}
-                    <div className="flex items-center rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/60 px-1 py-0.5 text-xs" dir="ltr">
-                      <div className="text-center px-2.5 py-0.5">
+                    {/* Performance Chips Cluster with Diagnostic Metrics */}
+                    <div className="flex flex-wrap items-center rounded-xl border border-slate-200/80 bg-slate-50/60 dark:border-slate-800 dark:bg-slate-800/60 px-1 py-0.5 text-xs" dir="ltr">
+                      <div className="text-center px-2 py-0.5">
                         <span className="block text-[9px] font-medium text-slate-500">{isEn ? "Spend" : "الإنفاق"}</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.spend || 0, selectedCurrency)}
                         </span>
                       </div>
                       <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2.5 py-0.5">
+                      <div className="text-center px-2 py-0.5">
+                        <span className="block text-[9px] font-medium text-slate-500">{isEn ? "Purchases" : "المبيعات"}</span>
+                        <span className="font-bold tabular-nums text-slate-900 dark:text-white">
+                          {formatNumber(performance?.purchases || 0)}
+                        </span>
+                      </div>
+                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+                      <div className="text-center px-2 py-0.5">
                         <span className="block text-[9px] font-medium text-slate-500">ROAS</span>
-                        <span className={`font-bold tabular-nums ${(performance?.roas || 0) >= 3 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
+                        <span className={`font-bold tabular-nums ${(performance?.roas || 0) >= 2 ? "text-emerald-600 dark:text-emerald-400" : "text-slate-900 dark:text-white"}`}>
                           {formatNumber(performance?.roas || 0, 2)}x
                         </span>
                       </div>
                       <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
-                      <div className="text-center px-2.5 py-0.5">
+                      <div className="text-center px-2 py-0.5">
                         <span className="block text-[9px] font-medium text-slate-500">CPA</span>
                         <span className="font-bold tabular-nums text-slate-900 dark:text-white">
                           {formatCurrency(performance?.cpa || 0, selectedCurrency)}
+                        </span>
+                      </div>
+                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+                      <div className="text-center px-2 py-0.5" title={isEn ? "Click-Through Rate (Hook)" : "معدل النقر Hook"}>
+                        <span className="block text-[9px] font-medium text-slate-500">Hook</span>
+                        <span className={`font-bold tabular-nums ${(performance?.ctr || 0) >= 1 ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}`}>
+                          {formatPercentage(performance?.ctr || 0)}
+                        </span>
+                      </div>
+                      <div className="h-5 w-px bg-slate-200 dark:bg-slate-700" />
+                      <div className="text-center px-2 py-0.5" title={isEn ? "Ad Frequency" : "تكرار المشاهدة"}>
+                        <span className="block text-[9px] font-medium text-slate-500">{isEn ? "Freq" : "تكرار"}</span>
+                        <span className={`font-bold tabular-nums ${(performance?.frequency || 0) >= 3 ? "text-orange-600 dark:text-orange-400" : "text-slate-900 dark:text-white"}`}>
+                          {formatNumber(performance?.frequency || 0, 1)}x
                         </span>
                       </div>
                     </div>

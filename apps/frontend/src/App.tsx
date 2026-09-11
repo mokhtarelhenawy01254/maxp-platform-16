@@ -494,9 +494,10 @@ const GoogleAnalyticsSettings = React.lazy(
 const FacebookAdsDashboard = React.lazy(
   () => import("./pages/advertising/FacebookAdsDashboard"),
 );
-const FacebookAdsDiagnosis = React.lazy(
-  () => import("./pages/advertising/FacebookAdsDiagnosis"),
-);
+const NavigateFacebookAdsDiagnosis: React.FC = () => {
+  const location = useLocation();
+  return <Navigate to={`/advertising/facebook-ads${location.search}`} replace />;
+};
 const FacebookAdsConnection = React.lazy(
   () => import("./pages/advertising/FacebookAdsConnection"),
 );
@@ -3950,11 +3951,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/advertising/facebook-ads/diagnosis"
-                  element={
-                    <Layout>
-                      <FacebookAdsDiagnosis />
-                    </Layout>
-                  }
+                  element={<NavigateFacebookAdsDiagnosis />}
                 />
                 <Route
                   path="/advertising/facebook-ads/budget-alerts"
@@ -6032,11 +6029,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/advertising/facebook-ads/diagnosis"
-                  element={
-                    <Layout>
-                      <FacebookAdsDiagnosis />
-                    </Layout>
-                  }
+                  element={<NavigateFacebookAdsDiagnosis />}
                 />
                 <Route
                   path="/advertising/facebook-ads/budget-alerts"

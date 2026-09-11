@@ -265,42 +265,81 @@ export const buildSparklinePath = (
 
 // ─── Health & Decision Helpers ───────────────────────────
 
+export interface HealthDecisionResult {
+  label: string;
+  labelEn: string;
+  detail: string;
+  detailEn: string;
+  className: string;
+  tone: "neutral" | "bad" | "good" | "warn";
+}
+
 export const getHealthDecision = (
   performance?: FacebookAdsPerformanceSummary["campaigns"][number]["performance"],
-) => {
+): HealthDecisionResult => {
   if (!performance || performance.impressions === 0) {
     return {
       label: "لا توجد عينة",
+      labelEn: "No Delivery",
+      detail: "لا توجد انطباعات مسجلة بعد، المشكلة غالباً في حالة الحملة أو فحص المجموعات الإعلانية.",
+      detailEn: "No impressions recorded yet. Check campaign delivery or ad set status.",
       className: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200",
+      tone: "neutral",
     };
   }
 
   if (performance.spend >= 150 && performance.purchases === 0) {
     return {
       label: "افحص النزيف",
+      labelEn: "Inspect Bleed",
+      detail: "إنفاق بدون شراء: افحص حدث الشراء في البيكسل، سرعة صفحة الهبوط وسلة الشراء.",
+      detailEn: "Spend without purchases: check Purchase Pixel, landing page, and checkout.",
       className: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-200",
+      tone: "bad",
+    };
+  }
+
+  if (performance.frequency >= 3) {
+    return {
+      label: "إرهاق جمهور",
+      labelEn: "Audience Fatigue",
+      detail: "التكرار مرتفع (Frequency >= 3): الجمهور بدأ يتشبع، جرب زاوية كرييتيف جديدة أو وسع الاستهداف.",
+      detailEn: "High frequency (>= 3): Audience saturation detected, test new creative angles or broaden targeting.",
+      className: "bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-200",
+      tone: "warn",
+    };
+  }
+
+  if (performance.ctr > 0 && performance.ctr < 1) {
+    return {
+      label: "Hook ضعيف",
+      labelEn: "Weak Hook",
+      detail: "الـ CTR منخفض (أقل من 1%): الانطباعات متوفرة لكن جذب الانتباه ضعيف، ابدأ بتغيير أول 3 ثوانٍ في الكرياتيف.",
+      detailEn: "Low CTR (< 1%): Impressions delivered but click-through is low. Test a stronger hook or creative.",
+      className: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200",
+      tone: "warn",
     };
   }
 
   if (performance.roas >= 2 && performance.purchases > 0) {
     return {
       label: "مرشح للتوسيع",
+      labelEn: "Scale Candidate",
+      detail: "أداء ممتاز (ROAS >= 2x): ارفع الميزانية تدريجياً بنسبة 15-20% مع مراقبة استقرار الـ CPA.",
+      detailEn: "Strong ROAS (>= 2x): Scale budget gradually by 15-20% while monitoring CPA stability.",
       className:
         "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200",
-    };
-  }
-
-  if (performance.ctr > 0 && performance.ctr < 1) {
-    return {
-      label: "الكريتيف ضعيف",
-      className:
-        "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-200",
+      tone: "good",
     };
   }
 
   return {
     label: "راقب",
+    labelEn: "Monitoring",
+    detail: "النتائج الحالية ضمن المعدل الطبيعي، استمر بالمراقبة لجمع بيانات كافية لاتخاذ القرار.",
+    detailEn: "Performance is within normal range. Continue monitoring for statistically significant data.",
     className: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-200",
+    tone: "neutral",
   };
 };
 
