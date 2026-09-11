@@ -59,6 +59,7 @@ const STOREFRONT_DEFERRED_PRELOAD_CHUNKS = [
   /(?:^|\/)app-tracking-/,
   /(?:^|\/)app-query-client-/,
   /(?:^|\/)vendor-qrcode-/,
+  /(?:^|\/)vendor-dompurify-/,
   /(?:^|\/)i18n-en-/,
 ];
 const STOREFRONT_THEME_PRESET_MODULE_PATTERN = /\/src\/storefront\/themes\//;
@@ -87,7 +88,7 @@ const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
 // Shared HTTP layer + tiny cross-app utilities used by EVERY app page and by
 // the storefront.
 const APP_SHARED_CORE_MODULE_PATTERN =
-  /\/src\/(?:services\/(?:api|apiClient|uploadService|pushNotificationService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+  /\/src\/(?:services\/(?:api|apiClient|uploadService|pushNotificationService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper|storeShortcut|storeUrl)|components\/settings\/DefaultPageSelector)\.tsx?$/;
 
 // Shared TanStack Query Client instances
 const APP_QUERY_CLIENT_MODULE_PATTERN =
@@ -281,6 +282,10 @@ const getVendorChunkName = (normalizedId: string): string | undefined => {
 
   if (packageName === 'qrcode.react' || packageName.startsWith('qrcode')) {
     return 'vendor-qrcode';
+  }
+
+  if (packageName === 'dompurify') {
+    return 'vendor-dompurify';
   }
 
   return undefined;

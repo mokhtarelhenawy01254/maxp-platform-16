@@ -40,7 +40,7 @@ export const SYSTEM_STORIES: SystemStory[] = [
     metricValue: "2 ثانية",
     metricLabel: "متوسط سرعة الرد وإغلاق الأوردر",
     apps: ["WhatsApp Business API", "Instagram for Business", "Facebook Pages Connect", "Bot Automation", "Broadcast Pro"],
-    image: "/images/landing/whatsapp_system.jpg",
+    image: "/images/landing/whatsapp_system.webp",
     ctaText: "شغّل ردود الواتساب الذكية",
   },
   {
@@ -53,7 +53,7 @@ export const SYSTEM_STORIES: SystemStory[] = [
     metricValue: "-38%",
     metricLabel: "انخفاض معدل الشحنات المرتجعة",
     apps: ["مركز التأكيد والمتابعة", "بوابة الشحن الذكي (Turbo)", "أتمتة الحالات", "حظر العملاء والمشاغبين", "الطلبات الجماعية"],
-    image: "/images/landing/shipping_system.jpg",
+    image: "/images/landing/shipping_system.webp",
     ctaText: "اضبط كول سنتر الشحن",
   },
   {
@@ -66,7 +66,7 @@ export const SYSTEM_STORIES: SystemStory[] = [
     metricValue: "100%",
     metricLabel: "دقة مطابقة الجرد الفعلي للنظام",
     apps: ["المخزون والمستودعات الشامل", "المخزون المتعدد والفروع", "المشتريات وإدارة الموردين", "البيع بالجملة", "باركود كشك التجهيز"],
-    image: "/images/landing/inventory_system.jpg",
+    image: "/images/landing/inventory_system.webp",
     ctaText: "اربط مخازنك وفروعك الآن",
   },
   {
@@ -79,7 +79,7 @@ export const SYSTEM_STORIES: SystemStory[] = [
     metricValue: "+42%",
     metricLabel: "زيادة معدل إتمام الشراء (Conversion)",
     apps: ["متجر ماكس السريع", "نظام كاشير POS للمحلات", "عروض الكميات والـ Upsell", "تقييمات العملاء", "تكامل WooCommerce"],
-    image: "/images/landing/pos_store_system.jpg",
+    image: "/images/landing/pos_store_system.webp",
     ctaText: "أطلق متجرك ونقطة البيع",
   },
   {
@@ -92,7 +92,7 @@ export const SYSTEM_STORIES: SystemStory[] = [
     metricValue: "دقيق 100%",
     metricLabel: "كشف حقيقي لصافي الربح قبل وبعد الإعلانات",
     apps: ["محرك الربحية ونقطة التعادل", "B-EV المنتج و ROAS", "القوائم المالية الشهرية", "الفواتير الإلكترونية", "مصادر الطلبات والمحاسبة"],
-    image: "/images/landing/pnl_finance_system.jpg",
+    image: "/images/landing/pnl_finance_system.webp",
     ctaText: "اعرف صافي أرباحك الآن",
   },
   {
@@ -105,7 +105,7 @@ export const SYSTEM_STORIES: SystemStory[] = [
     metricValue: "0 نزاعات",
     metricLabel: "شفافية مطلقة في حساب عمولات البيع",
     apps: ["نظام HR الأساسي", "الحضور والانصراف والورديات", "مسير الرواتب والعمولات", "إدارة العهد والأصول", "تقييم أداء فريق المبيعات"],
-    image: "/images/landing/hr_team_system.jpg",
+    image: "/images/landing/hr_team_system.webp",
     ctaText: "نظم فريقك وعمولاتك",
   },
 ];
