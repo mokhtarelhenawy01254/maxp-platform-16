@@ -8,6 +8,7 @@ import {
 import { repairMojibakeText } from '../utils/textEncoding';
 import socketService from '../services/socketService';
 import { clearAllSWCaches } from '../utils/swCacheFlush';
+import { queryClient } from '../config/queryClient';
 
 interface Company {
   id: string;
@@ -457,7 +458,41 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         // Set user data
         debugLog('✅ [AuthProvider] Setting user data');
-        const userData = data.data.user;
+        let userData = data.data.user;
+
+        // Hydrate from /auth/me to ensure context-aware fields & activeApps are 100% fresh and matching checkAuth
+        try {
+          const authToken = tokenManager.getAccessToken();
+          const meResponse = await fetch(`${getApiUrl()}/auth/me`, {
+            method: 'GET',
+            headers: authToken
+              ? {
+                  Authorization: `Bearer ${authToken}`,
+                  'Content-Type': 'application/json',
+                }
+              : {
+                  'Content-Type': 'application/json',
+                },
+            credentials: 'include',
+          });
+
+          if (meResponse.ok) {
+            const meResult = await meResponse.json();
+            const meUser = meResult?.data?.user || meResult?.data;
+            if (meResult?.success && meUser) {
+              userData = { ...userData, ...meUser };
+            }
+          }
+        } catch (meError) {
+          console.warn('⚠️ [AuthProvider] Failed to hydrate login user from /auth/me:', meError);
+        }
+
+        try {
+          queryClient.clear();
+        } catch (qcError) {
+          console.warn('⚠️ [AuthProvider] Failed to clear queryClient cache:', qcError);
+        }
+
         setUser(userData);
 
         // Store user data in localStorage for Socket.IO connection
@@ -552,12 +587,19 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         if (meResponse.ok) {
           const meResult = await meResponse.json();
-          if (meResult?.success && meResult?.data?.user) {
-            userData = meResult.data.user;
+          const meUser = meResult?.data?.user || meResult?.data;
+          if (meResult?.success && meUser) {
+            userData = { ...userData, ...meUser };
           }
         }
       } catch (meError) {
         console.warn('⚠️ [AuthProvider] Failed to hydrate register user from /auth/me:', meError);
+      }
+
+      try {
+        queryClient.clear();
+      } catch (qcError) {
+        console.warn('⚠️ [AuthProvider] Failed to clear queryClient cache:', qcError);
       }
 
       setUser(userData);
@@ -598,6 +640,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       localStorage.removeItem('dentalRole');
       sessionStorage.removeItem('dentalRole');
       localStorage.removeItem('maxp-default-page');
+      try {
+        queryClient.clear();
+      } catch (qcError) {
+        console.warn('⚠️ [AuthProvider] Failed to clear queryClient cache on logout:', qcError);
+      }
       setUser(null);
 
       // 🔌 Disconnect socket to force fresh connection on next login
