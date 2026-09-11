@@ -7,6 +7,8 @@ def test_supports_vision_for_gemini_and_gpt_vision_families() -> None:
     assert supports_vision("gemini-2.5-flash", "GOOGLE")
     assert supports_vision("gpt-4o-mini", "OPENAI")
     assert supports_vision("gpt-5.5", "OPENAI")
+    assert supports_vision("deepseek-flash", "DEEPSEEK")
+    assert supports_vision("deepseek-v4.1-flash", "DEEPSEEK")
 
 
 def test_route_for_image_input_returns_none_when_no_vision_model_configured() -> None:

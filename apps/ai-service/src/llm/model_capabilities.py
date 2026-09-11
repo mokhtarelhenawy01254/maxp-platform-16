@@ -19,7 +19,7 @@ DEFAULT_PROVIDER_MODELS = {
     "GOOGLE": DEFAULT_VISION_MODEL,
     "GROQ": "llama-3.3-70b-versatile",
     "OPENROUTER": "openrouter/auto",
-    "DEEPSEEK": "deepseek-v4-flash",
+    "DEEPSEEK": "deepseek-flash",
     "NVIDIA": "meta/llama-3.1-70b-instruct",
     "OLLAMA": "llama3",
 }
@@ -42,6 +42,10 @@ def supports_vision(model: str | None, provider: str | None = None) -> bool:
     if "vision" in name or "image" in name:
         return True
     if provider_name == "OPENROUTER" and any(marker in name for marker in ("llava", "qwen-vl", "pixtral")):
+        return True
+    if provider_name == "DEEPSEEK" and any(marker in name for marker in ("deepseek-flash", "deepseek-v4", "deepseek-v4.1", "deepseek-vl")):
+        return True
+    if any(marker in name for marker in ("deepseek-flash", "deepseek-v4.1")):
         return True
     return False
 

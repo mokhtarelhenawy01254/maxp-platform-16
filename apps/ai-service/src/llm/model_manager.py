@@ -428,7 +428,7 @@ class ModelManager:
 
     def _default_model_for_provider(self, provider: str) -> str:
         defaults = {
-            "DEEPSEEK": "deepseek-v4-flash",
+            "DEEPSEEK": "deepseek-flash",
             "OPENAI": "gpt-4o-mini",
             "ANTHROPIC": "claude-sonnet-4-20250514",
             "HUGGINGFACE": "mistralai/Mistral-7B-Instruct-v0.3",
@@ -441,7 +441,7 @@ class ModelManager:
             "SAMBANOVA": "DeepSeek-V3.1",
             "MISTRAL": "mistral-large-latest",
         }
-        return defaults.get(provider, "deepseek-v4-flash")
+        return defaults.get(provider, "deepseek-flash")
 
     # -------------------------------------------------------------------------
     # Core key selection — simple first active key
@@ -472,13 +472,19 @@ class ModelManager:
 
         async with session.async_session() as db:
             for provider_type in provider_priority:
+                model_candidates = [model_name]
+                if model_name in ("deepseek-flash", "deepseek-v4-flash"):
+                    model_candidates = ["deepseek-flash", "deepseek-v4-flash"]
+                elif "deepseek" in model_name.lower() and provider_type == "DEEPSEEK":
+                    model_candidates = [model_name, "deepseek-flash", "deepseek-v4-flash"]
+
                 stmt = (
                     select(AiKey)
                     .join(AiModelConfig, AiModelConfig.key_id == AiKey.id)
                     .where(
                         cast(AiKey.provider, String) == provider_type,
                         AiKey.is_active == True,  # noqa: E712
-                        AiModelConfig.model_name == model_name,
+                        AiModelConfig.model_name.in_(model_candidates),
                         AiModelConfig.is_enabled == True,  # noqa: E712
                     )
                 )

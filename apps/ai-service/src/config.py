@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     )
 
     default_llm_provider: Literal["anthropic", "openai", "google", "deepseek"] = "deepseek"
-    default_model: str = "deepseek-v4-flash"
+    default_model: str = "deepseek-flash"
     google_gemini_model: str = "gemini-2.5-flash"
 
     otlp_endpoint: str | None = Field(

@@ -4,7 +4,7 @@
   "role": "MEDIA_BUYER",
   "version": "1.0.0",
   "modelPolicy": {
-    "default": "deepseek-v4-flash",
+    "default": "deepseek-flash",
     "fallback": "llama-3.3-70b-versatile",
     "allowModelFallback": true
   },
