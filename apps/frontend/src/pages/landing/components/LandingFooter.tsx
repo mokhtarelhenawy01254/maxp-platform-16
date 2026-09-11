@@ -1,6 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Sparkles, Phone, Mail, MapPin } from "lucide-react";
+import { trackPlatformSiteLead } from "../../../utils/platformSiteMetaPixel";
 
 interface LandingFooterProps {
   onPreloadRegister?: () => void;
@@ -9,6 +10,14 @@ interface LandingFooterProps {
 export const LandingFooter: React.FC<LandingFooterProps> = ({
   onPreloadRegister,
 }) => {
+  const handleLeadClick =
+    (eventSource: string, destination: string) => () => {
+      trackPlatformSiteLead(eventSource, {
+        destination,
+        landing_variant: "enterprise-os",
+      });
+    };
+
   return (
     <footer className="relative border-t border-white/10 bg-slate-950 pt-20 pb-12 overflow-hidden">
       {/* Background Accent */}
@@ -41,6 +50,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
               <Link
                 to="/auth/register"
+                onClick={handleLeadClick("footer_cta_register", "/auth/register")}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-amber-600 px-8 py-4 text-sm font-black text-white shadow-xl shadow-red-600/40 hover:scale-[1.02] active:scale-[0.98] transition-all"
                 onMouseEnter={onPreloadRegister}
                 onFocus={onPreloadRegister}
@@ -53,6 +63,7 @@ export const LandingFooter: React.FC<LandingFooterProps> = ({
                 href="https://wa.me/201123087745?text=مرحباً،%20أريد%20معرفة%20المزيد%20عن%20منصة%20MaxP"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={handleLeadClick("footer_whatsapp_consultant", "whatsapp")}
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 px-6 py-4 text-sm font-bold text-slate-200 transition-all"
               >
                 <span>تحدث مع مستشار تشغيل</span>

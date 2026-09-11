@@ -12,6 +12,7 @@ import {
   Zap,
   Play,
 } from "lucide-react";
+import { trackPlatformSiteLead } from "../../../utils/platformSiteMetaPixel";
 
 interface LandingHeroProps {
   onPreloadRegister?: () => void;
@@ -20,6 +21,13 @@ interface LandingHeroProps {
 export const LandingHero: React.FC<LandingHeroProps> = ({
   onPreloadRegister,
 }) => {
+  const handleLeadClick =
+    (eventSource: string, destination: string) => () => {
+      trackPlatformSiteLead(eventSource, {
+        destination,
+        landing_variant: "enterprise-os",
+      });
+    };
   return (
     <section className="relative pt-28 sm:pt-36 pb-16 sm:pb-24 overflow-hidden">
       {/* Dynamic Background Aura */}
@@ -84,6 +92,7 @@ export const LandingHero: React.FC<LandingHeroProps> = ({
             >
               <Link
                 to="/auth/register"
+                onClick={handleLeadClick("hero_cta_register", "/auth/register")}
                 className="w-full sm:w-auto relative group inline-flex items-center justify-center gap-2.5 rounded-2xl bg-gradient-to-r from-red-600 via-red-500 to-amber-600 px-8 py-4 text-sm font-black text-white shadow-xl shadow-red-600/35 hover:shadow-red-600/60 hover:scale-[1.02] active:scale-[0.98] transition-all overflow-hidden"
                 onMouseEnter={onPreloadRegister}
                 onFocus={onPreloadRegister}

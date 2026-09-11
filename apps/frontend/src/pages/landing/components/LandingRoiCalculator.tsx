@@ -2,6 +2,7 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Calculator, ArrowLeft, Sparkles, TrendingUp, Clock, DollarSign } from "lucide-react";
+import { trackPlatformSiteLead } from "../../../utils/platformSiteMetaPixel";
 
 export const LandingRoiCalculator: React.FC = () => {
   const [revenue, setRevenue] = useState(150000);
@@ -175,6 +176,13 @@ export const LandingRoiCalculator: React.FC = () => {
 
               <Link
                 to="/auth/register"
+                onClick={() => {
+                  trackPlatformSiteLead("roi_calculator_cta", {
+                    destination: "/auth/register",
+                    landing_variant: "enterprise-os",
+                    calculated_benefit: calculations.annualBenefit,
+                  });
+                }}
                 className="w-full relative group inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-amber-600 px-6 py-3 text-xs font-black text-white shadow-lg shadow-red-600/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
               >
                 <span>ابدأ الآن واسترد مبيعاتك الضائعة</span>

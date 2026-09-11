@@ -10,6 +10,7 @@ import { LandingRoiCalculator } from "./landing/components/LandingRoiCalculator"
 import { LandingTestimonials } from "./landing/components/LandingTestimonials";
 import { LandingFaq } from "./landing/components/LandingFaq";
 import { LandingFooter } from "./landing/components/LandingFooter";
+import { trackPlatformSiteLead } from "../utils/platformSiteMetaPixel";
 
 const LandingPage: React.FC = () => {
   useEffect(() => {
@@ -71,6 +72,12 @@ const LandingPage: React.FC = () => {
         href="https://wa.me/201123087745?text=مرحباً،%20أود%20الاستفسار%20عن%20منصة%20Max%20P"
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => {
+          trackPlatformSiteLead("whatsapp_floating_button", {
+            destination: "whatsapp",
+            landing_variant: "enterprise-os",
+          });
+        }}
         className="fixed bottom-6 left-6 z-50 flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-white px-4 py-3 rounded-full shadow-2xl shadow-emerald-950/80 transition-all hover:scale-105 active:scale-95 group border border-emerald-400/30"
         aria-label="تواصل معنا عبر واتساب"
       >

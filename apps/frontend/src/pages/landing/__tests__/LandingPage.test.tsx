@@ -3,6 +3,10 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import LandingPage from "../../LandingPage";
 
+jest.mock("../../../utils/platformSiteMetaPixel", () => ({
+  trackPlatformSiteLead: jest.fn(),
+}));
+
 describe("LandingPage Component", () => {
   it("renders main landing hero and headline correctly", () => {
     render(

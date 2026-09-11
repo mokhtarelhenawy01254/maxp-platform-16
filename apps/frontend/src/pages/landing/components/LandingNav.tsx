@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ArrowLeft, Sparkles } from "lucide-react";
+import { trackPlatformSiteLead } from "../../../utils/platformSiteMetaPixel";
 
 interface LandingNavProps {
   onPreloadAuth?: () => void;
@@ -22,6 +23,14 @@ export const LandingNav: React.FC<LandingNavProps> = ({
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  const handleLeadClick =
+    (eventSource: string, destination: string) => () => {
+      trackPlatformSiteLead(eventSource, {
+        destination,
+        landing_variant: "enterprise-os",
+      });
+    };
 
   const navLinks = [
     { label: "الأدوات", href: "#tools" },
@@ -85,6 +94,7 @@ export const LandingNav: React.FC<LandingNavProps> = ({
 
           <Link
             to="/auth/register"
+            onClick={handleLeadClick("nav_cta_register", "/auth/register")}
             className="relative group inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-red-600 via-red-500 to-amber-600 px-4 sm:px-5 py-2 text-xs font-bold text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50 hover:scale-[1.02] active:scale-[0.98] transition-all overflow-hidden"
             onMouseEnter={onPreloadRegister}
             onFocus={onPreloadRegister}
@@ -139,7 +149,10 @@ export const LandingNav: React.FC<LandingNavProps> = ({
               </Link>
               <Link
                 to="/auth/register"
-                onClick={() => setMobileMenuOpen(false)}
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  handleLeadClick("nav_mobile_cta_register", "/auth/register")();
+                }}
                 className="flex-1 py-2.5 text-center text-xs font-bold text-white rounded-xl bg-gradient-to-r from-red-600 to-amber-600 shadow-md shadow-red-600/30"
               >
                 إنشاء حساب مجاناً
