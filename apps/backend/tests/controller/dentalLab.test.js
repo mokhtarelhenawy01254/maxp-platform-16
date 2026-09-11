@@ -117,6 +117,16 @@ const createPrisma = (overrides = {}) => {
       findMany: jest.fn(),
       upsert: jest.fn(),
     },
+    user: {
+      findFirst: jest.fn(),
+      findMany: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+    },
+    userCompany: {
+      findFirst: jest.fn(),
+      create: jest.fn(),
+    },
     $transaction: jest.fn((fn) => fn(prisma)),
     ...overrides,
   };
@@ -1417,6 +1427,99 @@ test('rejects when workTypeName is missing and no workTypeId', async () => {
       await controller.bulkRestoreCases(req({ body: { caseIds: ['c-1', 'c-2'] } }), resRestore);
       expect(resRestore.statusCode).toBe(200);
       expect(resRestore.payload.count).toBe(2);
+    });
+  });
+
+  describe('technicians and direct user accounts', () => {
+    test('createTechnician creates User and UserCompany with role AGENT', async () => {
+      const prisma = createPrisma();
+      prisma.user.findFirst.mockResolvedValue(null);
+      prisma.user.create.mockResolvedValue({ id: 'user-new-1', email: 'tech@lab.com' });
+      prisma.userCompany.findFirst.mockResolvedValue(null);
+      prisma.userCompany.create.mockResolvedValue({ id: 'uc-1' });
+      prisma.dentalSetting.upsert.mockResolvedValue({});
+      prisma.dentalTechnician.create.mockImplementation(({ data }) => Promise.resolve({ id: 'tech-1', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createTechnician(
+        req({
+          body: {
+            name: 'محمود عبد السلام',
+            role: 'CAD_DESIGNER',
+            email: 'tech@lab.com',
+            password: 'secretPassword123',
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(prisma.user.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            email: 'tech@lab.com',
+            role: 'AGENT',
+            companyId: 'company-1',
+          }),
+        })
+      );
+      expect(prisma.userCompany.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'user-new-1',
+          companyId: 'company-1',
+          role: 'AGENT',
+          isActive: true,
+          isDefault: true,
+        },
+      });
+      expect(prisma.dentalTechnician.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            name: 'محمود عبد السلام',
+            userId: 'user-new-1',
+          }),
+        })
+      );
+    });
+
+    test('createTechnician links existing user and creates UserCompany with role AGENT', async () => {
+      const prisma = createPrisma();
+      prisma.user.findFirst.mockResolvedValue({ id: 'user-existing-1', email: 'existing@lab.com' });
+      prisma.dentalTechnician.findFirst.mockResolvedValue(null);
+      prisma.userCompany.findFirst.mockResolvedValue(null);
+      prisma.userCompany.create.mockResolvedValue({ id: 'uc-2' });
+      prisma.user.update.mockResolvedValue({});
+      prisma.dentalSetting.upsert.mockResolvedValue({});
+      prisma.dentalTechnician.create.mockImplementation(({ data }) => Promise.resolve({ id: 'tech-2', ...data }));
+      getSharedPrismaClient.mockReturnValue(prisma);
+
+      const res = createResponse();
+      await controller.createTechnician(
+        req({
+          body: {
+            name: 'سامح حسن',
+            role: 'CERAMIST',
+            email: 'existing@lab.com',
+            password: 'newPassword123',
+          },
+        }),
+        res
+      );
+
+      expect(res.statusCode).toBe(200);
+      expect(res.payload.success).toBe(true);
+      expect(prisma.user.update).toHaveBeenCalled();
+      expect(prisma.userCompany.create).toHaveBeenCalledWith({
+        data: {
+          userId: 'user-existing-1',
+          companyId: 'company-1',
+          role: 'AGENT',
+          isActive: true,
+          isDefault: false,
+        },
+      });
     });
   });
 
