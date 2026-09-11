@@ -161,6 +161,127 @@ class AutonomousSkillLearner:
             session=session,
         )
 
+    async def record_universal_rule(
+        self,
+        company_id: str,
+        rule_category: str,
+        rule_title: str,
+        rule_instructions: str,
+        supporting_evidence: dict[str, Any] | None = None,
+        trigger_keywords: str | None = None,
+        session: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """Hermes Universal Learning for ANY Agent role in the platform."""
+        if not company_id:
+            return {"success": False, "error": "company_id is required"}
+
+        category_clean = (rule_category or "GENERAL").strip().upper()
+        category_titles = {
+            "CUSTOMER_SUPPORT": "كتيب خدمة العملاء والاستفسارات",
+            "SUPPORT": "كتيب خدمة العملاء والاستفسارات",
+            "SALES": "كتيب مبيعات وإغلاق الصفقات",
+            "SALES_CLOSING": "كتيب مبيعات وإغلاق الصفقات",
+            "INVENTORY": "كتيب إدارة وحركة المخزون",
+            "MEDIA_BUYER": "كتيب استراتيجيات إعلانات المتجر",
+            "OPERATIONS": "كتيب العمليات التشغيلية والتأكيد",
+            "CLINIC": "كتيب العيادات والمواعيد الطبية",
+            "HOTEL": "كتيب حجوزات الفنادق والضيافة",
+            "DENTAL_LAB": "كتيب تشغيل معمل الأسنان",
+            "GENERAL": "كتيب القواعد العامة للمتجر",
+        }
+        skill_name = category_titles.get(category_clean, f"كتيب {category_clean}")
+        skill_id = f"{category_clean.lower()}_playbook_{company_id}"
+
+        rule_line = f"- [{rule_title.strip()}] {rule_instructions.strip()}"
+
+        return await self._upsert_playbook_rule(
+            company_id=company_id,
+            skill_id=skill_id,
+            skill_name=skill_name,
+            skill_type=category_clean,
+            new_rule_line=rule_line,
+            rule_metadata={
+                "last_distilled_at": self._now_iso(),
+                "title": rule_title,
+                "category": category_clean,
+                "evidence": supporting_evidence or {},
+                "trigger_keywords": trigger_keywords or "",
+                "source": "AGENT_UNIVERSAL_LEARN",
+            },
+            session=session,
+        )
+
+    async def distill_inventory_insight(
+        self,
+        company_id: str,
+        product_name: str,
+        current_stock: int,
+        daily_sales: float,
+        supplier_lead_time_days: int = 3,
+        session: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """Distill inventory reorder and safety rules for inventory agents."""
+        if not company_id:
+            return {"success": False, "error": "company_id is required"}
+
+        days_remaining = (current_stock / daily_sales) if daily_sales > 0 else 999
+        rule_title = "مخزون طبيعي"
+        rule_instruction = ""
+
+        if days_remaining <= (supplier_lead_time_days + 1):
+            rule_title = "إعادة طلب عاجل"
+            rule_instruction = (
+                f"صنف '{product_name}' متبقي منه {current_stock} قطع فقط بمعدل بيع {daily_sales:.1f} يومياً "
+                f"(المخزون يكفي {days_remaining:.1f} أيام، والتوريد يستغرق {supplier_lead_time_days} أيام). "
+                f"القاعدة: أنشئ أمر شراء فوري للمورد أو نبه فريق المبيعات لتخفيض الصرف الإعلاني عنه فوراً."
+            )
+        elif daily_sales == 0 and current_stock > 50:
+            rule_title = "مخزون راكد"
+            rule_instruction = (
+                f"صنف '{product_name}' متوفر بـ {current_stock} قطعة دون أي مبيعات خلال الفترة الماضية. "
+                f"القاعدة: اقترح حزمة تخفيضات (Bundle) أو استخدامه كهدية ترويجية مع المنتجات الأكثر طلباً."
+            )
+        else:
+            rule_title = "متابعة المخزون"
+            rule_instruction = f"صنف '{product_name}' بوضع تشغيلي مستقر (الرصيد: {current_stock}، البيع اليومي: {daily_sales:.1f})."
+
+        return await self.record_universal_rule(
+            company_id=company_id,
+            rule_category="INVENTORY",
+            rule_title=rule_title,
+            rule_instructions=rule_instruction,
+            supporting_evidence={"current_stock": current_stock, "daily_sales": daily_sales},
+            session=session,
+        )
+
+    async def distill_customer_support_insight(
+        self,
+        company_id: str,
+        customer_issue: str,
+        resolution_method: str,
+        was_customer_satisfied: bool = True,
+        session: AsyncSession | None = None,
+    ) -> dict[str, Any]:
+        """Distill customer support & satisfaction resolution rules for support agents."""
+        if not company_id:
+            return {"success": False, "error": "company_id is required"}
+
+        status_tag = "حل معتمد" if was_customer_satisfied else "إجراء بديل"
+        instruction = (
+            f"عند مواجهة مشكلة '{customer_issue}'، أثبت الإجراء التالي نجاحه: '{resolution_method}'."
+            if was_customer_satisfied else
+            f"عند مواجهة مشكلة '{customer_issue}'، أسلوب '{resolution_method}' لم يحقق رضا العميل؛ اقترح تعويضاً أو تصعيداً فورياً."
+        )
+
+        return await self.record_universal_rule(
+            company_id=company_id,
+            rule_category="CUSTOMER_SUPPORT",
+            rule_title=f"{status_tag}: {customer_issue[:30]}",
+            rule_instructions=instruction,
+            supporting_evidence={"satisfied": was_customer_satisfied, "issue": customer_issue},
+            session=session,
+        )
+
     async def _upsert_playbook_rule(
         self,
         company_id: str,

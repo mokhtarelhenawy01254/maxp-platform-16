@@ -65,6 +65,7 @@ CORE_TOOL_NAMES: set[str] = {
     "agent_handoff_to",
     "unlock_advanced_tools",
     "knowledge_ask_merchant",
+    "record_learned_rule",
 }
 
 ADVANCED_TOOL_NAMES: set[str] = {
@@ -337,18 +338,31 @@ ROLE_TOOLS: dict[str, list[str]] = load_role_tools()
 def get_tools_for_role(role: str) -> list[FunctionTool]:
     role_upper = role.upper()
     tool_names = ROLE_TOOLS.get(role_upper)
+    tools: list[FunctionTool] = []
     if tool_names is not None:
-        return [t for n in tool_names if (t := _registry.resolve(n)) is not None]
-    return list(CORE_TOOLS)
+        tools = [t for n in tool_names if (t := _registry.resolve(n)) is not None]
+    else:
+        tools = list(CORE_TOOLS)
+
+    # Hermes Universal Self-Learning: ensure record_learned_rule is available to all agent roles
+    universal_learner = _registry.resolve("record_learned_rule")
+    if universal_learner and universal_learner not in tools:
+        tools.append(universal_learner)
+    return tools
 
 
 def get_tool_names_for_role(role: str) -> list[str]:
     role_upper = role.upper()
     tool_names = ROLE_TOOLS.get(role_upper)
+    names: list[str] = []
     if tool_names is not None:
-        return list(tool_names)
-    # Unknown role: safe default -- core read tools only
-    return sorted(CORE_TOOL_NAMES)
+        names = list(tool_names)
+    else:
+        names = sorted(CORE_TOOL_NAMES)
+
+    if "record_learned_rule" not in names:
+        names.append("record_learned_rule")
+    return names
 
 
 def get_tool_name_list(tools: list[FunctionTool]) -> list[str]:

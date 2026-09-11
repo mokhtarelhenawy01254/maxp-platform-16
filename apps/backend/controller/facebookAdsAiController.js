@@ -349,12 +349,14 @@ class FacebookAdsAiController {
         targetAgentId = `media_buyer_${String(companyId).slice(-6)}`;
       }
 
+      const scopedThreadId = threadId.endsWith(`_${companyId}`) ? threadId : `${threadId}_${companyId}`;
+
       try {
         const result = await aiServiceAdminClient.chatWithAgent({
           companyId,
           agentId: targetAgentId,
           message,
-          threadId: `${threadId}_${companyId}`,
+          threadId: scopedThreadId,
           channel: 'dashboard',
         });
 
@@ -381,7 +383,8 @@ class FacebookAdsAiController {
               type: 'WALLET_RECHARGE',
               action_label: 'شحن رصيد الذكاء الاصطناعي الآن'
             },
-            threadId: result?.thread_id || `${threadId}_${companyId}`,
+            threadId,
+            scopedThreadId: result?.thread_id || scopedThreadId,
             draft_id: null,
             agentId: targetAgentId,
           });
@@ -392,7 +395,8 @@ class FacebookAdsAiController {
           reply: result?.reply || '',
           status: result?.status || 'ok',
           tool_calls: result?.tool_calls || [],
-          threadId: result?.thread_id || `${threadId}_${companyId}`,
+          threadId,
+          scopedThreadId: result?.thread_id || scopedThreadId,
           draft_id: result?.draft_id || null,
           agentId: targetAgentId,
         });

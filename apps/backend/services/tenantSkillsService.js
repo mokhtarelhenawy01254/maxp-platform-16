@@ -190,6 +190,48 @@ class TenantSkillsService {
     });
   }
 
+  /**
+   * Universal Hermes learning for ANY agent domain: Customer Support, Sales, Inventory, Operations, etc.
+   */
+  async recordUniversalRule(companyId, { category = 'GENERAL', ruleTitle, ruleInstructions, triggerKeywords = '', metadata = {} } = {}) {
+    if (!companyId) throw new Error('companyId is required');
+    if (!ruleTitle || !ruleInstructions) throw new Error('ruleTitle and ruleInstructions are required');
+
+    const cleanCategory = String(category || 'GENERAL').trim().toUpperCase();
+    const categoryTitles = {
+      CUSTOMER_SUPPORT: 'كتيب خدمة العملاء والاستفسارات',
+      SUPPORT: 'كتيب خدمة العملاء والاستفسارات',
+      SALES: 'كتيب مبيعات وإغلاق الصفقات',
+      SALES_CLOSING: 'كتيب مبيعات وإغلاق الصفقات',
+      INVENTORY: 'كتيب إدارة وحركة المخزون',
+      MEDIA_BUYER: 'كتيب استراتيجيات إعلانات المتجر',
+      OPERATIONS: 'كتيب العمليات التشغيلية والتأكيد',
+      CLINIC: 'كتيب العيادات والمواعيد الطبية',
+      HOTEL: 'كتيب حجوزات الفنادق والضيافة',
+      DENTAL_LAB: 'كتيب تشغيل معمل الأسنان',
+      GENERAL: 'كتيب القواعد العامة للمتجر',
+    };
+
+    const skillName = categoryTitles[cleanCategory] || `كتيب ${cleanCategory}`;
+    const skillId = `${cleanCategory.toLowerCase()}_playbook_${companyId}`;
+    const ruleText = `- [${ruleTitle.trim()}] ${ruleInstructions.trim()}`;
+
+    return await this._saveLearnedRule({
+      companyId,
+      skillId,
+      skillName,
+      skillType: cleanCategory,
+      ruleText,
+      ruleType: 'UNIVERSAL_LEARNED',
+      metrics: {
+        title: ruleTitle,
+        category: cleanCategory,
+        triggerKeywords,
+        ...metadata,
+      },
+    });
+  }
+
   async _saveLearnedRule({ companyId, skillId, skillName, skillType, ruleText, ruleType, metrics }) {
     const baseHeader = `# ${skillName} (${companyId})\n> مهارة تم استخلاصها وتطويرها ذاتياً بناءً على تجارب المتجر الفعلية (Hermes Self-Learning Engine).\n\n## القواعد والدروس التشغيلية المعتمدة:\n`;
 

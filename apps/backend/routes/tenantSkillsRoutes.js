@@ -64,13 +64,19 @@ router.post('/distill-ads', resolveTenant, async (req, res) => {
 });
 
 /**
- * POST /api/tenant-skills/distill-sales
- * Distill sales closing and objection handling from customer dialogues.
+ * POST /api/tenant-skills/record-rule
+ * Universal Hermes learning endpoint for ANY agent (Support, Inventory, Sales, Media Buyer, Operations)
  */
-router.post('/distill-sales', resolveTenant, async (req, res) => {
+router.post('/record-rule', resolveTenant, async (req, res) => {
   try {
-    const dialogueData = req.body;
-    const result = await tenantSkillsService.distillFromSalesDialogue(req.companyId, dialogueData);
+    const { category, ruleTitle, ruleInstructions, triggerKeywords, metadata } = req.body;
+    const result = await tenantSkillsService.recordUniversalRule(req.companyId, {
+      category,
+      ruleTitle,
+      ruleInstructions,
+      triggerKeywords,
+      metadata,
+    });
     return res.status(200).json(result);
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });

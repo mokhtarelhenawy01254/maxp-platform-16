@@ -212,4 +212,94 @@ describe('Hermes Multi-Tenant Self-Learning Engine - Test Suite', () => {
       expect(toggleOn.enabled).toBe(true);
     });
   });
+
+  describe('5. Universal Self-Learning for ANY Agent (Support, Inventory, Clinic, Operations)', () => {
+    test('allows a Customer Support agent to record learned resolution rules', async () => {
+      const result = await tenantSkillsService.recordUniversalRule(merchantEgypt, {
+        category: 'CUSTOMER_SUPPORT',
+        ruleTitle: 'استبدال عيوب الصناعة مجاناً',
+        ruleInstructions: 'عند شكوى العميل من عيب صناعة خلال 14 يوماً، اعرض استبدالاً فورياً مع تحمل المتجر لمصاريف الشحن بالكامل.',
+        triggerKeywords: 'عيب صناعة,منتج تالف,استبدال',
+        metadata: { agentRole: 'SUPPORT', customerSatisfaction: 0.98 },
+      });
+
+      expect(result.success).toBe(true);
+      expect(result.ruleAdded).toContain('استبدال عيوب الصناعة مجاناً');
+
+      const rules = await tenantSkillsService.listLearnedRules(merchantEgypt, { skillType: 'CUSTOMER_SUPPORT' });
+      expect(rules.length).toBe(1);
+      expect(rules[0].name).toBe('كتيب خدمة العملاء والاستفسارات');
+      expect(rules[0].instructions).toContain('تحمل المتجر لمصاريف الشحن بالكامل');
+    });
+
+    test('allows an Inventory agent to record reorder & dead stock rules', async () => {
+      const result = await tenantSkillsService.recordUniversalRule(merchantEgypt, {
+        category: 'INVENTORY',
+        ruleTitle: 'عتبة إعادة الطلب العاجل لمقاس 42',
+        ruleInstructions: 'عند انخفاض رصيد مقاس 42 في الأحذية الكاجوال عن 8 قطع، أنشئ مسودة أمر شراء فوري للمورد.',
+        triggerKeywords: 'مخزون,مقاس 42,أمر شراء',
+        metadata: { agentRole: 'INVENTORY' },
+      });
+
+      expect(result.success).toBe(true);
+
+      const rules = await tenantSkillsService.listLearnedRules(merchantEgypt, { skillType: 'INVENTORY' });
+      expect(rules.length).toBe(1);
+      expect(rules[0].name).toBe('كتيب إدارة وحركة المخزون');
+      expect(rules[0].instructions).toContain('عتبة إعادة الطلب العاجل لمقاس 42');
+    });
+
+    test('allows a Clinic / Appointment agent to record policy rules', async () => {
+      const result = await tenantSkillsService.recordUniversalRule(merchantSaudi, {
+        category: 'CLINIC',
+        ruleTitle: 'تأكيد الحجز المسبق لعيادة الأسنان',
+        ruleInstructions: 'أرسل تذكيراً قبل 4 ساعات من الموعد عبر واتساب؛ إذا لم يؤكد المريض خلال ساعتين، أتح الموعد لقائمة الانتظار.',
+        triggerKeywords: 'موعد,عيادة,تأكيد',
+        metadata: { agentRole: 'CLINIC_BOOKING' },
+      });
+
+      expect(result.success).toBe(true);
+
+      const rules = await tenantSkillsService.listLearnedRules(merchantSaudi, { skillType: 'CLINIC' });
+      expect(rules.length).toBe(1);
+      expect(rules[0].name).toBe('كتيب العيادات والمواعيد الطبية');
+      expect(rules[0].instructions).toContain('تأكيد الحجز المسبق لعيادة الأسنان');
+    });
+
+    test('aggregates all domain playbooks under the merchant tenant without leaking', async () => {
+      // Record rules for Merchant Egypt
+      await tenantSkillsService.recordUniversalRule(merchantEgypt, {
+        category: 'CUSTOMER_SUPPORT',
+        ruleTitle: 'رد الشحن',
+        ruleInstructions: 'رد شحن مجاني',
+      });
+      await tenantSkillsService.recordUniversalRule(merchantEgypt, {
+        category: 'INVENTORY',
+        ruleTitle: 'تنبيه النقص',
+        ruleInstructions: 'تنبيه نقص للمورد',
+      });
+
+      // Record rules for Merchant Saudi
+      await tenantSkillsService.recordUniversalRule(merchantSaudi, {
+        category: 'CLINIC',
+        ruleTitle: 'تأكيد الحجز',
+        ruleInstructions: 'تأكيد حجز العيادة',
+      });
+
+      // Merchant Egypt should have CUSTOMER_SUPPORT and INVENTORY, but NOT CLINIC
+      const allEgPlaybooks = await tenantSkillsService.listLearnedRules(merchantEgypt);
+      const egTypes = allEgPlaybooks.map(p => p.skillType);
+      expect(egTypes).toContain('CUSTOMER_SUPPORT');
+      expect(egTypes).toContain('INVENTORY');
+      expect(egTypes).not.toContain('CLINIC');
+
+      // Merchant Saudi should have CLINIC, but NOT CUSTOMER_SUPPORT or INVENTORY
+      const allSaPlaybooks = await tenantSkillsService.listLearnedRules(merchantSaudi);
+      const saTypes = allSaPlaybooks.map(p => p.skillType);
+      expect(saTypes).toContain('CLINIC');
+      expect(saTypes).not.toContain('CUSTOMER_SUPPORT');
+      expect(saTypes).not.toContain('INVENTORY');
+    });
+  });
 });
+
