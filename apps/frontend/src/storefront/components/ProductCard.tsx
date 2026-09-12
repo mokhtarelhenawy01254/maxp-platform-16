@@ -23,6 +23,11 @@ import {
   navigateStorefrontDocument,
   shouldStorefrontForceDocumentNavigation,
 } from '../utils/navigationGuards';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  fetchStorefrontProduct,
+  getStorefrontProductQueryKey,
+} from '../hooks/useProduct';
 
 interface ProductCardProps {
   product: Product;
@@ -180,6 +185,22 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     `${productRouteBase}/${slug || id}`,
     location.search,
   );
+  const queryClient = useQueryClient();
+  const prefetchTarget = slug || id;
+
+  const handlePrefetch = React.useCallback(() => {
+    if (!prefetchTarget) return;
+
+    const queryKey = getStorefrontProductQueryKey(prefetchTarget);
+    if (!queryClient.getQueryData(queryKey) && product) {
+      queryClient.setQueryData(queryKey, product);
+    }
+    void queryClient.prefetchQuery({
+      queryKey,
+      queryFn: () => fetchStorefrontProduct(prefetchTarget),
+      staleTime: 60 * 1000,
+    });
+  }, [queryClient, prefetchTarget, product]);
   const isRtl = theme?.direction === 'rtl';
   const hasVariantChoices = Boolean(product.productVariants?.length);
   const stockQuantity =
@@ -779,7 +800,11 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
     <Link
       to={productPath}
       reloadDocument={shouldForceDocumentNavigation}
-      onMouseEnter={() => setIsHovered(true)}
+      onMouseEnter={() => {
+        setIsHovered(true);
+        handlePrefetch();
+      }}
+      onTouchStart={handlePrefetch}
       onMouseLeave={() => setIsHovered(false)}
       className={className}
       style={{ ...productCardStyles(style), touchAction: 'manipulation' }}
@@ -2197,6 +2222,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
             <Link
               to={productPath}
+              onMouseEnter={handlePrefetch}
+              onTouchStart={handlePrefetch}
               onClick={(event) => {
                 if (shouldForceDocumentNavigation) {
                   event.preventDefault();
@@ -2235,6 +2262,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
               <div className="space-y-3">
                 <Link
                   to={productPath}
+                  onMouseEnter={handlePrefetch}
+                  onTouchStart={handlePrefetch}
                   onClick={(event) => {
                     if (shouldForceDocumentNavigation) {
                       event.preventDefault();

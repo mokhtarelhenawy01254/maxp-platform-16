@@ -35,7 +35,8 @@ import { useIpGovernorateDetection } from "./hooks/useIpGovernorateDetection";
 import { Toaster } from "sonner";
 
 
-const StorefrontShell = React.lazy(() => import("./StorefrontShell"));
+const storefrontShellPromise = import("./StorefrontShell");
+const StorefrontShell = React.lazy(() => storefrontShellPromise);
 const STOREFRONT_TOASTER_IDLE_DELAY_MS = 8000;
 const STOREFRONT_TOASTER_INTENT_EVENTS = [
   "click",

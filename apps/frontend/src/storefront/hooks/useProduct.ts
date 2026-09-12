@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { resolvePreviewSource, resolvePreviewThemeId } from '../preview/previewContext';
 import {
   findThemePreviewProduct,
@@ -299,23 +299,44 @@ export const useProduct = (
     storefrontScope,
   );
   const presentationSlug = options.presentationSlug || getGlobalPresentationSlug();
+  const queryClient = useQueryClient();
+
+  const queryKey = getStorefrontProductQueryKey(
+    requestIdOrSlug,
+    storefrontScope,
+    isPreviewMode,
+    previewKey,
+    presentationSlug,
+  );
 
   const { data: product, isLoading, error, refetch } = useQuery<Product>({
-    queryKey: getStorefrontProductQueryKey(
-      requestIdOrSlug,
-      storefrontScope,
-      isPreviewMode,
-      previewKey,
-      presentationSlug,
-    ),
+    queryKey,
     queryFn: () => fetchStorefrontProduct(requestIdOrSlug!, isPreviewMode, presentationSlug),
     enabled: Boolean(requestIdOrSlug) && (options.enabled ?? true),
     staleTime: 60 * 1000,
+    placeholderData: () => {
+      if (!requestIdOrSlug) return undefined;
+      const cached = queryClient.getQueryData<Product>(queryKey);
+      if (cached) return cached;
+
+      const cachedProductsList = queryClient.getQueriesData<{ data?: Product[] }>({
+        queryKey: ['storefront', 'products', storefrontScope],
+      });
+      for (const [, res] of cachedProductsList) {
+        if (Array.isArray(res?.data)) {
+          const match = res.data.find(
+            (p) => p.id === requestIdOrSlug || p.slug === requestIdOrSlug,
+          );
+          if (match) return match;
+        }
+      }
+      return undefined;
+    },
   });
 
   return {
     product: product || null,
-    isLoading,
+    isLoading: isLoading && !product,
     error: error as Error | null,
     refetch,
   };

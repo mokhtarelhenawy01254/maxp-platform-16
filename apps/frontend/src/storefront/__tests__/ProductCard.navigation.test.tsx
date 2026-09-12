@@ -72,7 +72,7 @@ describe('ProductCard storefront navigation', () => {
     vi.restoreAllMocks();
   });
 
-  it('uses document navigation for KHEMET product cards', () => {
+  it('uses SPA navigation for KHEMET product cards without full document reload', () => {
     const queryClient = createQueryClient();
 
     const { container } = render(
@@ -87,6 +87,6 @@ describe('ProductCard storefront navigation', () => {
       'a[href="/product/swan-shoe"]',
     );
     expect(productLink).toBeInTheDocument();
-    expect(productLink).toHaveAttribute('data-reload-document', 'true');
+    expect(productLink).toHaveAttribute('data-reload-document', 'false');
   });
 });

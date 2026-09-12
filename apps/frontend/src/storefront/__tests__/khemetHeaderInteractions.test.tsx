@@ -13,6 +13,7 @@ import StorefrontShell, {
 } from '../StorefrontShell';
 import { useCartStore } from '../store/useCartStore';
 import { useCheckoutStore } from '../store/useCheckoutStore';
+import khemetLuxeThemeData from '../themes/khemet-luxe-eg.json';
 
 vi.mock('../services/storefrontAnalytics', () => ({
   default: {
@@ -93,6 +94,10 @@ describe('KHEMET LUXE storefront header interactions', () => {
             },
           }),
         );
+
+      if (url.pathname.endsWith('khemet-luxe-eg.json')) {
+        return jsonResponse(khemetLuxeThemeData);
+      }
 
       if (url.pathname.endsWith('/public/storefront/settings')) {
         return jsonResponse({
@@ -191,7 +196,7 @@ describe('KHEMET LUXE storefront header interactions', () => {
     useCheckoutStore.getState().resetCheckout();
   });
 
-  it('lets the KHEMET product page brand link use document navigation back home', async () => {
+  it('lets the KHEMET product page brand link use SPA navigation back home', async () => {
     render(
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
@@ -211,7 +216,7 @@ describe('KHEMET LUXE storefront header interactions', () => {
     });
     brandLink.dispatchEvent(clickEvent);
 
-    expect(clickEvent.defaultPrevented).toBe(false);
+    expect(clickEvent.defaultPrevented).toBe(true);
   });
 
   it('shows the compact KHEMET service rail on product pages', async () => {
@@ -270,19 +275,19 @@ describe('KHEMET LUXE storefront header interactions', () => {
     expect(await screen.findByRole('dialog', { name: /سلة|Cart/ })).toBeInTheDocument();
   });
 
-  it('uses document navigation for KHEMET chrome links across storefront pages', () => {
+  it('uses SPA navigation for KHEMET chrome links across storefront pages', () => {
     expect(
       shouldStorefrontForceDocumentNavigation('khemet-luxe-eg', true),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldStorefrontForceDocumentNavigation('khemet-luxe-eg', false),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldStorefrontHeaderForceDocumentNavigation('khemet-luxe-eg', true),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldStorefrontHeaderForceDocumentNavigation('khemet-luxe-eg', false),
-    ).toBe(true);
+    ).toBe(false);
     expect(
       shouldStorefrontHeaderForceDocumentNavigation('vela-fashion-eg', true),
     ).toBe(false);

@@ -190,6 +190,7 @@ const renderBootstrapError = (error: unknown): void => {
 // Render the application
 const bootstrapApp = async (): Promise<void> => {
   if (isStorefrontRequest()) {
+    void import("./storefront/StorefrontShell");
     const [{ default: StorefrontBootstrap, prefetchStorefrontBootstrapData }] =
       await Promise.all([
         import("./storefront/StorefrontBootstrap"),
