@@ -2086,33 +2086,52 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       .sort((a, b) => b.value - a.value);
 
     // تتبع مصير الطلبات المحولة وجودتها (كم اتسلم، كم رجع، كم اتلغى)
+    const orderNumbers = Array.from(new Set(convWindow.map((c) => c.orderNumber).filter(Boolean)));
     const orderIds = Array.from(new Set(convWindow.map((c) => c.orderId).filter(Boolean)));
-    const orderNumbers = Array.from(
-      new Set(convWindow.filter((c) => !c.orderId && c.orderNumber).map((c) => c.orderNumber))
-    );
 
     const orderMapById = new Map();
     const orderMapByNumber = new Map();
 
     if (orderIds.length > 0 || orderNumbers.length > 0) {
       const orClauses = [];
-      if (orderIds.length > 0) orClauses.push({ id: { in: orderIds } });
       if (orderNumbers.length > 0) orClauses.push({ orderNumber: { in: orderNumbers } });
+      if (orderIds.length > 0) orClauses.push({ id: { in: orderIds } });
 
       try {
-        const matchedOrders = await prisma.order.findMany({
-          where: {
-            companyId,
-            OR: orClauses,
-          },
-          select: {
-            id: true,
-            orderNumber: true,
-            status: true,
-            total: true,
-          },
+        const [matchedOrders, matchedGuestOrders] = await Promise.all([
+          prisma.order.findMany({
+            where: {
+              companyId,
+              OR: orClauses,
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              total: true,
+            },
+          }),
+          prisma.guestOrder.findMany({
+            where: {
+              companyId,
+              OR: orClauses,
+            },
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              total: true,
+            },
+          }).catch(() => []),
+        ]);
+
+        // ضيف أولاً طلبات الـ guest
+        matchedGuestOrders.forEach((o) => {
+          if (o.id) orderMapById.set(o.id, o);
+          if (o.orderNumber) orderMapByNumber.set(o.orderNumber, o);
         });
 
+        // الأولوية والسيادة للطلبات الحقيقية المنقولة في جدول Order
         matchedOrders.forEach((o) => {
           if (o.id) orderMapById.set(o.id, o);
           if (o.orderNumber) orderMapByNumber.set(o.orderNumber, o);
@@ -2140,11 +2159,11 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
     const statusMap = new Map();
 
     convWindow.forEach((c) => {
-      const matched = (c.orderId && orderMapById.get(c.orderId)) ||
-                      (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+      const matched = (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+                      (c.orderId && orderMapById.get(c.orderId)) ||
                       null;
       const status = (matched?.status || 'PENDING').toUpperCase();
-      const val = matched ? Number(matched.total || 0) : Number(c.cartValue || 0);
+      const val = matched && matched.total != null ? Number(matched.total) : Number(c.cartValue || 0);
 
       const statEntry = statusMap.get(status) || { status, count: 0, value: 0 };
       statEntry.count += 1;
@@ -2215,17 +2234,16 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           value: Number(s._sum.total || 0),
         })).sort((a, b) => b.count - a.count),
         recent: convWindow.slice(0, 20).map((c) => {
-          const matched = (c.orderId && orderMapById.get(c.orderId)) ||
-                          (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+          const matched = (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+                          (c.orderId && orderMapById.get(c.orderId)) ||
                           null;
           return {
             cartId: c.cartId,
-            orderId: c.orderId || matched?.id || null,
+            orderId: matched?.id || c.orderId || null,
             orderNumber: c.orderNumber || matched?.orderNumber || null,
             orderStatus: matched?.status || null,
-            customStatusCode: matched?.customStatusCode || null,
             employeeName: c.employeeName,
-            value: matched ? Number(matched.total || 0) : Number(c.cartValue || 0),
+            value: matched && matched.total != null ? Number(matched.total) : Number(c.cartValue || 0),
             governorate: c.governorate,
             convertedAt: c.convertedAt,
           };
