@@ -912,6 +912,12 @@ export const getSidebarConfig = (
             title: isEn ? 'Marketing & Advertising' : t('sidebar.marketingSection'),
             icon: Megaphone,
             items: [
+                // 0. مركز التسويق الذكي (AI Studio)
+                {
+                    to: '/advertising/marketing-studio',
+                    icon: Sparkles,
+                    label: isEn ? 'AI Marketing Studio' : 'مركز التسويق الذكي (AI Studio)',
+                },
                 // 1. إعلانات فيسبوك (Meta Ads)
                 {
                     to: '/advertising/facebook-ads',
@@ -919,6 +925,7 @@ export const getSidebarConfig = (
                     label: isEn ? 'Facebook Ads Campaigns' : t('sidebar.facebookAds'),
                     hidden: false,
                     children: [
+                        { to: '/advertising/marketing-studio', label: isEn ? 'AI Marketing Studio' : 'مركز التسويق الذكي (AI Studio)' },
                         { to: '/advertising/facebook-ads', label: isEn ? 'Dashboard & Cockpit' : 'لوحة القيادة والمؤشرات' },
                         { to: '/advertising/facebook-ads/connection', label: isEn ? 'Meta Ads Connection' : (t('sidebar.metaAdsConnection') || 'ربط إعلانات Meta') },
                         { to: '/advertising/facebook-ads/create-ad', label: isEn ? 'Create Ad (Wizard)' : 'إنشاء إعلان جديد (سريع / كامل)' },
