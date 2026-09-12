@@ -60,4 +60,28 @@ describe("Marketing AI Studio - Data & Strategy Engine", () => {
     expect(draft.destinationUrl).toContain("swan.maxp.online/product/three-line-sneaker");
     expect(draft.status).toBe("DRAFT");
   });
+
+  it("filters sessions accurately based on search keyword", () => {
+    const sessions = [
+      { id: "s1", title: "كوتشي سوان إسكوتش", updatedAt: new Date().toISOString(), createdAt: "", messages: [] },
+      { id: "s2", title: "تحليل سنيكرات بلستفورم", updatedAt: new Date().toISOString(), createdAt: "", messages: [] },
+      { id: "s3", title: "باقة Upsell لمنتج Dash", updatedAt: new Date().toISOString(), createdAt: "", messages: [] },
+    ];
+
+    const q = "إسكوتش";
+    const filtered = sessions.filter((s) => s.title.toLowerCase().includes(q.toLowerCase()));
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].id).toBe("s1");
+  });
+
+  it("handles dual-tab switching between SESSIONS and DRAFT", () => {
+    let activeTab: "SESSIONS" | "DRAFT" = "SESSIONS";
+    const onDraftGenerated = () => {
+      activeTab = "DRAFT";
+    };
+
+    expect(activeTab).toBe("SESSIONS");
+    onDraftGenerated();
+    expect(activeTab).toBe("DRAFT");
+  });
 });

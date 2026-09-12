@@ -12,6 +12,7 @@ import {
   Target,
   ShoppingBag,
   Plus,
+  MessageSquare,
 } from "lucide-react";
 import { chatWithMediaBuyer } from "../../../services/facebookAdsService";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
@@ -22,21 +23,23 @@ interface MarketingSquadChatFeedProps {
   selectedProduct: MarketingProduct | null;
   companyId: string | null;
   onDraftGenerated?: (draftData: any) => void;
+  activeSession?: CopilotSession;
+  addMessageToActiveSession?: (msg: Message) => void;
+  createNewSession?: () => void;
 }
 
 export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
   selectedProduct,
   companyId,
   onDraftGenerated,
+  activeSession: propActiveSession,
+  addMessageToActiveSession: propAddMessage,
+  createNewSession: propCreateSession,
 }) => {
-  const {
-    activeSession,
-    activeSessionId,
-    sessions,
-    addMessageToActiveSession,
-    createNewSession,
-    switchSession,
-  } = useCopilotSessions(companyId);
+  const fallback = useCopilotSessions(companyId);
+  const activeSession = propActiveSession || fallback.activeSession;
+  const addMessageToActiveSession = propAddMessage || fallback.addMessageToActiveSession;
+  const createNewSession = propCreateSession || fallback.createNewSession;
 
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
@@ -166,41 +169,33 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
           </div>
         </div>
 
-        {/* Sessions Switcher & Active Product Indicator */}
+        {/* Sessions & Active Product Indicator */}
         <div className="flex items-center gap-2">
           {selectedProduct && (
-            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-700 dark:text-blue-300">
-              <ShoppingBag className="w-3.5 h-3.5" />
-              <span className="font-bold truncate max-w-[110px]">
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-[11px] text-blue-700 dark:text-blue-300">
+              <ShoppingBag className="w-3.5 h-3.5 flex-shrink-0" />
+              <span className="font-bold truncate max-w-[120px]">
                 {selectedProduct.name}
               </span>
             </div>
           )}
 
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <select
-              aria-label="اختيار جلسة المحادثة"
-              value={activeSessionId}
-              onChange={(e) => switchSession(e.target.value)}
-              className="bg-transparent text-xs font-semibold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer max-w-[100px] truncate"
-            >
-              {sessions.map((s, idx) => (
-                <option key={s.id} value={s.id} className="bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200">
-                  {s.title && s.title !== "جلسة جديدة" ? s.title : `جلسة ${idx + 1}`}
-                </option>
-              ))}
-            </select>
-
-            <button
-              type="button"
-              onClick={() => createNewSession()}
-              className="px-2 py-1 text-[11px] rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1 transition shadow-sm"
-              title="بدء جلسة جديدة"
-            >
-              <Plus className="w-3 h-3" />
-              <span>جديدة</span>
-            </button>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 text-xs font-semibold">
+            <MessageSquare className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="truncate max-w-[130px]">
+              {activeSession.title || "جلسة جديدة"}
+            </span>
           </div>
+
+          <button
+            type="button"
+            onClick={() => createNewSession()}
+            className="px-2.5 py-1 text-xs rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold flex items-center gap-1 transition shadow-sm"
+            title="بدء جلسة جديدة"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>جلسة جديدة</span>
+          </button>
         </div>
       </div>
 

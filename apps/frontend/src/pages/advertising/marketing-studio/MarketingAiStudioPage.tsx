@@ -1,20 +1,24 @@
 import React, { useState } from "react";
-import { Sparkles, ShoppingBag, MessageSquare, Rocket } from "lucide-react";
+import { Sparkles, ShoppingBag, MessageSquare, Layers } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
+import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
 import { ProductOpportunityRadar } from "./ProductOpportunityRadar";
 import { MarketingSquadChatFeed } from "./MarketingSquadChatFeed";
-import { CampaignDraftLaunchCard } from "./CampaignDraftLaunchCard";
+import { MarketingControlHub } from "./MarketingControlHub";
 import type { MarketingProduct, MarketingCampaignDraft } from "./types";
 
 const MarketingAiStudioPage: React.FC = () => {
   const { user } = useAuth();
   const companyId = user?.companyId || null;
 
+  const copilotSessions = useCopilotSessions(companyId);
+
   const [selectedProduct, setSelectedProduct] = useState<MarketingProduct | null>(null);
   const [currentDraft, setCurrentDraft] = useState<MarketingCampaignDraft | null>(null);
+  const [hubTab, setHubTab] = useState<"SESSIONS" | "DRAFT">("SESSIONS");
 
   // Mobile/Tablet Tab state
-  const [mobileTab, setMobileTab] = useState<"RADAR" | "CHAT" | "DRAFT">("CHAT");
+  const [mobileTab, setMobileTab] = useState<"RADAR" | "CHAT" | "HUB">("CHAT");
 
   const handleProductSelect = (product: MarketingProduct) => {
     setSelectedProduct(product);
@@ -40,6 +44,10 @@ const MarketingAiStudioPage: React.FC = () => {
         format: args.format || "Reels / Video",
         status: "DRAFT",
       });
+      setHubTab("DRAFT");
+      if (window.innerWidth < 1024) {
+        setMobileTab("HUB");
+      }
     }
   };
 
@@ -92,15 +100,15 @@ const MarketingAiStudioPage: React.FC = () => {
           </button>
           <button
             type="button"
-            onClick={() => setMobileTab("DRAFT")}
+            onClick={() => setMobileTab("HUB")}
             className={`flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg transition flex items-center justify-center gap-1.5 ${
-              mobileTab === "DRAFT"
+              mobileTab === "HUB"
                 ? "bg-white dark:bg-slate-900 text-blue-600 shadow-sm"
                 : "text-slate-500"
             }`}
           >
-            <Rocket className="w-3.5 h-3.5" />
-            المسودة
+            <Layers className="w-3.5 h-3.5" />
+            الجلسات والمسودات
           </button>
         </div>
       </header>
@@ -131,19 +139,29 @@ const MarketingAiStudioPage: React.FC = () => {
             selectedProduct={selectedProduct}
             companyId={companyId}
             onDraftGenerated={handleDraftGenerated}
+            activeSession={copilotSessions.activeSession}
+            addMessageToActiveSession={copilotSessions.addMessageToActiveSession}
+            createNewSession={copilotSessions.createNewSession}
           />
         </section>
 
-        {/* Column 3: Campaign Draft & Action Card */}
+        {/* Column 3: Control Hub (Sessions History & Campaign Drafts) */}
         <section
-          aria-label="مسودة الإطلاق"
+          aria-label="مركز الجلسات والمسودات"
           className={`h-full lg:col-span-3 min-h-0 ${
-            mobileTab === "DRAFT" ? "block" : "hidden lg:block"
+            mobileTab === "HUB" ? "block" : "hidden lg:block"
           }`}
         >
-          <CampaignDraftLaunchCard
+          <MarketingControlHub
+            sessions={copilotSessions.sessions}
+            activeSessionId={copilotSessions.activeSessionId}
+            onSelectSession={copilotSessions.switchSession}
+            onNewSession={copilotSessions.createNewSession}
+            onDeleteSession={copilotSessions.deleteSession}
             draft={currentDraft}
             selectedProduct={selectedProduct}
+            activeTab={hubTab}
+            onTabChange={setHubTab}
             onDraftPublished={() => {
               setCurrentDraft(null);
             }}
