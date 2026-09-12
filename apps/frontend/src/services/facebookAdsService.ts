@@ -831,13 +831,36 @@ export interface CreateAdData {
   status?: "ACTIVE" | "PAUSED";
   creativeType: "SINGLE_IMAGE" | "SINGLE_VIDEO" | "CAROUSEL" | "COLLECTION";
   primaryText: string;
+  primaryTexts?: string[];
   headline?: string;
+  headlines?: string[];
   description?: string;
+  descriptions?: string[];
   callToAction?: string;
   imageUrl?: string;
   videoUrl?: string;
   linkUrl?: string;
+  displayLink?: string;
   productId?: string;
+  imageHash?: string;
+  videoId?: string;
+  pageId?: string;
+  instagramActorId?: string;
+  urlParameters?: string;
+  advantageCreative?: boolean;
+  textGeneration?: boolean;
+  textOptimizations?: boolean;
+  imageEnhancement?: boolean;
+  imageTemplates?: boolean;
+  videoHighlight?: boolean;
+  musicEnhancement?: boolean;
+  carouselCards?: Array<{
+    imageHash?: string;
+    imageUrl?: string;
+    headline: string;
+    description?: string;
+    linkUrl: string;
+  }>;
 }
 
 /**
@@ -1419,13 +1442,20 @@ export const getAds = async (adSetId: string): Promise<FacebookAd[]> => {
  * إنشاء إعلان جديد
  */
 export const createAd = async (
-  adSetId: string,
-  data: CreateAdData,
+  adSetIdOrData: string | CreateAdData,
+  data?: CreateAdData,
 ): Promise<FacebookAd> => {
   try {
+    const targetAdSetId =
+      typeof adSetIdOrData === "string"
+        ? adSetIdOrData
+        : (adSetIdOrData as CreateAdData).adSetId;
+    const targetData =
+      typeof adSetIdOrData === "string" ? data! : adSetIdOrData;
+
     const response = await apiClient.post(
-      `/facebook-ads/adsets/${adSetId}/ads`,
-      data,
+      `/facebook-ads/adsets/${targetAdSetId}/ads`,
+      targetData,
     );
     return response.data.data;
   } catch (error: unknown) {

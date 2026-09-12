@@ -220,8 +220,24 @@ const createAd = async (req, res) => {
     } = req.body;
     const normalizedCreativeType = normalizeFullAdCreativeType(creativeType);
 
+    const finalPrimaryText =
+      primaryText ||
+      (Array.isArray(req.body.primaryTexts)
+        ? req.body.primaryTexts.find((t) => typeof t === "string" && t.trim())
+        : null);
+    const finalHeadline =
+      headline ||
+      (Array.isArray(req.body.headlines)
+        ? req.body.headlines.find((h) => typeof h === "string" && h.trim())
+        : null);
+    const finalDescription =
+      description ||
+      (Array.isArray(req.body.descriptions)
+        ? req.body.descriptions.find((d) => typeof d === "string" && d.trim())
+        : null);
+
     // التحقق من البيانات المطلوبة
-    if (!name || !primaryText) {
+    if (!name || !finalPrimaryText) {
       return res.status(400).json({
         success: false,
         error: "Missing required fields: name, primaryText",
@@ -371,9 +387,9 @@ const createAd = async (req, res) => {
             status,
             pageId,
             creativeType: normalizedCreativeType,
-            primaryText,
-            headline,
-            description,
+            primaryText: finalPrimaryText,
+            headline: finalHeadline,
+            description: finalDescription,
             callToAction,
             imageHash,
             videoId: finalVideoId,
@@ -409,6 +425,9 @@ const createAd = async (req, res) => {
         ...req.body,
         pageId,
         creativeType: normalizedCreativeType,
+        primaryText: finalPrimaryText,
+        headline: finalHeadline,
+        description: finalDescription,
         imageHash,
         videoId: finalVideoId,
         carouselCards: preparedCarouselCards,
@@ -431,9 +450,9 @@ const createAd = async (req, res) => {
         status,
         facebookAdId,
         creativeType: normalizedCreativeType,
-        primaryText,
-        headline,
-        description,
+        primaryText: finalPrimaryText,
+        headline: finalHeadline,
+        description: finalDescription,
         callToAction,
         imageUrl,
         videoUrl,

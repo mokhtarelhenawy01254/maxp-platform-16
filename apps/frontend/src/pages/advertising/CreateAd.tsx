@@ -1,1029 +1,445 @@
 /**
- * Create Ad Page
+ * Create Ad Page (Meta Graph API v25.0)
  *
- * صفحة إنشاء إعلان جديد (Creative)
+ * صفحة إنشاء إعلان جديد بتنسيق معياري مع Advantage+ Creative وتنويع النصوص وتتبع UTM
  */
 
-import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import {
   ArrowLeftIcon,
-  CheckCircleIcon,
-  PhotoIcon,
-  VideoCameraIcon,
-  RectangleStackIcon,
-  XMarkIcon,
-  PlusIcon,
-  EyeIcon,
+  CheckIcon,
+  SparklesIcon,
+  RocketLaunchIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
-import i18n from "../../i18n";
-import { tToast } from "../../utils/i18n-toast";
+import { useTranslation } from "react-i18next";
 import {
   facebookAdsService,
   CreateAdData,
-  CALL_TO_ACTION_TYPES,
 } from "../../services/facebookAdsService";
-import { useAuth } from "../../hooks/useAuthSimple";
 import { apiClient } from "../../services/apiClient";
+import { useAuth } from "../../hooks/useAuthSimple";
 
-interface FacebookPage {
-  id: string;
-  pageId: string;
-  pageName: string;
-  status: string;
-}
+import {
+  AdFormData,
+  FacebookPage,
+  AdIdentityMediaStep,
+  AdCopyVariationsStep,
+  AdAdvantageCreativeStep,
+  AdDestinationTrackingStep,
+  AdPlacementLivePreview,
+  AdReviewStep,
+} from "../../components/advertising/ad";
 
 const CreateAd: React.FC = () => {
   const { adSetId } = useParams<{ adSetId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
+  const { i18n } = useTranslation();
+  const isEn = Boolean(i18n.language && i18n.language.startsWith("en"));
+
+  const selectedAdAccountId = searchParams.get("adAccountId") || "";
   const [currentStep, setCurrentStep] = useState(1);
-  const [loading, setLoading] = useState(false);
-  const [uploading, setUploading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [loadingPages, setLoadingPages] = useState(true);
-  const [previewMode, setPreviewMode] = useState(false);
 
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const videoInputRef = useRef<HTMLInputElement>(null);
-
-  // Form data
-  const [formData, setFormData] = useState<
-    CreateAdData & {
-      pageId?: string;
-      imageFile?: File | null;
-      videoFile?: File | null;
-      uploadedImageHash?: string;
-      uploadedVideoId?: string;
-      imagePreview?: string;
-      videoPreview?: string;
-    }
-  >({
+  // Form State
+  const [formData, setFormData] = useState<AdFormData>({
     adSetId: adSetId || "",
     name: "",
     status: "PAUSED",
     creativeType: "SINGLE_IMAGE",
     primaryText: "",
+    primaryTexts: [""],
     headline: "",
+    headlines: [""],
     description: "",
-    callToAction: "LEARN_MORE",
+    descriptions: [""],
+    callToAction: "ORDER_NOW",
     linkUrl: "",
+    displayLink: "",
     pageId: "",
     imageFile: null,
     videoFile: null,
+    advantageCreative: true,
+    textGeneration: true,
+    textOptimizations: true,
+    imageEnhancement: true,
+    imageTemplates: false,
+    videoHighlight: false,
+    musicEnhancement: true,
+    urlParameters: "utm_source=meta&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.name}}",
+    utmSource: "meta",
+    utmMedium: "paid_social",
+    utmCampaign: "{{campaign.name}}",
+    utmContent: "{{ad.name}}",
+    utmTerm: "{{adset.name}}",
+    carouselCardsList: [
+      { id: "1", headline: "", description: "", linkUrl: "" },
+      { id: "2", headline: "", description: "", linkUrl: "" },
+    ],
   });
 
-  const totalSteps = 4;
+  const updateFormData = (updates: Partial<AdFormData>) => {
+    setFormData((prev) => ({ ...prev, ...updates }));
+  };
 
   useEffect(() => {
     loadFacebookPages();
-  }, []);
+  }, [user?.companyId]);
 
   const loadFacebookPages = async () => {
     if (!user?.companyId) return;
-
     try {
       setLoadingPages(true);
-      const response = await apiClient.get(
-        "/facebook-integration/connected-pages",
-      );
-      if (response.data.success && response.data.pages) {
-        setFacebookPages(
-          response.data.pages.filter(
-            (p: FacebookPage) => p.status === "connected",
-          ),
+      const res = await apiClient.get("/facebook-integration/connected-pages");
+      if (res.data.success && res.data.pages) {
+        const pages: FacebookPage[] = res.data.pages.filter(
+          (p: FacebookPage) => p.status === "connected",
         );
-        if (response.data.pages.length === 1 && !formData.pageId) {
-          setFormData((prev) => ({
-            ...prev,
-            pageId: response.data.pages[0].pageId,
-          }));
+        setFacebookPages(pages);
+        if (pages.length > 0 && !formData.pageId) {
+          updateFormData({ pageId: pages[0].pageId });
         }
       }
-    } catch (error: any) {
-      console.error("Error loading Facebook Pages:", error);
-      // لا نعرض خطأ لأن Page اختياري في بعض الحالات
+    } catch (err) {
+      console.error("Failed to load Facebook pages:", err);
     } finally {
       setLoadingPages(false);
     }
   };
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate image
-    if (!file.type.startsWith("image/")) {
-      tToast.error("createAd.msg_ed79");
-      return;
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      // 10MB
-      tToast.error("createAd.msg_c49c");
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      imageFile: file,
-      imagePreview: URL.createObjectURL(file),
-    }));
-  };
-
-  const handleVideoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate video
-    if (!file.type.startsWith("video/")) {
-      tToast.error("createAd.msg_4399");
-      return;
-    }
-
-    if (file.size > 500 * 1024 * 1024) {
-      // 500MB
-      tToast.error("createAd.msg_18cb");
-      return;
-    }
-
-    setFormData((prev) => ({
-      ...prev,
-      videoFile: file,
-      videoPreview: URL.createObjectURL(file),
-    }));
-  };
-
-  const removeImage = () => {
-    if (formData.imagePreview) {
-      URL.revokeObjectURL(formData.imagePreview);
-    }
-    setFormData((prev) => ({
-      ...prev,
-      imageFile: null,
-      imagePreview: undefined,
-      uploadedImageHash: undefined,
-    }));
-  };
-
-  const removeVideo = () => {
-    if (formData.videoPreview) {
-      URL.revokeObjectURL(formData.videoPreview);
-    }
-    setFormData((prev) => ({
-      ...prev,
-      videoFile: null,
-      videoPreview: undefined,
-      uploadedVideoId: undefined,
-    }));
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
+  const uploadImageFile = async (): Promise<string | null> => {
     if (!formData.imageFile) return null;
-
     try {
-      setUploading(true);
-      toast.loading("جاري رفع الصورة...", { id: "upload-image" });
+      toast.loading(isEn ? "Uploading image to Meta..." : "جاري رفع الصورة إلى Meta...", { id: "upload-media" });
+      const uploadData = new FormData();
+      uploadData.append("image", formData.imageFile);
+      uploadData.append("adSetId", formData.adSetId);
 
-      // Create FormData
-      const uploadFormData = new FormData();
-      uploadFormData.append("image", formData.imageFile);
-      uploadFormData.append("adSetId", formData.adSetId);
-
-      // Upload to backend
-      const response = await apiClient.post(
-        "/facebook-ads/upload-image",
-        uploadFormData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        },
-      );
-
-      if (response.data.success && response.data.hash) {
-        toast.success("تم رفع الصورة بنجاح", { id: "upload-image" });
-        return response.data.hash;
-      } else {
-        throw new Error(response.data.error || i18n.t("createAd.msg_ba32"));
-      }
-    } catch (error: any) {
-      console.error("Error uploading image:", error);
-      toast.error(error?.response?.data?.error || "فشل في رفع الصورة", {
-        id: "upload-image",
+      const res = await apiClient.post("/facebook-ads/upload-image", uploadData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
+
+      if (res.data.success && res.data.hash) {
+        toast.success(isEn ? "Image uploaded successfully" : "تم رفع الصورة بنجاح", { id: "upload-media" });
+        return res.data.hash;
+      }
+      throw new Error(res.data.error || "Upload failed");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || (isEn ? "Failed to upload image" : "فشل في رفع الصورة"), { id: "upload-media" });
       return null;
-    } finally {
-      setUploading(false);
     }
   };
 
-  const uploadVideo = async (): Promise<string | null> => {
+  const uploadVideoFile = async (): Promise<string | null> => {
     if (!formData.videoFile) return null;
-
     try {
-      setUploading(true);
-      toast.loading("جاري رفع الفيديو...", { id: "upload-video" });
+      toast.loading(isEn ? "Uploading video to Meta..." : "جاري رفع الفيديو إلى Meta...", { id: "upload-media" });
+      const uploadData = new FormData();
+      uploadData.append("video", formData.videoFile);
+      uploadData.append("adSetId", formData.adSetId);
+      uploadData.append("name", formData.name || "Video Ad");
 
-      // Create FormData
-      const uploadFormData = new FormData();
-      uploadFormData.append("video", formData.videoFile);
-      uploadFormData.append("adSetId", formData.adSetId);
-      uploadFormData.append("name", formData.name || "Video Ad");
-
-      // Upload to backend
-      const response = await apiClient.post(
-        "/facebook-ads/upload-video",
-        uploadFormData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-          timeout: 300000, // 5 minutes for video upload
-        },
-      );
-
-      if (response.data.success && response.data.videoId) {
-        toast.success("تم رفع الفيديو بنجاح", { id: "upload-video" });
-        return response.data.videoId;
-      } else {
-        throw new Error(response.data.error || i18n.t("createAd.msg_ce27"));
-      }
-    } catch (error: any) {
-      console.error("Error uploading video:", error);
-      toast.error(error?.response?.data?.error || "فشل في رفع الفيديو", {
-        id: "upload-video",
+      const res = await apiClient.post("/facebook-ads/upload-video", uploadData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 300000,
       });
+
+      if (res.data.success && res.data.videoId) {
+        toast.success(isEn ? "Video uploaded successfully" : "تم رفع الفيديو بنجاح", { id: "upload-media" });
+        return res.data.videoId;
+      }
+      throw new Error(res.data.error || "Upload failed");
+    } catch (error: any) {
+      toast.error(error?.response?.data?.error || (isEn ? "Failed to upload video" : "فشل في رفع الفيديو"), { id: "upload-media" });
       return null;
-    } finally {
-      setUploading(false);
     }
   };
 
   const validateStep = (step: number): boolean => {
-    switch (step) {
-      case 1:
-        if (!formData.name.trim()) {
-          tToast.error("createAd.please_name_6078");
+    if (step === 1) {
+      if (!formData.name.trim()) {
+        toast.error(isEn ? "Please enter an ad name" : "يرجى كتابة اسم الإعلان");
+        return false;
+      }
+      if (!formData.pageId) {
+        toast.error(isEn ? "Please select a Facebook page" : "يرجى تحديد صفحة فيسبوك");
+        return false;
+      }
+      if (formData.creativeType === "SINGLE_IMAGE" && !formData.imageFile && !formData.imageUrl && !formData.uploadedImageHash) {
+        toast.error(isEn ? "Please upload an image" : "يرجى رفع صورة الإعلان");
+        return false;
+      }
+      if (formData.creativeType === "SINGLE_VIDEO" && !formData.videoFile && !formData.videoUrl && !formData.uploadedVideoId) {
+        toast.error(isEn ? "Please upload a video" : "يرجى رفع فيديو الإعلان");
+        return false;
+      }
+      if (formData.creativeType === "CAROUSEL") {
+        const invalid = formData.carouselCardsList.some((c) => !c.headline.trim() || !c.linkUrl.trim());
+        if (invalid) {
+          toast.error(isEn ? "Please provide headline and link for all carousel cards" : "يرجى ملء العنوان والرابط لكافة بطاقات الدوّار");
           return false;
-        }
-        if (!formData.creativeType) {
-          tToast.error("createAd.msg_b525");
-          return false;
-        }
-        return true;
-      case 2:
-        if (
-          formData.creativeType === "SINGLE_IMAGE" &&
-          !formData.imageFile &&
-          !formData.imageUrl
-        ) {
-          tToast.error("createAd.please_add_3894");
-          return false;
-        }
-        if (
-          formData.creativeType === "SINGLE_VIDEO" &&
-          !formData.videoFile &&
-          !formData.videoUrl
-        ) {
-          tToast.error("createAd.please_add_8d7d");
-          return false;
-        }
-        return true;
-      case 3:
-        if (!formData.primaryText.trim()) {
-          tToast.error("createAd.msg_705f");
-          return false;
-        }
-        if (!formData.linkUrl.trim()) {
-          tToast.error("createAd.msg_c6bf");
-          return false;
-        }
-        return true;
-      case 4:
-        return true; // Review step
-      default:
-        return true;
-    }
-  };
-
-  const handleNext = async () => {
-    if (!validateStep(currentStep)) {
-      return;
-    }
-
-    // Upload media before moving to next step
-    if (currentStep === 2) {
-      if (
-        formData.creativeType === "SINGLE_IMAGE" &&
-        formData.imageFile &&
-        !formData.uploadedImageHash
-      ) {
-        const hash = await uploadImage();
-        if (hash) {
-          setFormData((prev) => ({ ...prev, uploadedImageHash: hash }));
-        } else {
-          return; // Don't proceed if upload failed
-        }
-      } else if (
-        formData.creativeType === "SINGLE_VIDEO" &&
-        formData.videoFile &&
-        !formData.uploadedVideoId
-      ) {
-        const videoId = await uploadVideo();
-        if (videoId) {
-          setFormData((prev) => ({ ...prev, uploadedVideoId: videoId }));
-        } else {
-          return; // Don't proceed if upload failed
         }
       }
     }
-
-    if (currentStep < totalSteps) {
-      setCurrentStep(currentStep + 1);
+    if (step === 2) {
+      const hasText = formData.primaryTexts.some((t) => t && t.trim().length > 0);
+      if (!hasText) {
+        toast.error(isEn ? "Please provide at least one primary ad text" : "يرجى إدخال نص أساسي واحد على الأقل");
+        return false;
+      }
     }
+    if (step === 4) {
+      if (!formData.linkUrl || !formData.linkUrl.trim()) {
+        toast.error(isEn ? "Please enter destination website URL" : "يرجى إدخال رابط صفحة الهبوط / المتجر");
+        return false;
+      }
+    }
+    return true;
   };
 
-  const handlePrevious = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
+  const handleNext = async () => {
+    if (!validateStep(currentStep)) return;
+
+    // Trigger media upload if on step 1
+    if (currentStep === 1) {
+      if (formData.creativeType === "SINGLE_IMAGE" && formData.imageFile && !formData.uploadedImageHash) {
+        const hash = await uploadImageFile();
+        if (!hash) return;
+        updateFormData({ uploadedImageHash: hash });
+      } else if (formData.creativeType === "SINGLE_VIDEO" && formData.videoFile && !formData.uploadedVideoId) {
+        const vId = await uploadVideoFile();
+        if (!vId) return;
+        updateFormData({ uploadedVideoId: vId });
+      }
     }
+
+    setCurrentStep((prev) => Math.min(prev + 1, 5));
   };
 
   const handleSubmit = async () => {
-    if (!validateStep(4)) {
-      return;
-    }
-
-    // Upload media if not already uploaded
-    let imageHash = formData.uploadedImageHash;
-    let videoId = formData.uploadedVideoId;
-
-    if (
-      formData.creativeType === "SINGLE_IMAGE" &&
-      formData.imageFile &&
-      !imageHash
-    ) {
-      imageHash = await uploadImage();
-      if (!imageHash) return;
-    } else if (
-      formData.creativeType === "SINGLE_VIDEO" &&
-      formData.videoFile &&
-      !videoId
-    ) {
-      videoId = await uploadVideo();
-      if (!videoId) return;
-    }
+    if (!validateStep(4)) return;
 
     try {
-      setLoading(true);
+      setSubmitting(true);
+      toast.loading(isEn ? "Publishing ad to Meta v25..." : "جاري نشر الإعلان على منصة Meta v25...", { id: "create-ad" });
 
-      const adData: CreateAdData = {
+      // Clean variation arrays
+      const validTexts = formData.primaryTexts.map((t) => t.trim()).filter(Boolean);
+      const validHeadlines = formData.headlines.map((h) => h.trim()).filter(Boolean);
+
+      const payload: CreateAdData = {
         adSetId: formData.adSetId,
         name: formData.name,
         status: formData.status || "PAUSED",
         creativeType: formData.creativeType,
-        primaryText: formData.primaryText,
-        headline: formData.headline,
-        description: formData.description,
-        callToAction: formData.callToAction,
+        pageId: formData.pageId,
+        primaryText: validTexts[0] || "",
+        primaryTexts: validTexts,
+        headline: validHeadlines[0] || "",
+        headlines: validHeadlines,
+        description: formData.description || undefined,
+        callToAction: formData.callToAction || "ORDER_NOW",
         linkUrl: formData.linkUrl,
-        imageUrl: formData.imageUrl,
-        videoUrl: formData.videoUrl,
-        ...(imageHash && { imageHash }),
-        ...(videoId && { videoId }),
-        ...(formData.pageId && { pageId: formData.pageId }),
+        displayLink: formData.displayLink || undefined,
+        urlParameters: formData.urlParameters || undefined,
+        imageHash: formData.uploadedImageHash || formData.imageHash,
+        videoId: formData.uploadedVideoId || formData.videoId,
+        advantageCreative: formData.advantageCreative,
+        textGeneration: formData.textGeneration,
+        textOptimizations: formData.textOptimizations,
+        imageEnhancement: formData.imageEnhancement,
+        imageTemplates: formData.imageTemplates,
+        videoHighlight: formData.videoHighlight,
+        musicEnhancement: formData.musicEnhancement,
       };
 
-      await facebookAdsService.createAd(adData);
-      tToast.success("createAd.success_create_69a9");
-      navigate(`/advertising/facebook-ads/campaigns/${adSetId}/adset`);
+      await facebookAdsService.createAd(payload);
+      toast.success(isEn ? "Ad created successfully on Meta!" : "تم إنشاء الإعلان بنجاح على Meta!", { id: "create-ad" });
+
+      const returnUrl = `/advertising/facebook-ads${selectedAdAccountId ? `?adAccountId=${encodeURIComponent(selectedAdAccountId)}` : ""}`;
+      navigate(returnUrl);
     } catch (error: any) {
-      console.error("Error creating ad:", error);
-      toast.error(error?.response?.data?.error || "فشل في إنشاء الإعلان");
+      console.error("Failed to create ad:", error);
+      toast.error(error?.response?.data?.error || (isEn ? "Failed to create ad" : "فشل إنشاء الإعلان"), { id: "create-ad" });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
-  const creativeTypes = [
-    {
-      value: "SINGLE_IMAGE",
-      label: "صورة واحدة",
-      icon: PhotoIcon,
-      description: "إعلان بصورة واحدة ونص",
-    },
-    {
-      value: "SINGLE_VIDEO",
-      label: "فيديو واحد",
-      icon: VideoCameraIcon,
-      description: "إعلان بفيديو واحد ونص",
-    },
-    {
-      value: "CAROUSEL",
-      label: "Carousel",
-      icon: RectangleStackIcon,
-      description: "إعلان متعدد الصور (قريباً)",
-    },
+  const steps = [
+    { num: 1, label: isEn ? "Media & Identity" : "الهوية والتصميم" },
+    { num: 2, label: isEn ? "Copy Variations" : "النصوص والعناوين" },
+    { num: 3, label: isEn ? "Advantage+ Suite" : "تحسينات Advantage+" },
+    { num: 4, label: isEn ? "Destination & Tracking" : "الوجهة والتتبع" },
+    { num: 5, label: isEn ? "Review & Preview" : "المعاينة والمراجعة" },
   ];
 
-  return (
-    <div className="w-full space-y-6">
-      {/* Header */}
-      <div>
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4"
-        >
-          <ArrowLeftIcon className="w-5 h-5" />
-          رجوع
-        </button>
-        <h1 className="text-3xl font-bold text-gray-900">إنشاء إعلان جديد</h1>
-        <p className="mt-2 text-sm text-gray-600">
-          أنشئ إعلاناً جديداً مع Creative كامل
-        </p>
-      </div>
+  const selectedPage = facebookPages.find((p) => p.pageId === formData.pageId);
 
-      {/* Progress Steps */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <div className="flex items-center justify-between">
-          {[1, 2, 3, 4].map((step) => (
-            <React.Fragment key={step}>
-              <div className="flex flex-col items-center flex-1">
-                <div
-                  className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    step < currentStep
-                      ? "bg-green-500 text-white"
-                      : step === currentStep
-                        ? "bg-indigo-600 text-white"
-                        : "bg-gray-200 text-gray-600"
-                  }`}
-                >
-                  {step < currentStep ? (
-                    <CheckCircleIcon className="w-6 h-6" />
-                  ) : (
-                    <span>{step}</span>
-                  )}
-                </div>
-                <p
-                  className={`mt-2 text-sm font-medium ${
-                    step <= currentStep ? "text-gray-900" : "text-gray-500"
-                  }`}
-                >
-                  {step === 1 && "معلومات الإعلان"}
-                  {step === 2 && "الوسائط"}
-                  {step === 3 && "النص والمحتوى"}
-                  {step === 4 && "المراجعة"}
-                </p>
-              </div>
-              {step < 4 && (
-                <div
-                  className={`flex-1 h-1 mx-4 ${
-                    step < currentStep ? "bg-green-500" : "bg-gray-200"
-                  }`}
-                />
-              )}
-            </React.Fragment>
-          ))}
+  return (
+    <div className="w-full max-w-6xl mx-auto space-y-6 pb-12">
+      {/* Header */}
+      <div className="flex items-center justify-between border-b border-slate-200 pb-4">
+        <div>
+          <button
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 mb-2 transition"
+          >
+            <ArrowLeftIcon className="h-4 w-4" />
+            <span>{isEn ? "Back" : "رجوع"}</span>
+          </button>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-slate-950">
+              {isEn ? "Create New Ad (Creative v25)" : "إنشاء إعلان جديد (Meta v25 Suite)"}
+            </h1>
+            <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
+              Meta v25
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">
+            {isEn
+              ? "Design high-converting creatives with AI optimizations, dynamic copy, and accurate tracking."
+              : "صمم إعلاناً بيعياً عالي التحويل مدعوماً بالذكاء الاصطناعي وتنويع النصوص وتتبع المبيعات."}
+          </p>
         </div>
       </div>
 
-      {/* Form Content */}
-      <div className="bg-white p-8 rounded-lg shadow">
-        {/* Step 1: Ad Info */}
-        {currentStep === 1 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              معلومات الإعلان
-            </h2>
-
-            {/* Ad Name */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                اسم الإعلان *
-              </label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => handleInputChange("name", e.target.value)}
-                placeholder="مثال: إعلان صيف 2025"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-            </div>
-
-            {/* Creative Type */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                نوع الإعلان *
-              </label>
-              <div className="grid grid-cols-3 gap-4">
-                {creativeTypes.map((type) => {
-                  const Icon = type.icon;
-                  const isSelected = formData.creativeType === type.value;
-                  return (
-                    <button
-                      key={type.value}
-                      onClick={() =>
-                        handleInputChange("creativeType", type.value)
-                      }
-                      className={`p-6 border-2 rounded-lg text-left transition-all ${
-                        isSelected
-                          ? "border-indigo-600 bg-indigo-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      } ${type.value === "CAROUSEL" ? "opacity-50 cursor-not-allowed" : ""}`}
-                      disabled={type.value === "CAROUSEL"}
-                    >
-                      <Icon
-                        className={`w-8 h-8 mb-2 ${isSelected ? "text-indigo-600" : "text-gray-400"}`}
-                      />
-                      <div className="font-medium text-gray-900">
-                        {type.label}
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {type.description}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Facebook Page */}
-            {loadingPages ? (
-              <div className="text-center py-4">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600 mx-auto"></div>
-              </div>
-            ) : facebookPages.length > 0 ? (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  صفحة Facebook (لربط الإعلان)
-                </label>
-                <select
-                  value={formData.pageId}
-                  onChange={(e) => handleInputChange("pageId", e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="">اختر صفحة Facebook</option>
-                  {facebookPages.map((page) => (
-                    <option key={page.pageId} value={page.pageId}>
-                      {page.pageName}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1 text-sm text-gray-500">
-                  الإعلان سيُنشر من هذه الصفحة
-                </p>
-              </div>
-            ) : null}
-
-            {/* Ad Status */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                حالة الإعلان
-              </label>
-              <select
-                value={formData.status}
-                onChange={(e) =>
-                  handleInputChange(
-                    "status",
-                    e.target.value as "ACTIVE" | "PAUSED",
-                  )
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                <option value="PAUSED">متوقف (سأفعله لاحقاً)</option>
-                <option value="ACTIVE">نشط (يبدأ فوراً)</option>
-              </select>
-            </div>
-          </div>
-        )}
-
-        {/* Step 2: Media */}
-        {currentStep === 2 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">الوسائط</h2>
-
-            {/* Image Upload */}
-            {formData.creativeType === "SINGLE_IMAGE" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  صورة الإعلان *
-                </label>
-
-                {formData.imagePreview ? (
-                  <div className="relative">
-                    <img
-                      src={formData.imagePreview}
-                      alt="Preview"
-                      className="w-full max-w-md h-auto rounded-lg border border-gray-300"
-                    />
-                    <button
-                      onClick={removeImage}
-                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-                    >
-                      <XMarkIcon className="w-5 h-5" />
-                    </button>
-                    {formData.uploadedImageHash && (
-                      <div className="mt-2 text-sm text-green-600">
-                        ✓ تم رفع الصورة بنجاح
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-indigo-500 transition-colors"
-                  >
-                    <PhotoIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">اضغط لاختيار صورة</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      JPG, PNG - الحد الأقصى 10MB
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      الحد الأدنى: 600x315 بكسل
-                    </p>
-                  </div>
-                )}
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                />
-
-                {/* Alternative: Image URL */}
-                {!formData.imagePreview && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      أو رابط الصورة
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.imageUrl || ""}
-                      onChange={(e) =>
-                        handleInputChange("imageUrl", e.target.value)
-                      }
-                      placeholder="https://example.com/image.jpg"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Video Upload */}
-            {formData.creativeType === "SINGLE_VIDEO" && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  فيديو الإعلان *
-                </label>
-
-                {formData.videoPreview ? (
-                  <div className="relative">
-                    <video
-                      src={formData.videoPreview}
-                      controls
-                      className="w-full max-w-md h-auto rounded-lg border border-gray-300"
-                    />
-                    <button
-                      onClick={removeVideo}
-                      className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-                    >
-                      <XMarkIcon className="w-5 h-5" />
-                    </button>
-                    {formData.uploadedVideoId && (
-                      <div className="mt-2 text-sm text-green-600">
-                        ✓ تم رفع الفيديو بنجاح
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div
-                    onClick={() => videoInputRef.current?.click()}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center cursor-pointer hover:border-indigo-500 transition-colors"
-                  >
-                    <VideoCameraIcon className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-600">اضغط لاختيار فيديو</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      MP4, MOV - الحد الأقصى 500MB
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      المدة الموصى بها: 15-60 ثانية
-                    </p>
-                  </div>
-                )}
-
-                <input
-                  ref={videoInputRef}
-                  type="file"
-                  accept="video/*"
-                  onChange={handleVideoSelect}
-                  className="hidden"
-                />
-
-                {/* Alternative: Video URL */}
-                {!formData.videoPreview && (
-                  <div className="mt-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      أو رابط الفيديو
-                    </label>
-                    <input
-                      type="url"
-                      value={formData.videoUrl || ""}
-                      onChange={(e) =>
-                        handleInputChange("videoUrl", e.target.value)
-                      }
-                      placeholder="https://example.com/video.mp4"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {uploading && (
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-sm text-blue-800">
-                  جاري الرفع... الرجاء الانتظار
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Step 3: Copy & Content */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            <h2 className="text-xl font-semibold text-gray-900">
-              النص والمحتوى
-            </h2>
-
-            {/* Primary Text */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                النص الأساسي (Primary Text) *
-              </label>
-              <textarea
-                value={formData.primaryText}
-                onChange={(e) =>
-                  handleInputChange("primaryText", e.target.value)
-                }
-                placeholder="اكتب النص الرئيسي للإعلان هنا..."
-                rows={4}
-                maxLength={500}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                {formData.primaryText.length}/500 حرف
-              </p>
-            </div>
-
-            {/* Headline */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                العنوان (Headline)
-              </label>
-              <input
-                type="text"
-                value={formData.headline || ""}
-                onChange={(e) => handleInputChange("headline", e.target.value)}
-                placeholder="عنوان جذاب للإعلان"
-                maxLength={40}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                {formData.headline?.length || 0}/40 حرف
-              </p>
-            </div>
-
-            {/* Description */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                الوصف (Description)
-              </label>
-              <textarea
-                value={formData.description || ""}
-                onChange={(e) =>
-                  handleInputChange("description", e.target.value)
-                }
-                placeholder="وصف مختصر للإعلان"
-                rows={3}
-                maxLength={125}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                {formData.description?.length || 0}/125 حرف
-              </p>
-            </div>
-
-            {/* Call to Action */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Call to Action
-              </label>
-              <select
-                value={formData.callToAction}
-                onChange={(e) =>
-                  handleInputChange("callToAction", e.target.value)
-                }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              >
-                {CALL_TO_ACTION_TYPES.map((cta) => (
-                  <option key={cta.value} value={cta.value}>
-                    {cta.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Link URL */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                رابط الإعلان (Destination URL) *
-              </label>
-              <input
-                type="url"
-                value={formData.linkUrl || ""}
-                onChange={(e) => handleInputChange("linkUrl", e.target.value)}
-                placeholder="https://example.com/page"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-              />
-              <p className="mt-1 text-sm text-gray-500">
-                الرابط الذي سيتم توجيه المستخدمين إليه عند النقر على الإعلان
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Step 4: Review */}
-        {currentStep === 4 && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">
-                المراجعة والمعاينة
-              </h2>
-              <button
-                onClick={() => setPreviewMode(!previewMode)}
-                className="flex items-center gap-2 px-4 py-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100"
-              >
-                <EyeIcon className="w-5 h-5" />
-                {previewMode ? "إخفاء المعاينة" : "معاينة الإعلان"}
-              </button>
-            </div>
-
-            {/* Preview */}
-            {previewMode && (
-              <div className="border border-gray-300 rounded-lg p-6 bg-gray-50">
-                <div className="max-w-md mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
-                  {/* Media */}
-                  {formData.creativeType === "SINGLE_IMAGE" &&
-                    formData.imagePreview && (
-                      <img
-                        src={formData.imagePreview}
-                        alt="Ad Preview"
-                        className="w-full h-auto"
-                      />
-                    )}
-                  {formData.creativeType === "SINGLE_VIDEO" &&
-                    formData.videoPreview && (
-                      <video
-                        src={formData.videoPreview}
-                        controls
-                        className="w-full h-auto"
-                      />
-                    )}
-
-                  {/* Content */}
-                  <div className="p-4 space-y-2">
-                    {formData.headline && (
-                      <h3 className="font-semibold text-gray-900">
-                        {formData.headline}
-                      </h3>
-                    )}
-                    <p className="text-gray-700 text-sm">
-                      {formData.primaryText}
-                    </p>
-                    {formData.description && (
-                      <p className="text-gray-600 text-xs">
-                        {formData.description}
-                      </p>
-                    )}
-                    <button className="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm">
-                      {CALL_TO_ACTION_TYPES.find(
-                        (cta) => cta.value === formData.callToAction,
-                      )?.label || "افعل المزيد"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Summary */}
-            <div className="space-y-4">
-              <div className="p-6 bg-gray-50 rounded-lg space-y-4">
-                <h3 className="font-medium text-gray-900">ملخص الإعلان</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-gray-600">اسم الإعلان</p>
-                    <p className="font-semibold text-gray-900">
-                      {formData.name}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">نوع الإعلان</p>
-                    <p className="font-semibold text-gray-900">
-                      {
-                        creativeTypes.find(
-                          (t) => t.value === formData.creativeType,
-                        )?.label
-                      }
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Call to Action</p>
-                    <p className="font-semibold text-gray-900">
-                      {
-                        CALL_TO_ACTION_TYPES.find(
-                          (cta) => cta.value === formData.callToAction,
-                        )?.label
-                      }
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">الحالة</p>
-                    <p className="font-semibold text-gray-900">
-                      {formData.status === "ACTIVE" ? "نشط" : "متوقف"}
-                    </p>
-                  </div>
-                  {formData.linkUrl && (
-                    <div className="col-span-2">
-                      <p className="text-sm text-gray-600">رابط الإعلان</p>
-                      <p className="font-semibold text-gray-900 text-sm break-all">
-                        {formData.linkUrl}
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Navigation Buttons */}
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-gray-200">
+      {/* Stepper Bar */}
+      <div className="grid grid-cols-5 gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
+        {steps.map((step) => (
           <button
-            onClick={() => navigate(-1)}
-            className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+            key={step.num}
+            type="button"
+            onClick={() => {
+              if (step.num < currentStep || validateStep(currentStep)) {
+                setCurrentStep(step.num);
+              }
+            }}
+            className={`flex items-center gap-2 p-2 rounded-xl text-right transition border ${
+              currentStep === step.num
+                ? "border-indigo-600 bg-indigo-50/50 text-indigo-950 font-black shadow-xs"
+                : step.num < currentStep
+                  ? "border-emerald-200 bg-emerald-50/40 text-emerald-900 font-bold"
+                  : "border-transparent text-slate-400 font-semibold hover:text-slate-600"
+            }`}
           >
-            إلغاء
+            <div
+              className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-black shrink-0 ${
+                currentStep === step.num
+                  ? "bg-indigo-600 text-white"
+                  : step.num < currentStep
+                    ? "bg-emerald-600 text-white"
+                    : "bg-slate-200 text-slate-600"
+              }`}
+            >
+              {step.num < currentStep ? <CheckIcon className="h-3.5 w-3.5 stroke-3" /> : step.num}
+            </div>
+            <span className="text-[11px] truncate">{step.label}</span>
           </button>
+        ))}
+      </div>
 
-          <div className="flex gap-3">
-            {currentStep > 1 && (
+      {/* Main Grid: Form + Live Preview */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Step Content */}
+        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-xs">
+          {currentStep === 1 && (
+            <AdIdentityMediaStep
+              formData={formData}
+              updateFormData={updateFormData}
+              facebookPages={facebookPages}
+              loadingPages={loadingPages}
+              isEn={isEn}
+            />
+          )}
+
+          {currentStep === 2 && (
+            <AdCopyVariationsStep
+              formData={formData}
+              updateFormData={updateFormData}
+              isEn={isEn}
+            />
+          )}
+
+          {currentStep === 3 && (
+            <AdAdvantageCreativeStep
+              formData={formData}
+              updateFormData={updateFormData}
+              isEn={isEn}
+            />
+          )}
+
+          {currentStep === 4 && (
+            <AdDestinationTrackingStep
+              formData={formData}
+              updateFormData={updateFormData}
+              isEn={isEn}
+            />
+          )}
+
+          {currentStep === 5 && (
+            <AdReviewStep
+              formData={formData}
+              page={selectedPage}
+              isEn={isEn}
+            />
+          )}
+
+          {/* Navigation Controls */}
+          <div className="mt-8 flex items-center justify-between border-t border-slate-100 pt-4">
+            <button
+              type="button"
+              disabled={currentStep === 1}
+              onClick={() => setCurrentStep((prev) => Math.max(prev - 1, 1))}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 transition"
+            >
+              {isEn ? "Previous" : "السابق"}
+            </button>
+
+            {currentStep < 5 ? (
               <button
-                onClick={handlePrevious}
-                disabled={uploading}
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-              >
-                <ArrowLeftIcon className="w-5 h-5" />
-                السابق
-              </button>
-            )}
-            {currentStep < totalSteps ? (
-              <button
+                type="button"
                 onClick={handleNext}
-                disabled={uploading}
-                className="flex items-center gap-2 px-4 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-xs font-black text-white hover:bg-indigo-700 shadow-sm transition"
               >
-                {uploading ? "جاري الرفع..." : "التالي"}
+                <span>{isEn ? "Continue" : "متابعة"}</span>
               </button>
             ) : (
               <button
+                type="button"
+                disabled={submitting}
                 onClick={handleSubmit}
-                disabled={loading || uploading}
-                className="flex items-center gap-2 px-6 py-2 text-white bg-green-600 rounded-lg hover:bg-green-700 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-6 py-2.5 text-xs font-black text-white hover:bg-slate-800 disabled:opacity-50 shadow-sm transition"
               >
-                {loading ? (
+                {submitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                    جاري الإنشاء...
+                    <ArrowPathIcon className="h-4 w-4 animate-spin" />
+                    <span>{isEn ? "Publishing to Meta..." : "جاري النشر على Meta..."}</span>
                   </>
                 ) : (
                   <>
-                    <CheckCircleIcon className="w-5 h-5" />
-                    إنشاء الإعلان
+                    <RocketLaunchIcon className="h-4 w-4 text-emerald-400" />
+                    <span>{isEn ? "Launch Ad on Meta" : "نشر الإعلان على Meta"}</span>
                   </>
                 )}
               </button>
             )}
           </div>
+        </div>
+
+        {/* Live Preview Column */}
+        <div className="lg:col-span-5 sticky top-6">
+          <AdPlacementLivePreview
+            formData={formData}
+            page={selectedPage}
+            isEn={isEn}
+          />
         </div>
       </div>
     </div>
