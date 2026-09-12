@@ -96,11 +96,19 @@ const CreateAd: React.FC = () => {
     if (!user?.companyId) return;
     try {
       setLoadingPages(true);
-      const res = await apiClient.get("/facebook-integration/connected-pages");
-      if (res.data.success && res.data.pages) {
-        const pages: FacebookPage[] = res.data.pages.filter(
-          (p: FacebookPage) => p.status === "connected",
-        );
+      const res = await apiClient.get("/facebook-ads/pages");
+      if (res.data.success && (res.data.data || res.data.pages)) {
+        const rawPages = res.data.data || res.data.pages || [];
+        const pages: FacebookPage[] = rawPages
+          .filter((p: any) => p.isSelectable !== false)
+          .map((p: any) => ({
+            id: String(p.id || p.pageId),
+            pageId: String(p.id || p.pageId),
+            pageName: p.name || p.pageName,
+            status: p.status || "READY",
+            category: p.category,
+            pictureUrl: p.pictureUrl,
+          }));
         setFacebookPages(pages);
         if (pages.length > 0 && !formData.pageId) {
           updateFormData({ pageId: pages[0].pageId });
