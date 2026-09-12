@@ -976,7 +976,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                                           onMouseDown={(e) => {
                                             e.preventDefault();
                                             updateItemDetails(index, {
-                                              productId: catItem.id,
+                                              productId: catItem.type === "product" ? catItem.id : null,
                                               productName: catItem.name,
                                               unitPrice: catItem.cost || 0,
                                               unit: catItem.unit,
@@ -1157,7 +1157,7 @@ const PurchaseInvoiceForm: React.FC = () => {
                                     onMouseDown={(e) => {
                                       e.preventDefault();
                                       updateItemDetails(index, {
-                                        productId: catItem.id,
+                                        productId: catItem.type === "product" ? catItem.id : null,
                                         productName: catItem.name,
                                         unitPrice: catItem.cost || 0,
                                       });

@@ -59,6 +59,27 @@ exports.createPurchaseOrder = async (req, res) => {
 
     const orderNumber = await generateOrderNumber(companyId);
 
+    // Validate candidate productIds against actual Products table to avoid Foreign Key violation
+    const validProductIds = new Set();
+    const candidateProductIds = items
+      .map((item) => item.productId)
+      .filter(Boolean);
+
+    if (candidateProductIds.length > 0) {
+      const existingProducts = await safeQuery(() =>
+        getSharedPrismaClient().product.findMany({
+          where: {
+            id: { in: candidateProductIds },
+            companyId,
+          },
+          select: { id: true },
+        }),
+      );
+      if (Array.isArray(existingProducts)) {
+        existingProducts.forEach((p) => validProductIds.add(p.id));
+      }
+    }
+
     let subtotal = 0;
     let taxAmount = 0;
 
@@ -76,8 +97,13 @@ exports.createPurchaseOrder = async (req, res) => {
       subtotal += itemSubtotal;
       taxAmount += itemTax;
 
+      const safeProductId =
+        item.productId && validProductIds.has(item.productId)
+          ? item.productId
+          : null;
+
       return {
-        productId: item.productId || null,
+        productId: safeProductId,
         productName: item.productName,
         description: item.description,
         quantity,

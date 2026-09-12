@@ -4299,9 +4299,9 @@ router.post('/simple/:orderNumber/viewed', verifyToken.authenticateToken, async 
 // جلب عدد الطلبات الجديدة غير المقروءة
 router.get('/simple/new-count', verifyToken.authenticateToken, async (req, res) => {
   try {
-    const companyId = req.user?.companyId;
+    const companyId = req.user?.companyId || req.headers['x-company-id'] || req.companyId;
     if (!companyId) {
-      return res.status(403).json({ success: false, message: 'معرف الشركة مطلوب' });
+      return res.json({ success: true, data: { count: 0 } });
     }
 
     const excludedStatuses = ['DRAFT', 'TRASH', 'DUPLICATE_ORDER'];
