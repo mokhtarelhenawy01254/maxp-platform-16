@@ -95,15 +95,17 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
   const getSuggestedCost = (type: ReturnType | undefined): number => {
     if (!type) return 0;
     if (type.costModel === "FIXED" && type.fixedAmount != null) {
-      return Number(type.fixedAmount) || 0;
+      const fixed = Number(type.fixedAmount);
+      return isNaN(fixed) ? 0 : fixed;
     }
     if (type.costModel === "NONE") {
       return 0;
     }
     if (type.costModel === "FULL") {
-      const orderShippingCost =
-        (request.order as any)?.shippingCost ?? (request.order as any)?.shipping ?? 0;
-      return Number(orderShippingCost) || 0;
+      const o = request.order as any;
+      const rawCost = o?.shippingCost ?? o?.shipping ?? 0;
+      const parsed = Number(rawCost);
+      return isNaN(parsed) ? 0 : parsed;
     }
     return 0;
   };
@@ -123,19 +125,70 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
         const companies: ReturnShippingCompany[] = res.data?.data || [];
         const activeCompanies = companies.filter((c) => c.isActive !== false);
         setShippingCompanies(activeCompanies);
-        let activeTypes: ReturnType[] = [];
-        if (request.shippingCompanyId) {
-          const company = activeCompanies.find((c) => c.id === request.shippingCompanyId);
-          activeTypes = (company?.returnTypes || []).filter((rt) => rt.isActive !== false);
-        } else {
-          activeTypes = activeCompanies.flatMap((c) => c.returnTypes || []).filter((rt) => rt.isActive !== false);
-        }
-        setReturnTypes(activeTypes);
 
-        if (request.returnTypeId && (request.shippingReturnCost === undefined || request.shippingReturnCost === null || request.shippingReturnCost === ("" as any))) {
-          const matchedType = activeTypes.find((rt) => rt.id === request.returnTypeId);
-          if (matchedType) {
-            applyReturnTypeCost(matchedType);
+        // Auto-resolve active shipping company if not already set on request
+        let resolvedCompanyId = request.shippingCompanyId || "";
+        if (!resolvedCompanyId) {
+          if (activeCompanies.length === 1) {
+            resolvedCompanyId = activeCompanies[0].id;
+          } else if (
+            request.order?.turboTrackingNumber ||
+            (request.order as any)?.turboShipmentId
+          ) {
+            const turbo = activeCompanies.find(
+              (c) =>
+                c.slug?.toLowerCase() === "turbo" ||
+                c.providerKey?.toUpperCase() === "TURBO" ||
+                c.name?.toLowerCase().includes("turbo")
+            );
+            if (turbo) {
+              resolvedCompanyId = turbo.id;
+            }
+          }
+        }
+
+        if (resolvedCompanyId) {
+          setShippingCompanyId(resolvedCompanyId);
+          const company = activeCompanies.find((c) => c.id === resolvedCompanyId);
+          const activeTypes = (company?.returnTypes || []).filter(
+            (rt) => rt.isActive !== false
+          );
+          setReturnTypes(activeTypes);
+
+          if (
+            request.returnTypeId &&
+            (request.shippingReturnCost === undefined ||
+              request.shippingReturnCost === null ||
+              request.shippingReturnCost === ("" as any))
+          ) {
+            const matchedType =
+              activeTypes.find((rt) => rt.id === request.returnTypeId) ||
+              activeCompanies
+                .flatMap((c) => c.returnTypes || [])
+                .find((rt) => rt.id === request.returnTypeId);
+            if (matchedType) {
+              applyReturnTypeCost(matchedType);
+            }
+          }
+        } else {
+          // If no shipping company is resolved yet, make all active return types available
+          const allActiveTypes = activeCompanies
+            .flatMap((c) => c.returnTypes || [])
+            .filter((rt) => rt.isActive !== false);
+          setReturnTypes(allActiveTypes);
+
+          if (
+            request.returnTypeId &&
+            (request.shippingReturnCost === undefined ||
+              request.shippingReturnCost === null ||
+              request.shippingReturnCost === ("" as any))
+          ) {
+            const matchedType = allActiveTypes.find(
+              (rt) => rt.id === request.returnTypeId
+            );
+            if (matchedType) {
+              applyReturnTypeCost(matchedType);
+            }
           }
         }
       })
@@ -146,18 +199,37 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     setShippingCompanyId(value);
     setReturnTypeId("");
     if (!value) {
-      setReturnTypes([]);
+      const allActiveTypes = shippingCompanies
+        .flatMap((c) => c.returnTypes || [])
+        .filter((rt) => rt.isActive !== false);
+      setReturnTypes(allActiveTypes);
       return;
     }
     const company = shippingCompanies.find((c) => c.id === value);
-    const activeTypes = (company?.returnTypes || []).filter((rt) => rt.isActive !== false);
+    const activeTypes = (company?.returnTypes || []).filter(
+      (rt) => rt.isActive !== false
+    );
     setReturnTypes(activeTypes);
   };
 
   const handleReturnTypeChange = (value: string) => {
     setReturnTypeId(value);
-    const type = returnTypes.find((rt) => rt.id === value);
-    applyReturnTypeCost(type);
+    if (!value) {
+      setShippingReturnCost("");
+      return;
+    }
+    const type =
+      returnTypes.find((rt) => rt.id === value) ||
+      shippingCompanies
+        .flatMap((c) => c.returnTypes || [])
+        .find((rt) => rt.id === value);
+
+    if (type) {
+      if (type.shippingCompanyId && !shippingCompanyId) {
+        setShippingCompanyId(type.shippingCompanyId);
+      }
+      applyReturnTypeCost(type);
+    }
   };
 
   const fetchLogs = async () => {
@@ -439,7 +511,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                     <select
                       value={returnTypeId}
                       onChange={(e) => handleReturnTypeChange(e.target.value)}
-                      disabled={!shippingCompanyId}
+                      disabled={returnTypes.length === 0}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md disabled:opacity-50"
                     >
                       <option value="">{t('returns.k_265') || "-- اختر نوع المرتجع --"}</option>
@@ -453,14 +525,23 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 </div>
                 {returnTypeId &&
                   (() => {
-                    const rt = returnTypes.find((x) => x.id === returnTypeId);
+                    const rt =
+                      returnTypes.find((x) => x.id === returnTypeId) ||
+                      shippingCompanies
+                        .flatMap((c) => c.returnTypes || [])
+                        .find((x) => x.id === returnTypeId);
                     if (!rt) return null;
                     const suggested = getSuggestedCost(rt);
                     const currency = request.order?.currency || t('returns.k_22');
                     return (
-                      <p className="text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                        <Truck size={12} /> {t('returns.k_256')}: {suggested}{" "}
-                        {currency}
+                      <p className="text-xs text-blue-700 dark:text-blue-300 flex items-center gap-1.5 font-medium bg-blue-50/80 dark:bg-blue-900/20 p-2.5 rounded-md border border-blue-200 dark:border-blue-800/40">
+                        <Truck size={14} className="shrink-0 text-blue-600 dark:text-blue-400" />
+                        <span>
+                          {t('returns.k_256')}:{" "}
+                          <strong className="font-bold text-blue-900 dark:text-blue-100 underline decoration-blue-400">
+                            {suggested} {currency}
+                          </strong>
+                        </span>
                       </p>
                     );
                   })()}

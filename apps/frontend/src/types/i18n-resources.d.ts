@@ -8521,6 +8521,7 @@ declare module 'react-i18next' {
           general: string;
           requests: string;
           spam: string;
+          priority: string;
         };
         searchPlaceholder: string;
         advancedFilters: string;
