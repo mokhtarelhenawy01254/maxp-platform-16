@@ -134,7 +134,7 @@ const deleteConverstation = async (req, res) => {
 // 🆕 Get all conversations with pagination and filtering
 const getConversations = async (req, res) => {
     try {
-        const { page = 1, limit = 20, status, search, platform, unread, tab, channel: channelParam } = req.query;
+        const { page = 1, limit = 20, status, search, platform, unread, tab, channel: channelParam, priority } = req.query;
         const companyId = req.user?.companyId;
 
         if (!companyId) {
@@ -237,6 +237,11 @@ const getConversations = async (req, res) => {
                 ...where,
                 status: { in: ['ACTIVE', 'PENDING'] }
             };
+        }
+
+        // 🆕 Priority filter support (priority > 1 means high priority / starred)
+        if (priority === 'true' || priority === true || tab === 'priority') {
+            tabWhere.priority = { gt: 1 };
         }
 
         // For unreplied, filter directly from database using the new column

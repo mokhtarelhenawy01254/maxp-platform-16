@@ -7,6 +7,7 @@ export interface FilterState {
   assignedTo: "all" | "me" | "unassigned";
   startDate: Date | null;
   endDate: Date | null;
+  priorityOnly?: boolean;
 }
 
 interface FilterPanelProps {
@@ -59,23 +60,44 @@ const FilterPanel: React.FC<FilterPanelProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        {/* Unread Only */}
-        <div className="flex items-center gap-2 mt-6">
-          <input
-            type="checkbox"
-            id="unreadOnly"
-            checked={filters.unreadOnly}
-            onChange={(e) => handleChange("unreadOnly", e.target.checked)}
-            className="rounded"
-            style={{ accentColor: "var(--color-primary)" }}
-          />
-          <label
-            htmlFor="unreadOnly"
-            className="text-sm cursor-pointer select-none"
-            style={{ color: "var(--color-foreground)" }}
-          >
-            غير مقروءة فقط
-          </label>
+        {/* Checkboxes (Unread & Priority) */}
+        <div className="flex flex-col sm:flex-row md:flex-col gap-2 mt-4 md:mt-2">
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="unreadOnly"
+              checked={filters.unreadOnly}
+              onChange={(e) => handleChange("unreadOnly", e.target.checked)}
+              className="rounded"
+              style={{ accentColor: "var(--color-primary)" }}
+            />
+            <label
+              htmlFor="unreadOnly"
+              className="text-sm cursor-pointer select-none"
+              style={{ color: "var(--color-foreground)" }}
+            >
+              غير مقروءة فقط
+            </label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="priorityOnly"
+              checked={!!filters.priorityOnly}
+              onChange={(e) => handleChange("priorityOnly", e.target.checked)}
+              className="rounded"
+              style={{ accentColor: "var(--business-warning, #f59e0b)" }}
+            />
+            <label
+              htmlFor="priorityOnly"
+              className="text-sm cursor-pointer select-none flex items-center gap-1"
+              style={{ color: "var(--color-foreground)" }}
+            >
+              <span>⭐</span>
+              <span>ذات أولوية فقط</span>
+            </label>
+          </div>
         </div>
 
         {/* Assignment */}

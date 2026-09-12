@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, SlidersHorizontal, BarChart3 } from "lucide-react";
+import { Search, SlidersHorizontal, BarChart3, Star } from "lucide-react";
 import { InboxTab } from "../../../types/inbox.types";
 import { useTranslation } from "react-i18next";
 
@@ -14,10 +14,14 @@ interface InboxTabsProps {
     general: number;
     requests: number;
     spam: number;
+    priority?: number;
   };
   onSearch: (query: string) => void;
   onToggleFilters: () => void;
   onShowStats?: () => void;
+  isPriorityOnly?: boolean;
+  onTogglePriority?: () => void;
+  priorityCount?: number;
 }
 
 const InboxTabs: React.FC<InboxTabsProps> = ({
@@ -27,6 +31,9 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
   onSearch,
   onToggleFilters,
   onShowStats,
+  isPriorityOnly = false,
+  onTogglePriority,
+  priorityCount = 0,
 }) => {
   const { t } = useTranslation();
 
@@ -110,6 +117,21 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
               className="business-inbox-search w-full pr-10 pl-4 md:w-64 dark:bg-white/5 dark:text-white dark:border-white/15 dark:placeholder-slate-400"
             />
           </div>
+
+          {/* Priority Filter Toggle */}
+          {onTogglePriority && (
+            <button
+              onClick={onTogglePriority}
+              className={`business-chip-button transition-all duration-200 ${
+                isPriorityOnly
+                  ? "bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/25 ring-2 ring-amber-400/40"
+                  : "dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20 hover:text-amber-500 hover:border-amber-400"
+              }`}
+              title={isPriorityOnly ? "إلغاء تصفية الأولوية" : `تصفية المحادثات ذات الأولوية (⭐) ${priorityCount > 0 ? `(${priorityCount})` : ""}`}
+            >
+              <Star className={`w-5 h-5 ${isPriorityOnly ? "fill-white text-white" : "text-amber-500 fill-amber-500/20"}`} />
+            </button>
+          )}
 
           {/* Filters Toggle */}
           <button

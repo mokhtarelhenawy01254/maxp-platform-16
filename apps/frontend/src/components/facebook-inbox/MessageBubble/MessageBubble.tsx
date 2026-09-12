@@ -562,15 +562,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
       !!onForward ||
       (!isCustomer && !!onDelete);
     const actionButtonClassName =
-      "business-chip-button flex items-center justify-center rounded-full transition-colors";
-    const actionButtonBaseStyle: React.CSSProperties = {
-      width: "1.75rem",
-      height: "1.75rem",
-      minWidth: "1.75rem",
-      minHeight: "1.75rem",
-      padding: 0,
-      background: "var(--business-bubble-action-bg, rgba(255, 255, 255, 0.08))",
-    };
+      "flex-shrink-0 flex items-center justify-center rounded-full transition-all active:scale-90 duration-150 border";
 
     return (
       <div className="flex w-full mb-4 relative">
@@ -582,12 +574,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
             <button
               type="button"
               onClick={() => setShowActions((current) => !current)}
-              className={`absolute z-20 flex h-6 w-6 items-center justify-center rounded-full shadow-sm transition-colors ${
-                isCustomer ? "-left-7 top-1.5" : "-right-7 top-1.5"
+              className={`absolute z-20 flex h-7 w-7 sm:h-6 sm:w-6 items-center justify-center rounded-full shadow-md transition-all active:scale-90 ${
+                isCustomer ? "-left-8 top-1 sm:-left-7 sm:top-1.5" : "-right-8 top-1 sm:-right-7 sm:top-1.5"
               }`}
               style={{
-                background: "var(--business-floating-surface)",
-                border: "1px solid var(--business-card-border)",
+                background: "var(--business-floating-surface, rgba(255, 255, 255, 0.95))",
+                border: "1px solid var(--business-card-border, rgba(203, 213, 225, 0.8))",
                 color: "var(--color-muted-foreground)",
                 backdropFilter: "blur(12px)",
               }}
@@ -595,43 +587,35 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
               aria-label="إجراءات الرسالة"
               aria-expanded={showActions}
             >
-              <MoreHorizontal size={14} />
+              <MoreHorizontal size={15} />
             </button>
           )}
 
-          {/* Action Buttons */}
+          {/* Action Buttons Floating Bar - Touch-friendly & Safe positioning on mobile */}
           {showActions && hasMessageActions && (
             <div
-              className={`absolute z-30 flex items-center gap-0.5 rounded-full p-0.5 shadow-sm ${
-                isCustomer ? "left-0 top-9" : "right-0 top-9"
+              className={`absolute z-40 flex items-center gap-1.5 sm:gap-1 rounded-full p-1 shadow-xl border backdrop-blur-md transition-all duration-200 flex-nowrap whitespace-nowrap max-w-[calc(100vw-2.5rem)] ${
+                isCustomer
+                  ? "rtl:right-0 ltr:left-0 top-9"
+                  : "rtl:left-0 ltr:right-0 top-9"
               }`}
               style={{
-                background: "var(--business-floating-surface)",
-                border: "1px solid var(--business-card-border)",
-                backdropFilter: "blur(12px)",
+                background: "var(--business-floating-surface, rgba(255, 255, 255, 0.98))",
+                borderColor: "var(--business-card-border, rgba(203, 213, 225, 0.8))",
               }}
             >
               {onReaction && (
-                <div className="relative">
+                <div className="relative flex-shrink-0">
                   <button
                     onClick={() => setShowReactionSelector(!showReactionSelector)}
-                    className={actionButtonClassName}
-                    style={
+                    className={`${actionButtonClassName} w-8 h-8 sm:w-7 sm:h-7 ${
                       myReaction
-                        ? {
-                            ...actionButtonBaseStyle,
-                            color: "var(--business-warning)",
-                            background:
-                              "color-mix(in srgb, var(--business-warning) 12%, var(--color-background))",
-                          }
-                        : {
-                            ...actionButtonBaseStyle,
-                            color: "var(--business-warning)",
-                          }
-                    }
+                        ? "text-amber-600 bg-amber-100 border-amber-300"
+                        : "text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 border-amber-200/80 dark:border-amber-800/80"
+                    }`}
                     title="إضافة تفاعل"
                   >
-                    <Smile size={15} strokeWidth={2.4} />
+                    <Smile size={16} strokeWidth={2.4} />
                   </button>
                   {showReactionSelector && (
                     <ReactionSelector
@@ -646,38 +630,28 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
               )}
               {onReply && (
                 <button
-                  onClick={() => onReply(message)}
-                  className={actionButtonClassName}
-                  style={{
-                    ...actionButtonBaseStyle,
-                    color: "var(--color-primary)",
+                  onClick={() => {
+                    onReply(message);
+                    setShowActions(false);
                   }}
+                  className={`${actionButtonClassName} w-8 h-8 sm:w-7 sm:h-7 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 border-blue-200/80 dark:border-blue-800/80`}
                   title="رد"
                 >
-                  <Reply size={15} strokeWidth={2.4} />
+                  <Reply size={16} strokeWidth={2.4} />
                 </button>
               )}
               {onStar && (
                 <button
                   onClick={() => onStar(message.id, !!isStarred)}
-                  className={actionButtonClassName}
-                  style={
+                  className={`${actionButtonClassName} w-8 h-8 sm:w-7 sm:h-7 ${
                     isStarred
-                      ? {
-                          ...actionButtonBaseStyle,
-                          color: "var(--business-warning)",
-                          background:
-                            "color-mix(in srgb, var(--business-warning) 12%, var(--color-background))",
-                        }
-                      : {
-                          ...actionButtonBaseStyle,
-                          color: "var(--business-warning)",
-                        }
-                  }
+                      ? "text-white bg-amber-500 hover:bg-amber-600 border-amber-600 shadow-sm"
+                      : "text-amber-500 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 hover:bg-amber-100 dark:hover:bg-amber-900/60 border-amber-200/80 dark:border-amber-800/80"
+                  }`}
                   title={isStarred ? "إلغاء التمييز" : "تمييز الرسالة"}
                 >
                   <Star
-                    size={15}
+                    size={16}
                     strokeWidth={2.4}
                     fill={isStarred ? "currentColor" : "none"}
                   />
@@ -685,30 +659,26 @@ const MessageBubble: React.FC<MessageBubbleProps> = memo(
               )}
               {onForward && (
                 <button
-                  onClick={() => onForward(message)}
-                  className={actionButtonClassName}
-                  style={{
-                    ...actionButtonBaseStyle,
-                    color: "var(--color-secondary)",
+                  onClick={() => {
+                    onForward(message);
+                    setShowActions(false);
                   }}
+                  className={`${actionButtonClassName} w-8 h-8 sm:w-7 sm:h-7 text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/60 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 border-indigo-200/80 dark:border-indigo-800/80`}
                   title="إعادة توجيه"
                 >
-                  <Forward size={15} strokeWidth={2.4} />
+                  <Forward size={16} strokeWidth={2.4} />
                 </button>
               )}
               {!isCustomer && onDelete && (
                 <button
-                  onClick={() => onDelete(message.id)}
-                  className={actionButtonClassName}
-                  style={{
-                    ...actionButtonBaseStyle,
-                    color: "var(--business-danger)",
-                    background:
-                      "var(--business-bubble-danger-bg, rgba(239, 68, 68, 0.15))",
+                  onClick={() => {
+                    onDelete(message.id);
+                    setShowActions(false);
                   }}
+                  className={`${actionButtonClassName} w-8 h-8 sm:w-7 sm:h-7 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/60 hover:bg-red-100 dark:hover:bg-red-900/60 border-red-200/80 dark:border-red-800/80`}
                   title="حذف الرسالة"
                 >
-                  <Trash2 size={15} strokeWidth={2.4} />
+                  <Trash2 size={16} strokeWidth={2.4} />
                 </button>
               )}
             </div>

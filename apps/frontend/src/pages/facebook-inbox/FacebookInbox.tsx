@@ -221,6 +221,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     assignedTo: "all",
     startDate: null,
     endDate: null,
+    priorityOnly: false,
   });
 
   // Forwarding State
@@ -521,11 +522,15 @@ const getApiError = (error: unknown): ApiErrorLike => {
       general: 0,
       requests: 0,
       spam: 0,
+      priority: 0,
     };
 
-    // ðŸ”§ OPTIMIZED: Single pass through conversations instead of multiple filters
+    // 🔧 OPTIMIZED: Single pass through conversations instead of multiple filters
     if (conversations.length > 0) {
       for (const conv of conversations) {
+        if (conv.priority) {
+          counts.priority++;
+        }
         switch (conv.tab) {
           case "done":
             counts.done++;
@@ -553,6 +558,8 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
     return counts;
   }, [conversations, apiCounts]);
+
+  const priorityCount = tabCounts.priority;
 
   // ðŸ†• Load all messages for a conversation (for advanced search)
   const loadAllMessagesForConversation = useCallback(
@@ -730,6 +737,9 @@ const getApiError = (error: unknown): ApiErrorLike => {
 
       // 3. Unread filter
       if (filters.unreadOnly && conv.unreadCount === 0) return false;
+
+      // 3.5. Priority filter (⭐)
+      if (filters.priorityOnly && !conv.priority) return false;
 
       // 4. Assignment filter
       if (filters.assignedTo === "me" && conv.assignedTo !== user?.id)
@@ -2180,6 +2190,14 @@ const getApiError = (error: unknown): ApiErrorLike => {
           onSearch={setSearchQuery}
           onToggleFilters={() => setShowFilters(!showFilters)}
           onShowStats={() => setShowStats(true)}
+          isPriorityOnly={!!filters.priorityOnly}
+          onTogglePriority={() =>
+            setFilters((prev) => ({
+              ...prev,
+              priorityOnly: !prev.priorityOnly,
+            }))
+          }
+          priorityCount={priorityCount}
         />
       </div>
 
@@ -2257,9 +2275,86 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 assignedTo: "all",
                 startDate: null,
                 endDate: null,
+                priorityOnly: false,
               })
             }
           />
+
+          {/* Quick Filters Bar (برا ف المحادثات) */}
+          <div className="px-3 py-2 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-white/[0.03]">
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+              {/* ⭐ زر فلتر الأولوية السريع الخارجي */}
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    priorityOnly: !prev.priorityOnly,
+                  }))
+                }
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 select-none shadow-sm flex-shrink-0 ${
+                  filters.priorityOnly
+                    ? "bg-amber-500 text-white shadow-amber-500/25 ring-2 ring-amber-400/50 dark:ring-amber-500/40"
+                    : "bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-white/15 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 hover:border-amber-300"
+                }`}
+                title={filters.priorityOnly ? "إلغاء فلتر الأولوية" : "إظهار المحادثات ذات الأولوية فقط (⭐)"}
+              >
+                <span className={filters.priorityOnly ? "animate-pulse" : ""}>⭐</span>
+                <span>الأولوية</span>
+                {priorityCount > 0 && (
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[11px] font-bold ${
+                      filters.priorityOnly
+                        ? "bg-white text-amber-600"
+                        : "bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300"
+                    }`}
+                  >
+                    {priorityCount}
+                  </span>
+                )}
+              </button>
+
+              {/* زر فلتر غير مقروءة السريع */}
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    unreadOnly: !prev.unreadOnly,
+                  }))
+                }
+                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 select-none shadow-sm flex-shrink-0 ${
+                  filters.unreadOnly
+                    ? "bg-blue-600 text-white shadow-blue-500/25 ring-2 ring-blue-400/50"
+                    : "bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-white/15 hover:bg-blue-50 hover:text-blue-700 dark:hover:bg-blue-950/40 dark:hover:text-blue-300 hover:border-blue-300"
+                }`}
+                title={filters.unreadOnly ? "إلغاء فلتر غير المقروءة" : "إظهار الرسائل غير المقروءة فقط"}
+              >
+                <span className="w-2 h-2 rounded-full bg-current"></span>
+                <span>غير مقروءة</span>
+              </button>
+            </div>
+
+            {/* Reset active filters button */}
+            {(filters.priorityOnly || filters.unreadOnly || filters.assignedTo !== "all" || filters.startDate || filters.endDate) && (
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters({
+                    unreadOnly: false,
+                    assignedTo: "all",
+                    startDate: null,
+                    endDate: null,
+                    priorityOnly: false,
+                  })
+                }
+                className="text-[11px] text-slate-500 hover:text-red-500 dark:text-slate-400 dark:hover:text-red-400 font-medium transition-colors whitespace-nowrap flex-shrink-0"
+                title="إلغاء جميع الفلاتر"
+              >
+                مسح الفلاتر
+              </button>
+            )}
+          </div>
 
           <div
             className="flex-1 overflow-y-auto"
@@ -2291,9 +2386,32 @@ const getApiError = (error: unknown): ApiErrorLike => {
                 {error}
               </div>
             ) : filteredConversations.length === 0 ? (
-              <div className="business-inbox-empty p-8">
-                <div className="text-6xl mb-4">💬</div>
-                <p>{t("facebookInbox.noConversations")}</p>
+              <div className="business-inbox-empty p-8 text-center">
+                {filters.priorityOnly ? (
+                  <>
+                    <div className="text-5xl mb-3">⭐</div>
+                    <p className="font-semibold text-slate-700 dark:text-slate-200">
+                      لا توجد محادثات ذات أولوية
+                    </p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-4">
+                      يمكنك تمييز أي محادثة بنجمة من داخل الشات لتظهر هنا
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFilters((prev) => ({ ...prev, priorityOnly: false }))
+                      }
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-500 text-white hover:bg-amber-600 transition-colors shadow-sm mx-auto"
+                    >
+                      عرض جميع المحادثات
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div className="text-6xl mb-4">💬</div>
+                    <p>{t("facebookInbox.noConversations")}</p>
+                  </>
+                )}
               </div>
             ) : (
               <div>
