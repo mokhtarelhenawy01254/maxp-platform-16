@@ -12,11 +12,12 @@ function generateSessionId(): string {
   return `mb_sess_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 }
 
-function createDefaultSession(title = "جلسة جديدة"): CopilotSession {
+function createDefaultSession(title?: unknown): CopilotSession {
+  const safeTitle = typeof title === "string" && title.trim() ? title.trim() : "جلسة جديدة";
   const now = new Date().toISOString();
   return {
     id: generateSessionId(),
-    title,
+    title: safeTitle,
     createdAt: now,
     updatedAt: now,
     messages: [
@@ -35,14 +36,18 @@ export function useCopilotSessions(companyId?: string | null) {
   const SESSIONS_KEY = `maxp_mb_copilot_sessions_${storageSuffix}`;
   const ACTIVE_ID_KEY = `maxp_mb_copilot_active_id_${storageSuffix}`;
 
-  // 1. Initial State from localStorage
+  // 1. Initial State from localStorage (sanitizing any corrupt titles from event objects)
   const [sessions, setSessions] = useState<CopilotSession[]>(() => {
     try {
       const raw = localStorage.getItem(SESSIONS_KEY);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
+          return parsed.map((s: any) => ({
+            ...s,
+            title: typeof s?.title === "string" && s.title.trim() ? s.title : "جلسة جديدة",
+            messages: Array.isArray(s?.messages) ? s.messages : [],
+          }));
         }
       }
     } catch (e) {
@@ -103,8 +108,9 @@ export function useCopilotSessions(companyId?: string | null) {
   }, [sessions, activeSessionId]);
 
   // Create a new session and switch to it
-  const createNewSession = useCallback((customTitle?: string) => {
-    const newSession = createDefaultSession(customTitle || "جلسة جديدة");
+  const createNewSession = useCallback((customTitle?: unknown) => {
+    const validTitle = typeof customTitle === "string" && customTitle.trim() ? customTitle.trim() : "جلسة جديدة";
+    const newSession = createDefaultSession(validTitle);
     setSessions((prev) => [newSession, ...prev]);
     setActiveSessionId(newSession.id);
     return newSession;

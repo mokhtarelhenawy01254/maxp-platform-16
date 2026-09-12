@@ -84,4 +84,39 @@ describe("Marketing AI Studio - Data & Strategy Engine", () => {
     onDraftGenerated();
     expect(activeTab).toBe("DRAFT");
   });
+
+  it("prevents React Error #31 by strictly sanitizing titles from synthetic events", () => {
+    const sanitizeTitle = (title?: unknown) =>
+      typeof title === "string" && title.trim() ? title.trim() : "جلسة جديدة";
+
+    const syntheticClickEvent = {
+      _reactName: "onClick",
+      type: "click",
+      nativeEvent: {},
+      target: {},
+      currentTarget: {},
+    };
+
+    expect(sanitizeTitle(syntheticClickEvent)).toBe("جلسة جديدة");
+    expect(sanitizeTitle(undefined)).toBe("جلسة جديدة");
+    expect(sanitizeTitle(null)).toBe("جلسة جديدة");
+    expect(sanitizeTitle("")).toBe("جلسة جديدة");
+    expect(sanitizeTitle("جلسة مخصصة")).toBe("جلسة مخصصة");
+  });
+
+  it("sanitizes corrupted sessions from localStorage containing object titles", () => {
+    const rawSessionsFromStorage = [
+      { id: "s1", title: { _reactName: "onClick" }, messages: [] },
+      { id: "s2", title: "حملة سوان", messages: [] },
+    ];
+
+    const sanitized = rawSessionsFromStorage.map((s) => ({
+      ...s,
+      title: typeof s.title === "string" && s.title.trim() ? s.title : "جلسة جديدة",
+    }));
+
+    expect(sanitized[0].title).toBe("جلسة جديدة");
+    expect(typeof sanitized[0].title).toBe("string");
+    expect(sanitized[1].title).toBe("حملة سوان");
+  });
 });

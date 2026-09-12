@@ -102,7 +102,7 @@ export const MarketingControlHub: React.FC<MarketingControlHubProps> = ({
           {/* New Session Button */}
           <button
             type="button"
-            onClick={onNewSession}
+            onClick={() => onNewSession()}
             className="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-700 hover:to-blue-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition"
           >
             <Plus className="w-4 h-4" />
@@ -131,6 +131,7 @@ export const MarketingControlHub: React.FC<MarketingControlHubProps> = ({
               filteredSessions.map((sess) => {
                 const isActive = sess.id === activeSessionId;
                 const msgCount = sess.messages ? sess.messages.length : 0;
+                const displayTitle = typeof sess.title === "string" && sess.title.trim() ? sess.title : "جلسة جديدة";
                 return (
                   <div
                     key={sess.id}
@@ -158,7 +159,7 @@ export const MarketingControlHub: React.FC<MarketingControlHubProps> = ({
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-bold truncate">
-                          {sess.title || "جلسة جديدة"}
+                          {displayTitle}
                         </h4>
                         <div className="flex items-center gap-1.5 text-[10px] text-slate-400 mt-0.5">
                           <span>{msgCount} رسائل</span>

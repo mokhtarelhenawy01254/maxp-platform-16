@@ -107,7 +107,7 @@ export const CopilotSessionsList: React.FC<CopilotSessionsListProps> = ({
                     <MessageSquare className="h-3.5 w-3.5" />
                   </div>
                   <span className="truncate text-xs font-black text-slate-900 dark:text-white">
-                    {session.title || "محادثة ميديا باير"}
+                    {typeof session.title === "string" && session.title.trim() ? session.title : "محادثة ميديا باير"}
                   </span>
                 </div>
 
@@ -137,7 +137,7 @@ export const CopilotSessionsList: React.FC<CopilotSessionsListProps> = ({
               {lastMsg && (
                 <p className="line-clamp-1 text-[11px] text-slate-500 dark:text-slate-400">
                   {lastMsg.sender === "user" ? "أنت: " : "الإيجنت: "}
-                  {lastMsg.text}
+                  {typeof lastMsg.text === "string" ? lastMsg.text : ""}
                 </p>
               )}
 

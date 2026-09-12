@@ -141,7 +141,7 @@ const MarketingAiStudioPage: React.FC = () => {
             onDraftGenerated={handleDraftGenerated}
             activeSession={copilotSessions.activeSession}
             addMessageToActiveSession={copilotSessions.addMessageToActiveSession}
-            createNewSession={copilotSessions.createNewSession}
+            createNewSession={() => copilotSessions.createNewSession()}
           />
         </section>
 
@@ -156,7 +156,7 @@ const MarketingAiStudioPage: React.FC = () => {
             sessions={copilotSessions.sessions}
             activeSessionId={copilotSessions.activeSessionId}
             onSelectSession={copilotSessions.switchSession}
-            onNewSession={copilotSessions.createNewSession}
+            onNewSession={() => copilotSessions.createNewSession()}
             onDeleteSession={copilotSessions.deleteSession}
             draft={currentDraft}
             selectedProduct={selectedProduct}
