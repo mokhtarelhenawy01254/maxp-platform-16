@@ -809,6 +809,8 @@ export interface CreateAdSetData {
   behaviors?: string[];
   budgetType?: "DAILY" | "LIFETIME";
   budgetAmount?: number;
+  dailyMinSpendTarget?: number;
+  dailySpendCap?: number;
   optimizationGoal?: string;
   billingEvent?: string;
   placementType?: "AUTOMATIC" | "MANUAL";

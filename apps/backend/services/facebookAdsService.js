@@ -4573,6 +4573,15 @@ class FacebookAdsService {
       return 'COST_CAP';
     }
 
+    if (
+      normalized === 'LOWEST_COST_WITH_MIN_ROAS' ||
+      normalized === 'MIN_ROAS' ||
+      normalized === 'MIN_ROAS_GOAL' ||
+      normalized === 'TARGET_ROAS'
+    ) {
+      return 'ROAS';
+    }
+
     return normalized;
   }
 
@@ -4613,7 +4622,12 @@ class FacebookAdsService {
       case 'ROAS':
         if (bidValue) {
           bidData.bid_strategy = 'LOWEST_COST_WITH_MIN_ROAS';
-          bidData.min_roas_target = bidValue; // ROAS is a multiplier, not cents
+          // Meta Marketing API expects integer multiplier * 10000 (e.g. 3.5x -> 35000)
+          const roasGoal = Math.round(Number(bidValue) * 10000);
+          bidData.min_roas_goal = roasGoal;
+          bidData.bid_constraints = {
+            roas_average_floor: roasGoal
+          };
         }
         break;
 
