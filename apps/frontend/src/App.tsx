@@ -463,6 +463,9 @@ const PurchaseOrderForm = React.lazy(
 const PurchaseInvoices = React.lazy(
   () => import("./components/procurement/PurchaseInvoices"),
 );
+const PurchaseInvoiceForm = React.lazy(
+  () => import("./components/procurement/PurchaseInvoiceForm"),
+);
 const SupplierPayments = React.lazy(
   () => import("./components/procurement/SupplierPayments"),
 );
@@ -5030,7 +5033,17 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
-                        <PurchaseInvoices />
+                        <PurchaseInvoiceForm />
+                      </AppAccessRoute>
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/procurement/purchase-invoices/:id/edit"
+                  element={
+                    <Layout>
+                      <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
+                        <PurchaseInvoiceForm />
                       </AppAccessRoute>
                     </Layout>
                   }
