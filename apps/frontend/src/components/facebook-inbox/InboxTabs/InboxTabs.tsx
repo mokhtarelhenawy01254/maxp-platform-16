@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, SlidersHorizontal, BarChart3, Star } from "lucide-react";
+import { Search, Star } from "lucide-react";
 import { InboxTab } from "../../../types/inbox.types";
 import { useTranslation } from "react-i18next";
 
@@ -17,7 +17,7 @@ interface InboxTabsProps {
     priority?: number;
   };
   onSearch: (query: string) => void;
-  onToggleFilters: () => void;
+  onToggleFilters?: () => void;
   onShowStats?: () => void;
   isPriorityOnly?: boolean;
   onTogglePriority?: () => void;
@@ -29,8 +29,6 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
   onTabChange,
   counts,
   onSearch,
-  onToggleFilters,
-  onShowStats,
   isPriorityOnly = false,
   onTogglePriority,
   priorityCount = 0,
@@ -94,19 +92,8 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
           ))}
         </div>
 
-        {/* Search, Filter, and Stats buttons */}
+        {/* Search and Priority toggle */}
         <div className="business-inbox-toolbar">
-          {/* Stats Button */}
-          {onShowStats && (
-            <button
-              onClick={onShowStats}
-              className="business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20"
-              title={String(t("inbox.statistics"))}
-            >
-              <BarChart3 className="w-5 h-5" />
-            </button>
-          )}
-
           {/* Search */}
           <div className="business-inbox-search-wrap">
             <Search className="business-inbox-search-icon right-3 left-auto w-5 h-5 dark:text-slate-400" />
@@ -132,15 +119,6 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
               <Star className={`w-5 h-5 ${isPriorityOnly ? "fill-white text-white" : "text-amber-500 fill-amber-500/20"}`} />
             </button>
           )}
-
-          {/* Filters Toggle */}
-          <button
-            onClick={onToggleFilters}
-            className="business-chip-button dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20"
-            title={String(t("inbox.advancedFilters"))}
-          >
-            <SlidersHorizontal className="w-5 h-5" />
-          </button>
         </div>
       </div>
     </div>
