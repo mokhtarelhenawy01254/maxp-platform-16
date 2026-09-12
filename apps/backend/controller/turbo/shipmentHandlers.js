@@ -50,6 +50,52 @@ const createShipment = async (req, res) => {
     if (order.tableType === 'GuestOrder') { await safeQuery(() => prisma.guestOrder.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3); }
     else if (order.orderNumber) { await safeQuery(() => prisma.order.updateMany({ where: { orderNumber: order.orderNumber, companyId }, data: updateData }), 3); }
     else if (order.id) { await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: updateData }), 3); }
+
+    // Sync to prisma.shipment for unified shipments logs
+    try {
+      const turboCarrier = await prisma.shippingCompany.findFirst({
+        where: { companyId, providerKey: 'TURBO' },
+        select: { id: true },
+      });
+      const targetOrderId = order.id || null;
+      if (targetOrderId) {
+        const existingShipment = await prisma.shipment.findFirst({ where: { orderId: targetOrderId, companyId } });
+        if (existingShipment) {
+          await prisma.shipment.update({
+            where: { id: existingShipment.id },
+            data: {
+              shippingCompanyId: turboCarrier?.id || existingShipment.shippingCompanyId,
+              carrierType: 'TURBO',
+              trackingNumber: String(result.trackingNumber || ''),
+              externalShipmentId: String(result.shipmentId || ''),
+              status: result.status || 'CREATED',
+              labelUrl: result.labelUrl || null,
+            },
+          });
+        } else {
+          await prisma.shipment.create({
+            data: {
+              companyId,
+              orderId: targetOrderId,
+              shippingCompanyId: turboCarrier?.id || null,
+              carrierType: 'TURBO',
+              trackingNumber: String(result.trackingNumber || ''),
+              externalShipmentId: String(result.shipmentId || ''),
+              status: result.status || 'CREATED',
+              labelUrl: result.labelUrl || null,
+              destinationGovernorate: order.governorate || null,
+              destinationCity: order.city || null,
+              destinationAddress: order.customerAddress || order.shippingAddress || null,
+              cost: order.shipping !== null && order.shipping !== undefined ? Number(order.shipping) : null,
+              currency: order.currency || 'EGP',
+              metadata: JSON.stringify(baseTurboMetadata),
+            },
+          });
+        }
+      }
+    } catch (syncErr) {
+      console.warn('⚠️ [TURBO] Error syncing shipment to prisma.shipment:', syncErr.message);
+    }
     try {
       const company = await prisma.company.findUnique({ where: { id: companyId }, select: { settings: true } });
       if (company?.settings) { const cs = JSON.parse(company.settings); if (cs.turboAutomationEnabled && cs.turboAutomationStatus && cs.turboAutomationStatus !== order.status) { await orderService.updateOrderStatus(order.orderNumber, companyId, cs.turboAutomationStatus, 'تغيير تلقائي للحالة بعد إنشاء شحنة تربو بنجاح', 'SYSTEM', 'System Automation', null, true); } }
@@ -154,6 +200,45 @@ const bulkCreateShipments = async (req, res) => {
         } else if (order.id) {
           await safeQuery(() => prisma.order.update({ where: { id: order.id }, data: updateData }), 3);
         }
+
+        // Sync to prisma.shipment
+        try {
+          if (turboCarrier && order.id) {
+            const existingShipment = await prisma.shipment.findFirst({ where: { orderId: order.id, companyId } });
+            if (existingShipment) {
+              await prisma.shipment.update({
+                where: { id: existingShipment.id },
+                data: {
+                  shippingCompanyId: turboCarrier.id,
+                  carrierType: 'TURBO',
+                  trackingNumber: String(result.trackingNumber || ''),
+                  externalShipmentId: String(result.shipmentId || ''),
+                  status: result.status || 'CREATED',
+                  labelUrl: result.labelUrl || null,
+                },
+              });
+            } else {
+              await prisma.shipment.create({
+                data: {
+                  companyId,
+                  orderId: order.id,
+                  shippingCompanyId: turboCarrier.id,
+                  carrierType: 'TURBO',
+                  trackingNumber: String(result.trackingNumber || ''),
+                  externalShipmentId: String(result.shipmentId || ''),
+                  status: result.status || 'CREATED',
+                  labelUrl: result.labelUrl || null,
+                  destinationGovernorate: order.governorate || null,
+                  destinationCity: order.city || null,
+                  destinationAddress: order.customerAddress || order.shippingAddress || null,
+                  cost: order.shipping !== null && order.shipping !== undefined ? Number(order.shipping) : null,
+                  currency: order.currency || 'EGP',
+                  metadata: JSON.stringify(result.data || {}),
+                },
+              });
+            }
+          }
+        } catch (_) {}
 
         if (automationStatus && automationStatus !== order.status) {
           try {

@@ -7,11 +7,81 @@ const TurboService = require('../services/turboService');
 const BostaService = require('../services/bostaService');
 const QpExpressService = require('../services/qpExpressService');
 
+// Ensure recent Turbo orders are reflected in prisma.shipment
+async function syncTurboOrdersToShipments(prisma, companyId) {
+  try {
+    const unsyncedOrders = await prisma.order.findMany({
+      where: {
+        companyId,
+        OR: [
+          { turboTrackingNumber: { not: null } },
+          { turboShipmentId: { not: null } },
+        ],
+        shipments: { none: {} },
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        turboTrackingNumber: true,
+        turboShipmentId: true,
+        turboShipmentStatus: true,
+        turboLabelUrl: true,
+        turboMetadata: true,
+        governorate: true,
+        city: true,
+        customerAddress: true,
+        shippingAddress: true,
+        shipping: true,
+        currency: true,
+        createdAt: true,
+      },
+      take: 60,
+    });
+
+    if (unsyncedOrders.length > 0) {
+      const turboCarrier = await prisma.shippingCompany.findFirst({
+        where: { companyId, providerKey: 'TURBO' },
+        select: { id: true },
+      });
+
+      for (const ord of unsyncedOrders) {
+        const tracking = ord.turboTrackingNumber || ord.turboShipmentId;
+        if (!tracking) continue;
+        await prisma.shipment.create({
+          data: {
+            companyId,
+            orderId: ord.id,
+            shippingCompanyId: turboCarrier?.id || null,
+            carrierType: 'TURBO',
+            status: ord.turboShipmentStatus || 'CREATED',
+            trackingNumber: ord.turboTrackingNumber || null,
+            externalShipmentId: ord.turboShipmentId || null,
+            labelUrl: ord.turboLabelUrl || null,
+            destinationGovernorate: ord.governorate || null,
+            destinationCity: ord.city || null,
+            destinationAddress: ord.customerAddress || ord.shippingAddress || null,
+            cost: ord.shipping !== null && ord.shipping !== undefined ? Number(ord.shipping) : null,
+            currency: ord.currency || 'EGP',
+            createdAt: ord.createdAt || new Date(),
+            metadata: ord.turboMetadata || null,
+          },
+        }).catch(() => {});
+      }
+    }
+  } catch (err) {
+    console.warn('⚠️ [SHIPMENTS] syncTurboOrdersToShipments warning:', err.message);
+  }
+}
+
 // GET /api/v1/shipments - List all shipments with multi-carrier filters & pagination
 router.get('/', verifyToken.authenticateToken, async (req, res) => {
   try {
     const prisma = getSharedPrismaClient();
-    const { companyId } = req.user;
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: 'معرف الشركة مطلوب' });
+    }
+
     const {
       page = 1,
       limit = 20,
@@ -23,6 +93,9 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       dateTo,
     } = req.query;
 
+    // Background sync of Turbo orders to ensure UnifiedShipments reflects them
+    await syncTurboOrdersToShipments(prisma, companyId);
+
     const pageNum = Math.max(1, parseInt(page, 10) || 1);
     const take = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
     const skip = (pageNum - 1) * take;
@@ -30,7 +103,18 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
     const where = { companyId };
 
     if (shippingCompanyId && shippingCompanyId !== 'ALL') {
-      where.shippingCompanyId = shippingCompanyId;
+      const selectedComp = await prisma.shippingCompany.findFirst({
+        where: { id: shippingCompanyId, companyId },
+        select: { id: true, providerKey: true },
+      });
+      if (selectedComp?.providerKey && selectedComp.providerKey !== 'MANUAL') {
+        where.OR = [
+          { shippingCompanyId },
+          { carrierType: selectedComp.providerKey },
+        ];
+      } else {
+        where.shippingCompanyId = shippingCompanyId;
+      }
     }
 
     if (carrierType && carrierType !== 'ALL') {
@@ -53,13 +137,17 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
 
     if (search && String(search).trim()) {
       const q = String(search).trim();
-      where.OR = [
+      const searchConditions = [
         { trackingNumber: { contains: q, mode: 'insensitive' } },
         { externalShipmentId: { contains: q, mode: 'insensitive' } },
+        { destinationGovernorate: { contains: q, mode: 'insensitive' } },
+        { destinationCity: { contains: q, mode: 'insensitive' } },
         {
           order: {
             OR: [
               { orderNumber: { contains: q, mode: 'insensitive' } },
+              { customerName: { contains: q, mode: 'insensitive' } },
+              { customerPhone: { contains: q, mode: 'insensitive' } },
               { customer: { firstName: { contains: q, mode: 'insensitive' } } },
               { customer: { lastName: { contains: q, mode: 'insensitive' } } },
               { customer: { phone: { contains: q, mode: 'insensitive' } } },
@@ -67,6 +155,13 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
           },
         },
       ];
+
+      if (where.OR) {
+        where.AND = [{ OR: where.OR }, { OR: searchConditions }];
+        delete where.OR;
+      } else {
+        where.OR = searchConditions;
+      }
     }
 
     const [total, shipments, countsByStatus, pendingAmountAggr] = await Promise.all([
@@ -89,6 +184,8 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
             select: {
               id: true,
               orderNumber: true,
+              customerName: true,
+              customerPhone: true,
               total: true,
               currency: true,
               status: true,
@@ -154,21 +251,30 @@ router.get('/', verifyToken.authenticateToken, async (req, res) => {
       inTransit: inTransitCount,
       delivered: deliveredCount,
       returned: returnedCount,
-      pendingRemittanceAmount: pendingAmountAggr?._sum?.cost || 0,
+      pendingRemittanceAmount: Number(pendingAmountAggr?._sum?.cost || 0),
       statusCounts,
     };
 
     const formattedShipments = shipments.map((s) => {
       const cust = s.order?.customer;
-      const customerName = cust
-        ? [cust.firstName, cust.lastName].filter(Boolean).join(' ') || 'عميل'
-        : 'عميل';
+      const customerName =
+        s.order?.customerName ||
+        (cust ? [cust.firstName, cust.lastName].filter(Boolean).join(' ') : null) ||
+        'عميل';
+      const customerPhone = s.order?.customerPhone || cust?.phone || null;
+
       return {
         ...s,
+        cost: s.cost !== null && s.cost !== undefined ? Number(s.cost) : null,
         order: s.order
           ? {
               ...s.order,
-              customer: cust ? { ...cust, name: customerName } : null,
+              total: s.order.total !== null && s.order.total !== undefined ? Number(s.order.total) : 0,
+              customer: {
+                id: cust?.id || null,
+                name: customerName,
+                phone: customerPhone,
+              },
             }
           : null,
       };

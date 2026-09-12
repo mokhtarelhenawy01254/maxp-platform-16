@@ -26,6 +26,8 @@ const SHIPPING_APP_ACCESS_SLUGS = [
   'order-shipping-hub',
   'order-shipping-bosta',
   'order-shipping-qpexpress',
+  'order-shipping',
+  'order-core',
   'commerce-advanced',
   ...STORE_APP_SLUGS,
 ];

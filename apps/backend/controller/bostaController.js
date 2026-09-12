@@ -46,6 +46,13 @@ exports.createShipment = async (req, res) => {
       })
     , 2);
 
+    const bostaCompany = await safeQuery(() =>
+      prisma.shippingCompany.findFirst({
+        where: { companyId: req.user.companyId, providerKey: 'BOSTA' },
+        select: { id: true },
+      })
+    , 2);
+
     if (existingShipment) {
       await safeQuery(() =>
         prisma.shipment.update({
@@ -53,6 +60,7 @@ exports.createShipment = async (req, res) => {
           data: {
             externalShipmentId: result._id,
             trackingNumber: result.trackingNumber,
+            shippingCompanyId: bostaCompany?.id || existingShipment.shippingCompanyId,
             status: 'CREATED',
             carrierType: 'BOSTA',
             metadata: JSON.stringify({
@@ -68,10 +76,15 @@ exports.createShipment = async (req, res) => {
           data: {
             companyId: req.user.companyId,
             orderId: order.id,
+            shippingCompanyId: bostaCompany?.id || null,
             externalShipmentId: result._id,
             trackingNumber: result.trackingNumber,
             status: 'CREATED',
             carrierType: 'BOSTA',
+            destinationGovernorate: order.governorate || null,
+            destinationCity: order.city || null,
+            destinationAddress: order.customerAddress || order.shippingAddress || null,
+            cost: order.shipping !== null && order.shipping !== undefined ? Number(order.shipping) : null,
             metadata: JSON.stringify({
               bostaDeliveryId: result._id,
               bostaTrackingNumber: result.trackingNumber,
