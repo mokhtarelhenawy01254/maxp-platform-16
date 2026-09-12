@@ -244,9 +244,9 @@ router.put('/rule-responses', verifyToken.authenticateToken, async (req, res) =>
       }
     }
 
-    const normalizedCustomRuleResponses = normalizeSmartReplyTemplates(
-      req.body?.customRuleResponses,
-    );
+    const normalizedCustomRuleResponses = req.body?.customRuleResponses !== undefined
+      ? normalizeSmartReplyTemplates(req.body.customRuleResponses)
+      : (modelSettings?.ruleResponses?.customRuleResponses || { templates: [] });
 
     const rawChannels = req.body?.channelSettings !== undefined ? req.body.channelSettings : req.body?.channels;
     const channelMap = normalizeChannelMap(
@@ -255,8 +255,12 @@ router.put('/rule-responses', verifyToken.authenticateToken, async (req, res) =>
     );
     const activeChannelsArray = channelMapToArray(channelMap);
 
+    const enableRuleResponses = req.body?.enableRuleResponses !== undefined
+      ? req.body.enableRuleResponses === true
+      : (modelSettings?.ruleResponses?.enableRuleResponses === true);
+
     modelSettings.ruleResponses = {
-      enableRuleResponses: req.body?.enableRuleResponses === true,
+      enableRuleResponses,
       channels: activeChannelsArray,
       channelSettings: channelMap,
       customRuleResponses: normalizedCustomRuleResponses,
