@@ -23,6 +23,43 @@ export interface ProductLandingProduct {
   images?: string[] | string | null;
 }
 
+export type SectionType =
+  | "MEDIA"
+  | "TEXT"
+  | "HTML"
+  | "FORM"
+  | "FAQ"
+  | "FEATURES"
+  | "REVIEWS"
+  | "BANNERS"
+  | "COUNTDOWN";
+
+export interface LandingSection {
+  id: string;
+  type: SectionType;
+  title: string;
+  enabled: boolean;
+  content: {
+    images?: string[];
+    mainImage?: string;
+    heading?: string;
+    subheading?: string;
+    bodyText?: string;
+    htmlCode?: string;
+    orderKicker?: string;
+    orderTitle?: string;
+    orderCopy?: string;
+    buttonLabel?: string;
+    faqs?: Array<{ question: string; answer: string }>;
+    features?: Array<{ title: string; desc: string; icon: string }>;
+    reviews?: Array<{ name: string; text: string; rating: number; avatar?: string }>;
+    bannerText?: string;
+    bannerBg?: string;
+    timerEndsMinutes?: number;
+    lowStockCount?: number;
+  };
+}
+
 export interface ProductLandingPage {
   id: string;
   companyId: string;
@@ -34,11 +71,13 @@ export interface ProductLandingPage {
   generationStatus: string;
   designNotes?: string;
   slices: ProductLandingSlice[];
+  sections?: LandingSection[];
   formConfig?: {
     orderKicker?: string;
     orderTitle?: string;
     orderCopy?: string;
     buttonLabel?: string;
+    sections?: LandingSection[];
   };
   visits?: number;
   orders?: number;
@@ -55,7 +94,9 @@ export interface ProductLandingCreatePayload {
   slug?: string;
   designNotes?: string;
   slices?: ProductLandingSlice[];
+  sections?: LandingSection[];
   status?: ProductLandingStatus;
+  formConfig?: ProductLandingPage["formConfig"];
 }
 
 export interface ProductLandingUpdatePayload {
@@ -64,6 +105,7 @@ export interface ProductLandingUpdatePayload {
   status?: ProductLandingStatus;
   designNotes?: string;
   slices?: ProductLandingSlice[];
+  sections?: LandingSection[];
   formConfig?: ProductLandingPage["formConfig"];
 }
 
@@ -117,6 +159,11 @@ export const productLandingPagesService = {
     const response = await apiClient.patch(`/product-landings/${id}/status`, {
       status,
     });
+    return getResponseData<ProductLandingPage | null>(response, null);
+  },
+
+  async generateAiContent(id: string) {
+    const response = await apiClient.post(`/product-landings/${id}/ai-content`);
     return getResponseData<ProductLandingPage | null>(response, null);
   },
 

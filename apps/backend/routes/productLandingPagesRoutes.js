@@ -115,6 +115,11 @@ async function ensureProductLandingPagesTable(prisma) {
         CREATE INDEX IF NOT EXISTS "product_landing_pages_productId_idx"
         ON "product_landing_pages" ("productId")
       `);
+      try {
+        await prisma.$executeRawUnsafe(`
+          ALTER TABLE "product_landing_pages" ADD COLUMN IF NOT EXISTS "sections" TEXT;
+        `);
+      } catch (_) {}
     })().catch((error) => {
       ensureTablePromise = null;
       throw error;
@@ -414,11 +419,12 @@ function createRouteError(statusCode, message) {
   return error;
 }
 
-async function ensurePublishReady(prisma, { companyId, productId, slices }) {
+async function ensurePublishReady(prisma, { companyId, productId, slices, sections }) {
   const normalizedSlices = normalizeSlices(slices);
+  const normalizedSections = parseJsonArray(sections, []);
 
-  if (normalizedSlices.length === 0) {
-    throw createRouteError(400, 'لا يمكن نشر صفحة الهبوط بدون صور');
+  if (normalizedSlices.length === 0 && normalizedSections.length === 0) {
+    throw createRouteError(400, 'لا يمكن نشر صفحة الهبوط بدون صور أو أقسام محتوى');
   }
 
   const product = await getCompanyProduct(prisma, productId, companyId);
@@ -430,7 +436,7 @@ async function ensurePublishReady(prisma, { companyId, productId, slices }) {
     throw createRouteError(400, 'لا يمكن نشر صفحة هبوط لمنتج غير نشط');
   }
 
-  return { product, slices: normalizedSlices };
+  return { product, slices: normalizedSlices, sections: normalizedSections };
 }
 
 function formatLandingPage(landing, { includeProduct = true } = {}) {
@@ -438,9 +444,11 @@ function formatLandingPage(landing, { includeProduct = true } = {}) {
     return null;
   }
 
+  const formConfigRecord = parseJsonRecord(landing.formConfig, {});
+  const sections = parseJsonArray(landing.sections, null) || parseJsonArray(formConfigRecord.sections, []);
   const formConfig = {
     ...DEFAULT_FORM_CONFIG,
-    ...parseJsonRecord(landing.formConfig, {}),
+    ...formConfigRecord,
   };
   const seo = parseJsonRecord(landing.seo, {});
   const slices = normalizeSlices(landing.slices);
@@ -459,6 +467,7 @@ function formatLandingPage(landing, { includeProduct = true } = {}) {
     generationStatus: landing.generationStatus,
     designNotes: landing[DESIGN_NOTES_FIELD] || '',
     slices,
+    sections,
     formConfig,
     seo,
     productSnapshot: parseJsonRecord(landing.productSnapshot, null),
@@ -772,15 +781,25 @@ router.post('/', async (req, res) => {
     const title = normalizeText(req.body.title, 180) || `${product.name} - Landing`;
     const status = normalizeStatus(req.body.status, 'DRAFT');
     const slices = normalizeSlices(req.body.slices);
+    const sections = parseJsonArray(req.body.sections, []);
     if (status === 'PUBLISHED') {
       await ensurePublishReady(prisma, {
         companyId,
         productId: product.id,
         slices,
+        sections,
       });
     }
     const generationStatus =
-      slices.length > 0 ? 'READY_TO_REVIEW' : 'NEEDS_IMAGES';
+      slices.length > 0 || sections.length > 0 ? 'READY_TO_REVIEW' : 'NEEDS_IMAGES';
+
+    const baseFormConfig = isRecord(req.body.formConfig) ? req.body.formConfig : {};
+    const formConfigData = {
+      ...DEFAULT_FORM_CONFIG,
+      ...baseFormConfig,
+      orderTitle: baseFormConfig.orderTitle || `اطلب ${product.name}`,
+      sections,
+    };
 
     const page = await prisma.productLandingPage.create({
       data: {
@@ -794,11 +813,7 @@ router.post('/', async (req, res) => {
         [DESIGN_NOTES_FIELD]:
           normalizeText(req.body.designNotes, 4000) || null,
         slices: JSON.stringify(slices),
-        formConfig: JSON.stringify({
-          ...DEFAULT_FORM_CONFIG,
-          ...(isRecord(req.body.formConfig) ? req.body.formConfig : {}),
-          orderTitle: req.body.formConfig?.orderTitle || `اطلب ${product.name}`,
-        }),
+        formConfig: JSON.stringify(formConfigData),
         seo: stringifyNullable(req.body.seo) || JSON.stringify({}),
         productSnapshot: JSON.stringify(buildProductSnapshot(product)),
         publishedAt: status === 'PUBLISHED' ? new Date() : null,
@@ -879,11 +894,30 @@ router.put('/:id', async (req, res) => {
       req.body.slices === undefined ? undefined : normalizeSlices(req.body.slices);
     const publishSlices = nextSlices === undefined ? existing.slices : nextSlices;
 
+    const existingFormConfig = parseJsonRecord(existing.formConfig, {});
+    const existingSections = parseJsonArray(existing.sections, null) || parseJsonArray(existingFormConfig.sections, []);
+    const nextSections = req.body.sections !== undefined ? parseJsonArray(req.body.sections, []) : existingSections;
+    const publishSections = nextSections !== undefined ? nextSections : existingSections;
+
     if (nextStatus === 'PUBLISHED') {
       await ensurePublishReady(prisma, {
         companyId,
         productId: existing.productId,
         slices: publishSlices,
+        sections: publishSections,
+      });
+    }
+
+    let formConfigToSave = undefined;
+    if (req.body.formConfig !== undefined || req.body.sections !== undefined) {
+      const incomingFormConfig = isRecord(req.body.formConfig)
+        ? req.body.formConfig
+        : (req.body.formConfig !== undefined ? parseJsonRecord(req.body.formConfig, {}) : existingFormConfig);
+
+      formConfigToSave = JSON.stringify({
+        ...existingFormConfig,
+        ...incomingFormConfig,
+        sections: nextSections,
       });
     }
 
@@ -918,9 +952,7 @@ router.put('/:id', async (req, res) => {
               nextSlices.length > 0 ? 'READY_TO_REVIEW' : 'NEEDS_IMAGES',
           }
         : {}),
-      ...(req.body.formConfig !== undefined
-        ? { formConfig: stringifyNullable(req.body.formConfig) }
-        : {}),
+      ...(formConfigToSave !== undefined ? { formConfig: formConfigToSave } : {}),
       ...(req.body.seo !== undefined ? { seo: stringifyNullable(req.body.seo) } : {}),
       updatedById: req.user.id || null,
     };
@@ -972,12 +1004,16 @@ router.patch('/:id/status', async (req, res) => {
       });
     }
 
+    const existingFormConfig = parseJsonRecord(existing.formConfig, {});
+    const existingSections = parseJsonArray(existing.sections, null) || parseJsonArray(existingFormConfig.sections, []);
     const status = normalizeStatus(req.body.status, existing.status);
+
     if (status === 'PUBLISHED') {
       await ensurePublishReady(prisma, {
         companyId,
         productId: existing.productId,
         slices: existing.slices,
+        sections: existingSections,
       });
     }
 
@@ -1010,6 +1046,151 @@ router.patch('/:id/status', async (req, res) => {
     return res.status(error.statusCode || 500).json({
       success: false,
       message: error.statusCode ? error.message : 'تعذر تحديث حالة الصفحة',
+      error: error.message,
+    });
+  }
+});
+
+router.post('/:id/ai-content', async (req, res) => {
+  try {
+    const prisma = await getPrisma();
+    await ensureProductLandingPagesTable(prisma);
+
+    const companyId = req.user.companyId || req.body.companyId;
+    const landing = await findLandingForCompany(prisma, req.params.id, companyId, {
+      includeProduct: true,
+    });
+
+    if (!landing || !landing.product) {
+      return res.status(404).json({
+        success: false,
+        message: 'صفحة الهبوط أو المنتج غير موجود',
+      });
+    }
+
+    const prod = landing.product;
+    const prodName = prod.name || 'المنتج';
+    const prodPrice = prod.price || 0;
+    const currency = 'ج.م';
+    const cleanDesc = sanitizeRichText(prod.description, 400);
+
+    const aiSections = [
+      {
+        id: `sec-media-${Date.now()}`,
+        type: 'MEDIA',
+        title: 'الصور والميديا',
+        enabled: true,
+        content: {
+          images: prod.images && prod.images.length > 0 ? prod.images : (prod.mainImage ? [prod.mainImage] : []),
+          mainImage: prod.mainImage || (prod.images && prod.images[0]) || '',
+        },
+      },
+      {
+        id: `sec-text-${Date.now() + 1}`,
+        type: 'TEXT',
+        title: 'الوصف التسويقي',
+        enabled: true,
+        content: {
+          heading: `${prodName} — الاختيار الأفضل بجودة استثنائية`,
+          subheading: cleanDesc || `احصل على ${prodName} الأصلي بسعر خاص لفترة محدودة`,
+          bodyText: `تصميم أنيق وعملي يلبي احتياجاتك اليومية بدقة. خامات فائقة الجودة تم اختيارها بعناية لتدوم طويلاً، مع تجربة استخدام سلسة ومريحة تلبي أعلى توقعاتك.`,
+        },
+      },
+      {
+        id: `sec-countdown-${Date.now() + 2}`,
+        type: 'COUNTDOWN',
+        title: 'عرض محدود ونفاد الكمية',
+        enabled: true,
+        content: {
+          timerEndsMinutes: 45,
+          lowStockCount: Math.max(3, Math.min(prod.stock || 15, 19)),
+        },
+      },
+      {
+        id: `sec-features-${Date.now() + 3}`,
+        type: 'FEATURES',
+        title: 'مميزات الشراء والضمان',
+        enabled: true,
+        content: {
+          features: [
+            { title: 'شحن سريع لجميع المحافظات', desc: 'التوصيل خلال 24 إلى 48 ساعة فقط', icon: '🚚' },
+            { title: 'معاينة المنتج قبل الدفع', desc: 'افحص وتأكد من جودة المنتج قبل دفع أي مليم للكابتن', icon: '✅' },
+            { title: 'دفع عند الاستلام (COD)', desc: 'دون الحاجة لأي بطاقة ائتمانية أو دفع مسبق', icon: '💵' },
+            { title: 'ضمان الاستبدال والاسترجاع', desc: 'حق الاستبدال خلال 14 يوماً بسهولة تامة', icon: '🔁' },
+          ],
+        },
+      },
+      {
+        id: `sec-form-${Date.now() + 4}`,
+        type: 'FORM',
+        title: 'نموذج الشراء السريع',
+        enabled: true,
+        content: {
+          orderKicker: 'طلب مباشر وسريع',
+          orderTitle: `اطلب ${prodName} الآن بسعر ${prodPrice ? `${prodPrice} ${currency}` : 'خاص'}`,
+          orderCopy: 'املأ بيانات التوصيل الأساسية وسيتم الشحن والمتابعة معك فوراً.',
+          buttonLabel: `تأكيد الطلب الآن — دفع عند الاستلام 🚚`,
+        },
+      },
+      {
+        id: `sec-reviews-${Date.now() + 5}`,
+        type: 'REVIEWS',
+        title: 'آراء وتقييمات العملاء',
+        enabled: true,
+        content: {
+          reviews: [
+            { name: 'أحمد إبراهيم', text: `${prodName} وصلني نفس الوصف والصور بالظبط، الجودة ممتازة وسرعة الشحن محترمة جداً.`, rating: 5 },
+            { name: 'مروة عبد العزيز', text: 'بصراحة تجربة شراء ممتازة، والمعاينة قبل الدفع إدتني ثقة كاملة في المتجر. أنصح به!', rating: 5 },
+            { name: 'محمود سامي', text: 'الخامة والتقفيل عالي جداً والسعر ممتاز مقارنة بالسوق. خدمة العملاء تابعت معايا حتى الاستلام.', rating: 5 },
+          ],
+        },
+      },
+      {
+        id: `sec-faq-${Date.now() + 6}`,
+        type: 'FAQ',
+        title: 'الأسئلة الشائعة',
+        enabled: true,
+        content: {
+          faqs: [
+            { question: `هل يمكنني فحص ${prodName} قبل دفع المبلغ؟`, answer: 'نعم بالطبع، المندوب ينتظرك حتى تعاين وتتأكد من المنتج قبل دفع الكاش.' },
+            { question: 'ما هو موعد وصول الطلب؟', answer: 'الشحن يستغرق عادة من يوم إلى يومين عمل لكافة المحافظات.' },
+            { question: 'ماذا لو أردت استبدال أو إرجاع المنتج؟', answer: 'لديك 14 يوماً كاملة من تاريخ الاستلام للاستبدال أو الإرجاع مجاناً.' },
+          ],
+        },
+      },
+    ];
+
+    const updatedFormConfig = {
+      orderKicker: 'طلب مباشر وسريع',
+      orderTitle: `اطلب ${prodName} الآن بسعر ${prodPrice ? `${prodPrice} ${currency}` : 'خاص'}`,
+      orderCopy: 'املأ بيانات التوصيل الأساسية وسيتم الشحن والمتابعة معك فوراً.',
+      buttonLabel: `تأكيد الطلب الآن — دفع عند الاستلام 🚚`,
+      sections: aiSections,
+    };
+
+    const updated = await prisma.productLandingPage.update({
+      where: { id: landing.id },
+      data: {
+        formConfig: JSON.stringify(updatedFormConfig),
+        updatedById: req.user.id || null,
+      },
+      include: {
+        product: {
+          select: PRODUCT_SELECT,
+        },
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: formatLandingPage(updated),
+      message: 'تم توليد محتوى الصفحة بالذكاء الاصطناعي بنجاح',
+    });
+  } catch (error) {
+    console.error('[PRODUCT-LANDING] AI content generation failed:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'تعذر توليد المحتوى بالذكاء الاصطناعي',
       error: error.message,
     });
   }

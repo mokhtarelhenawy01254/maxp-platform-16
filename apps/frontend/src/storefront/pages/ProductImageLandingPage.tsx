@@ -42,11 +42,13 @@ type PublicLandingPage = {
   generationStatus: string;
   designNotes?: string;
   slices: LandingSlice[];
+  sections?: any[];
   formConfig?: {
     orderKicker?: string;
     orderTitle?: string;
     orderCopy?: string;
     buttonLabel?: string;
+    sections?: any[];
   };
   visits?: number;
   orders?: number;
@@ -466,21 +468,44 @@ const ProductImageLandingPage: React.FC = () => {
   const activeLanding = landingData?.landing || null;
   const activeProduct =
     landingData?.product || fallbackConfig?.fallbackProduct || null;
+  const activeSections: any[] = useMemo(
+    () =>
+      (Array.isArray(activeLanding?.sections) && activeLanding!.sections!.length > 0
+        ? activeLanding!.sections
+        : Array.isArray(activeLanding?.formConfig?.sections)
+          ? activeLanding!.formConfig!.sections
+          : []) || [],
+    [activeLanding],
+  );
+
+  const formSection = activeSections.find((s) => s?.type === "FORM");
+  const textSection = activeSections.find((s) => s?.type === "TEXT");
+  const featuresSection = activeSections.find((s) => s?.type === "FEATURES");
+  const reviewsSection = activeSections.find((s) => s?.type === "REVIEWS");
+  const faqSection = activeSections.find((s) => s?.type === "FAQ");
+  const countdownSection = activeSections.find((s) => s?.type === "COUNTDOWN");
+  const bannerSection = activeSections.find((s) => s?.type === "BANNERS");
+
   const activeConfig = {
     orderKicker:
+      formSection?.content?.orderKicker ||
       activeLanding?.formConfig?.orderKicker ||
       fallbackConfig?.orderKicker ||
       "نموذج الطلب",
     orderTitle:
+      formSection?.content?.orderTitle ||
       activeLanding?.formConfig?.orderTitle ||
       fallbackConfig?.orderTitle ||
       (activeProduct ? `اطلب ${activeProduct.name}` : "اطلب المنتج"),
     orderCopy:
+      formSection?.content?.orderCopy ||
       activeLanding?.formConfig?.orderCopy ||
       fallbackConfig?.orderCopy ||
       "املأ بياناتك وسيتم التواصل معك لتأكيد الطلب.",
     buttonLabel:
-      activeLanding?.formConfig?.buttonLabel || "تأكيد الطلب",
+      formSection?.content?.buttonLabel ||
+      activeLanding?.formConfig?.buttonLabel ||
+      "تأكيد الطلب",
     slices:
       activeLanding?.slices?.length
         ? activeLanding.slices
@@ -548,11 +573,26 @@ const ProductImageLandingPage: React.FC = () => {
   );
   const heroImage = productImage || visibleCampaignSlices[0]?.src || campaignSlices[0]?.src || "";
   const productDescription = cleanProductDescription(activeProduct?.description, 118);
-  const landingBenefitCards = getLandingBenefitCards(
-    activeProduct,
-    sizeOptions,
-    colorOptions,
-  );
+  const customFeatures = useMemo(() => {
+    if (
+      Array.isArray(featuresSection?.content?.features) &&
+      featuresSection.content.features.length > 0
+    ) {
+      return featuresSection.content.features.map((f: any) => ({
+        title: f.title || "ميزة",
+        text: f.desc || "",
+      }));
+    }
+    return null;
+  }, [featuresSection]);
+
+  const landingBenefitCards =
+    customFeatures ||
+    getLandingBenefitCards(
+      activeProduct,
+      sizeOptions,
+      colorOptions,
+    );
   const comparePrice = Number(activeProduct?.comparePrice || 0);
   const hasComparePrice = comparePrice > activePrice;
   const companyId =
@@ -857,6 +897,24 @@ const ProductImageLandingPage: React.FC = () => {
 
   return (
     <article className="product-image-landing" dir="rtl">
+      {bannerSection?.content?.text ? (
+        <div
+          className="pil-announcement-banner"
+          style={{
+            backgroundColor: bannerSection.content.backgroundColor || "#0284c7",
+            color: bannerSection.content.textColor || "#ffffff",
+            padding: "10px 16px",
+            textAlign: "center",
+            fontWeight: 600,
+            fontSize: "0.9rem",
+            position: "sticky",
+            top: 0,
+            zIndex: 40,
+          }}
+        >
+          {bannerSection.content.text}
+        </div>
+      ) : null}
       <section className="pil-hero" aria-labelledby="pil-hero-title">
         <div className="pil-hero-media" aria-hidden="true">
           {heroImage ? (
@@ -955,6 +1013,33 @@ const ProductImageLandingPage: React.FC = () => {
         <p className="pil-sr-copy">
           {cleanProductDescription(activeProduct.description, 600) || activeProduct.name}
         </p>
+
+        {countdownSection ? (
+          <div
+            className="pil-countdown-banner"
+            style={{
+              background: "#fef2f2",
+              border: "1px solid #fecaca",
+              borderRadius: 12,
+              padding: "12px 16px",
+              marginBottom: 20,
+              textAlign: "center",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              color: "#dc2626",
+              fontWeight: 700,
+              fontSize: "0.95rem",
+            }}
+          >
+            <span>⏳</span>
+            <span>
+              {countdownSection.content?.text ||
+                "عرض لفترة محدودة - اطلب الآن قبل انتهاء الكمية!"}
+            </span>
+          </div>
+        ) : null}
 
         <form className="pil-form" onSubmit={handleSubmit}>
           <div className="pil-field">
@@ -1092,6 +1177,120 @@ const ProductImageLandingPage: React.FC = () => {
           </button>
         </form>
       </section>
+
+      {reviewsSection?.content?.reviews?.length ? (
+        <section
+          className="pil-reviews"
+          aria-label="آراء العملاء"
+          style={{ padding: "32px 16px", maxWidth: 760, margin: "0 auto" }}
+        >
+          <div className="pil-section-heading">
+            <span>تجارب حقيقية</span>
+            <h2>{reviewsSection.content.title || "آراء وتقييمات العملاء"}</h2>
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: 16,
+              marginTop: 16,
+            }}
+          >
+            {reviewsSection.content.reviews.map((rev: any, idx: number) => (
+              <div
+                key={idx}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 12,
+                  padding: 16,
+                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 8,
+                  }}
+                >
+                  <strong style={{ fontSize: "0.95rem", color: "#1e293b" }}>
+                    {rev.name}
+                  </strong>
+                  <span style={{ color: "#f59e0b", fontSize: "1rem" }}>
+                    {"★".repeat(Number(rev.rating) || 5)}
+                  </span>
+                </div>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "0.88rem",
+                    color: "#475569",
+                    lineHeight: 1.5,
+                  }}
+                >
+                  {rev.comment || rev.text}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
+      {faqSection?.content?.faqs?.length ? (
+        <section
+          className="pil-faq"
+          aria-label="الأسئلة الشائعة"
+          style={{ padding: "32px 16px", maxWidth: 760, margin: "0 auto" }}
+        >
+          <div className="pil-section-heading">
+            <span>إجابات واضحة</span>
+            <h2>{faqSection.content.title || "الأسئلة الشائعة"}</h2>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              marginTop: 16,
+            }}
+          >
+            {faqSection.content.faqs.map((faq: any, idx: number) => (
+              <details
+                key={idx}
+                style={{
+                  background: "#ffffff",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: 10,
+                  padding: "14px 18px",
+                  cursor: "pointer",
+                }}
+              >
+                <summary
+                  style={{
+                    fontWeight: 600,
+                    fontSize: "0.95rem",
+                    color: "#1e293b",
+                  }}
+                >
+                  {faq.q || faq.question}
+                </summary>
+                <p
+                  style={{
+                    margin: "10px 0 0",
+                    fontSize: "0.88rem",
+                    color: "#64748b",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {faq.a || faq.answer}
+                </p>
+              </details>
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <a
         className={`pil-sticky-cta ${isStickyReady ? "is-ready" : ""}`}
