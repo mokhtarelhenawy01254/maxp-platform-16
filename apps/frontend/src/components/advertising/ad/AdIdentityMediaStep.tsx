@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import {
   PhotoIcon,
   VideoCameraIcon,
@@ -7,9 +7,12 @@ import {
   PlusIcon,
   CheckCircleIcon,
   ExclamationTriangleIcon,
+  ShoppingBagIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { AdFormData, FacebookPage } from "./types";
 import { toast } from "sonner";
+import { StoreProductPickerModal, SelectedStoreProduct } from "./StoreProductPickerModal";
 
 interface AdIdentityMediaStepProps {
   formData: AdFormData;
@@ -26,6 +29,7 @@ export const AdIdentityMediaStep: React.FC<AdIdentityMediaStepProps> = ({
   loadingPages,
   isEn = false,
 }) => {
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
 
@@ -114,6 +118,36 @@ export const AdIdentityMediaStep: React.FC<AdIdentityMediaStepProps> = ({
     updateFormData({
       carouselCardsList: formData.carouselCardsList.filter((c) => c.id !== id),
     });
+  };
+
+  const handleProductSelect = (product: SelectedStoreProduct) => {
+    updateFormData({
+      imagePreview: product.imageUrl,
+      imageUrl: product.imageUrl,
+      imageFile: null,
+      uploadedImageHash: undefined,
+      name: formData.name || `${product.name} - حملة v26`,
+      headline: formData.headline || `${product.name} - ${product.price.toLocaleString()} ج.م`,
+      headlines: formData.headlines.some(Boolean)
+        ? formData.headlines
+        : [`${product.name} - ${product.price.toLocaleString()} ج.م`],
+      linkUrl: product.landingUrl || formData.linkUrl,
+      primaryText:
+        formData.primaryText ||
+        product.description ||
+        `اطلبي الآن ${product.name} بأفضل جودة وخامات ممتازة مع شحن سريع ومعاينة قبل الاستلام!`,
+      primaryTexts: formData.primaryTexts.some(Boolean)
+        ? formData.primaryTexts
+        : [
+            product.description ||
+              `اطلبي الآن ${product.name} بأفضل جودة وخامات ممتازة مع شحن سريع ومعاينة قبل الاستلام!`,
+          ],
+    });
+    toast.success(
+      isEn
+        ? `Product "${product.name}" imported with image & link!`
+        : `تم استيراد بيانات "${product.name}" وتعبئة الصورة والرابط بنجاح!`,
+    );
   };
 
   return (
@@ -257,10 +291,20 @@ export const AdIdentityMediaStep: React.FC<AdIdentityMediaStepProps> = ({
 
       {/* Media Upload Area */}
       {formData.creativeType === "SINGLE_IMAGE" && (
-        <div>
-          <label className="block text-xs font-bold text-slate-700 mb-2">
-            {isEn ? "Upload Ad Image *" : "رفع صورة الإعلان *"}
-          </label>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <label className="block text-xs font-bold text-slate-700">
+              {isEn ? "Upload Ad Image *" : "صورة وتصميم الإعلان *"}
+            </label>
+            <button
+              type="button"
+              onClick={() => setIsProductModalOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-50 border border-indigo-200 px-3 py-1.5 text-xs font-black text-indigo-700 hover:bg-indigo-600 hover:text-white shadow-sm transition"
+            >
+              <ShoppingBagIcon className="h-4 w-4" />
+              <span>{isEn ? "Pick Store Product (1-Click)" : "📦 اختيار من منتجات المتجر (تعبئة فورية)"}</span>
+            </button>
+          </div>
           <input
             ref={imageInputRef}
             type="file"
@@ -424,6 +468,14 @@ export const AdIdentityMediaStep: React.FC<AdIdentityMediaStepProps> = ({
           </div>
         </div>
       )}
+
+      {/* Store Product Picker Modal */}
+      <StoreProductPickerModal
+        isOpen={isProductModalOpen}
+        onClose={() => setIsProductModalOpen(false)}
+        onSelect={handleProductSelect}
+        isEn={isEn}
+      />
     </div>
   );
 };

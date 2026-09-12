@@ -12,6 +12,8 @@ import {
   SparklesIcon,
   RocketLaunchIcon,
   ArrowPathIcon,
+  DevicePhoneMobileIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { toast } from "sonner";
 import { useTranslation } from "react-i18next";
@@ -46,6 +48,7 @@ const CreateAd: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
   const [facebookPages, setFacebookPages] = useState<FacebookPage[]>([]);
   const [loadingPages, setLoadingPages] = useState(true);
+  const [showMobilePreview, setShowMobilePreview] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState<AdFormData>({
@@ -442,8 +445,8 @@ const CreateAd: React.FC = () => {
           </div>
         </div>
 
-        {/* Live Preview Column */}
-        <div className="lg:col-span-5 sticky top-6">
+        {/* Live Preview Column (Desktop) */}
+        <div className="hidden lg:block lg:col-span-5 sticky top-6">
           <AdPlacementLivePreview
             formData={formData}
             page={selectedPage}
@@ -451,6 +454,43 @@ const CreateAd: React.FC = () => {
           />
         </div>
       </div>
+
+      {/* Mobile Floating Preview Pill */}
+      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setShowMobilePreview(true)}
+          className="inline-flex items-center gap-2 rounded-full bg-slate-950 text-white px-5 py-2.5 text-xs font-black shadow-2xl border border-slate-700/60 transition active:scale-95"
+        >
+          <DevicePhoneMobileIcon className="h-4 w-4 text-indigo-400" />
+          <span>{isEn ? "Live Ad Preview" : "👁️ معاينة الإعلان الحية"}</span>
+        </button>
+      </div>
+
+      {/* Mobile Preview Bottom Sheet Modal */}
+      {showMobilePreview && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-950/70 backdrop-blur-sm lg:hidden animate-in fade-in duration-200">
+          <div className="bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto p-4 shadow-2xl space-y-3">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <span className="text-xs font-black text-slate-900">
+                {isEn ? "Live Mobile Ad Preview" : "المعاينة الحية للإعلان"}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowMobilePreview(false)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition"
+              >
+                <XMarkIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <AdPlacementLivePreview
+              formData={formData}
+              page={selectedPage}
+              isEn={isEn}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

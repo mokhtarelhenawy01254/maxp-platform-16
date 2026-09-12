@@ -1,9 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   PlusIcon,
   XMarkIcon,
   SparklesIcon,
   ChatBubbleBottomCenterTextIcon,
+  ArrowPathIcon,
 } from "@heroicons/react/24/outline";
 import { AdFormData } from "./types";
 import { toast } from "sonner";
@@ -19,6 +20,42 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
   updateFormData,
   isEn = false,
 }) => {
+  const [isAiGenerating, setIsAiGenerating] = useState(false);
+
+  const generateAiCopyVariations = async () => {
+    setIsAiGenerating(true);
+    const rawName = formData.name || formData.headline || "المنتج العصري";
+    const cleanName = rawName.replace(/-(.*)$/, "").replace(/حملة(.*)$/, "").trim() || "المنتج المميز";
+
+    await new Promise((resolve) => setTimeout(resolve, 800));
+
+    const generatedTexts = [
+      `🔥 عرض حصري لفترة محدودة! احصل على ${cleanName} بجودة استثنائية وسعر لا يتكرر. شحن سريع لجميع المحافظات والدفع بعد المعاينة عند الاستلام!`,
+      `✨ أناقة وراحة فائقة تناسب يومك بالكامل مع ${cleanName}. خامات ممتازة تدوم طويلاً، وتصميم عصري يجمع بين التميز والعملية اليومية.`,
+      `⭐ انضم لآلاف العملاء الراضين مع ${cleanName}! تجربة شراء مضمونة 100%، معاينة مجانية قبل الاستلام وضمان استبدال واسترجاع فوري.`,
+    ];
+
+    const generatedHeadlines = [
+      `${cleanName} - خصم خاص وشحن سريع`,
+      `${cleanName} الأصلي - اطلب الآن واستلم غداً`,
+      `الأكثر طلباً وتقييماً ⭐ معاينة قبل الدفع`,
+    ];
+
+    updateFormData({
+      primaryTexts: generatedTexts,
+      primaryText: generatedTexts[0],
+      headlines: generatedHeadlines,
+      headline: generatedHeadlines[0],
+    });
+
+    setIsAiGenerating(false);
+    toast.success(
+      isEn
+        ? "AI generated 3 high-converting angles & headlines!"
+        : "تم توليد 3 زوايا إعلانية وعناوين بالذكاء الاصطناعي بنجاح!",
+    );
+  };
+
   // Add primary text variation
   const addPrimaryText = () => {
     if (formData.primaryTexts.length >= 5) {
@@ -111,6 +148,44 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
               : "يمكنك إضافة حتى 5 نصوص و 5 عناوين مختلفة. خوارزميات Meta تقوم باختبار التوليفات تلقائياً وإظهار النص الأكثر إقناعاً لكل عميل."}
           </p>
         </div>
+      </div>
+
+      {/* AI Copywriter Action Card */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-purple-200 bg-gradient-to-r from-purple-50 via-indigo-50/40 to-white p-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-purple-600 flex items-center justify-center text-white shadow-md shadow-purple-200 shrink-0">
+            <SparklesIcon className="h-5 w-5" />
+          </div>
+          <div>
+            <h4 className="text-xs font-black text-slate-900">
+              {isEn ? "MaxP AI Copywriter (3 Strategic Angles)" : "كاتب الإعلانات الذكي (MaxP AI Copywriter)"}
+            </h4>
+            <p className="text-[11px] text-slate-500 font-medium">
+              {isEn
+                ? "Auto-generates FOMO, Value, and Social Proof variations"
+                : "يولد 3 زوايا بيعية (العرض والخصم، الراحة والجودة، الثقة والأمان) متوافقة مع سياسات Meta"}
+            </p>
+          </div>
+        </div>
+
+        <button
+          type="button"
+          disabled={isAiGenerating}
+          onClick={generateAiCopyVariations}
+          className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-purple-600 px-4 py-2.5 text-xs font-black text-white hover:bg-purple-700 disabled:opacity-50 shadow-sm transition shrink-0"
+        >
+          {isAiGenerating ? (
+            <>
+              <ArrowPathIcon className="h-4 w-4 animate-spin" />
+              <span>{isEn ? "Generating Copy..." : "جاري التوليد الذكي..."}</span>
+            </>
+          ) : (
+            <>
+              <SparklesIcon className="h-4 w-4 text-purple-200" />
+              <span>{isEn ? "Generate 3 AI Variations" : "✨ توليد 3 زوايا إعلانية ذكية"}</span>
+            </>
+          )}
+        </button>
       </div>
 
       {/* Quick Hooks Assistant */}

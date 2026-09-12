@@ -22,6 +22,7 @@ import {
   PencilSquareIcon,
   CheckIcon,
   XMarkIcon,
+  SparklesIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -1014,6 +1015,41 @@ const CampaignDetails: React.FC = () => {
                                 {ad.facebookAdId && (
                                   <span className="text-[10px] font-mono text-slate-400">
                                     Meta ID: {ad.facebookAdId}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Micro-Metrics Bar or Learning Badge */}
+                              <div className="mt-2 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-1.5 text-[11px]">
+                                {(ad as any).spend != null && Number((ad as any).spend) > 0 ? (
+                                  <>
+                                    <span className="font-semibold text-slate-500">
+                                      {isEn ? "Spend:" : "الإنفاق:"}{" "}
+                                      <strong className="font-mono text-slate-900">
+                                        {Number((ad as any).spend).toLocaleString()} ج.م
+                                      </strong>
+                                    </span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="font-semibold text-slate-500">
+                                      ROAS:{" "}
+                                      <strong className="font-mono text-emerald-700">
+                                        {Number((ad as any).roas || 0).toFixed(2)}x
+                                      </strong>
+                                    </span>
+                                    <span className="text-slate-300">•</span>
+                                    <span className="font-semibold text-slate-500">
+                                      {isEn ? "Orders:" : "الطلبات:"}{" "}
+                                      <strong className="font-mono text-indigo-700">
+                                        {Number((ad as any).purchases || 0)}
+                                      </strong>
+                                    </span>
+                                  </>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-bold text-amber-700">
+                                    <SparklesIcon className="h-3 w-3 text-amber-500" />
+                                    {isEn
+                                      ? "Learning Phase (Meta AI)"
+                                      : "إعلان نشط - في مرحلة التعلّم الذكي لـ Meta"}
                                   </span>
                                 )}
                               </div>

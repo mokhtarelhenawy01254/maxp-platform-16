@@ -5,3 +5,4 @@ export * from "./AdAdvantageCreativeStep";
 export * from "./AdDestinationTrackingStep";
 export * from "./AdPlacementLivePreview";
 export * from "./AdReviewStep";
+export * from "./StoreProductPickerModal";
