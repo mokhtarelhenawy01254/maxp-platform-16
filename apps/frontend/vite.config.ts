@@ -88,7 +88,7 @@ const APP_I18N_MODULE_PATTERN = /\/src\/i18n\/index\.ts$/;
 // Shared HTTP layer + tiny cross-app utilities used by EVERY app page and by
 // the storefront.
 const APP_SHARED_CORE_MODULE_PATTERN =
-  /\/src\/(?:services\/(?:api|apiClient|uploadService|pushNotificationService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper|storeShortcut|storeUrl)|components\/settings\/DefaultPageSelector)\.tsx?$/;
+  /\/src\/(?:config\/environment|services\/(?:api|apiClient|uploadService|pushNotificationService)|hooks\/(?:useAuthSimple|useDebounce)|utils\/(?:pushNotifications|statusRegistry|tokenManager|imageUrl|urlHelper|storeShortcut|storeUrl)|components\/settings\/DefaultPageSelector)\.tsx?$/;
 
 // Shared TanStack Query Client instances
 const APP_QUERY_CLIENT_MODULE_PATTERN =
