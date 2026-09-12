@@ -6970,7 +6970,7 @@ const ProductInfo: React.FC<ProductInfoProps> = ({ section, settings: sectionSet
             {spotlightContent}
           </a>
         ) : (
-          <Link to={spotlightHref} reloadDocument className={className}>
+          <Link to={spotlightHref} className={className}>
             {spotlightContent}
           </Link>
         );

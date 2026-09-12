@@ -1,12 +1,14 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { storefrontFetch } from '../../utils/storefrontApi';
 import ProductCard from '../components/ProductCard';
 import GracefulSmartCard from '../components/GracefulSmartCard';
 import StorefrontProductImage from '../components/StorefrontProductImage';
-import { useProduct } from '../hooks/useProduct';
+import { fetchStorefrontProduct, getStorefrontProductQueryKey, useProduct } from '../hooks/useProduct';
 import { useProducts, type Product } from '../hooks/useProducts';
 import { useStorefrontSettings } from '../hooks/useStorefrontSettings';
+import { shouldStorefrontForceDocumentNavigation } from '../utils/navigationGuards';
 import { isMarketplaceThemePreview } from '../preview/previewContext';
 import {
   getThemePreviewProductRecommendations,
@@ -324,6 +326,8 @@ const resolveRelatedProductsVariant = (
 };
 
 const RelatedProducts: React.FC<RelatedProductsProps> = ({ section, settings }) => {
+  const queryClient = useQueryClient();
+  const shouldForceDocumentNavigation = shouldStorefrontForceDocumentNavigation();
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
   const { settings: storefrontSettings } = useStorefrontSettings();
@@ -601,11 +605,23 @@ const RelatedProducts: React.FC<RelatedProductsProps> = ({ section, settings }) 
         (Array.isArray(rawVariants) ? rawVariants.length : 0),
     );
 
+    const prefetchTarget = relatedProduct.slug || relatedProduct.id;
+    const handlePrefetch = () => {
+      if (!prefetchTarget) return;
+      void queryClient.prefetchQuery({
+        queryKey: getStorefrontProductQueryKey(prefetchTarget),
+        queryFn: () => fetchStorefrontProduct(prefetchTarget),
+        staleTime: 1000 * 60 * 5,
+      });
+    };
+
     return (
       <Link
         key={relatedProduct.id}
         to={productPath}
-        reloadDocument
+        reloadDocument={shouldForceDocumentNavigation}
+        onMouseEnter={handlePrefetch}
+        onTouchStart={handlePrefetch}
         className="group block space-y-3 text-[#2d211e] transition-transform duration-300 hover:-translate-y-1"
       >
         <div className="relative overflow-hidden bg-[#f3ece6]">
