@@ -52,9 +52,11 @@ class FacebookAdCreateFullDraftInput(BaseModel):
 
 
 class FacebookAdGetDecisionInput(BaseModel):
-    ad_id: str | None = Field(default=None, description="Meta Ad ID to evaluate")
-    campaign_id: str | None = Field(default=None, description="Meta Campaign ID to evaluate")
+    ad_id: str | None = Field(default=None, description="Specific Meta Ad ID or internal Ad ID to evaluate")
+    campaign_id: str | None = Field(default=None, description="Specific Meta Campaign ID or internal Campaign ID to evaluate")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+    status: str | None = Field(default="ACTIVE", description="Filter by status: ACTIVE, PAUSED, or ALL")
+    limit: int = Field(default=10, description="Max campaigns and ads to evaluate (default 10)")
 
 
 async def facebook_ad_analyze_product(input_data: FacebookAdAnalyzeProductInput) -> dict[str, Any]:
@@ -428,6 +430,105 @@ async def facebook_ad_publish_draft(input_data: FacebookAdPublishDraftInput) -> 
         }
 
 
+def _evaluate_performance_item(
+    item_type: Literal["CAMPAIGN", "AD"],
+    item_id: str,
+    name: str,
+    status: str,
+    spend: float,
+    impressions: int,
+    clicks: int,
+    purchases: int,
+    revenue: float,
+    ctr: float,
+    price: float,
+    cost: float,
+    currency: str,
+    budget_amount: float = 0.0,
+    budget_type: str | None = None,
+    campaign_name: str | None = None,
+    product_name: str | None = None,
+    ads_count: int | None = None,
+) -> dict[str, Any]:
+    margin = price - cost if price > 0 else 0
+    cpa = round(spend / purchases, 2) if purchases > 0 else 0.0
+    roas = round(revenue / spend, 2) if spend > 0 else 0.0
+    breakeven_roas = round(price / margin, 2) if margin > 0 else 2.0
+    target_cpa = round(margin * 0.45, 2) if margin > 0 else round(price * 0.25, 2)
+
+    decision = "WATCH"
+    rationale = ""
+    action_plan = ""
+
+    if spend == 0 or impressions < 500:
+        decision = "LEARNING"
+        budget_info = f"، الميزانية اليومية: {budget_amount} {currency}" if budget_amount > 0 else ""
+        rationale = f"في مرحلة الاستكشاف والتعلم الأولى (الظهور: {impressions}، الإنفاق: {spend} {currency}{budget_info})."
+        action_plan = "ترك الحملة/الإعلان يعمل لمدة 24-48 ساعة بدون تعديل لإعطاء خوارزمية ميتا فرصة تثبيت مرحلة التعلم."
+    elif purchases > 0:
+        if roas >= breakeven_roas and (target_cpa == 0 or cpa <= target_cpa):
+            decision = "SCALE"
+            rationale = f"أداء رابح وممتاز: العائد ROAS ({roas}x) يتفوق على نقطة التعادل ({breakeven_roas}x)، وتكلفة الشراء CPA ({cpa} {currency}) ممتازة وضمن المستهدف ({target_cpa} {currency})."
+            action_plan = "زيادة الميزانية اليومية بنسبة 20% تدريجياً وتجهيز كرييتف بديل لتفادي تشبع الجمهور."
+        elif roas >= 1.0:
+            decision = "WATCH"
+            rationale = f"تحقق مبيعات بعائد ROAS ({roas}x) يقترب من التعادل ({breakeven_roas}x)، لكن الهامش ضيق."
+            action_plan = "مراقبة معدل التحويل CR وسرعة صفحة الهبوط على الهاتف لتحسين الـ CPA."
+        else:
+            decision = "FIX_OFFER"
+            rationale = f"العائد ROAS ({roas}x) أقل من نقطة التعادل ({breakeven_roas}x)، وتكلفة الاكتساب CPA ({cpa} {currency}) تلتهم الربحية."
+            action_plan = "تطوير العرض التجاري (عرض قطعتين بخصم إضافي أو شحن مجاني) لرفع متوسط قيمة الطلب AOV."
+    else:
+        # 0 Purchases
+        price_limit = price if price > 0 else 500.0
+        if spend > (price_limit * 1.5):
+            decision = "KILL"
+            rationale = f"تجاوز الإنفاق ({spend} {currency}) حاجز الأمان المالي (1.5x سعر المنتج) دون تسجيل أي طلب شراء مؤكد."
+            action_plan = "إيقاف الإعلان/الحملة فوراً لوقف الهدر المالي واختبار زاوية تسويقية جديدة."
+        elif impressions > 2000 and ctr < 0.01:
+            decision = "FIX_CREATIVE"
+            rationale = f"نسبة النقر CTR ({round(ctr * 100, 2)}%) منخفضة جداً (أقل من 1%) رغم تسجيل {impressions} ظهور."
+            action_plan = "تغيير الكرييتف الإعلاني (الصورة/الفيديو) وتجديد الهوك (Hook) في أول سطرين."
+        elif clicks > 40 and purchases == 0:
+            decision = "FIX_LANDING"
+            rationale = f"يجلب نقرات مهتمة ({clicks} نقرة) دون تحويلها لطلبات على صفحة المتجر."
+            action_plan = "فحص تجربة الشراء بصفحة الهبوط وسرعة التحميل وتسهيل خيار الدفع عند الاستلام."
+        else:
+            decision = "WATCH"
+            rationale = f"البيانات قيد الجمع والتحليل الأولي (الإنفاق: {spend} {currency}، النقرات: {clicks})."
+            action_plan = "الانتظار حتى بلوغ 50 نقرة على الأقل قبل اتخاذ قرار حاسم."
+
+    item_dict: dict[str, Any] = {
+        "type": item_type,
+        "id": item_id,
+        "name": name,
+        "status": status,
+        "spend": spend,
+        "impressions": impressions,
+        "clicks": clicks,
+        "purchases": purchases,
+        "revenue": revenue,
+        "ctr": f"{round(ctr * 100, 2)}%",
+        "cpa": cpa,
+        "roas": f"{roas}x",
+        "breakeven_roas": f"{breakeven_roas}x",
+        "target_cpa": target_cpa,
+        "currency": currency,
+        "decision": decision,
+        "analysis": rationale,
+        "recommendation": action_plan,
+    }
+    if item_type == "CAMPAIGN":
+        item_dict["budget_amount"] = budget_amount
+        item_dict["budget_type"] = budget_type or "DAILY"
+        item_dict["ads_count"] = ads_count or 0
+    else:
+        item_dict["campaign_name"] = campaign_name or "غير محدد"
+        item_dict["product_name"] = product_name
+
+    return item_dict
+
+
 async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> dict[str, Any]:
     """Retrieve dynamic Media Buyer performance decisions (SCALE, KILL, FIX_CREATIVE, FIX_OFFER, WATCH) based on live ad insights & unit economics."""
     company_id = input_data.company_id or ""
@@ -439,9 +540,82 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
         return {"success": False, "error": "Database session unavailable"}
 
     async with sf() as session:
-        # Join facebook_ads with facebook_ad_insights and products to compute real metrics
-        query_sql = """
+        # 1. Fetch store baseline economics (currency, default price, cost, sample product)
+        baseline_row = await session.execute(
+            text('SELECT c.currency, p.name, p.price, p.cost FROM public.companies c LEFT JOIN public.products p ON p."companyId" = c.id AND p."deletedAt" IS NULL WHERE c.id = :cid ORDER BY p."createdAt" DESC LIMIT 1'),
+            {"cid": company_id}
+        )
+        base_match = baseline_row.first()
+        default_currency = str(base_match.currency if base_match and base_match.currency else "EGP").upper()
+        default_price = float(base_match.price) if base_match and base_match.price else 500.0
+        default_cost = float(base_match.cost) if base_match and base_match.cost else (default_price * 0.5)
+        default_prod_name = base_match.name if base_match and base_match.name else None
+
+        limit = min(max(input_data.limit or 10, 1), 50)
+        status_filter = input_data.status if input_data.status and input_data.status != "ALL" else None
+
+        # 2. Query Campaigns (facebook_campaigns)
+        camp_query = """
+            SELECT c.id, c."facebookCampaignId", c.name, c.status, c."budgetType", c."budgetAmount", c."createdAt",
+                   COALESCE(SUM(i.spend), 0) AS total_spend,
+                   COALESCE(SUM(i.impressions), 0) AS total_impressions,
+                   COALESCE(SUM(i.clicks), 0) AS total_clicks,
+                   COALESCE(SUM(i.purchases), 0) AS total_purchases,
+                   COALESCE(SUM(i."purchaseValue"), 0) AS total_revenue,
+                   COALESCE(AVG(i.ctr), 0) AS avg_ctr,
+                   COUNT(DISTINCT a.id) AS ads_count
+            FROM public.facebook_campaigns c
+            LEFT JOIN public.facebook_adsets s ON s."campaignId" = c.id
+            LEFT JOIN public.facebook_ads a ON a."adSetId" = s.id
+            LEFT JOIN public.facebook_ad_insights i ON i."adId" = a.id
+            WHERE c."companyId" = :cid
+        """
+        camp_params: dict[str, Any] = {"cid": company_id, "limit": limit}
+        if status_filter:
+            camp_query += " AND c.status = :status_filter"
+            camp_params["status_filter"] = status_filter
+        if input_data.campaign_id:
+            camp_query += ' AND (c.id = :camp_id OR c."facebookCampaignId" = :camp_id)'
+            camp_params["camp_id"] = input_data.campaign_id
+
+        camp_query += """
+            GROUP BY c.id, c."facebookCampaignId", c.name, c.status, c."budgetType", c."budgetAmount", c."createdAt"
+            ORDER BY (CASE WHEN c.status = 'ACTIVE' THEN 0 ELSE 1 END), c."createdAt" DESC
+            LIMIT :limit
+        """
+        camp_result = await session.execute(text(camp_query), camp_params)
+        camp_rows = camp_result.fetchall()
+
+        # If filtered by ACTIVE but none returned, retry without status filter to show available campaigns
+        if not camp_rows and status_filter and not input_data.campaign_id:
+            camp_fallback = await session.execute(
+                text("""
+                    SELECT c.id, c."facebookCampaignId", c.name, c.status, c."budgetType", c."budgetAmount", c."createdAt",
+                           COALESCE(SUM(i.spend), 0) AS total_spend,
+                           COALESCE(SUM(i.impressions), 0) AS total_impressions,
+                           COALESCE(SUM(i.clicks), 0) AS total_clicks,
+                           COALESCE(SUM(i.purchases), 0) AS total_purchases,
+                           COALESCE(SUM(i."purchaseValue"), 0) AS total_revenue,
+                           COALESCE(AVG(i.ctr), 0) AS avg_ctr,
+                           COUNT(DISTINCT a.id) AS ads_count
+                    FROM public.facebook_campaigns c
+                    LEFT JOIN public.facebook_adsets s ON s."campaignId" = c.id
+                    LEFT JOIN public.facebook_ads a ON a."adSetId" = s.id
+                    LEFT JOIN public.facebook_ad_insights i ON i."adId" = a.id
+                    WHERE c."companyId" = :cid
+                    GROUP BY c.id, c."facebookCampaignId", c.name, c.status, c."budgetType", c."budgetAmount", c."createdAt"
+                    ORDER BY c."createdAt" DESC
+                    LIMIT :limit
+                """),
+                {"cid": company_id, "limit": limit}
+            )
+            camp_rows = camp_fallback.fetchall()
+
+        # 3. Query Ads (facebook_ads)
+        ads_query = """
             SELECT a.id, a."facebookAdId", a.name, a.status, a."createdAt", a."productId",
+                   c.name AS campaign_name,
+                   c.id AS campaign_id,
                    COALESCE(SUM(i.spend), 0) AS total_spend,
                    COALESCE(SUM(i.impressions), 0) AS total_impressions,
                    COALESCE(SUM(i.clicks), 0) AS total_clicks,
@@ -451,46 +625,77 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
                    COALESCE(AVG(i.cpc), 0) AS avg_cpc,
                    p.name AS product_name,
                    p.price AS product_price,
-                   p.cost AS product_cost,
-                   c.currency
+                   p.cost AS product_cost
             FROM public.facebook_ads a
+            LEFT JOIN public.facebook_adsets s ON s.id = a."adSetId"
+            LEFT JOIN public.facebook_campaigns c ON c.id = s."campaignId"
             LEFT JOIN public.facebook_ad_insights i ON i."adId" = a.id
             LEFT JOIN public.products p ON p.id = a."productId"
-            LEFT JOIN public.companies c ON c.id = a."companyId"
             WHERE a."companyId" = :cid
         """
-        params: dict[str, Any] = {"cid": company_id}
+        ads_params: dict[str, Any] = {"cid": company_id, "limit": limit}
+        if status_filter:
+            ads_query += " AND a.status = :status_filter"
+            ads_params["status_filter"] = status_filter
         if input_data.ad_id:
-            query_sql += ' AND (a."facebookAdId" = :aid OR a.id = :aid)'
-            params["aid"] = input_data.ad_id
+            ads_query += ' AND (a."facebookAdId" = :aid OR a.id = :aid)'
+            ads_params["aid"] = input_data.ad_id
+        if input_data.campaign_id:
+            ads_query += ' AND (c."facebookCampaignId" = :camp_id OR c.id = :camp_id)'
+            ads_params["camp_id"] = input_data.campaign_id
 
-        query_sql += """
-            GROUP BY a.id, a."facebookAdId", a.name, a.status, a."createdAt", a."productId", p.name, p.price, p.cost, c.currency
-            ORDER BY a."createdAt" DESC
-            LIMIT 5
+        ads_query += """
+            GROUP BY a.id, a."facebookAdId", a.name, a.status, a."createdAt", a."productId",
+                     c.name, c.id, p.name, p.price, p.cost
+            ORDER BY (CASE WHEN a.status = 'ACTIVE' THEN 0 ELSE 1 END), a."createdAt" DESC
+            LIMIT :limit
         """
+        ads_result = await session.execute(text(ads_query), ads_params)
+        ads_rows = ads_result.fetchall()
 
-        result = await session.execute(text(query_sql), params)
-        rows = result.fetchall()
-
-        if not rows:
-            # Query if catalog has products to give a dynamic launch recommendation instead of a static message
-            catalog_row = await session.execute(
-                text('SELECT name, price FROM public.products WHERE "companyId" = :cid AND "deletedAt" IS NULL ORDER BY "createdAt" DESC LIMIT 1'),
-                {"cid": company_id}
+        # If filtered by ACTIVE but none returned, retry without status filter
+        if not ads_rows and status_filter and not input_data.ad_id:
+            ads_fallback = await session.execute(
+                text("""
+                    SELECT a.id, a."facebookAdId", a.name, a.status, a."createdAt", a."productId",
+                           c.name AS campaign_name,
+                           c.id AS campaign_id,
+                           COALESCE(SUM(i.spend), 0) AS total_spend,
+                           COALESCE(SUM(i.impressions), 0) AS total_impressions,
+                           COALESCE(SUM(i.clicks), 0) AS total_clicks,
+                           COALESCE(SUM(i.purchases), 0) AS total_purchases,
+                           COALESCE(SUM(i."purchaseValue"), 0) AS total_revenue,
+                           COALESCE(AVG(i.ctr), 0) AS avg_ctr,
+                           COALESCE(AVG(i.cpc), 0) AS avg_cpc,
+                           p.name AS product_name,
+                           p.price AS product_price,
+                           p.cost AS product_cost
+                    FROM public.facebook_ads a
+                    LEFT JOIN public.facebook_adsets s ON s.id = a."adSetId"
+                    LEFT JOIN public.facebook_campaigns c ON c.id = s."campaignId"
+                    LEFT JOIN public.facebook_ad_insights i ON i."adId" = a.id
+                    LEFT JOIN public.products p ON p.id = a."productId"
+                    WHERE a."companyId" = :cid
+                    GROUP BY a.id, a."facebookAdId", a.name, a.status, a."createdAt", a."productId",
+                             c.name, c.id, p.name, p.price, p.cost
+                    ORDER BY a."createdAt" DESC
+                    LIMIT :limit
+                """),
+                {"cid": company_id, "limit": limit}
             )
-            sample_product = catalog_row.first()
-            prod_info = dict(sample_product._mapping) if sample_product else None
+            ads_rows = ads_fallback.fetchall()
 
+        # Fallback if no campaigns or ads exist:
+        if not camp_rows and not ads_rows:
             rec_text = (
-                f"لا توجد حملات إعلانية نشطة حالياً. يمكنك البدء فوراً بإنشاء 3 زوايا إعلانية لمنتج '{prod_info.get('name')}' بسعر {prod_info.get('price')} باستخدام أمر إنشاء المسودة."
-                if prod_info else
+                f"لا توجد حملات أو إعلانات مسجلة حالياً. يمكنك البدء فوراً بإنشاء 3 زوايا إعلانية لمنتج '{default_prod_name}' بسعر {default_price} باستخدام أمر إنشاء المسودة."
+                if default_prod_name else
                 "لا توجد حملات إعلانية نشطة أو إعلانات مسجلة حالياً. يُرجى رفع منتجات بالمتجر أولاً للبدء في توليد الحملات."
             )
-
             return {
                 "success": True,
                 "decision": "NO_DATA",
+                "campaigns_count": 0,
                 "ad_count": 0,
                 "message": rec_text,
                 "rules": [
@@ -501,105 +706,124 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
                 ]
             }
 
-        # Analyze top ad or requested ad dynamically
-        primary_row = dict(rows[0]._mapping)
-        spend = float(primary_row.get("total_spend") or 0)
-        impressions = int(primary_row.get("total_impressions") or 0)
-        clicks = int(primary_row.get("total_clicks") or 0)
-        purchases = int(primary_row.get("total_purchases") or 0)
-        revenue = float(primary_row.get("total_revenue") or 0)
-        ctr = float(primary_row.get("avg_ctr") or (clicks / impressions if impressions > 0 else 0))
-        price = float(primary_row.get("product_price") or 0)
-        cost = float(primary_row.get("product_cost") or 0) if primary_row.get("product_cost") else (price * 0.5)
-        margin = price - cost
-        currency = str(primary_row.get("currency") or "EGP").upper()
+        # 4. Evaluate each campaign
+        campaign_evaluations: list[dict[str, Any]] = []
+        for r in camp_rows:
+            row = dict(r._mapping)
+            c_spend = float(row.get("total_spend") or 0)
+            c_impressions = int(row.get("total_impressions") or 0)
+            c_clicks = int(row.get("total_clicks") or 0)
+            c_purchases = int(row.get("total_purchases") or 0)
+            c_revenue = float(row.get("total_revenue") or 0)
+            c_ctr = float(row.get("avg_ctr") or (c_clicks / c_impressions if c_impressions > 0 else 0))
+            c_budget = float(row.get("budgetAmount") or 0)
 
-        cpa = round(spend / purchases, 2) if purchases > 0 else 0
-        roas = round(revenue / spend, 2) if spend > 0 else 0
-        breakeven_roas = round(price / margin, 2) if margin > 0 else 2.0
-        target_cpa = round(margin * 0.45, 2)
+            c_eval = _evaluate_performance_item(
+                item_type="CAMPAIGN",
+                item_id=str(row.get("facebookCampaignId") or row.get("id")),
+                name=str(row.get("name") or "حملة إعلانية"),
+                status=str(row.get("status") or "ACTIVE"),
+                spend=c_spend,
+                impressions=c_impressions,
+                clicks=c_clicks,
+                purchases=c_purchases,
+                revenue=c_revenue,
+                ctr=c_ctr,
+                price=default_price,
+                cost=default_cost,
+                currency=default_currency,
+                budget_amount=c_budget,
+                budget_type=row.get("budgetType"),
+                ads_count=int(row.get("ads_count") or 0),
+            )
+            campaign_evaluations.append(c_eval)
 
-        # Dynamic decision synthesis
-        decision = "WATCH"
-        rationale = ""
-        action_plan = ""
+        # 5. Evaluate each ad
+        ad_evaluations: list[dict[str, Any]] = []
+        for r in ads_rows:
+            row = dict(r._mapping)
+            a_spend = float(row.get("total_spend") or 0)
+            a_impressions = int(row.get("total_impressions") or 0)
+            a_clicks = int(row.get("total_clicks") or 0)
+            a_purchases = int(row.get("total_purchases") or 0)
+            a_revenue = float(row.get("total_revenue") or 0)
+            a_ctr = float(row.get("avg_ctr") or (a_clicks / a_impressions if a_impressions > 0 else 0))
+            a_price = float(row.get("product_price") or default_price)
+            a_cost = float(row.get("product_cost") or default_cost)
 
-        if spend == 0 or impressions < 500:
-            decision = "LEARNING"
-            rationale = f"الإعلان في مرحلة التعلم والاستكشاف الأولي (عدد الظهور: {impressions}، الإنفاق: {spend} {currency})."
-            action_plan = "ترك الإعلان يعمل لمدة 24-48 ساعة لجمع بيانات دقيقة لخوارزميات ميتا قبل اتخاذ أي قرار بالتعديل."
-        elif purchases > 0:
-            if roas >= breakeven_roas and cpa <= target_cpa:
-                decision = "SCALE"
-                rationale = f"أداء فائق وتحقيق أرباح: العائد الإعلاني ROAS ({roas}x) أعلى من نقطة التعادل ({breakeven_roas}x)، وتكلفة الشراء ({cpa} {currency}) ممتازة وأقل من الهدف ({target_cpa} {currency})."
-                action_plan = f"زيادة الميزانية اليومية بنسبة 20% تدريجياً، مع تجهيز زاوية إعلانية إضافية لتفادي إجهاد الإعلان (Ad Fatigue)."
-            elif roas >= 1.0:
-                decision = "WATCH"
-                rationale = f"الإعلان يحقق مبيعات بعائد {roas}x وقريب من نقطة التعادل ({breakeven_roas}x)."
-                action_plan = "مراقبة معدل التحويل وسرعة صفحة الهبوط على الهاتف لتحسين الـ CPA."
-            else:
-                decision = "FIX_OFFER"
-                rationale = f"العائد الإعلاني ({roas}x) أقل من نقطة التعادل ({breakeven_roas}x)، تكلفة الشراء ({cpa} {currency}) تلتهم هامش الربح."
-                action_plan = "إعادة هيكلة العرض التجاري (إضافة باقة شحن مجاني أو عرض قطعتين بخصم) لزيادة متوسط قيمة الطلب AOV."
-        else:
-            # 0 Purchases
-            if spend > (price * 1.5):
-                decision = "KILL"
-                rationale = f"تجاوز الإنفاق ({spend} {currency}) الحد المسموح للأمان المالي (1.5x من سعر المنتج {price} {currency}) دون تحقيق أي طلب شراء."
-                action_plan = "إيقاف الإعلان فوراً لوقف نزيف الميزانية، والبدء في اختبار زاوية تسويقية مختلفة تماماً لمنتج آخر."
-            elif impressions > 2000 and ctr < 0.01:
-                decision = "FIX_CREATIVE"
-                rationale = f"نسبة النقر إلى الظهور ({round(ctr * 100, 2)}%) منخفضة جداً (أقل من 1%) رغم وصول الإعلان لأكثر من {impressions} ظهور."
-                action_plan = "تغيير الصورة الإعلانية وتجديد أول جملتين في الـ Hook لجذب انتباه الجمهور في الـ Feed."
-            elif clicks > 40 and purchases == 0:
-                decision = "FIX_LANDING"
-                rationale = f"الإعلان يجلب نقرات مهتمة ({clicks} نقرة) لكن لا يتم تحويلها إلى مبيعات على صفحة المنتج."
-                action_plan = "فحص تجربة الشراء بصفحة الهبوط (تبسيط نموذج الدفع، إضافة وسائل الدفع عند الاستلام، ومراجعة الصور)."
-            else:
-                decision = "WATCH"
-                rationale = f"البيانات الأولية ما زالت قيد التجمع (الإنفاق: {spend} {currency}، النقرات: {clicks})."
-                action_plan = "الانتظار حتى وصول عدد النقرات إلى 50 نقرة على الأقل لاتخاذ قرار حاسم."
+            a_eval = _evaluate_performance_item(
+                item_type="AD",
+                item_id=str(row.get("facebookAdId") or row.get("id")),
+                name=str(row.get("name") or "إعلان فيسبوك"),
+                status=str(row.get("status") or "ACTIVE"),
+                spend=a_spend,
+                impressions=a_impressions,
+                clicks=a_clicks,
+                purchases=a_purchases,
+                revenue=a_revenue,
+                ctr=a_ctr,
+                price=a_price,
+                cost=a_cost,
+                currency=default_currency,
+                campaign_name=row.get("campaign_name"),
+                product_name=row.get("product_name"),
+            )
+            ad_evaluations.append(a_eval)
 
-        return {
+        # Primary representative item (prefer requested or top campaign/ad)
+        primary_item = campaign_evaluations[0] if campaign_evaluations else ad_evaluations[0]
+
+        response_payload: dict[str, Any] = {
             "success": True,
-            "decision": decision,
-            "ad_id": primary_row.get("facebookAdId") or primary_row.get("id"),
-            "ad_name": primary_row.get("name"),
+            # Backward-compatible single-item fields
+            "decision": primary_item.get("decision"),
+            "ad_id": primary_item.get("id"),
+            "ad_name": primary_item.get("name"),
             "metrics": {
-                "spend": spend,
-                "impressions": impressions,
-                "clicks": clicks,
-                "purchases": purchases,
-                "revenue": revenue,
-                "ctr": f"{round(ctr * 100, 2)}%",
-                "cpa": cpa,
-                "roas": f"{roas}x",
-                "breakeven_roas": f"{breakeven_roas}x",
-                "target_cpa": target_cpa,
-                "currency": currency,
+                "spend": primary_item.get("spend"),
+                "impressions": primary_item.get("impressions"),
+                "clicks": primary_item.get("clicks"),
+                "purchases": primary_item.get("purchases"),
+                "revenue": primary_item.get("revenue"),
+                "ctr": primary_item.get("ctr"),
+                "cpa": primary_item.get("cpa"),
+                "roas": primary_item.get("roas"),
+                "breakeven_roas": primary_item.get("breakeven_roas"),
+                "target_cpa": primary_item.get("target_cpa"),
+                "currency": primary_item.get("currency"),
             },
-            "analysis": rationale,
-            "recommendation": action_plan,
-            "evaluated_ads_count": len(rows),
+            "analysis": primary_item.get("analysis"),
+            "recommendation": primary_item.get("recommendation"),
+            "evaluated_ads_count": len(ad_evaluations),
+            "evaluated_campaigns_count": len(campaign_evaluations),
+            # Full multi-item lists
+            "campaigns": campaign_evaluations,
+            "ads": ad_evaluations,
+            "summary": {
+                "total_active_campaigns": len([c for c in campaign_evaluations if c.get("status") == "ACTIVE"]),
+                "total_active_ads": len([a for a in ad_evaluations if a.get("status") == "ACTIVE"]),
+                "total_spend": round(sum(c.get("spend", 0.0) for c in campaign_evaluations) or sum(a.get("spend", 0.0) for a in ad_evaluations), 2),
+                "total_revenue": round(sum(c.get("revenue", 0.0) for c in campaign_evaluations) or sum(a.get("revenue", 0.0) for a in ad_evaluations), 2),
+            },
         }
 
         # Hermes Autonomous Learning: Automatically distill high-confidence decisions into the merchant's playbook
-        if decision in ("SCALE", "KILL", "FIX_OFFER", "FIX_CREATIVE"):
+        if primary_item.get("decision") in ("SCALE", "KILL", "FIX_OFFER", "FIX_CREATIVE"):
             try:
                 from src.skills.learner import autonomous_skill_learner
                 distill_res = await autonomous_skill_learner.distill_ad_performance(
                     company_id=company_id,
                     ad_metrics={
-                        "ad_name": primary_row.get("name"),
-                        "product_name": primary_row.get("product_name"),
-                        "spend": spend,
-                        "revenue": revenue,
-                        "purchases": purchases,
-                        "ctr": ctr,
-                        "cpa": cpa,
-                        "roas": roas,
-                        "target_cpa": target_cpa,
-                        "currency": currency,
+                        "ad_name": primary_item.get("name"),
+                        "product_name": primary_item.get("product_name"),
+                        "spend": primary_item.get("spend"),
+                        "revenue": primary_item.get("revenue"),
+                        "purchases": primary_item.get("purchases"),
+                        "ctr": float(str(primary_item.get("ctr", "0")).replace("%", "")) / 100.0,
+                        "cpa": primary_item.get("cpa"),
+                        "roas": float(str(primary_item.get("roas", "0")).replace("x", "")),
+                        "target_cpa": primary_item.get("target_cpa"),
+                        "currency": primary_item.get("currency"),
                     },
                     session=session,
                 )
@@ -671,7 +895,7 @@ facebook_ad_publish_draft_tool = FunctionTool(
 
 facebook_ad_get_decision_tool = FunctionTool(
     name="facebook_ad_get_decision",
-    description="Get Media Buyer performance recommendations (SCALE, KILL, FIX_CREATIVE) for active Facebook ads based on unit economics.",
+    description="Get Media Buyer performance recommendations (SCALE, KILL, FIX_CREATIVE, WATCH, LEARNING) for active Facebook campaigns and ads based on live unit economics, budgets, and ROAS.",
     func=facebook_ad_get_decision,
     input_model=FacebookAdGetDecisionInput,
 )
