@@ -19,6 +19,7 @@ import {
   Users,
   Wallet,
   Zap,
+  Sparkles,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -389,6 +390,15 @@ const FacebookAdsDashboard: React.FC = () => {
               >
                 <Zap className={`h-3.5 w-3.5 ${syncing ? "animate-spin" : ""}`} />
                 <span className="hidden sm:inline">{isEn ? "Sync Meta" : "مزامنة Meta"}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => navigate("/advertising/marketing-studio")}
+                className="inline-flex h-9 items-center justify-center gap-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 px-3.5 text-xs font-black text-white shadow-xs hover:from-purple-700 hover:to-indigo-700 transition-all shadow-purple-500/20"
+              >
+                <Sparkles className="h-3.5 w-3.5" />
+                <span>{isEn ? "AI Marketing Studio" : "مركز التسويق الذكي"}</span>
               </button>
 
               <button

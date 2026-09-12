@@ -21,6 +21,7 @@ import {
   Target,
   Users,
   Wand2,
+  Sparkles,
 } from "lucide-react";
 
 interface FacebookAdsModuleNavProps {
@@ -28,6 +29,14 @@ interface FacebookAdsModuleNavProps {
 }
 
 const navItems = [
+  {
+    to: "/advertising/marketing-studio",
+    labelAr: "مركز التسويق الذكي",
+    labelEn: "AI Studio",
+    descriptionAr: "فريق الأيجنتس والمخزون",
+    descriptionEn: "Agent Squad & Inventory",
+    icon: Sparkles,
+  },
   {
     to: "/advertising/facebook-ads",
     labelAr: "مركز التحكم",

@@ -504,6 +504,9 @@ const GoogleAnalyticsSettings = React.lazy(
 const FacebookAdsDashboard = React.lazy(
   () => import("./pages/advertising/FacebookAdsDashboard"),
 );
+const MarketingAiStudioPage = React.lazy(
+  () => import("./pages/advertising/marketing-studio/MarketingAiStudioPage"),
+);
 const NavigateFacebookAdsDiagnosis: React.FC = () => {
   const location = useLocation();
   return <Navigate to={`/advertising/facebook-ads${location.search}`} replace />;
@@ -1673,6 +1676,7 @@ if (typeof window !== "undefined") {
   p["/pos"] = () => import("./pages/pos/PosPage");
   p["/tickets"] = () => import("./pages/tickets/TurboTickets");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
+  p["/advertising/marketing-studio"] = () => import("./pages/advertising/marketing-studio/MarketingAiStudioPage");
   p["/affiliates"] = () => import("./pages/affiliates/AffiliateDashboard");
   p["/hr"] = () => import("./pages/hr/HRDashboard");
   p["/settings"] = () => import("./pages/settings/Settings");
@@ -3660,6 +3664,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <FacebookAdsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/marketing-studio"
+                  element={
+                    <Layout>
+                      <MarketingAiStudioPage />
                     </Layout>
                   }
                 />
@@ -5750,6 +5762,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <FacebookAdsDashboard />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/marketing-studio"
+                  element={
+                    <Layout>
+                      <MarketingAiStudioPage />
                     </Layout>
                   }
                 />
