@@ -3486,7 +3486,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         let survivorGuestNumbers = 0;
         if (hasActiveStatusFilter) {
           for (const num of filteredGuestOrderNumbers) {
-            const eff = effectiveCodeForGuest(normalizeOrderKey(num));
+            const key = normalizeOrderKey(num);
+            // إذا كان للطلب الضيف توأم عادي، فهو محسوب بالفعل في totalRegular إذا كان يطابق الفلتر
+            if (shadowedGuestOrderNumberSet.has(key)) {
+              continue;
+            }
+            const eff = effectiveCodeForGuest(key);
             if (activeStatusFilterUpper.includes(eff)) {
               survivorGuestNumbers += 1;
             } else {
@@ -3494,7 +3499,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             }
           }
         } else {
-          survivorGuestNumbers = filteredGuestOrderNumbers.length;
+          survivorGuestNumbers = filteredGuestOrderNumbers.filter((n) => !shadowedGuestOrderNumberSet.has(normalizeOrderKey(n))).length;
         }
         reconciledSurvivorGuestCount = survivorGuestNumbers;
 
@@ -6080,6 +6085,148 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
   }
 });
 
+// Export Orders
+router.get('/export', verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
+
+    const { status, paymentStatus, search, startDate, endDate } = req.query;
+
+    // Build Filters (Same as /simple)
+    const whereClause = { companyId };
+    const guestWhereClause = { companyId };
+    const duplicateSettings = await orderService.getDuplicateSettings(companyId);
+
+    if (status && status !== 'all') {
+      const normalizedStatus = String(status);
+      whereClause.status = normalizedStatus.toUpperCase();
+      guestWhereClause.status = { in: [normalizedStatus.toUpperCase(), normalizedStatus.toLowerCase()] };
+    } else {
+      whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
+      guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
+    }
+
+    if (paymentStatus && paymentStatus !== 'all') {
+      whereClause.paymentStatus = paymentStatus.toUpperCase();
+      guestWhereClause.id = '__guest_orders_do_not_support_payment_status_filter__';
+    }
+
+    if (startDate || endDate) {
+      const exportTimezone = await getCompanyTimezone(companyId);
+      const dateRangeFilter = buildDateRangeFilter(startDate, endDate, exportTimezone);
+      if (dateRangeFilter.gte || dateRangeFilter.lte) {
+        whereClause.createdAt = dateRangeFilter;
+        guestWhereClause.createdAt = dateRangeFilter;
+      }
+    }
+
+    if (search) {
+      const searchCondition = {
+        OR: [
+          { orderNumber: { contains: search } },
+          { customer: { firstName: { contains: search } } },
+          { customer: { lastName: { contains: search } } },
+          { customer: { phone: { contains: search } } }
+        ]
+      };
+      Object.assign(whereClause, searchCondition);
+
+      const guestSearchCondition = {
+        OR: [
+          { orderNumber: { contains: search } },
+          { guestName: { contains: search } },
+          { guestPhone: { contains: search } },
+          { guestEmail: { contains: search } }
+        ]
+      };
+      Object.assign(guestWhereClause, guestSearchCondition);
+    }
+
+    // Fetch Data with select + limit to avoid OOM on large datasets
+    const EXPORT_MAX_ROWS = 5000;
+    const [regularOrders, guestOrders] = await Promise.all([
+      getSharedPrismaClient().order.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+        take: EXPORT_MAX_ROWS,
+        select: {
+          orderNumber: true,
+          createdAt: true,
+          status: true,
+          total: true,
+          paymentStatus: true,
+          customer: { select: { firstName: true, lastName: true, phone: true } }
+        }
+      }),
+      getSharedPrismaClient().guestOrder.findMany({
+        where: guestWhereClause,
+        orderBy: { createdAt: 'desc' },
+        take: EXPORT_MAX_ROWS,
+        select: {
+          orderNumber: true,
+          createdAt: true,
+          status: true,
+          total: true,
+          guestName: true,
+          guestPhone: true
+        }
+      })
+    ]);
+
+    const regularOrderNumberSet = new Set(
+      regularOrders.map(o => String(o.orderNumber || '').trim().toLowerCase()).filter(Boolean)
+    );
+    const uniqueGuestOrders = guestOrders.filter(
+      g => !regularOrderNumberSet.has(String(g.orderNumber || '').trim().toLowerCase())
+    );
+
+    // Format Data for Excel
+    const allOrders = [
+      ...regularOrders.map(o => ({
+        'Order Number': o.orderNumber,
+        'Date': o.createdAt,
+        'Customer Name': o.customer ? `${o.customer.firstName} ${o.customer.lastName}` : '',
+        'Phone': o.customer?.phone || '',
+        'Total': o.total,
+        'Status': o.status,
+        'Payment Status': o.paymentStatus,
+        'Type': 'Regular'
+      })),
+      ...uniqueGuestOrders.map(o => ({
+        'Order Number': o.orderNumber,
+        'Date': o.createdAt,
+        'Customer Name': o.guestName || '',
+        'Phone': o.guestPhone || '',
+        'Total': o.total,
+        'Status': o.status,
+        'Payment Status': 'Unavailable',
+        'Type': 'Guest'
+      }))
+    ].sort((a, b) => new Date(b.Date) - new Date(a.Date));
+
+    // Lazy-load heavy export libraries only when needed
+    const xlsx = require('xlsx');
+
+    // Create Workbook
+    const wb = xlsx.utils.book_new();
+    const ws = xlsx.utils.json_to_sheet(allOrders);
+    xlsx.utils.book_append_sheet(wb, ws, 'Orders');
+
+    // Generate Buffer
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    // Send Response
+    res.setHeader('Content-Disposition', 'attachment; filename="orders.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+
+  } catch (error) {
+    console.error('❌ Error exporting orders:', error);
+    res.status(500).json({ success: false, message: 'Export failed', error: error.message });
+  }
+});
+
 // الحصول على طلب محدد
 router.get('/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
@@ -6841,140 +6988,6 @@ router.post('/bulk/delete', verifyToken.authenticateToken, verifyToken.requireRo
   }
 });
 
-// Export Orders
-router.get('/export', verifyToken.authenticateToken, async (req, res) => {
-  try {
-    const companyId = req.user?.companyId;
-    if (!companyId) return res.status(403).json({ success: false, message: 'Unauthorized' });
-
-    const { status, paymentStatus, search, startDate, endDate } = req.query;
-
-    // Build Filters (Same as /simple)
-    const whereClause = { companyId };
-    const guestWhereClause = { companyId };
-    const duplicateSettings = await orderService.getDuplicateSettings(companyId);
-
-    if (status && status !== 'all') {
-      const normalizedStatus = String(status);
-      whereClause.status = normalizedStatus.toUpperCase();
-      guestWhereClause.status = { in: [normalizedStatus.toUpperCase(), normalizedStatus.toLowerCase()] };
-    } else {
-      whereClause.status = getVisibleRegularOrderStatusesFilter(duplicateSettings);
-      guestWhereClause.status = getVisibleGuestOrderStatusesFilter(duplicateSettings);
-    }
-
-    if (paymentStatus && paymentStatus !== 'all') {
-      whereClause.paymentStatus = paymentStatus.toUpperCase();
-      guestWhereClause.id = '__guest_orders_do_not_support_payment_status_filter__';
-    }
-
-    if (startDate || endDate) {
-      const exportTimezone = await getCompanyTimezone(companyId);
-      const dateRangeFilter = buildDateRangeFilter(startDate, endDate, exportTimezone);
-      if (dateRangeFilter.gte || dateRangeFilter.lte) {
-        whereClause.createdAt = dateRangeFilter;
-        guestWhereClause.createdAt = dateRangeFilter;
-      }
-    }
-
-    if (search) {
-      const searchCondition = {
-        OR: [
-          { orderNumber: { contains: search } },
-          { customer: { firstName: { contains: search } } },
-          { customer: { lastName: { contains: search } } },
-          { customer: { phone: { contains: search } } }
-        ]
-      };
-      Object.assign(whereClause, searchCondition);
-
-      const guestSearchCondition = {
-        OR: [
-          { orderNumber: { contains: search } },
-          { guestName: { contains: search } },
-          { guestPhone: { contains: search } },
-          { guestEmail: { contains: search } }
-        ]
-      };
-      Object.assign(guestWhereClause, guestSearchCondition);
-    }
-
-    // Fetch Data with select + limit to avoid OOM on large datasets
-    const EXPORT_MAX_ROWS = 5000;
-    const [regularOrders, guestOrders] = await Promise.all([
-      getSharedPrismaClient().order.findMany({
-        where: whereClause,
-        orderBy: { createdAt: 'desc' },
-        take: EXPORT_MAX_ROWS,
-        select: {
-          orderNumber: true,
-          createdAt: true,
-          status: true,
-          total: true,
-          paymentStatus: true,
-          customer: { select: { firstName: true, lastName: true, phone: true } }
-        }
-      }),
-      getSharedPrismaClient().guestOrder.findMany({
-        where: guestWhereClause,
-        orderBy: { createdAt: 'desc' },
-        take: EXPORT_MAX_ROWS,
-        select: {
-          orderNumber: true,
-          createdAt: true,
-          status: true,
-          total: true,
-          guestName: true,
-          guestPhone: true
-        }
-      })
-    ]);
-
-    // Format Data for Excel
-    const allOrders = [
-      ...regularOrders.map(o => ({
-        'Order Number': o.orderNumber,
-        'Date': o.createdAt,
-        'Customer Name': o.customer ? `${o.customer.firstName} ${o.customer.lastName}` : '',
-        'Phone': o.customer?.phone || '',
-        'Total': o.total,
-        'Status': o.status,
-        'Payment Status': o.paymentStatus,
-        'Type': 'Regular'
-      })),
-      ...guestOrders.map(o => ({
-        'Order Number': o.orderNumber,
-        'Date': o.createdAt,
-        'Customer Name': o.guestName || '',
-        'Phone': o.guestPhone || '',
-        'Total': o.total,
-        'Status': o.status,
-        'Payment Status': 'Unavailable',
-        'Type': 'Guest'
-      }))
-    ].sort((a, b) => new Date(b.Date) - new Date(a.Date));
-
-    // Lazy-load heavy export libraries only when needed
-    const xlsx = require('xlsx');
-
-    // Create Workbook
-    const wb = xlsx.utils.book_new();
-    const ws = xlsx.utils.json_to_sheet(allOrders);
-    xlsx.utils.book_append_sheet(wb, ws, 'Orders');
-
-    // Generate Buffer
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
-
-    // Send Response
-    res.setHeader('Content-Disposition', 'attachment; filename="orders.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
-
-  } catch (error) {
-    console.error('❌ Error exporting orders:', error);
-    res.status(500).json({ success: false, message: 'Export failed', error: error.message });
-  }
-});
 
 router.put('/simple/:orderNumber', verifyToken.authenticateToken, async (req, res) => {
   try {
