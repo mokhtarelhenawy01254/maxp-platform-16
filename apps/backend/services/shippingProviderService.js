@@ -419,9 +419,13 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
       customerName,
       customerPhone: shipment.order?.customerPhone || shipment.order?.customer?.phone,
       shippingAddress:
+        shipment.order?.shippingAddress ||
         shipment.destinationAddress ||
+        shipment.order?.customerAddress,
+      customerAddress:
         shipment.order?.customerAddress ||
-        shipment.order?.shippingAddress,
+        shipment.destinationAddress ||
+        '',
       city:
         shipment.destinationGovernorate ||
         shipment.destinationCity ||

@@ -19,7 +19,10 @@ class QpExpressShipmentService {
     }
 
     const parts = items.map(item => {
-      const name = item.productName || item.product?.name || item.product?.title || item.title || item.name || 'منتج';
+      let name = item.productName || item.product?.name || item.product?.title || item.title || item.name;
+      if (!name || name === 'منتج غير محدد' || name === 'منتج') {
+        name = item.variantName || item.productSku || 'منتج';
+      }
       const qty = item.quantity || 1;
       const size = item.productSize || item.size || '';
       const color = item.productColor || item.color || '';
@@ -45,27 +48,83 @@ class QpExpressShipmentService {
   }
 
   /**
-   * استخراج نص العنوان الصافي
+   * استخراج نص العنوان الصافي وتفكيك JSON وإزالة طوابع المحادثات
    */
   formatAddress(shippingAddress, customerAddress) {
-    if (typeof shippingAddress === 'string' && shippingAddress.trim()) {
-      return shippingAddress.trim();
-    }
-    if (shippingAddress && typeof shippingAddress === 'object') {
+    const tryParseJson = (val) => {
+      if (!val) return null;
+      if (typeof val === 'object') return val;
+      if (typeof val === 'string' && val.trim().startsWith('{')) {
+        try {
+          return JSON.parse(val.trim());
+        } catch {
+          return null;
+        }
+      }
+      return null;
+    };
+
+    const cleanText = (text) => {
+      if (!text || typeof text !== 'string') return '';
+      return text
+        .replace(/\r?\n.*?[٠-٩0-9]{1,2}:[٠-٩0-9]{2}\s*(ص|م|am|pm)?/gi, '') // إزالة طوابع الوقت من الشات مثل ١٠:٥٣ ص
+        .replace(/\r?\n\s*(\+?20|0)?1[0125][0-9]{8}\s*$/g, '') // إزالة رقم الهاتف إذا كان مكرراً في نهاية العنوان
+        .replace(/[\r\n]+/g, ' - ') // استبدال الأسطر بواصلة
+        .replace(/\s+/g, ' ')
+        .trim();
+    };
+
+    // 1. فحص ما إذا كان العنوان كائن JSON (أو نص JSON مخزن في قاعدة البيانات)
+    const parsed = tryParseJson(shippingAddress) || tryParseJson(customerAddress);
+    if (parsed) {
+      const street =
+        parsed.address ||
+        parsed['العنوان'] ||
+        parsed['عنوان'] ||
+        parsed.street ||
+        parsed['الشارع'] ||
+        parsed['شارع'] ||
+        parsed.details ||
+        parsed['تفاصيل العنوان'] ||
+        '';
+
+      const building = parsed.building || parsed['العمارة'] || parsed['عمارة'] ? `عمارة ${parsed.building || parsed['العمارة'] || parsed['عمارة']}`.replace(/عمارة\s+عمارة/, 'عمارة') : '';
+      const floor = parsed.floor || parsed['الدور'] || parsed['دور'] ? `دور ${parsed.floor || parsed['الدور'] || parsed['دور']}`.replace(/دور\s+دور/, 'دور') : '';
+      const apartment = parsed.apartment || parsed['الشقة'] || parsed['شقة'] ? `شقة ${parsed.apartment || parsed['الشقة'] || parsed['شقة']}`.replace(/شقة\s+شقة/, 'شقة') : '';
+      const landmark = parsed.landmark || parsed['علامة مميزة'] || '';
+      const area = parsed.area || parsed['المنطقة'] || parsed['منطقة'] || '';
+
       const parts = [
-        shippingAddress.street || shippingAddress.address,
-        shippingAddress.building,
-        shippingAddress.floor ? `دور ${shippingAddress.floor}` : '',
-        shippingAddress.apartment ? `شقة ${shippingAddress.apartment}` : '',
-        shippingAddress.landmark,
-        shippingAddress.area,
-        shippingAddress.city
+        street,
+        building,
+        floor,
+        apartment,
+        landmark,
+        area
       ].filter(Boolean);
-      if (parts.length > 0) return parts.join(', ');
+
+      if (parts.length > 0) {
+        const joined = cleanText(parts.join(' - '));
+        if (joined.length > 2) return joined;
+      }
     }
+
+    // 2. استخدام customerAddress إذا كان نصاً عادياً نظيفاً
     if (typeof customerAddress === 'string' && customerAddress.trim()) {
-      return customerAddress.trim();
+      const cleaned = cleanText(customerAddress);
+      if (cleaned && !cleaned.startsWith('{') && cleaned.length > 2) {
+        return cleaned;
+      }
     }
+
+    // 3. استخدام shippingAddress إذا كان نصاً عادياً نظيفاً
+    if (typeof shippingAddress === 'string' && shippingAddress.trim()) {
+      const cleaned = cleanText(shippingAddress);
+      if (cleaned && !cleaned.startsWith('{') && cleaned.length > 2) {
+        return cleaned;
+      }
+    }
+
     return 'العنوان غير محدد';
   }
 

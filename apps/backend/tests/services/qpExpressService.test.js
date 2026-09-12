@@ -85,6 +85,32 @@ describe('QpExpressShipmentService', () => {
     expect(formatted).toContain('شقة 12');
   });
 
+  test('should decode stringified JSON address and strip chat timestamps', () => {
+    const jsonStr = '{"governorate":"سوهاج","city":"سوهاج","area":"","address":"الاصلاح - البلينا - سوهاج\\n١٠:٥٣ ص","phone":"01104453528","country":"Egypt"}';
+    const formatted = shipmentService.formatAddress(jsonStr);
+    expect(formatted).toBe('الاصلاح - البلينا - سوهاج');
+    expect(formatted).not.toContain('governorate');
+    expect(formatted).not.toContain('١٠:٥٣ ص');
+    expect(formatted).not.toContain('{');
+  });
+
+  test('should decode Arabic JSON address objects', () => {
+    const jsonStr = '{"المحافظة": "الغربية", "المدينة": "الغربية", "المنطقة": "قطور", "العنوان": "شارع الفرن الالي بجوار عطارة المصطفي", "phone": "0100654546", "البلد": "مصر"}';
+    const formatted = shipmentService.formatAddress(jsonStr);
+    expect(formatted).toContain('شارع الفرن الالي بجوار عطارة المصطفي');
+    expect(formatted).toContain('قطور');
+    expect(formatted).not.toContain('المحافظة');
+    expect(formatted).not.toContain('{');
+  });
+
+  test('should handle generic product names gracefully in shipment contents', () => {
+    const items = [
+      { productName: null, productColor: 'أسود', quantity: 1 }
+    ];
+    const contents = shipmentService.formatShipmentContents(items);
+    expect(contents).toContain('منتج (أسود) × 1');
+  });
+
   test('should create shipment payload and call API', async () => {
     mockClient.post.mockResolvedValueOnce({
       serial: 21139999,

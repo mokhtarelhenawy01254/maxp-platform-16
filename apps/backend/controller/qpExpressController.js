@@ -57,7 +57,8 @@ exports.createShipment = async (req, res) => {
     // 2. Prepare order payload for QP Express
     const customerName = order.customerName || order.customer?.name || order.customer?.fullName || 'عميل';
     const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';
-    const shippingAddress = order.shippingAddress || order.address || order.customer?.address || '';
+    const shippingAddress = order.shippingAddress || '';
+    const customerAddress = order.customerAddress || order.address || order.customer?.address || '';
     const city = order.city || order.governorate || order.shippingCity || '';
     const totalAmount = calculateCollectableCodAmount(order);
 
@@ -78,6 +79,7 @@ exports.createShipment = async (req, res) => {
       customerName,
       customerPhone,
       shippingAddress,
+      customerAddress,
       city,
       items,
       totalAmount,
@@ -314,9 +316,10 @@ exports.bulkCreateShipments = async (req, res) => {
 
         const customerName = order.customerName || (order.customer ? `${order.customer.firstName || ''} ${order.customer.lastName || ''}`.trim() : null) || 'عميل';
         const customerPhone = order.customerPhone || order.customer?.phone || order.phone || '';
-        const shippingAddress = order.shippingAddress || order.address || order.customer?.address || '';
+        const shippingAddress = order.shippingAddress || '';
+        const customerAddress = order.customerAddress || order.address || order.customer?.address || '';
         const city = order.city || order.governorate || order.shippingCity || '';
-        const totalAmount = Number(order.totalAmount || order.total || order.subtotal || 0);
+        const totalAmount = calculateCollectableCodAmount(order);
 
         let items = [];
         if (order.orderItems && Array.isArray(order.orderItems)) {
@@ -335,6 +338,7 @@ exports.bulkCreateShipments = async (req, res) => {
           customerName,
           customerPhone,
           shippingAddress,
+          customerAddress,
           city,
           items,
           totalAmount,
