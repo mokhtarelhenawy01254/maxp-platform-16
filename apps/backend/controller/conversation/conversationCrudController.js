@@ -242,6 +242,9 @@ const getConversations = async (req, res) => {
         // 🆕 Priority filter support (priority > 1 means high priority / starred)
         if (priority === 'true' || priority === true || tab === 'priority') {
             tabWhere.priority = { gt: 1 };
+            // When priority is explicitly filtered, include all priority chats regardless of status or reply state
+            delete tabWhere.status;
+            delete tabWhere.lastMessageIsFromCustomer;
         }
 
         // For unreplied, filter directly from database using the new column
@@ -314,8 +317,9 @@ const getConversations = async (req, res) => {
             throw dbErr;
         }
 
-        // 🆕 Count for unreplied should use the same filter
+        // 🆕 Count for unreplied & priority should use the same filter
         let unrepliedCount = 0;
+        let priorityCount = 0;
         try {
             // 🔧 FIX: Use executeWithRetry to handle connection errors
             total = await executeWithRetry(async () => {
@@ -336,7 +340,19 @@ const getConversations = async (req, res) => {
                 });
             }, 3);
 
-            console.log(`✅ [GET-CONV] count success. Total: ${total}, Unreplied: ${unrepliedCount}`);
+            // Also get total priority count for stats badge across whole channel
+            const priorityWhere = {
+                ...where,
+                priority: { gt: 1 }
+            };
+
+            priorityCount = await executeWithRetry(async () => {
+                return await prisma.conversation.count({
+                    where: priorityWhere
+                });
+            }, 3);
+
+            console.log(`✅ [GET-CONV] count success. Total: ${total}, Unreplied: ${unrepliedCount}, Priority: ${priorityCount}`);
         } catch (cntErr) {
             console.error('❌ [GET-CONV] count FAILED:', cntErr);
             throw cntErr;
@@ -428,7 +444,8 @@ const getConversations = async (req, res) => {
             },
             counts: {
                 total: total,
-                unreplied: unrepliedCount // 🆕 From database count
+                unreplied: unrepliedCount, // 🆕 From database count
+                priority: priorityCount
             }
         });
 

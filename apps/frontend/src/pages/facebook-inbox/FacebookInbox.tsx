@@ -456,9 +456,10 @@ const getApiError = (error: unknown): ApiErrorLike => {
   }, [companyId]); // Only depend on companyId, not loadSpecificConversation
 
   useEffect(() => {
+    const isPriority = filters.priorityOnly;
     if (isInitialMount.current) {
       isInitialMount.current = false;
-      // ðŸ†• Use database search when search query exists
+      // 🆕 Use database search when search query exists
       if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
         loadConversationsRef.current(
           1,
@@ -466,14 +467,22 @@ const getApiError = (error: unknown): ApiErrorLike => {
           activeTab,
           debouncedSearchQuery.trim(),
           channel,
+          isPriority,
         );
       } else {
-        loadConversationsRef.current(1, false, activeTab, undefined, channel);
+        loadConversationsRef.current(
+          1,
+          false,
+          activeTab,
+          undefined,
+          channel,
+          isPriority,
+        );
       }
       return;
     }
 
-    // ðŸ†• Use database search when search query exists
+    // 🆕 Use database search when search query exists
     if (debouncedSearchQuery && debouncedSearchQuery.trim()) {
       loadConversationsRef.current(
         1,
@@ -481,17 +490,27 @@ const getApiError = (error: unknown): ApiErrorLike => {
         activeTab,
         debouncedSearchQuery.trim(),
         channel,
+        isPriority,
       );
     } else {
-      loadConversationsRef.current(1, false, activeTab, undefined, channel);
+      loadConversationsRef.current(
+        1,
+        false,
+        activeTab,
+        undefined,
+        channel,
+        isPriority,
+      );
     }
-  }, [activeTab, debouncedSearchQuery]); // ðŸ”§ Added debouncedSearchQuery to trigger search in database
+  }, [activeTab, debouncedSearchQuery, filters.priorityOnly]); // 🔧 Trigger search/reload on priority toggle
 
-  // ðŸ”§ OPTIMIZED: Debounce loadConversations to prevent excessive API calls
+  // 🔧 OPTIMIZED: Debounce loadConversations to prevent excessive API calls
   // Move this before handlers that use it
   const loadConversationsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadConversationsRefForDebounce = useRef(loadConversations);
   const debouncedSearchQueryRef = useRef(debouncedSearchQuery);
+  const filtersRef = useRef(filters);
+  filtersRef.current = filters;
   debouncedSearchQueryRef.current = debouncedSearchQuery; // Keep ref updated
   loadConversationsRefForDebounce.current = loadConversations; // Keep ref updated
 
@@ -500,12 +519,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
       clearTimeout(loadConversationsTimeoutRef.current);
     }
     loadConversationsTimeoutRef.current = setTimeout(() => {
-      // ðŸ†• Use database search when search query exists
+      // 🆕 Use database search when search query exists
       const search = debouncedSearchQueryRef.current?.trim();
+      const isPriority = filtersRef.current.priorityOnly;
       if (search) {
-        loadConversationsRefForDebounce.current(1, false, tab, search, channel);
+        loadConversationsRefForDebounce.current(1, false, tab, search, channel, isPriority);
       } else {
-        loadConversationsRefForDebounce.current(1, false, tab, undefined, channel);
+        loadConversationsRefForDebounce.current(1, false, tab, undefined, channel, isPriority);
       }
       loadConversationsTimeoutRef.current = null;
     }, 500); // Debounce by 500ms to batch multiple updates
@@ -559,7 +579,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     return counts;
   }, [conversations, apiCounts]);
 
-  const priorityCount = tabCounts.priority;
+  const priorityCount = apiCounts.priority || tabCounts.priority;
 
   // ðŸ†• Load all messages for a conversation (for advanced search)
   const loadAllMessagesForConversation = useCallback(
@@ -1481,6 +1501,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
         activeTab,
         debouncedSearchQuery.trim() || undefined,
         channel,
+        filtersRef.current.priorityOnly,
       );
       alert(t("conversations.deleteConversationSuccess"));
     } catch (error) {

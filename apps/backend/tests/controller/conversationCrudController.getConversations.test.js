@@ -272,4 +272,51 @@ describe('conversationCrudController.getConversations', () => {
       })
     );
   });
+
+  test('fetches all priority conversations even when tab is unreplied (ignores status and lastMessageIsFromCustomer)', async () => {
+    const prisma = createPrismaMock({
+      conversations: [
+        {
+          id: 'conv_starred_replied',
+          customerId: 'cust_2',
+          channel: 'FACEBOOK',
+          status: 'RESOLVED',
+          lastMessagePreview: 'تم الرد',
+          lastMessageAt: new Date(),
+          updatedAt: new Date(),
+          unreadCount: 0,
+          assignedUserId: null,
+          priority: 3,
+          metadata: null,
+          customer: { id: 'cust_2', firstName: 'سارة', lastName: 'علي' },
+          user: null,
+          messages: []
+        }
+      ],
+      totalCount: 1
+    });
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const req = {
+      query: { priority: 'true', tab: 'unreplied' },
+      user: { companyId: 'company_1' }
+    };
+    const res = createResponse();
+
+    await getConversations(req, res);
+
+    const findManyCall = prisma.conversation.findMany.mock.calls[0][0];
+    expect(findManyCall.where.priority).toEqual({ gt: 1 });
+    expect(findManyCall.where.status).toBeUndefined();
+    expect(findManyCall.where.lastMessageIsFromCustomer).toBeUndefined();
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.arrayContaining([
+          expect.objectContaining({ id: 'conv_starred_replied', priority: true })
+        ])
+      })
+    );
+  });
 });

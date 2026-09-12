@@ -147,13 +147,17 @@ export const useInboxConversations = () => {
   // Track the last channel filter so "load more" pagination respects it.
   const lastChannelRef = useRef<string | undefined>(undefined);
 
+  // Track the last priority filter so "load more" pagination respects it.
+  const lastPriorityRef = useRef<boolean | undefined>(undefined);
+
   const currentConversationIdRef = useRef<string | null>(null);
 
   // Store counts from API
   const [apiCounts, setApiCounts] = useState<{
     total: number;
     unreplied: number;
-  }>({ total: 0, unreplied: 0 });
+    priority: number;
+  }>({ total: 0, unreplied: 0, priority: 0 });
 
   // Load conversations
   const loadConversations = useCallback(
@@ -163,6 +167,7 @@ export const useInboxConversations = () => {
       tab: string = "all",
       search?: string,
       channel?: string,
+      priority?: boolean,
     ) => {
       if (!companyId) return;
 
@@ -174,15 +179,19 @@ export const useInboxConversations = () => {
         setError(null);
 
         if (channel) lastChannelRef.current = channel;
+        if (priority !== undefined) lastPriorityRef.current = priority;
+
+        const isPriority = priority !== undefined ? priority : (lastPriorityRef.current || false);
 
         const response = await apiClient.get(`conversations`, {
           params: {
             companyId,
-            limit: 50, // Paginate all tabs equally for performance
+            limit: isPriority ? 200 : 50, // Load all priority chats at once with higher limit
             page: pageNum,
             tab: tab,
             ...(search && search.trim() ? { search: search.trim() } : {}), // 🆕 Add search parameter
             ...(channel ? { channel } : {}), // 🆕 Filter by channel (e.g. INSTAGRAM)
+            ...(isPriority ? { priority: "true" } : {}), // 🆕 Server-side priority filter
           },
         });
 
@@ -192,10 +201,15 @@ export const useInboxConversations = () => {
         const counts = result.counts || {};
 
         // Update API counts
-        if (counts.total !== undefined || counts.unreplied !== undefined) {
+        if (
+          counts.total !== undefined ||
+          counts.unreplied !== undefined ||
+          counts.priority !== undefined
+        ) {
           setApiCounts((prev) => ({
             total: counts.total ?? prev.total,
             unreplied: counts.unreplied ?? prev.unreplied,
+            priority: counts.priority ?? prev.priority,
           }));
         }
 
@@ -309,10 +323,17 @@ export const useInboxConversations = () => {
     [companyId],
   );
 
-  // Load more conversations - now uses currentTabRef to ensure correct pagination
+  // Load more conversations - now uses currentTabRef and lastPriorityRef to ensure correct pagination
   const loadMoreConversations = useCallback(() => {
     if (hasMoreConversations && !loading) {
-      loadConversations(conversationsPage + 1, true, currentTabRef.current, undefined, lastChannelRef.current);
+      loadConversations(
+        conversationsPage + 1,
+        true,
+        currentTabRef.current,
+        undefined,
+        lastChannelRef.current,
+        lastPriorityRef.current,
+      );
     }
   }, [hasMoreConversations, loading, conversationsPage, loadConversations]);
 
