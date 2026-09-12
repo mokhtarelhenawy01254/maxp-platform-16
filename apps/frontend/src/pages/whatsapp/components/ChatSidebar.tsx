@@ -136,11 +136,15 @@ function getLastMessagePreview(contact: Contact) {
   switch (contact.lastMessage?.messageType) {
     case "IMAGE":
       return "صورة";
+    case "STICKER":
+      return "ملصق";
     case "VIDEO":
       return "فيديو";
     case "AUDIO":
+    case "VOICE":
       return "رسالة صوتية";
     case "DOCUMENT":
+    case "FILE":
       return "ملف";
     case "LOCATION":
       return "موقع";

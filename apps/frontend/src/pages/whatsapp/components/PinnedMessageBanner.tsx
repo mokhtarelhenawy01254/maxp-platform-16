@@ -28,9 +28,10 @@ export const PinnedMessageBanner: React.FC<PinnedMessageBannerProps> = ({
       }
     }
     if (msg.messageType === "IMAGE") return "📷 صورة";
+    if (msg.messageType === "STICKER") return "💟 ملصق";
     if (msg.messageType === "VIDEO") return "🎥 فيديو";
-    if (msg.messageType === "AUDIO") return "🎵 مقطع صوتي";
-    if (msg.messageType === "DOCUMENT") return `📄 مستند: ${msg.mediaFileName || ""}`;
+    if (msg.messageType === "AUDIO" || msg.messageType === "VOICE") return "🎵 مقطع صوتي";
+    if (msg.messageType === "DOCUMENT" || msg.messageType === "FILE") return `📄 مستند: ${msg.mediaFileName || ""}`;
     if (msg.messageType === "LOCATION") return "📍 موقع جغرافي";
     if (msg.messageType === "INTERACTIVE") return `✨ رسالة تفاعلية: ${msg.content || ""}`;
     return msg.content || "رسالة مثبتة";

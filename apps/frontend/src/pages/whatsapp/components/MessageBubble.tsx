@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import { format, isToday, isYesterday } from "date-fns";
 import {
@@ -18,6 +19,7 @@ import {
   PhoneOff,
   Pin,
   Radio,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { tToast } from "../../../utils/i18n-toast";
@@ -122,6 +124,20 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
 
     // ── Copy Code State ──
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    // ── Media Preview Lightbox State ──
+    const [previewOpen, setPreviewOpen] = useState(false);
+
+    useEffect(() => {
+      if (!previewOpen) return;
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "Escape") {
+          setPreviewOpen(false);
+        }
+      };
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }, [previewOpen]);
 
     const handleCopyCode = (code: string) => {
       navigator.clipboard.writeText(code);
@@ -266,23 +282,62 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
 
       if (message.mediaUrl) {
         const fullMediaUrl = buildWhatsAppMediaUrl(message.mediaUrl, message.id);
+        const normalizedType = (message.messageType || message.mediaType || "").toUpperCase();
+        const isImageOrStickerUrl =
+          typeof message.mediaUrl === "string" &&
+          /\.(webp|png|jpe?g|gif|svg)(\?.*)?$/i.test(message.mediaUrl);
 
-        switch (message.messageType) {
+        switch (normalizedType) {
           case "IMAGE":
             return (
               <div className="space-y-1.5">
-                <a href={fullMediaUrl} target="_blank" rel="noreferrer">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewOpen(true);
+                  }}
+                  className="group block w-full cursor-zoom-in text-left focus:outline-hidden"
+                  title={t("whatsapp.media.viewImage", "عرض الصورة")}
+                >
                   <img
                     src={fullMediaUrl}
                     alt="Message media"
                     loading="lazy"
-                    className="max-h-[12rem] max-w-full rounded-lg object-cover sm:max-h-[18rem]"
+                    className="max-h-[12rem] max-w-full rounded-lg object-cover transition-opacity group-hover:opacity-95 sm:max-h-[18rem]"
                   />
-                </a>
+                </button>
                 {message.content ? (
                   <LinkifiedText
                     text={message.content}
                     className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
+                  />
+                ) : null}
+              </div>
+            );
+          case "STICKER":
+            return (
+              <div className="flex flex-col items-center justify-center py-1">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setPreviewOpen(true);
+                  }}
+                  className="group block cursor-pointer rounded-lg p-0.5 transition-transform hover:scale-105 active:scale-95 focus:outline-hidden"
+                  title={t("whatsapp.media.viewSticker", "عرض الملصق")}
+                >
+                  <img
+                    src={fullMediaUrl}
+                    alt="Sticker"
+                    loading="lazy"
+                    className="max-h-[10rem] max-w-[10rem] object-contain sm:max-h-[13rem] sm:max-w-[13rem]"
+                  />
+                </button>
+                {message.content ? (
+                  <LinkifiedText
+                    text={message.content}
+                    className="mt-1 block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
                   />
                 ) : null}
               </div>
@@ -304,8 +359,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               </div>
             );
           case "AUDIO":
+          case "VOICE":
             return <audio src={fullMediaUrl} controls className="min-w-[12rem] max-w-full sm:min-w-[14rem]" />;
           case "DOCUMENT":
+          case "FILE":
             return (
               <div className="flex min-w-[14rem] items-center gap-3 rounded-xl border border-[color:color-mix(in_srgb,var(--shell-control-border)_70%,transparent)] bg-[var(--whatsapp-surface-muted)] px-3 py-3">
                 <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
@@ -316,7 +373,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                     {message.mediaFileName || "Document"}
                   </p>
                   <p className="text-xs text-[color:var(--color-muted-foreground)]">
-                    {t("common.download") || "Download"}
+                    {t("common.download", "تحميل")}
                   </p>
                 </div>
                 <a
@@ -331,10 +388,39 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
               </div>
             );
           default:
+            if (isImageOrStickerUrl || message.mediaMimeType?.startsWith("image/")) {
+              return (
+                <div className="space-y-1.5">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPreviewOpen(true);
+                    }}
+                    className="group block w-full cursor-zoom-in text-left focus:outline-hidden"
+                    title={t("whatsapp.media.viewImage", "عرض الصورة")}
+                  >
+                    <img
+                      src={fullMediaUrl}
+                      alt="Message media"
+                      loading="lazy"
+                      className="max-h-[12rem] max-w-full rounded-lg object-cover transition-opacity group-hover:opacity-95 sm:max-h-[18rem]"
+                    />
+                  </button>
+                  {message.content ? (
+                    <LinkifiedText
+                      text={message.content}
+                      className="block whitespace-pre-wrap text-sm leading-[1.45] text-[color:var(--color-foreground)]"
+                    />
+                  ) : null}
+                </div>
+              );
+            }
+
             return (
               <div className="space-y-2">
                 <p className="text-sm text-rose-700 dark:text-rose-200">
-                  Unsupported media type: {message.messageType}
+                  {t("whatsapp.media.unsupported", "نوع وسائط غير مدعوم")}: {message.messageType}
                 </p>
                 <a
                   href={fullMediaUrl}
@@ -343,7 +429,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
                   className="inline-flex items-center gap-2 rounded-full border border-[color:var(--shell-control-border)] bg-[var(--whatsapp-surface-strong)] px-3 py-2 text-sm text-[color:var(--color-foreground)] transition-colors hover:bg-[var(--whatsapp-surface-hover)]"
                 >
                   <Download className="size-4" />
-                  {t("common.download") || "Download"}
+                  {t("common.download", "تحميل")}
                 </a>
               </div>
             );
@@ -805,6 +891,91 @@ const MessageBubble: React.FC<MessageBubbleProps> = React.memo(
             </div>
           </div>
         )}
+
+        {/* Media Preview Lightbox Modal on Same Page */}
+        {previewOpen && message.mediaUrl && typeof document !== "undefined"
+          ? createPortal(
+              <div
+                className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/85 p-4 backdrop-blur-sm animate-in fade-in-0 duration-150"
+                onClick={() => setPreviewOpen(false)}
+                tabIndex={-1}
+                role="dialog"
+                aria-modal="true"
+              >
+                {/* Top action bar */}
+                <div
+                  className="absolute top-4 inset-x-4 flex items-center justify-between text-white z-10 px-2 sm:px-6"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-white/90">
+                      {String(message.messageType || "").toUpperCase() === "STICKER"
+                        ? t("whatsapp.media.sticker", "ملصق")
+                        : message.mediaFileName || t("whatsapp.media.image", "صورة")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <a
+                      href={buildWhatsAppMediaUrl(message.mediaUrl, message.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25"
+                      title={t("whatsapp.media.openNewTab", "فتح في صفحة جديدة")}
+                    >
+                      <ExternalLink className="size-4" />
+                    </a>
+                    <a
+                      href={buildWhatsAppMediaUrl(message.mediaUrl, message.id)}
+                      download={
+                        message.mediaFileName ||
+                        (String(message.messageType || "").toUpperCase() === "STICKER"
+                          ? "sticker.webp"
+                          : "image")
+                      }
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25"
+                      title={t("common.download", "تحميل")}
+                    >
+                      <Download className="size-4" />
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewOpen(false)}
+                      className="inline-flex size-9 items-center justify-center rounded-full bg-white/10 text-white transition hover:bg-white/25"
+                      title={t("common.close", "إغلاق")}
+                    >
+                      <X className="size-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Media container */}
+                <div
+                  className="relative flex max-h-[85vh] max-w-[92vw] items-center justify-center"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <img
+                    src={buildWhatsAppMediaUrl(message.mediaUrl, message.id)}
+                    alt={message.mediaFileName || "Preview"}
+                    className={cn(
+                      "max-h-[82vh] max-w-[90vw] select-none rounded-lg object-contain shadow-2xl",
+                      String(message.messageType || "").toUpperCase() === "STICKER" &&
+                        "max-h-[60vh] max-w-[60vw]"
+                    )}
+                  />
+                </div>
+
+                {message.content ? (
+                  <div
+                    className="mt-3 max-w-xl rounded-xl bg-black/60 px-4 py-2 text-center text-sm text-white/90 backdrop-blur-xs"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {message.content}
+                  </div>
+                ) : null}
+              </div>,
+              document.body,
+            )
+          : null}
       </div>
     );
   },
