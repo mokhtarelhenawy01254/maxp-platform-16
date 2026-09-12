@@ -196,6 +196,18 @@ const createAdSet = async (req, res) => {
       budgetAmount,
       optimizationGoal,
       billingEvent,
+      placementType,
+      placements,
+      performanceGoal,
+      conversionEvent,
+      conversionLocation,
+      attributionWindow,
+      pixelId,
+      bidStrategy,
+      bidValue,
+      startTime,
+      endTime,
+      isDynamicCreative,
       ageMin,
       ageMax,
       genders,
@@ -204,11 +216,10 @@ const createAdSet = async (req, res) => {
       behaviors,
     } = req.body;
 
-    // التحقق من البيانات المطلوبة
-    if (!name || !budgetType || !budgetAmount) {
+    if (!name || typeof name !== "string" || !name.trim()) {
       return res.status(400).json({
         success: false,
-        error: "Missing required fields: name, budgetType, budgetAmount",
+        error: "اسم المجموعة الإعلانية مطلوب",
       });
     }
 
@@ -222,6 +233,22 @@ const createAdSet = async (req, res) => {
       return res.status(404).json({
         success: false,
         error: "Campaign not found",
+      });
+    }
+
+    const campaignSettings = parseJsonObject(campaign.settings) || {};
+    const isCboCampaign = Boolean(
+      campaign.budgetOptimization ||
+      campaignSettings.budgetOptimization ||
+      campaignSettings.isCbo ||
+      campaignSettings.meta?.budgetOptimization ||
+      (Number(campaign.dailyBudget) > 0 || Number(campaign.lifetimeBudget) > 0)
+    );
+
+    if (!isCboCampaign && (!budgetType || !budgetAmount || Number(budgetAmount) <= 0)) {
+      return res.status(400).json({
+        success: false,
+        error: "يرجى تحديد نوع ومبلغ الميزانية اليومية أو الإجمالية للمجموعة الإعلانية",
       });
     }
 
@@ -272,13 +299,25 @@ const createAdSet = async (req, res) => {
         : null;
 
     const facebookResult = await adsService.createAdSet(fbCampaignId, {
-      name,
+      name: name.trim(),
       status,
       targeting: targetingPayload,
-      budgetType,
-      budgetAmount,
-      optimizationGoal,
-      billingEvent,
+      budgetType: isCboCampaign && !budgetAmount ? undefined : budgetType,
+      budgetAmount: isCboCampaign && !budgetAmount ? undefined : budgetAmount,
+      optimizationGoal: optimizationGoal || (pixelId && conversionEvent ? "OFFSITE_CONVERSIONS" : "LINK_CLICKS"),
+      billingEvent: billingEvent || "IMPRESSIONS",
+      placementType: placementType || "AUTOMATIC",
+      placements: placements || [],
+      performanceGoal,
+      conversionEvent,
+      conversionLocation,
+      attributionWindow,
+      pixelId,
+      bidStrategy,
+      bidValue,
+      startTime,
+      endTime,
+      isDynamicCreative,
     });
 
     if (!facebookResult.success) {
@@ -288,16 +327,18 @@ const createAdSet = async (req, res) => {
       });
     }
 
+    const adSetMeta = buildAdSetMetaSettings(facebookResult.data || {});
+
     // حفظ AdSet في قاعدة البيانات
     const adSet = await getSharedPrismaClient().facebookAdset.create({
       data: {
         campaignId,
-        name,
+        name: name.trim(),
         status,
         facebookAdSetId: facebookResult.adSetId,
         targeting: targetingPayload ? JSON.stringify(targetingPayload) : null,
-        ageMin: targetingPayload.ageMin || ageMin,
-        ageMax: targetingPayload.ageMax || ageMax,
+        ageMin: targetingPayload.ageMin || ageMin || null,
+        ageMax: targetingPayload.ageMax || ageMax || null,
         genders: targetingPayload.genders
           ? JSON.stringify(targetingPayload.genders)
           : null,
@@ -310,10 +351,18 @@ const createAdSet = async (req, res) => {
         behaviors: targetingPayload.behaviors
           ? JSON.stringify(targetingPayload.behaviors)
           : null,
-        budgetType,
-        budgetAmount,
-        optimizationGoal,
-        billingEvent,
+        budgetType: budgetType || null,
+        budgetAmount: budgetAmount ? Number(budgetAmount) : null,
+        optimizationGoal: optimizationGoal || null,
+        billingEvent: billingEvent || null,
+        settings: JSON.stringify({
+          meta: adSetMeta,
+          pixelId: pixelId || null,
+          conversionEvent: conversionEvent || null,
+          conversionLocation: conversionLocation || null,
+          placementType: placementType || "AUTOMATIC",
+          bidStrategy: bidStrategy || null,
+        }),
       },
     });
 

@@ -496,10 +496,16 @@ export interface TargetingData {
   cities?: MetaGeoLocation[];
   regions?: MetaGeoLocation[];
   locationTypes?: Array<"home" | "recent">;
-  interests?: string[];
-  behaviors?: string[];
+  interests?: Array<string | { id: string; name?: string }>;
+  behaviors?: Array<string | { id: string; name?: string }>;
   customAudiences?: string[];
   lookalikeAudiences?: string[];
+  excludedAudiences?: string[];
+  advantageAudience?: boolean;
+  targetingExpansion?: boolean;
+  relationshipStatuses?: number[];
+  locales?: number[];
+  devicePlatforms?: string[];
 }
 
 export interface MetaGeoLocation {
@@ -801,10 +807,22 @@ export interface CreateAdSetData {
   locations?: string[];
   interests?: string[];
   behaviors?: string[];
-  budgetType: "DAILY" | "LIFETIME";
-  budgetAmount: number;
+  budgetType?: "DAILY" | "LIFETIME";
+  budgetAmount?: number;
   optimizationGoal?: string;
   billingEvent?: string;
+  placementType?: "AUTOMATIC" | "MANUAL";
+  placements?: string[];
+  performanceGoal?: string;
+  conversionEvent?: string;
+  conversionLocation?: string;
+  attributionWindow?: string;
+  pixelId?: string;
+  bidStrategy?: string;
+  bidValue?: number;
+  startTime?: string;
+  endTime?: string;
+  isDynamicCreative?: boolean;
 }
 
 export interface CreateAdData {
