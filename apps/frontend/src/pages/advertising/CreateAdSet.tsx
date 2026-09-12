@@ -462,6 +462,10 @@ const CreateAdSet: React.FC = () => {
             onBudgetTypeChange={setBudgetType}
             budgetAmount={budgetAmount}
             onBudgetAmountChange={setBudgetAmount}
+            dailyMinSpendTarget={dailyMinSpendTarget}
+            onDailyMinSpendTargetChange={setDailyMinSpendTarget}
+            dailySpendCap={dailySpendCap}
+            onDailySpendCapChange={setDailySpendCap}
             startTime={startTime}
             onStartTimeChange={setStartTime}
             hasEndDate={hasEndDate}
@@ -530,6 +534,8 @@ const CreateAdSet: React.FC = () => {
             isCboCampaign={isCboCampaign}
             budgetType={budgetType}
             budgetAmount={budgetAmount}
+            dailyMinSpendTarget={dailyMinSpendTarget}
+            dailySpendCap={dailySpendCap}
             startTime={startTime}
             hasEndDate={hasEndDate}
             endTime={endTime}
