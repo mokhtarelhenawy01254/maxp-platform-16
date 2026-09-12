@@ -5179,7 +5179,7 @@ async function markStatusViewed(req, res) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const facebookAppConfig = require('../config/facebookAppConfig');
-const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v25.0';
+const META_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION || 'v26.0';
 const META_GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
 async function getFacebookConfig(req, res) {

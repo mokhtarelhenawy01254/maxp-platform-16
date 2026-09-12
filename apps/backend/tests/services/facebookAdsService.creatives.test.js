@@ -30,7 +30,7 @@ describe("FacebookAdsService creative creation", () => {
     expect(result.success).toBe(true);
     expect(result.campaignId).toBe("campaign-1");
     expect(axios.post).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_123456789/campaigns",
+      "https://graph.facebook.com/v26.0/act_123456789/campaigns",
       expect.objectContaining({
         name: "Swan campaign",
         objective: "OUTCOME_SALES",
@@ -303,7 +303,7 @@ describe("FacebookAdsService creative creation", () => {
 
     expect(result.success).toBe(true);
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/search",
+      "https://graph.facebook.com/v26.0/search",
       {
         params: expect.objectContaining({
           access_token: "token",
@@ -344,7 +344,7 @@ describe("FacebookAdsService creative creation", () => {
       }),
     );
     expect(axios.post).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_123456789/ads",
+      "https://graph.facebook.com/v26.0/act_123456789/ads",
       expect.objectContaining({
         adset_id: "adset-1",
         creative: { creative_id: "creative-1" },
@@ -363,7 +363,7 @@ describe("FacebookAdsService creative creation", () => {
 
     expect(result.success).toBe(true);
     expect(axios.post).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/120-meta-ad",
+      "https://graph.facebook.com/v26.0/120-meta-ad",
       { status: "PAUSED" },
       {
         params: {
@@ -389,7 +389,7 @@ describe("FacebookAdsService creative creation", () => {
     expect(result.success).toBe(true);
     expect(result.data).toHaveLength(1);
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/creative-1/previews",
+      "https://graph.facebook.com/v26.0/creative-1/previews",
       {
         params: {
           access_token: "token",
@@ -426,7 +426,7 @@ describe("FacebookAdsService creative creation", () => {
     expect(result.data).toHaveLength(1);
     expect(axios.get).toHaveBeenNthCalledWith(
       2,
-      "https://graph.facebook.com/v25.0/act_123456789/generatepreviews",
+      "https://graph.facebook.com/v26.0/act_123456789/generatepreviews",
       {
         params: {
           access_token: "token",
@@ -461,7 +461,7 @@ describe("FacebookAdsService creative creation", () => {
 
     expect(result.success).toBe(true);
     expect(axios.post).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/pixel-1/events",
+      "https://graph.facebook.com/v26.0/pixel-1/events",
       {
         data: [
           expect.objectContaining({
@@ -512,7 +512,7 @@ describe("FacebookAdsService creative creation", () => {
     expect(result.success).toBe(true);
     expect(result.recommendations).toHaveLength(1);
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/120-meta-ad",
+      "https://graph.facebook.com/v26.0/120-meta-ad",
       {
         params: {
           access_token: "token",
@@ -521,7 +521,7 @@ describe("FacebookAdsService creative creation", () => {
       },
     );
     expect(axios.post).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_123456789/ads",
+      "https://graph.facebook.com/v26.0/act_123456789/ads",
       expect.objectContaining({
         adset_id: "120-meta-adset",
         creative: { creative_id: "creative-1" },
@@ -561,7 +561,7 @@ describe("FacebookAdsService creative creation", () => {
       impressions: 650,
     });
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/120-meta-ad/insights",
+      "https://graph.facebook.com/v26.0/120-meta-ad/insights",
       {
         params: {
           access_token: "token",
@@ -710,7 +710,7 @@ describe("FacebookAdsService creative creation", () => {
     expect(result.success).toBe(true);
     expect(result.hash).toBe("buffer-hash-1");
     expect(axios.post).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_123456789/adimages",
+      "https://graph.facebook.com/v26.0/act_123456789/adimages",
       expect.any(Object),
       expect.any(Object),
     );

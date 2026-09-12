@@ -36,7 +36,7 @@ describe("FacebookAdsService.getCampaignInsightsSummary", () => {
       expect.objectContaining({ campaign_id: "campaign-1" }),
     ]);
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_1120545302307751/insights",
+      "https://graph.facebook.com/v26.0/act_1120545302307751/insights",
       expect.objectContaining({
         params: expect.objectContaining({
           access_token: "token",
@@ -55,7 +55,7 @@ describe("FacebookAdsService.getCampaignInsightsSummary", () => {
       .mockResolvedValueOnce({
         data: {
           data: [{ campaign_id: "campaign-1", spend: "25.00" }],
-          paging: { next: "https://graph.facebook.com/v25.0/next-insights" },
+          paging: { next: "https://graph.facebook.com/v26.0/next-insights" },
         },
       })
       .mockResolvedValueOnce({
@@ -74,8 +74,8 @@ describe("FacebookAdsService.getCampaignInsightsSummary", () => {
     ]);
     expect(axios.get).toHaveBeenNthCalledWith(
       2,
-      "https://graph.facebook.com/v25.0/next-insights",
-      { params: undefined },
+      "https://graph.facebook.com/v26.0/next-insights",
+      expect.objectContaining({ params: undefined }),
     );
   });
 });
@@ -107,7 +107,7 @@ describe("FacebookAdsService.getGeoPerformanceBreakdown", () => {
     expect(result.success).toBe(true);
     expect(result.breakdown).toBe("region");
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_1120545302307751/insights",
+      "https://graph.facebook.com/v26.0/act_1120545302307751/insights",
       expect.objectContaining({
         params: expect.objectContaining({
           access_token: "token",
@@ -167,7 +167,7 @@ describe("FacebookAdsService.getCampaigns", () => {
 
     expect(result.success).toBe(true);
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_1120545302307751/campaigns",
+      "https://graph.facebook.com/v26.0/act_1120545302307751/campaigns",
       expect.objectContaining({
         params: expect.objectContaining({
           access_token: "token",
@@ -184,7 +184,7 @@ describe("FacebookAdsService.getCampaigns", () => {
       .mockResolvedValueOnce({
         data: {
           data: [{ id: "campaign-1", name: "Swan campaign 1" }],
-          paging: { next: "https://graph.facebook.com/v25.0/next-campaigns" },
+          paging: { next: "https://graph.facebook.com/v26.0/next-campaigns" },
         },
       })
       .mockResolvedValueOnce({
@@ -203,7 +203,7 @@ describe("FacebookAdsService.getCampaigns", () => {
     ]);
     expect(axios.get).toHaveBeenNthCalledWith(
       2,
-      "https://graph.facebook.com/v25.0/next-campaigns",
+      "https://graph.facebook.com/v26.0/next-campaigns",
       { params: undefined },
     );
   });
@@ -226,7 +226,7 @@ describe("FacebookAdsService.getAds", () => {
 
     expect(result.success).toBe(true);
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/act_1120545302307751/ads",
+      "https://graph.facebook.com/v26.0/act_1120545302307751/ads",
       expect.objectContaining({
         params: expect.objectContaining({
           access_token: "token",

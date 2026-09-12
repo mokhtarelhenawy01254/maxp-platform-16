@@ -10,7 +10,7 @@ from src.tools.whatsapp_error_codes import WhatsAppAPIError, map_whatsapp_error
 
 logger = structlog.get_logger(__name__)
 
-META_GRAPH_API_VERSION = os.getenv("META_GRAPH_API_VERSION", "v25.0")
+META_GRAPH_API_VERSION = os.getenv("META_GRAPH_API_VERSION", "v26.0")
 META_GRAPH_API_BASE_URL = os.getenv(
     "META_GRAPH_API_BASE_URL", "https://graph.facebook.com"
 )

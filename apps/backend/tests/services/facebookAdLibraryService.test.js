@@ -38,10 +38,10 @@ describe("FacebookAdLibraryService", () => {
     });
 
     expect(result.success).toBe(true);
-    expect(result.apiVersion).toBe("v25.0");
+    expect(result.apiVersion).toBe("v26.0");
     expect(result.data).toHaveLength(1);
     expect(axios.get).toHaveBeenCalledWith(
-      "https://graph.facebook.com/v25.0/ads_archive",
+      "https://graph.facebook.com/v26.0/ads_archive",
       {
         params: expect.objectContaining({
           access_token: "token",
