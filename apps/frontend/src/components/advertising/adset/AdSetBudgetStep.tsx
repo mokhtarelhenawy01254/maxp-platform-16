@@ -361,24 +361,24 @@ export const AdSetBudgetStep: React.FC<AdSetBudgetStepProps> = ({
                 {isSelected && bs.hasInput && (
                   <div className="mt-3 pt-3 border-t border-cyan-100 dark:border-cyan-900/40 flex items-center gap-3">
                     <label className="text-xs font-semibold text-gray-700 dark:text-gray-300 shrink-0">
-                      الحد الأقصى المستهدف (ج.م):
+                      {bs.inputLabel || "الحد الأقصى المستهدف (ج.م):"}
                     </label>
                     <input
                       type="number"
-                      min={1}
-                      step={5}
+                      min={bs.inputStep === 0.1 ? 0.1 : 1}
+                      step={bs.inputStep || 5}
                       value={bidValue || ""}
                       onChange={(e) =>
                         onBidValueChange(
                           e.target.value ? Number(e.target.value) : undefined,
                         )
                       }
-                      placeholder="مثال: 70"
+                      placeholder={bs.inputPlaceholder || "مثال: 70"}
                       className="w-36 px-3 py-1.5 bg-white dark:bg-gray-900 border border-cyan-400 rounded-lg text-xs font-bold text-gray-900 dark:text-white"
                       onClick={(e) => e.stopPropagation()}
                     />
                     <span className="text-[11px] text-gray-400">
-                      (سيتوقف الإعلان إذا زادت تكلفة النتيجة عن هذا المبلغ)
+                      {bs.hint || "(سيتوقف الإعلان إذا زادت تكلفة النتيجة عن هذا المبلغ)"}
                     </span>
                   </div>
                 )}
