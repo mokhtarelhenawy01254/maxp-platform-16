@@ -73,7 +73,7 @@ export const AdSetPlacementsStep: React.FC<AdSetPlacementsStepProps> = ({
     onPlacementsChange([
       "FACEBOOK_FEED",
       "INSTAGRAM_FEED",
-      "INSTAGRAM_EXPLORE",
+      "FACEBOOK_MARKETPLACE",
     ]);
   };
 
