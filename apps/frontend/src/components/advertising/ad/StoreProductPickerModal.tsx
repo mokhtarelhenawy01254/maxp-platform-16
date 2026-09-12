@@ -87,13 +87,20 @@ export const StoreProductPickerModal: React.FC<StoreProductPickerModalProps> = (
     const productSlug = p.slug || p.id;
     const landingUrl = `https://${companySlug}.maxp.online/product/${productSlug}`;
 
+    const rawDesc = p.description || p.shortDescription || "";
+    const cleanDesc = rawDesc
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
     onSelect({
       id: p.id,
       name: p.name,
       price: Number(p.price || 0),
       slug: productSlug,
       imageUrl: fullImg,
-      description: p.description || p.shortDescription,
+      description: cleanDesc,
       landingUrl,
     });
     onClose();
