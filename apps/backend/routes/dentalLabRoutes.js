@@ -201,6 +201,7 @@ router.get('/notifications/schedule', verifyToken.authenticateToken, dentalRoleG
 // Materials & Inventory Harmonization (خامات معمل الأسنان والموردين)
 router.get('/materials/summary', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION']), controller.getMaterialsDashboardSummary);
 router.get('/materials/suppliers', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION']), controller.listDentalSuppliers);
+router.post('/materials/suppliers', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION']), controller.createDentalSupplier);
 router.get('/materials', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER', 'ACCOUNTANT', 'RECEPTION', 'TECHNICIAN']), controller.listMaterials);
 router.post('/materials', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.createMaterial);
 router.put('/materials/:id', verifyToken.authenticateToken, dentalRoleGuard(['OWNER', 'MANAGER']), controller.updateMaterial);

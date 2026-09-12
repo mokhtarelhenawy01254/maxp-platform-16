@@ -1421,7 +1421,7 @@ export const createAd = async (
  */
 export const updateAd = async (
   id: string,
-  data: Partial<CreateAdData>,
+  data: Partial<CreateAdData & { status?: string }>,
 ): Promise<FacebookAd> => {
   try {
     const response = await apiClient.put(`/facebook-ads/ads/${id}`, data);
@@ -1581,12 +1581,14 @@ export const getAdsPerformanceSummary = async (
   startDate?: string,
   endDate?: string,
   adAccountId?: string,
+  refresh = false,
 ): Promise<FacebookAdsPerformanceSummary> => {
   try {
     const params = new URLSearchParams();
     if (startDate) params.append("startDate", startDate);
     if (endDate) params.append("endDate", endDate);
     if (adAccountId) params.append("adAccountId", adAccountId);
+    if (refresh) params.append("refresh", "true");
 
     const query = params.toString();
     const response = await apiClient.get(
@@ -1605,12 +1607,14 @@ export const getAdsDecisionSummary = async (
   startDate?: string,
   endDate?: string,
   adAccountId?: string,
+  refresh = false,
 ): Promise<FacebookAdsDecisionSummary> => {
   try {
     const params = new URLSearchParams();
     if (startDate) params.append("startDate", startDate);
     if (endDate) params.append("endDate", endDate);
     if (adAccountId) params.append("adAccountId", adAccountId);
+    if (refresh) params.append("refresh", "true");
 
     const query = params.toString();
     const response = await apiClient.get(
@@ -1623,6 +1627,21 @@ export const getAdsDecisionSummary = async (
     console.error("❌ Error fetching Ads decision summary:", error);
     throw error;
   }
+};
+export const pauseAdSet = async (id: string): Promise<unknown> => {
+  return updateAdSet(id, { status: "PAUSED" });
+};
+
+export const resumeAdSet = async (id: string): Promise<unknown> => {
+  return updateAdSet(id, { status: "ACTIVE" });
+};
+
+export const pauseAd = async (id: string): Promise<FacebookAd> => {
+  return updateAd(id, { status: "PAUSED" });
+};
+
+export const resumeAd = async (id: string): Promise<FacebookAd> => {
+  return updateAd(id, { status: "ACTIVE" });
 };
 
 export const getGeoPerformanceReport = async ({
@@ -3440,13 +3459,18 @@ export const facebookAdsService = {
   // AdSets
   getAdSets,
   createAdSet,
+  updateAdSet,
   deleteAdSet,
+  pauseAdSet,
+  resumeAdSet,
 
   // Ads
   getAds,
   createAd,
   updateAd,
   deleteAd,
+  pauseAd,
+  resumeAd,
 
   // Insights
   getAdInsights,
@@ -3563,7 +3587,6 @@ export const facebookAdsService = {
   updateAttributionSettings,
 
   // v22.0: Ad Set Management
-  updateAdSet,
   updateFrequencyCap,
 
   // v22.0: Advanced Targeting

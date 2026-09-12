@@ -12,6 +12,9 @@ import {
   Loader2,
   X,
   History,
+  Phone,
+  MapPin,
+  User,
 } from "lucide-react";
 import {
   DentalMaterial,
@@ -21,6 +24,7 @@ import {
   createDentalMaterial,
   recordDentalMaterialStockIn,
   fetchDentalSuppliers,
+  createDentalSupplier,
   fetchDentalMaterialsSummary,
   fmtMoney,
   MODAL_CONTENT_CLS,
@@ -47,7 +51,18 @@ export default function DentalMaterialsTab() {
   // Modals state
   const [isAddMaterialModalOpen, setIsAddMaterialModalOpen] = useState(false);
   const [isStockInModalOpen, setIsStockInModalOpen] = useState(false);
+  const [isAddSupplierModalOpen, setIsAddSupplierModalOpen] = useState(false);
+  const [isViewSuppliersModalOpen, setIsViewSuppliersModalOpen] = useState(false);
   const [selectedMaterialForStockIn, setSelectedMaterialForStockIn] = useState<DentalMaterial | null>(null);
+  const [targetSupplierField, setTargetSupplierField] = useState<"newMat" | "stock" | null>(null);
+
+  // New Supplier form state
+  const [newSuppName, setNewSuppName] = useState("");
+  const [newSuppContact, setNewSuppContact] = useState("");
+  const [newSuppPhone, setNewSuppPhone] = useState("");
+  const [newSuppCity, setNewSuppCity] = useState("");
+  const [newSuppNotes, setNewSuppNotes] = useState("");
+  const [isSubmittingSupplier, setIsSubmittingSupplier] = useState(false);
 
   // New Material form state
   const [newMatName, setNewMatName] = useState("");
@@ -68,6 +83,39 @@ export default function DentalMaterialsTab() {
   const [stockTotalCost, setStockTotalCost] = useState("");
   const [stockSupplierId, setStockSupplierId] = useState("");
   const [stockExpiryDate, setStockExpiryDate] = useState("");
+
+  const handleCreateSupplier = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSuppName.trim()) return;
+    setIsSubmittingSupplier(true);
+    setActionError(null);
+    try {
+      const created = await createDentalSupplier({
+        name: newSuppName.trim(),
+        contactPerson: newSuppContact.trim() || undefined,
+        phone: newSuppPhone.trim() || undefined,
+        city: newSuppCity.trim() || undefined,
+        notes: newSuppNotes.trim() || undefined,
+      });
+      setSuppliers((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)));
+      if (targetSupplierField === "newMat") {
+        setNewMatSupplierId(created.id);
+      } else if (targetSupplierField === "stock") {
+        setStockSupplierId(created.id);
+      }
+      setIsAddSupplierModalOpen(false);
+      setNewSuppName("");
+      setNewSuppContact("");
+      setNewSuppPhone("");
+      setNewSuppCity("");
+      setNewSuppNotes("");
+      setTargetSupplierField(null);
+    } catch (err: any) {
+      setActionError(err?.response?.data?.error || "فشل إضافة المورد");
+    } finally {
+      setIsSubmittingSupplier(false);
+    }
+  };
 
   const loadData = async () => {
     setIsLoading(true);
@@ -173,7 +221,28 @@ export default function DentalMaterialsTab() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsViewSuppliersModalOpen(true)}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 text-xs font-bold transition-all border border-gray-200 dark:border-gray-700 shadow-xs active:scale-95 cursor-pointer"
+          >
+            <Building2 className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+            <span>الموردين والشركات ({suppliers.length})</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setTargetSupplierField(null);
+              setIsAddSupplierModalOpen(true);
+            }}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-cyan-600/30 dark:border-cyan-500/30 hover:bg-cyan-50 dark:hover:bg-cyan-950/30 text-cyan-700 dark:text-cyan-300 text-xs font-bold transition-all shadow-xs active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>مورد جديد</span>
+          </button>
+
           <button
             type="button"
             onClick={() => setIsAddMaterialModalOpen(true)}
@@ -500,7 +569,20 @@ export default function DentalMaterialsTab() {
               </div>
 
               <div>
-                <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">شركة التوريد المعتمدة (المورد)</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-gray-700 dark:text-gray-300">شركة التوريد المعتمدة (المورد)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTargetSupplierField("newMat");
+                      setIsAddSupplierModalOpen(true);
+                    }}
+                    className="text-xs text-cyan-600 dark:text-cyan-400 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>مورد جديد</span>
+                  </button>
+                </div>
                 <select
                   value={newMatSupplierId}
                   onChange={(e) => setNewMatSupplierId(e.target.value)}
@@ -627,7 +709,20 @@ export default function DentalMaterialsTab() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">شركة التوريد (المورد)</label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-semibold text-gray-700 dark:text-gray-300">شركة التوريد (المورد)</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTargetSupplierField("stock");
+                        setIsAddSupplierModalOpen(true);
+                      }}
+                      className="text-xs text-cyan-600 dark:text-cyan-400 font-bold hover:underline inline-flex items-center gap-1 cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>مورد جديد</span>
+                    </button>
+                  </div>
                   <select
                     value={stockSupplierId}
                     onChange={(e) => setStockSupplierId(e.target.value)}
@@ -636,7 +731,7 @@ export default function DentalMaterialsTab() {
                     <option value="">-- اختر المورد --</option>
                     {suppliers.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.name}
+                        {s.name} {s.phone ? `(${s.phone})` : ""}
                       </option>
                     ))}
                   </select>
@@ -669,6 +764,232 @@ export default function DentalMaterialsTab() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 3: Add Supplier (إضافة مورد / شركة جديدة) */}
+      {isAddSupplierModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className={MODAL_CONTENT_CLS}>
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                  <span>إضافة مورد / شركة خامات جديدة</span>
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  يتم حفظ المورد في قاعدة بيانات الموردين الموحدة للمنظومة
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAddSupplierModalOpen(false);
+                  setTargetSupplierField(null);
+                }}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSupplier} className="space-y-3.5 text-xs">
+              <div>
+                <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                  اسم الشركة أو المورد *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newSuppName}
+                  onChange={(e) => setNewSuppName(e.target.value)}
+                  placeholder="مثال: شركة دلتا للزيركون ومستلزمات الأسنان"
+                  className={MODAL_INPUT_CLS}
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                    مسؤول المبيعات / المندوب
+                  </label>
+                  <input
+                    type="text"
+                    value={newSuppContact}
+                    onChange={(e) => setNewSuppContact(e.target.value)}
+                    placeholder="e.g. م. أحمد خليل"
+                    className={MODAL_INPUT_CLS}
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                    رقم الهاتف / الواتساب
+                  </label>
+                  <input
+                    type="text"
+                    value={newSuppPhone}
+                    onChange={(e) => setNewSuppPhone(e.target.value)}
+                    placeholder="010xxxxxxxx"
+                    className={MODAL_INPUT_CLS}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                  المدينة / المقر
+                </label>
+                <input
+                  type="text"
+                  value={newSuppCity}
+                  onChange={(e) => setNewSuppCity(e.target.value)}
+                  placeholder="القاهرة، الإسكندرية، المنصورة..."
+                  className={MODAL_INPUT_CLS}
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold mb-1 text-gray-700 dark:text-gray-300">
+                  ملاحظات أو شروط السداد
+                </label>
+                <textarea
+                  rows={2}
+                  value={newSuppNotes}
+                  onChange={(e) => setNewSuppNotes(e.target.value)}
+                  placeholder="مثال: سداد آجل 15 يوم، خصم 5% على كميات أقراص الزيركون..."
+                  className={MODAL_INPUT_CLS}
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-gray-200 dark:border-gray-700 mt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsAddSupplierModalOpen(false);
+                    setTargetSupplierField(null);
+                  }}
+                  className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 font-semibold cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingSupplier}
+                  className="px-5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white font-bold disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                >
+                  {isSubmittingSupplier && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>{isSubmittingSupplier ? "جاري الحفظ..." : "حفظ المورد"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 4: View Suppliers (عرض قائمة الموردين والشركات) */}
+      {isViewSuppliersModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className={`${MODAL_CONTENT_CLS} max-w-xl!`}>
+            <div className="flex items-center justify-between pb-3 border-b border-gray-200 dark:border-gray-700 mb-4">
+              <div>
+                <h3 className="text-base font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                  <span>الشركات والموردين المعتمدين ({suppliers.length})</span>
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  قائمة الموردين المعتمدين لتوريد خامات وأقراص ومستهلكات المعمل
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsViewSuppliersModalOpen(false)}
+                className="p-1 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+              {suppliers.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
+                  <Building2 className="w-10 h-10 mx-auto text-gray-300 dark:text-gray-600 mb-2" />
+                  <p className="font-semibold">لا يوجد موردين مسجلين بعد</p>
+                  <p className="mt-1">يمكنك إضافة أول شركة توريد لتسجيل أقراص وخامات المعمل باسمها.</p>
+                </div>
+              ) : (
+                suppliers.map((s) => (
+                  <div
+                    key={s.id}
+                    className="p-3 bg-gray-50 dark:bg-gray-900/60 border border-gray-200 dark:border-gray-700/80 rounded-xl flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="space-y-1">
+                      <div className="font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <span>{s.name}</span>
+                        {s.city && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-950/60 text-cyan-700 dark:text-cyan-300 flex items-center gap-1 font-normal">
+                            <MapPin className="w-3 h-3" />
+                            {s.city}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-3 text-gray-500 dark:text-gray-400 text-[11px]">
+                        {s.contactPerson && (
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3 text-gray-400" />
+                            {s.contactPerson}
+                          </span>
+                        )}
+                        {s.phone && (
+                          <span className="flex items-center gap-1 dir-ltr">
+                            <Phone className="w-3 h-3 text-gray-400" />
+                            {s.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {s.currentBalance !== undefined && Number(s.currentBalance) !== 0 && (
+                      <div className="text-left shrink-0">
+                        <span className="text-[10px] text-gray-400 block">الرصيد</span>
+                        <span
+                          className={`font-bold ${
+                            Number(s.currentBalance) > 0
+                              ? "text-red-600 dark:text-red-400"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        >
+                          {fmtMoney(Number(s.currentBalance))}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+
+            <div className="flex items-center justify-between pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
+              <button
+                type="button"
+                onClick={() => {
+                  setTargetSupplierField(null);
+                  setIsAddSupplierModalOpen(true);
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ مورد / شركة جديدة</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsViewSuppliersModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 text-xs font-semibold cursor-pointer"
+              >
+                إغلاق
+              </button>
+            </div>
           </div>
         </div>
       )}

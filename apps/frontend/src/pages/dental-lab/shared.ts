@@ -1333,5 +1333,17 @@ export const deleteDentalCaseMaterialUsage = async (caseId: string, usageId: str
 export const fetchDentalSuppliers = async (): Promise<DentalSupplier[]> =>
   unwrapListEnvelope<DentalSupplier>(await apiClient.get("/dental-lab/materials/suppliers"));
 
+export const createDentalSupplier = async (data: {
+  name: string;
+  contactPerson?: string;
+  phone?: string;
+  mobile?: string;
+  city?: string;
+  address?: string;
+  notes?: string;
+  paymentTerms?: string;
+}): Promise<DentalSupplier> =>
+  unwrapEnvelope<DentalSupplier>(await apiClient.post("/dental-lab/materials/suppliers", data));
+
 export const fetchDentalMaterialsSummary = async (): Promise<DentalMaterialsSummary> =>
   unwrapEnvelope<DentalMaterialsSummary>(await apiClient.get("/dental-lab/materials/summary"));

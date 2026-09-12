@@ -5893,6 +5893,53 @@ const listDentalSuppliers = async (req, res) => {
   }
 };
 
+const createDentalSupplier = async (req, res) => {
+  try {
+    const companyId = getCompanyId(req, res);
+    if (!companyId) return;
+    const prisma = getSharedPrismaClient();
+
+    const {
+      name,
+      contactPerson,
+      phone,
+      mobile,
+      city,
+      address,
+      notes,
+      taxNumber,
+      paymentTerms,
+    } = req.body;
+
+    if (!name || typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'اسم المورد أو الشركة مطلوب' });
+    }
+
+    const supplier = await prisma.supplier.create({
+      data: {
+        companyId,
+        name: name.trim(),
+        contactPerson: contactPerson ? contactPerson.trim() : null,
+        phone: phone ? phone.trim() : null,
+        mobile: mobile ? mobile.trim() : null,
+        city: city ? city.trim() : null,
+        address: address ? address.trim() : null,
+        notes: notes ? notes.trim() : null,
+        taxNumber: taxNumber ? taxNumber.trim() : null,
+        paymentTerms: paymentTerms ? paymentTerms.trim() : null,
+        currentBalance: 0,
+        createdBy: req.user?.id || null,
+        isActive: true,
+      },
+    });
+
+    return res.status(201).json({ success: true, data: supplier });
+  } catch (error) {
+    console.error('Error creating dental supplier:', error);
+    return res.status(500).json({ success: false, error: 'حدث خطأ في إضافة المورد' });
+  }
+};
+
 const getMaterialsDashboardSummary = async (req, res) => {
   try {
     const companyId = getCompanyId(req, res);
@@ -6043,5 +6090,6 @@ module.exports = {
   recordCaseMaterialConsumption,
   deleteCaseMaterialUsage,
   listDentalSuppliers,
+  createDentalSupplier,
   getMaterialsDashboardSummary,
 };
