@@ -17,7 +17,8 @@ import {
 import { chatWithMediaBuyer } from "../../../services/facebookAdsService";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
 import type { MarketingProduct } from "./types";
-import type { Message } from "../../../components/advertising/copilot/types";
+import type { Message, CopilotSession } from "../../../components/advertising/copilot/types";
+import { MarketingMarkdownMessage } from "./MarketingMarkdownMessage";
 
 interface MarketingSquadChatFeedProps {
   selectedProduct: MarketingProduct | null;
@@ -232,10 +233,10 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
 
                 {/* Bubble */}
                 <div
-                  className={`max-w-[85%] rounded-2xl p-3.5 space-y-2 leading-relaxed ${
+                  className={`rounded-2xl p-3.5 space-y-2 leading-relaxed ${
                     isUser
-                      ? "bg-blue-600 text-white rounded-tr-none shadow-sm"
-                      : "bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200 dark:border-slate-700/60 shadow-sm"
+                      ? "max-w-[85%] bg-blue-600 text-white rounded-tr-none shadow-sm"
+                      : "max-w-[95%] sm:max-w-[90%] bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 rounded-tl-none border border-slate-200 dark:border-slate-700/60 shadow-sm"
                   }`}
                 >
                   {/* Tool execution badge if present */}
@@ -253,7 +254,7 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
                     </div>
                   )}
 
-                  <div className="whitespace-pre-wrap">{msg.text}</div>
+                  <MarketingMarkdownMessage content={msg.text} isUser={isUser} />
 
                   <span className="block text-[9px] opacity-60 text-left pt-1">
                     {new Date(msg.timestamp).toLocaleTimeString([], {
