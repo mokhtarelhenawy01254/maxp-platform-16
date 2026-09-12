@@ -169,9 +169,45 @@ describe('smartRepliesRoutes', () => {
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
       expect(res.body.message).toBe('Smart replies saved successfully');
+      expect(res.body.data.channels).toEqual(['WHATSAPP', 'FACEBOOK', 'INSTAGRAM']);
       expect(res.body.data.customRuleResponses.templates).toHaveLength(1);
+      expect(res.body.data.customRuleResponses.templates[0].channels).toEqual(['WHATSAPP', 'FACEBOOK', 'INSTAGRAM']);
       expect(res.body.data.customRuleResponses.templates[0].keywords).toEqual(['بكام', 'سعر']);
       expect(res.body.data.customRuleResponses.templates[0].responses).toEqual(['السعر 250 جنيه']);
+    });
+
+    it('persists customized global channels and per-template channels', async () => {
+      mockPrisma.aiSetting.findUnique.mockResolvedValue({
+        modelSettings: JSON.stringify({}),
+      });
+      mockPrisma.aiSetting.upsert.mockImplementation(async ({ update }) => ({
+        companyId: 'company-test-123',
+        modelSettings: update.modelSettings,
+      }));
+
+      const res = await request(app)
+        .put('/api/v1/smart-replies/rule-responses')
+        .send({
+          enableRuleResponses: true,
+          channels: ['WHATSAPP', 'INSTAGRAM'],
+          customRuleResponses: {
+            templates: [
+              {
+                id: 'custom_wa_only',
+                name: 'واتساب فقط',
+                type: 'custom',
+                channels: ['WHATSAPP'],
+                keywords: ['سعر'],
+                responses: ['خاص بالواتساب'],
+              },
+            ],
+          },
+        });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data.channels).toEqual(['WHATSAPP', 'INSTAGRAM']);
+      expect(res.body.data.customRuleResponses.templates[0].channels).toEqual(['WHATSAPP']);
     });
   });
 });

@@ -143,7 +143,64 @@ function shouldRunChannel(settings, channel) {
   return channels.includes(channel);
 }
 
-async function getSmartReplies(companyId) {
+function isSmartReplyChannelEnabled(config, channel) {
+  if (!channel) return true;
+  const ch = String(channel).toUpperCase().trim();
+  if (!config) return ['WHATSAPP', 'FACEBOOK', 'MESSENGER', 'INSTAGRAM'].includes(ch);
+
+  // 1. If passed directly as an array: ['WHATSAPP', 'FACEBOOK', ...]
+  if (Array.isArray(config)) {
+    const active = config.map((c) => String(c).toUpperCase().trim());
+    if (ch === 'MESSENGER' || ch === 'FACEBOOK') {
+      return active.includes('FACEBOOK') || active.includes('MESSENGER');
+    }
+    if (ch === 'TELEGRAM_BOT') {
+      return active.includes('TELEGRAM_BOT') || (active.includes('TELEGRAM') && !active.includes('TELEGRAM_USER'));
+    }
+    if (ch === 'TELEGRAM_USER' || ch === 'TELEGRAM_USERBOT') {
+      return active.includes('TELEGRAM_USER') || active.includes('TELEGRAM_USERBOT');
+    }
+    if (ch === 'TELEGRAM') {
+      return active.includes('TELEGRAM') || active.includes('TELEGRAM_BOT') || active.includes('TELEGRAM_USER');
+    }
+    return active.includes(ch);
+  }
+
+  // 2. If passed as wrapper with channelSettings: { channelSettings, channels }
+  if (config.channelSettings && typeof config.channelSettings === 'object') {
+    const cs = config.channelSettings;
+    if (ch === 'WHATSAPP') return cs.whatsapp !== false;
+    if (ch === 'FACEBOOK' || ch === 'MESSENGER') return cs.messenger !== false && cs.facebook !== false;
+    if (ch === 'INSTAGRAM') return cs.instagram !== false;
+    if (ch === 'TIKTOK') return Boolean(cs.tiktok);
+    if (ch === 'TELEGRAM_USER' || ch === 'TELEGRAM_USERBOT') return Boolean(cs.telegram_user || cs.telegramUser);
+    if (ch === 'TELEGRAM_BOT') return Boolean(cs.telegram_bot || cs.telegramBot);
+    if (ch === 'TELEGRAM') return Boolean(cs.telegram_bot || cs.telegramBot || cs.telegram_user || cs.telegramUser);
+  }
+
+  // 3. If wrapper has channels array
+  if (Array.isArray(config.channels)) {
+    return isSmartReplyChannelEnabled(config.channels, ch);
+  }
+
+  // 4. If passed directly as channelSettings map (e.g. { whatsapp: true, messenger: false })
+  if (typeof config === 'object') {
+    const cs = config;
+    if (ch === 'WHATSAPP') return cs.whatsapp !== false;
+    if (ch === 'FACEBOOK' || ch === 'MESSENGER') return cs.messenger !== false && cs.facebook !== false;
+    if (ch === 'INSTAGRAM') return cs.instagram !== false;
+    if (ch === 'TIKTOK') return Boolean(cs.tiktok);
+    if (ch === 'TELEGRAM_USER' || ch === 'TELEGRAM_USERBOT') return Boolean(cs.telegram_user || cs.telegramUser);
+    if (ch === 'TELEGRAM_BOT') return Boolean(cs.telegram_bot || cs.telegramBot);
+    if (ch === 'TELEGRAM') return Boolean(cs.telegram_bot || cs.telegramBot || cs.telegram_user || cs.telegramUser);
+  }
+
+  // Default active channels for backwards compatibility: WHATSAPP, FACEBOOK, INSTAGRAM
+  const defaultActive = ['WHATSAPP', 'FACEBOOK', 'MESSENGER', 'INSTAGRAM'];
+  return defaultActive.includes(ch);
+}
+
+async function getSmartReplies(companyId, channel) {
   try {
     const prisma = getSharedPrismaClient();
     if (!prisma?.aiSetting?.findUnique) return null;
@@ -165,9 +222,29 @@ async function getSmartReplies(companyId) {
       return null;
     }
 
+    if (channel) {
+      const allowed = isSmartReplyChannelEnabled({
+        channels: ruleResponses.channels,
+        channelSettings: ruleResponses.channelSettings,
+      }, channel);
+      if (!allowed) {
+        return null;
+      }
+    }
+
     const templates = Array.isArray(ruleResponses.customRuleResponses?.templates)
       ? ruleResponses.customRuleResponses.templates
       : [];
+
+    const ALL_CHANNELS = [
+      'WHATSAPP',
+      'FACEBOOK',
+      'MESSENGER',
+      'INSTAGRAM',
+      'TIKTOK',
+      'TELEGRAM_USER',
+      'TELEGRAM_BOT',
+    ];
 
     return templates
       .filter((t) => t && typeof t === 'object')
@@ -175,6 +252,9 @@ async function getSmartReplies(companyId) {
         id: String(t.id || ''),
         name: String(t.name || ''),
         type: String(t.type || 'custom'),
+        channels: Array.isArray(t.channels) && t.channels.length > 0
+          ? t.channels.map((c) => String(c).toUpperCase())
+          : ALL_CHANNELS,
         keywords: Array.isArray(t.keywords)
           ? t.keywords.map((k) => String(k || '').trim()).filter(Boolean)
           : [],
@@ -189,15 +269,24 @@ async function getSmartReplies(companyId) {
   }
 }
 
-function matchSmartReplyTemplates({ text, templates = [] }) {
+function matchSmartReplyTemplates({ text, templates = [], channel }) {
   if (!text || !Array.isArray(templates) || templates.length === 0) return null;
 
   const normalized = normalizeBotText(text);
   if (!normalized) return null;
 
+  const normalizedChannel = channel ? String(channel).toUpperCase() : null;
+
   let best = null;
   for (const template of templates) {
     if (!template || !Array.isArray(template.keywords) || template.keywords.length === 0) continue;
+
+    if (normalizedChannel && Array.isArray(template.channels) && template.channels.length > 0) {
+      const isTemplateAllowed = isSmartReplyChannelEnabled(template.channels, normalizedChannel);
+      if (!isTemplateAllowed) {
+        continue;
+      }
+    }
 
     let matchedKeyword = null;
     let bestKwLen = -1;
@@ -269,9 +358,9 @@ async function evaluateInboundBotReply({ companyId, text, channel, customer = {}
   }
 
   // 3. Smart Replies from /settings/smart-replies (AiSetting)
-  const smartTemplates = await getSmartReplies(companyId);
+  const smartTemplates = await getSmartReplies(companyId, channel);
   if (smartTemplates && smartTemplates.length > 0) {
-    const matchedSmartReply = matchSmartReplyTemplates({ text, templates: smartTemplates });
+    const matchedSmartReply = matchSmartReplyTemplates({ text, templates: smartTemplates, channel });
     if (matchedSmartReply) {
       matchedSmartReply.replyText = interpolateReply(matchedSmartReply.replyText, customer);
       return matchedSmartReply;
@@ -320,5 +409,6 @@ module.exports = {
   getSmartReplies,
   matchSmartReplyTemplates,
   shouldRunChannel,
+  isSmartReplyChannelEnabled,
   evaluateInboundBotReply,
 };

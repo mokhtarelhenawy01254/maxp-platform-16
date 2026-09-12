@@ -418,8 +418,80 @@ class TelegramBotService {
                 companyId: companyId
             });
 
-            // ── AI auto-reply (fire-and-forget, never blocks the webhook) ──────────────
+            // ── Bot / Smart Replies for Telegram Bot ──────────────
+            let botHandledTg = false;
             if (content && type === 'TEXT') {
+                const configId = metadata.telegramConfigId;
+                try {
+                    const { evaluateInboundBotReply } = require('./botRuleEngine');
+                    const firstContact = (await prisma.message.count({
+                        where: { conversationId: conversation.id }
+                    })) <= 1;
+
+                    const evaluation = await evaluateInboundBotReply({
+                        companyId,
+                        text: content,
+                        channel: 'TELEGRAM_BOT',
+                        customer: {
+                            firstName: customer.firstName,
+                            lastName: customer.lastName,
+                        },
+                        isFirstMessage: firstContact,
+                    });
+
+                    if (evaluation?.kind && evaluation.replyText && configId && telegramId) {
+                        const bot = this.bots.get(configId);
+                        if (bot) {
+                            await bot.telegram.sendMessage(telegramId, evaluation.replyText);
+
+                            const replySource = evaluation.kind === 'smart_reply'
+                                ? 'smart_reply'
+                                : (evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'));
+
+                            const savedReply = await prisma.message.create({
+                                data: {
+                                    conversationId: conversation.id,
+                                    content: evaluation.replyText,
+                                    type: 'TEXT',
+                                    isFromCustomer: false,
+                                    metadata: JSON.stringify({
+                                        platform: 'telegram',
+                                        source: replySource,
+                                        ruleId: evaluation.ruleId || null,
+                                        templateName: evaluation.templateName || null,
+                                        matchedKeyword: evaluation.matchedKeyword || null,
+                                        telegramConfigId: configId,
+                                    }),
+                                },
+                            });
+
+                            await prisma.conversation.update({
+                                where: { id: conversation.id },
+                                data: {
+                                    lastMessageAt: new Date(),
+                                    lastMessagePreview: evaluation.replyText.length > 50 ? evaluation.replyText.substring(0, 50) + '...' : evaluation.replyText,
+                                    isRead: true,
+                                },
+                            });
+
+                            socketService.sendToConversationSecure(conversation.id, companyId, 'new_message', {
+                                ...savedReply,
+                                senderName: evaluation.templateName || 'الرد التلقائي الذكي',
+                                platform: 'telegram',
+                                channel: 'TELEGRAM',
+                                companyId,
+                            });
+
+                            botHandledTg = true;
+                        }
+                    }
+                } catch (tgBotErr) {
+                    console.error('❌ [Telegram] Bot/Smart Reply error:', tgBotErr.message);
+                }
+            }
+
+            // ── AI auto-reply (fire-and-forget, never blocks the webhook) ──────────────
+            if (!botHandledTg && content && type === 'TEXT') {
                 const configId = metadata.telegramConfigId;
                 setImmediate(async () => {
                     try {

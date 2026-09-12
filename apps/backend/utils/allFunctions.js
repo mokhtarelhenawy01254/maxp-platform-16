@@ -3428,6 +3428,106 @@ async function handleTikTokMessage(inbound, companyId) {
       console.error('⚠️ [TT-MSG] Socket emit error:', socketErr.message);
     }
 
+    // ── 5.5 Bot / Smart Replies for TikTok ────────────────────────────────
+    let botHandledTikTok = false;
+    const ttBotText = (messageText || '').trim();
+    if (ttBotText && companyId) {
+      try {
+        const { evaluateInboundBotReply } = require('../services/botRuleEngine');
+        const pClient = getPrisma();
+        const firstContact = (await pClient.message.count({
+          where: { conversationId: conversation.id }
+        })) <= 1;
+
+        const evaluation = await evaluateInboundBotReply({
+          companyId,
+          text: ttBotText,
+          channel: 'TIKTOK',
+          customer: {
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+          },
+          isFirstMessage: firstContact,
+        });
+
+        if (evaluation?.kind && evaluation.replyText) {
+          const tiktokMessagingService = require('../services/tiktok/tiktokMessagingService');
+          const ttResult = await tiktokMessagingService.sendTextMessage({
+            companyId,
+            toOpenId: senderId,
+            text: evaluation.replyText,
+          });
+
+          if (ttResult?.success) {
+            const replySource = evaluation.kind === 'smart_reply'
+              ? 'smart_reply'
+              : (evaluation.kind === 'rule'
+                ? 'rule_reply'
+                : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'));
+
+            const replyId = require('crypto').randomUUID();
+            const savedReply = await safeQuery(async () => {
+              return await pClient.message.create({
+                data: {
+                  id: replyId,
+                  conversationId: conversation.id,
+                  content: evaluation.replyText,
+                  type: 'TEXT',
+                  isFromCustomer: false,
+                  senderId: null,
+                  metadata: JSON.stringify({
+                    platform: 'tiktok',
+                    source: replySource,
+                    isTikTokReply: true,
+                    ruleId: evaluation.ruleId || null,
+                    templateName: evaluation.templateName || null,
+                    matchedKeyword: evaluation.matchedKeyword || null,
+                    timestamp: new Date(),
+                  }),
+                },
+              });
+            });
+
+            const socketService = require('../services/socketService');
+            const io = socketService.getIO();
+            if (io && savedReply) {
+              io.to(`company_${companyId}`).emit('new_message', {
+                id: savedReply.id,
+                conversationId: conversation.id,
+                content: savedReply.content,
+                type: 'text',
+                isFromCustomer: false,
+                timestamp: savedReply.createdAt,
+                metadata: JSON.parse(savedReply.metadata || '{}'),
+                senderId: null,
+                senderName: evaluation.templateName || 'الرد التلقائي الذكي',
+                companyId,
+                platform: 'tiktok',
+                channel: 'TIKTOK',
+              });
+            }
+
+            await safeQuery(async () => {
+              return await pClient.conversation.update({
+                where: { id: conversation.id },
+                data: {
+                  lastMessageAt: new Date(),
+                  lastMessagePreview: evaluation.replyText.length > 100 ? evaluation.replyText.substring(0, 100) + '...' : evaluation.replyText,
+                  lastMessageIsFromCustomer: false,
+                  unreadCount: 0,
+                  updatedAt: new Date(),
+                },
+              });
+            });
+
+            botHandledTikTok = true;
+          }
+        }
+      } catch (botErr) {
+        console.error('⚠️ [TT-MSG] Bot / Smart Reply error:', botErr.message);
+      }
+    }
+
     // ── 6. AI Auto-Reply for TikTok ──────────────────────────────────────
     const hasCustomerTextForAi = messageText && messageText.trim().length > 0;
     const hasCustomerAttachmentsForAi = attachments && attachments.length > 0;
@@ -3439,6 +3539,7 @@ async function handleTikTokMessage(inbound, companyId) {
     ].filter(Boolean).join('\n\n').trim();
 
     const shouldRunTikTokAiAutoReply = Boolean(
+      !botHandledTikTok &&
       customer.companyId &&
       (hasCustomerTextForAi || hasCustomerAttachmentsForAi) &&
       aiCustomerContent

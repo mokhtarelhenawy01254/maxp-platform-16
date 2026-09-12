@@ -17,10 +17,19 @@ import {
 import { toast } from "sonner";
 import { apiClient } from "../../services/apiClient";
 
+export type SmartReplyChannel =
+  | "WHATSAPP"
+  | "FACEBOOK"
+  | "INSTAGRAM"
+  | "TIKTOK"
+  | "TELEGRAM_USER"
+  | "TELEGRAM_BOT";
+
 interface AutoReplyTemplate {
   id: string;
   name: string;
   type: "greeting" | "thanks" | "confirmation" | "farewell" | "custom";
+  channels?: SmartReplyChannel[];
   keywords: string[];
   responses: string[];
   isDefault?: boolean;
@@ -28,7 +37,115 @@ interface AutoReplyTemplate {
 
 interface Settings {
   enabled: boolean;
+  channels: SmartReplyChannel[];
   templates: AutoReplyTemplate[];
+}
+
+const DEFAULT_CHANNELS: SmartReplyChannel[] = [
+  "WHATSAPP",
+  "FACEBOOK",
+  "INSTAGRAM",
+];
+
+const ALL_CHANNELS: {
+  id: SmartReplyChannel;
+  label: string;
+  shortLabel: string;
+  activeClass: string;
+  inactiveClass: string;
+  badgeClass: string;
+}[] = [
+  {
+    id: "WHATSAPP",
+    label: "واتساب (WhatsApp)",
+    shortLabel: "واتساب",
+    activeClass:
+      "bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950/70 dark:text-emerald-300 dark:border-emerald-700 shadow-xs",
+    inactiveClass:
+      "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-750",
+    badgeClass:
+      "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200/80 dark:border-emerald-800/80",
+  },
+  {
+    id: "FACEBOOK",
+    label: "فيسبوك ماسنجر (Messenger)",
+    shortLabel: "ماسنجر",
+    activeClass:
+      "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-950/70 dark:text-blue-300 dark:border-blue-700 shadow-xs",
+    inactiveClass:
+      "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-750",
+    badgeClass:
+      "bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200/80 dark:border-blue-800/80",
+  },
+  {
+    id: "INSTAGRAM",
+    label: "إنستغرام (Instagram)",
+    shortLabel: "إنستغرام",
+    activeClass:
+      "bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300 dark:bg-fuchsia-950/70 dark:text-fuchsia-300 dark:border-fuchsia-700 shadow-xs",
+    inactiveClass:
+      "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-750",
+    badgeClass:
+      "bg-fuchsia-50 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300 border-fuchsia-200/80 dark:border-fuchsia-800/80",
+  },
+  {
+    id: "TIKTOK",
+    label: "تيك توك (TikTok)",
+    shortLabel: "تيك توك",
+    activeClass:
+      "bg-neutral-900 text-white border-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:border-neutral-300 shadow-xs",
+    inactiveClass:
+      "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-750",
+    badgeClass:
+      "bg-neutral-100 text-neutral-800 dark:bg-neutral-800 dark:text-neutral-200 border-neutral-300 dark:border-neutral-700",
+  },
+  {
+    id: "TELEGRAM_USER",
+    label: "تلجرام - حساب شخصي (User)",
+    shortLabel: "تلجرام يوزر",
+    activeClass:
+      "bg-sky-100 text-sky-800 border-sky-300 dark:bg-sky-950/70 dark:text-sky-300 dark:border-sky-700 shadow-xs",
+    inactiveClass:
+      "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-750",
+    badgeClass:
+      "bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300 border-sky-200/80 dark:border-sky-800/80",
+  },
+  {
+    id: "TELEGRAM_BOT",
+    label: "تلجرام - بوت (Bot)",
+    shortLabel: "تلجرام بوت",
+    activeClass:
+      "bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-950/70 dark:text-cyan-300 dark:border-cyan-700 shadow-xs",
+    inactiveClass:
+      "bg-gray-100 text-gray-500 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700 hover:bg-gray-200 dark:hover:bg-gray-750",
+    badgeClass:
+      "bg-cyan-50 text-cyan-700 dark:bg-cyan-950/60 dark:text-cyan-300 border-cyan-200/80 dark:border-cyan-800/80",
+  },
+];
+
+function SmartReplyChannelBadges({
+  channels,
+}: {
+  channels?: SmartReplyChannel[];
+}) {
+  const currentChannels =
+    Array.isArray(channels) && channels.length > 0
+      ? channels
+      : DEFAULT_CHANNELS;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {ALL_CHANNELS.filter((c) => currentChannels.includes(c.id)).map((c) => (
+        <span
+          key={c.id}
+          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${c.badgeClass}`}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-current opacity-75" />
+          <span>{c.shortLabel}</span>
+        </span>
+      ))}
+    </div>
+  );
 }
 
 const defaultTemplates: AutoReplyTemplate[] = [];
@@ -41,6 +158,7 @@ const SmartRepliesSettings: React.FC = () => {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<Settings>({
     enabled: false,
+    channels: DEFAULT_CHANNELS,
     templates: defaultTemplates,
   });
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -61,6 +179,10 @@ const SmartRepliesSettings: React.FC = () => {
         const data = response.data.data;
         setSettings({
           enabled: data.enableRuleResponses === true,
+          channels:
+            Array.isArray(data.channels) && data.channels.length > 0
+              ? data.channels
+              : DEFAULT_CHANNELS,
           templates: data.customRuleResponses?.templates || defaultTemplates,
         });
       }
@@ -74,12 +196,14 @@ const SmartRepliesSettings: React.FC = () => {
 
   const persistSettings = async (
     newTemplates: AutoReplyTemplate[],
-    enabledState: boolean = settings.enabled
+    enabledState: boolean = settings.enabled,
+    channelsState: SmartReplyChannel[] = settings.channels,
   ) => {
     try {
       setSaving(true);
       await apiClient.put("/smart-replies/rule-responses", {
         enableRuleResponses: enabledState,
+        channels: channelsState,
         customRuleResponses: {
           templates: newTemplates,
         },
@@ -96,7 +220,11 @@ const SmartRepliesSettings: React.FC = () => {
   };
 
   const handleSave = async () => {
-    const success = await persistSettings(settings.templates, settings.enabled);
+    const success = await persistSettings(
+      settings.templates,
+      settings.enabled,
+      settings.channels
+    );
     if (success) {
       toast.success(t("smartReplies.ruleSaved") || "تم الحفظ بنجاح");
     }
@@ -105,7 +233,11 @@ const SmartRepliesSettings: React.FC = () => {
   const handleToggleEnable = async () => {
     const nextEnabled = !settings.enabled;
     setSettings((prev) => ({ ...prev, enabled: nextEnabled }));
-    const success = await persistSettings(settings.templates, nextEnabled);
+    const success = await persistSettings(
+      settings.templates,
+      nextEnabled,
+      settings.channels
+    );
     if (success) {
       toast.success(
         nextEnabled
@@ -115,10 +247,66 @@ const SmartRepliesSettings: React.FC = () => {
     }
   };
 
+  const handleToggleGlobalChannel = async (channelId: SmartReplyChannel) => {
+    const current = settings.channels || DEFAULT_CHANNELS;
+    const exists = current.includes(channelId);
+    const nextChannels = exists
+      ? current.filter((c) => c !== channelId)
+      : [...current, channelId];
+
+    if (nextChannels.length === 0) {
+      toast.error("يجب تفعيل قناة واحدة على الأقل أو إيقاف الردود التلقائية بالكامل من المفتاح الرئيسي");
+      return;
+    }
+
+    setSettings((prev) => ({ ...prev, channels: nextChannels }));
+    const success = await persistSettings(
+      settings.templates,
+      settings.enabled,
+      nextChannels
+    );
+    if (success) {
+      const channelLabel =
+        ALL_CHANNELS.find((c) => c.id === channelId)?.shortLabel || channelId;
+      toast.success(
+        exists
+          ? `تم إيقاف الردود التلقائية على ${channelLabel}`
+          : `تم تشغيل الردود التلقائية على ${channelLabel}`
+      );
+    }
+  };
+
+  const handleToggleTemplateChannel = (channelId: SmartReplyChannel) => {
+    if (!editingTemplate) return;
+    const current =
+      Array.isArray(editingTemplate.channels) &&
+      editingTemplate.channels.length > 0
+        ? editingTemplate.channels
+        : DEFAULT_CHANNELS;
+    const exists = current.includes(channelId);
+    const next = exists
+      ? current.filter((c) => c !== channelId)
+      : [...current, channelId];
+
+    if (next.length === 0) {
+      toast.error("يجب اختيار قناة واحدة على الأقل لهذا القالب");
+      return;
+    }
+
+    setEditingTemplate({
+      ...editingTemplate,
+      channels: next,
+    });
+  };
+
   const handleEditStart = (template: AutoReplyTemplate) => {
     setEditingId(template.id);
     setEditingTemplate({
       ...template,
+      channels:
+        Array.isArray(template.channels) && template.channels.length > 0
+          ? [...template.channels]
+          : DEFAULT_CHANNELS,
       keywords: Array.isArray(template.keywords) ? [...template.keywords] : [],
       responses:
         Array.isArray(template.responses) && template.responses.length > 0
@@ -166,9 +354,15 @@ const SmartRepliesSettings: React.FC = () => {
       return;
     }
 
+    const targetChannels =
+      Array.isArray(editingTemplate.channels) && editingTemplate.channels.length > 0
+        ? editingTemplate.channels
+        : DEFAULT_CHANNELS;
+
     const updatedTemplate: AutoReplyTemplate = {
       ...editingTemplate,
       name: trimmedName,
+      channels: targetChannels,
       keywords: cleanKeywords,
       responses: cleanResponses,
     };
@@ -226,6 +420,7 @@ const SmartRepliesSettings: React.FC = () => {
       id: `custom_${Date.now()}`,
       name: "",
       type: "custom",
+      channels: DEFAULT_CHANNELS,
       keywords: [],
       responses: [""],
     };
@@ -419,6 +614,57 @@ const SmartRepliesSettings: React.FC = () => {
               </button>
             </div>
           </div>
+
+          {/* Global Channel Selector */}
+          <div
+            className={`mt-5 pt-4 border-t transition-opacity ${
+              settings.enabled
+                ? "border-emerald-200/70 dark:border-emerald-800/60"
+                : "border-gray-200 dark:border-gray-700 opacity-60"
+            }`}
+          >
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
+              <div>
+                <span className="text-xs font-bold text-gray-800 dark:text-gray-200 flex items-center gap-1.5">
+                  <span>تفعيل وإيقاف المنصات المدعومة:</span>
+                </span>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  اضغط على أي قناة لتشغيلها أو إيقافها فورياً (واتساب، ماسنجر، إنستغرام، تيك توك، تلجرام يوزر، تلجرام بوت)
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2">
+                {ALL_CHANNELS.map((channel) => {
+                  const isChannelActive = settings.channels.includes(channel.id);
+                  return (
+                    <button
+                      key={channel.id}
+                      type="button"
+                      onClick={() => handleToggleGlobalChannel(channel.id)}
+                      disabled={saving}
+                      className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                        isChannelActive
+                          ? channel.activeClass
+                          : channel.inactiveClass
+                      }`}
+                    >
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isChannelActive
+                            ? "bg-emerald-500 animate-pulse"
+                            : "bg-gray-400"
+                        }`}
+                      />
+                      <span>{channel.label}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded-md font-medium bg-black/5 dark:bg-white/10">
+                        {isChannelActive ? "مفعل" : "معطل"}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Templates Section */}
@@ -496,6 +742,51 @@ const SmartRepliesSettings: React.FC = () => {
                           className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm"
                           placeholder="مثال: رسالة الترحيب، أسعار الشحن، الاستفسار عن المقاسات"
                         />
+                      </div>
+
+                      {/* Target Channels for this template */}
+                      <div>
+                        <div className="flex items-center justify-between mb-1.5">
+                          <label className="block text-sm font-bold text-gray-800 dark:text-gray-200">
+                            القنوات المستهدفة لهذا القالب
+                          </label>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {(editingTemplate.channels || DEFAULT_CHANNELS).length} قنوات محددة
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                          اختر القنوات التي سيعمل عليها هذا الرد التلقائي عند مطابقة الكلمات الدالة
+                        </p>
+                        <div className="flex flex-wrap gap-2">
+                          {ALL_CHANNELS.map((channel) => {
+                            const isSelected = (
+                              editingTemplate.channels || DEFAULT_CHANNELS
+                            ).includes(channel.id);
+                            return (
+                              <button
+                                key={channel.id}
+                                type="button"
+                                onClick={() =>
+                                  handleToggleTemplateChannel(channel.id)
+                                }
+                                className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                                  isSelected
+                                    ? channel.activeClass
+                                    : channel.inactiveClass
+                                }`}
+                              >
+                                <span
+                                  className={`w-2 h-2 rounded-full ${
+                                    isSelected
+                                      ? "bg-emerald-500"
+                                      : "bg-gray-400"
+                                  }`}
+                                />
+                                <span>{channel.label}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
 
                       {/* Keywords */}
@@ -703,6 +994,7 @@ const SmartRepliesSettings: React.FC = () => {
                           <h3 className="font-bold text-gray-900 dark:text-white text-base">
                             {template.name || "قالب رد تلقائي"}
                           </h3>
+                          <SmartReplyChannelBadges channels={template.channels} />
                           <span className="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800/60">
                             {template.keywords.length} كلمات دالة
                           </span>

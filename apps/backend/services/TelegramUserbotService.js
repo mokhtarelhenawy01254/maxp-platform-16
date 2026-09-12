@@ -1474,6 +1474,73 @@ class TelegramUserbotService {
             channel: 'TELEGRAM',
             companyId
         });
+
+        // ── Bot / Smart Replies for Telegram Userbot ──────────────
+        if (text && messageType === 'TEXT' && client) {
+            try {
+                const { evaluateInboundBotReply } = require('./botRuleEngine');
+                const firstContact = (await prisma.message.count({
+                    where: { conversationId: conversation.id }
+                })) <= 1;
+
+                const evaluation = await evaluateInboundBotReply({
+                    companyId,
+                    text,
+                    channel: 'TELEGRAM_USER',
+                    customer: {
+                        firstName,
+                        lastName,
+                    },
+                    isFirstMessage: firstContact,
+                });
+
+                if (evaluation?.kind && evaluation.replyText) {
+                    const entity = await client.getEntity(senderId);
+                    await client.sendMessage(entity, { message: evaluation.replyText });
+
+                    const replySource = evaluation.kind === 'smart_reply'
+                        ? 'smart_reply'
+                        : (evaluation.kind === 'rule' ? 'rule_reply' : (evaluation.kind === 'welcome' ? 'welcome_reply' : 'default_reply'));
+
+                    const savedReply = await prisma.message.create({
+                        data: {
+                            conversationId: conversation.id,
+                            content: evaluation.replyText,
+                            type: 'TEXT',
+                            isFromCustomer: false,
+                            metadata: JSON.stringify({
+                                platform: 'telegram',
+                                source: replySource,
+                                ruleId: evaluation.ruleId || null,
+                                templateName: evaluation.templateName || null,
+                                matchedKeyword: evaluation.matchedKeyword || null,
+                                userbotConfigId,
+                            }),
+                        },
+                    });
+
+                    await prisma.conversation.update({
+                        where: { id: conversation.id },
+                        data: {
+                            lastMessageAt: new Date(),
+                            lastMessagePreview: evaluation.replyText.length > 50 ? evaluation.replyText.substring(0, 50) + '...' : evaluation.replyText,
+                            isRead: true,
+                            lastMessageIsFromCustomer: false,
+                        },
+                    });
+
+                    socketService.sendToConversationSecure(conversation.id, companyId, 'new_message', {
+                        ...savedReply,
+                        senderName: evaluation.templateName || 'الرد التلقائي الذكي',
+                        platform: 'telegram',
+                        channel: 'TELEGRAM',
+                        companyId,
+                    });
+                }
+            } catch (userbotReplyErr) {
+                console.error('❌ [Telegram Userbot] Smart Reply error:', userbotReplyErr.message);
+            }
+        }
     }
 
     /**

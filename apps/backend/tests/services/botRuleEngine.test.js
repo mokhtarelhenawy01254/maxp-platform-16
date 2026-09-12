@@ -297,6 +297,178 @@ describe('botRuleEngine evaluateInboundBotReply', () => {
     });
     expect(result.kind).toBeNull();
   });
+
+  test('respects global channels setting for smart replies', async () => {
+    prisma.botAutomationSettings.findUnique.mockResolvedValue(null);
+    prisma.aiSetting.findUnique.mockResolvedValue({
+      modelSettings: JSON.stringify({
+        ruleResponses: {
+          enableRuleResponses: true,
+          channels: ['WHATSAPP'], // Only WHATSAPP enabled globally
+          customRuleResponses: {
+            templates: [
+              {
+                id: 'tmpl-1',
+                name: 'التحية',
+                keywords: ['السلام عليكم'],
+                responses: ['وعليكم السلام'],
+              },
+            ],
+          },
+        },
+      }),
+    });
+
+    // FACEBOOK should be blocked by global channel setting
+    const fbResult = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'السلام عليكم',
+      channel: 'FACEBOOK',
+    });
+    expect(fbResult.kind).toBeNull();
+
+    // WHATSAPP should match
+    const waResult = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'السلام عليكم',
+      channel: 'WHATSAPP',
+    });
+    expect(waResult.kind).toBe('smart_reply');
+    expect(waResult.ruleId).toBe('tmpl-1');
+  });
+
+  test('respects per-template channels setting for smart replies', async () => {
+    prisma.botAutomationSettings.findUnique.mockResolvedValue(null);
+    prisma.aiSetting.findUnique.mockResolvedValue({
+      modelSettings: JSON.stringify({
+        ruleResponses: {
+          enableRuleResponses: true,
+          channels: ['WHATSAPP', 'FACEBOOK', 'INSTAGRAM'],
+          customRuleResponses: {
+            templates: [
+              {
+                id: 'tmpl-wa',
+                name: 'واتساب فقط',
+                channels: ['WHATSAPP'],
+                keywords: ['سعر'],
+                responses: ['سعر الواتساب 100'],
+              },
+              {
+                id: 'tmpl-fb',
+                name: 'فيسبوك فقط',
+                channels: ['FACEBOOK'],
+                keywords: ['سعر'],
+                responses: ['سعر الفيسبوك 200'],
+              },
+            ],
+          },
+        },
+      }),
+    });
+
+    const waResult = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'عايز اعرف السعر',
+      channel: 'WHATSAPP',
+    });
+    expect(waResult.kind).toBe('smart_reply');
+    expect(waResult.ruleId).toBe('tmpl-wa');
+    expect(waResult.replyText).toBe('سعر الواتساب 100');
+
+    const fbResult = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'عايز اعرف السعر',
+      channel: 'FACEBOOK',
+    });
+    expect(fbResult.kind).toBe('smart_reply');
+    expect(fbResult.ruleId).toBe('tmpl-fb');
+    expect(fbResult.replyText).toBe('سعر الفيسبوك 200');
+
+    const igResult = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'عايز اعرف السعر',
+      channel: 'INSTAGRAM',
+    });
+    expect(igResult.kind).toBeNull();
+  });
+
+  test('respects channelSettings object toggles (disables Messenger, enables TikTok and Telegram)', async () => {
+    prisma.botAutomationSettings.findUnique.mockResolvedValue(null);
+    prisma.aiSetting.findUnique.mockResolvedValue({
+      modelSettings: JSON.stringify({
+        ruleResponses: {
+          enableRuleResponses: true,
+          channelSettings: {
+            whatsapp: true,
+            messenger: false,
+            instagram: true,
+            tiktok: true,
+            telegram_bot: true,
+            telegram_user: true,
+          },
+          customRuleResponses: {
+            templates: [
+              {
+                id: 'tmpl-all',
+                name: 'الرد الذكي',
+                keywords: ['سلام'],
+                responses: ['وعليكم السلام يا فندم'],
+              },
+            ],
+          },
+        },
+      }),
+    });
+
+    // FACEBOOK should be disabled
+    const fbRes = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'سلام عليكم',
+      channel: 'FACEBOOK',
+    });
+    expect(fbRes.kind).toBeNull();
+
+    // MESSENGER alias should also be disabled
+    const msgRes = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'سلام عليكم',
+      channel: 'MESSENGER',
+    });
+    expect(msgRes.kind).toBeNull();
+
+    // WHATSAPP should be active
+    const waRes = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'سلام عليكم',
+      channel: 'WHATSAPP',
+    });
+    expect(waRes.kind).toBe('smart_reply');
+    expect(waRes.ruleId).toBe('tmpl-all');
+
+    // TIKTOK should be active
+    const ttRes = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'سلام عليكم',
+      channel: 'TIKTOK',
+    });
+    expect(ttRes.kind).toBe('smart_reply');
+
+    // TELEGRAM_BOT should be active
+    const tgBotRes = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'سلام عليكم',
+      channel: 'TELEGRAM_BOT',
+    });
+    expect(tgBotRes.kind).toBe('smart_reply');
+
+    // TELEGRAM_USER should be active
+    const tgUserRes = await evaluateInboundBotReply({
+      companyId: 'co-1',
+      text: 'سلام عليكم',
+      channel: 'TELEGRAM_USER',
+    });
+    expect(tgUserRes.kind).toBe('smart_reply');
+  });
 });
 
 describe('botRuleEngine matchSmartReplyTemplates', () => {
@@ -337,5 +509,20 @@ describe('botRuleEngine matchSmartReplyTemplates', () => {
   test('returns null for empty templates or text', () => {
     expect(matchSmartReplyTemplates({ text: '', templates })).toBeNull();
     expect(matchSmartReplyTemplates({ text: 'سلام', templates: [] })).toBeNull();
+  });
+
+  test('filters templates by channel', () => {
+    const channelTemplates = [
+      { id: 'wa', name: 'واتساب', channels: ['WHATSAPP'], keywords: ['مرحبا'], responses: ['رد واتساب'] },
+      { id: 'fb', name: 'فيسبوك', channels: ['FACEBOOK'], keywords: ['مرحبا'], responses: ['رد فيسبوك'] },
+    ];
+    const waRes = matchSmartReplyTemplates({ text: 'مرحبا', templates: channelTemplates, channel: 'WHATSAPP' });
+    expect(waRes?.ruleId).toBe('wa');
+
+    const fbRes = matchSmartReplyTemplates({ text: 'مرحبا', templates: channelTemplates, channel: 'FACEBOOK' });
+    expect(fbRes?.ruleId).toBe('fb');
+
+    const igRes = matchSmartReplyTemplates({ text: 'مرحبا', templates: channelTemplates, channel: 'INSTAGRAM' });
+    expect(igRes).toBeNull();
   });
 });

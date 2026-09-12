@@ -14232,6 +14232,19 @@ declare module 'react-i18next' {
         incompleteReportsError: string;
         incompleteRecoveryOverview: string;
         incompleteValue: string;
+        incompleteDestinyTitle: string;
+        incompleteDestinySubtitle: string;
+        incompleteDestinyDelivered: string;
+        incompleteDestinyReturned: string;
+        incompleteDestinyCancelled: string;
+        incompleteDestinyInProgress: string;
+        incompleteDeliverySuccessRate: string;
+        incompleteEffectiveDeliveryRate: string;
+        incompleteStatusBreakdown: string;
+        incompleteQualityExcellent: string;
+        incompleteQualityGood: string;
+        incompleteQualityNeedsAttention: string;
+        incompleteViewOrder: string;
         workspaceTitle: string;
         myWorkspace: string;
         logCall: string;
@@ -15450,6 +15463,8 @@ declare module 'react-i18next' {
         k_261: string;
         k_262: string;
         k_263: string;
+        k_264: string;
+        k_265: string;
       };
       returnsAnalytics: {
         title: string;
