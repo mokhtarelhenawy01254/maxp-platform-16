@@ -93,6 +93,32 @@ exports.createShipment = async (req, res) => {
         })
       , 2);
     }
+    let orderMeta = {};
+    try {
+      orderMeta = typeof order.metadata === 'string' ? JSON.parse(order.metadata) : (order.metadata || {});
+    } catch (e) {}
+    orderMeta.trackingNumber = String(result.trackingNumber);
+    orderMeta.shippingCarrier = 'BOSTA';
+    orderMeta.bostaDeliveryId = result._id;
+
+    await safeQuery(() =>
+      prisma.order.update({
+        where: { id: order.id },
+        data: {
+          status: 'SHIPPED',
+          customStatusCode: null,
+          metadata: JSON.stringify(orderMeta),
+          statusHistory: {
+            create: {
+              status: 'SHIPPED',
+              oldStatus: order.status,
+              reason: `تم إنشاء بوليصة بوستا برقم ${result.trackingNumber}`,
+              changedBy: req.user?.id || 'SYSTEM',
+            },
+          },
+        },
+      })
+    , 2);
 
     res.json({ success: true, data: result, message: `تم إنشاء الشحنة بنجاح برقم تتبع ${result.trackingNumber}` });
   } catch (error) {

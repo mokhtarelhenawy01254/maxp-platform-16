@@ -128,6 +128,9 @@ export interface Order {
   sourceType?: string;
   turboShipmentStatus?: string;
   turboTrackingNumber?: string;
+  carrierType?: string;
+  shipment?: any;
+  shipments?: any[];
   affiliateId?: string;
   affiliate?: AffiliateFilterOption;
   merchantOrder?: MerchantOrderScope;
@@ -560,7 +563,19 @@ const transformOrder = (order: RawOrder): Order => {
           governorate: order.governorate || "",
           country: "",
         },
-    trackingNumber: order.trackingNumber || undefined,
+    trackingNumber:
+      order.trackingNumber ||
+      order.metadata?.trackingNumber ||
+      order.shipments?.[0]?.trackingNumber ||
+      order.turboTrackingNumber ||
+      undefined,
+    carrierType:
+      order.carrierType ||
+      order.metadata?.shippingCarrier ||
+      order.shipments?.[0]?.carrierType ||
+      (order.turboTrackingNumber ? "TURBO" : undefined),
+    shipment: order.shipment || order.shipments?.[0] || undefined,
+    shipments: order.shipments || [],
     notes: order.notes || "",
     createdAt: order.createdAt || new Date().toISOString(),
     conversationId: order.conversationId || undefined,

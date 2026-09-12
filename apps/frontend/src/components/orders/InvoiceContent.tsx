@@ -154,6 +154,7 @@ const InvoiceContent: React.FC<InvoiceContentProps> = ({ invoice, settings: ps, 
     invoice.order?.turboTrackingNumber ||
     (invoice as any).trackingNumber ||
     (invoice.order as any)?.shipment?.trackingNumber ||
+    (invoice.order as any)?.shipments?.[0]?.trackingNumber ||
     null;
 
   const showOrderBarcode = s.showBarcodeOrderCode !== false && invoice.order?.orderNumber;

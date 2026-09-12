@@ -525,6 +525,18 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
           tax: parsedTax,
           shipping: resolvedShipping,
           total: resolvedTotal,
+          trackingNumber:
+            simpleOrder.trackingNumber ||
+            simpleOrder.shipments?.[0]?.trackingNumber ||
+            simpleOrder.turboTrackingNumber ||
+            (simpleOrder.metadata as any)?.trackingNumber ||
+            null,
+          carrierType:
+            simpleOrder.carrierType ||
+            simpleOrder.shipments?.[0]?.carrierType ||
+            (simpleOrder.metadata as any)?.shippingCarrier ||
+            null,
+          shipments: simpleOrder.shipments || [],
           currency: "EGP",
           isViewed: true,
         };

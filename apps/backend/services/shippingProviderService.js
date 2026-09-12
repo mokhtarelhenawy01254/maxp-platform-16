@@ -264,19 +264,38 @@ const updateShipmentFromProviderResult = async (prisma, shipment, provider, resu
   if (shipment.orderId && (result.trackingNumber || shipment.trackingNumber)) {
     try {
       const finalTrackingNumber = result.trackingNumber || shipment.trackingNumber;
+
+      let existingOrderMeta = {};
+      try {
+        existingOrderMeta = typeof shipment.order?.metadata === 'string'
+          ? JSON.parse(shipment.order.metadata)
+          : (shipment.order?.metadata || {});
+      } catch (e) {}
+
+      existingOrderMeta.trackingNumber = String(finalTrackingNumber);
+      existingOrderMeta.shippingCarrier = provider.providerKey;
+
       await prisma.order.update({
         where: { id: shipment.orderId },
         data: {
           status: 'SHIPPED',
-          trackingNumber: finalTrackingNumber,
-          carrierType: provider.providerKey,
+          customStatusCode: null,
+          metadata: JSON.stringify(existingOrderMeta),
           ...(provider.providerKey === 'TURBO'
             ? {
-                turboTrackingNumber: finalTrackingNumber,
+                turboTrackingNumber: String(finalTrackingNumber),
                 turboShipmentId: result.externalShipmentId || result.shipmentId || shipment.externalShipmentId || null,
                 turboShipmentStatus: 'created',
               }
             : {}),
+          statusHistory: {
+            create: {
+              status: 'SHIPPED',
+              oldStatus: shipment.order?.status || 'PENDING',
+              reason: `تم إنشاء الشحنة وتوجيهها لشركة ${provider.providerKey} بنجاح (رقم التتبع: ${finalTrackingNumber})`,
+              changedBy: 'SYSTEM',
+            },
+          },
         },
       });
     } catch (orderSyncErr) {
@@ -435,6 +454,7 @@ const createProviderShipment = async (prisma, shipmentOrId, options = {}) => {
       totalAmount: codAmount,
       price: codAmount,
       notes: shipment.order?.notes || '',
+      metadata: shipment.order?.metadata || null,
     };
 
     try {

@@ -1,6 +1,14 @@
 const axios = require('axios');
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
 const { calculateCollectableCodAmount } = require('../utils/shippingFinancialUtils');
+const {
+  cleanPhoneNumber,
+  cleanCustomerName,
+  cleanShippingAddress,
+  cleanShippingNotes,
+  formatShipmentContents,
+  detectGovernorateFromText,
+} = require('../utils/shippingSanitizer');
 
 const BOSTA_DELIVERY_TYPES = {
   FORWARD: 10,
@@ -176,40 +184,21 @@ class BostaService {
     const items = order.orderItems || [];
     const totalWeight = items.reduce((sum, item) => sum + Number(item.product?.weight || item.weight || 0.5), 0.5);
 
-    const formattedItems = items.map(item => {
-      const name = item.productName || item.product?.name || item.name || 'منتج';
-      const qty = item.quantity || 1;
-      const size = item.productSize || item.size || '';
-      const color = item.productColor || item.color || '';
-      const variant = [size, color].filter(Boolean).join(' - ');
-      return variant ? `${name} (${variant}) × ${qty}` : `${name} × ${qty}`;
-    });
-    const itemsDescription = formattedItems.length > 0 ? formattedItems.join(' + ') : `طلب #${order.orderNumber || order.id}`;
+    const itemsDescription = formatShipmentContents(items, order.metadata, 'منتج');
+    const addressLine = cleanShippingAddress(order.shippingAddress, order.customerAddress || customer?.address);
 
-    // Format address
-    let addressLine = order.customerAddress || order.shippingAddress || customer?.address || '';
-    let parsedCity = order.city || order.governorate || customer?.city || customer?.governorate || 'Cairo';
-    let parsedDistrict = order.city || undefined;
-
-    if (typeof addressLine === 'string' && addressLine.trim().startsWith('{')) {
-      try {
-        const parsed = JSON.parse(addressLine);
-        if (parsed && typeof parsed === 'object') {
-          addressLine = parsed.address || parsed.addressLine1 || parsed.street || addressLine;
-          if (parsed.city) parsedCity = parsed.city;
-          if (parsed.governorate && !parsedCity) parsedCity = parsed.governorate;
-          if (parsed.district) parsedDistrict = parsed.district;
-        }
-      } catch {
-        // keep string as is
-      }
+    let parsedCity = order.city || order.governorate || customer?.city || customer?.governorate || '';
+    if (!parsedCity || parsedCity.trim() === '') {
+      parsedCity = detectGovernorateFromText(order.shippingAddress) || detectGovernorateFromText(order.customerAddress) || 'Cairo';
     }
+    const parsedDistrict = order.city || undefined;
 
-    const fullName = (order.customerName || customer?.name || customer?.firstName || 'عميل').trim();
+    const fullName = cleanCustomerName(order.customerName || customer?.name || customer?.firstName || 'عميل');
     const nameParts = fullName.split(/\s+/);
     const firstName = nameParts[0] || 'عميل';
     const lastName = nameParts.slice(1).join(' ') || '.';
-    const phone = order.customerPhone || customer?.phone || '';
+    const phone = cleanPhoneNumber(order.customerPhone || customer?.phone || '');
+    const finalNotes = cleanShippingNotes(order.notes, 'المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة');
 
     return {
       type,
@@ -231,7 +220,7 @@ class BostaService {
         phone,
         email: order.customerEmail || customer?.email || '',
       },
-      notes: `Order ID: ${order.orderNumber || order.id}`,
+      notes: finalNotes.substring(0, 250),
     };
   }
 }

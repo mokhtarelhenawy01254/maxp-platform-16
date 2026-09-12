@@ -4,6 +4,14 @@
  */
 
 const { getBestShippingAddressFields } = require('./addressParser');
+const {
+  cleanPhoneNumber,
+  cleanCustomerName,
+  cleanShippingAddress,
+  cleanShippingNotes,
+  resolveBestPhoneNumbers,
+  isGenericOrInternalIdentifier,
+} = require('../shippingSanitizer');
 
 function calculateTotalWeight(items) {
   if (!items || items.length === 0) {
@@ -52,7 +60,7 @@ function formatOrderForTurbo(order, customer, items) {
 
   let governorate = addressFields.governorate || order.city || order.governorate;
 
-  const customerName = (
+  const rawCustomerName = (
     order.customerName ||
     order.guestName ||
     (customer?.firstName ? `${customer.firstName} ${customer.lastName || ''}`.trim() : null) ||
@@ -62,8 +70,9 @@ function formatOrderForTurbo(order, customer, items) {
     addressFields.parsedAddress?.customerName ||
     ''
   ).trim();
+  const customerName = cleanCustomerName(rawCustomerName);
 
-  const customerPhone = normalizeDigits((
+  const rawPhone1 = (
     order.customerPhone ||
     order.guestPhone ||
     customer?.phone ||
@@ -71,7 +80,23 @@ function formatOrderForTurbo(order, customer, items) {
     addressFields.parsedAddress?.phone ||
     addressFields.parsedAddress?.mobile ||
     ''
-  ).trim());
+  ).trim();
+
+  let rawPhone2 = order.phone2 || order.alternativePhone || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.alternativePhone || addressFields.parsedAddress?.secondPhone || null;
+  if (!rawPhone2 && order.notes) {
+    const noteMatch = String(order.notes).match(/(?:هاتف\s*بديل|رقم\s*بديل|بديل|phone2|alt(?:ernative)?\s*phone)[\s:]*([0-9\u0660-\u0669]{11})/i);
+    if (noteMatch && noteMatch[1]) {
+      rawPhone2 = noteMatch[1];
+    }
+  }
+
+  const resolvedPhones = resolveBestPhoneNumbers(
+    rawPhone1,
+    rawPhone2,
+    `${order.shippingAddress || ''} ${order.customerAddress || ''}`
+  );
+  const customerPhone = resolvedPhones.primaryPhone;
+  const resolvedPhone2 = resolvedPhones.secondaryPhone || null;
 
   const totalValue = parseFloat(order.total || order.finalTotal || order.totalAmount || order.grandTotal || 0);
   const shippingFee = parseFloat(order.shipping || order.shippingCost || order.deliveryFee || 0);
@@ -101,8 +126,15 @@ function formatOrderForTurbo(order, customer, items) {
       }
     }
 
+    let prodName = item.productName || item.name || item.product?.name || item.title;
+    if (isGenericOrInternalIdentifier(prodName)) {
+      prodName = (!isGenericOrInternalIdentifier(variantName) ? variantName : null) ||
+                 (!isGenericOrInternalIdentifier(item.productDetails) ? item.productDetails : null) ||
+                 'منتج';
+    }
+
     return {
-      productName: item.productName || item.name || item.product?.name || 'منتج',
+      productName: prodName,
       color: color ? String(color).trim() : null,
       size: size ? String(size).trim() : null,
       variantName: variantName ? String(variantName).trim() : null,
@@ -121,18 +153,7 @@ function formatOrderForTurbo(order, customer, items) {
   }
 
   const requestType = order.requestType || parsedMetadata.requestType || order.orderType || order.type || null;
-
-  // Resolve alternative phone from order, address, or embedded in notes
-  let resolvedPhone2 = order.phone2 || order.alternativePhone || addressFields.parsedAddress?.phone2 || addressFields.parsedAddress?.alternativePhone || addressFields.parsedAddress?.secondPhone || null;
-  if (!resolvedPhone2 && order.notes) {
-    const noteMatch = String(order.notes).match(/(?:هاتف\s*بديل|رقم\s*بديل|بديل|phone2|alt(?:ernative)?\s*phone)[\s:]*([0-9\u0660-\u0669]{11})/i);
-    if (noteMatch && noteMatch[1]) {
-      resolvedPhone2 = noteMatch[1];
-    }
-  }
-  if (resolvedPhone2) {
-    resolvedPhone2 = normalizeDigits(resolvedPhone2);
-  }
+  const cleanedNotes = cleanShippingNotes(order.notes || '', undefined, resolvedPhone2);
 
   return {
     orderId: order.id,
@@ -140,7 +161,8 @@ function formatOrderForTurbo(order, customer, items) {
     customerName: customerName,
     customerPhone: customerPhone,
     customerEmail: order.customerEmail || order.guestEmail || customer?.email || '',
-    shippingAddress: rawShippingAddress,
+    shippingAddress: cleanShippingAddress(order.shippingAddress, order.customerAddress, customerName),
+    rawShippingAddress: rawShippingAddress,
     customerAddress: order.customerAddress || null,
     city: order.city || addressFields.city,
     // Merged district/area from both address sources (structured JSON + plain text),
@@ -154,7 +176,7 @@ function formatOrderForTurbo(order, customer, items) {
     totalValue: totalValue,
     paymentMethod: order.paymentMethod || 'CASH',
     paymentStatus: order.paymentStatus || null,
-    notes: order.notes || '',
+    notes: cleanedNotes,
     createdAt: order.createdAt || new Date().toISOString(),
     phone2: resolvedPhone2,
     alternativePhone: resolvedPhone2,

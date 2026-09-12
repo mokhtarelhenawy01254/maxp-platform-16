@@ -3182,6 +3182,19 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
               merchantPayoutId: true
             }
           },
+          shipments: {
+            select: {
+              id: true,
+              carrierType: true,
+              trackingNumber: true,
+              status: true,
+              labelUrl: true,
+              externalShipmentId: true,
+              cost: true,
+            },
+            orderBy: { createdAt: 'desc' },
+            take: 1,
+          },
           ...buildScopedMerchantOrderInclude(merchant)
         }
       }),
@@ -3504,7 +3517,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
             }
           };
         }) : [],
-        trackingNumber: order.trackingNumber,
+        trackingNumber: order.shipments?.[0]?.trackingNumber || orderMetadata?.trackingNumber || order.turboTrackingNumber || null,
+        carrierType: order.shipments?.[0]?.carrierType || orderMetadata?.shippingCarrier || (order.turboTrackingNumber ? 'TURBO' : null),
+        shipment: order.shipments?.[0] || null,
+        shipments: order.shipments || [],
         notes: order.notes,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
@@ -5649,7 +5665,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             }
           };
         }),
-        trackingNumber: null,
+        trackingNumber: guestOrder.turboTrackingNumber || safeParseOrderMetadata(guestOrder.metadata)?.trackingNumber || null,
+        carrierType: guestOrder.turboTrackingNumber ? 'TURBO' : (safeParseOrderMetadata(guestOrder.metadata)?.shippingCarrier || null),
+        shipment: null,
+        shipments: [],
         notes: guestOrder.notes || '',
         createdAt: guestOrder.createdAt,
         updatedAt: guestOrder.updatedAt,
@@ -5815,7 +5834,10 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
             }
           };
         }),
-        trackingNumber: order.trackingNumber,
+        trackingNumber: order.shipments?.[0]?.trackingNumber || orderMetadata?.trackingNumber || order.turboTrackingNumber || null,
+        carrierType: order.shipments?.[0]?.carrierType || orderMetadata?.shippingCarrier || (order.turboTrackingNumber ? 'TURBO' : null),
+        shipment: order.shipments?.[0] || null,
+        shipments: order.shipments || [],
         notes: order.notes,
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,

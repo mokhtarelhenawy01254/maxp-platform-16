@@ -85,6 +85,7 @@ exports.createShipment = async (req, res) => {
       totalAmount,
       notes: customNotes || order.notes || order.customerNotes || '',
       weight: weight || order.weight || 1,
+      metadata: order.metadata || null,
     };
 
     // 3. Create shipment via QP Express API
@@ -154,7 +155,17 @@ exports.createShipment = async (req, res) => {
             prisma.order.update({
               where: { id: order.id },
               data: {
+                status: 'SHIPPED',
+                customStatusCode: null,
                 metadata: JSON.stringify(orderMeta),
+                statusHistory: {
+                  create: {
+                    status: 'SHIPPED',
+                    oldStatus: order.status,
+                    reason: `تم إنشاء بوليصة QP Express برقم ${result.trackingNumber}`,
+                    changedBy: req.user?.id || 'SYSTEM',
+                  },
+                },
               },
             })
           , 2);
@@ -171,6 +182,8 @@ exports.createShipment = async (req, res) => {
             prisma.guestOrder.update({
               where: { id: order.id },
               data: {
+                status: 'SHIPPED',
+                trackingNumber: String(result.trackingNumber),
                 metadata: JSON.stringify(guestMeta),
               },
             })
@@ -344,6 +357,7 @@ exports.bulkCreateShipments = async (req, res) => {
           totalAmount,
           notes: defaultNotes || order.notes || order.customerNotes || 'المعاينة في وجود المندوب ولا يوجد استرجاع إلا في حالة عيوب الصناعة',
           weight: order.weight || 1,
+          metadata: order.metadata || null,
         };
 
         const result = await service.createShipment(orderData);
@@ -403,7 +417,17 @@ exports.bulkCreateShipments = async (req, res) => {
             prisma.order.update({
               where: { id: order.id },
               data: {
+                status: 'SHIPPED',
+                customStatusCode: null,
                 metadata: JSON.stringify(orderMeta),
+                statusHistory: {
+                  create: {
+                    status: 'SHIPPED',
+                    oldStatus: order.status,
+                    reason: `تم إنشاء بوليصة QP Express برقم ${result.trackingNumber}`,
+                    changedBy: req.user?.id || 'SYSTEM',
+                  },
+                },
               },
             })
           , 2);

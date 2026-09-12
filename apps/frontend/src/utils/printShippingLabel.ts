@@ -78,10 +78,20 @@ export function toOrderDetailsType(order: SimpleOrderForLabel): OrderDetailsType
     currency: order.currency || "EGP",
     notes: order.notes || "",
     createdAt: order.createdAt || new Date().toISOString(),
-    updatedAt: order.updatedAt || new Date().toISOString(),
-    trackingNumber: order.trackingNumber || order.turboTrackingNumber || null,
-    carrierType: order.carrierType || null,
-    turboTrackingNumber: order.turboTrackingNumber || null,
+    trackingNumber:
+      order.trackingNumber ||
+      order.turboTrackingNumber ||
+      (order as any).shipment?.trackingNumber ||
+      (order as any).shipments?.[0]?.trackingNumber ||
+      (typeof order.metadata === 'object' && order.metadata ? (order.metadata as any).trackingNumber : null) ||
+      null,
+    carrierType:
+      order.carrierType ||
+      (order as any).shipment?.carrierType ||
+      (order as any).shipments?.[0]?.carrierType ||
+      (typeof order.metadata === 'object' && order.metadata ? (order.metadata as any).shippingCarrier : null) ||
+      null,
+    turboTrackingNumber: order.turboTrackingNumber || (order as any).shipment?.trackingNumber || null,
     shippingAddress: order.shippingAddress || "",
   };
 }
@@ -540,6 +550,7 @@ function buildShippingLabelPageMarkup(order: OrderDetailsType, companyName?: str
     order.trackingNumber ||
     order.turboTrackingNumber ||
     (order as any).shipment?.trackingNumber ||
+    (order as any).shipments?.[0]?.trackingNumber ||
     (order as any).merchantOrder?.trackingNumber ||
     null;
 

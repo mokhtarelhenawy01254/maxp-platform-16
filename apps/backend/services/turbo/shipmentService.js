@@ -2,6 +2,7 @@ const axios = require('axios');
 const { getBestShippingAddressFields, extractCleanStreetAddress, cleanLocationName } = require('../../utils/turbo/addressParser');
 const { getTurboGovernorateName, findGovernmentByCity } = require('../../utils/turbo/governorateMapper');
 const { handleError } = require('../../utils/turbo/errorHandler');
+const { cleanShippingNotes } = require('../../utils/shippingSanitizer');
 
 
 function normalizeTextForMatching(text) {
@@ -203,12 +204,14 @@ class ShipmentService {
         codAmount = Math.max(0, codAmount - Number(orderData.codDepositAmount));
       }
 
+      const finalTurboNotes = cleanShippingNotes(notes || `Order #${orderNumber}`, undefined, secondPhone);
+
       const finalAddress = (cleanAddress && cleanAddress.trim().length >= 3) ? cleanAddress.trim() : `${cleanArea || cleanGovernorate} - ${cleanGovernorate}`;
       const shipmentData = {
         authentication_key: apiKey, main_client_code: mainClientCode || 37321, remote_order_id: orderNumber || `Order ${orderNumber}`,
         remote_shipment_id: String(orderId || ''), receiver: finalReceiver, phone1: validPhone, phone2: secondPhone || null,
         api_followup_phone: senderNumber || validPhone, government: cleanGovernorate, area: cleanArea || cleanGovernorate || 'المركز الرئيسي',
-        address: finalAddress, notes: notes || `Order #${orderNumber}`, order_summary: formattedSummary,
+        address: finalAddress, notes: finalTurboNotes, order_summary: formattedSummary,
         return_summary: orderData.returnSummary || defaultReturnSummary,
         amount_to_be_collected: codAmount,
         return_amount: returnAmt, is_order: isOrderVal, can_open: orderData.canOpen !== undefined ? (orderData.canOpen ? "1" : "0") : "1",
@@ -359,7 +362,7 @@ class ShipmentService {
         remote_shipment_id: String(formattedData.orderId || ''), receiver: finalReceiver, phone1: validPhone,
         phone2: formattedData.alternativePhone || null, api_followup_phone: senderNumber || validPhone,
         government: cleanGovernorate, area: cleanArea, address: cleanAddress,
-        notes: formattedData.notes || `Order #${formattedData.orderNumber}`,
+        notes: cleanShippingNotes(formattedData.notes || `Order #${formattedData.orderNumber}`, undefined, formattedData.alternativePhone),
         invoice_number: String(formattedData.orderNumber || ''),
         order_summary: formattedSummary, return_summary: formattedData.returnSummary || defaultReturnSummary,
         amount_to_be_collected: codAmount, return_amount: returnAmt, is_order: isOrderVal,
