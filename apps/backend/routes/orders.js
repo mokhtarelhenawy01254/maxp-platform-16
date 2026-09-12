@@ -23,6 +23,31 @@ const {
   extractAttributionFromCheckoutData
 } = require('../utils/orderAttribution');
 const { detectAbandonReason } = require('../utils/incompleteAbandonReason');
+const {
+  buildDateRangeFilter,
+  EGYPT_TIMEZONE
+} = require('../utils/dateUtils');
+
+// ── Company Timezone Cache (5-minute TTL) ──────────────────────────────
+const _companyTimezoneCache = new Map();
+const getCompanyTimezone = async (companyId) => {
+  if (!companyId) return EGYPT_TIMEZONE;
+  const cached = _companyTimezoneCache.get(companyId);
+  if (cached && (Date.now() - cached.cachedAt < 5 * 60 * 1000)) {
+    return cached.timezone;
+  }
+  try {
+    const comp = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { timezone: true }
+    });
+    const tz = comp?.timezone || EGYPT_TIMEZONE;
+    _companyTimezoneCache.set(companyId, { timezone: tz, cachedAt: Date.now() });
+    return tz;
+  } catch (err) {
+    return EGYPT_TIMEZONE;
+  }
+};
 
 // ── Dynamic Status Code Cache ──────────────────────────────────────────
 // Loads ALL known status codes (system + custom) from orderStatusConfig
@@ -2625,6 +2650,7 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
     }
 
     const orderDetailFeatureAccess = await getOrderDetailFeatureAccess(companyId);
+    const companyTimezone = await getCompanyTimezone(companyId);
 
     // إعدادات الطلبات: عرض السلال غير المكتملة داخل صفحة الطلبات
     let showIncompleteCarts = false;
@@ -2949,21 +2975,12 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    // 3. Filter by Date Range
+    // 3. Filter by Date Range (Timezone-aware)
     if (startDate || endDate) {
-      whereClause.createdAt = {};
-      guestWhereClause.createdAt = {};
-
-      if (startDate) {
-        whereClause.createdAt.gte = new Date(startDate);
-        guestWhereClause.createdAt.gte = new Date(startDate);
-      }
-      if (endDate) {
-        // Set end date to end of day
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        whereClause.createdAt.lte = end;
-        guestWhereClause.createdAt.lte = end;
+      const dateRangeFilter = buildDateRangeFilter(startDate, endDate, companyTimezone);
+      if (dateRangeFilter.gte || dateRangeFilter.lte) {
+        whereClause.createdAt = dateRangeFilter;
+        guestWhereClause.createdAt = dateRangeFilter;
       }
     }
 
@@ -3136,14 +3153,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         }
       }
       if (startDate || endDate) {
-        const createdAtFilter = {};
-        if (startDate) createdAtFilter.gte = new Date(startDate);
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          createdAtFilter.lte = end;
+        const cartDateRangeFilter = buildDateRangeFilter(startDate, endDate, companyTimezone);
+        if (cartDateRangeFilter.gte || cartDateRangeFilter.lte) {
+          cartAnd.push({ createdAt: cartDateRangeFilter });
         }
-        cartAnd.push({ createdAt: createdAtFilter });
       }
       // استبعاد السلال اللي اتحولت بالفعل لطلب حقيقي (فشل حذفها وقت التحويل)
       // حتى لا تظهر السلة + الطلب المحول كسطرين متكررين في القائمة.
@@ -3901,7 +3914,8 @@ router.get('/simple/stats', verifyToken.authenticateToken, async (req, res) => {
       });
     }
 
-    const stats = await simpleOrderService.getSimpleStats(companyId, dateFrom || null, dateTo || null);
+    const statsTimezone = await getCompanyTimezone(companyId);
+    const stats = await simpleOrderService.getSimpleStats(companyId, dateFrom || null, dateTo || null, statsTimezone);
 
     console.log(`✅ [ORDERS-STATS] Stats sent for companyId: ${companyId}`, {
       totalOrders: stats.totalOrders,
@@ -6855,17 +6869,11 @@ router.get('/export', verifyToken.authenticateToken, async (req, res) => {
     }
 
     if (startDate || endDate) {
-      whereClause.createdAt = {};
-      guestWhereClause.createdAt = {};
-      if (startDate) {
-        whereClause.createdAt.gte = new Date(startDate);
-        guestWhereClause.createdAt.gte = new Date(startDate);
-      }
-      if (endDate) {
-        const end = new Date(endDate);
-        end.setHours(23, 59, 59, 999);
-        whereClause.createdAt.lte = end;
-        guestWhereClause.createdAt.lte = end;
+      const exportTimezone = await getCompanyTimezone(companyId);
+      const dateRangeFilter = buildDateRangeFilter(startDate, endDate, exportTimezone);
+      if (dateRangeFilter.gte || dateRangeFilter.lte) {
+        whereClause.createdAt = dateRangeFilter;
+        guestWhereClause.createdAt = dateRangeFilter;
       }
     }
 

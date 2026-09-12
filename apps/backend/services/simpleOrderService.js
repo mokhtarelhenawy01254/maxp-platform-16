@@ -1,4 +1,5 @@
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
+const { buildDateRangeFilter, EGYPT_TIMEZONE } = require('../utils/dateUtils');
 
 class SimpleOrderService {
   constructor() {
@@ -590,11 +591,12 @@ class SimpleOrderService {
   }
 
   // إحصائيات بسيطة - قراءة من قاعدة البيانات
-  async getSimpleStats(companyId = null, dateFrom = null, dateTo = null) {
+  async getSimpleStats(companyId = null, dateFrom = null, dateTo = null, timezone = EGYPT_TIMEZONE) {
     try {
       console.log(`📊 [SIMPLE-STATS] Getting stats for companyId: ${companyId}`, {
         dateFrom,
-        dateTo
+        dateTo,
+        timezone
       });
 
       if (!companyId) {
@@ -614,15 +616,9 @@ class SimpleOrderService {
       const where = { companyId, billingHoldAt: null };
 
       if (dateFrom || dateTo) {
-        where.createdAt = {};
-        if (dateFrom) {
-          where.createdAt.gte = new Date(dateFrom);
-        }
-        if (dateTo) {
-          // إضافة يوم كامل للتاريخ النهائي (نهاية اليوم)
-          const endDate = new Date(dateTo);
-          endDate.setHours(23, 59, 59, 999);
-          where.createdAt.lte = endDate;
+        const dateRangeFilter = buildDateRangeFilter(dateFrom, dateTo, timezone);
+        if (dateRangeFilter.gte || dateRangeFilter.lte) {
+          where.createdAt = dateRangeFilter;
         }
       }
 

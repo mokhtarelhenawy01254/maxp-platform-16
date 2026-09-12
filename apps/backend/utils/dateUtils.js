@@ -54,11 +54,14 @@ function getStartOfDayInEgypt(date = new Date()) {
  * Example: For Egypt (UTC+2), midnight = 22:00 UTC of the previous calendar day.
  */
 function getStartOfDayInTimezone(date = new Date(), timezone = EGYPT_TIMEZONE) {
-  const d = new Date(date);
-  const dateStr = getDateStringInTimezone(d, timezone);
+  let dateStr;
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    dateStr = date.trim();
+  } else {
+    dateStr = getDateStringInTimezone(new Date(date), timezone);
+  }
 
-  // Now we need "midnight in Egypt" expressed as UTC.
-  // Egypt is UTC+2 normally, UTC+3 during DST.
+  // Now we need "midnight in target timezone" expressed as UTC.
   // We find the actual UTC offset for this specific date/timezone.
   const midnightLocalString = `${dateStr}T00:00:00`;
   // Create a "fake UTC" date and find offset by comparing
@@ -91,13 +94,47 @@ function getEndOfDayInEgypt(date = new Date()) {
  * الحصول على نهاية اليوم في منطقة زمنية محددة
  */
 function getEndOfDayInTimezone(date = new Date(), timezone = EGYPT_TIMEZONE) {
-  const start = getStartOfDayInTimezone(date, timezone);
-  const end = new Date(start);
-  end.setUTCHours(end.getUTCHours() + 23);
-  end.setUTCMinutes(59);
-  end.setUTCSeconds(59);
-  end.setUTCMilliseconds(999);
-  return end;
+  let dateStr;
+  if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date.trim())) {
+    dateStr = date.trim();
+  } else {
+    dateStr = getDateStringInTimezone(new Date(date), timezone);
+  }
+
+  const endLocalString = `${dateStr}T23:59:59.999`;
+  const testDate = new Date(endLocalString + 'Z');
+  const localTime = new Date(testDate.toLocaleString('en-US', { timeZone: timezone }));
+  const utcTime = new Date(testDate.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offsetMs = localTime.getTime() - utcTime.getTime();
+
+  return new Date(testDate.getTime() - offsetMs);
+}
+
+/**
+ * ✅ تحويل startDate و endDate إلى نطاق زمني Prisma ({ gte?, lte? }) مع مراعاة المنطقة الزمنية (Timezone)
+ * يدعم صيغ: YYYY-MM-DD أو سلاسل/كائنات التاريخ الكاملة
+ */
+function buildDateRangeFilter(startDate, endDate, timezone = EGYPT_TIMEZONE) {
+  const filter = {};
+  if (startDate) {
+    const s = typeof startDate === 'string' ? startDate.trim() : startDate;
+    if (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)) {
+      filter.gte = getStartOfDayInTimezone(s, timezone);
+    } else {
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) filter.gte = d;
+    }
+  }
+  if (endDate) {
+    const e = typeof endDate === 'string' ? endDate.trim() : endDate;
+    if (typeof e === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(e)) {
+      filter.lte = getEndOfDayInTimezone(e, timezone);
+    } else {
+      const d = new Date(e);
+      if (!isNaN(d.getTime())) filter.lte = d;
+    }
+  }
+  return filter;
 }
 
 /**
@@ -267,6 +304,7 @@ module.exports = {
   getEndOfDayInTimezone,
   getDateStringInTimezone,
   normalizeDateForDb,
+  buildDateRangeFilter,
   // Legacy Egypt Wrappers
   getNowInEgypt,
   getStartOfDayInEgypt,

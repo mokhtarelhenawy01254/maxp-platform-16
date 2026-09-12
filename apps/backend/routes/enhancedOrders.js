@@ -13,6 +13,27 @@ const verifyToken = require("../utils/verifyToken");
 const { checkAppAccess } = require('../middleware/checkAppAccess');
 
 const DEFAULT_MIGRATION_COMPANY_ID = 'cmdt8nrjq003vufuss47dqc45';
+const { EGYPT_TIMEZONE } = require('../utils/dateUtils');
+
+const _companyTimezoneCache = new Map();
+const getCompanyTimezone = async (companyId) => {
+  if (!companyId) return EGYPT_TIMEZONE;
+  const cached = _companyTimezoneCache.get(companyId);
+  if (cached && (Date.now() - cached.cachedAt < 5 * 60 * 1000)) {
+    return cached.timezone;
+  }
+  try {
+    const comp = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: { timezone: true }
+    });
+    const tz = comp?.timezone || EGYPT_TIMEZONE;
+    _companyTimezoneCache.set(companyId, { timezone: tz, cachedAt: Date.now() });
+    return tz;
+  } catch (err) {
+    return EGYPT_TIMEZONE;
+  }
+};
 
 // أداة الطلب اليدوي (اشتراك): هي الوحيدة اللي تحدد انتهاء الاشتراك والتعليق
 const MANUAL_ORDER_APP_SLUGS = ['manual-orders-pro', 'store-pro'];
@@ -235,6 +256,8 @@ router.get('/', async (req, res) => {
       });
     }
 
+    const companyTimezone = await getCompanyTimezone(companyId);
+
     const result = await enhancedOrderService.getEnhancedOrders(companyId, {
       page: parseInt(page),
       limit: parseInt(limit),
@@ -244,6 +267,7 @@ router.get('/', async (req, res) => {
       conversationId,
       dateFrom,
       dateTo,
+      timezone: companyTimezone,
       minConfidence: minConfidence ? parseFloat(minConfidence) : undefined,
       extractionMethod,
       sourceType,
@@ -519,8 +543,9 @@ router.get('/stats', async (req, res) => {
 
     const { dateFrom, dateTo } = req.query;
     const companyId = req.user.companyId;
+    const companyTimezone = await getCompanyTimezone(companyId);
 
-    const stats = await enhancedOrderService.getOrderStats(companyId, dateFrom, dateTo);
+    const stats = await enhancedOrderService.getOrderStats(companyId, dateFrom, dateTo, companyTimezone);
 
     await enhancedOrderService.disconnect();
 
@@ -1055,8 +1080,9 @@ router.get('/conversations/stats', async (req, res) => {
 
     const { dateFrom, dateTo } = req.query;
     const companyId = req.user.companyId;
+    const companyTimezone = await getCompanyTimezone(companyId);
 
-    const stats = await enhancedOrderService.getConversationCompletionStats(companyId, dateFrom, dateTo);
+    const stats = await enhancedOrderService.getConversationCompletionStats(companyId, dateFrom, dateTo, companyTimezone);
 
     await enhancedOrderService.disconnect();
 

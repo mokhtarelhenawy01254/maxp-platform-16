@@ -1,4 +1,5 @@
 const { getSharedPrismaClient, safeQuery } = require('./sharedDatabase');
+const { buildDateRangeFilter, EGYPT_TIMEZONE } = require('../utils/dateUtils');
 const { getWooCommerceAutoExportService } = require('./wooCommerceAutoExportService');
 const orderService = require('./orderService');
 const internalSyncService = require('./internalSyncService');
@@ -1984,9 +1985,10 @@ class EnhancedOrderService {
       }
 
       if (dateFrom || dateTo) {
-        where.createdAt = {};
-        if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-        if (dateTo) where.createdAt.lte = new Date(dateTo);
+        const dateRangeFilter = buildDateRangeFilter(dateFrom, dateTo, options.timezone || EGYPT_TIMEZONE);
+        if (dateRangeFilter.gte || dateRangeFilter.lte) {
+          where.createdAt = dateRangeFilter;
+        }
       }
 
       if (sourceType) {
@@ -2083,16 +2085,17 @@ class EnhancedOrderService {
   /**
    * إحصائيات الطلبات المحسنة
    */
-  async getOrderStats(companyId, dateFrom, dateTo) {
+  async getOrderStats(companyId, dateFrom, dateTo, timezone = EGYPT_TIMEZONE) {
     try {
       const where = {
         companyId: companyId
       };
 
       if (dateFrom || dateTo) {
-        where.createdAt = {};
-        if (dateFrom) where.createdAt.gte = new Date(dateFrom);
-        if (dateTo) where.createdAt.lte = new Date(dateTo);
+        const dateRangeFilter = buildDateRangeFilter(dateFrom, dateTo, timezone);
+        if (dateRangeFilter.gte || dateRangeFilter.lte) {
+          where.createdAt = dateRangeFilter;
+        }
       }
 
       const [
@@ -2203,7 +2206,7 @@ class EnhancedOrderService {
   /**
    * إحصائيات المحادثات المكتملة
    */
-  async getConversationCompletionStats(companyId, dateFrom, dateTo) {
+  async getConversationCompletionStats(companyId, dateFrom, dateTo, timezone = EGYPT_TIMEZONE) {
     try {
       const where = {
         companyId: companyId,
@@ -2211,9 +2214,10 @@ class EnhancedOrderService {
       };
 
       if (dateFrom || dateTo) {
-        where.updatedAt = {};
-        if (dateFrom) where.updatedAt.gte = new Date(dateFrom);
-        if (dateTo) where.updatedAt.lte = new Date(dateTo);
+        const dateRangeFilter = buildDateRangeFilter(dateFrom, dateTo, timezone);
+        if (dateRangeFilter.gte || dateRangeFilter.lte) {
+          where.updatedAt = dateRangeFilter;
+        }
       }
 
       const [
