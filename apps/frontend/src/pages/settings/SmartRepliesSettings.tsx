@@ -415,6 +415,8 @@ const SmartRepliesSettings: React.FC = () => {
     }
   };
 
+  const templatesContainerRef = React.useRef<HTMLDivElement>(null);
+
   const handleAddTemplate = () => {
     const newTemplate: AutoReplyTemplate = {
       id: `custom_${Date.now()}`,
@@ -425,6 +427,12 @@ const SmartRepliesSettings: React.FC = () => {
       responses: [""],
     };
     handleEditStart(newTemplate);
+    setTimeout(() => {
+      templatesContainerRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }, 60);
   };
 
   const handleAddKeyword = () => {
@@ -668,62 +676,83 @@ const SmartRepliesSettings: React.FC = () => {
         </div>
 
         {/* Templates Section */}
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-          <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-gray-900 dark:text-white">
-                {t("smartReplies.templates") || "قوالب الردود"}
-              </h2>
-              <span className="text-xs px-2.5 py-0.5 font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
-                {settings.templates.length}
-              </span>
-            </div>
-          </div>
+        {(() => {
+          const isCreatingNew = Boolean(
+            editingId &&
+            editingTemplate &&
+            !settings.templates.some((t) => t.id === editingId)
+          );
+          const templatesToRender =
+            isCreatingNew && editingTemplate
+              ? [editingTemplate, ...settings.templates]
+              : settings.templates;
 
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {settings.templates.length === 0 && !editingId ? (
-              <div className="p-12 text-center text-gray-500 dark:text-gray-400">
-                <ChatBubbleLeftRightIcon className="w-12 h-12 mx-auto text-gray-400 mb-3 opacity-60" />
-                <p className="font-semibold text-gray-800 dark:text-gray-200 text-base">
-                  {t("smartReplies.noRules") || "لا توجد قوالب ردود بعد"}
-                </p>
-                <p className="text-sm mt-1 max-w-md mx-auto">
-                  {t("smartReplies.noRulesDesc") ||
-                    "أضف قوالب الردود التلقائية لتسهيل وسرعة الرد على العملاء فور إرسالهم للرسائل"}
-                </p>
-                <button
-                  onClick={handleAddTemplate}
-                  className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer"
-                >
-                  <PlusIcon className="h-4 w-4" />
-                  <span>{t("smartReplies.addRule") || "إضافة قالب جديد"}</span>
-                </button>
+          return (
+            <div
+              ref={templatesContainerRef}
+              className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden"
+            >
+              <div className="p-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                    {t("smartReplies.templates") || "قوالب الردود"}
+                  </h2>
+                  <span className="text-xs px-2.5 py-0.5 font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-full">
+                    {settings.templates.length}
+                  </span>
+                </div>
               </div>
-            ) : (
-              settings.templates.map((template) => {
-                const isEditing = editingId === template.id;
 
-                if (isEditing && editingTemplate) {
-                  // Edit Mode
-                  return (
-                    <div
-                      key={template.id}
-                      className="p-5 sm:p-6 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-5 border-y-2 border-indigo-500/40"
+              <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                {templatesToRender.length === 0 ? (
+                  <div className="p-12 text-center text-gray-500 dark:text-gray-400">
+                    <ChatBubbleLeftRightIcon className="w-12 h-12 mx-auto text-gray-400 mb-3 opacity-60" />
+                    <p className="font-semibold text-gray-800 dark:text-gray-200 text-base">
+                      {t("smartReplies.noRules") || "لا توجد قوالب ردود بعد"}
+                    </p>
+                    <p className="text-sm mt-1 max-w-md mx-auto">
+                      {t("smartReplies.noRulesDesc") ||
+                        "أضف قوالب الردود التلقائية لتسهيل وسرعة الرد على العملاء فور إرسالهم للرسائل"}
+                    </p>
+                    <button
+                      onClick={handleAddTemplate}
+                      className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium transition-colors cursor-pointer"
                     >
-                      {/* Edit Header */}
-                      <div className="flex items-center justify-between pb-3 border-b border-indigo-100 dark:border-indigo-900/50">
-                        <div className="flex items-center gap-2.5">
-                          <span className="p-1.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 rounded-lg">
-                            <PencilIcon className="h-5 w-5" />
-                          </span>
-                          <h3 className="font-bold text-gray-900 dark:text-white text-base">
-                            {t("smartReplies.editTemplate") || "تعديل القالب"}
-                          </h3>
-                        </div>
-                        <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                          جاري التعديل الآن
-                        </span>
-                      </div>
+                      <PlusIcon className="h-4 w-4" />
+                      <span>{t("smartReplies.addRule") || "إضافة قالب جديد"}</span>
+                    </button>
+                  </div>
+                ) : (
+                  templatesToRender.map((template) => {
+                    const isEditing = editingId === template.id;
+
+                    if (isEditing && editingTemplate) {
+                      // Edit Mode
+                      return (
+                        <div
+                          key={template.id}
+                          className="p-5 sm:p-6 bg-indigo-50/30 dark:bg-indigo-950/20 space-y-5 border-y-2 border-indigo-500/40"
+                        >
+                          {/* Edit Header */}
+                          <div className="flex items-center justify-between pb-3 border-b border-indigo-100 dark:border-indigo-900/50">
+                            <div className="flex items-center gap-2.5">
+                              <span className="p-1.5 bg-indigo-100 dark:bg-indigo-900/60 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                                {isCreatingNew ? (
+                                  <PlusIcon className="h-5 w-5" />
+                                ) : (
+                                  <PencilIcon className="h-5 w-5" />
+                                )}
+                              </span>
+                              <h3 className="font-bold text-gray-900 dark:text-white text-base">
+                                {isCreatingNew
+                                  ? "إضافة قالب رد تلقائي جديد"
+                                  : t("smartReplies.editTemplate") || "تعديل القالب"}
+                              </h3>
+                            </div>
+                            <span className="text-xs font-semibold px-2.5 py-1 rounded-md bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                              {isCreatingNew ? "قالب جديد" : "جاري التعديل الآن"}
+                            </span>
+                          </div>
 
                       {/* Name Input */}
                       <div>
@@ -1116,6 +1145,8 @@ const SmartRepliesSettings: React.FC = () => {
             )}
           </div>
         </div>
+      );
+    })()}
 
         {/* Global Save Button at Bottom */}
         <div className="flex justify-end pt-2">
