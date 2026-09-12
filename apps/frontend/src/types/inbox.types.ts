@@ -6,7 +6,8 @@ export type InboxTab =
   | "general"
   | "requests"
   | "spam"
-  | "unreplied";
+  | "unreplied"
+  | "priority";
 export type ConversationStatus = "open" | "pending" | "resolved" | "done";
 
 export interface InboxConversationMetadata {

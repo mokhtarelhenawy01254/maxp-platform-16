@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, Star } from "lucide-react";
+import { Search } from "lucide-react";
 import { InboxTab } from "../../../types/inbox.types";
 import { useTranslation } from "react-i18next";
 
@@ -71,6 +71,11 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
       label: t("inbox.tabs.spam"),
       count: counts.spam,
     },
+    {
+      id: "priority" as InboxTab,
+      label: t("inbox.tabs.priority", "الأولوية ⭐"),
+      count: counts.priority || 0,
+    },
   ];
 
   return (
@@ -92,9 +97,8 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
           ))}
         </div>
 
-        {/* Search and Priority toggle */}
+        {/* Search */}
         <div className="business-inbox-toolbar">
-          {/* Search */}
           <div className="business-inbox-search-wrap">
             <Search className="business-inbox-search-icon right-3 left-auto w-5 h-5 dark:text-slate-400" />
             <input
@@ -104,21 +108,6 @@ const InboxTabs: React.FC<InboxTabsProps> = ({
               className="business-inbox-search w-full pr-10 pl-4 md:w-64 dark:bg-white/5 dark:text-white dark:border-white/15 dark:placeholder-slate-400"
             />
           </div>
-
-          {/* Priority Filter Toggle */}
-          {onTogglePriority && (
-            <button
-              onClick={onTogglePriority}
-              className={`business-chip-button transition-all duration-200 ${
-                isPriorityOnly
-                  ? "bg-amber-500 text-white border-amber-600 shadow-md shadow-amber-500/25 ring-2 ring-amber-400/40"
-                  : "dark:bg-white/10 dark:text-white dark:border-white/15 dark:hover:bg-white/20 hover:text-amber-500 hover:border-amber-400"
-              }`}
-              title={isPriorityOnly ? "إلغاء تصفية الأولوية" : `تصفية المحادثات ذات الأولوية (⭐) ${priorityCount > 0 ? `(${priorityCount})` : ""}`}
-            >
-              <Star className={`w-5 h-5 ${isPriorityOnly ? "fill-white text-white" : "text-amber-500 fill-amber-500/20"}`} />
-            </button>
-          )}
         </div>
       </div>
     </div>

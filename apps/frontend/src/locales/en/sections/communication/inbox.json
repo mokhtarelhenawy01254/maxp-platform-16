@@ -6,7 +6,8 @@
     "main": "Main",
     "general": "General",
     "requests": "Requests",
-    "spam": "Spam"
+    "spam": "Spam",
+    "priority": "Priority ⭐"
   },
   "searchPlaceholder": "Search conversations...",
   "advancedFilters": "Advanced Filters",

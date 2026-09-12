@@ -456,7 +456,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
   }, [companyId]); // Only depend on companyId, not loadSpecificConversation
 
   useEffect(() => {
-    const isPriority = filters.priorityOnly;
+    const isPriority = filters.priorityOnly || activeTab === "priority";
     if (isInitialMount.current) {
       isInitialMount.current = false;
       // 🆕 Use database search when search query exists
@@ -521,7 +521,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     loadConversationsTimeoutRef.current = setTimeout(() => {
       // 🆕 Use database search when search query exists
       const search = debouncedSearchQueryRef.current?.trim();
-      const isPriority = filtersRef.current.priorityOnly;
+      const isPriority = filtersRef.current.priorityOnly || tab === "priority";
       if (search) {
         loadConversationsRefForDebounce.current(1, false, tab, search, channel, isPriority);
       } else {
@@ -576,10 +576,13 @@ const getApiError = (error: unknown): ApiErrorLike => {
       counts.all = conversations.length;
     }
 
-    return counts;
+    return {
+      ...counts,
+      priority: apiCounts.priority || counts.priority,
+    };
   }, [conversations, apiCounts]);
 
-  const priorityCount = apiCounts.priority || tabCounts.priority;
+  const priorityCount = tabCounts.priority;
 
   // ðŸ†• Load all messages for a conversation (for advanced search)
   const loadAllMessagesForConversation = useCallback(
@@ -759,7 +762,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
       if (filters.unreadOnly && conv.unreadCount === 0) return false;
 
       // 3.5. Priority filter (⭐)
-      if (filters.priorityOnly && !conv.priority) return false;
+      if ((filters.priorityOnly || activeTab === "priority") && !conv.priority) return false;
 
       // 4. Assignment filter
       if (filters.assignedTo === "me" && conv.assignedTo !== user?.id)
@@ -785,6 +788,7 @@ const getApiError = (error: unknown): ApiErrorLike => {
     conversations,
     debouncedSearchQuery,
     filters,
+    activeTab,
     user?.id,
     selectedConversation,
     messages,
@@ -2304,36 +2308,6 @@ const getApiError = (error: unknown): ApiErrorLike => {
           {/* Quick Filters Bar (برا ف المحادثات) */}
           <div className="px-3 py-2 border-b border-slate-200/80 dark:border-white/10 flex items-center justify-between gap-2 bg-slate-50/70 dark:bg-white/[0.03]">
             <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              {/* ⭐ زر فلتر الأولوية السريع الخارجي */}
-              <button
-                type="button"
-                onClick={() =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    priorityOnly: !prev.priorityOnly,
-                  }))
-                }
-                className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold transition-all duration-200 select-none shadow-sm flex-shrink-0 ${
-                  filters.priorityOnly
-                    ? "bg-amber-500 text-white shadow-amber-500/25 ring-2 ring-amber-400/50 dark:ring-amber-500/40"
-                    : "bg-white dark:bg-white/10 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-white/15 hover:bg-amber-50 hover:text-amber-700 dark:hover:bg-amber-950/40 dark:hover:text-amber-300 hover:border-amber-300"
-                }`}
-                title={filters.priorityOnly ? "إلغاء فلتر الأولوية" : "إظهار المحادثات ذات الأولوية فقط (⭐)"}
-              >
-                <span className={filters.priorityOnly ? "animate-pulse" : ""}>⭐</span>
-                <span>الأولوية</span>
-                {priorityCount > 0 && (
-                  <span
-                    className={`px-1.5 py-0.2 rounded-full text-[11px] font-bold ${
-                      filters.priorityOnly
-                        ? "bg-white text-amber-600"
-                        : "bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300"
-                    }`}
-                  >
-                    {priorityCount}
-                  </span>
-                )}
-              </button>
 
               {/* زر فلتر غير مقروءة السريع */}
               <button

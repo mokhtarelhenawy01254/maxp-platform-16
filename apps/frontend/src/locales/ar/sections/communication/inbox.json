@@ -6,7 +6,8 @@
     "main": "رئيسي",
     "general": "عام",
     "requests": "طلبات",
-    "spam": "سبام"
+    "spam": "سبام",
+    "priority": "الأولوية ⭐"
   },
   "searchPlaceholder": "بحث في المحادثات...",
   "advancedFilters": "فلاتر متقدمة",
