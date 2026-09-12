@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import MessageBubble from "./MessageBubble";
 
 jest.mock("../../../services/apiClient", () => ({
@@ -162,6 +162,60 @@ describe("MessageBubble", () => {
     expect(screen.getByAltText("صورة مقتبسة")).toHaveAttribute(
       "src",
       "/uploads/products/product-1.webp",
+    );
+  });
+
+  it("opens action buttons bar and triggers reply, star, and forward callbacks", () => {
+    const onReply = jest.fn();
+    const onStar = jest.fn();
+    const onForward = jest.fn();
+
+    render(
+      <MessageBubble
+        message={{
+          ...baseMessage,
+          content: "رسالة تجريبية للتفاعل",
+        }}
+        onReply={onReply}
+        onStar={onStar}
+        onForward={onForward}
+      />,
+    );
+
+    // Initial state: actions popup is not visible
+    expect(screen.queryByTitle("رد")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("تمييز الرسالة")).not.toBeInTheDocument();
+    expect(screen.queryByTitle("إعادة توجيه")).not.toBeInTheDocument();
+
+    // Click the More actions button (three dots)
+    const moreButton = screen.getByTitle("إجراءات الرسالة");
+    fireEvent.click(moreButton);
+
+    // Now actions buttons are rendered
+    const replyBtn = screen.getByTitle("رد");
+    const starBtn = screen.getByTitle("تمييز الرسالة");
+    const forwardBtn = screen.getByTitle("إعادة توجيه");
+
+    expect(replyBtn).toBeInTheDocument();
+    expect(starBtn).toBeInTheDocument();
+    expect(forwardBtn).toBeInTheDocument();
+
+    // Click Star button
+    fireEvent.click(starBtn);
+    expect(onStar).toHaveBeenCalledWith("message-1", false);
+
+    // Click Reply button
+    fireEvent.click(replyBtn);
+    expect(onReply).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "message-1" }),
+    );
+
+    // Click More button again to show forward
+    fireEvent.click(moreButton);
+    const forwardBtnAgain = screen.getByTitle("إعادة توجيه");
+    fireEvent.click(forwardBtnAgain);
+    expect(onForward).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "message-1" }),
     );
   });
 });

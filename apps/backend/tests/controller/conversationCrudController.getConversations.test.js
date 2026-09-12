@@ -227,4 +227,49 @@ describe('conversationCrudController.getConversations', () => {
       })
     );
   });
+
+  test('filters by priority when priority=true is requested', async () => {
+    const prisma = createPrismaMock({
+      conversations: [
+        {
+          id: 'conv_starred',
+          customerId: 'cust_1',
+          channel: 'FACEBOOK',
+          status: 'ACTIVE',
+          lastMessagePreview: 'مهم جدا',
+          lastMessageAt: new Date(),
+          updatedAt: new Date(),
+          unreadCount: 0,
+          assignedUserId: null,
+          priority: 2,
+          metadata: null,
+          customer: { id: 'cust_1', firstName: 'عميل', lastName: 'مميز' },
+          user: null,
+          messages: []
+        }
+      ],
+      totalCount: 1
+    });
+    getSharedPrismaClient.mockReturnValue(prisma);
+
+    const req = {
+      query: { priority: 'true' },
+      user: { companyId: 'company_1' }
+    };
+    const res = createResponse();
+
+    await getConversations(req, res);
+
+    const findManyCall = prisma.conversation.findMany.mock.calls[0][0];
+    expect(findManyCall.where.priority).toEqual({ gt: 1 });
+
+    expect(res.json).toHaveBeenCalledWith(
+      expect.objectContaining({
+        success: true,
+        data: expect.arrayContaining([
+          expect.objectContaining({ id: 'conv_starred', priority: true })
+        ])
+      })
+    );
+  });
 });
