@@ -4758,6 +4758,12 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/orders/incomplete/report"
+                  element={
+                    <Navigate to="/orders/incomplete/reports" replace />
+                  }
+                />
+                <Route
                   path="/orders/incomplete/:cartId"
                   element={
                     <Layout>

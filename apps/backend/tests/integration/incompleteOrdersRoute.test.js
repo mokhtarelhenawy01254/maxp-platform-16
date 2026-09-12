@@ -28,6 +28,12 @@ jest.mock('../../middleware/checkAppAccess', () => ({
   checkAppAccess: () => (req, res, next) => next(),
 }));
 
+jest.mock('../../middleware/rbacMiddleware', () => ({
+  requireDbPermission: () => (req, res, next) => next(),
+  requirePermission: () => (req, res, next) => next(),
+  hasPermission: () => true,
+}));
+
 jest.mock('axios', () => ({
   post: jest.fn(),
 }));
@@ -518,6 +524,13 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     expect(seeded.responseRate).toBe(100);
     expect(response.body.data.trend.length).toBeGreaterThanOrEqual(1);
     expect(response.body.data.recent).toEqual(expect.any(Array));
+    expect(response.body.data.destiny).toBeDefined();
+    expect(response.body.data.destiny.totalConverted).toBeGreaterThanOrEqual(1);
+    expect(response.body.data.destiny.delivered).toBeDefined();
+    expect(response.body.data.destiny.returned).toBeDefined();
+    expect(response.body.data.destiny.cancelled).toBeDefined();
+    expect(response.body.data.destiny.inProgress).toBeDefined();
+    expect(Array.isArray(response.body.data.destiny.statusBreakdown)).toBe(true);
   });
 
   test('POST /incomplete/:cartId/contact records a CartContactLog with the employee', async () => {
@@ -549,6 +562,79 @@ describe('Incomplete orders phone filter, conversion log & reports', () => {
     expect(response.body.data.from).toBeTruthy();
     expect(response.body.data.to).toBeTruthy();
     expect(Array.isArray(response.body.data.trend)).toBe(true);
+  });
+
+  test('GET /incomplete/reports accurately matches converted orders and calculates destiny rates', async () => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 10000)}`;
+    const cust = await prisma.customer.create({
+      data: {
+        firstName: 'Report',
+        lastName: 'Destiny',
+        phone: `010${Math.floor(10000000 + Math.random() * 90000000)}`,
+        companyId: company.id,
+      },
+    });
+
+    const deliveredOrder = await prisma.order.create({
+      data: {
+        orderNumber: `ORD-DEL-${unique}`,
+        customerId: cust.id,
+        companyId: company.id,
+        status: 'DELIVERED',
+        paymentStatus: 'PENDING',
+        paymentMethod: 'CASH',
+        subtotal: 1000,
+        total: 1000,
+        currency: 'EGP',
+        customerName: 'Report Destiny',
+        customerPhone: cust.phone,
+      },
+    });
+
+    const returnedOrder = await prisma.order.create({
+      data: {
+        orderNumber: `ORD-RET-${unique}`,
+        customerId: cust.id,
+        companyId: company.id,
+        status: 'RETURNED',
+        paymentStatus: 'PENDING',
+        paymentMethod: 'CASH',
+        subtotal: 400,
+        total: 400,
+        currency: 'EGP',
+        customerName: 'Report Destiny',
+        customerPhone: cust.phone,
+      },
+    });
+
+    await prisma.cartConversionLog.create({
+      data: {
+        cartId: `cart-del-${unique}`,
+        orderId: deliveredOrder.id,
+        orderNumber: deliveredOrder.orderNumber,
+        companyId: company.id,
+        cartValue: 1000,
+      },
+    });
+
+    await prisma.cartConversionLog.create({
+      data: {
+        cartId: `cart-ret-${unique}`,
+        orderId: returnedOrder.id,
+        orderNumber: returnedOrder.orderNumber,
+        companyId: company.id,
+        cartValue: 400,
+      },
+    });
+
+    const response = await request(app).get('/api/v1/orders-new/incomplete/reports?days=30');
+    expect(response.status).toBe(200);
+    expect(response.body.data.destiny.delivered.count).toBeGreaterThanOrEqual(1);
+    expect(response.body.data.destiny.delivered.value).toBeGreaterThanOrEqual(1000);
+    expect(response.body.data.destiny.returned.count).toBeGreaterThanOrEqual(1);
+    expect(response.body.data.destiny.returned.value).toBeGreaterThanOrEqual(400);
+    expect(response.body.data.destiny.deliveryRate).toBeGreaterThan(0);
+    expect(response.body.data.destiny.effectiveDeliveryRate).toBeGreaterThan(0);
   });
 });
 

@@ -16,6 +16,11 @@ import {
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { apiClient } from "../../services/apiClient";
 import { useCurrency } from "../../hooks/useCurrency";
+import {
+  ConvertedOrdersDestinyCard,
+  ConvertedOrdersDestiny,
+} from "./components/ConvertedOrdersDestinyCard";
+import { getOrderStatusDisplay } from "../../utils/statusRegistry";
 
 interface ReportData {
   periodDays: number | null;
@@ -35,6 +40,7 @@ interface ReportData {
     byTeam: number;
     natural: number;
   };
+  destiny?: ConvertedOrdersDestiny;
   team: Array<{
     employeeId: string | null;
     employeeName: string;
@@ -49,7 +55,9 @@ interface ReportData {
   orderSources: Array<{ source: string; count: number; value: number }>;
   recent: Array<{
     cartId: string;
+    orderId?: string | null;
     orderNumber: string | null;
+    orderStatus?: string | null;
     employeeName: string | null;
     value: number;
     governorate: string | null;
@@ -375,6 +383,11 @@ const IncompleteReports: React.FC = () => {
             </div>
           </section>
 
+          {/* مصير الطلبات المحولة وجودتها */}
+          {data.destiny && (
+            <ConvertedOrdersDestinyCard destiny={data.destiny} />
+          )}
+
           <section>
             <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
               {t("orders.incompleteRecoveryPipeline")}
@@ -512,25 +525,47 @@ const IncompleteReports: React.FC = () => {
               </h2>
               {data.recent.length ? (
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {data.recent.map((c) => (
-                    <div
-                      key={c.cartId}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 px-3 py-2 text-sm dark:border-gray-700"
-                    >
-                      <div className="min-w-0">
-                        <div className="font-medium text-gray-900 dark:text-white truncate">
-                          {c.orderNumber || c.cartId.slice(0, 12)}
+                  {data.recent.map((c) => {
+                    const statusInfo = c.orderStatus ? getOrderStatusDisplay({ status: c.orderStatus }) : null;
+                    return (
+                      <div
+                        key={c.cartId}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-gray-100 px-3 py-2 text-sm dark:border-gray-700 hover:bg-gray-50/50 dark:hover:bg-gray-700/20 transition-colors"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {c.orderNumber ? (
+                              <Link
+                                to={`/orders?search=${encodeURIComponent(c.orderNumber)}`}
+                                className="font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
+                                title={t("incompleteViewOrder", "عرض الطلب") as string}
+                              >
+                                {c.orderNumber}
+                              </Link>
+                            ) : (
+                              <span className="font-medium text-gray-900 dark:text-white truncate">
+                                {c.cartId.slice(0, 12)}
+                              </span>
+                            )}
+                            {statusInfo && (
+                              <span
+                                className={`text-[10px] px-1.5 py-0.2 rounded font-medium ${statusInfo.primary.colorClass}`}
+                              >
+                                {statusInfo.primary.label}
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                            {c.employeeName || "-"} · {formatDate(c.convertedAt)}
+                            {c.governorate ? ` · ${c.governorate}` : ""}
+                          </div>
                         </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {c.employeeName || "-"} · {formatDate(c.convertedAt)}
-                          {c.governorate ? ` · ${c.governorate}` : ""}
+                        <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                          {formatPrice(c.value)}
                         </div>
                       </div>
-                      <div className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
-                        {formatPrice(c.value)}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400 py-8 text-center">

@@ -2085,6 +2085,105 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
       }))
       .sort((a, b) => b.value - a.value);
 
+    // تتبع مصير الطلبات المحولة وجودتها (كم اتسلم، كم رجع، كم اتلغى)
+    const orderIds = Array.from(new Set(convWindow.map((c) => c.orderId).filter(Boolean)));
+    const orderNumbers = Array.from(
+      new Set(convWindow.filter((c) => !c.orderId && c.orderNumber).map((c) => c.orderNumber))
+    );
+
+    const orderMapById = new Map();
+    const orderMapByNumber = new Map();
+
+    if (orderIds.length > 0 || orderNumbers.length > 0) {
+      const orClauses = [];
+      if (orderIds.length > 0) orClauses.push({ id: { in: orderIds } });
+      if (orderNumbers.length > 0) orClauses.push({ orderNumber: { in: orderNumbers } });
+
+      try {
+        const matchedOrders = await prisma.order.findMany({
+          where: {
+            companyId,
+            OR: orClauses,
+          },
+          select: {
+            id: true,
+            orderNumber: true,
+            status: true,
+            total: true,
+          },
+        });
+
+        matchedOrders.forEach((o) => {
+          if (o.id) orderMapById.set(o.id, o);
+          if (o.orderNumber) orderMapByNumber.set(o.orderNumber, o);
+        });
+      } catch (orderLookupErr) {
+        console.warn('⚠️ [ORDERS] reports: failed to fetch converted orders status:', orderLookupErr.message);
+      }
+    }
+
+    const DELIVERED_SET = new Set(['DELIVERED', 'PARTIALLY_DELIVERED', 'COMPLETED']);
+    const RETURNED_SET = new Set(['RETURNED', 'PARTIALLY_RETURNED', 'REFUNDED', 'PARTIALLY_REFUNDED', 'REFUNDED_PARTIALLY']);
+    const CANCELLED_SET = new Set(['CANCELLED', 'FAILED', 'TRASH', 'TRASH_ORDER', 'DUPLICATE_ORDER', 'PENDING_CANCELLATION']);
+
+    const destinyStats = {
+      totalConverted: converted,
+      delivered: { count: 0, value: 0, rate: 0 },
+      returned: { count: 0, value: 0, rate: 0 },
+      cancelled: { count: 0, value: 0, rate: 0 },
+      inProgress: { count: 0, value: 0, rate: 0 },
+      effectiveDeliveryRate: 0,
+      deliveryRate: 0,
+      statusBreakdown: [],
+    };
+
+    const statusMap = new Map();
+
+    convWindow.forEach((c) => {
+      const matched = (c.orderId && orderMapById.get(c.orderId)) ||
+                      (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+                      null;
+      const status = (matched?.status || 'PENDING').toUpperCase();
+      const val = matched ? Number(matched.total || 0) : Number(c.cartValue || 0);
+
+      const statEntry = statusMap.get(status) || { status, count: 0, value: 0 };
+      statEntry.count += 1;
+      statEntry.value += val;
+      statusMap.set(status, statEntry);
+
+      if (DELIVERED_SET.has(status)) {
+        destinyStats.delivered.count += 1;
+        destinyStats.delivered.value += val;
+      } else if (RETURNED_SET.has(status)) {
+        destinyStats.returned.count += 1;
+        destinyStats.returned.value += val;
+      } else if (CANCELLED_SET.has(status)) {
+        destinyStats.cancelled.count += 1;
+        destinyStats.cancelled.value += val;
+      } else {
+        destinyStats.inProgress.count += 1;
+        destinyStats.inProgress.value += val;
+      }
+    });
+
+    if (converted > 0) {
+      destinyStats.delivered.rate = (destinyStats.delivered.count / converted) * 100;
+      destinyStats.returned.rate = (destinyStats.returned.count / converted) * 100;
+      destinyStats.cancelled.rate = (destinyStats.cancelled.count / converted) * 100;
+      destinyStats.inProgress.rate = (destinyStats.inProgress.count / converted) * 100;
+      destinyStats.deliveryRate = destinyStats.delivered.rate;
+
+      const finalizedCount = destinyStats.delivered.count + destinyStats.returned.count + destinyStats.cancelled.count;
+      destinyStats.effectiveDeliveryRate = finalizedCount > 0 ? (destinyStats.delivered.count / finalizedCount) * 100 : 0;
+    }
+
+    destinyStats.statusBreakdown = Array.from(statusMap.values())
+      .map((s) => ({
+        ...s,
+        rate: converted > 0 ? (s.count / converted) * 100 : 0,
+      }))
+      .sort((a, b) => b.count - a.count);
+
     res.json({
       success: true,
       data: {
@@ -2107,6 +2206,7 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           byTeam: byTeamConverted,
           natural: naturalConverted,
         },
+        destiny: destinyStats,
         team,
         trend,
         orderSources: orderSourceAgg.map((s) => ({
@@ -2114,14 +2214,22 @@ router.get('/incomplete/reports', verifyToken.authenticateToken, async (req, res
           count: s._count._all || 0,
           value: Number(s._sum.total || 0),
         })).sort((a, b) => b.count - a.count),
-        recent: convWindow.slice(0, 20).map((c) => ({
-          cartId: c.cartId,
-          orderNumber: c.orderNumber,
-          employeeName: c.employeeName,
-          value: Number(c.cartValue || 0),
-          governorate: c.governorate,
-          convertedAt: c.convertedAt,
-        })),
+        recent: convWindow.slice(0, 20).map((c) => {
+          const matched = (c.orderId && orderMapById.get(c.orderId)) ||
+                          (c.orderNumber && orderMapByNumber.get(c.orderNumber)) ||
+                          null;
+          return {
+            cartId: c.cartId,
+            orderId: c.orderId || matched?.id || null,
+            orderNumber: c.orderNumber || matched?.orderNumber || null,
+            orderStatus: matched?.status || null,
+            customStatusCode: matched?.customStatusCode || null,
+            employeeName: c.employeeName,
+            value: matched ? Number(matched.total || 0) : Number(c.cartValue || 0),
+            governorate: c.governorate,
+            convertedAt: c.convertedAt,
+          };
+        }),
       },
     });
   } catch (error) {
