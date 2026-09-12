@@ -28,6 +28,7 @@ interface ProductLandingHeaderProps {
   onCopyUrl: () => void;
   onTogglePhonePreview?: () => void;
   showPhonePreview?: boolean;
+  isDirty?: boolean;
 }
 
 export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
@@ -45,6 +46,7 @@ export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
   onCopyUrl,
   onTogglePhonePreview,
   showPhonePreview,
+  isDirty,
 }) => {
   const isBusy = saving || generatingAi;
 
@@ -53,14 +55,22 @@ export const ProductLandingHeader: React.FC<ProductLandingHeaderProps> = ({
       {/* Primary Actions (Right side in RTL) */}
       <div className="eo-header-actions">
         <button
-          className="eo-btn eo-btn-save"
+          className={`eo-btn eo-btn-save ${isDirty ? "is-dirty" : ""}`}
           type="button"
           onClick={onSave}
           disabled={isBusy || !selectedId}
-          title="حفظ التعديلات في قاعدة البيانات"
+          title={
+            isDirty
+              ? "توجد تغييرات غير محفوظة — اضغط لحفظ الصفحة"
+              : "حفظ التعديلات في قاعدة البيانات"
+          }
         >
-          {saving ? <Loader2 className="eo-spin" size={16} /> : <Save size={16} />}
-          <span>حفظ التعديلات</span>
+          {saving ? (
+            <Loader2 className="eo-spin" size={16} />
+          ) : (
+            <Save size={16} />
+          )}
+          <span>حفظ التعديلات{isDirty ? " ●" : ""}</span>
         </button>
 
         {previewUrl ? (

@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   ProductLandingPage,
@@ -33,6 +34,8 @@ const ProductLandingPages: React.FC = () => {
   const [loadingProducts, setLoadingProducts] = useState(false);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [isDirty, setIsDirty] = useState(false);
   const [generatingAi, setGeneratingAi] = useState(false);
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -44,10 +47,11 @@ const ProductLandingPages: React.FC = () => {
   );
   const selectedProduct = selectedPage?.product || null;
 
-  const customerUrl = selectedPage
-    ? `${window.location.origin}/store/lp/${editor.slug || selectedPage.slug}`
+  const liveSlug = selectedPage?.slug || "";
+  const customerUrl = liveSlug
+    ? `${window.location.origin}/store/lp/${liveSlug}`
     : "";
-  const previewUrl = selectedPage ? `${customerUrl}?preview=1` : "";
+  const previewUrl = customerUrl ? `${customerUrl}?preview=1` : "";
 
   // Load landing pages list
   const loadPages = useCallback(async () => {
@@ -119,6 +123,7 @@ const ProductLandingPages: React.FC = () => {
         sections: savedSections,
       });
       setActiveSectionId(savedSections[0]?.id || null);
+      setIsDirty(false);
     }
   }, [selectedPage]);
 
@@ -148,6 +153,7 @@ const ProductLandingPages: React.FC = () => {
       sections: [...current.sections, newSec],
     }));
     setActiveSectionId(newSec.id);
+    setIsDirty(true);
     toast.success(`تمت إضافة: ${newSec.title}`);
   };
 
@@ -162,6 +168,7 @@ const ProductLandingPages: React.FC = () => {
       nextSections[targetIndex] = temp;
       return { ...current, sections: nextSections };
     });
+    setIsDirty(true);
   };
 
   const handleRemoveSection = (id: string) => {
@@ -170,6 +177,7 @@ const ProductLandingPages: React.FC = () => {
       sections: current.sections.filter((sec) => sec.id !== id),
     }));
     if (activeSectionId === id) setActiveSectionId(null);
+    setIsDirty(true);
     toast.info("تم حذف القسم");
   };
 
@@ -183,6 +191,7 @@ const ProductLandingPages: React.FC = () => {
         sec.id === id ? { ...sec, content: updatedContent } : sec,
       ),
     }));
+    setIsDirty(true);
   };
 
   // Actions
@@ -211,6 +220,7 @@ const ProductLandingPages: React.FC = () => {
       setPages((current) =>
         current.map((item) => (item.id === updated.id ? updated : item)),
       );
+      setIsDirty(false);
       toast.success("تم حفظ كافة أقسام وبيانات الصفحة بنجاح! 🎉");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "تعذر حفظ الصفحة");
@@ -246,6 +256,23 @@ const ProductLandingPages: React.FC = () => {
       toast.error(error instanceof Error ? error.message : "تعذر تحديث الحالة");
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const handleDeletePage = async () => {
+    if (!selectedPage) return;
+
+    try {
+      setDeleting(true);
+      await productLandingPagesService.delete(selectedPage.id);
+      toast.success("تم حذف صفحة الهبوط بنجاح 🗑️");
+      const nextPages = pages.filter((p) => p.id !== selectedPage.id);
+      setPages(nextPages);
+      setSelectedId(nextPages[0]?.id || "");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "تعذر حذف الصفحة");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -336,52 +363,84 @@ const ProductLandingPages: React.FC = () => {
         onCopyUrl={handleCopyUrl}
         onTogglePhonePreview={() => setShowPhonePreview((prev) => !prev)}
         showPhonePreview={showPhonePreview}
+        isDirty={isDirty}
       />
 
-      {/* Main Workspace: Canvas + Elements Drawer + Phone Preview */}
-      <div className="eo-builder-workspace">
-        {/* Right Drawer: Elements Palette */}
-        <ElementsSidebarDrawer onAddSection={handleAddSection} />
+      {/* If No Pages Created Yet: Show Clean Zero State */}
+      {!loadingPages && pages.length === 0 ? (
+        <div className="eo-zero-state-container">
+          <div className="eo-zero-state-card">
+            <div className="eo-zero-state-icon">🚀</div>
+            <h2>ابدأ بإنشاء أول صفحة هبوط لمنتجاتك!</h2>
+            <p>
+              لم تقم بإنشاء أي صفحات هبوط بعد. اختر منتجاً من كتالوج متجرك
+              وسيتولى الذكاء الاصطناعي تجهيز صفحة تحويل وبيانات بيع احترافية
+              بشكل فوري.
+            </p>
+            <button
+              type="button"
+              className="eo-btn eo-btn-new-page eo-btn-lg"
+              onClick={() => setIsCreateModalOpen(true)}
+            >
+              <Plus size={18} />
+              <span>+ إنشاء أول صفحة هبوط الآن</span>
+            </button>
+          </div>
+        </div>
+      ) : (
+        /* Main Workspace: Canvas + Elements Drawer + Phone Preview */
+        <div className="eo-builder-workspace">
+          {/* Right Drawer: Elements Palette */}
+          <ElementsSidebarDrawer onAddSection={handleAddSection} />
 
-        {/* Center: Main Canvas Editor */}
-        <section className="eo-builder-canvas">
-          <ProductSummaryCard
-            page={selectedPage}
-            product={selectedProduct}
-            title={editor.title}
-            onChangeTitle={(val) => setEditor((c) => ({ ...c, title: val }))}
-            slug={editor.slug}
-            onChangeSlug={(val) => setEditor((c) => ({ ...c, slug: val }))}
-            status={editor.status}
-            onUpdateStatus={handleUpdateStatus}
-            updatingStatus={updatingStatus}
-          />
-
-          <SectionsStackEditor
-            sections={editor.sections}
-            activeSectionId={activeSectionId}
-            onToggleActiveSection={(id) =>
-              setActiveSectionId((current) => (current === id ? null : id))
-            }
-            onMoveSection={handleMoveSection}
-            onRemoveSection={handleRemoveSection}
-            onUpdateSectionContent={handleUpdateSectionContent}
-            product={selectedProduct}
-          />
-        </section>
-
-        {/* Left: Phone Live Preview Frame */}
-        {showPhonePreview && (
-          <aside className="eo-builder-preview-col">
-            <PhoneMockupPreview
-              title={editor.title}
+          {/* Center: Main Canvas Editor */}
+          <section className="eo-builder-canvas">
+            <ProductSummaryCard
+              page={selectedPage}
               product={selectedProduct}
-              sections={editor.sections}
-              formConfig={editor.formConfig}
+              title={editor.title}
+              onChangeTitle={(val) => {
+                setEditor((c) => ({ ...c, title: val }));
+                setIsDirty(true);
+              }}
+              slug={editor.slug}
+              onChangeSlug={(val) => {
+                setEditor((c) => ({ ...c, slug: val }));
+                setIsDirty(true);
+              }}
+              status={editor.status}
+              onUpdateStatus={handleUpdateStatus}
+              updatingStatus={updatingStatus}
+              onDeletePage={handleDeletePage}
+              deleting={deleting}
             />
-          </aside>
-        )}
-      </div>
+
+            <SectionsStackEditor
+              sections={editor.sections}
+              activeSectionId={activeSectionId}
+              onToggleActiveSection={(id) =>
+                setActiveSectionId((current) => (current === id ? null : id))
+              }
+              onMoveSection={handleMoveSection}
+              onRemoveSection={handleRemoveSection}
+              onUpdateSectionContent={handleUpdateSectionContent}
+              product={selectedProduct}
+            />
+          </section>
+
+          {/* Left: Phone Live Preview Frame */}
+          {showPhonePreview && (
+            <aside className="eo-builder-preview-col">
+              <PhoneMockupPreview
+                title={editor.title}
+                product={selectedProduct}
+                sections={editor.sections}
+                formConfig={editor.formConfig}
+              />
+            </aside>
+          )}
+        </div>
+      )}
 
       {/* Create Landing Modal */}
       <CreateLandingModal

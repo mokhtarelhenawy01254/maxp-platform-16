@@ -55,6 +55,7 @@ export interface LandingSection {
     reviews?: Array<{ name: string; text: string; rating: number; avatar?: string }>;
     bannerText?: string;
     bannerBg?: string;
+    text?: string;
     timerEndsMinutes?: number;
     lowStockCount?: number;
   };
@@ -178,4 +179,8 @@ export const productLandingPagesService = {
     return normalizeArrayPayload<ProductLandingProduct>(payload);
   },
 
+  async delete(id: string) {
+    const response = await apiClient.delete(`/product-landings/${id}`);
+    return response.data;
+  },
 };

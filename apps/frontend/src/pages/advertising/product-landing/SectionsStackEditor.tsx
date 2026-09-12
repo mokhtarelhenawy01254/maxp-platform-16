@@ -72,7 +72,11 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => onRemoveSection(section.id)}
+                    onClick={() => {
+                      if (window.confirm(`هل أنت متأكد من حذف قسم "${section.title}"؟`)) {
+                        onRemoveSection(section.id);
+                      }
+                    }}
                     className="eo-btn-del"
                     title="حذف القسم"
                   >

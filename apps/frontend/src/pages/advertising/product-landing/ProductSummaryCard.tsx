@@ -7,6 +7,7 @@ import {
   Pause,
   Play,
   ShoppingBag,
+  Trash2,
   TrendingUp,
 } from "lucide-react";
 import {
@@ -26,6 +27,8 @@ interface ProductSummaryCardProps {
   status: ProductLandingStatus;
   onUpdateStatus: (status: ProductLandingStatus) => void;
   updatingStatus: boolean;
+  onDeletePage?: () => void;
+  deleting?: boolean;
 }
 
 export const ProductSummaryCard: React.FC<ProductSummaryCardProps> = ({
@@ -38,6 +41,8 @@ export const ProductSummaryCard: React.FC<ProductSummaryCardProps> = ({
   status,
   onUpdateStatus,
   updatingStatus,
+  onDeletePage,
+  deleting,
 }) => {
   const visits = page?.visits || 0;
   const orders = page?.orders || 0;
@@ -97,6 +102,27 @@ export const ProductSummaryCard: React.FC<ProductSummaryCardProps> = ({
               <span>نشر الصفحة حية</span>
             </button>
           )}
+
+          {onDeletePage && (
+            <button
+              type="button"
+              className="eo-btn eo-btn-del-page"
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `هل أنت متأكد من حذف صفحة "${title || page?.title}" نهائياً؟`,
+                  )
+                ) {
+                  onDeletePage();
+                }
+              }}
+              disabled={deleting}
+              title="حذف صفحة الهبوط نهائياً"
+            >
+              <Trash2 size={15} />
+              <span>حذف</span>
+            </button>
+          )}
         </div>
       </div>
 
@@ -109,9 +135,19 @@ export const ProductSummaryCard: React.FC<ProductSummaryCardProps> = ({
             type="text"
             className="eo-slug-text-input"
             value={slug}
-            onChange={(e) => onChangeSlug(e.target.value)}
+            onChange={(e) =>
+              onChangeSlug(e.target.value.toLowerCase().replace(/\s+/g, "-"))
+            }
             placeholder="page-slug"
           />
+          {page && slug !== page.slug && (
+            <span
+              className="eo-slug-unsaved-badge"
+              title="يجب حفظ التعديلات لتفعيل هذا الرابط في المتجر"
+            >
+              ⚠️ غير محفوظ
+            </span>
+          )}
         </div>
 
         <div className="eo-summary-stats">

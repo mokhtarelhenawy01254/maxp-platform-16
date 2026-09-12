@@ -151,7 +151,18 @@ export const SectionItemEditor: React.FC<SectionItemEditorProps> = ({
   if (type === "COUNTDOWN") {
     return (
       <div className="eo-section-editor-body">
-        <div className="eo-fields eo-fields-inline">
+        <div className="eo-fields">
+          <label>
+            <span>نص التنبيه أو العرض الترويجي:</span>
+            <input
+              type="text"
+              value={content.text || ""}
+              onChange={(e) => update({ text: e.target.value })}
+              placeholder="مثال: عرض خاص لفترة محدودة — اطلب الآن قبل انتهاء الكمية!"
+            />
+          </label>
+        </div>
+        <div className="eo-fields eo-fields-inline" style={{ marginTop: 10 }}>
           <label>
             <span>مدة العداد التنازلي (بالدقائق):</span>
             <input

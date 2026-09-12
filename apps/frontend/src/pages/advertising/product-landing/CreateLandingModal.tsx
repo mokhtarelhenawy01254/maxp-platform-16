@@ -30,6 +30,8 @@ export const CreateLandingModal: React.FC<CreateLandingModalProps> = ({
   const [selectedProductId, setSelectedProductId] = useState("");
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
+  const [isTitleTouched, setIsTitleTouched] = useState(false);
+  const [isSlugTouched, setIsSlugTouched] = useState(false);
   const [error, setError] = useState("");
 
   const selectedProduct = useMemo(
@@ -41,10 +43,10 @@ export const CreateLandingModal: React.FC<CreateLandingModalProps> = ({
 
   const handleSelectProduct = (prod: ProductLandingProduct) => {
     setSelectedProductId(prod.id);
-    if (!title.trim()) {
+    if (!isTitleTouched) {
       setTitle(`${prod.name} — عرض حصري`);
     }
-    if (!slug.trim()) {
+    if (!isSlugTouched) {
       const generatedSlug = (prod.slug || prod.name)
         .toLowerCase()
         .replace(/[\s_]+/g, "-")
@@ -166,7 +168,10 @@ export const CreateLandingModal: React.FC<CreateLandingModalProps> = ({
                 <input
                   type="text"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={(e) => {
+                    setTitle(e.target.value);
+                    setIsTitleTouched(true);
+                  }}
                   placeholder="مثال: سماعة بلوتوث لاسلكية — خصم 30%"
                   required
                 />
@@ -181,7 +186,12 @@ export const CreateLandingModal: React.FC<CreateLandingModalProps> = ({
                   <input
                     type="text"
                     value={slug}
-                    onChange={(e) => setSlug(e.target.value)}
+                    onChange={(e) => {
+                      setSlug(
+                        e.target.value.toLowerCase().replace(/\s+/g, "-"),
+                      );
+                      setIsSlugTouched(true);
+                    }}
                     placeholder="product-name"
                     required
                   />

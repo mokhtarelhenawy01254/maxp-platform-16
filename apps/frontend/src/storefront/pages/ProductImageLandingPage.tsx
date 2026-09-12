@@ -897,11 +897,14 @@ const ProductImageLandingPage: React.FC = () => {
 
   return (
     <article className="product-image-landing" dir="rtl">
-      {bannerSection?.content?.text ? (
+      {bannerSection?.content?.bannerText || bannerSection?.content?.text ? (
         <div
           className="pil-announcement-banner"
           style={{
-            backgroundColor: bannerSection.content.backgroundColor || "#0284c7",
+            backgroundColor:
+              bannerSection.content.bannerBg ||
+              bannerSection.content.backgroundColor ||
+              "#0284c7",
             color: bannerSection.content.textColor || "#ffffff",
             padding: "10px 16px",
             textAlign: "center",
@@ -912,7 +915,7 @@ const ProductImageLandingPage: React.FC = () => {
             zIndex: 40,
           }}
         >
-          {bannerSection.content.text}
+          {bannerSection.content.bannerText || bannerSection.content.text}
         </div>
       ) : null}
       <section className="pil-hero" aria-labelledby="pil-hero-title">

@@ -1051,6 +1051,39 @@ router.patch('/:id/status', async (req, res) => {
   }
 });
 
+router.delete('/:id', async (req, res) => {
+  try {
+    const prisma = await getPrisma();
+    await ensureProductLandingPagesTable(prisma);
+
+    const companyId = req.user.companyId || req.query.companyId;
+    const existing = await findLandingForCompany(prisma, req.params.id, companyId);
+
+    if (!existing) {
+      return res.status(404).json({
+        success: false,
+        message: 'صفحة الهبوط غير موجودة',
+      });
+    }
+
+    await prisma.productLandingPage.delete({
+      where: { id: existing.id },
+    });
+
+    return res.json({
+      success: true,
+      message: 'تم حذف صفحة الهبوط بنجاح',
+    });
+  } catch (error) {
+    console.error('[PRODUCT-LANDING] Delete failed:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'تعذر حذف صفحة الهبوط',
+      error: error.message,
+    });
+  }
+});
+
 router.post('/:id/ai-content', async (req, res) => {
   try {
     const prisma = await getPrisma();
