@@ -19,7 +19,7 @@ const PLACEMENT_OPTIONS = [
       { id: "FACEBOOK_FEED", label: "خلاصة فيسبوك (Facebook Feed)" },
       { id: "INSTAGRAM_FEED", label: "خلاصة إنستجرام (Instagram Feed)" },
       { id: "FACEBOOK_MARKETPLACE", label: "سوق فيسبوك (Marketplace)" },
-      { id: "INSTAGRAM_EXPLORE", label: "استكشاف إنستجرام (Explore)" },
+      { id: "FACEBOOK_RIGHT_COLUMN", label: "العمود الجانبي لفيسبوك (Right Column)" },
     ],
   },
   {
@@ -32,8 +32,9 @@ const PLACEMENT_OPTIONS = [
     ],
   },
   {
-    category: "منصات أخرى وشبكات الشركاء",
+    category: "المراسلة وشبكات الشركاء",
     items: [
+      { id: "WHATSAPP_STATUS", label: "حالات واتساب (WhatsApp Status)" },
       { id: "MESSENGER_INBOX", label: "بريد ماسنجر (Messenger Inbox)" },
       { id: "AUDIENCE_NETWORK", label: "شبكة جمهور ميتا (Audience Network)" },
     ],
