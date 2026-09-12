@@ -97,6 +97,8 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
   };
 
   const getSourceTypeInfo = () => {
+    let sourceType = order.sourceType || "";
+
     // فحص المتجر أولاً
     if (
       order.sourceType === "storefront" ||

@@ -675,7 +675,7 @@ async function backfillMissingVouchers(companyId, { limit = 50 } = {}) {
     where: {
       companyId,
       status: 'DELIVERED',
-      customerId: { not: null },
+      customerId: { not: '' },
       ...(activatedAt ? { createdAt: { gte: activatedAt } } : {})
     },
     orderBy: { createdAt: 'asc' },
