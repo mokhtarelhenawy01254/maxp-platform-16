@@ -325,10 +325,13 @@ class FacebookAdsAiController {
             allowedTools: [
               'product_search',
               'inventory_check',
+              'facebook_ad_account_info',
               'facebook_ad_analyze_product',
               'facebook_ad_create_full_draft',
               'facebook_ad_publish_draft',
               'facebook_ad_get_decision',
+              'facebook_ad_record_learned_rule',
+              'orders_campaign_attribution_report',
               'competitor_get_ads',
               'sales_revenue',
               'company_snapshot',

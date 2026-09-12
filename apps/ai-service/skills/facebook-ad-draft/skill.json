@@ -8,8 +8,10 @@
     "facebook_ad_create_draft",
     "facebook_ad_analyze_product",
     "facebook_ad_create_full_draft",
-    "facebook_ad_get_decision"
+    "facebook_ad_get_decision",
+    "facebook_ad_account_info",
+    "orders_campaign_attribution_report"
   ],
   "requiresHumanApproval": true,
-  "maxToolCount": 6
+  "maxToolCount": 8
 }

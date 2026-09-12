@@ -870,6 +870,194 @@ async def facebook_ad_record_learned_rule(input_data: FacebookAdRecordLearnedRul
     )
 
 
+# ── New Ad Account Info & Campaign Attribution Tools ──────────────────────────
+
+class FacebookAdAccountInfoInput(BaseModel):
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+class OrdersCampaignAttributionInput(BaseModel):
+    period: str = Field(default="30", description="Reporting period in days (e.g. '7', '14', '30', '90')")
+    campaign_name: str | None = Field(default=None, description="Optional campaign name filter")
+    source: str | None = Field(default=None, description="Optional UTM source filter (e.g. 'facebook', 'instagram')")
+    company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
+
+async def facebook_ad_account_info(input_data: FacebookAdAccountInfoInput) -> dict[str, Any]:
+    """Retrieve details of connected Facebook Ad Accounts, active account ID, connected Facebook pages, and pixel ID."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    sf = _db_mod.async_session
+    if not sf:
+        return {"success": False, "error": "Database session unavailable"}
+
+    async with sf() as session:
+        # 1. Fetch connected ad accounts
+        accounts_res = await session.execute(
+            text("""
+                SELECT a.id, a."accountId", a.name, a.currency, a.timezone, a."isActive",
+                       COUNT(DISTINCT c.id) as campaigns_count
+                FROM public.facebook_ad_accounts a
+                LEFT JOIN public.facebook_campaigns c ON c."adAccountId" = a.id
+                WHERE a."companyId" = :cid
+                GROUP BY a.id, a."accountId", a.name, a.currency, a.timezone, a."isActive"
+                ORDER BY a."isActive" DESC, a."createdAt" DESC
+            """),
+            {"cid": company_id}
+        )
+        acc_rows = accounts_res.fetchall()
+        accounts_list = []
+        active_account = None
+        for r in acc_rows:
+            raw_id = str(r.accountId or "")
+            clean_acc_id = f"act_{raw_id}" if raw_id and not raw_id.startswith("act_") else raw_id
+            acc_data = {
+                "id": str(r.id),
+                "account_id": clean_acc_id,
+                "name": str(r.name or "Unnamed Account"),
+                "currency": str(r.currency or "EGP").upper(),
+                "timezone": str(r.timezone or "Africa/Cairo"),
+                "is_active": bool(r.isActive),
+                "campaigns_count": int(r.campaigns_count or 0),
+            }
+            accounts_list.append(acc_data)
+            if r.isActive and active_account is None:
+                active_account = acc_data
+
+        # 2. Fetch connected Facebook pages
+        pages_res = await session.execute(
+            text("""
+                SELECT "pageId", "pageName", "instagramAccountId", "instagramAccountName", status
+                FROM public.facebook_pages
+                WHERE "companyId" = :cid AND status = 'connected'
+                ORDER BY "connectedAt" DESC
+            """),
+            {"cid": company_id}
+        )
+        page_rows = pages_res.fetchall()
+        pages_list = [
+            {
+                "page_id": str(p.pageId),
+                "page_name": str(p.pageName or "Facebook Page"),
+                "instagram_account": str(p.instagramAccountName) if p.instagramAccountName else None,
+                "status": str(p.status),
+            }
+            for p in page_rows
+        ]
+
+        # 3. Check pixel from recent campaigns
+        pixel_res = await session.execute(
+            text('SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != \'\' LIMIT 1'),
+            {"cid": company_id}
+        )
+        pixel_row = pixel_res.first()
+        pixel_id = str(pixel_row.pixelId) if pixel_row and pixel_row.pixelId else None
+
+        return {
+            "success": True,
+            "connected": len(accounts_list) > 0,
+            "active_ad_account": active_account or (accounts_list[0] if accounts_list else None),
+            "accounts_count": len(accounts_list),
+            "all_ad_accounts": accounts_list,
+            "connected_pages": pages_list,
+            "pixel_id": pixel_id,
+        }
+
+
+async def orders_campaign_attribution_report(input_data: OrdersCampaignAttributionInput) -> dict[str, Any]:
+    """Retrieve UTM campaign attribution report, order conversions, and actual store sales linked to marketing campaigns."""
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "company_id is required"}
+
+    sf = _db_mod.async_session
+    if not sf:
+        return {"success": False, "error": "Database session unavailable"}
+
+    async with sf() as session:
+        try:
+            days = int(input_data.period or "30")
+        except Exception:
+            days = 30
+        days = min(max(days, 1), 365)
+
+        orders_res = await session.execute(
+            text("""
+                SELECT "orderNumber", status, total, metadata, "createdAt"
+                FROM public.orders
+                WHERE "companyId" = :cid 
+                  AND status NOT IN ('DRAFT', 'TRASH')
+                  AND "createdAt" >= NOW() - (:days || ' days')::interval
+                ORDER BY "createdAt" DESC
+                LIMIT 500
+            """),
+            {"cid": company_id, "days": str(days)}
+        )
+        orders = orders_res.fetchall()
+
+        campaign_map: dict[str, dict[str, Any]] = {}
+        source_map: dict[str, dict[str, Any]] = {}
+        total_rev = 0.0
+        total_cnt = 0
+        delivered_cnt = 0
+        delivered_rev = 0.0
+        cancelled_cnt = 0
+
+        for o in orders:
+            total_cnt += 1
+            rev = float(o.total or 0)
+            total_rev += rev
+            status = str(o.status or "").upper()
+            if status == "DELIVERED":
+                delivered_cnt += 1
+                delivered_rev += rev
+            elif status in ("CANCELLED", "RETURNED", "DUPLICATE_ORDER"):
+                cancelled_cnt += 1
+
+            meta = o.metadata if isinstance(o.metadata, dict) else {}
+            attr = meta.get("attribution") if isinstance(meta, dict) else {}
+            if not isinstance(attr, dict):
+                attr = {}
+
+            src = str(attr.get("source") or attr.get("utm_source") or "direct").strip().lower()
+            cmp = str(attr.get("campaignName") or attr.get("utm_campaign") or "unattributed").strip()
+
+            if input_data.source and input_data.source.lower() not in src:
+                continue
+            if input_data.campaign_name and input_data.campaign_name.lower() not in cmp.lower():
+                continue
+
+            if src not in source_map:
+                source_map[src] = {"source": src, "orders_count": 0, "revenue": 0.0}
+            source_map[src]["orders_count"] += 1
+            source_map[src]["revenue"] = round(source_map[src]["revenue"] + rev, 2)
+
+            if cmp not in campaign_map:
+                campaign_map[cmp] = {"campaign_name": cmp, "source": src, "orders_count": 0, "revenue": 0.0}
+            campaign_map[cmp]["orders_count"] += 1
+            campaign_map[cmp]["revenue"] = round(campaign_map[cmp]["revenue"] + rev, 2)
+
+        return {
+            "success": True,
+            "period_days": days,
+            "summary": {
+                "total_orders": total_cnt,
+                "total_revenue": round(total_rev, 2),
+                "delivered_orders": delivered_cnt,
+                "delivered_revenue": round(delivered_rev, 2),
+                "cancelled_orders": cancelled_cnt,
+                "average_order_value": round(total_rev / total_cnt, 2) if total_cnt > 0 else 0.0,
+                "delivery_rate": f"{round((delivered_cnt / total_cnt) * 100, 1)}%" if total_cnt > 0 else "0.0%",
+                "tracked_campaigns_count": len(campaign_map),
+                "tracked_sources_count": len(source_map),
+            },
+            "by_campaign": sorted(list(campaign_map.values()), key=lambda x: x["revenue"], reverse=True)[:15],
+            "by_source": sorted(list(source_map.values()), key=lambda x: x["revenue"], reverse=True)[:10],
+        }
+
+
 # ── Tool Definitions ─────────────────────────────────────────────────────────
 
 facebook_ad_analyze_product_tool = FunctionTool(
@@ -907,10 +1095,26 @@ facebook_ad_record_learned_rule_tool = FunctionTool(
     input_model=FacebookAdRecordLearnedRuleInput,
 )
 
+facebook_ad_account_info_tool = FunctionTool(
+    name="facebook_ad_account_info",
+    description="Get details of connected Facebook Ad Accounts (Account ID, Name, Currency, Timezone, Active status, Connected Pages, and Pixel ID) for the merchant's store.",
+    func=facebook_ad_account_info,
+    input_model=FacebookAdAccountInfoInput,
+)
+
+orders_campaign_attribution_report_tool = FunctionTool(
+    name="orders_campaign_attribution_report",
+    description="Retrieve UTM campaign attribution analytics and real store sales matching Facebook campaigns and ad sources (revenue, order counts, conversion rates, AOV, utm_source, utm_campaign).",
+    func=orders_campaign_attribution_report,
+    input_model=OrdersCampaignAttributionInput,
+)
+
 __all_tools__ = [
     facebook_ad_analyze_product_tool,
     facebook_ad_create_full_draft_tool,
     facebook_ad_publish_draft_tool,
     facebook_ad_get_decision_tool,
     facebook_ad_record_learned_rule_tool,
+    facebook_ad_account_info_tool,
+    orders_campaign_attribution_report_tool,
 ]
