@@ -135,7 +135,7 @@ const FacebookAdsDashboard: React.FC = () => {
   };
 
   const loadCampaigns = useCallback(
-    async (adAccountId = selectedAdAccountId) => {
+    async (adAccountId = selectedAdAccountId, forceRefresh = false) => {
       if (!adAccountId) {
         setCampaigns([]);
         setPerformanceSummary(null);
@@ -153,6 +153,7 @@ const FacebookAdsDashboard: React.FC = () => {
               dateRange.startDate,
               dateRange.endDate,
               adAccountId,
+              forceRefresh,
             )
             .catch(() => null),
           facebookAdsService
@@ -160,6 +161,7 @@ const FacebookAdsDashboard: React.FC = () => {
               dateRange.startDate,
               dateRange.endDate,
               adAccountId,
+              forceRefresh,
             )
             .catch(() => null),
         ]);
@@ -278,7 +280,7 @@ const FacebookAdsDashboard: React.FC = () => {
       setRefreshing(true);
       await Promise.all([
         refreshAdAccounts(),
-        selectedAdAccountId ? loadCampaigns(selectedAdAccountId) : Promise.resolve(),
+        selectedAdAccountId ? loadCampaigns(selectedAdAccountId, true) : Promise.resolve(),
       ]);
       tToast.success("FacebookAdsDashboard.success_refresh_fe61");
     } catch (error: unknown) {
@@ -292,8 +294,10 @@ const FacebookAdsDashboard: React.FC = () => {
     if (!selectedAdAccountId) return;
     try {
       setSyncing(true);
-      const result = await facebookAdsService.syncAdAccountCampaigns(selectedAdAccountId);
-      await loadCampaigns(selectedAdAccountId);
+      const result = await facebookAdsService.syncAdAccountCampaigns(selectedAdAccountId, {
+        includeStructure: true,
+      });
+      await loadCampaigns(selectedAdAccountId, true);
       toast.success(result.message || "تمت مزامنة الحملات بنجاح من Meta");
     } catch (error: unknown) {
       toast.error(getApiErrorMessage(error, "فشلت المزامنة المباشرة مع Meta"));

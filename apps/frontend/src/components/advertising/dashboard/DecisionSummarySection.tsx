@@ -118,13 +118,22 @@ const DecisionSummarySection: React.FC<DecisionSummarySectionProps> = ({
     setActionLoadingId(row.ad.id);
     try {
       if (actionType === "kill") {
-        await facebookAdsService.pauseCampaign(campaignId);
+        if (row.ad?.id) {
+          await facebookAdsService.pauseAd(row.ad.id);
+          toast.success(
+            isEn
+              ? `Ad paused: "${row.ad.name}"`
+              : `تم إيقاف الإعلان الخاسر: "${row.ad.name}"`,
+          );
+        } else {
+          await facebookAdsService.pauseCampaign(campaignId);
+          toast.success(
+            isEn
+              ? `Campaign paused for "${row.ad?.name || campaignId}"`
+              : `تم إيقاف الحملة بنجاح`,
+          );
+        }
         setExecutedActions((prev) => ({ ...prev, [row.ad.id]: true }));
-        toast.success(
-          isEn
-            ? `Campaign paused for "${row.ad.name}"`
-            : `تم إيقاف حملة "${row.ad.name}" بنجاح`,
-        );
       } else {
         const currentBudget = row.campaign.budgetAmount || 100;
         const nextBudget = Math.round(currentBudget * 1.2);

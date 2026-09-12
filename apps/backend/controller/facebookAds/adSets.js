@@ -473,22 +473,54 @@ const updateAdSet = async (req, res) => {
       return res
         .status(404)
         .json({ success: false, error: "Ad Set not found" });
-    const accessToken = await getCompanyAdsAccessToken(companyId);
-    if (!accessToken)
-      return res
-        .status(400)
-        .json({ success: false, error: "Access Token not found" });
-    const adAccount = await getSharedPrismaClient().facebookAdAccount.findFirst(
-      { where: { companyId, isActive: true } },
-    );
-    const adsService = new FacebookAdsService(
-      accessToken,
-      adAccount?.accountId,
-    );
-    const result = await adsService.updateAdSet(adSet.facebookAdSetId, data);
-    if (!result.success)
-      return res.status(400).json({ success: false, error: result.error });
-    res.json({ success: true, data: result.data });
+
+    // Update in Meta
+    if (adSet.facebookAdSetId) {
+      const accessToken = await getCompanyAdsAccessToken(companyId);
+      if (accessToken) {
+        const adAccount = await getSharedPrismaClient().facebookAdAccount.findFirst(
+          { where: { companyId, isActive: true } },
+        );
+        const adsService = new FacebookAdsService(
+          accessToken,
+          adAccount?.accountId,
+        );
+        const metaPayload = {};
+        if (data.status) metaPayload.status = data.status;
+        if (data.name) metaPayload.name = data.name;
+        if (data.budgetAmount !== undefined) {
+          metaPayload.daily_budget = Math.round(Number(data.budgetAmount) * 100);
+        }
+        if (Object.keys(metaPayload).length > 0) {
+          const result = await adsService.updateAdSet(adSet.facebookAdSetId, metaPayload);
+          if (!result.success) {
+            console.warn("⚠️ Warning updating Meta ad set:", result.error);
+          }
+        }
+      }
+    }
+
+    // Update in Database
+    const updatePayload = { ...data };
+    const parsedSettings = parseJsonObject(adSet.settings);
+    if (data.status) {
+      parsedSettings.meta = {
+        ...(parsedSettings.meta || {}),
+        configuredStatus: data.status,
+        effectiveStatus: data.status,
+      };
+      updatePayload.settings = JSON.stringify(parsedSettings);
+    }
+
+    const updated = await getSharedPrismaClient().facebookAdset.update({
+      where: { id },
+      data: {
+        ...updatePayload,
+        updatedAt: new Date(),
+      },
+    });
+
+    res.json({ success: true, data: updated });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

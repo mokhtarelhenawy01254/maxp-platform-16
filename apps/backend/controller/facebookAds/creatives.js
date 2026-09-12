@@ -488,6 +488,23 @@ const updateAd = async (req, res) => {
       });
     }
 
+    // تحديث في Meta إذا كان موجود
+    if (ad.facebookAdId) {
+      const accessToken = await getCompanyAdsAccessToken(companyId);
+      if (accessToken) {
+        const adsService = new FacebookAdsService(accessToken);
+        const metaPayload = {};
+        if (updateData.status) metaPayload.status = updateData.status;
+        if (updateData.name) metaPayload.name = updateData.name;
+        if (Object.keys(metaPayload).length > 0) {
+          const result = await adsService.updateAd(ad.facebookAdId, metaPayload);
+          if (!result.success) {
+            console.warn("⚠️ Warning updating Meta ad:", result.error);
+          }
+        }
+      }
+    }
+
     // تحديث في قاعدة البيانات
     const updated = await getSharedPrismaClient().facebookAd.update({
       where: { id },

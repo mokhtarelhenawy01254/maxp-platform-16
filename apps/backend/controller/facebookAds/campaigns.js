@@ -496,18 +496,44 @@ const updateCampaign = async (req, res) => {
       const accessToken = await getCompanyAdsAccessToken(companyId);
       if (accessToken) {
         const adsService = new FacebookAdsService(accessToken);
-        await adsService.updateCampaign(
-          campaign.facebookCampaignId,
-          updateData,
-        );
+        const metaUpdateData = {};
+        if (updateData.status) metaUpdateData.status = updateData.status;
+        if (updateData.name) metaUpdateData.name = updateData.name;
+        if (updateData.budgetAmount !== undefined) {
+          const cents = Math.round(Number(updateData.budgetAmount) * 100);
+          if (campaign.budgetType === "LIFETIME") {
+            metaUpdateData.lifetime_budget = cents;
+          } else {
+            metaUpdateData.daily_budget = cents;
+          }
+        }
+        if (Object.keys(metaUpdateData).length > 0) {
+          await adsService.updateCampaign(
+            campaign.facebookCampaignId,
+            metaUpdateData,
+          );
+        }
       }
+    }
+
+    const updatePayload = { ...updateData };
+    if (updateData.status || updateData.budgetAmount !== undefined) {
+      const parsedSettings = parseJsonObject(campaign.settings);
+      if (updateData.status) {
+        parsedSettings.meta = {
+          ...(parsedSettings.meta || {}),
+          configuredStatus: updateData.status,
+          effectiveStatus: updateData.status,
+        };
+      }
+      updatePayload.settings = JSON.stringify(parsedSettings);
     }
 
     // تحديث في قاعدة البيانات
     const updated = await getSharedPrismaClient().facebookCampaign.update({
       where: { id },
       data: {
-        ...updateData,
+        ...updatePayload,
         updatedAt: new Date(),
       },
     });
@@ -556,7 +582,7 @@ const deleteCampaign = async (req, res) => {
       }
     }
 
-    // حذف من قاعدة البيانات (CASCADE سيحذف AdSets و Ads تلقائياً)
+    // حذف من قاعدة البيانات
     await getSharedPrismaClient().facebookCampaign.delete({
       where: { id },
     });
@@ -605,10 +631,20 @@ const pauseCampaign = async (req, res) => {
       }
     }
 
+    const parsedSettings = parseJsonObject(campaign.settings);
+    parsedSettings.meta = {
+      ...(parsedSettings.meta || {}),
+      configuredStatus: "PAUSED",
+      effectiveStatus: "PAUSED",
+    };
+
     // تحديث في قاعدة البيانات
     const updated = await getSharedPrismaClient().facebookCampaign.update({
       where: { id },
-      data: { status: "PAUSED" },
+      data: {
+        status: "PAUSED",
+        settings: JSON.stringify(parsedSettings),
+      },
     });
 
     res.json({
@@ -656,10 +692,20 @@ const resumeCampaign = async (req, res) => {
       }
     }
 
+    const parsedSettings = parseJsonObject(campaign.settings);
+    parsedSettings.meta = {
+      ...(parsedSettings.meta || {}),
+      configuredStatus: "ACTIVE",
+      effectiveStatus: "ACTIVE",
+    };
+
     // تحديث في قاعدة البيانات
     const updated = await getSharedPrismaClient().facebookCampaign.update({
       where: { id },
-      data: { status: "ACTIVE" },
+      data: {
+        status: "ACTIVE",
+        settings: JSON.stringify(parsedSettings),
+      },
     });
 
     res.json({

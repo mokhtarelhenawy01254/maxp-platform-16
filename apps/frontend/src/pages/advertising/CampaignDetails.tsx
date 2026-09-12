@@ -17,6 +17,7 @@ import {
   ChartBarIcon,
   ArrowTopRightOnSquareIcon,
   PhotoIcon,
+  MapPinIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ import {
   facebookAdsService,
   FacebookCampaign,
   FacebookAdSet,
+  FacebookAd,
   CAMPAIGN_OBJECTIVES,
 } from "../../services/facebookAdsService";
 import type { FacebookCampaignInsightsResponse } from "../../services/facebookAdsService";
@@ -47,6 +49,115 @@ const getApiErrorMessage = (error: unknown, fallback: string) => {
   return fallback;
 };
 
+const REGION_ARABIC_NAMES: Record<string, string> = {
+  Cairo: "القاهرة",
+  Alexandria: "الإسكندرية",
+  Giza: "الجيزة",
+  "Al Sharqia": "الشرقية",
+  Dakahlia: "الدقهلية",
+  Beheira: "البحيرة",
+  Gharbia: "الغربية",
+  Monufia: "المنوفية",
+  "Kafr el Sheikh": "كفر الشيخ",
+  "Kafr el-Sheikh": "كفر الشيخ",
+  "Port Said": "بورسعيد",
+  Damietta: "دمياط",
+  Qalyubia: "القليوبية",
+  Suez: "السويس",
+  Ismailia: "الإسماعيلية",
+  Faiyum: "الفيوم",
+  "Beni Suef": "بني سويف",
+  Minya: "المنيا",
+  Asyut: "أسيوط",
+  Sohag: "سوهاج",
+  Qena: "قنا",
+  Luxor: "الأقصر",
+  Aswan: "أسوان",
+  "Red Sea": "البحر الأحمر",
+  "New Valley": "الوادي الجديد",
+  Matrouh: "مطروح",
+  "North Sinai": "شمال سيناء",
+  "South Sinai": "جنوب سيناء",
+};
+
+const translateRegion = (name: string, isEn: boolean): string => {
+  if (isEn) return name;
+  return REGION_ARABIC_NAMES[name] || name;
+};
+
+const parseLocations = (locationsRaw: unknown, isEn = false): string | null => {
+  if (!locationsRaw) return null;
+  let parsed: unknown = locationsRaw;
+
+  if (typeof locationsRaw === "string") {
+    try {
+      parsed = JSON.parse(locationsRaw);
+    } catch {
+      if (
+        locationsRaw.length < 40 &&
+        !locationsRaw.includes("{") &&
+        !locationsRaw.includes("[")
+      ) {
+        return locationsRaw;
+      }
+      return null;
+    }
+  }
+
+  if (Array.isArray(parsed)) {
+    const names = parsed
+      .map((item) =>
+        typeof item === "string" ? item : (item as { name?: string })?.name || "",
+      )
+      .filter(Boolean);
+    if (names.length === 0) return null;
+    const translated = names.map((n) => translateRegion(n, isEn));
+    if (translated.length <= 3) return translated.join("، ");
+    return `${translated.slice(0, 3).join("، ")} (+${translated.length - 3} ${isEn ? "more" : "أخرى"})`;
+  }
+
+  if (parsed && typeof parsed === "object") {
+    const p = parsed as {
+      cities?: Array<{ name?: string }>;
+      regions?: Array<{ name?: string }>;
+      countries?: string[];
+    };
+    const names: string[] = [];
+
+    if (Array.isArray(p.regions)) {
+      p.regions.forEach((r) => {
+        if (r.name) {
+          const cleanName = r.name.replace(/\s+Governorate$/i, "").trim();
+          if (!names.includes(cleanName)) names.push(cleanName);
+        }
+      });
+    }
+
+    if (Array.isArray(p.cities)) {
+      p.cities.forEach((c) => {
+        if (c.name) {
+          const cleanName = c.name.replace(/\s+Governorate$/i, "").trim();
+          if (!names.includes(cleanName)) names.push(cleanName);
+        }
+      });
+    }
+
+    if (names.length === 0 && Array.isArray(p.countries)) {
+      names.push(...p.countries);
+    }
+
+    if (names.length > 0) {
+      const translated = names.map((n) => translateRegion(n, isEn));
+      if (translated.length <= 3) {
+        return translated.join("، ");
+      }
+      return `${translated.slice(0, 3).join("، ")} (+${translated.length - 3} ${isEn ? "more" : "محافظات"})`;
+    }
+  }
+
+  return null;
+};
+
 const CampaignDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -60,6 +171,9 @@ const CampaignDetails: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [syncing, setSyncing] = useState(false);
+  const [togglingAdSetId, setTogglingAdSetId] = useState<string | null>(null);
+  const [togglingAdId, setTogglingAdId] = useState<string | null>(null);
+
   const selectedAdAccountId = searchParams.get("adAccountId") || "";
   const dashboardUrl = `/advertising/facebook-ads${
     selectedAdAccountId
@@ -151,15 +265,16 @@ const CampaignDetails: React.FC = () => {
 
   const formatTargetingSummary = (adSet: FacebookAdSet) => {
     const parts: string[] = [];
-    if (adSet.locations) {
-      const loc = Array.isArray(adSet.locations)
-        ? adSet.locations.join(", ")
-        : String(adSet.locations);
-      if (loc && loc !== "[]") parts.push(loc);
+    const locSummary = parseLocations(
+      adSet.locations || (adSet.targeting as any)?.geo_locations,
+      isEn,
+    );
+    if (locSummary) {
+      parts.push(locSummary);
     }
     if (adSet.ageMin || adSet.ageMax) {
       parts.push(
-        `${adSet.ageMin || 18} - ${adSet.ageMax || 65}+ ${isEn ? "yo" : "سنة"}`,
+        `${adSet.ageMin || 18}-${adSet.ageMax || 65}+ ${isEn ? "yo" : "سنة"}`,
       );
     }
     if (adSet.genders) {
@@ -167,7 +282,7 @@ const CampaignDetails: React.FC = () => {
         ? adSet.genders.join(", ")
         : String(adSet.genders);
       if (g.includes("1") && g.includes("2")) {
-        parts.push(isEn ? "All Genders" : "كل الفئات");
+        parts.push(isEn ? "All" : "الجميع");
       } else if (g.includes("2")) {
         parts.push(isEn ? "Women" : "نساء");
       } else if (g.includes("1")) {
@@ -175,6 +290,72 @@ const CampaignDetails: React.FC = () => {
       }
     }
     return parts;
+  };
+
+  const handleToggleAdSetStatus = async (adSet: FacebookAdSet) => {
+    const isCurrentlyActive =
+      adSet.effectiveStatus === "ACTIVE" || adSet.status === "ACTIVE";
+    try {
+      setTogglingAdSetId(adSet.id);
+      if (isCurrentlyActive) {
+        await facebookAdsService.pauseAdSet(adSet.id);
+        toast.success(
+          isEn
+            ? `Ad set "${adSet.name}" paused`
+            : `تم إيقاف المجموعة الإعلانية "${adSet.name}"`,
+        );
+      } else {
+        await facebookAdsService.resumeAdSet(adSet.id);
+        toast.success(
+          isEn
+            ? `Ad set "${adSet.name}" activated`
+            : `تم تنشيط المجموعة الإعلانية "${adSet.name}"`,
+        );
+      }
+      await loadCampaign();
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          isEn ? "Failed to update ad set" : "فشل تحديث المجموعة",
+        ),
+      );
+    } finally {
+      setTogglingAdSetId(null);
+    }
+  };
+
+  const handleToggleAdStatus = async (ad: FacebookAd) => {
+    const isCurrentlyActive =
+      ad.effectiveStatus === "ACTIVE" || ad.status === "ACTIVE";
+    try {
+      setTogglingAdId(ad.id);
+      if (isCurrentlyActive) {
+        await facebookAdsService.pauseAd(ad.id);
+        toast.success(
+          isEn
+            ? `Ad "${ad.name}" paused`
+            : `تم إيقاف الإعلان "${ad.name}"`,
+        );
+      } else {
+        await facebookAdsService.resumeAd(ad.id);
+        toast.success(
+          isEn
+            ? `Ad "${ad.name}" activated`
+            : `تم تنشيط الإعلان "${ad.name}"`,
+        );
+      }
+      await loadCampaign();
+    } catch (error) {
+      toast.error(
+        getApiErrorMessage(
+          error,
+          isEn ? "Failed to update ad" : "فشل تحديث الإعلان",
+        ),
+      );
+    } finally {
+      setTogglingAdId(null);
+    }
   };
 
   const handlePause = async () => {
@@ -303,12 +484,22 @@ const CampaignDetails: React.FC = () => {
     {
       label: "ROAS",
       value: `${(insights?.data.roas || 0).toFixed(2)}x`,
-      sub: `CPA ${formatCurrency(insights?.data.cpa, campaignCurrency)}`,
+      sub: (
+        <span dir="ltr" className="inline-flex items-center gap-1 font-semibold">
+          <span>CPA</span>
+          <span>{formatCurrency(insights?.data.cpa, campaignCurrency)}</span>
+        </span>
+      ),
     },
     {
       label: "CTR",
       value: formatPercent(insights?.data.ctr),
-      sub: `Frequency ${(insights?.data.frequency || 0).toFixed(2)}`,
+      sub: (
+        <span dir="ltr" className="inline-flex items-center gap-1 font-semibold">
+          <span>Freq</span>
+          <span>{(insights?.data.frequency || 0).toFixed(2)}</span>
+        </span>
+      ),
     },
   ];
 
@@ -539,6 +730,8 @@ const CampaignDetails: React.FC = () => {
             {campaignAdSets.map((adSet) => {
               const ads = adSet.ads || [];
               const targetingParts = formatTargetingSummary(adSet);
+              const isAdSetActive =
+                (adSet.effectiveStatus || adSet.status) === "ACTIVE";
 
               return (
                 <div key={adSet.id} className="px-4 py-3 hover:bg-slate-50/70">
@@ -560,7 +753,7 @@ const CampaignDetails: React.FC = () => {
                         )}
                       </div>
 
-                      <div className="mt-1 flex flex-wrap gap-2 text-xs font-semibold text-slate-500">
+                      <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
                         <span>
                           {formatCurrency(adSet.budgetAmount, campaignCurrency)}
                           {adSet.budgetType === "DAILY" ? (isEn ? " / day" : " / يوم") : ""}
@@ -574,15 +767,50 @@ const CampaignDetails: React.FC = () => {
                         {targetingParts.map((part, idx) => (
                           <span
                             key={idx}
-                            className="rounded bg-slate-100 px-2 py-0.5 text-slate-600"
+                            className="inline-flex items-center gap-1 rounded bg-slate-100 px-2 py-0.5 text-slate-700"
                           >
-                            {part}
+                            {idx === 0 && <MapPinIcon className="h-3 w-3 text-slate-400" />}
+                            <span>{part}</span>
                           </span>
                         ))}
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 flex-wrap gap-2">
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => handleToggleAdSetStatus(adSet)}
+                        disabled={togglingAdSetId === adSet.id}
+                        className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition disabled:opacity-50 ${
+                          isAdSetActive
+                            ? "border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                            : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                        }`}
+                        title={isEn ? "Toggle Ad Set status" : "تبديل حالة المجموعة الإعلانية"}
+                      >
+                        {isAdSetActive ? (
+                          <>
+                            <PauseIcon className="h-3.5 w-3.5" />
+                            <span>
+                              {togglingAdSetId === adSet.id
+                                ? "..."
+                                : isEn
+                                  ? "Pause"
+                                  : "إيقاف"}
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <PlayIcon className="h-3.5 w-3.5" />
+                            <span>
+                              {togglingAdSetId === adSet.id
+                                ? "..."
+                                : isEn
+                                  ? "Resume"
+                                  : "تشغيل"}
+                            </span>
+                          </>
+                        )}
+                      </button>
                       <button
                         onClick={() =>
                           navigate(
@@ -643,11 +871,16 @@ const CampaignDetails: React.FC = () => {
                                 </p>
                               )}
                               <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-500">
-                                <span
-                                  className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${getStatusBadge(ad.effectiveStatus || ad.status)}`}
+                                <button
+                                  onClick={() => handleToggleAdStatus(ad)}
+                                  disabled={togglingAdId === ad.id}
+                                  className={`cursor-pointer rounded px-1.5 py-0.5 text-[10px] font-bold transition hover:opacity-80 disabled:opacity-50 ${getStatusBadge(ad.effectiveStatus || ad.status)}`}
+                                  title={isEn ? "Click to toggle ad status" : "اضغط لإيقاف أو تشغيل الإعلان"}
                                 >
-                                  {getStatusLabel(ad.effectiveStatus || ad.status)}
-                                </span>
+                                  {togglingAdId === ad.id
+                                    ? "..."
+                                    : getStatusLabel(ad.effectiveStatus || ad.status)}
+                                </button>
                                 {ad.callToAction && (
                                   <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
                                     {ad.callToAction}
@@ -670,11 +903,11 @@ const CampaignDetails: React.FC = () => {
                                 ),
                               )
                             }
-                            className="inline-flex shrink-0 items-center gap-1 rounded-lg bg-indigo-600 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-indigo-700"
+                            className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-indigo-700"
                             title={isEn ? "Open ad diagnostics and performance" : "فتح تشخيص الإعلان وتحليله"}
                           >
                             <ChartBarIcon className="h-4 w-4" />
-                            {isEn ? "Analysis" : "تشخيص الأداء"}
+                            <span>{isEn ? "Analysis" : "تشخيص الأداء"}</span>
                           </button>
                         </div>
                       ))}
