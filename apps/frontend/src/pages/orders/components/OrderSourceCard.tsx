@@ -97,13 +97,23 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
   };
 
   const getSourceTypeInfo = () => {
-    // محاولة تحديد المصدر من البيانات المتاحة
-    let sourceType = order.sourceType;
-
-    // التحقق من extractionMethod أولاً
+    // فحص المتجر أولاً
     if (
+      order.sourceType === "storefront" ||
+      order.extractionMethod === "storefront" ||
+      order.orderSource === "STOREFRONT" ||
+      order.orderSource === "GUEST_CART" ||
+      order.metadata?.source === "storefront" ||
+      order.metadata?.isGuestOrder
+    ) {
+      sourceType = "storefront";
+    }
+    // التحقق من الطلب اليدوي
+    else if (
       order.extractionMethod === "manual" ||
-      order.extractionMethod === "manual_order_modal"
+      order.extractionMethod === "manual_order_modal" ||
+      order.extractionMethod === "manual_admin" ||
+      order.sourceType === "manual"
     ) {
       sourceType = "manual";
     }
@@ -117,11 +127,6 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
         sourceType = "ai_conversation";
       } else if (order.createdBy || order.createdByName) {
         sourceType = "manual";
-      } else if (
-        order.metadata?.source === "storefront" ||
-        order.metadata?.isGuestOrder
-      ) {
-        sourceType = "storefront";
       } else {
         sourceType = "unknown";
       }
@@ -231,7 +236,9 @@ const OrderSourceCard: React.FC<OrderSourceCardProps> = ({ order }) => {
                 {sourceTypeInfo.icon} {sourceTypeInfo.name}
               </span>
               {order.extractionMethod &&
-                order.extractionMethod !== "manual" && (
+                order.extractionMethod !== "manual" &&
+                order.extractionMethod !== "storefront" &&
+                (order.sourceType === "ai_conversation" || !!order.conversationId) && (
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     (
                     {order.extractionMethod === "ai_enhanced"

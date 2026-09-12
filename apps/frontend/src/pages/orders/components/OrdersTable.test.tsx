@@ -24,6 +24,7 @@ const helpers: OrdersTableHelpers = {
   }),
   getConfidenceColor: () => "bg-green-100",
   getConfidenceIcon: () => null,
+  getOrderSourceText: () => "المتجر",
 };
 
 const makeOrder = (overrides: Partial<Order> = {}): Order => ({

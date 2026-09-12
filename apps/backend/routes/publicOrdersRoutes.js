@@ -2473,10 +2473,11 @@ router.post('/', async (req, res) => {
           paymentMethod: mapPaymentMethodToEnum(paymentMethod || 'cash'),
           notes: order.notes || `طلب من الموقع - ${order.orderNumber}`,
           sourceType: 'storefront',
+          extractionMethod: 'storefront',
           isViewed: false,
           affiliateReferralId,
           affiliateId,
-          orderSource,
+          orderSource: orderSource || 'STOREFRONT',
           metadata:
             Object.keys(regularOrderMetadata).length > 0
               ? JSON.stringify(regularOrderMetadata)

@@ -3520,9 +3520,15 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
           : orderMetadata,
         merchantOrder: merchantOrderScope || undefined,
         isViewed: order.isViewed ?? false,
-        sourceType: order.sourceType || 'unknown',
-        extractionMethod: order.extractionMethod || 'unknown',
-        orderSource: order.orderSource || 'REGULAR',
+        sourceType: (order.sourceType === 'storefront' || orderMetadata?.source === 'storefront' || order.orderSource === 'STOREFRONT')
+          ? 'storefront'
+          : (order.sourceType || 'unknown'),
+        extractionMethod: (order.sourceType === 'storefront' || orderMetadata?.source === 'storefront' || order.orderSource === 'STOREFRONT')
+          ? 'storefront'
+          : (order.extractionMethod || 'unknown'),
+        orderSource: (order.sourceType === 'storefront' || orderMetadata?.source === 'storefront' || order.orderSource === 'STOREFRONT')
+          ? (order.orderSource || 'STOREFRONT')
+          : (order.orderSource || 'REGULAR'),
         conversationId: order.conversationId,
         conversation: order.conversation,
         affiliateId: order.affiliateId,
@@ -3599,7 +3605,10 @@ router.get('/simple', verifyToken.authenticateToken, async (req, res) => {
         createdAt: order.createdAt,
         updatedAt: order.updatedAt,
         metadata,
-        isViewed: order.isViewed ?? false
+        isViewed: order.isViewed ?? false,
+        sourceType: 'storefront',
+        extractionMethod: 'storefront',
+        orderSource: 'STOREFRONT'
       }, orderDetailFeatureAccess, { isMerchant: false });
     });
 
@@ -5843,9 +5852,15 @@ router.get('/simple/:orderNumber', verifyToken.authenticateToken, async (req, re
         turboReturnReason: order.turboReturnReason,
         turboExpectedBranch: order.turboExpectedBranch,
         // Source & Meta Fields
-        sourceType: order.sourceType || 'unknown',
-        extractionMethod: order.extractionMethod || 'unknown',
-        orderSource: order.orderSource || 'REGULAR',
+        sourceType: (order.sourceType === 'storefront' || orderMetadata?.source === 'storefront' || order.orderSource === 'STOREFRONT')
+          ? 'storefront'
+          : (order.sourceType || 'unknown'),
+        extractionMethod: (order.sourceType === 'storefront' || orderMetadata?.source === 'storefront' || order.orderSource === 'STOREFRONT')
+          ? 'storefront'
+          : (order.extractionMethod || 'unknown'),
+        orderSource: (order.sourceType === 'storefront' || orderMetadata?.source === 'storefront' || order.orderSource === 'STOREFRONT')
+          ? (order.orderSource || 'STOREFRONT')
+          : (order.orderSource || 'REGULAR'),
         conversationId: order.conversationId,
         conversation: order.conversation,
         affiliateId: order.affiliateId,

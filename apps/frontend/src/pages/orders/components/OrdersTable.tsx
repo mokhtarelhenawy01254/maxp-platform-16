@@ -45,6 +45,7 @@ export interface OrdersTableHelpers {
   };
   getConfidenceColor: (confidence?: number) => string;
   getConfidenceIcon: (confidence?: number) => React.ReactNode;
+  getOrderSourceText?: (order: Order) => string;
 }
 
 interface OrdersTableProps {
@@ -286,17 +287,17 @@ export const OrdersTable: React.FC<OrdersTableProps> = ({
                               {order.customerPhone}
                             </span>
                           )}
-                          {order.extractionMethod && (
-                            <span className="mt-0.5 hidden text-xs text-slate-400 dark:text-slate-500 2xl:inline">
-                              {order.extractionMethod === "ai_enhanced"
+                          <span className="mt-0.5 hidden text-xs text-slate-400 dark:text-slate-500 2xl:inline">
+                            {helpers.getOrderSourceText
+                              ? helpers.getOrderSourceText(order)
+                              : order.extractionMethod === "ai_enhanced"
                                 ? t("orders.enhancedExtraction")
                                 : order.extractionMethod === "ai_basic"
                                   ? t("orders.basicExtraction")
                                   : order.extractionMethod === "manual"
                                     ? t("orders.manual")
                                     : order.extractionMethod}
-                            </span>
-                          )}
+                          </span>
                         </div>
                       </td>
                     )}

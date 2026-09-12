@@ -127,6 +127,8 @@ router.post('/kashier/checkout', extractSubdomainMiddleware, requireCompany, asy
         paymentMethod: 'CREDIT_CARD',
         notes: notes || '',
         sourceType: 'storefront',
+        extractionMethod: 'storefront',
+        orderSource: 'STOREFRONT',
         isViewed: false,
         metadata: JSON.stringify({
           kashierSessionId: session.sessionId,

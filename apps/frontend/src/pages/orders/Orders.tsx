@@ -2708,13 +2708,56 @@ const Orders: React.FC = () => {
   }, [orderStatuses]);
 
   const getOrderSourceText = (order: Order) => {
-    if (order.extractionMethod === "ai_enhanced") return t("orders.enhancedExtraction");
-    if (order.extractionMethod === "ai_basic") return t("orders.basicExtraction");
-    if (order.extractionMethod === "manual") return t("orders.manual");
+    const isStorefront =
+      order.sourceType === "storefront" ||
+      order.extractionMethod === "storefront" ||
+      order.orderSource === "STOREFRONT" ||
+      order.orderSource === "GUEST_CART" ||
+      order.metadata?.source === "storefront" ||
+      order.metadata?.isGuestOrder === true;
+
+    if (isStorefront) return t("orders.sourceStorefront", "المتجر");
+
+    const isWoo =
+      order.sourceType === "woocommerce" ||
+      order.sourceType === "woocommerce_webhook" ||
+      order.sourceType === "woo" ||
+      order.syncedFromWoo === true;
+
+    if (isWoo) return t("orders.sourceWooCommerce", "وو كومرس");
+
+    if (order.sourceType === "pos") return t("orders.sourcePOS", "نقطة بيع");
+
+    if (
+      order.sourceType === "affiliate_direct" ||
+      order.orderSource === "AFFILIATE_DIRECT"
+    ) {
+      return t("orders.sourceAffiliateDirect", "مسوق مباشر");
+    }
+
+    if (
+      order.sourceType === "manual" ||
+      order.extractionMethod === "manual" ||
+      order.extractionMethod === "manual_order_modal" ||
+      order.extractionMethod === "manual_admin"
+    ) {
+      return t("orders.sourceManual", "يدوي");
+    }
+
+    if (order.sourceType === "import" || order.extractionMethod === "import") {
+      return t("orders.sourceImport", "استيراد");
+    }
+
+    if (order.extractionMethod === "ai_enhanced") return t("orders.enhancedExtraction", "استخراج محسن");
+    if (order.extractionMethod === "ai_basic") return t("orders.basicExtraction", "استخراج بسيط");
+    if (order.sourceType === "ai_conversation" || order.conversationId) {
+      return t("orders.sourceAutoConversation", "محادثة تلقائية");
+    }
+
     if (typeof order.metadata?.source === "string" && order.metadata.source) {
       return order.metadata.source;
     }
-    return t("orders.notSpecified");
+    return t("orders.sourceUnknown", "غير محدد");
   };
 
   const getAffiliateDisplayName = (affiliate?: AffiliateFilterOption) => {
@@ -2924,6 +2967,7 @@ const Orders: React.FC = () => {
       getUnifiedStatusDisplay,
       getConfidenceColor,
       getConfidenceIcon,
+      getOrderSourceText,
     }),
     [
       getCustomerDisplayName,
@@ -2936,6 +2980,7 @@ const Orders: React.FC = () => {
       getUnifiedStatusDisplay,
       getConfidenceColor,
       getConfidenceIcon,
+      getOrderSourceText,
     ],
   );
 
