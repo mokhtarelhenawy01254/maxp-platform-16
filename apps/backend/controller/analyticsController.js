@@ -120,13 +120,16 @@ const parseJsonSafely = (value) => {
   }
 };
 
-const normalizeAttributionText = (value, fallback = '') => {
+const normalizeAttributionText = (value, fallbackOrMaxLength = '') => {
+  const fallback = typeof fallbackOrMaxLength === 'string' ? fallbackOrMaxLength : '';
+  const maxLength = typeof fallbackOrMaxLength === 'number' ? fallbackOrMaxLength : 320;
   if (value === null || value === undefined) {
     return fallback;
   }
 
   const text = String(value).trim();
-  return text || fallback;
+  if (!text) return fallback;
+  return text.slice(0, maxLength);
 };
 
 const buildOrderAttributionSnapshot = (metadata, orderContext = {}) => {
