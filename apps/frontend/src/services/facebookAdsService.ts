@@ -1420,6 +1420,19 @@ export const deleteAdSet = async (id: string): Promise<void> => {
 };
 
 /**
+ * تكرار AdSet
+ */
+export const duplicateAdSet = async (id: string): Promise<FacebookAdSet> => {
+  try {
+    const response = await apiClient.post(`/facebook-ads/adsets/${id}/duplicate`);
+    return response.data.data;
+  } catch (error: unknown) {
+    console.error("❌ Error duplicating AdSet:", error);
+    throw error;
+  }
+};
+
+/**
  * ============================================
  * Ads Functions
  * ============================================
@@ -3507,6 +3520,7 @@ export const facebookAdsService = {
   // AdSets
   getAdSets,
   createAdSet,
+  duplicateAdSet,
   updateAdSet,
   deleteAdSet,
   pauseAdSet,

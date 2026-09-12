@@ -611,11 +611,119 @@ const updateFrequencyCap = async (req, res) => {
   }
 };
 
-// v22.0: Advanced Targeting
+/**
+ * POST /api/v1/facebook-ads/adsets/:id/duplicate
+ * تكرار المجموعة الإعلانية بنقرة واحدة
+ */
+const duplicateAdSet = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const companyId = req.user?.companyId;
+
+    const sourceAdSet = await getSharedPrismaClient().facebookAdset.findFirst({
+      where: { id },
+      include: {
+        facebookCampaign: {
+          include: { facebookAdAccount: true },
+        },
+        ads: true,
+      },
+    });
+
+    if (!sourceAdSet || sourceAdSet.facebookCampaign.companyId !== companyId) {
+      return res.status(404).json({ success: false, error: "AdSet not found" });
+    }
+
+    const newName = `نسخة من ${sourceAdSet.name || "AdSet"}`;
+    const parsedTargeting = parseJsonObject(sourceAdSet.targeting);
+
+    let newFacebookAdSetId = null;
+    const accessToken = await getCompanyAdsAccessToken(companyId);
+
+    if (accessToken && sourceAdSet.facebookCampaign.facebookCampaignId) {
+      const adAccount =
+        sourceAdSet.facebookCampaign.facebookAdAccount ||
+        (await getSharedPrismaClient().facebookAdAccount.findFirst({
+          where: { companyId, isActive: true },
+        }));
+
+      if (adAccount) {
+        const adsService = new FacebookAdsService(accessToken, adAccount.accountId);
+        const fbCampaignId = sourceAdSet.facebookCampaign.facebookCampaignId;
+
+        const isCBO = Boolean(
+          sourceAdSet.facebookCampaign.budgetOptimization ||
+          sourceAdSet.facebookCampaign.dailyBudget ||
+          sourceAdSet.facebookCampaign.lifetimeBudget,
+        );
+
+        const adSetData = {
+          name: newName,
+          status: "PAUSED",
+          targeting: parsedTargeting || {},
+          optimizationGoal: sourceAdSet.optimizationGoal || "OFFSITE_CONVERSIONS",
+          billingEvent: sourceAdSet.billingEvent || "IMPRESSIONS",
+          ...(!isCBO && sourceAdSet.budgetAmount
+            ? {
+                dailyBudget:
+                  sourceAdSet.budgetType === "DAILY"
+                    ? sourceAdSet.budgetAmount
+                    : undefined,
+                lifetimeBudget:
+                  sourceAdSet.budgetType === "LIFETIME"
+                    ? sourceAdSet.budgetAmount
+                    : undefined,
+              }
+            : {}),
+        };
+
+        const fbResult = await adsService.createAdSet(fbCampaignId, adSetData);
+        if (fbResult.success) {
+          newFacebookAdSetId = fbResult.adSetId;
+        }
+      }
+    }
+
+    const duplicatedAdSet = await getSharedPrismaClient().facebookAdset.create({
+      data: {
+        campaignId: sourceAdSet.campaignId,
+        companyId,
+        name: newName,
+        status: "PAUSED",
+        facebookAdSetId: newFacebookAdSetId,
+        budgetType: sourceAdSet.budgetType,
+        budgetAmount: sourceAdSet.budgetAmount,
+        targeting: sourceAdSet.targeting,
+        locations: sourceAdSet.locations,
+        ageMin: sourceAdSet.ageMin,
+        ageMax: sourceAdSet.ageMax,
+        genders: sourceAdSet.genders,
+        interests: sourceAdSet.interests,
+        optimizationGoal: sourceAdSet.optimizationGoal,
+        billingEvent: sourceAdSet.billingEvent,
+        bidAmount: sourceAdSet.bidAmount,
+        settings: sourceAdSet.settings,
+      },
+      include: {
+        ads: true,
+      },
+    });
+
+    return res.json({
+      success: true,
+      data: duplicatedAdSet,
+      message: "تم تكرار المجموعة الإعلانية بنجاح",
+    });
+  } catch (error) {
+    console.error("❌ Error duplicating AdSet:", error);
+    return res.status(500).json({ success: false, error: error.message });
+  }
+};
 
 module.exports = {
   getAdSets,
   createAdSet,
+  duplicateAdSet,
   deleteAdSet,
   updateAdSetSchedule,
   updateAdSet,

@@ -18,6 +18,10 @@ import {
   ArrowTopRightOnSquareIcon,
   PhotoIcon,
   MapPinIcon,
+  DocumentDuplicateIcon,
+  PencilSquareIcon,
+  CheckIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -173,6 +177,10 @@ const CampaignDetails: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
   const [togglingAdSetId, setTogglingAdSetId] = useState<string | null>(null);
   const [togglingAdId, setTogglingAdId] = useState<string | null>(null);
+  const [duplicatingAdSetId, setDuplicatingAdSetId] = useState<string | null>(null);
+  const [editingBudgetAdSetId, setEditingBudgetAdSetId] = useState<string | null>(null);
+  const [editBudgetValue, setEditBudgetValue] = useState<string>("");
+  const [savingBudgetId, setSavingBudgetId] = useState<string | null>(null);
 
   const selectedAdAccountId = searchParams.get("adAccountId") || "";
   const dashboardUrl = `/advertising/facebook-ads${
@@ -355,6 +363,72 @@ const CampaignDetails: React.FC = () => {
       );
     } finally {
       setTogglingAdId(null);
+    }
+  };
+
+  const handleDuplicateAdSet = async (adSet: FacebookAdSet) => {
+    try {
+      setDuplicatingAdSetId(adSet.id);
+      toast.info(
+        isEn
+          ? `Duplicating "${adSet.name}"...`
+          : `جاري تكرار المجموعة "${adSet.name}"...`,
+      );
+      await facebookAdsService.duplicateAdSet(adSet.id);
+      toast.success(
+        isEn
+          ? "Ad Set duplicated successfully!"
+          : "تم تكرار المجموعة الإعلانية بنجاح!",
+      );
+      await loadCampaign();
+    } catch (error) {
+      console.error("Error duplicating ad set:", error);
+      toast.error(
+        getApiErrorMessage(
+          error,
+          isEn ? "Failed to duplicate ad set" : "فشل تكرار المجموعة",
+        ),
+      );
+    } finally {
+      setDuplicatingAdSetId(null);
+    }
+  };
+
+  const handleStartEditBudget = (adSet: FacebookAdSet) => {
+    setEditingBudgetAdSetId(adSet.id);
+    setEditBudgetValue(String(adSet.budgetAmount || ""));
+  };
+
+  const handleSaveBudget = async (adSet: FacebookAdSet) => {
+    const num = Number(editBudgetValue);
+    if (isNaN(num) || num <= 0) {
+      toast.error(
+        isEn
+          ? "Please enter a valid budget amount"
+          : "يرجى إدخال مبلغ ميزانية صالح",
+      );
+      return;
+    }
+    try {
+      setSavingBudgetId(adSet.id);
+      await facebookAdsService.updateAdSet(adSet.id, { budgetAmount: num });
+      toast.success(
+        isEn
+          ? "Budget updated successfully on Meta!"
+          : "تم تحديث الميزانية بنجاح على Meta!",
+      );
+      setEditingBudgetAdSetId(null);
+      await loadCampaign();
+    } catch (error) {
+      console.error("Error updating budget:", error);
+      toast.error(
+        getApiErrorMessage(
+          error,
+          isEn ? "Failed to update budget" : "فشل تحديث الميزانية",
+        ),
+      );
+    } finally {
+      setSavingBudgetId(null);
     }
   };
 
@@ -754,10 +828,47 @@ const CampaignDetails: React.FC = () => {
                       </div>
 
                       <div className="mt-1 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-500">
-                        <span>
-                          {formatCurrency(adSet.budgetAmount, campaignCurrency)}
-                          {adSet.budgetType === "DAILY" ? (isEn ? " / day" : " / يوم") : ""}
-                        </span>
+                        {editingBudgetAdSetId === adSet.id ? (
+                          <div className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-200 px-2 py-1 rounded-lg">
+                            <input
+                              type="number"
+                              value={editBudgetValue}
+                              onChange={(e) => setEditBudgetValue(e.target.value)}
+                              className="w-20 rounded border border-indigo-300 bg-white px-1.5 py-0.5 text-xs font-bold text-slate-900"
+                              placeholder="الميزانية"
+                              autoFocus
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleSaveBudget(adSet)}
+                              disabled={savingBudgetId === adSet.id}
+                              className="p-1 rounded bg-indigo-600 text-white hover:bg-indigo-700"
+                              title={isEn ? "Save" : "حفظ"}
+                            >
+                              <CheckIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingBudgetAdSetId(null)}
+                              className="p-1 rounded text-slate-500 hover:text-slate-800"
+                              title={isEn ? "Cancel" : "إلغاء"}
+                            >
+                              <XMarkIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            onClick={() => handleStartEditBudget(adSet)}
+                            className="inline-flex items-center gap-1 cursor-pointer hover:text-indigo-600 hover:underline bg-slate-50 px-2 py-0.5 rounded border border-slate-100"
+                            title={isEn ? "Click to edit budget quickly" : "اضغط لتعديل الميزانية سريعاً"}
+                          >
+                            <span>
+                              {formatCurrency(adSet.budgetAmount, campaignCurrency)}
+                              {adSet.budgetType === "DAILY" ? (isEn ? " / day" : " / يوم") : ""}
+                            </span>
+                            <PencilSquareIcon className="h-3 w-3 text-slate-400 hover:text-indigo-600" />
+                          </span>
+                        )}
                         <span>{ads.length} {isEn ? "ads" : "إعلان"}</span>
                         {adSet.optimizationGoal && (
                           <span className="rounded bg-slate-50 px-2 py-0.5 text-slate-600">
@@ -777,6 +888,20 @@ const CampaignDetails: React.FC = () => {
                     </div>
 
                     <div className="flex shrink-0 flex-wrap items-center gap-2">
+                      <button
+                        onClick={() => handleDuplicateAdSet(adSet)}
+                        disabled={duplicatingAdSetId === adSet.id}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-100 hover:border-slate-300 transition disabled:opacity-50"
+                        title={isEn ? "Duplicate Ad Set (1-Click)" : "تكرار المجموعة الإعلانية بنقرة واحدة"}
+                      >
+                        <DocumentDuplicateIcon className="h-3.5 w-3.5 text-slate-500" />
+                        <span>
+                          {duplicatingAdSetId === adSet.id
+                            ? (isEn ? "..." : "جاري التكرار...")
+                            : (isEn ? "Duplicate" : "تكرار")}
+                        </span>
+                      </button>
+
                       <button
                         onClick={() => handleToggleAdSetStatus(adSet)}
                         disabled={togglingAdSetId === adSet.id}

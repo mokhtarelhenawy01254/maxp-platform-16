@@ -144,6 +144,9 @@ router.post('/campaigns/:campaignId/adsets', facebookAdsController.createAdSet);
 // DELETE /api/v1/facebook-ads/adsets/:id - حذف AdSet
 router.delete('/adsets/:id', facebookAdsController.deleteAdSet);
 
+// POST /api/v1/facebook-ads/adsets/:id/duplicate - تكرار AdSet
+router.post('/adsets/:id/duplicate', facebookAdsController.duplicateAdSet);
+
 /**
  * ============================================
  * Ads Routes
