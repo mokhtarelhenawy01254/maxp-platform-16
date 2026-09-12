@@ -14,6 +14,10 @@ interface AdSetBudgetStepProps {
   onBudgetTypeChange: (type: "DAILY" | "LIFETIME") => void;
   budgetAmount: number;
   onBudgetAmountChange: (amount: number) => void;
+  dailyMinSpendTarget?: number;
+  onDailyMinSpendTargetChange?: (val?: number) => void;
+  dailySpendCap?: number;
+  onDailySpendCapChange?: (val?: number) => void;
   startTime: string;
   onStartTimeChange: (time: string) => void;
   hasEndDate: boolean;
@@ -43,6 +47,10 @@ const BID_STRATEGIES = [
     description: "تحديد حد أقصى لتكلفة كل عملية شراء (مثلاً لا تزيد عن 70 ج.م)",
     badge: "لضبط هوامش الربح",
     hasInput: true,
+    inputLabel: "الحد الأقصى للتكلفة (ج.م):",
+    inputPlaceholder: "مثال: 70",
+    inputStep: 5,
+    hint: "(سيتوقف الإعلان إذا زادت تكلفة النتيجة عن هذا المبلغ)",
   },
   {
     id: "BID_CAP",
@@ -50,6 +58,21 @@ const BID_STRATEGIES = [
     description: "تحديد أعلى سعر مزايدة تدفعه ميتا في المزاد الإعلاني الواحد",
     badge: "للمحترفين",
     hasInput: true,
+    inputLabel: "أعلى سعر مزايدة (ج.م):",
+    inputPlaceholder: "مثال: 50",
+    inputStep: 5,
+    hint: "(سقف المزايدة في المزاد الفردي)",
+  },
+  {
+    id: "LOWEST_COST_WITH_MIN_ROAS",
+    title: "مستهدف عائد الإنفاق الأدنى (Target Minimum ROAS)",
+    description: "تحديد مضاعف العائد على الإنفاق المطلوب (مثلاً: 3.5x لضمان ربحية المبيعات)",
+    badge: "جديد v26.0 - للمتاجر",
+    hasInput: true,
+    inputLabel: "مضاعف ROAS المستهدف:",
+    inputPlaceholder: "مثال: 3.5",
+    inputStep: 0.1,
+    hint: "(ستعطي ميتا الأولوية للمشترين ذوي سلات الشراء الأعلى)",
   },
 ];
 
@@ -83,6 +106,10 @@ export const AdSetBudgetStep: React.FC<AdSetBudgetStepProps> = ({
   onBudgetTypeChange,
   budgetAmount,
   onBudgetAmountChange,
+  dailyMinSpendTarget,
+  onDailyMinSpendTargetChange,
+  dailySpendCap,
+  onDailySpendCapChange,
   startTime,
   onStartTimeChange,
   hasEndDate,
@@ -108,16 +135,81 @@ export const AdSetBudgetStep: React.FC<AdSetBudgetStepProps> = ({
         </label>
 
         {isCboCampaign ? (
-          <div className="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-xl space-y-1.5">
-            <div className="flex items-center gap-2 font-bold text-sm text-purple-900 dark:text-purple-200">
-              <SparklesIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-              <span>ميزانية الحملة Advantage+ مفعلة (CBO)</span>
+          <div className="space-y-3">
+            <div className="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-xl space-y-1.5">
+              <div className="flex items-center gap-2 font-bold text-sm text-purple-900 dark:text-purple-200">
+                <SparklesIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                <span>ميزانية الحملة Advantage+ مفعلة (CBO)</span>
+              </div>
+              <p className="text-xs text-purple-700 dark:text-purple-300">
+                هذه الحملة تستخدم توزيع الميزانية الذكي على مستوى الحملة بالكامل
+                {campaignBudgetText ? ` (${campaignBudgetText})` : ""}.
+                سيقوم نظام ميتا بتوزيع الإنفاق تلقائياً على المجموعات الأكثر تحقيقاً للمبيعات.
+              </p>
             </div>
-            <p className="text-xs text-purple-700 dark:text-purple-300">
-              هذه الحملة تستخدم توزيع الميزانية الذكي على مستوى الحملة بالكامل
-              {campaignBudgetText ? ` (${campaignBudgetText})` : ""}.
-              سيقوم نظام ميتا بتوزيع الإنفاق تلقائياً على المجموعات الأكثر تحقيقاً للمبيعات، ولن تحتاج لتحديد ميزانية لهذه المجموعة يدوياً.
-            </p>
+
+            {/* v26.0: Ad Set Spend Limits under CBO */}
+            <div className="p-3.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-gray-900 dark:text-white">
+                    حدود إنفاق المجموعة الإعلانية (Ad Set Spend Limits)
+                  </h4>
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5">
+                    اختياري: التحكم في وتيرة إنفاق هذه المجموعة ضمن ميزانية CBO
+                  </p>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-950/60 text-cyan-800 dark:text-cyan-300 font-bold">
+                  v26.0
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    الحد اليومي الأدنى للإنفاق (ج.م)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={10}
+                    value={dailyMinSpendTarget ?? ""}
+                    onChange={(e) =>
+                      onDailyMinSpendTargetChange?.(
+                        e.target.value ? Number(e.target.value) : undefined
+                      )
+                    }
+                    placeholder="مثال: 50 (ضمان حد أدنى)"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    يضمن حصول المجموعة على هذا الإنفاق على الأقل يومياً
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-[11px] font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    سقف الإنفاق اليومي الأقصى (ج.م)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    step={10}
+                    value={dailySpendCap ?? ""}
+                    onChange={(e) =>
+                      onDailySpendCapChange?.(
+                        e.target.value ? Number(e.target.value) : undefined
+                      )
+                    }
+                    placeholder="مثال: 300 (منع الاحتكار)"
+                    className="w-full px-3 py-2 bg-white dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-lg text-xs font-semibold text-gray-900 dark:text-white focus:ring-2 focus:ring-cyan-500"
+                  />
+                  <p className="text-[10px] text-gray-400 mt-0.5">
+                    يمنع المجموعة من استهلاك أكثر من هذا المبلغ يومياً
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         ) : (
           <div className="space-y-3">
