@@ -18,6 +18,8 @@ interface AdSetReviewStepProps {
   isCboCampaign: boolean;
   budgetType: "DAILY" | "LIFETIME";
   budgetAmount: number;
+  dailyMinSpendTarget?: number;
+  dailySpendCap?: number;
   startTime: string;
   hasEndDate: boolean;
   endTime: string;
@@ -48,6 +50,8 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
   isCboCampaign,
   budgetType,
   budgetAmount,
+  dailyMinSpendTarget,
+  dailySpendCap,
   startTime,
   hasEndDate,
   endTime,
@@ -144,6 +148,19 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
                   : `${budgetAmount?.toLocaleString() || 0} ج.م (${budgetType === "DAILY" ? "يومية" : "إجمالية"})`}
               </span>
             </div>
+            {isCboCampaign && (dailyMinSpendTarget || dailySpendCap) && (
+              <div className="flex justify-between">
+                <span className="text-gray-400">حدود إنفاق المجموعة:</span>
+                <span className="font-semibold text-cyan-700 dark:text-cyan-400 text-xs">
+                  {[
+                    dailyMinSpendTarget ? `أدنى: ${dailyMinSpendTarget} ج.م` : null,
+                    dailySpendCap ? `أقصى: ${dailySpendCap} ج.م` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(" | ")}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-gray-400">التحكم بالتكلفة:</span>
               <span className="font-semibold text-gray-900 dark:text-white">
@@ -151,7 +168,9 @@ export const AdSetReviewStep: React.FC<AdSetReviewStepProps> = ({
                   ? `Cost Cap: ${bidValue} ج.م`
                   : bidStrategy === "BID_CAP" && bidValue
                     ? `Bid Cap: ${bidValue} ج.م`
-                    : "أعلى حجم (تلقائي)"}
+                    : bidStrategy === "LOWEST_COST_WITH_MIN_ROAS" && bidValue
+                      ? `Target ROAS: ${bidValue}x`
+                      : "أعلى حجم (تلقائي)"}
               </span>
             </div>
             <div className="flex justify-between">
