@@ -128,7 +128,7 @@ export const AdDestinationTrackingStep: React.FC<AdDestinationTrackingStepProps>
         <div className="flex items-center gap-2">
           <TagIcon className="h-4 w-4 text-indigo-600" />
           <h4 className="text-xs font-black text-slate-900">
-            {isEn ? "UTM Tracking Parameters Builder (Meta v25)" : "منشئ وسوم التتبع الاحترافي (UTM Parameters Builder)"}
+            {isEn ? "UTM Tracking Parameters Builder (Meta v26)" : "منشئ وسوم التتبع الاحترافي (UTM Parameters Builder)"}
           </h4>
         </div>
         <p className="text-[11px] text-slate-500">

@@ -27,7 +27,7 @@ export const AdReviewStep: React.FC<AdReviewStepProps> = ({
         <CheckCircleIcon className="h-6 w-6 text-emerald-600 shrink-0" />
         <div>
           <h3 className="text-sm font-black text-emerald-950">
-            {isEn ? "Ready to Launch Ad on Meta v25" : "الإعلان جاهز للنشر على منصة Meta v25"}
+            {isEn ? "Ready to Launch Ad on Meta v26" : "الإعلان جاهز للنشر على منصة Meta v26"}
           </h3>
           <p className="mt-0.5 text-xs text-emerald-800 font-medium">
             {isEn

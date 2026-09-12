@@ -103,7 +103,7 @@ export const AdCopyVariationsStep: React.FC<AdCopyVariationsStepProps> = ({
         <SparklesIcon className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
         <div className="text-xs">
           <p className="font-black text-indigo-950">
-            {isEn ? "Meta v25 Advantage+ Dynamic Text" : "ميزة التوزيع الذكي للنصوص (Meta v25 Dynamic Text)"}
+            {isEn ? "Meta v26 Advantage+ Dynamic Text" : "ميزة التوزيع الذكي للنصوص (Meta v26 Dynamic Text)"}
           </p>
           <p className="mt-0.5 text-indigo-800 font-medium">
             {isEn

@@ -44,7 +44,7 @@ export const AdAdvantageCreativeStep: React.FC<AdAdvantageCreativeStepProps> = (
           <div>
             <div className="flex items-center gap-2">
               <h3 className="text-sm font-black text-slate-900">
-                {isEn ? "Advantage+ Creative Suite (Meta v25)" : "حزمة تحسينات التصميم الذكية (Advantage+ Creative)"}
+                {isEn ? "Advantage+ Creative Suite (Meta v26)" : "حزمة تحسينات التصميم الذكية (Advantage+ Creative)"}
               </h3>
               <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-bold text-indigo-700">
                 {isEn ? "Recommended" : "موصى به لزيادة المبيعات"}

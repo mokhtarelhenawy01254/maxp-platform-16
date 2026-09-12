@@ -227,7 +227,7 @@ const CreateAd: React.FC = () => {
 
     try {
       setSubmitting(true);
-      toast.loading(isEn ? "Publishing ad to Meta v25..." : "جاري نشر الإعلان على منصة Meta v25...", { id: "create-ad" });
+      toast.loading(isEn ? "Publishing ad to Meta v26..." : "جاري نشر الإعلان على منصة Meta v26...", { id: "create-ad" });
 
       // Clean variation arrays
       const validTexts = formData.primaryTexts.map((t) => t.trim()).filter(Boolean);
@@ -296,10 +296,10 @@ const CreateAd: React.FC = () => {
           </button>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-slate-950">
-              {isEn ? "Create New Ad (Creative v25)" : "إنشاء إعلان جديد (Meta v25 Suite)"}
+              {isEn ? "Create New Ad (Creative v26)" : "إنشاء إعلان جديد (Meta v26 Suite)"}
             </h1>
             <span className="rounded-full bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[11px] font-bold text-indigo-700">
-              Meta v25
+              Meta v26
             </span>
           </div>
           <p className="mt-1 text-xs text-slate-500">

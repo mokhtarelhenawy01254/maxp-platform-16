@@ -354,7 +354,7 @@ const CreateAdSet: React.FC = () => {
               إنشاء مجموعة إعلانات جديدة
             </h1>
             <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-950/70 dark:text-cyan-300 font-mono font-bold">
-              Meta v25.0
+              Meta v26.0
             </span>
           </div>
           {campaign && (
