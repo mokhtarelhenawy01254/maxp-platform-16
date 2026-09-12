@@ -44,6 +44,20 @@ const generateInvoiceNumber = async (companyId) => {
   return `PI-${String(lastNumber + 1).padStart(6, "0")}`;
 };
 
+const generatePaymentNumber = async (companyId) => {
+  const lastPayment = await safeQuery(() =>
+    getSharedPrismaClient().supplierPayment.findFirst({
+      where: { companyId },
+      orderBy: { createdAt: "desc" },
+    }),
+  );
+
+  const lastNumber = lastPayment
+    ? parseInt(lastPayment.paymentNumber.split("-").pop())
+    : 0;
+  return `SP-${String(lastNumber + 1).padStart(6, "0")}`;
+};
+
 exports.createPurchaseInvoice = async (req, res) => {
   try {
     const { companyId, id: userId } = req.user;
@@ -56,6 +70,9 @@ exports.createPurchaseInvoice = async (req, res) => {
       notes,
       shippingCost,
       discountAmount,
+      paidAmount: rawPaidAmount,
+      paymentMethod,
+      paymentNotes,
     } = req.body;
 
     if (!supplierId || !items || items.length === 0) {
@@ -98,6 +115,11 @@ exports.createPurchaseInvoice = async (req, res) => {
     const discount = parseFloat(discountAmount || 0);
     const totalAmount = subtotal + taxAmount + shipping - discount;
 
+    const requestedPaid = Math.max(0, parseFloat(rawPaidAmount || 0));
+    const paidAmount = Math.min(requestedPaid, totalAmount);
+    const remainingAmount = Math.max(0, totalAmount - paidAmount);
+    const status = remainingAmount <= 0 ? "PAID" : paidAmount > 0 ? "PARTIALLY_PAID" : "PENDING";
+
     const invoice = await safeQuery(() =>
       getSharedPrismaClient().purchaseInvoice.create({
         data: {
@@ -112,8 +134,9 @@ exports.createPurchaseInvoice = async (req, res) => {
           discountAmount: discount,
           shippingCost: shipping,
           totalAmount,
-          paidAmount: 0,
-          remainingAmount: totalAmount,
+          paidAmount,
+          remainingAmount,
+          status,
           notes,
           createdBy: userId,
           purchaseInvoiceItems: {
@@ -128,20 +151,41 @@ exports.createPurchaseInvoice = async (req, res) => {
       }),
     );
 
-    await safeQuery(() =>
-      getSharedPrismaClient().supplier.update({
-        where: { id: supplierId },
-        data: {
-          currentBalance: {
-            increment: totalAmount,
+    if (paidAmount > 0) {
+      const paymentNumber = await generatePaymentNumber(companyId);
+      await safeQuery(() =>
+        getSharedPrismaClient().supplierPayment.create({
+          data: {
+            companyId,
+            supplierId,
+            purchaseInvoiceId: invoice.id,
+            paymentNumber,
+            paymentDate: invoiceDate ? new Date(invoiceDate) : new Date(),
+            amount: paidAmount,
+            paymentMethod: paymentMethod || "CASH",
+            notes: paymentNotes || "سداد فوري عند إنشاء الفاتورة",
+            createdBy: userId,
           },
-        },
-      }),
-    );
+        }),
+      );
+    }
+
+    if (remainingAmount > 0) {
+      await safeQuery(() =>
+        getSharedPrismaClient().supplier.update({
+          where: { id: supplierId },
+          data: {
+            currentBalance: {
+              increment: remainingAmount,
+            },
+          },
+        }),
+      );
+    }
 
     res.status(201).json({
       success: true,
-      message: "تم إنشاء الفاتورة بنجاح",
+      message: paidAmount >= totalAmount ? "تم إنشاء الفاتورة وسدادها بنجاح" : "تم إنشاء الفاتورة بنجاح",
       invoice: normalizePurchaseInvoice(invoice),
     });
   } catch (error) {

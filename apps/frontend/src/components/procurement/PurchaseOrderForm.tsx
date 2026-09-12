@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   Trash2,
   Plus,
@@ -9,6 +9,10 @@ import {
   PackageCheck,
   ShoppingCart,
   AlertCircle,
+  Search,
+  Check,
+  ChevronsUpDown,
+  SlidersHorizontal,
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -23,13 +27,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -93,12 +90,23 @@ const PurchaseOrderForm: React.FC = () => {
   const [catalogItems, setCatalogItems] = useState<CatalogItem[]>([]);
   const [activeSearchRowIndex, setActiveSearchRowIndex] = useState<number | null>(null);
 
+  // Searchable combobox for supplier
+  const [supplierSearchOpen, setSupplierSearchOpen] = useState(false);
+  const [supplierSearchQuery, setSupplierSearchQuery] = useState("");
+  const supplierDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Optional columns toggle (Tax & Discount per line)
+  const [showAdvancedItemColumns, setShowAdvancedItemColumns] = useState(false);
+
   // Quick Supplier Modal
   const [isQuickSupplierOpen, setIsQuickSupplierOpen] = useState(false);
   const [quickSupplierName, setQuickSupplierName] = useState("");
   const [quickSupplierPhone, setQuickSupplierPhone] = useState("");
   const [quickSupplierContact, setQuickSupplierContact] = useState("");
   const [submittingQuickSupplier, setSubmittingQuickSupplier] = useState(false);
+
+  // Refs for keyboard navigation
+  const itemInputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const [formData, setFormData] = useState({
     supplierId: "",
@@ -129,6 +137,20 @@ const PurchaseOrderForm: React.FC = () => {
       fetchOrder();
     }
   }, [id]);
+
+  // Click outside to close supplier combobox
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        supplierDropdownRef.current &&
+        !supplierDropdownRef.current.contains(event.target as Node)
+      ) {
+        setSupplierSearchOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const fetchInitialData = async () => {
     try {
@@ -231,6 +253,18 @@ const PurchaseOrderForm: React.FC = () => {
     return suppliers.find((s) => s.id === formData.supplierId);
   }, [suppliers, formData.supplierId]);
 
+  const filteredSuppliers = useMemo(() => {
+    if (!supplierSearchQuery.trim()) return suppliers;
+    const q = supplierSearchQuery.toLowerCase();
+    return suppliers.filter(
+      (s) =>
+        s.name.toLowerCase().includes(q) ||
+        (s.phone && s.phone.includes(q)) ||
+        (s.mobile && s.mobile.includes(q)) ||
+        (s.contactPerson && s.contactPerson.toLowerCase().includes(q)),
+    );
+  }, [suppliers, supplierSearchQuery]);
+
   const updateItemDetails = (index: number, updates: Partial<OrderItem>) => {
     setItems((prevItems) => {
       const newItems = [...prevItems];
@@ -260,6 +294,17 @@ const PurchaseOrderForm: React.FC = () => {
 
   const updateItem = (index: number, field: keyof OrderItem, value: any) => {
     updateItemDetails(index, { [field]: value });
+  };
+
+  // Keyboard rapid-entry: hitting Enter on price adds a new line and focuses its name field
+  const handlePriceKeyDown = (e: React.KeyboardEvent, index: number) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addItem();
+      setTimeout(() => {
+        itemInputRefs.current[index + 1]?.focus();
+      }, 50);
+    }
   };
 
   const addItem = () => {
@@ -309,12 +354,14 @@ const PurchaseOrderForm: React.FC = () => {
       0,
     );
 
-    const grandTotal =
+    const grandTotal = Math.max(
+      0,
       subtotal -
-      itemDiscounts +
-      totalTax +
-      Number(formData.shippingCost) -
-      Number(formData.discountAmount);
+        itemDiscounts +
+        totalTax +
+        Number(formData.shippingCost) -
+        Number(formData.discountAmount),
+    );
 
     return { subtotal, totalTax, itemDiscounts, grandTotal };
   };
@@ -419,8 +466,8 @@ const PurchaseOrderForm: React.FC = () => {
   }
 
   return (
-    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-5">
-      {/* Header */}
+    <div className="p-3 sm:p-6 max-w-7xl mx-auto space-y-5 pb-24 md:pb-6">
+      {/* Top Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <Button
@@ -443,466 +490,567 @@ const PurchaseOrderForm: React.FC = () => {
             </p>
           </div>
         </div>
-        {isEdit && (
-          <Button variant="outline" onClick={() => window.print()} className="gap-2">
-            <Printer className="size-4" />
-            {t("procurement.purchaseOrderForm.print", "طباعة")}
+
+        <div className="flex items-center gap-2">
+          {isEdit && (
+            <Button variant="outline" onClick={() => window.print()} className="gap-2">
+              <Printer className="size-4" />
+              {t("procurement.purchaseOrderForm.print", "طباعة")}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setShowAdvancedItemColumns((prev) => !prev)}
+            className="text-xs gap-1.5 rounded-lg h-9"
+          >
+            <SlidersHorizontal className="size-3.5" />
+            {showAdvancedItemColumns ? "إخفاء الضرائب والخصومات الفرعية" : "إظهار الضريبة والخصم لكل بند"}
           </Button>
-        )}
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Supplier & Header Metadata */}
-        <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
-          <CardContent className="p-4 sm:p-6 space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Supplier Select */}
-              <div className="space-y-1.5 md:col-span-1">
-                <div className="flex items-center justify-between">
-                  <Label className="font-semibold text-sm">
-                    {t("procurement.purchaseOrderForm.supplierLabel", "المورد *")}
-                  </Label>
-                  <Button
-                    type="button"
-                    variant="link"
-                    size="sm"
-                    onClick={() => setIsQuickSupplierOpen(true)}
-                    className="p-0 h-auto text-xs text-primary font-medium flex items-center gap-1"
-                  >
-                    <UserPlus className="size-3.5" />
-                    + مورد جديد
-                  </Button>
-                </div>
-                <Select
-                  value={formData.supplierId}
-                  onValueChange={(val) => setFormData((prev) => ({ ...prev, supplierId: val }))}
-                >
-                  <SelectTrigger className="h-11 rounded-xl">
-                    <SelectValue
-                      placeholder={t(
-                        "procurement.purchaseOrderForm.supplierPlaceholder",
-                        "اختر المورد",
-                      )}
+      <form onSubmit={handleSubmit}>
+        {/* Split Layout: 8 cols Form / 4 cols Sticky Receipt */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Main Column (8 cols) */}
+          <div className="lg:col-span-8 space-y-5">
+            {/* Supplier & Header Metadata */}
+            <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
+              <CardContent className="p-4 sm:p-5 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {/* Searchable Combobox for Supplier */}
+                  <div className="space-y-1.5 md:col-span-1 relative" ref={supplierDropdownRef}>
+                    <div className="flex items-center justify-between">
+                      <Label className="font-semibold text-sm">
+                        {t("procurement.purchaseOrderForm.supplierLabel", "المورد *")}
+                      </Label>
+                      <Button
+                        type="button"
+                        variant="link"
+                        size="sm"
+                        onClick={() => setIsQuickSupplierOpen(true)}
+                        className="p-0 h-auto text-xs text-primary font-medium flex items-center gap-1"
+                      >
+                        <UserPlus className="size-3.5" />
+                        + مورد جديد
+                      </Button>
+                    </div>
+
+                    {/* Trigger Input */}
+                    <div
+                      onClick={() => setSupplierSearchOpen((prev) => !prev)}
+                      className="flex items-center justify-between h-11 px-3.5 py-2 rounded-xl border border-input bg-background/80 hover:bg-accent/40 cursor-pointer transition-colors shadow-xs"
                     >
-                      {selectedSupplier ? (
-                        <div className="flex items-center gap-2 truncate">
-                          <span className="font-semibold text-foreground">
-                            {selectedSupplier.name}
-                          </span>
-                          {selectedSupplier.phone && (
-                            <span className="text-xs text-muted-foreground">
-                              ({selectedSupplier.phone})
+                      <div className="flex items-center gap-2 truncate">
+                        {selectedSupplier ? (
+                          <div className="flex items-center gap-2 truncate">
+                            <span className="font-semibold text-foreground text-sm">
+                              {selectedSupplier.name}
                             </span>
-                          )}
-                        </div>
-                      ) : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="max-h-72">
-                    {suppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        <div className="flex items-center justify-between gap-4 w-full text-start">
-                          <span className="font-medium text-foreground">{s.name}</span>
-                          {s.phone && (
-                            <span className="text-xs text-muted-foreground">{s.phone}</span>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                            {selectedSupplier.phone && (
+                              <span className="text-xs text-muted-foreground font-mono">
+                                ({selectedSupplier.phone})
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">
+                            {t(
+                              "procurement.purchaseOrderForm.supplierPlaceholder",
+                              "ابحث عن مورد بالاسم أو الهاتف...",
+                            )}
+                          </span>
+                        )}
+                      </div>
+                      <ChevronsUpDown className="size-4 text-muted-foreground shrink-0" />
+                    </div>
 
-                {selectedSupplier && selectedSupplier.currentBalance !== undefined && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-lg mt-1 font-medium">
-                    <AlertCircle className="size-3.5 shrink-0 text-amber-500" />
-                    <span>
-                      الرصيد الحالي:{" "}
-                      <strong className="font-bold text-foreground">
-                        {Number(selectedSupplier.currentBalance).toFixed(2)} ج.م
-                      </strong>
-                    </span>
+                    {/* Dropdown Menu with Instant Search */}
+                    {supplierSearchOpen && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 rounded-xl border border-border bg-popover shadow-xl p-2 space-y-2 text-popover-foreground animate-in fade-in-0 zoom-in-95">
+                        <div className="relative">
+                          <Search className="absolute right-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+                          <Input
+                            autoFocus
+                            placeholder="اكتب اسم أو رقم هاتف المورد..."
+                            value={supplierSearchQuery}
+                            onChange={(e) => setSupplierSearchQuery(e.target.value)}
+                            className="pr-9 h-9 text-xs rounded-lg"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+
+                        <div className="max-h-56 overflow-y-auto space-y-1">
+                          {filteredSuppliers.length === 0 ? (
+                            <div className="text-center py-4 text-xs text-muted-foreground">
+                              لا يوجد مورد مطابق للبحث.
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setSupplierSearchOpen(false);
+                                  setQuickSupplierName(supplierSearchQuery);
+                                  setIsQuickSupplierOpen(true);
+                                }}
+                                className="block mx-auto mt-2 text-primary font-semibold hover:underline"
+                              >
+                                + إضافة &quot;{supplierSearchQuery}&quot; كمورد جديد
+                              </button>
+                            </div>
+                          ) : (
+                            filteredSuppliers.map((s) => {
+                              const isSelected = s.id === formData.supplierId;
+                              return (
+                                <button
+                                  key={s.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setFormData((prev) => ({ ...prev, supplierId: s.id }));
+                                    setSupplierSearchOpen(false);
+                                    setSupplierSearchQuery("");
+                                  }}
+                                  className={`w-full flex items-center justify-between p-2 rounded-lg text-xs transition-colors text-start ${
+                                    isSelected
+                                      ? "bg-primary/10 text-primary font-semibold"
+                                      : "hover:bg-muted"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-2 truncate">
+                                    {isSelected && <Check className="size-3.5 text-primary shrink-0" />}
+                                    <span className="truncate">{s.name}</span>
+                                    {s.phone && (
+                                      <span className="text-[11px] text-muted-foreground font-mono">
+                                        ({s.phone})
+                                      </span>
+                                    )}
+                                  </div>
+                                  {s.currentBalance !== undefined && (
+                                    <span
+                                      className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-medium shrink-0 ${
+                                        Number(s.currentBalance) > 0
+                                          ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                      }`}
+                                    >
+                                      رصيد: {Number(s.currentBalance).toFixed(0)} ج.م
+                                    </span>
+                                  )}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedSupplier && selectedSupplier.currentBalance !== undefined && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-2.5 py-1.5 rounded-xl mt-1 font-medium border border-border/40">
+                        <AlertCircle className="size-3.5 shrink-0 text-amber-500" />
+                        <span>
+                          الرصيد الحالي:{" "}
+                          <strong className="font-bold text-foreground font-mono">
+                            {Number(selectedSupplier.currentBalance).toFixed(2)} ج.م
+                          </strong>
+                        </span>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
 
-              {/* Order Date */}
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">
-                  {t("procurement.purchaseOrderForm.orderDateLabel", "تاريخ الأمر")}
-                </Label>
-                <Input
-                  type="date"
-                  className="h-11 rounded-xl"
-                  value={formData.orderDate}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, orderDate: e.target.value }))}
-                />
-              </div>
+                  {/* Order Date */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">
+                      {t("procurement.purchaseOrderForm.orderDateLabel", "تاريخ الأمر")}
+                    </Label>
+                    <Input
+                      type="date"
+                      className="h-11 rounded-xl"
+                      value={formData.orderDate}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, orderDate: e.target.value }))}
+                    />
+                  </div>
 
-              {/* Expected Delivery */}
-              <div className="space-y-1.5">
-                <Label className="text-sm font-medium">
-                  {t("procurement.purchaseOrderForm.expectedDeliveryLabel", "التسليم المتوقع")}
-                </Label>
-                <Input
-                  type="date"
-                  className="h-11 rounded-xl"
-                  value={formData.expectedDelivery}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, expectedDelivery: e.target.value }))
-                  }
-                />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+                  {/* Expected Delivery */}
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">
+                      {t("procurement.purchaseOrderForm.expectedDeliveryLabel", "التسليم المتوقع")}
+                    </Label>
+                    <Input
+                      type="date"
+                      className="h-11 rounded-xl"
+                      value={formData.expectedDelivery}
+                      onChange={(e) =>
+                        setFormData((prev) => ({ ...prev, expectedDelivery: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* Order Items Section */}
-        <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
-          <CardContent className="p-4 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold gradient-text flex items-center gap-2">
-                <PackageCheck className="size-5 text-primary" />
-                {t("procurement.purchaseOrderForm.itemsSection", "الأصناف والخامات")}
-              </h2>
-              <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full font-mono">
-                {items.length} {items.length === 1 ? "صنف" : "أصناف"}
-              </span>
-            </div>
+            {/* Order Items Section */}
+            <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
+              <CardContent className="p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-base font-bold gradient-text flex items-center gap-2">
+                    <PackageCheck className="size-5 text-primary" />
+                    {t("procurement.purchaseOrderForm.itemsSection", "الأصناف والخامات")}
+                  </h2>
+                  <span className="text-xs text-muted-foreground bg-muted px-2.5 py-1 rounded-full font-mono font-medium">
+                    {items.length} {items.length === 1 ? "صنف" : "أصناف"}
+                  </span>
+                </div>
 
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-visible">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="min-w-[280px] font-bold">
-                      {t("procurement.purchaseOrderForm.columnItem", "الصنف")}
-                    </TableHead>
-                    <TableHead className="w-[110px] text-center font-bold">
-                      {t("procurement.purchaseOrderForm.columnQuantity", "الكمية")}
-                    </TableHead>
-                    <TableHead className="w-[130px] text-center font-bold">
-                      {t("procurement.purchaseOrderForm.columnUnitPrice", "سعر الوحدة")}
-                    </TableHead>
-                    <TableHead className="w-[100px] text-center font-bold">
-                      {t("procurement.purchaseOrderForm.columnTax", "الضريبة %")}
-                    </TableHead>
-                    <TableHead className="w-[100px] text-center font-bold">
-                      {t("procurement.purchaseOrderForm.columnDiscount", "الخصم %")}
-                    </TableHead>
-                    <TableHead className="w-[130px] text-right font-bold">
-                      {t("procurement.purchaseOrderForm.columnTotal", "الإجمالي")}
-                    </TableHead>
-                    <TableHead className="w-[50px] text-center"></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
+                {/* Desktop Table View */}
+                <div className="hidden md:block overflow-visible">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[280px] font-bold">
+                          {t("procurement.purchaseOrderForm.columnItem", "الصنف")}
+                        </TableHead>
+                        <TableHead className="w-[110px] text-center font-bold">
+                          {t("procurement.purchaseOrderForm.columnQuantity", "الكمية")}
+                        </TableHead>
+                        <TableHead className="w-[140px] text-center font-bold">
+                          {t("procurement.purchaseOrderForm.columnUnitPrice", "سعر الوحدة")}
+                        </TableHead>
+                        {showAdvancedItemColumns && (
+                          <>
+                            <TableHead className="w-[100px] text-center font-bold">
+                              {t("procurement.purchaseOrderForm.columnTax", "الضريبة %")}
+                            </TableHead>
+                            <TableHead className="w-[100px] text-center font-bold">
+                              {t("procurement.purchaseOrderForm.columnDiscount", "الخصم %")}
+                            </TableHead>
+                          </>
+                        )}
+                        <TableHead className="w-[140px] text-right font-bold">
+                          {t("procurement.purchaseOrderForm.columnTotal", "الإجمالي")}
+                        </TableHead>
+                        <TableHead className="w-[50px] text-center"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {items.map((item, index) => {
+                        const filteredCatalog = catalogItems.filter(
+                          (c) =>
+                            c.name.toLowerCase().includes((item.productName || "").toLowerCase()) ||
+                            (c.sku &&
+                              c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
+                        );
+
+                        return (
+                          <TableRow key={index} className="hover:bg-muted/40 transition-colors">
+                            <TableCell className="relative overflow-visible">
+                              <div className="space-y-1 relative">
+                                <Input
+                                  ref={(el) => {
+                                    itemInputRefs.current[index] = el;
+                                  }}
+                                  placeholder={t(
+                                    "procurement.purchaseOrderForm.itemPlaceholder",
+                                    "اختر صنفاً أو اكتب اسمه...",
+                                  )}
+                                  value={item.productName}
+                                  onFocus={() => setActiveSearchRowIndex(index)}
+                                  onChange={(e) => {
+                                    updateItem(index, "productName", e.target.value);
+                                    setActiveSearchRowIndex(index);
+                                  }}
+                                  className="h-10 rounded-lg"
+                                />
+
+                                {/* Autocomplete Dropdown */}
+                                {activeSearchRowIndex === index &&
+                                  item.productName &&
+                                  filteredCatalog.length > 0 && (
+                                    <div
+                                      className="absolute top-full left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-xl p-1 text-popover-foreground"
+                                      onMouseLeave={() => setActiveSearchRowIndex(null)}
+                                    >
+                                      {filteredCatalog.slice(0, 10).map((catItem) => (
+                                        <button
+                                          key={catItem.id}
+                                          type="button"
+                                          className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-muted text-start transition-colors"
+                                          onMouseDown={(e) => {
+                                            e.preventDefault();
+                                            updateItemDetails(index, {
+                                              productId: catItem.id,
+                                              productName: catItem.name,
+                                              unitPrice: catItem.cost || 0,
+                                              description: catItem.category
+                                                ? `${catItem.category}${catItem.unit ? ` - ${catItem.unit}` : ""}`
+                                                : "",
+                                            });
+                                            setActiveSearchRowIndex(null);
+                                          }}
+                                        >
+                                          <div className="flex items-center gap-2 truncate">
+                                            <span className="font-medium truncate">{catItem.name}</span>
+                                            {catItem.sku && (
+                                              <span className="text-xs text-muted-foreground">
+                                                ({catItem.sku})
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="flex items-center gap-2 shrink-0">
+                                            <span
+                                              className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
+                                                catItem.type === "dental_material"
+                                                  ? "bg-cyan-500/10 text-cyan-600 border border-cyan-500/20"
+                                                  : "bg-primary/10 text-primary border border-primary/20"
+                                              }`}
+                                            >
+                                              {catItem.type === "dental_material"
+                                                ? "خامة أسنان"
+                                                : "منتج"}
+                                            </span>
+                                            {catItem.cost > 0 && (
+                                              <span className="text-xs font-semibold">
+                                                {catItem.cost} ج.م
+                                              </span>
+                                            )}
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                              </div>
+                            </TableCell>
+
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="1"
+                                step="any"
+                                value={item.quantity}
+                                onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                                className="h-10 text-center rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                              />
+                            </TableCell>
+
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                step="any"
+                                value={item.unitPrice}
+                                onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
+                                onKeyDown={(e) => handlePriceKeyDown(e, index)}
+                                className="h-10 text-center rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                              />
+                            </TableCell>
+
+                            {showAdvancedItemColumns && (
+                              <>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="any"
+                                    value={item.taxRate}
+                                    onChange={(e) => updateItem(index, "taxRate", e.target.value)}
+                                    className="h-10 text-center rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  <Input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="any"
+                                    value={item.discountRate}
+                                    onChange={(e) => updateItem(index, "discountRate", e.target.value)}
+                                    className="h-10 text-center rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                                  />
+                                </TableCell>
+                              </>
+                            )}
+
+                            <TableCell className="text-right font-bold font-mono text-sm text-foreground">
+                              {item.totalPrice.toFixed(2)} ج.م
+                            </TableCell>
+
+                            <TableCell className="text-center">
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeItem(index)}
+                                className="text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg"
+                              >
+                                <Trash2 className="size-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+
+                {/* Mobile View: Single-depth cards per item */}
+                <div className="grid grid-cols-1 gap-3 md:hidden">
                   {items.map((item, index) => {
                     const filteredCatalog = catalogItems.filter(
                       (c) =>
                         c.name.toLowerCase().includes((item.productName || "").toLowerCase()) ||
-                        (c.sku &&
-                          c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
+                        (c.sku && c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
                     );
 
                     return (
-                      <TableRow key={index} className="hover:bg-muted/40 transition-colors">
-                        <TableCell className="relative overflow-visible">
-                          <div className="space-y-1 relative">
-                            <Input
-                              placeholder={t(
-                                "procurement.purchaseOrderForm.itemPlaceholder",
-                                "اختر صنفاً أو اكتب اسمه...",
-                              )}
-                              value={item.productName}
-                              onFocus={() => setActiveSearchRowIndex(index)}
-                              onChange={(e) => {
-                                updateItem(index, "productName", e.target.value);
-                                setActiveSearchRowIndex(index);
-                              }}
-                              className="h-10 rounded-lg"
-                            />
-
-                            {/* Autocomplete Dropdown */}
-                            {activeSearchRowIndex === index &&
-                              item.productName &&
-                              filteredCatalog.length > 0 && (
-                                <div
-                                  className="absolute top-full left-0 right-0 z-50 mt-1 max-h-56 overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-xl p-1 text-popover-foreground"
-                                  onMouseLeave={() => setActiveSearchRowIndex(null)}
-                                >
-                                  {filteredCatalog.slice(0, 10).map((catItem) => (
-                                    <button
-                                      key={catItem.id}
-                                      type="button"
-                                      className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-muted text-start transition-colors"
-                                      onMouseDown={(e) => {
-                                        e.preventDefault();
-                                        updateItemDetails(index, {
-                                          productId: catItem.id,
-                                          productName: catItem.name,
-                                          unitPrice: catItem.cost || 0,
-                                          description: catItem.category
-                                            ? `${catItem.category}${catItem.unit ? ` - ${catItem.unit}` : ""}`
-                                            : "",
-                                        });
-                                        setActiveSearchRowIndex(null);
-                                      }}
-                                    >
-                                      <div className="flex items-center gap-2 truncate">
-                                        <span className="font-medium truncate">{catItem.name}</span>
-                                        {catItem.sku && (
-                                          <span className="text-xs text-muted-foreground">
-                                            ({catItem.sku})
-                                          </span>
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-2 shrink-0">
-                                        <span
-                                          className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-medium ${
-                                            catItem.type === "dental_material"
-                                              ? "bg-cyan-500/10 text-cyan-600 border border-cyan-500/20"
-                                              : "bg-primary/10 text-primary border border-primary/20"
-                                          }`}
-                                        >
-                                          {catItem.type === "dental_material"
-                                            ? "خامة أسنان"
-                                            : "منتج"}
-                                        </span>
-                                        {catItem.cost > 0 && (
-                                          <span className="text-xs font-semibold">
-                                            {catItem.cost} ج.م
-                                          </span>
-                                        )}
-                                      </div>
-                                    </button>
-                                  ))}
-                                </div>
-                              )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="1"
-                            step="any"
-                            value={item.quantity}
-                            onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                            className="h-10 text-center rounded-lg"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            step="any"
-                            value={item.unitPrice}
-                            onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
-                            className="h-10 text-center rounded-lg"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="any"
-                            value={item.taxRate}
-                            onChange={(e) => updateItem(index, "taxRate", e.target.value)}
-                            className="h-10 text-center rounded-lg"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="any"
-                            value={item.discountRate}
-                            onChange={(e) => updateItem(index, "discountRate", e.target.value)}
-                            className="h-10 text-center rounded-lg"
-                          />
-                        </TableCell>
-                        <TableCell className="text-right font-bold font-mono text-sm text-foreground">
-                          {item.totalPrice.toFixed(2)} ج.م
-                        </TableCell>
-                        <TableCell className="text-center">
+                      <div
+                        key={index}
+                        className="p-3.5 rounded-xl border border-border/80 bg-card/60 space-y-3 relative"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-bold font-mono bg-muted px-2 py-0.5 rounded-md">
+                            بند #{index + 1}
+                          </span>
                           <Button
                             type="button"
                             variant="ghost"
-                            size="icon"
+                            size="sm"
                             onClick={() => removeItem(index)}
-                            className="text-red-500 hover:text-red-600 hover:bg-red-500/10 rounded-lg"
+                            className="text-red-500 hover:bg-red-500/10 h-7 px-2"
                           >
-                            <Trash2 className="size-4" />
+                            <Trash2 className="size-3.5 mr-1" /> حذف
                           </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
+                        </div>
 
-            {/* Mobile View: Single-depth cards per item */}
-            <div className="grid grid-cols-1 gap-3 md:hidden">
-              {items.map((item, index) => {
-                const filteredCatalog = catalogItems.filter(
-                  (c) =>
-                    c.name.toLowerCase().includes((item.productName || "").toLowerCase()) ||
-                    (c.sku && c.sku.toLowerCase().includes((item.productName || "").toLowerCase())),
-                );
-
-                return (
-                  <div
-                    key={index}
-                    className="p-3.5 rounded-xl border border-border/80 bg-card/60 space-y-3 relative"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-bold font-mono bg-muted px-2 py-0.5 rounded-md">
-                        بند #{index + 1}
-                      </span>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => removeItem(index)}
-                        className="text-red-500 hover:bg-red-500/10 h-7 px-2"
-                      >
-                        <Trash2 className="size-3.5 mr-1" /> حذف
-                      </Button>
-                    </div>
-
-                    <div className="space-y-1 relative">
-                      <Label className="text-xs font-medium">اسم الصنف أو الخامة</Label>
-                      <Input
-                        placeholder="ابحث أو اكتب اسم الصنف..."
-                        value={item.productName}
-                        onFocus={() => setActiveSearchRowIndex(index)}
-                        onChange={(e) => {
-                          updateItem(index, "productName", e.target.value);
-                          setActiveSearchRowIndex(index);
-                        }}
-                        className="h-10 rounded-lg"
-                      />
-                      {activeSearchRowIndex === index &&
-                        item.productName &&
-                        filteredCatalog.length > 0 && (
-                          <div
-                            className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-xl p-1 text-popover-foreground"
-                            onMouseLeave={() => setActiveSearchRowIndex(null)}
-                          >
-                            {filteredCatalog.slice(0, 8).map((catItem) => (
-                              <button
-                                key={catItem.id}
-                                type="button"
-                                className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg hover:bg-muted text-start"
-                                onMouseDown={(e) => {
-                                  e.preventDefault();
-                                  updateItemDetails(index, {
-                                    productId: catItem.id,
-                                    productName: catItem.name,
-                                    unitPrice: catItem.cost || 0,
-                                  });
-                                  setActiveSearchRowIndex(null);
-                                }}
+                        <div className="space-y-1 relative">
+                          <Label className="text-xs font-medium">اسم الصنف أو الخامة</Label>
+                          <Input
+                            placeholder="ابحث أو اكتب اسم الصنف..."
+                            value={item.productName}
+                            onFocus={() => setActiveSearchRowIndex(index)}
+                            onChange={(e) => {
+                              updateItem(index, "productName", e.target.value);
+                              setActiveSearchRowIndex(index);
+                            }}
+                            className="h-10 rounded-lg"
+                          />
+                          {activeSearchRowIndex === index &&
+                            item.productName &&
+                            filteredCatalog.length > 0 && (
+                              <div
+                                className="absolute top-full left-0 right-0 z-50 mt-1 max-h-48 overflow-y-auto rounded-xl border border-border/80 bg-popover shadow-xl p-1 text-popover-foreground"
+                                onMouseLeave={() => setActiveSearchRowIndex(null)}
                               >
-                                <span className="font-medium truncate">{catItem.name}</span>
-                                <span className="text-primary font-mono">{catItem.cost} ج.م</span>
-                              </button>
-                            ))}
+                                {filteredCatalog.slice(0, 8).map((catItem) => (
+                                  <button
+                                    key={catItem.id}
+                                    type="button"
+                                    className="w-full flex items-center justify-between px-3 py-2 text-xs rounded-lg hover:bg-muted text-start"
+                                    onMouseDown={(e) => {
+                                      e.preventDefault();
+                                      updateItemDetails(index, {
+                                        productId: catItem.id,
+                                        productName: catItem.name,
+                                        unitPrice: catItem.cost || 0,
+                                      });
+                                      setActiveSearchRowIndex(null);
+                                    }}
+                                  >
+                                    <span className="font-medium truncate">{catItem.name}</span>
+                                    <span className="text-primary font-mono">{catItem.cost} ج.م</span>
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs text-muted-foreground">الكمية</Label>
+                            <Input
+                              type="number"
+                              min="1"
+                              step="any"
+                              value={item.quantity}
+                              onChange={(e) => updateItem(index, "quantity", e.target.value)}
+                              className="h-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                            />
+                          </div>
+                          <div>
+                            <Label className="text-xs text-muted-foreground">سعر الوحدة</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="any"
+                              value={item.unitPrice}
+                              onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
+                              className="h-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                            />
+                          </div>
+                        </div>
+
+                        {showAdvancedItemColumns && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-muted-foreground">ضريبة %</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="any"
+                                value={item.taxRate}
+                                onChange={(e) => updateItem(index, "taxRate", e.target.value)}
+                                className="h-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-muted-foreground">خصم %</Label>
+                              <Input
+                                type="number"
+                                min="0"
+                                max="100"
+                                step="any"
+                                value={item.discountRate}
+                                onChange={(e) => updateItem(index, "discountRate", e.target.value)}
+                                className="h-9 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none font-mono"
+                              />
+                            </div>
                           </div>
                         )}
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">الكمية</Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          step="any"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(index, "quantity", e.target.value)}
-                          className="h-9"
-                        />
+                        <div className="flex justify-between items-center pt-2 border-t border-border/50">
+                          <span className="text-xs text-muted-foreground font-medium">
+                            إجمالي البند:
+                          </span>
+                          <span className="text-sm font-bold font-mono text-primary">
+                            {item.totalPrice.toFixed(2)} ج.م
+                          </span>
+                        </div>
                       </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">سعر الوحدة</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="any"
-                          value={item.unitPrice}
-                          onChange={(e) => updateItem(index, "unitPrice", e.target.value)}
-                          className="h-9"
-                        />
-                      </div>
-                    </div>
+                    );
+                  })}
+                </div>
 
-                    <div className="grid grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs text-muted-foreground">ضريبة %</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="any"
-                          value={item.taxRate}
-                          onChange={(e) => updateItem(index, "taxRate", e.target.value)}
-                          className="h-9"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs text-muted-foreground">خصم %</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          max="100"
-                          step="any"
-                          value={item.discountRate}
-                          onChange={(e) => updateItem(index, "discountRate", e.target.value)}
-                          className="h-9"
-                        />
-                      </div>
-                    </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={addItem}
+                  className="w-full sm:w-auto rounded-xl gap-2 micro-bounce text-sm h-10 font-semibold"
+                >
+                  <Plus className="size-4" /> {t("procurement.purchaseOrderForm.addItem", "إضافة بند جديد")}
+                </Button>
+              </CardContent>
+            </Card>
 
-                    <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                      <span className="text-xs text-muted-foreground font-medium">
-                        إجمالي هذا البند:
-                      </span>
-                      <span className="text-sm font-bold font-mono text-primary">
-                        {item.totalPrice.toFixed(2)} ج.م
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={addItem}
-              className="w-full sm:w-auto mt-2 rounded-xl gap-2 micro-bounce"
-            >
-              <Plus className="size-4" /> {t("procurement.purchaseOrderForm.addItem", "إضافة صنف جديد")}
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Footer: Payment Terms, Notes and Financial Summary */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {/* Terms & Notes */}
-          <div className="md:col-span-2 space-y-4">
+            {/* Terms and Notes Section */}
             <Card className={`${glassClass} border-border/70 shadow-sm`} size="sm">
-              <CardContent className="p-4 sm:p-6 space-y-4">
+              <CardContent className="p-4 sm:p-5 space-y-4">
                 <div className="space-y-1.5">
                   <Label className="text-sm font-semibold">
                     {t("procurement.purchaseOrderForm.paymentTermsLabel", "شروط الدفع والتسليم")}
                   </Label>
                   <Textarea
                     rows={2}
-                    placeholder="مثال: دفع 50% مقدماً والباقي عند الاستلام..."
+                    placeholder="مثال: دفع 50% مقدماً والباقي عند الاستلام والفحص..."
                     value={formData.paymentTerms}
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, paymentTerms: e.target.value }))
@@ -916,7 +1064,7 @@ const PurchaseOrderForm: React.FC = () => {
                   </Label>
                   <Textarea
                     rows={3}
-                    placeholder="أي تعليمات خاصة بالشحن، رقم عرض السعر، أو تفاصيل الفحص..."
+                    placeholder="أي تعليمات خاصة بالشحن، رقم عرض السعر، أو تفاصيل الفحص الفني..."
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
                     className="rounded-xl"
@@ -926,15 +1074,21 @@ const PurchaseOrderForm: React.FC = () => {
             </Card>
           </div>
 
-          {/* Financial Summary Card */}
-          <div>
-            <Card className={`${glassClass} border-border/70 shadow-md`} size="sm">
-              <CardContent className="p-4 sm:p-6 space-y-3.5">
-                <h3 className="text-base font-bold gradient-text">
-                  {t("procurement.purchaseOrderForm.summaryTitle", "ملخص المبالغ")}
-                </h3>
+          {/* Sticky Financial Sidebar (4 cols on desktop) */}
+          <div className="lg:col-span-4 space-y-5 lg:sticky lg:top-4">
+            <Card className={`${glassClass} border-border/80 shadow-md`} size="sm">
+              <CardContent className="p-4 sm:p-5 space-y-4">
+                <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                  <h3 className="text-base font-bold gradient-text flex items-center gap-1.5">
+                    <ShoppingCart className="size-4 text-primary" />
+                    {t("procurement.purchaseOrderForm.summaryTitle", "ملخص المبالغ")}
+                  </h3>
+                  <span className="text-xs font-mono font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-md">
+                    {items.length} بنود
+                  </span>
+                </div>
 
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">
                       {t("procurement.purchaseOrderForm.subtotalLabel", "المجموع قبل الخصم:")}
@@ -954,7 +1108,7 @@ const PurchaseOrderForm: React.FC = () => {
                   )}
 
                   {totals.totalTax > 0 && (
-                    <div className="flex justify-between text-green-600">
+                    <div className="flex justify-between text-emerald-600">
                       <span>{t("procurement.purchaseOrderForm.totalTaxLabel", "الضرائب:")}</span>
                       <span className="font-semibold font-mono">
                         +{totals.totalTax.toFixed(2)} ج.م
@@ -962,9 +1116,7 @@ const PurchaseOrderForm: React.FC = () => {
                     </div>
                   )}
 
-                  <Separator className="my-1.5" />
-
-                  <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center justify-between gap-3 pt-1">
                     <span className="text-xs text-muted-foreground shrink-0">
                       {t("procurement.purchaseOrderForm.shippingLabel", "مصاريف الشحن:")}
                     </span>
@@ -972,7 +1124,7 @@ const PurchaseOrderForm: React.FC = () => {
                       type="number"
                       min="0"
                       step="any"
-                      className="h-8 w-28 text-right font-mono text-xs rounded-lg"
+                      className="h-8 w-28 text-right font-mono text-xs rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       value={formData.shippingCost}
                       onChange={(e) =>
                         setFormData((prev) => ({ ...prev, shippingCost: Number(e.target.value) }))
@@ -988,7 +1140,7 @@ const PurchaseOrderForm: React.FC = () => {
                       type="number"
                       min="0"
                       step="any"
-                      className="h-8 w-28 text-right font-mono text-xs rounded-lg"
+                      className="h-8 w-28 text-right font-mono text-xs rounded-lg [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                       value={formData.discountAmount}
                       onChange={(e) =>
                         setFormData((prev) => ({
@@ -1003,45 +1155,79 @@ const PurchaseOrderForm: React.FC = () => {
 
                   <div className="flex justify-between items-baseline pt-1">
                     <span className="font-bold text-sm">
-                      {t("procurement.purchaseOrderForm.grandTotalLabel", "الإجمالي النهائي:")}
+                      {t("procurement.purchaseOrderForm.grandTotalLabel", "الإجمالي التقديري:")}
                     </span>
                     <span className="text-2xl font-black font-mono text-primary">
                       {totals.grandTotal.toFixed(2)} ج.م
                     </span>
                   </div>
                 </div>
+
+                {/* Primary CTA Buttons (Desktop) */}
+                <div className="pt-2 space-y-2 hidden md:block">
+                  <Button
+                    type="submit"
+                    disabled={saving}
+                    className="w-full h-12 text-base rounded-xl font-bold micro-bounce shadow-md"
+                    style={{
+                      background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                    }}
+                  >
+                    {saving ? (
+                      <LoadingSpinner size="sm" />
+                    ) : (
+                      <Save className="size-4 mr-1.5" />
+                    )}
+                    {isEdit
+                      ? t("procurement.purchaseOrderForm.updateBtn", "تحديث أمر الشراء")
+                      : t("procurement.purchaseOrderForm.createBtn", "تأكيد وحفظ الأمر")}
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => navigate("/procurement/purchase-orders")}
+                    className="w-full rounded-xl text-xs"
+                  >
+                    {t("procurement.purchaseOrderForm.cancel", "إلغاء والعودة")}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center justify-end gap-3 pt-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/procurement/purchase-orders")}
-            className="rounded-xl px-5 micro-bounce"
-          >
-            {t("procurement.purchaseOrderForm.cancel", "إلغاء")}
-          </Button>
-          <Button
-            type="submit"
-            disabled={saving}
-            className="rounded-xl px-8 font-semibold micro-bounce shadow-md"
-            style={{
-              background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
-            }}
-          >
-            {saving ? (
-              <LoadingSpinner size="sm" />
-            ) : (
-              <Save className="size-4 mr-1.5" />
-            )}
-            {isEdit
-              ? t("procurement.purchaseOrderForm.updateBtn", "تحديث البيانات")
-              : t("procurement.purchaseOrderForm.createBtn", "تأكيد وحفظ الأمر")}
-          </Button>
+        {/* Sticky Action Bar for Mobile (< 768px) */}
+        <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border/80 p-3 flex items-center justify-between shadow-2xl md:hidden">
+          <div className="flex flex-col">
+            <span className="text-[11px] text-muted-foreground">الإجمالي التقديري:</span>
+            <span className="text-lg font-black font-mono text-primary">
+              {totals.grandTotal.toFixed(2)} ج.م
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/procurement/purchase-orders")}
+              className="rounded-xl"
+            >
+              إلغاء
+            </Button>
+            <Button
+              type="submit"
+              disabled={saving}
+              className="rounded-xl px-5 font-bold shadow-md"
+              style={{
+                background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+              }}
+            >
+              {saving ? <LoadingSpinner size="sm" /> : <Save className="size-4 mr-1" />}
+              حفظ
+            </Button>
+          </div>
         </div>
       </form>
 

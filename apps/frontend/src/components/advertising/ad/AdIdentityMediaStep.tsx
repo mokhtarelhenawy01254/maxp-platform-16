@@ -133,6 +133,39 @@ export const AdIdentityMediaStep: React.FC<AdIdentityMediaStepProps> = ({
           />
         </div>
 
+        {/* Initial Ad Status */}
+        <div>
+          <label className="block text-xs font-bold text-slate-700 mb-1">
+            {isEn ? "Initial Ad Status *" : "حالة الإعلان الأولية *"}
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => updateFormData({ status: "ACTIVE" })}
+              className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition ${
+                formData.status === "ACTIVE"
+                  ? "border-emerald-600 bg-emerald-50 text-emerald-950 ring-1 ring-emerald-500 shadow-sm"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              {isEn ? "Active (Launch Immediately)" : "نشط (نشر وتفعيل فوراً)"}
+            </button>
+            <button
+              type="button"
+              onClick={() => updateFormData({ status: "PAUSED" })}
+              className={`flex items-center justify-center gap-2 p-2.5 rounded-xl border text-xs font-bold transition ${
+                formData.status === "PAUSED"
+                  ? "border-amber-600 bg-amber-50 text-amber-950 ring-1 ring-amber-500 shadow-sm"
+                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
+              }`}
+            >
+              <span className="h-2 w-2 rounded-full bg-amber-500" />
+              {isEn ? "Paused (Draft Review)" : "متوقف مؤقتاً (مسودة)"}
+            </button>
+          </div>
+        </div>
+
         {/* Facebook Page Selection */}
         <div>
           <label className="block text-xs font-bold text-slate-700 mb-1">

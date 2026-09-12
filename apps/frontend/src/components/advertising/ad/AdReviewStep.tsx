@@ -53,6 +53,24 @@ export const AdReviewStep: React.FC<AdReviewStepProps> = ({
               <span className="font-black text-slate-900">{formData.name}</span>
             </div>
             <div className="flex justify-between">
+              <span className="text-slate-500 font-bold">{isEn ? "Initial Status:" : "حالة الإطلاق:"}</span>
+              <span
+                className={`font-bold px-2 py-0.5 rounded text-[11px] ${
+                  formData.status === "ACTIVE"
+                    ? "bg-emerald-100 text-emerald-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}
+              >
+                {formData.status === "ACTIVE"
+                  ? isEn
+                    ? "ACTIVE (Live)"
+                    : "نشط فوراً"
+                  : isEn
+                  ? "PAUSED (Draft)"
+                  : "متوقف مؤقتاً"}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-slate-500 font-bold">{isEn ? "Facebook Page:" : "صفحة فيسبوك:"}</span>
               <span className="font-bold text-slate-900">{page?.pageName || formData.pageId}</span>
             </div>

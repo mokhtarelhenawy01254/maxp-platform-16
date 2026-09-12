@@ -249,6 +249,7 @@ const CreateAd: React.FC = () => {
         displayLink: formData.displayLink || undefined,
         urlParameters: formData.urlParameters || undefined,
         imageHash: formData.uploadedImageHash || formData.imageHash,
+        imageUrl: formData.imageUrl || undefined,
         videoId: formData.uploadedVideoId || formData.videoId,
         advantageCreative: formData.advantageCreative,
         textGeneration: formData.textGeneration,
