@@ -67,6 +67,7 @@ export interface ReturnRequest {
     currency: string;
     turboTrackingNumber?: string;
     shippingCost?: number;
+    shipping?: number;
     codDepositAmount?: number;
     codDepositPaid?: boolean;
     codDepositRefunded?: boolean;
@@ -186,9 +187,10 @@ export const returnService = {
   ) => apiClient.put<{ success: boolean; data: ReturnType }>(`/returns/return-types/${id}`, data),
   deleteReturnType: (id: string) =>
     apiClient.delete<{ success: boolean }>(`/returns/return-types/${id}`),
-  getReturnShippingCompanies: () =>
+  getReturnShippingCompanies: (params?: { activeOnly?: boolean }) =>
     apiClient.get<{ success: boolean; data: ReturnShippingCompany[] }>(
       "/returns/return-shipping-companies",
+      { params },
     ),
 };
 

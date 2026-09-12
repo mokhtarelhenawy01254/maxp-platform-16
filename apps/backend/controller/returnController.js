@@ -355,6 +355,10 @@ exports.getReturnRequests = async (req, res) => {
 
         const mappedRequests = requests.map(r => ({
             ...r,
+            order: r.order ? {
+                ...r.order,
+                shippingCost: r.order.shipping != null ? Number(r.order.shipping) : 0
+            } : null,
             reason: r.returnReason ? {
                 ...r.returnReason,
                 category: r.returnReason.returnReasonCategory
@@ -921,11 +925,19 @@ exports.getReturnShippingCompanies = async (req, res) => {
     try {
         const companyId = req.user.effectiveCompanyId || req.user.companyId;
         const prisma = getPrisma();
+        const { activeOnly } = req.query;
+        const isFilterActive = activeOnly === 'true' || activeOnly === true;
+
+        const where = { companyId };
+        if (isFilterActive) {
+            where.isActive = true;
+        }
 
         const companies = await prisma.shippingCompany.findMany({
-            where: { companyId },
+            where,
             include: {
                 returnTypes: {
+                    where: isFilterActive ? { isActive: true } : undefined,
                     orderBy: { createdAt: 'asc' }
                 }
             },
@@ -972,6 +984,7 @@ exports.getReturnShippingCompanies = async (req, res) => {
                 },
                 include: {
                     returnTypes: {
+                        where: isFilterActive ? { isActive: true } : undefined,
                         orderBy: { createdAt: 'asc' },
                     },
                 },
@@ -979,7 +992,7 @@ exports.getReturnShippingCompanies = async (req, res) => {
 
             const idx = companies.findIndex((c) => c.id === turbo.id);
             if (idx >= 0) companies[idx] = turbo;
-            else companies.unshift(turbo);
+            else if (!isFilterActive || turbo.isActive) companies.unshift(turbo);
         }
 
         res.json({ success: true, data: companies });

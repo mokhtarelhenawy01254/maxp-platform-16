@@ -92,36 +92,55 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
     returnService.getReasons().then((res) => setReasons(res.data)).catch(() => {});
   }, []);
 
-  // Load shipping companies and their return types
-  useEffect(() => {
-    returnService
-      .getReturnShippingCompanies()
-      .then((res) => {
-        const companies: ReturnShippingCompany[] = res.data?.data || [];
-        setShippingCompanies(companies);
-        if (request.shippingCompanyId) {
-          const company = companies.find((c) => c.id === request.shippingCompanyId);
-          setReturnTypes(company?.returnTypes || []);
-        } else {
-          setReturnTypes(companies.flatMap((c) => c.returnTypes || []));
-        }
-      })
-      .catch(() => {});
-  }, []);
+  const getSuggestedCost = (type: ReturnType | undefined): number => {
+    if (!type) return 0;
+    if (type.costModel === "FIXED" && type.fixedAmount != null) {
+      return Number(type.fixedAmount) || 0;
+    }
+    if (type.costModel === "NONE") {
+      return 0;
+    }
+    if (type.costModel === "FULL") {
+      const orderShippingCost =
+        (request.order as any)?.shippingCost ?? (request.order as any)?.shipping ?? 0;
+      return Number(orderShippingCost) || 0;
+    }
+    return 0;
+  };
 
   // When a return type is selected, suggest the return shipping cost based on the cost model
   const applyReturnTypeCost = (type: ReturnType | undefined) => {
     if (!type) return;
-    if (type.costModel === "FIXED" && type.fixedAmount != null) {
-      setShippingReturnCost(String(type.fixedAmount));
-    } else if (type.costModel === "NONE") {
-      setShippingReturnCost("0");
-    } else if (type.costModel === "FULL") {
-      const orderShippingCost =
-        request.order?.shippingCost != null ? request.order.shippingCost : 0;
-      setShippingReturnCost(String(orderShippingCost));
-    }
+    const cost = getSuggestedCost(type);
+    setShippingReturnCost(String(cost));
   };
+
+  // Load active shipping companies and their return types
+  useEffect(() => {
+    returnService
+      .getReturnShippingCompanies({ activeOnly: true })
+      .then((res) => {
+        const companies: ReturnShippingCompany[] = res.data?.data || [];
+        const activeCompanies = companies.filter((c) => c.isActive !== false);
+        setShippingCompanies(activeCompanies);
+        let activeTypes: ReturnType[] = [];
+        if (request.shippingCompanyId) {
+          const company = activeCompanies.find((c) => c.id === request.shippingCompanyId);
+          activeTypes = (company?.returnTypes || []).filter((rt) => rt.isActive !== false);
+        } else {
+          activeTypes = activeCompanies.flatMap((c) => c.returnTypes || []).filter((rt) => rt.isActive !== false);
+        }
+        setReturnTypes(activeTypes);
+
+        if (request.returnTypeId && (request.shippingReturnCost === undefined || request.shippingReturnCost === null || request.shippingReturnCost === ("" as any))) {
+          const matchedType = activeTypes.find((rt) => rt.id === request.returnTypeId);
+          if (matchedType) {
+            applyReturnTypeCost(matchedType);
+          }
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleShippingCompanyChange = (value: string) => {
     setShippingCompanyId(value);
@@ -131,7 +150,8 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
       return;
     }
     const company = shippingCompanies.find((c) => c.id === value);
-    setReturnTypes(company?.returnTypes || []);
+    const activeTypes = (company?.returnTypes || []).filter((rt) => rt.isActive !== false);
+    setReturnTypes(activeTypes);
   };
 
   const handleReturnTypeChange = (value: string) => {
@@ -404,7 +424,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                       }
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md"
                     >
-                      <option value="">{t('returns.k_30')}</option>
+                      <option value="">{t('returns.k_264') || "-- اختر شركة الشحن --"}</option>
                       {shippingCompanies.map((sc) => (
                         <option key={sc.id} value={sc.id}>
                           {sc.name}
@@ -422,7 +442,7 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                       disabled={!shippingCompanyId}
                       className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md disabled:opacity-50"
                     >
-                      <option value="">{t('returns.k_30')}</option>
+                      <option value="">{t('returns.k_265') || "-- اختر نوع المرتجع --"}</option>
                       {returnTypes.map((rt) => (
                         <option key={rt.id} value={rt.id}>
                           {rt.name}
@@ -434,17 +454,15 @@ const ReturnDetailsModal: React.FC<ReturnDetailsModalProps> = ({
                 {returnTypeId &&
                   (() => {
                     const rt = returnTypes.find((x) => x.id === returnTypeId);
-                    return rt ? (
+                    if (!rt) return null;
+                    const suggested = getSuggestedCost(rt);
+                    const currency = request.order?.currency || t('returns.k_22');
+                    return (
                       <p className="text-[11px] text-blue-600 dark:text-blue-400 flex items-center gap-1">
-                        <Truck size={12} /> {t('returns.k_256')}:{" "}
-                        {rt.costModel === "FIXED"
-                          ? `${rt.fixedAmount} ${request.order?.currency || t('returns.k_22')}`
-                          : rt.costModel === "NONE"
-                            ? "0"
-                            : request.order?.shippingCost ?? 0}{" "}
-                        {request.order?.currency || t('returns.k_22')}
+                        <Truck size={12} /> {t('returns.k_256')}: {suggested}{" "}
+                        {currency}
                       </p>
-                    ) : null;
+                    );
                   })()}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>

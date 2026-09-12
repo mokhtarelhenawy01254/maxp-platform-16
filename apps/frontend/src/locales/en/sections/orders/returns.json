@@ -261,5 +261,7 @@
   "k_260": "Inactive",
   "k_261": "Are you sure you want to delete this category? All reasons inside it will also be deleted.",
   "k_262": "Category deleted successfully",
-  "k_263": "Failed to delete category"
+  "k_263": "Failed to delete category",
+  "k_264": "-- Choose shipping company --",
+  "k_265": "-- Choose return type --"
 }
