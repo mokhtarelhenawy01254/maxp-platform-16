@@ -195,7 +195,7 @@ exports.getSupplierPaymentById = async (req, res) => {
         supplier: true,
         purchaseInvoice: {
           include: {
-            items: true
+            purchaseInvoiceItems: true
           }
         }
       }

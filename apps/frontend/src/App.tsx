@@ -469,6 +469,9 @@ const PurchaseInvoiceForm = React.lazy(
 const SupplierPayments = React.lazy(
   () => import("./components/procurement/SupplierPayments"),
 );
+const SupplierPaymentForm = React.lazy(
+  () => import("./components/procurement/SupplierPaymentForm"),
+);
 const ProcurementDashboard = React.lazy(
   () => import("./components/procurement/ProcurementDashboard"),
 );
@@ -5073,7 +5076,7 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
-                        <SupplierPayments />
+                        <SupplierPaymentForm />
                       </AppAccessRoute>
                     </Layout>
                   }
@@ -5083,7 +5086,7 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <AppAccessRoute requiredAppSlugs={['procurement-pro', 'store-pro']}>
-                        <SupplierPayments />
+                        <SupplierPaymentForm />
                       </AppAccessRoute>
                     </Layout>
                   }
