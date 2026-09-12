@@ -89,6 +89,8 @@ const CreateAdSet: React.FC = () => {
   });
   const [bidStrategy, setBidStrategy] = useState("LOWEST_COST_WITHOUT_CAP");
   const [bidValue, setBidValue] = useState<number | undefined>(undefined);
+  const [dailyMinSpendTarget, setDailyMinSpendTarget] = useState<number | undefined>(undefined);
+  const [dailySpendCap, setDailySpendCap] = useState<number | undefined>(undefined);
   const [attributionWindow, setAttributionWindow] = useState("7d_click_1d_view");
   const [isDynamicCreative, setIsDynamicCreative] = useState(false);
 
@@ -273,10 +275,18 @@ const CreateAdSet: React.FC = () => {
         // Budget & Schedule
         budgetType: isCboCampaign ? undefined : budgetType,
         budgetAmount: isCboCampaign ? undefined : budgetAmount,
+        dailyMinSpendTarget: isCboCampaign && dailyMinSpendTarget ? dailyMinSpendTarget : undefined,
+        dailySpendCap: isCboCampaign && dailySpendCap ? dailySpendCap : undefined,
         startTime: startTime ? new Date(startTime).toISOString() : undefined,
         endTime: hasEndDate && endTime ? new Date(endTime).toISOString() : undefined,
         bidStrategy,
-        bidValue: (bidStrategy === "COST_CAP" || bidStrategy === "BID_CAP") && bidValue ? bidValue : undefined,
+        bidValue:
+          (bidStrategy === "COST_CAP" ||
+            bidStrategy === "BID_CAP" ||
+            bidStrategy === "LOWEST_COST_WITH_MIN_ROAS") &&
+          bidValue
+            ? bidValue
+            : undefined,
         attributionWindow,
         isDynamicCreative,
         // Placements
