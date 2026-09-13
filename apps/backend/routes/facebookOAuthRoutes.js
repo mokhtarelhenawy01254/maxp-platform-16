@@ -3483,4 +3483,56 @@ router.post("/generate-pixel-token", verifyToken.authenticateToken, async (req, 
   }
 });
 
+/**
+ * 🔄 v26.0: Silent Background Token Refresh Endpoint
+ * POST /api/v1/facebook-oauth/refresh-token
+ * تجديد استباقي للتوكن طويل العمر قبل انقضاء صلاحيته
+ */
+router.post("/refresh-token", verifyToken.authenticateToken, async (req, res) => {
+  try {
+    const { companyId } = req.body;
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: "Company ID is required" });
+    }
+
+    const company = await getSharedPrismaClient().company.findUnique({
+      where: { id: companyId },
+      select: {
+        id: true,
+        facebookUserAccessToken: true,
+        facebookPixelAccessToken: true
+      }
+    });
+
+    if (!company) {
+      return res.status(404).json({ success: false, message: "Company not found" });
+    }
+
+    const activeToken = company.facebookUserAccessToken || company.facebookPixelAccessToken;
+    if (!activeToken) {
+      return res.status(400).json({ success: false, message: "No active token found to refresh" });
+    }
+
+    const refreshedToken = await exchangeForLongLivedFacebookToken(activeToken);
+
+    if (refreshedToken && refreshedToken !== activeToken) {
+      await getSharedPrismaClient().company.update({
+        where: { id: companyId },
+        data: {
+          facebookUserAccessToken: refreshedToken,
+          ...(company.facebookPixelAccessToken ? { facebookPixelAccessToken: refreshedToken } : {})
+        }
+      });
+      console.log(`✅ [TOKEN-REFRESH] Successfully refreshed Facebook token for company ${companyId}`);
+      return res.json({ success: true, message: "Token refreshed successfully", refreshed: true });
+    }
+
+    res.json({ success: true, message: "Token is already healthy and up to date", refreshed: false });
+  } catch (error) {
+    console.error("❌ [TOKEN-REFRESH] Error refreshing token:", error.message);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 module.exports = router;
+module.exports.exchangeForLongLivedFacebookToken = exchangeForLongLivedFacebookToken;

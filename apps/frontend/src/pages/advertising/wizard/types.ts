@@ -67,6 +67,7 @@ export interface FormData {
   startTime: string;
   endTime: string;
   attributionWindow: string;
+  existingCustomerBudgetPercentage?: number;
 
   // Step 3: Audience & Placements
   locations: string[];

@@ -946,10 +946,15 @@ const CreateAdWizard: React.FC = () => {
         ...(formData.useLeadForm &&
           formData.leadFormId && { leadFormId: formData.leadFormId }),
 
-        // Advantage+ Creative
+        // Advantage+ Creative (v26.0)
         advantageCreative: formData.advantageCreative,
         textGeneration: formData.textGeneration,
         imageEnhancement: formData.imageEnhancement,
+        expandImage: formData.expandImage,
+        visualTouchups: formData.visualTouchups,
+        relevantComments: formData.relevantComments,
+        priceOverlay: formData.priceOverlay,
+        existingCustomerBudgetPercentage: formData.existingCustomerBudgetPercentage,
 
         // Status
         status: formData.status,

@@ -904,6 +904,7 @@ export interface CreateFullAdData {
   frequencyCap?: number;
   frequencyCapInterval?: string;
   spendLimit?: number;
+  existingCustomerBudgetPercentage?: number;
 
   // Schedule Data
   startTime?: string;

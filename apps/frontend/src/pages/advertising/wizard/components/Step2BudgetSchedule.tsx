@@ -605,6 +605,46 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
         </div>
       </div>
 
+      {/* Existing Customer Budget Cap (ECBC - v26) */}
+      {(formData.objective === "OUTCOME_SALES" || formData.objective === "OUTCOME_LEADS") && (
+        <div className="bg-gradient-to-r from-emerald-50/70 via-white to-teal-50/70 border border-emerald-200 rounded-xl p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <h4 className="text-sm font-bold text-gray-900">
+                سقف ميزانية العملاء السابقين (Meta v26 ECBC)
+              </h4>
+              <span className="rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                حماية الميزانية
+              </span>
+            </div>
+            <span className="text-sm font-extrabold text-emerald-700">
+              {formData.existingCustomerBudgetPercentage || 0}% كحد أقصى للعملاء الحاليين
+            </span>
+          </div>
+          <p className="text-xs text-gray-600 mb-3">
+            يمنع خوارزميات Meta من حرق ميزانيتك الإعلانية على عملاء اشتروا منك مسبقاً، ويوجه ما لا يقل عن {100 - (formData.existingCustomerBudgetPercentage || 0)}% لجلب مشترين جدد بالكامل.
+          </p>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min="0"
+              max="50"
+              step="5"
+              value={formData.existingCustomerBudgetPercentage || 0}
+              onChange={(e) =>
+                handleChange("existingCustomerBudgetPercentage", parseInt(e.target.value))
+              }
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
+            />
+          </div>
+          <div className="flex justify-between text-[11px] text-gray-500 mt-1 font-medium">
+            <span>0% (100% عملاء جدد حصرياً)</span>
+            <span>20% متوازن</span>
+            <span>50% كحد أقصى</span>
+          </div>
+        </div>
+      )}
+
       {/* Bid Strategy */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-3">

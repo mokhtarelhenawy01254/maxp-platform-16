@@ -753,7 +753,8 @@ class FacebookAdsService {
         attributionWindow,
         pixelId,
         bidStrategy,
-        bidValue
+        bidValue,
+        existingCustomerBudgetPercentage
       } = data;
 
       // بناء بيانات الاستهداف
@@ -808,6 +809,11 @@ class FacebookAdsService {
       // إضافة promoted_object للتحويلات
       if (Object.keys(promotedObject).length > 0) {
         adSetData.promoted_object = promotedObject;
+      }
+
+      // ✅ v26.0: Existing Customer Budget Cap (ECBC)
+      if (existingCustomerBudgetPercentage !== undefined && Number(existingCustomerBudgetPercentage) > 0) {
+        adSetData.existing_customer_budget_percentage = Number(existingCustomerBudgetPercentage);
       }
 
       // إضافة Attribution Spec
@@ -1450,6 +1456,7 @@ class FacebookAdsService {
         frequencyCap,
         frequencyCapInterval,
         spendLimit,
+        existingCustomerBudgetPercentage,
         
         // Schedule Data
         startTime,
@@ -1717,7 +1724,8 @@ class FacebookAdsService {
         bidStrategy: budgetOptimization ? undefined : effectiveBidStrategy,
         bidValue: budgetOptimization ? undefined : bidValue,
         frequencyCap,
-        frequencyCapInterval
+        frequencyCapInterval,
+        existingCustomerBudgetPercentage
       };
 
       // إذا لم يكن CBO مفعل، أضف الميزانية على مستوى AdSet
