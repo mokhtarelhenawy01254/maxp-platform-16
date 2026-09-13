@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Copy,
   Check,
+  Undo2,
 } from "lucide-react";
 import { chatWithMediaBuyer } from "../../../services/facebookAdsService";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
@@ -31,6 +32,8 @@ interface MarketingSquadChatFeedProps {
   activeSession?: CopilotSession;
   addMessageToActiveSession?: (msg: Message) => void;
   createNewSession?: () => void;
+  onRewind?: () => void;
+  isRewinding?: boolean;
 }
 
 export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
@@ -41,6 +44,8 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
   activeSession: propActiveSession,
   addMessageToActiveSession: propAddMessage,
   createNewSession: propCreateSession,
+  onRewind,
+  isRewinding = false,
 }) => {
   const fallback = useCopilotSessions(companyId);
   const activeSession = propActiveSession || fallback.activeSession;
@@ -109,6 +114,7 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
           sender: "agent",
           text: res.reply || "تم استلام الطلب وتجهيز الخطة التسويقية.",
           toolCalls: res.tool_calls,
+          telemetry: res.telemetry,
           timestamp: new Date().toISOString(),
         };
         addMessageToActiveSession(agentMsg);
@@ -168,7 +174,7 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
             </p>
           </div>
         ) : (
-          activeSession.messages.map((msg) => {
+          activeSession.messages.map((msg, idx) => {
             const isUser = msg.sender === "user";
             // Arabic: Speaker (User) on Right, Bot on Left.
             // English: Speaker (User) on Left (opposite of Arabic), Bot on Right.
@@ -202,9 +208,9 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
                   {/* Tool execution badge if present */}
                   {msg.toolCalls && msg.toolCalls.length > 0 && (
                     <div className="flex flex-wrap gap-1 mb-2">
-                      {msg.toolCalls.map((tc, idx) => (
+                      {msg.toolCalls.map((tc, tcIdx) => (
                         <span
-                          key={idx}
+                          key={tcIdx}
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/60 text-blue-800 dark:text-blue-200 text-[10px] font-mono font-medium"
                         >
                           <Wrench className="w-2.5 h-2.5" />
@@ -216,12 +222,49 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
 
                   <MarketingMarkdownMessage content={msg.text} isUser={isUser} />
 
-                  <span className="block text-[9px] opacity-60 text-end pt-1">
-                    {new Date(msg.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </span>
+                  {/* Hermes Telemetry HUD & Performance Stats */}
+                  {!isUser && msg.telemetry && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1.5 mt-1 border-t border-slate-200/60 dark:border-slate-700/40 text-[10px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
+                      <span className="px-1.5 py-0.2 rounded bg-slate-200/80 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold">
+                        {msg.telemetry.model || "Hermes-Engine"}
+                      </span>
+                      {typeof msg.telemetry.latency_ms === "number" && (
+                        <span>{msg.telemetry.latency_ms}ms</span>
+                      )}
+                      {typeof msg.telemetry.tokens === "number" && (
+                        <span>• {msg.telemetry.tokens} tkn</span>
+                      )}
+                      {msg.telemetry.p95_sla && (
+                        <span className="text-emerald-600 dark:text-emerald-400">
+                          • SLA {msg.telemetry.p95_sla}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    {!isUser && idx === activeSession.messages.length - 1 && onRewind ? (
+                      <button
+                        type="button"
+                        onClick={onRewind}
+                        disabled={isRewinding}
+                        className="inline-flex items-center gap-1 text-[10px] text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition cursor-pointer active:scale-95 disabled:opacity-40"
+                        title="التراجع عن هذه الخطوة واستعادة الحالة السابقة"
+                      >
+                        <Undo2 className={`w-3 h-3 ${isRewinding ? "animate-spin" : ""}`} />
+                        <span>تراجع</span>
+                      </button>
+                    ) : (
+                      <span />
+                    )}
+
+                    <span className="text-[9px] opacity-60 tabular-nums">
+                      {new Date(msg.timestamp).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
                 </div>
               </div>
             );

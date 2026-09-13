@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { toast } from "sonner";
 import type { CopilotSession, Message } from "./types";
 import {
   getMarketingCopilotSessions,
   saveMarketingCopilotSession,
   deleteMarketingCopilotSession,
+  rewindMarketingCopilotSession,
 } from "../../../services/facebookAdsService";
 
 const INITIAL_WELCOME_TEXT = 
@@ -279,17 +281,92 @@ export function useCopilotSessions(companyId?: string | null) {
     );
   }, [activeSessionId]);
 
+  const [isRewinding, setIsRewinding] = useState(false);
+
+  // Hermes-Grade Session Rewind: Rollback last turn (user + assistant)
+  const rewindActiveSession = useCallback(async (): Promise<boolean> => {
+    if (!activeSessionId || isRewinding) return false;
+
+    const currentSession = sessions.find((s) => s.id === activeSessionId);
+    if (!currentSession || !currentSession.messages.some((m) => m.sender === "user")) {
+      toast.info("لا توجد خطوات سابقة للتراجع عنها في هذه الجلسة");
+      return false;
+    }
+
+    setIsRewinding(true);
+    try {
+      const res = await rewindMarketingCopilotSession(activeSessionId);
+      if (res.success) {
+        if (res.session && Array.isArray(res.session.messages)) {
+          const cloudMsgs: Message[] =
+            res.session.messages.length > 0
+              ? res.session.messages
+              : [
+                  {
+                    id: `welcome-${Date.now()}`,
+                    sender: "agent",
+                    text: INITIAL_WELCOME_TEXT,
+                    timestamp: new Date().toISOString(),
+                  },
+                ];
+          setSessions((prev) =>
+            prev.map((s) =>
+              s.id === activeSessionId
+                ? { ...s, messages: cloudMsgs, updatedAt: new Date().toISOString() }
+                : s
+            )
+          );
+        } else {
+          // Local fallback rollback: remove last agent message and last user message
+          setSessions((prev) =>
+            prev.map((s) => {
+              if (s.id !== activeSessionId) return s;
+              const msgs = [...s.messages];
+              if (msgs.length > 1 && msgs[msgs.length - 1].sender === "agent") {
+                msgs.pop();
+              }
+              if (msgs.length > 0 && msgs[msgs.length - 1].sender === "user") {
+                msgs.pop();
+              }
+              if (msgs.length === 0) {
+                msgs.push({
+                  id: `welcome-${Date.now()}`,
+                  sender: "agent",
+                  text: INITIAL_WELCOME_TEXT,
+                  timestamp: new Date().toISOString(),
+                });
+              }
+              return { ...s, messages: msgs, updatedAt: new Date().toISOString() };
+            })
+          );
+        }
+        toast.success(res.message || "تم التراجع عن آخر خطوة واستعادة الحالة السابقة بنجاح ↩️");
+        return true;
+      } else {
+        toast.error(res.error || "تعذر التراجع عن الخطوة السابقة");
+        return false;
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "حدث خطأ أثناء محاولة التراجع");
+      return false;
+    } finally {
+      setIsRewinding(false);
+    }
+  }, [activeSessionId, isRewinding, sessions]);
+
   return {
     sessions,
     totalCount: totalCount || sessions.length,
     activeSession,
     activeSessionId,
     isLoadingCloud,
+    isRewinding,
     createNewSession,
     switchSession,
     deleteSession,
     clearAllSessions,
     addMessageToActiveSession,
+    rewindActiveSession,
   };
 }
 

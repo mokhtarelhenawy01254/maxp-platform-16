@@ -86,6 +86,44 @@ const MarketingAiStudioPage: React.FC = () => {
     setIsDraftDrawerOpen(true);
   };
 
+  const canRewind = Boolean(
+    copilotSessions.activeSession?.messages?.some((m) => m.sender === "user")
+  );
+
+  const latestTelemetry = React.useMemo(() => {
+    const msgs = copilotSessions.activeSession?.messages || [];
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].telemetry) {
+        return msgs[i].telemetry;
+      }
+    }
+    return null;
+  }, [copilotSessions.activeSession]);
+
+  const telemetryBadge = latestTelemetry ? (
+    <div
+      className="hidden md:flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/70 text-[10px] font-mono tabular-nums text-slate-600 dark:text-slate-300 shadow-2xs"
+      title={`نموذج العمل: ${latestTelemetry.model || "Hermes"} | زمن الاستجابة: ${
+        latestTelemetry.latency_ms || 0
+      }ms`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+      <span className="font-bold text-slate-800 dark:text-slate-200">
+        {latestTelemetry.model || "Hermes-Engine"}
+      </span>
+      {typeof latestTelemetry.latency_ms === "number" && (
+        <span className="text-slate-500 dark:text-slate-400">
+          • {latestTelemetry.latency_ms}ms
+        </span>
+      )}
+      {latestTelemetry.p95_sla && (
+        <span className="text-emerald-600 dark:text-emerald-400 hidden lg:inline">
+          • SLA {latestTelemetry.p95_sla}
+        </span>
+      )}
+    </div>
+  ) : null;
+
   return (
     <AgentStudioLayout
       studioId="marketing"
@@ -98,6 +136,10 @@ const MarketingAiStudioPage: React.FC = () => {
       sessionsCount={copilotSessions.totalCount || copilotSessions.sessions.length}
       onOpenSessions={() => setIsSessionsDrawerOpen(true)}
       onNewSession={() => copilotSessions.createNewSession()}
+      onRewind={copilotSessions.rewindActiveSession}
+      canRewind={canRewind}
+      isRewinding={copilotSessions.isRewinding}
+      telemetryBadge={telemetryBadge}
       activeAgent={activeAgent}
       agentRoutingHref="/admin/ai-hub?tab=routing"
       statusBadge={
@@ -131,6 +173,8 @@ const MarketingAiStudioPage: React.FC = () => {
           activeSession={copilotSessions.activeSession}
           addMessageToActiveSession={copilotSessions.addMessageToActiveSession}
           createNewSession={() => copilotSessions.createNewSession()}
+          onRewind={copilotSessions.rewindActiveSession}
+          isRewinding={copilotSessions.isRewinding}
         />
       }
       extraDrawers={

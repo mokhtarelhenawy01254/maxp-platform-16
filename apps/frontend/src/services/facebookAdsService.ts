@@ -3862,6 +3862,15 @@ export async function chatWithMediaBuyer(
   status: string;
   tool_calls?: any[];
   agentId?: string;
+  telemetry?: {
+    latency_ms?: number;
+    tokens?: number;
+    model?: string;
+    p95_sla?: string;
+    status?: string;
+  };
+  rewind?: boolean;
+  undoneCount?: number;
   error?: string;
 }> {
   const response = await apiClient.post<{
@@ -3870,6 +3879,15 @@ export async function chatWithMediaBuyer(
     status: string;
     tool_calls?: any[];
     agentId?: string;
+    telemetry?: {
+      latency_ms?: number;
+      tokens?: number;
+      model?: string;
+      p95_sla?: string;
+      status?: string;
+    };
+    rewind?: boolean;
+    undoneCount?: number;
     error?: string;
   }>(
     "/facebook-ads/ai/chat",
@@ -3985,6 +4003,34 @@ export async function deleteMarketingCopilotSession(sessionId: string): Promise<
     return response.data;
   } catch (err: any) {
     return { success: false, error: err?.message || "Failed to delete session" };
+  }
+}
+
+/**
+ * التراجع عن آخر خطوة في جلسة محادثة واستعادة الحالة السابقة سحابياً (Hermes Session Rewind)
+ */
+export async function rewindMarketingCopilotSession(sessionId: string): Promise<{
+  success: boolean;
+  message?: string;
+  undoneCount?: number;
+  remainingCount?: number;
+  session?: any;
+  error?: string;
+}> {
+  try {
+    const response = await apiClient.post<{
+      success: boolean;
+      message?: string;
+      undoneCount?: number;
+      remainingCount?: number;
+      session?: any;
+    }>(`/facebook-ads/ai/sessions/${sessionId}/rewind`);
+    return response.data;
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.response?.data?.error || err?.message || "Failed to rewind session",
+    };
   }
 }
 

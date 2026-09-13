@@ -1,12 +1,23 @@
+export interface AgentTelemetry {
+  latency_ms?: number;
+  tokens?: number;
+  model?: string;
+  p95_sla?: string;
+  status?: string;
+}
+
 export interface Message {
   id: string;
   sender: "user" | "agent";
   text: string;
   toolCalls?: Array<{
-    tool: string;
-    status: string;
+    tool?: string;
+    name?: string;
+    status?: string;
     result?: any;
+    args?: any;
   }>;
+  telemetry?: AgentTelemetry;
   timestamp: string | Date;
 }
 

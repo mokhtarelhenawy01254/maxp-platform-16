@@ -9,6 +9,7 @@ import {
   Plus,
   MessageSquare,
   Sparkles,
+  Undo2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { StudioEntity, StudioAgentInfo } from "./types";
@@ -24,6 +25,10 @@ export interface AgentStudioLayoutProps {
   sessionsCount: number;
   onOpenSessions: () => void;
   onNewSession: () => void;
+  onRewind?: () => void;
+  canRewind?: boolean;
+  isRewinding?: boolean;
+  telemetryBadge?: React.ReactNode;
   sessionsButtonLabel?: string;
   sessionsIcon?: LucideIcon;
   activeAgent?: StudioAgentInfo | null;
@@ -51,6 +56,10 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
   sessionsCount,
   onOpenSessions,
   onNewSession,
+  onRewind,
+  canRewind = false,
+  isRewinding = false,
+  telemetryBadge,
   sessionsButtonLabel = "الجلسات",
   sessionsIcon: SessionsIcon = FolderArchive,
   activeAgent,
@@ -175,6 +184,25 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
               <ExternalLink className="w-3 h-3 text-indigo-400 dark:text-indigo-500 opacity-60 group-hover:opacity-100 transition shrink-0" />
             </Link>
 
+            {/* Rewind / Undo Action */}
+            {onRewind && (
+              <button
+                type="button"
+                onClick={onRewind}
+                disabled={!canRewind || isRewinding}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.97] transition text-xs font-bold text-slate-700 dark:text-slate-300 shadow-xs cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
+                title="تراجع عن آخر خطوة (Undo)"
+                aria-label="تراجع عن آخر خطوة"
+              >
+                <Undo2
+                  className={`w-3.5 h-3.5 text-slate-500 dark:text-slate-400 ${
+                    isRewinding ? "animate-spin text-indigo-500" : ""
+                  }`}
+                />
+                <span className="hidden xl:inline">تراجع</span>
+              </button>
+            )}
+
             {/* New Session Action */}
             <button
               type="button"
@@ -189,6 +217,7 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
 
           {/* Right Status / Telemetry badge */}
           <div className="flex items-center gap-2">
+            {telemetryBadge}
             {statusBadge}
           </div>
         </div>
@@ -230,6 +259,21 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
 
             {/* Mobile Session Actions */}
             <div className="flex items-center gap-1.5 flex-shrink-0">
+              {onRewind && (
+                <button
+                  type="button"
+                  onClick={onRewind}
+                  disabled={!canRewind || isRewinding}
+                  className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-[0.97] transition disabled:opacity-40 disabled:active:scale-100"
+                  title="تراجع عن آخر خطوة"
+                  aria-label="تراجع عن آخر خطوة"
+                >
+                  <Undo2
+                    className={`w-3.5 h-3.5 ${isRewinding ? "animate-spin text-indigo-500" : ""}`}
+                  />
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={onOpenSessions}
