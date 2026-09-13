@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   MessageSquare,
   Plus,
@@ -6,7 +6,10 @@ import {
   ChevronRight,
   Clock,
   CheckCircle2,
+  Copy,
+  Check,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { CopilotSession } from "./types";
 
 interface CopilotSessionsListProps {
@@ -28,6 +31,16 @@ export const CopilotSessionsList: React.FC<CopilotSessionsListProps> = ({
   onBackToChat,
   onClearAll,
 }) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyId = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast.success("تم نسخ معرف الجلسة بنجاح");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   const formatTime = (isoString?: string) => {
     if (!isoString) return "";
     try {

@@ -12,6 +12,8 @@ import {
   History,
   Plus,
   MessageSquare,
+  Copy,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -30,14 +32,19 @@ const QUICK_PROMPTS: QuickPrompt[] = [
       "عايزك تعمل إعلان ممول لمنتج الداش https://swan.maxp.online/product/dash بميزانية 400 جنيه يومياً وافحص اقتصادياته واكتب المسودات.",
   },
   {
-    label: "📊 حساب نقطة التعادل والـ CPA",
+    label: "📊 فحص الحملات وقرارات SCALE / KILL",
     prompt:
-      "كيف تحسب نقطة التعادل وسقف تكلفة الشراء (Target CPA) قبل إطلاق أي حملة؟",
+      "افحص كل الحملات الإعلانية الحالية وقارن الـ CPA بنقطة التعادل وقولي مين نعمله SCALE ومين KILL ومين محتاج تعديل.",
   },
   {
-    label: "⚡ صياغة 3 زوايا إعلانية",
+    label: "📦 فحص الأوردرات ونسبة التسليم COD",
     prompt:
-      "اقترح لي 3 زوايا إعلانية مختلفة لحملة تحويلات لمبيعات متجري.",
+      "راجع تقرير إسناد الحملات للأوردرات الحقيقية بمعدلات التسليم والإلغاء الفعلية للـ 30 يوماً الأخيرة.",
+  },
+  {
+    label: "🎯 تحليل إعلانات المنافسين بالسوق",
+    prompt:
+      "هات لي أفضل زوايا وهوكات إعلانات المنافسين الشغالة في سوق الأحذية الكاجوال والطبية في مصر.",
   },
 ];
 
@@ -49,11 +56,11 @@ export const MediaBuyerCopilotWidget: React.FC = () => {
     sessions,
     activeSession,
     activeSessionId,
-    createNewSession,
     switchSession,
+    createNewSession,
     deleteSession,
-    clearAllSessions,
     addMessageToActiveSession,
+    clearAllSessions,
   } = useCopilotSessions(companyId);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -61,9 +68,19 @@ export const MediaBuyerCopilotWidget: React.FC = () => {
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [publishingDraftId, setPublishingDraftId] = useState<string | null>(null);
+  const [copiedSessionId, setCopiedSessionId] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleCopySessionId = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!activeSession?.id) return;
+    navigator.clipboard.writeText(activeSession.id);
+    setCopiedSessionId(true);
+    toast.success("تم نسخ معرف الجلسة للمراجعة");
+    setTimeout(() => setCopiedSessionId(false), 2000);
+  };
 
   useEffect(() => {
     if (isOpen && !showSessionsList) {
@@ -198,16 +215,31 @@ export const MediaBuyerCopilotWidget: React.FC = () => {
                     أونلاين
                   </span>
                 </div>
-                {/* Active Session Title Chip */}
-                <button
-                  type="button"
-                  onClick={() => setShowSessionsList((prev) => !prev)}
-                  title="عرض الجلسات السابقة أو التبديل بينها"
-                  className="flex max-w-[200px] items-center gap-1 truncate text-right text-[11px] font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
-                >
-                  <MessageSquare className="h-3 w-3 shrink-0" />
-                  <span className="truncate">{activeSession.title || "جلسة المحادثة"}</span>
-                </button>
+                {/* Active Session Title Chip & Copy Action */}
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowSessionsList((prev) => !prev)}
+                    title="عرض الجلسات السابقة أو التبديل بينها"
+                    className="flex max-w-[170px] items-center gap-1 truncate text-right text-[11px] font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
+                  >
+                    <MessageSquare className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{activeSession.title || "جلسة المحادثة"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopySessionId}
+                    title={copiedSessionId ? "تم نسخ المعرف!" : "نسخ معرف الجلسة للمراجعة والدعم"}
+                    className="p-1 rounded-md text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    aria-label="نسخ معرف الجلسة"
+                  >
+                    {copiedSessionId ? (
+                      <Check className="h-3 w-3 text-emerald-500" />
+                    ) : (
+                      <Copy className="h-3 w-3" />
+                    )}
+                  </button>
+                </div>
               </div>
             </div>
 

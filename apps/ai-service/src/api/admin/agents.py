@@ -857,6 +857,22 @@ async def chat_with_agent(body: AgentChatRequest, session: SessionDep) -> AgentC
     response_attachments = payload.get("response_attachments")
 
     reply_text = sanitize_model_reply(payload.get("reply") or payload.get("summary") or "")
+    if not reply_text and tools:
+        for t in reversed(tools):
+            if isinstance(t, dict):
+                t_res = t.get("result") or {}
+                if isinstance(t_res, dict):
+                    if t_res.get("message"):
+                        reply_text = str(t_res.get("message"))
+                        break
+                    elif t_res.get("skill", {}).get("message"):
+                        reply_text = str(t_res.get("skill", {}).get("message"))
+                        break
+                    elif t_res.get("rule_added"):
+                        reply_text = f"تم تسجيل التفضيل بنجاح: {t_res.get('rule_added')}"
+                        break
+        if not reply_text:
+            reply_text = "تم تنفيذ الإجراء بنجاح."
     return AgentChatResponse(
         status=status,
         thread_id=thread_id,

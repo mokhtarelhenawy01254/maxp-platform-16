@@ -7,7 +7,10 @@ import {
   X,
   Clock,
   FolderArchive,
+  Copy,
+  Check,
 } from "lucide-react";
+import { toast } from "sonner";
 import type { CopilotSession } from "../../../components/advertising/copilot/types";
 
 interface MarketingControlHubProps {
@@ -30,6 +33,15 @@ export const MarketingControlHub: React.FC<MarketingControlHubProps> = ({
   onDeleteSession,
 }) => {
   const [search, setSearch] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyId = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(id);
+    setCopiedId(id);
+    toast.success("تم نسخ معرف الجلسة بنجاح");
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const filteredSessions = useMemo(() => {
     if (!search.trim()) return sessions;
@@ -169,19 +181,35 @@ export const MarketingControlHub: React.FC<MarketingControlHubProps> = ({
                     </div>
                   </div>
 
-                  {sessions.length > 1 && (
+                  <div className="flex items-center gap-1">
                     <button
                       type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDeleteSession(sess.id);
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition"
-                      title="حذف هذه الجلسة"
+                      onClick={(e) => handleCopyId(e, sess.id)}
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg transition"
+                      title={copiedId === sess.id ? "تم النسخ بنجاح!" : "نسخ معرف الجلسة للمراجعة والدعم الفني"}
+                      aria-label="نسخ معرف الجلسة"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      {copiedId === sess.id ? (
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                      ) : (
+                        <Copy className="w-3.5 h-3.5" />
+                      )}
                     </button>
-                  )}
+
+                    {sessions.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onDeleteSession(sess.id);
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg transition"
+                        title="حذف هذه الجلسة"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })

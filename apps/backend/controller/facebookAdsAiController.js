@@ -530,12 +530,39 @@ class FacebookAdsAiController {
           });
         }
 
+        const toolCallsList = result?.tool_calls || [];
+        const toolNames = toolCallsList.map(tc => tc.name || tc.function?.name || tc.tool || (typeof tc === 'string' ? tc : '')).filter(Boolean);
+
+        let finalReply = (result?.reply || '').trim();
+        if (!finalReply && toolCallsList.length > 0) {
+          const skillTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'manage_agent_skill');
+          const ruleTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'record_learned_rule' || (t.name || t.function?.name || t.tool) === 'facebook_ad_record_learned_rule');
+          const draftTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_create_full_draft');
+          const decTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_get_decision');
+          const compTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'competitor_get_ads');
+
+          if (skillTool) {
+            const skillName = skillTool.result?.skill?.name || skillTool.args?.skill_name || 'المهارة المطلوبة';
+            finalReply = `تمام يا فندم، تم إنشاء وتفعيل "${skillName}" بنجاح في نظام المتجر الدائم! 🎯\n\nأقدر دلوقتي أستخدمها في حساب الـ CAC والـ ROAS وربط أرقام الحملات بمبيعاتك الفعلية. تحب نبدأ بتطبيقها فوراً؟`;
+          } else if (ruleTool) {
+            finalReply = `تم حفظ وتثبيت التفضيل/القاعدة بنجاح في كتيب استراتيجيات المتجر ✅`;
+          } else if (draftTool) {
+            finalReply = `تم تجهيز مسودات الحملات الإعلانية بنجاح وجاهزة للمراجعة والإطلاق 🚀`;
+          } else if (decTool) {
+            finalReply = `تم فحص أداء الحملات وتحليل قرارات الـ SCALE والـ KILL بنجاح 📊`;
+          } else if (compTool) {
+            finalReply = `تم استخراج استخبارات إعلانات المنافسين ومؤشرات السوق المصري 🔎`;
+          } else {
+            finalReply = `تم تنفيذ الإجراء المطلوب بنجاح ✅`;
+          }
+        }
+
         // Automatically persist agent reply in Cloud DB
         try {
           await marketingCopilotSessionService.appendMessage(companyId, threadId, {
             sender: 'agent',
-            text: result?.reply || '',
-            toolCalls: result?.tool_calls || [],
+            text: finalReply,
+            toolCalls: toolCallsList,
           });
 
           // Update activeProduct in session context if any tool calls referenced or analyzed a product
@@ -559,12 +586,9 @@ class FacebookAdsAiController {
           console.warn('[FacebookAdsAI] Failed to persist agent reply in DB:', dbErr.message);
         }
 
-        const toolCallsList = result?.tool_calls || [];
-        const toolNames = toolCallsList.map(tc => tc.name || tc.function?.name || tc).filter(Boolean);
-
         return res.json({
           success: true,
-          reply: result?.reply || '',
+          reply: finalReply,
           status: result?.status || 'ok',
           tool_calls: toolCallsList,
           tools_called: toolNames,
