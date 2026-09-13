@@ -410,6 +410,7 @@ const ProductImageLandingPage: React.FC = () => {
     useState<LandingFormState>(DEFAULT_FORM_STATE);
   const [selectedColor, setSelectedColor] = useState("");
   const [selectedSize, setSelectedSize] = useState("");
+  const [selectedBundleQty, setSelectedBundleQty] = useState<number>(1);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStickyReady, setIsStickyReady] = useState(false);
@@ -580,6 +581,48 @@ const ProductImageLandingPage: React.FC = () => {
   }, [selectedColor, selectedSize, variants]);
   const currency = landingData?.company?.currency || "EGP";
   const activePrice = Number(selectedVariant?.price ?? activeProduct?.price ?? 0);
+
+  const bundleTiers = useMemo(
+    () => [
+      { qty: 1, label: "قطعة واحدة", discountPercent: 0, badge: "" },
+      { qty: 2, label: "قطعتين (وفر 15%)", discountPercent: 15, badge: "الأكثر طلباً 🔥" },
+      { qty: 3, label: "3 قطع (وفر 25% + شحن مجاني)", discountPercent: 25, badge: "أفضل قيمة 💰" },
+    ],
+    [],
+  );
+
+  const activeBundle = useMemo(
+    () => bundleTiers.find((b) => b.qty === selectedBundleQty) || bundleTiers[0],
+    [bundleTiers, selectedBundleQty],
+  );
+
+  const discountedUnitPrice = useMemo(() => {
+    if (activeBundle.discountPercent <= 0) return activePrice;
+    return Math.round(activePrice * (1 - activeBundle.discountPercent / 100));
+  }, [activePrice, activeBundle]);
+
+  const orderFinalTotal = useMemo(
+    () => discountedUnitPrice * activeBundle.qty,
+    [discountedUnitPrice, activeBundle],
+  );
+
+  const sectionsToRender = useMemo(() => {
+    if (activeSections.length === 0) {
+      return [
+        ...(bannerSection ? [bannerSection] : []),
+        { id: "sec-media-default", type: "MEDIA", enabled: true, content: {} },
+        { id: "sec-features-default", type: "FEATURES", enabled: true, content: {} },
+        { id: "sec-form-default", type: "FORM", enabled: true, content: {} },
+        ...(reviewsSection ? [reviewsSection] : []),
+        ...(faqSection ? [faqSection] : []),
+      ];
+    }
+    const hasForm = activeSections.some((s) => s?.type === "FORM" && s.enabled !== false);
+    if (!hasForm) {
+      return [...activeSections, { id: "sec-form-auto", type: "FORM", enabled: true, content: {} }];
+    }
+    return activeSections;
+  }, [activeSections, bannerSection, reviewsSection, faqSection]);
   const productImage = getPrimaryProductImage(activeProduct);
   const campaignSlices = activeConfig.slices;
   const visibleCampaignSliceKey = useMemo(
@@ -762,9 +805,9 @@ const ProductImageLandingPage: React.FC = () => {
         productId: activeProduct.id,
         variantId: selectedVariant?.id || undefined,
         name: activeProduct.name,
-        price: activePrice,
+        price: discountedUnitPrice,
         basePrice: Number(activeProduct.price || activePrice),
-        quantity: 1,
+        quantity: activeBundle.qty,
         imageUrl: productImage,
         attributes,
       };
@@ -779,6 +822,9 @@ const ProductImageLandingPage: React.FC = () => {
           governorate: formState.governorate.trim(),
           notes: [
             "Image-stack landing page",
+            activeBundle.qty > 1
+              ? `عرض الباقة: ${activeBundle.label} (${activeBundle.qty} قطع)`
+              : "",
             activeLanding?.id ? `Landing Page ID: ${activeLanding.id}` : "",
             activeLanding?.slug ? `Landing Slug: ${activeLanding.slug}` : "",
             selectedColor ? `اللون: ${selectedColor}` : "",
@@ -788,11 +834,11 @@ const ProductImageLandingPage: React.FC = () => {
             .join("\n"),
           paymentMethod: "cod",
           shippingCost: 0,
-          subtotal: activePrice,
-          total: activePrice,
+          subtotal: orderFinalTotal,
+          total: orderFinalTotal,
         },
         [item],
-        activePrice,
+        orderFinalTotal,
         companyId,
         pixelEventId,
       ) as Record<string, unknown>;
@@ -910,17 +956,26 @@ const ProductImageLandingPage: React.FC = () => {
     );
   }
 
-  return (
-    <article className="product-image-landing" dir="rtl">
-      {bannerSection?.content?.bannerText || bannerSection?.content?.text ? (
+  const renderDynamicSection = (section: any, idx: number) => {
+    if (!section || section.enabled === false) return null;
+    const type = section.type;
+    const content = section.content || {};
+
+    if (type === "BANNERS") {
+      const bannerText = content.bannerText || content.text || bannerSection?.content?.bannerText || bannerSection?.content?.text;
+      if (!bannerText) return null;
+
+      return (
         <div
+          key={section.id || idx}
           className="pil-announcement-banner"
           style={{
             backgroundColor:
-              bannerSection.content.bannerBg ||
-              bannerSection.content.backgroundColor ||
+              content.bannerBg ||
+              content.backgroundColor ||
+              bannerSection?.content?.bannerBg ||
               "#0284c7",
-            color: bannerSection.content.textColor || "#ffffff",
+            color: content.textColor || bannerSection?.content?.textColor || "#ffffff",
             padding: "10px 16px",
             textAlign: "center",
             fontWeight: 600,
@@ -930,281 +985,463 @@ const ProductImageLandingPage: React.FC = () => {
             zIndex: 40,
           }}
         >
-          {bannerSection.content.bannerText || bannerSection.content.text}
+          {bannerText}
         </div>
-      ) : null}
-      <section className="pil-hero" aria-labelledby="pil-hero-title">
-        <div className="pil-hero-media" aria-hidden="true">
-          {heroImage ? (
-            <img src={heroImage} alt="" loading="eager" />
-          ) : null}
-        </div>
-        <div className="pil-hero-shade" />
-        <div className="pil-hero-content">
-          <span className="pil-hero-kicker">
-            {landingData?.company?.name || "المتجر"} · طلب سريع
-          </span>
-          <h1 id="pil-hero-title">{activeProduct.name}</h1>
-          <p>
-            {productDescription ||
-              activeConfig.orderCopy ||
-              "اختار المقاس واللون وسيتم التواصل معك لتأكيد الطلب."}
-          </p>
-          <div className="pil-hero-actions">
-            <a className="pil-hero-cta" href="#order">
-              اطلب الآن
-            </a>
-            <div className="pil-hero-price" aria-label="السعر الحالي">
-              <strong>{formatPrice(activePrice, currency)}</strong>
-              {hasComparePrice ? (
-                <span>{formatPrice(comparePrice, currency)}</span>
+      );
+    }
+
+    if (type === "MEDIA") {
+      return (
+        <React.Fragment key={section.id || idx}>
+          <section className="pil-hero" aria-labelledby="pil-hero-title">
+            <div className="pil-hero-media" aria-hidden="true">
+              {heroImage ? (
+                <img src={heroImage} alt="" loading="eager" />
               ) : null}
             </div>
-          </div>
-        </div>
-        <div className="pil-hero-bottom" aria-label="مميزات الطلب">
-          <span>دفع عند الاستلام</span>
-          <span>تأكيد هاتفي</span>
-          <span>اختيار المقاس واللون</span>
-        </div>
-      </section>
-
-      <section className="pil-benefits" aria-label="أسباب الشراء">
-        {landingBenefitCards.map((card) => (
-          <div className="pil-benefit" key={card.title}>
-            <strong>{card.title}</strong>
-            <span>{card.text}</span>
-          </div>
-        ))}
-      </section>
-
-      {visibleCampaignSlices.length > 0 ? (
-        <section className="pil-campaign" aria-label="صور الحملة">
-          <div className="pil-section-heading">
-            <span>تصميم صفحة المنتج</span>
-            <h2>لقطات تساعدك تتخيل المنتج</h2>
-          </div>
-          <div className="pil-campaign-grid">
-            {visibleCampaignSlices.slice(0, 3).map((slice, index) => (
-              <figure className="pil-campaign-shot" key={`${slice.src}-${index}`}>
-                <img
-                  src={slice.src}
-                  width={slice.width || 1024}
-                  height={slice.height || 1024}
-                  alt={slice.alt}
-                  loading={index === 0 ? "eager" : "lazy"}
-                />
-              </figure>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="pil-order-intro" aria-label="ملخص المنتج">
-        <div className="pil-section-heading">
-          <span>{activeConfig.orderKicker}</span>
-          <h2>{activeConfig.orderTitle}</h2>
-        </div>
-        <p>{activeConfig.orderCopy}</p>
-      </section>
-
-      <section id="order" className="pil-order" aria-labelledby="pil-order-title">
-        <span className="pil-order-kicker">بيانات الطلب</span>
-        <h1 id="pil-order-title">{activeConfig.orderTitle}</h1>
-        <p>{activeConfig.orderCopy}</p>
-
-        <div className="pil-summary" aria-label="ملخص المنتج">
-          <div className="pil-summary-cell">
-            <b>{formatPrice(activePrice, currency)}</b>
-            <span>السعر الحالي</span>
-          </div>
-          <div className="pil-summary-cell">
-            <b>
-              {sizeOptions.length
-                ? `${sizeOptions[0]}-${sizeOptions[sizeOptions.length - 1]}`
-                : "متاح"}
-            </b>
-            <span>{sizeOptions.length ? "المقاسات" : "التوفر"}</span>
-          </div>
-        </div>
-
-        <p className="pil-sr-copy">
-          {cleanProductDescription(activeProduct.description, 600) || activeProduct.name}
-        </p>
-
-        {countdownSection ? (
-          <div
-            className="pil-countdown-banner"
-            style={{
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: 12,
-              padding: "12px 16px",
-              marginBottom: 20,
-              textAlign: "center",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              color: "#dc2626",
-              fontWeight: 700,
-              fontSize: "0.95rem",
-            }}
-          >
-            <span>⏳</span>
-            <span>
-              {countdownSection.content?.text ||
-                "عرض لفترة محدودة - اطلب الآن قبل انتهاء الكمية!"}
-            </span>
-          </div>
-        ) : null}
-
-        <form className="pil-form" onSubmit={handleSubmit}>
-          <div className="pil-field">
-            <label htmlFor="pil-customer-name">الاسم</label>
-            <input
-              id="pil-customer-name"
-              name="customerName"
-              value={formState.customerName}
-              onChange={updateFormField("customerName")}
-              autoComplete="name"
-              placeholder="اكتب اسمك"
-              required
-            />
-          </div>
-
-          <div className="pil-field">
-            <label htmlFor="pil-phone">رقم الموبايل</label>
-            <input
-              id="pil-phone"
-              name="phone"
-              type="tel"
-              inputMode="tel"
-              value={formState.phone}
-              onChange={updateFormField("phone")}
-              autoComplete="tel"
-              placeholder="01xxxxxxxxx"
-              required
-            />
-          </div>
-
-          {sizeOptions.length > 0 || colorOptions.length > 0 ? (
-            <div className="pil-two-cols">
-              {sizeOptions.length > 0 ? (
-                <div className="pil-field">
-                  <label htmlFor="pil-size">المقاس</label>
-                  <select
-                    id="pil-size"
-                    name="size"
-                    value={selectedSize}
-                    onChange={(event) => setSelectedSize(event.target.value)}
-                    required
-                  >
-                    <option value="">اختار</option>
-                    {sizeOptions.map((size) => (
-                      <option key={size} value={size}>
-                        {size}
-                      </option>
-                    ))}
-                  </select>
+            <div className="pil-hero-shade" />
+            <div className="pil-hero-content">
+              <span className="pil-hero-kicker">
+                {landingData?.company?.name || "المتجر"} · طلب سريع
+              </span>
+              <h1 id="pil-hero-title">{activeProduct.name}</h1>
+              <p>
+                {productDescription ||
+                  activeConfig.orderCopy ||
+                  "اختار المقاس واللون وسيتم التواصل معك لتأكيد الطلب."}
+              </p>
+              <div className="pil-hero-actions">
+                <a className="pil-hero-cta" href="#order">
+                  اطلب الآن
+                </a>
+                <div className="pil-hero-price" aria-label="السعر الحالي">
+                  <strong>{formatPrice(activePrice, currency)}</strong>
+                  {hasComparePrice ? (
+                    <span>{formatPrice(comparePrice, currency)}</span>
+                  ) : null}
                 </div>
-              ) : null}
-
-              {colorOptions.length > 0 ? (
-                <div className="pil-field">
-                  <label htmlFor="pil-color">اللون</label>
-                  <select
-                    id="pil-color"
-                    name="color"
-                    value={selectedColor}
-                    onChange={(event) => setSelectedColor(event.target.value)}
-                    required
-                  >
-                    <option value="">اختار</option>
-                    {colorOptions.map((color) => (
-                      <option key={color} value={color}>
-                        {color}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              ) : null}
+              </div>
             </div>
-          ) : null}
+            <div className="pil-hero-bottom" aria-label="مميزات الطلب">
+              <span>دفع عند الاستلام</span>
+              <span>تأكيد هاتفي</span>
+              <span>اختيار المقاس واللون</span>
+            </div>
+          </section>
 
-          <div className="pil-two-cols">
-            <div className="pil-field">
-              <label htmlFor="pil-governorate">المحافظة</label>
-              <select
-                id="pil-governorate"
-                name="governorate"
-                value={formState.governorate}
-                onChange={updateFormField("governorate")}
-                required
-              >
-                <option value="">اختار</option>
-                {EGYPT_GOVERNORATES.map((governorate) => (
-                  <option key={governorate.id} value={governorate.nameAr}>
-                    {governorate.nameAr}
-                  </option>
+          {visibleCampaignSlices.length > 0 ? (
+            <section className="pil-campaign" aria-label="صور الحملة">
+              <div className="pil-section-heading">
+                <span>تصميم صفحة المنتج</span>
+                <h2>لقطات تساعدك تتخيل المنتج</h2>
+              </div>
+              <div className="pil-campaign-grid">
+                {visibleCampaignSlices.slice(0, 3).map((slice, index) => (
+                  <figure className="pil-campaign-shot" key={`${slice.src}-${index}`}>
+                    <img
+                      src={slice.src}
+                      width={slice.width || 1024}
+                      height={slice.height || 1024}
+                      alt={slice.alt}
+                      loading={index === 0 ? "eager" : "lazy"}
+                    />
+                  </figure>
                 ))}
-              </select>
-            </div>
+              </div>
+            </section>
+          ) : null}
+        </React.Fragment>
+      );
+    }
 
-            <div className="pil-field">
-              <label htmlFor="pil-area">المنطقة</label>
-              <input
-                id="pil-area"
-                name="area"
-                value={formState.area}
-                onChange={updateFormField("area")}
-                autoComplete="address-level2"
-                placeholder="مثال: مدينة نصر"
-                required
-              />
-            </div>
+    if (type === "TEXT") {
+      const heading = content.heading || activeLanding?.title || activeProduct.name;
+      const subheading = content.subheading;
+      const bodyText = content.bodyText;
+
+      if (!heading && !bodyText) return null;
+
+      return (
+        <section key={section.id || idx} className="pil-text-story" aria-label="تفاصيل المنتج">
+          <div className="pil-section-heading">
+            <span>مواصفات وتفاصيل</span>
+            <h2>{heading}</h2>
           </div>
-
-          <div className="pil-field">
-            <label htmlFor="pil-address">العنوان بالتفصيل</label>
-            <textarea
-              id="pil-address"
-              name="address"
-              value={formState.address}
-              onChange={updateFormField("address")}
-              autoComplete="street-address"
-              placeholder="الشارع، العمارة، الدور، علامة مميزة"
-              required
-            />
-          </div>
-
-          {formError ? (
-            <div className="pil-error" role="alert">
-              {formError}
+          {subheading ? <p className="pil-text-subheading">{subheading}</p> : null}
+          {bodyText ? (
+            <div className="pil-text-body">
+              {bodyText.split("\n").map((paragraph: string, pIdx: number) =>
+                paragraph.trim() ? <p key={pIdx}>{paragraph}</p> : null,
+              )}
             </div>
           ) : null}
+        </section>
+      );
+    }
 
-          {isLocalLandingTest ? (
-            <div className="pil-test-note" role="status">
-              وضع الاختبار المحلي مفعل، لن يتم إنشاء طلب حقيقي.
+    if (type === "FEATURES") {
+      return (
+        <section key={section.id || idx} className="pil-benefits" aria-label="أسباب الشراء">
+          {landingBenefitCards.map((card) => (
+            <div className="pil-benefit" key={card.title}>
+              <strong>{card.title}</strong>
+              <span>{card.text}</span>
             </div>
+          ))}
+        </section>
+      );
+    }
+
+    if (type === "COUNTDOWN") {
+      const text =
+        content.text ||
+        content.bannerText ||
+        countdownSection?.content?.text ||
+        "عرض لفترة محدودة — اطلب الآن قبل انتهاء الكمية!";
+      const lowStock = content.lowStockCount || countdownSection?.content?.lowStockCount;
+
+      return (
+        <div
+          key={section.id || idx}
+          className="pil-countdown-banner"
+          style={{
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: 12,
+            padding: "12px 16px",
+            margin: "20px auto",
+            maxWidth: 760,
+            textAlign: "center",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexWrap: "wrap",
+            gap: 8,
+            color: "#dc2626",
+            fontWeight: 700,
+            fontSize: "0.95rem",
+          }}
+        >
+          <span>⏳</span>
+          <span>{text}</span>
+          {lowStock ? (
+            <span
+              style={{
+                background: "#dc2626",
+                color: "#ffffff",
+                padding: "2px 8px",
+                borderRadius: 999,
+                fontSize: "0.8rem",
+              }}
+            >
+              متبقي {lowStock} قطع فقط!
+            </span>
           ) : null}
+        </div>
+      );
+    }
 
-          <button className="pil-submit" type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "جاري إرسال الطلب" : activeConfig.buttonLabel}
-          </button>
-        </form>
-      </section>
+    if (type === "FORM") {
+      return (
+        <React.Fragment key={section.id || idx}>
+          <section className="pil-order-intro" aria-label="ملخص المنتج">
+            <div className="pil-section-heading">
+              <span>{activeConfig.orderKicker}</span>
+              <h2>{activeConfig.orderTitle}</h2>
+            </div>
+            <p>{activeConfig.orderCopy}</p>
+          </section>
 
-      {reviewsSection?.content?.reviews?.length ? (
+          <section id="order" className="pil-order" aria-labelledby="pil-order-title">
+            <span className="pil-order-kicker">بيانات الطلب</span>
+            <h1 id="pil-order-title">{activeConfig.orderTitle}</h1>
+            <p>{activeConfig.orderCopy}</p>
+
+            <div className="pil-summary" aria-label="ملخص المنتج">
+              <div className="pil-summary-cell">
+                <b>{formatPrice(orderFinalTotal, currency)}</b>
+                <span>
+                  السعر ({activeBundle.qty} {activeBundle.qty > 1 ? "قطع" : "قطعة"})
+                </span>
+              </div>
+              <div className="pil-summary-cell">
+                <b>
+                  {sizeOptions.length
+                    ? `${sizeOptions[0]}-${sizeOptions[sizeOptions.length - 1]}`
+                    : "متاح"}
+                </b>
+                <span>{sizeOptions.length ? "المقاسات" : "التوفر"}</span>
+              </div>
+            </div>
+
+            <p className="pil-sr-copy">
+              {cleanProductDescription(activeProduct.description, 600) || activeProduct.name}
+            </p>
+
+            {/* Quantity Bundles Selector */}
+            <div className="pil-bundles-wrapper">
+              <label className="pil-bundles-label">اختر الكمية والعرض التوفيري:</label>
+              <div className="pil-bundles-grid">
+                {bundleTiers.map((tier) => {
+                  const tierUnitPrice =
+                    tier.discountPercent > 0
+                      ? Math.round(activePrice * (1 - tier.discountPercent / 100))
+                      : activePrice;
+                  const tierTotal = tierUnitPrice * tier.qty;
+                  const isSelected = selectedBundleQty === tier.qty;
+
+                  return (
+                    <button
+                      key={tier.qty}
+                      type="button"
+                      className={`pil-bundle-card ${isSelected ? "is-selected" : ""}`}
+                      onClick={() => setSelectedBundleQty(tier.qty)}
+                    >
+                      {tier.badge ? (
+                        <span className="pil-bundle-badge">{tier.badge}</span>
+                      ) : null}
+                      <div className="pil-bundle-qty-label">{tier.label}</div>
+                      <div className="pil-bundle-pricing">
+                        <strong className="pil-bundle-total">
+                          {formatPrice(tierTotal, currency)}
+                        </strong>
+                        {tier.qty > 1 && (
+                          <small className="pil-bundle-unit">
+                            ({formatPrice(tierUnitPrice, currency)} للقطعة)
+                          </small>
+                        )}
+                      </div>
+                      <div
+                        className={`pil-bundle-radio ${isSelected ? "is-checked" : ""}`}
+                      >
+                        {isSelected ? "✓" : ""}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <form className="pil-form" onSubmit={handleSubmit}>
+              <div className="pil-field">
+                <label htmlFor="pil-customer-name">الاسم</label>
+                <input
+                  id="pil-customer-name"
+                  name="customerName"
+                  value={formState.customerName}
+                  onChange={updateFormField("customerName")}
+                  autoComplete="name"
+                  placeholder="اكتب اسمك بالكامل"
+                  required
+                />
+              </div>
+
+              <div className="pil-field">
+                <label htmlFor="pil-phone">رقم الموبايل</label>
+                <input
+                  id="pil-phone"
+                  name="phone"
+                  type="tel"
+                  inputMode="tel"
+                  value={formState.phone}
+                  onChange={updateFormField("phone")}
+                  autoComplete="tel"
+                  placeholder="01xxxxxxxxx"
+                  required
+                />
+              </div>
+
+              {sizeOptions.length > 0 || colorOptions.length > 0 ? (
+                <div className="pil-variants-block">
+                  {colorOptions.length > 0 ? (
+                    <div className="pil-field">
+                      <label htmlFor="pil-color">اللون</label>
+                      <div
+                        className="pil-chips-group"
+                        role="radiogroup"
+                        aria-label="اختيار اللون"
+                      >
+                        {colorOptions.map((color) => (
+                          <button
+                            key={color}
+                            type="button"
+                            className={`pil-chip ${selectedColor === color ? "is-selected" : ""}`}
+                            onClick={() => setSelectedColor(color)}
+                          >
+                            {color}
+                          </button>
+                        ))}
+                      </div>
+                      <select
+                        id="pil-color"
+                        name="color"
+                        value={selectedColor}
+                        onChange={(event) => setSelectedColor(event.target.value)}
+                        required
+                        className="pil-native-select"
+                      >
+                        <option value="">اختار</option>
+                        {colorOptions.map((color) => (
+                          <option key={color} value={color}>
+                            {color}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+
+                  {sizeOptions.length > 0 ? (
+                    <div className="pil-field">
+                      <label htmlFor="pil-size">المقاس</label>
+                      <div
+                        className="pil-chips-group"
+                        role="radiogroup"
+                        aria-label="اختيار المقاس"
+                      >
+                        {sizeOptions.map((size) => (
+                          <button
+                            key={size}
+                            type="button"
+                            className={`pil-chip ${selectedSize === size ? "is-selected" : ""}`}
+                            onClick={() => setSelectedSize(size)}
+                          >
+                            {size}
+                          </button>
+                        ))}
+                      </div>
+                      <select
+                        id="pil-size"
+                        name="size"
+                        value={selectedSize}
+                        onChange={(event) => setSelectedSize(event.target.value)}
+                        required
+                        className="pil-native-select"
+                      >
+                        <option value="">اختار</option>
+                        {sizeOptions.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : null}
+                </div>
+              ) : null}
+
+              <div className="pil-two-cols">
+                <div className="pil-field">
+                  <label htmlFor="pil-governorate">المحافظة</label>
+                  <select
+                    id="pil-governorate"
+                    name="governorate"
+                    value={formState.governorate}
+                    onChange={updateFormField("governorate")}
+                    required
+                  >
+                    <option value="">اختار</option>
+                    {EGYPT_GOVERNORATES.map((governorate) => (
+                      <option key={governorate.id} value={governorate.nameAr}>
+                        {governorate.nameAr}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="pil-field">
+                  <label htmlFor="pil-area">المنطقة</label>
+                  <input
+                    id="pil-area"
+                    name="area"
+                    value={formState.area}
+                    onChange={updateFormField("area")}
+                    autoComplete="address-level2"
+                    placeholder="مثال: مدينة نصر"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="pil-field">
+                <label htmlFor="pil-address">العنوان بالتفصيل</label>
+                <textarea
+                  id="pil-address"
+                  name="address"
+                  value={formState.address}
+                  onChange={updateFormField("address")}
+                  autoComplete="street-address"
+                  placeholder="الشارع، العمارة، الدور، علامة مميزة"
+                  required
+                />
+              </div>
+
+              {formError ? (
+                <div className="pil-error" role="alert">
+                  {formError}
+                </div>
+              ) : null}
+
+              {isLocalLandingTest ? (
+                <div className="pil-test-note" role="status">
+                  وضع الاختبار المحلي مفعل، لن يتم إنشاء طلب حقيقي.
+                </div>
+              ) : null}
+
+              <button className="pil-submit" type="submit" disabled={isSubmitting}>
+                {isSubmitting
+                  ? "جاري إرسال الطلب..."
+                  : `${activeConfig.buttonLabel} — ${formatPrice(orderFinalTotal, currency)} 🚚`}
+              </button>
+            </form>
+
+            {/* Trust Badges Strip */}
+            <div className="pil-trust-badges-strip" aria-label="ضمانات الشراء">
+              <div className="pil-trust-item">
+                <span className="pil-trust-icon">🛡️</span>
+                <div>
+                  <strong>معاينة قبل الدفع</strong>
+                  <small>افتح الشحنة وتأكد منها براحتك</small>
+                </div>
+              </div>
+              <div className="pil-trust-item">
+                <span className="pil-trust-icon">🚚</span>
+                <div>
+                  <strong>الدفع نقدياً عند الاستلام</strong>
+                  <small>لا تدفع أي مبلغ إلا بعد فحص شحنتك</small>
+                </div>
+              </div>
+              <div className="pil-trust-item">
+                <span className="pil-trust-icon">🔄</span>
+                <div>
+                  <strong>استبدال واسترجاع سهل</strong>
+                  <small>خلال 14 يوم بكل مرونة</small>
+                </div>
+              </div>
+            </div>
+          </section>
+        </React.Fragment>
+      );
+    }
+
+    if (type === "REVIEWS") {
+      const reviews =
+        content.reviews || reviewsSection?.content?.reviews || [];
+      if (!reviews.length) return null;
+
+      return (
         <section
+          key={section.id || idx}
           className="pil-reviews"
           aria-label="آراء العملاء"
           style={{ padding: "32px 16px", maxWidth: 760, margin: "0 auto" }}
         >
           <div className="pil-section-heading">
             <span>تجارب حقيقية</span>
-            <h2>{reviewsSection.content.title || "آراء وتقييمات العملاء"}</h2>
+            <h2>
+              {content.title ||
+                reviewsSection?.content?.title ||
+                "آراء وتقييمات العملاء"}
+            </h2>
           </div>
           <div
             style={{
@@ -1214,9 +1451,9 @@ const ProductImageLandingPage: React.FC = () => {
               marginTop: 16,
             }}
           >
-            {reviewsSection.content.reviews.map((rev: any, idx: number) => (
+            {reviews.map((rev: any, rIdx: number) => (
               <div
-                key={idx}
+                key={rIdx}
                 style={{
                   background: "#ffffff",
                   border: "1px solid #e2e8f0",
@@ -1254,17 +1491,25 @@ const ProductImageLandingPage: React.FC = () => {
             ))}
           </div>
         </section>
-      ) : null}
+      );
+    }
 
-      {faqSection?.content?.faqs?.length ? (
+    if (type === "FAQ") {
+      const faqs = content.faqs || faqSection?.content?.faqs || [];
+      if (!faqs.length) return null;
+
+      return (
         <section
+          key={section.id || idx}
           className="pil-faq"
           aria-label="الأسئلة الشائعة"
           style={{ padding: "32px 16px", maxWidth: 760, margin: "0 auto" }}
         >
           <div className="pil-section-heading">
             <span>إجابات واضحة</span>
-            <h2>{faqSection.content.title || "الأسئلة الشائعة"}</h2>
+            <h2>
+              {content.title || faqSection?.content?.title || "الأسئلة الشائعة"}
+            </h2>
           </div>
           <div
             style={{
@@ -1274,9 +1519,9 @@ const ProductImageLandingPage: React.FC = () => {
               marginTop: 16,
             }}
           >
-            {faqSection.content.faqs.map((faq: any, idx: number) => (
+            {faqs.map((faq: any, fIdx: number) => (
               <details
-                key={idx}
+                key={fIdx}
                 style={{
                   background: "#ffffff",
                   border: "1px solid #e2e8f0",
@@ -1308,7 +1553,27 @@ const ProductImageLandingPage: React.FC = () => {
             ))}
           </div>
         </section>
-      ) : null}
+      );
+    }
+
+    if (type === "HTML") {
+      if (!content.htmlCode) return null;
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-html-block"
+          style={{ maxWidth: 760, margin: "24px auto", padding: "0 16px" }}
+          dangerouslySetInnerHTML={{ __html: content.htmlCode }}
+        />
+      );
+    }
+
+    return null;
+  };
+
+  return (
+    <article className="product-image-landing" dir="rtl">
+      {sectionsToRender.map((section, idx) => renderDynamicSection(section, idx))}
 
       <a
         className={`pil-sticky-cta ${isStickyReady ? "is-ready" : ""}`}
@@ -1317,9 +1582,11 @@ const ProductImageLandingPage: React.FC = () => {
       >
         <strong>
           {activeProduct.name}
-          <span>{formatPrice(activePrice, currency)}</span>
+          <span>{formatPrice(orderFinalTotal, currency)}</span>
         </strong>
-        <em>اطلب</em>
+        <span className="pil-sticky-cta-btn">
+          اطلب الآن ({activeBundle.qty} {activeBundle.qty > 1 ? "قطع" : "قطعة"})
+        </span>
       </a>
     </article>
   );

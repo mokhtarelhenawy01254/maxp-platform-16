@@ -3740,7 +3740,7 @@ const AppContent = () => {
                 <Route
                   path="/advertising/product-landing-pages"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <ProductLandingPages />
                     </Layout>
                   }
@@ -3748,7 +3748,7 @@ const AppContent = () => {
                 <Route
                   path="/advertising/landing-builder"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <ProductLandingPages />
                     </Layout>
                   }
@@ -5876,7 +5876,7 @@ const AppContent = () => {
                 <Route
                   path="/advertising/product-landing-pages"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <ProductLandingPages />
                     </Layout>
                   }
@@ -5884,7 +5884,7 @@ const AppContent = () => {
                 <Route
                   path="/advertising/landing-builder"
                   element={
-                    <Layout>
+                    <Layout fullWidth>
                       <ProductLandingPages />
                     </Layout>
                   }

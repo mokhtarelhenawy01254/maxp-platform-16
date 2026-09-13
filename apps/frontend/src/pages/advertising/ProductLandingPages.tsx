@@ -449,6 +449,8 @@ const ProductLandingPages: React.FC = () => {
                 product={selectedProduct}
                 sections={editor.sections}
                 formConfig={editor.formConfig}
+                previewUrl={previewUrl}
+                customerUrl={customerUrl}
               />
             </aside>
           )}
