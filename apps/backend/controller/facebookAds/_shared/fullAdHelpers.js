@@ -657,6 +657,8 @@ function validateFullAdCreativePayload(data, creativeType) {
     if (invalidIndex >= 0) {
       return `بطاقة الدوّار رقم ${invalidIndex + 1} تحتاج صورة وعنوان ورابط وجهة.`;
     }
+  }
+
   if (creativeType === "EXISTING_POST" && !data.postId) {
     return "معرّف المنشور (Post ID) مطلوب عند استخدام منشور حالي من الصفحة.";
   }

@@ -4,10 +4,8 @@
 - `facebook_ad.analyze_product`: جلب تفاصيل المنتج وهوامش الربح والمخزون.
 - `facebook_ad.create_full_draft`: إنشاء مسودات إعلانية متكاملة متعددة الزوايا (يدعم publish_now: true للنشر الفوري المباشر).
 - `facebook_ad.publish_draft`: نشر مسودة إعلانية معتمدة مباشرة على حساب فيسبوك الإعلاني وجلب معرفات Meta.
-- `facebook_ad.get_decision`: جلب مؤشرات الأداء والقرارات الاستثمارية (SCALE / KILL / FIX).
+- `facebook_ad.get_decision`: جلب مؤشرات الأداء والقرارات الاستثمارية (SCALE / KILL / FIX) وتحليل الـ CTR والـ ROAS.
 - `facebook_ad.account_info`: فحص الحساب الإعلاني، العملة، الرصيد، والميزانية المتاحة.
-- `facebook_ad.campaign_insights`: جلب إحصائيات وأداء الحملات النشطة (Spend, Impressions, Clicks, Conversions).
-- `facebook_ad.ad_insights`: جلب أداء الإعلانات الفردية وتحليل الـ CTR والـ ROAS.
 - `orders.campaign_attribution_report`: تقرير نسب مبيعات وطلبات المتجر الفعلية للحملات الإعلانية ومصادر الزيارات.
 - `record_learned_rule`: تسجيل قاعدة أو درس تشغيلي جديد أو تعديل سلوك بناءً على توجيهات التاجر وتخزينه دائماً في كتيب استراتيجيات المتجر (`media_buyer_playbook`).
 - `manage_agent_skill`: إنشاء مهارة تشغيلية مخصصة جديدة أو تعديل مهارة حالية للتاجر (Hermes Dynamic Skill Creation).

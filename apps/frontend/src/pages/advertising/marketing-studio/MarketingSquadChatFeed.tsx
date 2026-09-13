@@ -13,6 +13,8 @@ import {
   ShoppingBag,
   Plus,
   MessageSquare,
+  Copy,
+  Check,
 } from "lucide-react";
 import { chatWithMediaBuyer } from "../../../services/facebookAdsService";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
@@ -44,8 +46,17 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
 
   const [inputMessage, setInputMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [copiedSessionId, setCopiedSessionId] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const handleCopySessionId = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!activeSession?.id) return;
+    navigator.clipboard.writeText(activeSession.id);
+    setCopiedSessionId(true);
+    setTimeout(() => setCopiedSessionId(false), 2000);
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -70,9 +81,15 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
     setInputMessage("");
     setLoading(true);
 
-    // Context-aware: attach product specs if selected and not already in prompt
+    // Context-aware: attach product specs if selected and not already in prompt,
+    // avoiding noise on general queries, identity changes, skill requests, or short follow-ups
     let promptForAgent = textToSend;
-    if (selectedProduct && !textToSend.includes(selectedProduct.name)) {
+    const isSystemOrMetaQuery =
+      textToSend.length <= 4 ||
+      /^(؟|\?|تمام|شكرا|ألو|الو|مرحبا|اهلا|ازيك|فينك|مردتش)/i.test(textToSend) ||
+      /(مهارة|مهاره|اسمك|غير اسمك|مين انت|هويتك|تفضيل|تتبع|utm)/i.test(textToSend);
+
+    if (selectedProduct && !isSystemOrMetaQuery && !textToSend.includes(selectedProduct.name)) {
       promptForAgent = `[المنتج المحدد في الرادار: "${selectedProduct.name}" | السعر: ${selectedProduct.price} ج.م | المخزون: ${selectedProduct.stock} قطعة | التكلفة: ${selectedProduct.cost || 0} ج.م]\n\n${textToSend}`;
     }
 
@@ -136,9 +153,22 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
         <div className="flex items-center gap-2">
           <div className="flex items-center gap-1 text-[11px] text-slate-500 dark:text-slate-400">
             <MessageSquare className="w-3 h-3 text-indigo-500" />
-            <span className="font-medium truncate max-w-[140px]">
+            <span className="font-medium truncate max-w-[130px]" title={activeSession.title || "جلسة جديدة"}>
               {activeSession.title || "جلسة جديدة"}
             </span>
+            <button
+              type="button"
+              onClick={handleCopySessionId}
+              className="p-1 rounded-md text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
+              title={copiedSessionId ? "تم نسخ معرف الجلسة!" : "نسخ معرف الجلسة للمراجعة والدعم الفني"}
+              aria-label="نسخ معرف الجلسة"
+            >
+              {copiedSessionId ? (
+                <Check className="w-3 h-3 text-emerald-500" />
+              ) : (
+                <Copy className="w-3 h-3" />
+              )}
+            </button>
           </div>
 
           <button
