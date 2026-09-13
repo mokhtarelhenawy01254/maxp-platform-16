@@ -515,6 +515,9 @@ const FacebookAdsDashboard = React.lazy(
 const MarketingAiStudioPage = React.lazy(
   () => import("./pages/advertising/marketing-studio/MarketingAiStudioPage"),
 );
+const CreativeAiStudioPage = React.lazy(
+  () => import("./pages/advertising/creative-studio/CreativeAiStudioPage"),
+);
 const NavigateFacebookAdsDiagnosis: React.FC = () => {
   const location = useLocation();
   return <Navigate to={`/advertising/facebook-ads${location.search}`} replace />;
@@ -1022,9 +1025,6 @@ const BookingManagementPage = React.lazy(
 );
 const EducationManagementPage = React.lazy(
   () => import("./pages/admin/EducationManagementPage"),
-);
-const AIImageGenerator = React.lazy(
-  () => import("./pages/admin/AIImageGenerator"),
 );
 const BrandIdentitySettings = React.lazy(
   () => import("./pages/admin/BrandIdentitySettings"),
@@ -1691,6 +1691,7 @@ if (typeof window !== "undefined") {
   p["/tickets"] = () => import("./pages/tickets/TurboTickets");
   p["/advertising"] = () => import("./pages/advertising/FacebookAdsDashboard");
   p["/advertising/marketing-studio"] = () => import("./pages/advertising/marketing-studio/MarketingAiStudioPage");
+  p["/advertising/creative-studio"] = () => import("./pages/advertising/creative-studio/CreativeAiStudioPage");
   p["/affiliates"] = () => import("./pages/affiliates/AffiliateDashboard");
   p["/hr"] = () => import("./pages/hr/HRDashboard");
   p["/settings"] = () => import("./pages/settings/Settings");
@@ -3700,6 +3701,14 @@ const AppContent = () => {
                   element={
                     <Layout>
                       <MarketingAiStudioPage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/advertising/creative-studio"
+                  element={
+                    <Layout fullWidth>
+                      <CreativeAiStudioPage />
                     </Layout>
                   }
                 />
@@ -5832,6 +5841,14 @@ const AppContent = () => {
                   }
                 />
                 <Route
+                  path="/advertising/creative-studio"
+                  element={
+                    <Layout fullWidth>
+                      <CreativeAiStudioPage />
+                    </Layout>
+                  }
+                />
+                <Route
                   path="/advertising/facebook-ads/connection"
                   element={
                     <Layout>
@@ -7951,11 +7968,7 @@ const AppContent = () => {
                 />
                 <Route
                   path="/admin/ai-image-generator"
-                  element={
-                    <Layout fullWidth>
-                      <AIImageGenerator />
-                    </Layout>
-                  }
+                  element={<Navigate to="/advertising/creative-studio" replace />}
                 />
                 <Route
                   path="/admin/brand-identity"

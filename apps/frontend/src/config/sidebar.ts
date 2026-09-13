@@ -517,7 +517,7 @@ export const getSidebarConfig = (
             items: [
                 { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت' },
                 { to: '/admin/agent-profiles', icon: Users, label: t('sidebar.agentProfiles') },
-                { to: '/admin/ai-image-generator', icon: Image, label: t('sidebar.aiImageGenerator') },
+                { to: '/advertising/creative-studio', icon: Palette, label: isEn ? 'AI Creative Studio' : 'استوديو التصاميم الذكي' },
                 { to: '/admin/ai-catalog', icon: ShoppingBag, label: t('sidebar.aiCatalog') },
                 { to: '/admin/ai-knowledge-questions', icon: Lightbulb, label: t('sidebar.aiKnowledgeQuestions') },
                 { to: '/admin/ai-hub?tab=sandbox', icon: FlaskConical, label: t('sidebar.aiAgentSandbox') },
@@ -927,6 +927,12 @@ export const getSidebarConfig = (
                     to: '/advertising/marketing-studio',
                     icon: Sparkles,
                     label: isEn ? 'AI Marketing Studio' : 'مركز التسويق الذكي (AI Studio)',
+                },
+                // 1.5 استوديو التصاميم الذكي (AI Creative Studio)
+                {
+                    to: '/advertising/creative-studio',
+                    icon: Palette,
+                    label: isEn ? 'AI Creative Studio' : 'استوديو التصاميم الإعلانية (AI)',
                 },
                 // 2. إعلانات فيسبوك (Meta Ads Cockpit)
                 {

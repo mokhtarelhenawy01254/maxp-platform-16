@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Rocket,
   Sparkles,
@@ -8,6 +9,7 @@ import {
   Check,
   Tag,
   ExternalLink,
+  Palette,
 } from "lucide-react";
 import { toast } from "sonner";
 import { publishAiDraft } from "../../../services/facebookAdsService";
@@ -30,6 +32,7 @@ export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = (
   selectedProduct,
   onDraftPublished,
 }) => {
+  const navigate = useNavigate();
   const [publishing, setPublishing] = useState(false);
   const productName = selectedProduct?.name || "المنتج المحدد";
 
@@ -373,7 +376,27 @@ export const CampaignDraftLaunchCard: React.FC<CampaignDraftLaunchCardProps> = (
       </div>
 
       {/* 5. Action Footer: Launch to Meta Ads (Sticky with Safe Area) */}
-      <div className="p-2.5 sm:p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex-shrink-0 sticky bottom-0 z-10 shadow-lg sm:shadow-none">
+      <div className="p-2.5 sm:p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex-shrink-0 sticky bottom-0 z-10 shadow-lg sm:shadow-none space-y-2">
+        <button
+          type="button"
+          onClick={() => {
+            navigate("/advertising/creative-studio", {
+              state: {
+                prefillProduct: selectedProduct,
+                prefillDraft: {
+                  headline,
+                  primaryText: primaryCopy,
+                  price: sellingPrice,
+                },
+              },
+            });
+          }}
+          className="w-full min-h-[38px] py-2 px-3 rounded-xl border border-indigo-200 dark:border-indigo-800/60 bg-indigo-50/70 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-950/50 text-indigo-700 dark:text-indigo-300 font-bold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99]"
+        >
+          <Palette className="w-3.5 h-3.5 text-indigo-500" />
+          <span>صمم إعلان مرئي بالذكاء الاصطناعي في Creative Studio</span>
+        </button>
+
         <button
           type="button"
           onClick={handleLaunch}
