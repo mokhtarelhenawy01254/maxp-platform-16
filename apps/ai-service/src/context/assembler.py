@@ -103,6 +103,32 @@ class ContextAssembler:
 
         history_messages = []
         try:
+            # Check for dashboard marketing copilot sessions
+            is_dashboard_channel = getattr(ctx, "channel", None) == "dashboard" or str(lookup_id).startswith("mb_sess_")
+            if is_dashboard_channel:
+                try:
+                    fb_query = text(
+                        'SELECT content, role FROM public.facebook_ads_ai_chat_messages '
+                        'WHERE "sessionId" = :session_id '
+                        'ORDER BY "createdAt" DESC LIMIT :limit'
+                    )
+                    fb_result = await ctx.session.execute(
+                        fb_query,
+                        {"session_id": str(lookup_id), "limit": limit}
+                    )
+                    fb_rows = fb_result.fetchall()
+                    if fb_rows:
+                        for row in reversed(fb_rows):
+                            content = row[0] or ""
+                            r = str(row[1] or "assistant").lower()
+                            role = "user" if r == "user" else "assistant"
+                            if content:
+                                history_messages.append({"role": role, "content": content})
+                        if history_messages:
+                            return self._dedupe_adjacent_messages(history_messages)
+                except Exception as fb_err:
+                    logger.warning("failed to fetch dashboard message history from DB", error=str(fb_err))
+
             query = text(
                 'SELECT content, "isFromCustomer", type, attachments FROM public.messages '
                 'WHERE "conversationId" = :conversation_id '
@@ -233,14 +259,23 @@ You are continuing an existing conversation on Facebook Messenger that was previ
         # 1. Skills Instructions (Static per agent — largest block, high cache priority)
         # Always inject full skill instructions right after base instructions so this large block
         # is part of the fixed cacheable prefix across all turns.
+        company_id = getattr(ctx, "company_id", None)
+        if company_id and ctx.session:
+            try:
+                from src.skills.integration import hydrate_tenant_skills_from_db
+                await hydrate_tenant_skills_from_db(company_id, ctx.session)
+            except Exception as exc:
+                logger.warning("hydrate_tenant_skills_failed", company_id=company_id, error=str(exc))
+
         agent = ctx.agent
-        if agent and hasattr(agent, "allowed_skills") and agent.allowed_skills:
+        allowed_skills = getattr(agent, "allowed_skills", set()) if agent else set()
+        agent_role = getattr(agent, "role", None) or getattr(agent, "name", None)
+        user_msg = getattr(ctx, "user_message", None)
+        if allowed_skills or company_id:
             from src.skills.integration import get_skills_block
-            agent_role = getattr(agent, "role", None) or getattr(agent, "name", None)
-            user_msg = getattr(ctx, "user_message", None)
             full_skills_block = get_skills_block(
-                agent.allowed_skills,
-                company_id=getattr(ctx, "company_id", None),
+                allowed_skills=allowed_skills,
+                company_id=company_id,
                 agent_role=agent_role,
                 user_message=user_msg,
             )
@@ -248,9 +283,8 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                 static_sections.append(("skills", full_skills_block))
                 logger.info(
                     "injected_full_skills",
-                    skill_count=len(agent.allowed_skills),
-                    skills=sorted(agent.allowed_skills),
-                    company_id=getattr(ctx, "company_id", None),
+                    skill_count=len(allowed_skills) if allowed_skills else 0,
+                    company_id=company_id,
                 )
 
         # 2. Current Date (Prefix-stable: Date only, avoids minute-by-minute cache invalidation)

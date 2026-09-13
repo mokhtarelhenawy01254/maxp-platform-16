@@ -332,12 +332,19 @@ class FacebookAdsAiController {
               'facebook_ad_publish_draft',
               'facebook_ad_get_decision',
               'facebook_ad_record_learned_rule',
+              'record_learned_rule',
+              'manage_agent_skill',
               'orders_campaign_attribution_report',
               'competitor_get_ads',
               'sales_revenue',
               'company_snapshot',
               'audit_read',
               'generate_social_image',
+            ],
+            allowedSkills: [
+              'facebook-ad-draft',
+              'catalog-search',
+              'campaign-report'
             ],
           });
           if (spawned?.id) {
@@ -365,6 +372,21 @@ class FacebookAdsAiController {
         console.warn('[FacebookAdsAI] Failed to persist user message in DB:', dbErr.message);
       }
 
+      // Retrieve recent conversation messages for Hermes memory continuity
+      let recentMessages = [];
+      try {
+        const sessionData = await marketingCopilotSessionService.getSession(companyId, threadId);
+        if (sessionData && Array.isArray(sessionData.messages) && sessionData.messages.length > 1) {
+          // Exclude the message we just appended (the last one) so the current prompt isn't duplicated
+          recentMessages = sessionData.messages.slice(0, -1).slice(-15).map(m => ({
+            role: m.sender === 'user' ? 'user' : 'assistant',
+            content: m.text || '',
+          }));
+        }
+      } catch (memErr) {
+        console.warn('[FacebookAdsAI] Could not load prior messages for context:', memErr.message);
+      }
+
       try {
         const result = await aiServiceAdminClient.chatWithAgent({
           companyId,
@@ -372,6 +394,10 @@ class FacebookAdsAiController {
           message,
           threadId: scopedThreadId,
           channel: 'dashboard',
+          source_channel: 'dashboard',
+          memory_context: {
+            recentMessages,
+          },
         });
 
         // Intercept quota / budget / uncharged error states inside response payload

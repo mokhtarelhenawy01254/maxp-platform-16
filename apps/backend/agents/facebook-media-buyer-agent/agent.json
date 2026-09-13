@@ -33,6 +33,13 @@
     "facebook_ad.publish_draft",
     "facebook_ad.analyze_product",
     "facebook_ad.get_decision",
+    "facebook_ad.account_info",
+    "facebook_ad.campaign_insights",
+    "facebook_ad.ad_insights",
+    "orders.campaign_attribution_report",
+    "record_learned_rule",
+    "facebook_ad.record_learned_rule",
+    "manage_agent_skill",
     "generate_social_image",
     "audit.read",
     "agent.handoff"

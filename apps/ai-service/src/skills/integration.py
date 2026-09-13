@@ -87,6 +87,57 @@ def clear_skills_cache(skill_id: str | None = None, company_id: str | None = Non
         _tenant_skills_cache.clear()
 
 
+async def hydrate_tenant_skills_from_db(company_id: str, session: Any = None) -> list[dict[str, Any]]:
+    """Load tenant-scoped skills and playbooks from PostgreSQL into _tenant_skills_cache.
+    Ensures learned rules and custom skills persist across PM2 reloads and service restarts.
+    """
+    if not company_id:
+        return []
+
+    # If already populated in cache, return cached entries
+    if company_id in _tenant_skills_cache and _tenant_skills_cache[company_id]:
+        return list(_tenant_skills_cache[company_id].values())
+
+    from sqlalchemy import select as sa_select
+    from src.db.models.skill import Skill as SkillModel
+
+    async def _do_load(sess: Any) -> list[dict[str, Any]]:
+        stmt = sa_select(SkillModel).where(
+            SkillModel.company_id == company_id,
+            SkillModel.enabled == True,
+        )
+        result = await sess.execute(stmt)
+        skills = result.scalars().all()
+        for skill in skills:
+            register_tenant_skill_in_cache(company_id, {
+                "id": skill.id,
+                "name": skill.name,
+                "description": skill.description or "",
+                "instructions": skill.instructions or skill.content or "",
+                "content": skill.content or skill.instructions or "",
+                "allowed_tools": skill.allowed_tools or [],
+                "trigger_phrases": skill.trigger_phrases or "",
+                "enabled": skill.enabled,
+                "priority": skill.priority,
+                "skill_metadata": skill.skill_metadata or {},
+            })
+        logger.info("tenant_skills_hydrated_from_db", company_id=company_id, count=len(skills))
+        return get_tenant_skills_from_cache(company_id)
+
+    if session is not None:
+        return await _do_load(session)
+
+    try:
+        from src.db.session import async_session
+        if async_session:
+            async with async_session() as new_session:
+                return await _do_load(new_session)
+    except Exception as exc:
+        logger.warning("hydrate_tenant_skills_from_db_failed", company_id=company_id, error=str(exc))
+
+    return []
+
+
 async def preload_skills_from_db(session: Any) -> None:
     """Load all skills from DB into _db_skills_cache.
     Called after seed_skills so the in-memory cache reflects DB state.
@@ -301,11 +352,13 @@ def get_skills_block(
             if not desc_60.endswith("."):
                 desc_60 = f"{desc_60}."
 
-            triggers_str = meta.get("trigger_keywords") or t_skill.get("trigger_phrases") or ""
-            triggers = [t.strip().lower() for t in triggers_str.replace("\n", ",").split(",") if t.strip()]
-
-            # Check for JIT L1 match against incoming message
-            is_hit = any(trig in lower_user_msg for trig in triggers) if (lower_user_msg and triggers) else False
+            # Check for JIT L1 match against incoming message or active domain playbook
+            is_playbook = (
+                "playbook" in skill_id.lower()
+                or meta.get("skill_type") == "PLAYBOOK"
+                or (allowed_domains and skill_domain in allowed_domains and "playbook" in skill_name.lower())
+            )
+            is_hit = is_playbook or (any(trig in lower_user_msg for trig in triggers) if (lower_user_msg and triggers) else False)
 
             if is_hit:
                 instr = t_skill.get("instructions") or t_skill.get("content") or ""

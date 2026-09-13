@@ -347,10 +347,13 @@ def get_tools_for_role(role: str) -> list[FunctionTool]:
     else:
         tools = list(CORE_TOOLS)
 
-    # Hermes Universal Self-Learning: ensure record_learned_rule is available to all agent roles
+    # Hermes Universal Self-Learning: ensure record_learned_rule and manage_agent_skill are available to all agent roles
     universal_learner = _registry.resolve("record_learned_rule")
     if universal_learner and universal_learner not in tools:
         tools.append(universal_learner)
+    skill_manager = _registry.resolve("manage_agent_skill")
+    if skill_manager and skill_manager not in tools:
+        tools.append(skill_manager)
     return tools
 
 
@@ -365,6 +368,8 @@ def get_tool_names_for_role(role: str) -> list[str]:
 
     if "record_learned_rule" not in names:
         names.append("record_learned_rule")
+    if "manage_agent_skill" not in names:
+        names.append("manage_agent_skill")
     return names
 
 
