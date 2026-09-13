@@ -44,6 +44,7 @@ import {
   getFullAdMinimumBudgetAmount,
   isCappedBidStrategy,
   normalizeAttributionWindowForObjective,
+  normalizeCurrencyCode,
   normalizeWizardBidStrategy,
 } from "./CreateAdWizard.helpers";
 import ErrorBoundary from "../../components/ErrorBoundary";
@@ -1189,8 +1190,9 @@ const CreateAdWizard: React.FC = () => {
     adAccounts.find((account) => resolveAdAccountId(account) === selectedAdAccountId) ||
     null;
   const selectedAdAccount = selectedRemoteAdAccount || undefined;
-  const selectedAdAccountCurrency =
-    selectedSavedAdAccount?.currency || selectedRemoteAdAccount?.currency || "EGP";
+  const selectedAdAccountCurrency = normalizeCurrencyCode(
+    selectedSavedAdAccount?.currency || selectedRemoteAdAccount?.currency || "EGP",
+  );
   const minimumWizardBudget = getFullAdMinimumBudgetAmount(selectedAdAccountCurrency);
   const getAdAccountBusinessKey = (account: FacebookAdAccount) =>
     account.business?.id ||
