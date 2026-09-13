@@ -232,6 +232,7 @@ const CreateAdWizard: React.FC = () => {
     specialAdCategories: [],
     isSplitTest: false,
     splitTestVariable: "CREATIVE",
+    spendLimit: undefined,
 
     // Step 2 - Ad Set Level
     performanceGoal: "MAXIMIZE_CONVERSIONS",
@@ -911,6 +912,9 @@ const CreateAdWizard: React.FC = () => {
         ...(formData.isSplitTest && {
           isSplitTest: true,
           splitTestVariable: formData.splitTestVariable,
+        }),
+        ...(formData.spendLimit && {
+          spendLimit: formData.spendLimit,
         }),
 
         // Ad Set Level - الميزات الجديدة

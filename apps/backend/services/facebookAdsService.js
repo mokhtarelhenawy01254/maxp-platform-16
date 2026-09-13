@@ -1886,7 +1886,10 @@ class FacebookAdsService {
         campaignData.budgetOptimization = true;
         campaignData.budgetType = budgetType;
         campaignData.budgetAmount = budgetAmount;
-        if (spendLimit) campaignData.spendLimit = spendLimit;
+      }
+
+      if (spendLimit) {
+        campaignData.spendLimit = spendLimit;
       }
 
       const campaignResult = await this.createCampaign(campaignData);

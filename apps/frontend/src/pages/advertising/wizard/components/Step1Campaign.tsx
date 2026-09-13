@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertCircle, Target, Eye, Globe, MessageCircle, ShoppingBag, Smartphone, Users, Sparkles } from "lucide-react";
+import { AlertCircle, Target, Eye, Globe, MessageCircle, ShoppingBag, Smartphone, Users, Sparkles, ShieldAlert } from "lucide-react";
 import type { FormData } from "../types";
 import { OBJECTIVES, SPECIAL_AD_CATEGORIES } from "../constants";
 
@@ -183,6 +183,69 @@ export const Step1Campaign: React.FC<Step1CampaignProps> = ({
                 </button>
               ))}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Campaign Spending Limit */}
+      <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+              <ShieldAlert className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className="text-xs font-bold text-gray-900">
+                حد إنفاق الحملة الإجمالي (Campaign Spending Limit)
+              </h4>
+              <p className="text-[11px] text-gray-500">
+                سقف مالي اختياري لإيقاف الحملة كلياً عند الوصول إليه لحماية الميزانية
+              </p>
+            </div>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={Boolean(formData.spendLimit && formData.spendLimit > 0)}
+              onChange={(e) => {
+                if (!e.target.checked) {
+                  handleChange("spendLimit", undefined);
+                } else {
+                  handleChange("spendLimit", 10000);
+                }
+              }}
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-600"></div>
+          </label>
+        </div>
+
+        {Boolean(formData.spendLimit && formData.spendLimit > 0) && (
+          <div className="pt-2 border-t border-slate-200">
+            <label className="block text-xs font-semibold text-gray-700 mb-1">
+              الحد الأقصى للإنفاق التراكمي للحملة
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                min={100}
+                value={formData.spendLimit || ""}
+                onChange={(e) =>
+                  handleChange(
+                    "spendLimit",
+                    e.target.value ? Number(e.target.value) : undefined,
+                  )
+                }
+                placeholder="مثال: 20000"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs font-semibold focus:ring-2 focus:ring-emerald-500"
+              />
+              <span className="absolute left-3 top-2 text-xs text-gray-400 font-bold">
+                EGP
+              </span>
+            </div>
+            <p className="text-[10px] text-gray-500 mt-1">
+              ستتوقف جميع الإعلانات والمجموعات داخل هذه الحملة فور وصول إجمالي الصرف لهذا الرقم.
+            </p>
           </div>
         )}
       </div>

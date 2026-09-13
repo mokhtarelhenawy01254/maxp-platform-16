@@ -58,6 +58,7 @@ export interface FormData {
   specialAdCategories: string[];
   isSplitTest?: boolean;
   splitTestVariable?: "CREATIVE" | "AUDIENCE" | "PLACEMENT";
+  spendLimit?: number;
 
   // Step 2: Ad Set Level
   budgetType: "DAILY" | "LIFETIME";
