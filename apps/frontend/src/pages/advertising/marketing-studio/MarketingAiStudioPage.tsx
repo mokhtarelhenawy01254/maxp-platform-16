@@ -61,13 +61,13 @@ const MarketingAiStudioPage: React.FC = () => {
   };
 
   return (
-    <div className="h-full w-full flex flex-col p-1.5 sm:p-2 gap-1.5 sm:gap-2 bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100 overflow-hidden">
+    <div className="h-[calc(100dvh-4.5rem)] flex flex-col p-2.5 sm:p-3.5 gap-2.5 sm:gap-3 bg-slate-100/60 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
       {/* Top Ergonomic Control Bar */}
-      <header className="flex items-center justify-between gap-2 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex-shrink-0">
+      <header className="flex items-center justify-between gap-2.5 bg-white dark:bg-slate-900 px-3.5 py-2 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex-shrink-0 flex-wrap">
         {/* Brand & Cockpit Badge */}
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-blue-600 text-white shadow-sm flex-shrink-0">
-            <Sparkles className="w-3.5 h-3.5" />
+        <div className="flex items-center gap-2.5">
+          <div className="p-1.5 rounded-xl bg-blue-600 text-white shadow-sm flex-shrink-0">
+            <Sparkles className="w-4 h-4" />
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
@@ -165,7 +165,7 @@ const MarketingAiStudioPage: React.FC = () => {
       </header>
 
       {/* Main 2-Panel Focused Workspace (Zero Wasted Space) */}
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2 min-h-0 overflow-hidden">
+      <main className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-2.5 sm:gap-3 min-h-0 overflow-hidden">
         {/* Panel 1: Strategy & Chat Studio (58% of screen) */}
         <section
           aria-label="استوديو استراتيجية التسويق"

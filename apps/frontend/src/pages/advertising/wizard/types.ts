@@ -112,10 +112,14 @@ export interface FormData {
   useLeadForm: boolean;
   leadFormId?: string;
 
-  // Advantage+ Creative
+  // Advantage+ Creative (v26.0)
   advantageCreative: boolean;
   textGeneration: boolean;
   imageEnhancement: boolean;
+  expandImage?: boolean;
+  visualTouchups?: boolean;
+  relevantComments?: boolean;
+  priceOverlay?: boolean;
 
   // Status
   status: "ACTIVE" | "PAUSED";

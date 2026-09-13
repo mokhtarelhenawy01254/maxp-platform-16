@@ -100,20 +100,24 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
 }) => {
   return (
     <div className="space-y-6">
-      {/* Advantage+ Audience */}
-      <div className="bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-xl">
+      {/* Advantage+ Audience (v26) */}
+      <div className="bg-gradient-to-r from-purple-50 via-indigo-50/60 to-pink-50 p-4 rounded-xl border border-purple-100">
         <div className="flex items-center justify-between">
           <div>
-            <h4 className="font-medium text-gray-900 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-500" />
-              Advantage+ Audience
-            </h4>
-            <p className="text-sm text-gray-600 mt-1">
-              دع Facebook يجد أفضل جمهور لإعلانك تلقائياً باستخدام الذكاء
-              الاصطناعي
+            <div className="flex items-center gap-2">
+              <h4 className="font-bold text-gray-900 flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-purple-600" />
+                Advantage+ Audience (Meta v26)
+              </h4>
+              <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                الجيل الذكي
+              </span>
+            </div>
+            <p className="text-xs text-gray-600 mt-1 max-w-xl leading-relaxed">
+              في إصدار v26، تستخدم خوارزميات الذكاء الاصطناعي اهتماماتك وجماهيرك كنقطة انطلاق أولية (Audience Suggestions)، ثم تتوسع ذاتياً لجلب أفضل المشترين بأقل تكلفة ممكنة مع احترام قيود الدولة والسن الصارمة.
             </p>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
             <input
               type="checkbox"
               checked={formData.advantageAudience}
@@ -124,6 +128,17 @@ export const Step3Targeting: React.FC<Step3TargetingProps> = ({
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
           </label>
+        </div>
+
+        <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] pt-3 border-t border-purple-100/80">
+          <div className="flex items-center gap-1.5 text-slate-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 shrink-0" />
+            <span><strong>قيود صارمة (Controls):</strong> الدولة، المحافظة، والحد الأدنى للعمر (تلتزم بها Meta 100%).</span>
+          </div>
+          <div className="flex items-center gap-1.5 text-slate-700">
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-500 shrink-0" />
+            <span><strong>مقترحات ذكية (Suggestions):</strong> الاهتمامات والجمهور المشابه (بذور للتوسع الذكي).</span>
+          </div>
         </div>
       </div>
 

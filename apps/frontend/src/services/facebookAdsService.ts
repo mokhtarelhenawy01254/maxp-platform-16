@@ -856,6 +856,11 @@ export interface CreateAdData {
   imageTemplates?: boolean;
   videoHighlight?: boolean;
   musicEnhancement?: boolean;
+  // Advantage+ Creative (v26.0)
+  expandImage?: boolean;
+  visualTouchups?: boolean;
+  relevantComments?: boolean;
+  priceOverlay?: boolean;
   carouselCards?: Array<{
     imageHash?: string;
     imageUrl?: string;
@@ -970,7 +975,7 @@ export interface CreateFullAdData {
   useLeadForm?: boolean;
   leadFormId?: string;
 
-  // Advantage+ Creative Enhancements (v22.0)
+  // Advantage+ Creative Enhancements (v26.0)
   advantageCreative?: boolean;
   textGeneration?: boolean;
   imageEnhancement?: boolean;
@@ -978,6 +983,10 @@ export interface CreateFullAdData {
   imageTemplates?: boolean;
   videoHighlight?: boolean;
   textOptimizations?: boolean;
+  expandImage?: boolean;
+  visualTouchups?: boolean;
+  relevantComments?: boolean;
+  priceOverlay?: boolean;
 
   // Status
   status?: "ACTIVE" | "PAUSED";

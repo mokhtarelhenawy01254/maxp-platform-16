@@ -1,4 +1,3 @@
-import React from "react";
 import {
   SparklesIcon,
   MusicalNoteIcon,
@@ -6,6 +5,10 @@ import {
   Bars3BottomLeftIcon,
   FilmIcon,
   CheckBadgeIcon,
+  ArrowsPointingOutIcon,
+  SunIcon,
+  ChatBubbleLeftRightIcon,
+  TagIcon,
 } from "@heroicons/react/24/outline";
 import { AdFormData } from "./types";
 
@@ -30,6 +33,10 @@ export const AdAdvantageCreativeStep: React.FC<AdAdvantageCreativeStepProps> = (
       musicEnhancement: enabled,
       videoHighlight: enabled,
       textGeneration: enabled,
+      expandImage: enabled,
+      visualTouchups: enabled,
+      relevantComments: enabled,
+      priceOverlay: enabled,
     });
   };
 
@@ -173,6 +180,110 @@ export const AdAdvantageCreativeStep: React.FC<AdAdvantageCreativeStepProps> = (
                   imageTemplates: e.target.checked,
                 })
               }
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1"
+            />
+          </div>
+
+          {/* Generative Expand (v26) */}
+          <div className="flex items-start justify-between p-3.5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start gap-2.5 pr-1">
+              <ArrowsPointingOutIcon className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-900">
+                    {isEn ? "Generative Uncrop & Expand (9:16)" : "المد الذكي للريلز (Generative Expand)"}
+                  </p>
+                  <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600">v26</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {isEn
+                    ? "Meta AI outpaints 1:1 square media to cleanly fit vertical Reels/Stories without borders"
+                    : "تمديد محيط الصور المربعة بالذكاء الاصطناعي لملء شاشة Reels و Stories بالكامل بدون حواف سوداء"}
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(formData.expandImage)}
+              onChange={(e) => updateFormData({ expandImage: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1"
+            />
+          </div>
+
+          {/* Adaptive Visual Touchups (v26) */}
+          <div className="flex items-start justify-between p-3.5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start gap-2.5 pr-1">
+              <SunIcon className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-900">
+                    {isEn ? "Adaptive Visual Touchups" : "الضبط التكيفي للسطوع والتباين"}
+                  </p>
+                  <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600">v26</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {isEn
+                    ? "Calibrates brightness and dynamic range tailored to each viewer's mobile screen"
+                    : "معايرة السطوع والوضوح تلقائياً لتناسب شاشة هاتف كل عميل يشاهد الإعلان"}
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(formData.visualTouchups)}
+              onChange={(e) => updateFormData({ visualTouchups: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1"
+            />
+          </div>
+
+          {/* Social Proof & Relevant Comments (v26) */}
+          <div className="flex items-start justify-between p-3.5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start gap-2.5 pr-1">
+              <ChatBubbleLeftRightIcon className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-900">
+                    {isEn ? "Social Proof Amplification" : "الإثبات الاجتماعي والتعليقات الإيجابية"}
+                  </p>
+                  <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600">v26</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {isEn
+                    ? "Highlights and pins top positive customer feedback under the ad automatically"
+                    : "إبراز التعليقات الأكثر إيجابية وتثبيتها أسفل الإعلان لبناء الثقة الفورية"}
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(formData.relevantComments)}
+              onChange={(e) => updateFormData({ relevantComments: e.target.checked })}
+              className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1"
+            />
+          </div>
+
+          {/* Product Price & Discount Badge Overlay (v26) */}
+          <div className="flex items-start justify-between p-3.5 rounded-xl border border-slate-200 bg-white">
+            <div className="flex items-start gap-2.5 pr-1">
+              <TagIcon className="h-5 w-5 text-indigo-600 shrink-0 mt-0.5" />
+              <div>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-slate-900">
+                    {isEn ? "Dynamic Price & Promo Badges" : "ملصقات الأسعار ونسب الخصم التلقائية"}
+                  </p>
+                  <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[9px] font-bold text-indigo-600">v26</span>
+                </div>
+                <p className="text-[11px] text-slate-500 mt-0.5">
+                  {isEn
+                    ? "Overlays prices and discount ribbons on product creative without modifying originals"
+                    : "وضع شارات الأسعار ونسب الخصم على صور الكتالوج تلقائياً لزيادة جاذبية الشراء"}
+                </p>
+              </div>
+            </div>
+            <input
+              type="checkbox"
+              checked={Boolean(formData.priceOverlay)}
+              onChange={(e) => updateFormData({ priceOverlay: e.target.checked })}
               className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 mt-1"
             />
           </div>

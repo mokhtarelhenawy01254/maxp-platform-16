@@ -1189,14 +1189,18 @@ class FacebookAdsService {
         displayLink,
         urlParameters,
         carouselCards = [],
-        // ✅ v22.0: Individual Advantage+ Creative Enhancements
+        // ✅ v26.0: Individual Advantage+ Creative Enhancements
         advantageCreative = false,
         textGeneration = false,
         imageEnhancement = false,
         musicEnhancement = false,
         imageTemplates = false,
         videoHighlight = false,
-        textOptimizations = false
+        textOptimizations = false,
+        expandImage = false,
+        visualTouchups = false,
+        relevantComments = false,
+        priceOverlay = false
       } = data;
 
       if (!pageId) {
@@ -1353,9 +1357,37 @@ class FacebookAdsService {
             enroll_status: 'OPT_IN'
           };
         }
+
+        // ✅ v26.0: Generative Expand (Auto-uncrop/expand for Reels & Stories 9:16)
+        if (expandImage && imageHash) {
+          creativeData.degrees_of_freedom_spec.creative_features_spec.expand_image = {
+            enroll_status: 'OPT_IN'
+          };
+        }
+
+        // ✅ v26.0: Adaptive Visual Touchups (per-user brightness & contrast tuning)
+        if (visualTouchups && (imageHash || videoId)) {
+          creativeData.degrees_of_freedom_spec.creative_features_spec.visual_touchups = {
+            enroll_status: 'OPT_IN'
+          };
+        }
+
+        // ✅ v26.0: Social Proof & Relevant Comments amplification
+        if (relevantComments) {
+          creativeData.degrees_of_freedom_spec.creative_features_spec.relevant_comments = {
+            enroll_status: 'OPT_IN'
+          };
+        }
+
+        // ✅ v26.0: Catalog / Product Price Overlay
+        if (priceOverlay) {
+          creativeData.degrees_of_freedom_spec.creative_features_spec.catalog_carousel_overlay = {
+            enroll_status: 'OPT_IN'
+          };
+        }
       }
 
-      console.log('📤 Creating Creative (v22.0):', JSON.stringify(creativeData, null, 2));
+      console.log('📤 Creating Creative (v26.0):', JSON.stringify(creativeData, null, 2));
 
       const response = await axios.post(
         `${this.baseUrl}/${this.getAccountId()}/adcreatives`,
@@ -1455,7 +1487,7 @@ class FacebookAdsService {
         headlineVariations = [],
         leadFormId,
         
-        // Advantage+ Creative Enhancements (v22.0)
+        // Advantage+ Creative Enhancements (v26.0)
         advantageCreative = false,
         textGeneration = false,
         imageEnhancement = false,
@@ -1463,6 +1495,10 @@ class FacebookAdsService {
         imageTemplates = false,
         videoHighlight = false,
         textOptimizations = false,
+        expandImage = false,
+        visualTouchups = false,
+        relevantComments = false,
+        priceOverlay = false,
         
         // Status
         status = 'PAUSED'
@@ -1739,14 +1775,18 @@ class FacebookAdsService {
         imageHash: finalImageHash,
         videoId: finalVideoId,
         carouselCards: preparedCarouselCards,
-        // Advantage+ Creative
+        // Advantage+ Creative (v26.0)
         advantageCreative,
         textGeneration,
         imageEnhancement,
         musicEnhancement,
         imageTemplates,
         videoHighlight,
-        textOptimizations
+        textOptimizations,
+        expandImage,
+        visualTouchups,
+        relevantComments,
+        priceOverlay
       };
 
       const adResult = await this.createAd(adSetResult.adSetId, adCreativeData);
@@ -3031,15 +3071,15 @@ class FacebookAdsService {
         event_source_url: eventSourceUrl,
         action_source: actionSource,
         user_data: {
-          em: userData.email ? [this.hashValue(userData.email.toLowerCase())] : undefined,
-          ph: userData.phone ? [this.hashValue(userData.phone)] : undefined,
-          fn: userData.firstName ? [this.hashValue(userData.firstName.toLowerCase())] : undefined,
-          ln: userData.lastName ? [this.hashValue(userData.lastName.toLowerCase())] : undefined,
-          ct: userData.city ? [this.hashValue(userData.city.toLowerCase())] : undefined,
-          st: userData.state ? [this.hashValue(userData.state.toLowerCase())] : undefined,
-          zp: userData.zipCode ? [this.hashValue(userData.zipCode)] : undefined,
-          country: userData.country ? [this.hashValue(userData.country.toLowerCase())] : undefined,
-          external_id: userData.externalId ? [this.hashValue(userData.externalId)] : undefined,
+          em: userData.email ? [this.hashValue(userData.email.trim().toLowerCase())] : undefined,
+          ph: userData.phone ? [this.hashValue(this.normalizePhoneE164(userData.phone, userData.country || 'EG'))] : undefined,
+          fn: userData.firstName ? [this.hashValue(userData.firstName.trim().toLowerCase())] : undefined,
+          ln: userData.lastName ? [this.hashValue(userData.lastName.trim().toLowerCase())] : undefined,
+          ct: userData.city ? [this.hashValue(userData.city.trim().toLowerCase())] : undefined,
+          st: userData.state ? [this.hashValue(userData.state.trim().toLowerCase())] : undefined,
+          zp: userData.zipCode ? [this.hashValue(userData.zipCode.trim().toLowerCase())] : undefined,
+          country: userData.country ? [this.hashValue(userData.country.trim().toLowerCase())] : undefined,
+          external_id: userData.externalId ? [this.hashValue(userData.externalId.toString().trim())] : undefined,
           client_ip_address: userData.ipAddress,
           client_user_agent: userData.userAgent,
           fbc: userData.fbc, // Facebook Click ID
@@ -3097,6 +3137,49 @@ class FacebookAdsService {
         error: error.response?.data?.error?.message || error.message
       };
     }
+  }
+
+  /**
+   * تطبيع أرقام الهواتف بمعيار E.164 لرفع جودة مطابقة أحداث Meta (Event Match Quality - EMQ)
+   */
+  normalizePhoneE164(phone, defaultCountry = 'EG') {
+    if (!phone) return null;
+    let cleaned = phone.toString().replace(/[^0-9+]/g, '');
+    if (!cleaned) return null;
+
+    // إزالة علامة + للاحتفاظ بالأرقام فقط
+    if (cleaned.startsWith('+')) {
+      cleaned = cleaned.substring(1);
+    }
+
+    // إزالة الأصفار البادئة إن وجدت
+    if (cleaned.startsWith('00')) {
+      cleaned = cleaned.substring(2);
+    }
+
+    // تطبيع الأرقام المحلية حسب الدولة
+    const country = (defaultCountry || 'EG').toUpperCase();
+    if (country === 'EG') {
+      if (cleaned.startsWith('01') && cleaned.length === 11) {
+        cleaned = '2' + cleaned;
+      } else if (cleaned.startsWith('1') && cleaned.length === 10) {
+        cleaned = '20' + cleaned;
+      }
+    } else if (country === 'SA' || country === 'KSA') {
+      if (cleaned.startsWith('05') && cleaned.length === 10) {
+        cleaned = '966' + cleaned.substring(1);
+      } else if (cleaned.startsWith('5') && cleaned.length === 9) {
+        cleaned = '966' + cleaned;
+      }
+    } else if (country === 'AE' || country === 'UAE') {
+      if (cleaned.startsWith('05') && cleaned.length === 10) {
+        cleaned = '971' + cleaned.substring(1);
+      } else if (cleaned.startsWith('5') && cleaned.length === 9) {
+        cleaned = '971' + cleaned;
+      }
+    }
+
+    return cleaned;
   }
 
   /**
@@ -4868,13 +4951,13 @@ class FacebookAdsService {
         creative: {
           creative_id: creativeId
         },
-        // WhatsApp-specific fields
+        // WhatsApp-specific fields (Supports both native CTWA and wa.me fallback)
         object_story_spec: {
           page_id: pageId,
           link_data: {
             link: `https://wa.me/${whatsappBusinessAccountId}`,
             call_to_action: {
-              type: 'MESSAGE_PAGE'
+              type: 'WHATSAPP_MESSAGE'
             }
           }
         }

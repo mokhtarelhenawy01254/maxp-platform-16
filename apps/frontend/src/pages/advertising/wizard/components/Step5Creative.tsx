@@ -857,7 +857,7 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
 
             <label className="flex items-center justify-between p-3 bg-white rounded-lg">
               <div>
-                <span className="text-sm font-medium">تحسين الصورة</span>
+                <span className="text-sm font-medium">تحسين الصورة والتباين</span>
                 <p className="text-xs text-gray-500">
                   تعديل السطوع والتباين تلقائياً
                 </p>
@@ -867,6 +867,48 @@ export const Step5Creative: React.FC<Step5CreativeProps> = ({
                 checked={formData.imageEnhancement}
                 onChange={(e) => {
                   handleChange("imageEnhancement", e.target.checked);
+                  if (e.target.checked) handleChange("advantageCreative", true);
+                }}
+                className="w-5 h-5 text-green-600 rounded"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-3 bg-white rounded-lg">
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium">المد الذكي للريلز (9:16)</span>
+                  <span className="rounded bg-green-100 px-1 py-0.5 text-[9px] font-bold text-green-700">v26</span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  تمديد أبعاد الصور لتملأ شاشة Stories و Reels تلقائياً
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={Boolean(formData.expandImage)}
+                onChange={(e) => {
+                  handleChange("expandImage", e.target.checked);
+                  if (e.target.checked) handleChange("advantageCreative", true);
+                }}
+                className="w-5 h-5 text-green-600 rounded"
+              />
+            </label>
+
+            <label className="flex items-center justify-between p-3 bg-white rounded-lg">
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-medium">إبراز التعليقات الإيجابية</span>
+                  <span className="rounded bg-green-100 px-1 py-0.5 text-[9px] font-bold text-green-700">v26</span>
+                </div>
+                <p className="text-xs text-gray-500">
+                  تثبيت آراء العملاء الممتازة أسفل الإعلان كإثبات اجتماعي
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={Boolean(formData.relevantComments)}
+                onChange={(e) => {
+                  handleChange("relevantComments", e.target.checked);
                   if (e.target.checked) handleChange("advantageCreative", true);
                 }}
                 className="w-5 h-5 text-green-600 rounded"
