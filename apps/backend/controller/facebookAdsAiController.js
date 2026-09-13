@@ -205,10 +205,14 @@ class FacebookAdsAiController {
 
           // 3. Check PlatformSiteMetaPixelSetting
           if (!resolvedPixelId) {
-            const sitePixel = await prisma.platformSiteMetaPixelSetting?.findFirst({
-              where: { companyId }
-            });
-            resolvedPixelId = sitePixel?.pixelId;
+            try {
+              const sitePixel = await prisma.platformSiteMetaPixelSetting?.findFirst({
+                where: { isEnabled: true }
+              });
+              if (sitePixel?.pixelId) {
+                resolvedPixelId = sitePixel.pixelId;
+              }
+            } catch (_) {}
           }
 
           // 4. Check direct Meta API via getFacebookPixels

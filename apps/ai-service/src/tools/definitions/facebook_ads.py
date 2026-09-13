@@ -215,11 +215,13 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
         if not resolved_pixel_id:
             pix_res = await session.execute(
                 text("""
-                    SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                    SELECT c."pixelId" FROM public.facebook_pixel_configs c
+                    JOIN public.storefront_settings s ON s.id = c."storefrontSettingsId"
+                    WHERE s."companyId" = :cid AND c."pixelId" IS NOT NULL AND c."pixelId" != ''
                     UNION
                     SELECT "facebookPixelId" AS "pixelId" FROM public.storefront_settings WHERE "companyId" = :cid AND "facebookPixelId" IS NOT NULL AND "facebookPixelId" != ''
                     UNION
-                    SELECT "pixelId" FROM public.platform_site_meta_pixel_settings WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                    SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
                     LIMIT 1
                 """),
                 {"cid": company_id}
@@ -227,6 +229,37 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
             pix_row = pix_res.first()
             if pix_row and pix_row.pixelId:
                 resolved_pixel_id = str(pix_row.pixelId)
+
+        # Auto-resolve ad_account_id if missing
+        resolved_ad_account_id = input_data.ad_account_id
+        if not resolved_ad_account_id:
+            acc_res = await session.execute(
+                text("""
+                    SELECT "accountId", id FROM public.facebook_ad_accounts 
+                    WHERE "companyId" = :cid AND "isActive" = true 
+                    ORDER BY "createdAt" DESC LIMIT 1
+                """),
+                {"cid": company_id}
+            )
+            acc_row = acc_res.first()
+            if acc_row:
+                raw_acc = str(acc_row.accountId or acc_row.id)
+                resolved_ad_account_id = f"act_{raw_acc}" if raw_acc and not raw_acc.startswith("act_") else raw_acc
+
+        # Auto-resolve page_id if missing
+        resolved_page_id = input_data.page_id
+        if not resolved_page_id:
+            page_res = await session.execute(
+                text("""
+                    SELECT "pageId" FROM public.facebook_pages 
+                    WHERE "companyId" = :cid AND status = 'connected' 
+                    ORDER BY "connectedAt" DESC LIMIT 1
+                """),
+                {"cid": company_id}
+            )
+            page_row = page_res.first()
+            if page_row and page_row.pageId:
+                resolved_page_id = str(page_row.pageId)
 
         resolved_product_url = resolved_product_url or "https://store.maxp.online"
 
@@ -251,8 +284,8 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
             "companyId": company_id,
             "inputHash": uuid.uuid4().hex,
             "productUrl": resolved_product_url,
-            "adAccountId": input_data.ad_account_id,
-            "pageId": input_data.page_id,
+            "adAccountId": resolved_ad_account_id,
+            "pageId": resolved_page_id,
             "pixelId": resolved_pixel_id,
             "requestedCampaignCount": len(input_data.angles),
             "budgetAmount": first_angle.budget_amount,
@@ -285,6 +318,8 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "description": angle.description or "",
                 "callToAction": angle.call_to_action or "SHOP_NOW",
                 "imageUrl": angle.image_url,
+                "adAccountId": resolved_ad_account_id,
+                "pageId": resolved_page_id,
                 "pixelId": resolved_pixel_id,
                 "conversionEvent": "PURCHASE",
                 "conversionLocation": "WEBSITE",
@@ -973,11 +1008,13 @@ async def facebook_ad_account_info(input_data: FacebookAdAccountInfoInput) -> di
         # 3. Check pixel from recent campaigns, storefront settings, or pixel configs
         pixel_res = await session.execute(
             text("""
-                SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                SELECT c."pixelId" FROM public.facebook_pixel_configs c
+                JOIN public.storefront_settings s ON s.id = c."storefrontSettingsId"
+                WHERE s."companyId" = :cid AND c."pixelId" IS NOT NULL AND c."pixelId" != ''
                 UNION
                 SELECT "facebookPixelId" AS "pixelId" FROM public.storefront_settings WHERE "companyId" = :cid AND "facebookPixelId" IS NOT NULL AND "facebookPixelId" != ''
                 UNION
-                SELECT "pixelId" FROM public.platform_site_meta_pixel_settings WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
+                SELECT "pixelId" FROM public.facebook_campaigns WHERE "companyId" = :cid AND "pixelId" IS NOT NULL AND "pixelId" != ''
                 LIMIT 1
             """),
             {"cid": company_id}

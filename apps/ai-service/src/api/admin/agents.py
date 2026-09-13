@@ -400,6 +400,15 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         except Exception as exc:
             logger.warning("role_tools_fallback_failed", role=cfg["role"], error=str(exc))
 
+    # Ensure Hermes self-learning and vital tools are always active
+    for required_t in ["record_learned_rule", "manage_agent_skill"]:
+        if required_t not in allowed_tools:
+            allowed_tools.append(required_t)
+    if str(cfg.get("role")).upper() == "MEDIA_BUYER":
+        for mb_tool in ["facebook_ad_record_learned_rule", "facebook_ad_account_info", "orders_campaign_attribution_report"]:
+            if mb_tool not in allowed_tools:
+                allowed_tools.append(mb_tool)
+
     overrides = {
         "id": cfg["id"],
         "name": cfg["name"],
@@ -430,6 +439,22 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     if not template_slug:
         template_slug = "default"
         logger.warning("no_template_using_default", agent_id=cfg["id"], role=cfg.get("role"))
+
+    # Ensure template instructions override stale persona instructions if template has updated soul
+    if template_slug and template_slug != "default":
+        try:
+            from src.agents.loader import get_template
+            tpl = await get_template(str(template_slug), session)
+            if tpl and tpl.instructions_soul:
+                if "instructions" not in overrides:
+                    overrides["instructions"] = {}
+                overrides["instructions"]["soul"] = tpl.instructions_soul
+                if tpl.instructions_tools:
+                    overrides["instructions"]["tools"] = tpl.instructions_tools
+                if tpl.instructions_agents:
+                    overrides["instructions"]["agents"] = tpl.instructions_agents
+        except Exception as exc:
+            logger.warning("template_instructions_sync_failed", error=str(exc))
 
 
 

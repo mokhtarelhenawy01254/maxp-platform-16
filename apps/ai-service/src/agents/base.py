@@ -608,6 +608,17 @@ class BaseAgent:
             for st_name in get_skill_tool_names():
                 allowed.add(st_name.lower())
 
+        # Hermes Universal Self-Learning & Asset Visibility: always permit self-learning and vital tools
+        allowed.add("record_learned_rule")
+        allowed.add("manage_agent_skill")
+        if str(self.role).upper() == "MEDIA_BUYER":
+            allowed.add("facebook_ad_record_learned_rule")
+            allowed.add("facebook_ad.record_learned_rule")
+            allowed.add("facebook_ad_account_info")
+            allowed.add("facebook_ad.account_info")
+            allowed.add("orders_campaign_attribution_report")
+            allowed.add("orders.campaign_attribution_report")
+
         scoped = [
             t for t in get_all_tools()
             if _tool_name(t).lower() in allowed or _tool_name(t).replace("_", ".").lower() in allowed

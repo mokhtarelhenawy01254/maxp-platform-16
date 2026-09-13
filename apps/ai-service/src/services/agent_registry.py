@@ -273,6 +273,14 @@ async def init_registry_from_db(session_factory) -> None:
                     if not tool_names:
                         tool_names = get_tool_names_for_role(db_agent.role)
 
+                    # Hermes Self-Learning Protocol: ALWAYS ensure learning & skill tools are available
+                    if "record_learned_rule" not in tool_names:
+                        tool_names.append("record_learned_rule")
+                    if "manage_agent_skill" not in tool_names:
+                        tool_names.append("manage_agent_skill")
+                    if db_agent.role == "MEDIA_BUYER" and "facebook_ad_record_learned_rule" not in tool_names:
+                        tool_names.append("facebook_ad_record_learned_rule")
+
                     channels: list[str] = db_agent.channels or []
 
                     raw_tools = resolve_tools_from_names(tool_names)
@@ -285,20 +293,22 @@ async def init_registry_from_db(session_factory) -> None:
 
                     _agent_config_json = db_agent.config or {}
                     persona = dict(db_agent.persona or {})
-                    # ponytail: if persona is empty but template_slug exists, load from template
-                    if not persona.get("soulInstructions") and db_agent.template_slug:
+                    # Hermes Living Agent Protocol: always sync latest SOUL and TOOLS from template
+                    if db_agent.template_slug:
                         try:
                             from src.agents.loader import get_template
                             template = await get_template(db_agent.template_slug, session)
                             if template:
-                                persona = {
-                                    "soulInstructions": template.instructions_soul or "",
-                                    "personaInstructions": template.instructions_persona or "",
-                                    "agentInstructions": template.instructions_agents or "",
-                                    "toolsInstructions": template.instructions_tools or "",
-                                }
-                        except Exception:
-                            pass
+                                if template.instructions_soul:
+                                    persona["soulInstructions"] = template.instructions_soul
+                                if template.instructions_tools:
+                                    persona["toolsInstructions"] = template.instructions_tools
+                                if template.instructions_agents:
+                                    persona["agentInstructions"] = template.instructions_agents
+                                if template.instructions_persona and not persona.get("personaInstructions"):
+                                    persona["personaInstructions"] = template.instructions_persona
+                        except Exception as e:
+                            logger.warning("template_sync_failed", error=str(e))
                     config = BaseAgentConfig(
                         id=db_agent.id,
                         name=db_agent.name,
