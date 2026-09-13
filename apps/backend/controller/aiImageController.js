@@ -77,10 +77,46 @@ async function writeProviderLog({ companyId, keyId, keyName, action, status, lat
   }
 }
 
+function normalizeImageUrl(imgUrl) {
+  if (!imgUrl || typeof imgUrl !== "string") return null;
+  const trimmed = imgUrl.trim();
+  if (!trimmed) return null;
+  if (trimmed.startsWith("data:") || trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
+    return trimmed;
+  }
+  // If it's a relative path starting with / or uploads/
+  const cleanPath = trimmed.startsWith("/") ? trimmed.slice(1) : trimmed;
+  const localCandidates = [
+    path.join(__dirname, "..", cleanPath),
+    path.join(__dirname, "..", "uploads", cleanPath.replace(/^uploads\//, "")),
+    path.join("/var/www/backend2", cleanPath),
+  ];
+
+  for (const candidate of localCandidates) {
+    if (fs.existsSync(candidate)) {
+      try {
+        const ext = path.extname(candidate).toLowerCase().replace(".", "") || "png";
+        const mime = ext === "jpg" || ext === "jpeg" ? "image/jpeg" : ext === "webp" ? "image/webp" : "image/png";
+        const base64 = fs.readFileSync(candidate).toString("base64");
+        return `data:${mime};base64,${base64}`;
+      } catch (e) {
+        console.warn("⚠️ [AI-IMAGE] Failed to read local image file:", e.message);
+      }
+    }
+  }
+
+  // Fallback to absolute HTTPS domain
+  const publicBase = process.env.PUBLIC_APP_URL || process.env.BASE_URL || "https://maxp.online";
+  return `${publicBase.replace(/\/+$/, "")}/${cleanPath}`;
+}
+
 exports.generateImage = async (req, res) => {
   try {
     const companyId = req.user?.companyId;
     let { prompt, model, aspectRatio = "1:1", style, negativePrompt, size, quality, productImage, referenceImage } = req.body;
+
+    productImage = normalizeImageUrl(productImage);
+    referenceImage = normalizeImageUrl(referenceImage);
 
     if (!prompt || !prompt.trim()) {
       return res.status(400).json({ success: false, message: "الصورة مطلوب" });

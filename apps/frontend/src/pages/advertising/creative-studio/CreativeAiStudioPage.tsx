@@ -132,6 +132,17 @@ const CreativeAiStudioPage: React.FC = () => {
         ? `${customPrompt}. Style: ${selectedPreset.promptModifier}`
         : `${selectedPreset.promptModifier}. Professional commercial scene for product: ${selectedProduct.name}. Clean composition, realistic shadows and lighting.`;
 
+      let resolvedProductImage = selectedProduct.mainImage || undefined;
+      if (
+        resolvedProductImage &&
+        !resolvedProductImage.startsWith("http://") &&
+        !resolvedProductImage.startsWith("https://") &&
+        !resolvedProductImage.startsWith("data:")
+      ) {
+        const origin = window.location.origin;
+        resolvedProductImage = `${origin.replace(/\/+$/, "")}/${resolvedProductImage.replace(/^\/+/, "")}`;
+      }
+
       const res = await apiClient.post<{
         success?: boolean;
         data?: { imageUrl?: string };
@@ -144,7 +155,7 @@ const CreativeAiStudioPage: React.FC = () => {
           aspectRatio,
           style: selectedPreset.category,
           quality: 90,
-          productImage: selectedProduct.mainImage || undefined,
+          productImage: resolvedProductImage,
         },
         { timeout: 120000 }
       );
