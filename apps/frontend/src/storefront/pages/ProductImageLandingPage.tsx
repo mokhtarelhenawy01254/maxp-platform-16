@@ -877,6 +877,12 @@ const ProductImageLandingPage: React.FC = () => {
 
     const updateSticky = () => {
       setIsStickyReady(window.scrollY > 300);
+      const orderEl = document.getElementById("order");
+      if (orderEl) {
+        const rect = orderEl.getBoundingClientRect();
+        const inView = rect.top < window.innerHeight && rect.bottom > 80;
+        setIsFormInView(inView);
+      }
     };
 
     updateSticky();
@@ -889,7 +895,7 @@ const ProductImageLandingPage: React.FC = () => {
         ([entry]) => {
           setIsFormInView(entry.isIntersecting);
         },
-        { threshold: 0.1 },
+        { threshold: 0.05 },
       );
       observer.observe(formEl);
     }
@@ -898,7 +904,7 @@ const ProductImageLandingPage: React.FC = () => {
       window.removeEventListener("scroll", updateSticky);
       if (observer) observer.disconnect();
     };
-  }, []);
+  }, [activeLanding?.id, sectionsToRender.length]);
 
   const updateFormField =
     (field: keyof LandingFormState) =>
