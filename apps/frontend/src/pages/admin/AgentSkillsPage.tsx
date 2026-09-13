@@ -2,16 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import {
-  Sparkles,
-  Plus,
-  RefreshCw,
-  AlertCircle,
-  Cpu,
-  Layers,
-  Search,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Search, AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { useAuth } from "../../hooks/useAuthSimple";
@@ -25,10 +16,8 @@ import {
   SkillVertical,
   getSkillMeta,
 } from "./agent-skills/types";
-import { SkillTelemetryBar } from "./agent-skills/SkillTelemetryBar";
 import { SkillFilterBar } from "./agent-skills/SkillFilterBar";
-import { SkillBentoCard } from "./agent-skills/SkillBentoCard";
-import { SkillMatrixRow } from "./agent-skills/SkillMatrixRow";
+import { SkillRowCard } from "./agent-skills/SkillRowCard";
 import { SkillInspectorDrawer } from "./agent-skills/SkillInspectorDrawer";
 import { AssignSkillModal } from "./agent-skills/AssignSkillModal";
 import { CreateSkillModal } from "./agent-skills/CreateSkillModal";
@@ -91,7 +80,6 @@ export default function AgentSkillsPage({
   const [query, setQuery] = useState("");
   const [selectedVertical, setSelectedVertical] = useState<SkillVertical>("all");
   const [safetyFilter, setSafetyFilter] = useState<"all" | "autonomous" | "approval" | "equipped">("all");
-  const [viewMode, setViewMode] = useState<"grid" | "matrix">("grid");
 
   // Inspection Drawer & Dialogs
   const [inspectedSkill, setInspectedSkill] = useState<SkillDefinition | null>(null);
@@ -176,6 +164,17 @@ export default function AgentSkillsPage({
     return counts;
   }, [skills]);
 
+  // Equipped skills count
+  const equippedSkillsCount = useMemo(() => {
+    let count = 0;
+    for (const s of skills) {
+      if ((skillEquippedAgentsMap.get(s.id) || []).length > 0) {
+        count++;
+      }
+    }
+    return count;
+  }, [skills, skillEquippedAgentsMap]);
+
   // Filtered skills list
   const filteredSkills = useMemo(() => {
     let list = skills;
@@ -216,8 +215,88 @@ export default function AgentSkillsPage({
     return list;
   }, [skills, query, selectedVertical, safetyFilter, skillEquippedAgentsMap]);
 
+  // Toggle Switch Handler on Row (Enable / Disable Skill)
+  const handleToggleSkill = async (skill: SkillDefinition, enabled: boolean) => {
+    if (agents.length === 0) {
+      toast.info("لا يوجد وكلاء مسجلون لهذه المنشأة لربط المهارة بهم");
+      return;
+    }
+
+    try {
+      if (!enabled) {
+        // Remove skill from all agents who have it
+        const agentsWithSkill = agents.filter((a) => (a.allowedSkills || []).includes(skill.id));
+        await Promise.all(
+          agentsWithSkill.map(async (agent) => {
+            const nextSkills = (agent.allowedSkills || []).filter((s) => s !== skill.id);
+            return apiPut(
+              `/agent/agents/${agent.id}/files`,
+              {
+                name: agent.name,
+                role: agent.role,
+                allowedTools: agent.allowedTools || [],
+                allowedSkills: nextSkills,
+              },
+              effectiveCompanyId
+            );
+          })
+        );
+
+        setAgents((prev) =>
+          prev.map((a) => ({
+            ...a,
+            allowedSkills: (a.allowedSkills || []).filter((s) => s !== skill.id),
+          }))
+        );
+        toast.success(`تم تعطيل مهارة "${skill.id}" عن الوكلاء`);
+      } else {
+        // Enable: if there are agents matching the vertical or default to first/all agents
+        const meta = getSkillMeta(skill);
+        let targetAgents = agents.filter((a) => {
+          const role = a.role?.toLowerCase() || "";
+          if (meta.vertical === "sales" && (role.includes("sales") || role.includes("seller"))) return true;
+          if (meta.vertical === "support" && role.includes("support")) return true;
+          if (meta.vertical === "marketing" && (role.includes("buyer") || role.includes("marketing"))) return true;
+          return false;
+        });
+
+        if (targetAgents.length === 0) {
+          targetAgents = [agents[0]]; // fallback to primary agent
+        }
+
+        await Promise.all(
+          targetAgents.map(async (agent) => {
+            const nextSkills = [...new Set([...(agent.allowedSkills || []), skill.id])];
+            return apiPut(
+              `/agent/agents/${agent.id}/files`,
+              {
+                name: agent.name,
+                role: agent.role,
+                allowedTools: agent.allowedTools || [],
+                allowedSkills: nextSkills,
+              },
+              effectiveCompanyId
+            );
+          })
+        );
+
+        const targetIds = new Set(targetAgents.map((a) => a.id));
+        setAgents((prev) =>
+          prev.map((a) =>
+            targetIds.has(a.id)
+              ? { ...a, allowedSkills: [...new Set([...(a.allowedSkills || []), skill.id])] }
+              : a
+          )
+        );
+        toast.success(`تم تفعيل وتجهيز مهارة "${skill.id}" للوكلاء`);
+      }
+    } catch (err: any) {
+      toast.error(err.message || "حدث خطأ أثناء تعديل حالة المهارة");
+    }
+  };
+
   // Single Agent Toggle Handler (from Drawer)
-  const handleToggleAgent = async (agentId: string, enabled: boolean) => {
+  const handleToggleAgentInDrawer = async (agentId: string, enabled: boolean) => {
     if (!inspectedSkill) return;
     const targetSkillId = inspectedSkill.id;
     const agent = agents.find((a) => a.id === agentId);
@@ -239,7 +318,6 @@ export default function AgentSkillsPage({
       effectiveCompanyId
     );
 
-    // Optimistic state update
     setAgents((prev) =>
       prev.map((a) => (a.id === agentId ? { ...a, allowedSkills: newSkills } : a))
     );
@@ -282,47 +360,22 @@ export default function AgentSkillsPage({
   };
 
   return (
-    <div dir="rtl" className="flex flex-col gap-4 p-3.5 sm:p-6 w-full max-w-[1750px] mx-auto">
-      {/* 1. Vanguard Cockpit Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-border/60">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <div className="flex size-7 items-center justify-center rounded-xl bg-gradient-to-tr from-primary to-indigo-600 text-white shadow-xs">
-              <Sparkles className="size-4" />
-            </div>
-            <h1 className="text-lg sm:text-xl font-black tracking-tight text-foreground">
-              مركز قدرات ومهارات الوكلاء (Agent Capability Studio)
-            </h1>
-            <span className="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[0.65rem] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-              Autonomous Core 2026
-            </span>
-          </div>
-          <p className="text-xs text-muted-foreground">
-            كتالوج القدرات التنفيذية المستقلة لتشغيل وكلاء المبيعات، العيادات، الفنادق، وخدمة العملاء بأعلى درجات الأمان والربحية.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            onClick={() => setCreateOpen(true)}
-            className="h-9 gap-1.5 font-bold shadow-xs bg-primary hover:bg-primary/90 text-primary-foreground text-xs"
-          >
-            <Plus className="size-4" />
-            <span>مهارة مخصصة جديدة</span>
-          </Button>
-
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={loadAll}
-            disabled={loading}
-            className="h-9 w-9 text-muted-foreground hover:text-foreground border-border/80"
-            title="تحديث البيانات"
-          >
-            <RefreshCw className={`size-4 ${loading ? "animate-spin" : ""}`} />
-          </Button>
-        </div>
-      </div>
+    <div dir="rtl" className="flex flex-col gap-3.5 p-3.5 sm:p-5 w-full max-w-[1400px] mx-auto">
+      {/* 1. Filter & Actions Header Bar (Image 1 + Image 2 Style) */}
+      <SkillFilterBar
+        totalCount={skills.length}
+        equippedCount={equippedSkillsCount}
+        query={query}
+        onQueryChange={setQuery}
+        selectedVertical={selectedVertical}
+        onSelectVertical={setSelectedVertical}
+        safetyFilter={safetyFilter}
+        onSafetyFilterChange={setSafetyFilter}
+        verticalCounts={verticalCounts}
+        onNewSkill={() => setCreateOpen(true)}
+        onRefresh={loadAll}
+        loading={loading}
+      />
 
       {/* Error Alert */}
       {error && (
@@ -332,111 +385,53 @@ export default function AgentSkillsPage({
         </Alert>
       )}
 
-      {/* 2. Live Telemetry Bar */}
-      <SkillTelemetryBar skills={skills} agents={agents} tools={tools} />
-
-      {/* 3. Segmented Filter & Controls Bar */}
-      <SkillFilterBar
-        query={query}
-        onQueryChange={setQuery}
-        selectedVertical={selectedVertical}
-        onSelectVertical={setSelectedVertical}
-        safetyFilter={safetyFilter}
-        onSafetyFilterChange={setSafetyFilter}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        verticalCounts={verticalCounts}
-        totalFiltered={filteredSkills.length}
-      />
-
-      {/* 4. Main Content: Grid Bento Cards vs Matrix View */}
+      {/* 2. Main High-Density Skills List (Image 1 Style) */}
       {loading ? (
-        <div className="flex min-h-[350px] items-center justify-center rounded-2xl border border-dashed bg-card/40">
+        <div className="flex min-h-[300px] items-center justify-center rounded-2xl border border-dashed bg-card/40">
           <div className="flex flex-col items-center gap-2">
             <LoadingSpinner size="lg" />
-            <span className="text-xs text-muted-foreground font-mono">جارٍ مزامنة قدرات الوكلاء...</span>
+            <span className="text-xs text-muted-foreground font-mono">جارٍ مزامنة المهارات...</span>
           </div>
         </div>
       ) : filteredSkills.length === 0 ? (
-        <div className="flex min-h-[250px] flex-col items-center justify-center rounded-2xl border border-dashed bg-card/30 p-8 text-center">
-          <div className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground mb-3">
-            <Search className="size-5" />
+        <div className="flex min-h-[220px] flex-col items-center justify-center rounded-2xl border border-dashed bg-card/30 p-8 text-center">
+          <div className="flex size-10 items-center justify-center rounded-full bg-muted text-muted-foreground mb-2.5">
+            <Search className="size-4" />
           </div>
           <h3 className="font-bold text-sm text-foreground">لا توجد مهارات مطابقة للبحث</h3>
           <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-            جرب تعديل كلمات البحث أو اختيار قطاع آخر من شريط التصنيفات بالأعلى.
+            جرب تعديل كلمات البحث أو اختيار تبويب آخر.
           </p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setQuery("");
-              setSelectedVertical("all");
-              setSafetyFilter("all");
-            }}
-            className="mt-3 text-xs"
-          >
-            إعادة تعيين الفلاتر
-          </Button>
         </div>
-      ) : viewMode === "grid" ? (
-        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      ) : (
+        <div className="flex flex-col gap-2">
           {filteredSkills.map((skill) => (
-            <SkillBentoCard
+            <SkillRowCard
               key={skill.id}
               skill={skill}
               equippedAgents={skillEquippedAgentsMap.get(skill.id) || []}
               toolsMap={toolsMap}
               onInspect={(s) => setInspectedSkill(s)}
+              onToggle={handleToggleSkill}
               onAssign={(s) => setAssignSkill(s)}
               onTestSandbox={handleTestSandbox}
             />
           ))}
         </div>
-      ) : (
-        <div className="rounded-2xl border border-border/80 bg-card overflow-hidden shadow-2xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-right border-collapse">
-              <thead>
-                <tr className="border-b border-border/80 bg-muted/40 text-[0.7rem] font-bold text-muted-foreground uppercase tracking-wider">
-                  <th className="py-3 px-4">القدرة والرمز الفني</th>
-                  <th className="py-3 px-3 hidden sm:table-cell">القطاع التجاري</th>
-                  <th className="py-3 px-3">نمط التشغيل</th>
-                  <th className="py-3 px-3 hidden md:table-cell">الأدوات</th>
-                  <th className="py-3 px-3 hidden lg:table-cell">الوكلاء المجهزون</th>
-                  <th className="py-3 px-4 text-left">الإجراءات</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredSkills.map((skill) => (
-                  <SkillMatrixRow
-                    key={skill.id}
-                    skill={skill}
-                    equippedAgents={skillEquippedAgentsMap.get(skill.id) || []}
-                    toolsMap={toolsMap}
-                    onInspect={(s) => setInspectedSkill(s)}
-                    onAssign={(s) => setAssignSkill(s)}
-                    onTestSandbox={handleTestSandbox}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       )}
 
-      {/* 5. Slide-Over Quick Inspector Drawer */}
+      {/* 3. Slide-Over Quick Inspector Drawer */}
       <SkillInspectorDrawer
         skill={inspectedSkill}
         open={!!inspectedSkill}
         onClose={() => setInspectedSkill(null)}
         agents={agents}
         toolsMap={toolsMap}
-        onAgentToggled={handleToggleAgent}
+        onAgentToggled={handleToggleAgentInDrawer}
         companyId={effectiveCompanyId}
       />
 
-      {/* 6. Assign Skill Modal */}
+      {/* 4. Assign Skill Modal */}
       <AssignSkillModal
         open={!!assignSkill}
         skill={assignSkill}
@@ -445,7 +440,7 @@ export default function AgentSkillsPage({
         onSave={handleSaveBulkAssign}
       />
 
-      {/* 7. Create Custom Skill Modal */}
+      {/* 5. Create Custom Skill Modal */}
       <CreateSkillModal
         open={createOpen}
         tools={tools}

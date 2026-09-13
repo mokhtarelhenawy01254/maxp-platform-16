@@ -335,7 +335,12 @@ class FacebookAdsAiController {
         return res.status(401).json({ success: false, error: 'Company ID is required' });
       }
 
-      const { message, threadId = 'facebook_ads_copilot_thread', agentId: requestedAgentId } = req.body || {};
+      const {
+        message,
+        threadId = 'facebook_ads_copilot_thread',
+        agentId: requestedAgentId,
+        activeProduct: incomingActiveProduct,
+      } = req.body || {};
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ success: false, error: 'message is required' });
       }
@@ -441,11 +446,17 @@ class FacebookAdsAiController {
 
       // Retrieve recent conversation messages and active working memory for Hermes continuity
       let recentMessages = [];
-      let activeProductContext = null;
+      let activeProductContext = incomingActiveProduct || null;
       try {
         const sessionData = await marketingCopilotSessionService.getSession(companyId, threadId);
         if (sessionData) {
-          activeProductContext = sessionData.context?.activeProduct || null;
+          activeProductContext = incomingActiveProduct || sessionData.context?.activeProduct || null;
+          if (incomingActiveProduct) {
+            // Keep session working memory synchronized with UI selection
+            marketingCopilotSessionService.updateContext(companyId, threadId, {
+              activeProduct: incomingActiveProduct,
+            }).catch(e => console.warn('[FacebookAdsAI] Failed updating session context:', e.message));
+          }
           if (Array.isArray(sessionData.messages) && sessionData.messages.length > 1) {
             // Exclude the message we just appended (the last one) so the current prompt isn't duplicated
             recentMessages = sessionData.messages.slice(0, -1).slice(-15).map(m => ({
@@ -535,25 +546,61 @@ class FacebookAdsAiController {
 
         let finalReply = (result?.reply || '').trim();
         if (!finalReply && toolCallsList.length > 0) {
-          const skillTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'manage_agent_skill');
-          const ruleTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'record_learned_rule' || (t.name || t.function?.name || t.tool) === 'facebook_ad_record_learned_rule');
-          const draftTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_create_full_draft');
-          const decTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_get_decision');
-          const compTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'competitor_get_ads');
+          // 2026 SOTA Standard: Enforced Superstep LLM Synthesis
+          // If the model yielded without natural language synthesis after executing tools,
+          // execute an immediate follow-up synthesis prompt so the agent formulates its own explanation.
+          try {
+            const toolSummaries = toolCallsList.map(tc => {
+              const name = tc.name || tc.function?.name || tc.tool || 'أداة';
+              const args = tc.arguments || tc.args || {};
+              const res = tc.result || {};
+              return `- أداة [${name}]: المعطيات (${JSON.stringify(args)}) -> النتيجة: (${JSON.stringify(res).slice(0, 300)})`;
+            }).join('\n');
 
-          if (skillTool) {
-            const skillName = skillTool.result?.skill?.name || skillTool.args?.skill_name || 'المهارة المطلوبة';
-            finalReply = `تمام يا فندم، تم إنشاء وتفعيل "${skillName}" بنجاح في نظام المتجر الدائم! 🎯\n\nأقدر دلوقتي أستخدمها في حساب الـ CAC والـ ROAS وربط أرقام الحملات بمبيعاتك الفعلية. تحب نبدأ بتطبيقها فوراً؟`;
-          } else if (ruleTool) {
-            finalReply = `تم حفظ وتثبيت التفضيل/القاعدة بنجاح في كتيب استراتيجيات المتجر ✅`;
-          } else if (draftTool) {
-            finalReply = `تم تجهيز مسودات الحملات الإعلانية بنجاح وجاهزة للمراجعة والإطلاق 🚀`;
-          } else if (decTool) {
-            finalReply = `تم فحص أداء الحملات وتحليل قرارات الـ SCALE والـ KILL بنجاح 📊`;
-          } else if (compTool) {
-            finalReply = `تم استخراج استخبارات إعلانات المنافسين ومؤشرات السوق المصري 🔎`;
-          } else {
-            finalReply = `تم تنفيذ الإجراء المطلوب بنجاح ✅`;
+            const synthesisPrompt = `لقد قمت كـ Media Buyer بتنفيذ الأدوات التالية بنجاح:\n${toolSummaries}\n\nالمطلوب: اشرح للتاجر بأسلوبك البشري الودود والمحترف بالعامية المصرية الراقية ما تم إنجازه بدقة، وما هي التوصيات والخطوات التالية بناءً على نتائج الأدوات، دون أي صيغ آلية.`;
+
+            const synthResult = await aiServiceAdminClient.chatWithAgent({
+              companyId,
+              agentId: targetAgentId,
+              message: synthesisPrompt,
+              threadId: scopedThreadId,
+              channel: 'dashboard',
+              source_channel: 'dashboard',
+              memory_context: {
+                recentMessages,
+                activeProduct: activeProductContext,
+              },
+            });
+
+            if (synthResult?.reply && synthResult.reply.trim().length > 10) {
+              finalReply = synthResult.reply.trim();
+            }
+          } catch (synthErr) {
+            console.warn('[FacebookAdsAI] Enforced synthesis step failed, falling back to heuristic template:', synthErr.message);
+          }
+
+          // Graceful fallback if synthesis failed or returned empty
+          if (!finalReply) {
+            const skillTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'manage_agent_skill');
+            const ruleTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'record_learned_rule' || (t.name || t.function?.name || t.tool) === 'facebook_ad_record_learned_rule');
+            const draftTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_create_full_draft');
+            const decTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'facebook_ad_get_decision');
+            const compTool = toolCallsList.find(t => (t.name || t.function?.name || t.tool) === 'competitor_get_ads');
+
+            if (skillTool) {
+              const skillName = skillTool.result?.skill?.name || skillTool.args?.skill_name || 'المهارة المطلوبة';
+              finalReply = `تمام يا فندم، تم إنشاء وتفعيل "${skillName}" بنجاح في نظام المتجر الدائم! 🎯\n\nأقدر دلوقتي أستخدمها في حساب الـ CAC والـ ROAS وربط أرقام الحملات بمبيعاتك الفعلية. تحب نبدأ بتطبيقها فوراً؟`;
+            } else if (ruleTool) {
+              finalReply = `تم حفظ وتثبيت التفضيل/القاعدة بنجاح في كتيب استراتيجيات المتجر ✅`;
+            } else if (draftTool) {
+              finalReply = `تم تجهيز مسودات الحملات الإعلانية بنجاح وجاهزة للمراجعة والإطلاق 🚀`;
+            } else if (decTool) {
+              finalReply = `تم فحص أداء الحملات وتحليل قرارات الـ SCALE والـ KILL بنجاح 📊`;
+            } else if (compTool) {
+              finalReply = `تم استخراج استخبارات إعلانات المنافسين ومؤشرات السوق المصري 🔎`;
+            } else {
+              finalReply = `تم تنفيذ الإجراء المطلوب بنجاح ✅`;
+            }
           }
         }
 

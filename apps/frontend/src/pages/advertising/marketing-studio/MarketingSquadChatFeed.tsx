@@ -81,20 +81,20 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
     setInputMessage("");
     setLoading(true);
 
-    // Context-aware: attach product specs if selected and not already in prompt,
-    // avoiding noise on general queries, identity changes, skill requests, or short follow-ups
-    let promptForAgent = textToSend;
-    const isSystemOrMetaQuery =
-      textToSend.length <= 4 ||
-      /^(؟|\?|تمام|شكرا|ألو|الو|مرحبا|اهلا|ازيك|فينك|مردتش)/i.test(textToSend) ||
-      /(مهارة|مهاره|اسمك|غير اسمك|مين انت|هويتك|تفضيل|تتبع|utm)/i.test(textToSend);
-
-    if (selectedProduct && !isSystemOrMetaQuery && !textToSend.includes(selectedProduct.name)) {
-      promptForAgent = `[المنتج المحدد في الرادار: "${selectedProduct.name}" | السعر: ${selectedProduct.price} ج.م | المخزون: ${selectedProduct.stock} قطعة | التكلفة: ${selectedProduct.cost || 0} ج.م]\n\n${textToSend}`;
-    }
+    // 2026 SOTA Standard: Keep user prompt 100% pristine.
+    // Transmit active entity via structured ephemeral state channel (activeProduct payload).
+    const productPayload = selectedProduct
+      ? {
+          id: selectedProduct.id,
+          name: selectedProduct.name,
+          price: selectedProduct.price,
+          stock: selectedProduct.stock,
+          cost: selectedProduct.cost || 0,
+        }
+      : undefined;
 
     try {
-      const res = await chatWithMediaBuyer(promptForAgent, activeSession.id);
+      const res = await chatWithMediaBuyer(textToSend, activeSession.id, productPayload);
       if (res.success) {
         const agentMsg: Message = {
           id: `agent-${Date.now()}`,

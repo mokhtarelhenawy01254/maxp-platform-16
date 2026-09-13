@@ -1,34 +1,38 @@
 import React from "react";
-import { Search, X, LayoutGrid, List, SlidersHorizontal } from "lucide-react";
+import { Search, X, Plus, RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { SkillVertical, VERTICAL_CONFIG } from "./types";
 
 interface SkillFilterBarProps {
+  totalCount: number;
+  equippedCount: number;
   query: string;
   onQueryChange: (q: string) => void;
   selectedVertical: SkillVertical;
   onSelectVertical: (v: SkillVertical) => void;
   safetyFilter: "all" | "autonomous" | "approval" | "equipped";
   onSafetyFilterChange: (f: "all" | "autonomous" | "approval" | "equipped") => void;
-  viewMode: "grid" | "matrix";
-  onViewModeChange: (m: "grid" | "matrix") => void;
   verticalCounts: Record<SkillVertical, number>;
-  totalFiltered: number;
+  onNewSkill: () => void;
+  onRefresh: () => void;
+  loading: boolean;
 }
 
 export const SkillFilterBar: React.FC<SkillFilterBarProps> = ({
+  totalCount,
+  equippedCount,
   query,
   onQueryChange,
   selectedVertical,
   onSelectVertical,
   safetyFilter,
   onSafetyFilterChange,
-  viewMode,
-  onViewModeChange,
   verticalCounts,
-  totalFiltered,
+  onNewSkill,
+  onRefresh,
+  loading,
 }) => {
   const verticals: SkillVertical[] = [
     "all",
@@ -44,8 +48,78 @@ export const SkillFilterBar: React.FC<SkillFilterBarProps> = ({
 
   return (
     <div className="space-y-3">
-      {/* 1. Category Vertical Pills - Horizontal Scrollable */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 scrollbar-none">
+      {/* 1. Diagnostics Banner (Image 1 Style: > ⚠️ Skill diagnostics: ...) */}
+      <div className="flex items-center justify-between rounded-xl bg-amber-500/10 border border-amber-500/20 px-3.5 py-2 text-xs text-amber-800 dark:text-amber-300 font-mono">
+        <div className="flex items-center gap-2">
+          <span>&gt;</span>
+          <AlertTriangle className="size-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="font-semibold">
+            تشخيص المهارات: {totalCount} مهارة معتمدة ({equippedCount} مجهزة ومفعلة للوكلاء)، 0 أخطاء تكامل
+          </span>
+        </div>
+        <span className="text-[0.7rem] text-amber-700 dark:text-amber-400/80 hidden sm:inline">
+          نواة MaxP Core 2026
+        </span>
+      </div>
+
+      {/* 2. Top Header Row (Installed 21 ... + New) */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+        {/* Installed Count Heading */}
+        <div className="flex items-baseline gap-2.5">
+          <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+            المهارات المثبتة
+          </h2>
+          <span className="font-mono text-base font-bold text-muted-foreground">
+            {totalCount}
+          </span>
+        </div>
+
+        {/* Right Actions: Search + Refresh + (+ New) */}
+        <div className="flex items-center gap-2">
+          {/* Search Box */}
+          <div className="relative w-48 sm:w-64">
+            <Search className="absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+              placeholder="بحث في المهارات..."
+              className="h-8 border-border/80 bg-muted/30 pr-8 pl-7 text-xs focus-visible:ring-1"
+            />
+            {query && (
+              <button
+                onClick={() => onQueryChange("")}
+                className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="size-3" />
+              </button>
+            )}
+          </div>
+
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={onRefresh}
+            disabled={loading}
+            className="h-8 w-8 text-muted-foreground hover:text-foreground border-border/80 rounded-lg"
+            title="تحديث القائمة"
+          >
+            <RefreshCw className={`size-3.5 ${loading ? "animate-spin" : ""}`} />
+          </Button>
+
+          {/* + New Button (Image 1 Style) */}
+          <Button
+            onClick={onNewSkill}
+            className="h-8 px-3 text-xs font-bold gap-1 bg-foreground text-background hover:bg-foreground/90 rounded-lg shadow-xs"
+          >
+            <Plus className="size-3.5" />
+            <span>مهارة جديدة</span>
+          </Button>
+        </div>
+      </div>
+
+      {/* 3. Minimalist Category Tabs with Active Underline (Image 2 Style) */}
+      <div className="flex items-center gap-4 overflow-x-auto border-b border-border/60 pb-px scrollbar-none text-xs">
         {verticals.map((v) => {
           const cfg = VERTICAL_CONFIG[v];
           const isSelected = selectedVertical === v;
@@ -56,134 +130,29 @@ export const SkillFilterBar: React.FC<SkillFilterBarProps> = ({
               key={v}
               onClick={() => onSelectVertical(v)}
               className={cn(
-                "group inline-flex items-center gap-2 whitespace-nowrap rounded-full px-3.5 py-1.5 text-xs font-bold transition-all shrink-0",
+                "group inline-flex items-center gap-1.5 whitespace-nowrap pb-2.5 font-bold transition-all shrink-0 relative",
                 isSelected
-                  ? "bg-primary text-primary-foreground shadow-xs scale-100"
-                  : "bg-card text-muted-foreground hover:bg-muted hover:text-foreground border border-border/80"
+                  ? "text-foreground font-black"
+                  : "text-muted-foreground hover:text-foreground"
               )}
             >
-              <span className="text-sm leading-none">{cfg.icon}</span>
               <span>{cfg.labelAr}</span>
               <span
                 className={cn(
-                  "rounded-full px-1.5 py-0.2 text-[0.65rem] font-mono",
-                  isSelected
-                    ? "bg-white/20 text-white"
-                    : "bg-muted text-muted-foreground group-hover:bg-background"
+                  "font-mono text-[0.7rem]",
+                  isSelected ? "text-foreground" : "text-muted-foreground/70"
                 )}
               >
-                {count}
+                ({count})
               </span>
+
+              {/* Active Underline Indicator */}
+              {isSelected && (
+                <span className="absolute bottom-0 inset-x-0 h-0.5 bg-primary rounded-full" />
+              )}
             </button>
           );
         })}
-      </div>
-
-      {/* 2. Search & Controls Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 rounded-2xl border border-border/70 bg-card/60 p-2 sm:p-2.5 backdrop-blur-sm">
-        {/* Search Box */}
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="ابحث بالاسم، الوصف، أو أسماء الأدوات..."
-            className="h-9 border-none bg-muted/40 pr-9 pl-8 text-xs sm:text-sm focus-visible:ring-1"
-          />
-          {query && (
-            <button
-              onClick={() => onQueryChange("")}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="size-3.5" />
-            </button>
-          )}
-        </div>
-
-        {/* Filters & View Switchers */}
-        <div className="flex items-center justify-between sm:justify-end gap-2 shrink-0">
-          {/* Safety Filter Toggle */}
-          <div className="flex items-center rounded-xl bg-muted/50 p-0.5 border border-border/60">
-            <button
-              onClick={() => onSafetyFilterChange("all")}
-              className={cn(
-                "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors",
-                safetyFilter === "all"
-                  ? "bg-background text-foreground shadow-2xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-            >
-              الكل
-            </button>
-            <button
-              onClick={() => onSafetyFilterChange("autonomous")}
-              className={cn(
-                "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors flex items-center gap-1",
-                safetyFilter === "autonomous"
-                  ? "bg-background text-emerald-600 dark:text-emerald-400 shadow-2xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="مهارات تنفذ تلقائياً"
-            >
-              <span>⚡</span>
-              <span className="hidden md:inline">تشغيل ذاتي</span>
-            </button>
-            <button
-              onClick={() => onSafetyFilterChange("approval")}
-              className={cn(
-                "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors flex items-center gap-1",
-                safetyFilter === "approval"
-                  ? "bg-background text-amber-600 dark:text-amber-400 shadow-2xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="مهارات تتطلب موافقة التاجر"
-            >
-              <span>🛡️</span>
-              <span className="hidden md:inline">موافقة التاجر</span>
-            </button>
-            <button
-              onClick={() => onSafetyFilterChange("equipped")}
-              className={cn(
-                "rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors flex items-center gap-1",
-                safetyFilter === "equipped"
-                  ? "bg-background text-indigo-600 dark:text-indigo-400 shadow-2xs font-bold"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="مهارات مجهزة لوكلاء حاليين"
-            >
-              <span>🤖</span>
-              <span className="hidden md:inline">مسندة</span>
-            </button>
-          </div>
-
-          {/* View Mode Toggle: Grid vs Matrix */}
-          <div className="flex items-center rounded-xl bg-muted/50 p-0.5 border border-border/60">
-            <button
-              onClick={() => onViewModeChange("grid")}
-              className={cn(
-                "flex size-7 items-center justify-center rounded-lg transition-colors",
-                viewMode === "grid"
-                  ? "bg-background text-foreground shadow-2xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="عرض الكروت الذكية (Grid)"
-            >
-              <LayoutGrid className="size-3.5" />
-            </button>
-            <button
-              onClick={() => onViewModeChange("matrix")}
-              className={cn(
-                "flex size-7 items-center justify-center rounded-lg transition-colors",
-                viewMode === "matrix"
-                  ? "bg-background text-foreground shadow-2xs"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              title="عرض المصفوفة الفائقة (Matrix View)"
-            >
-              <List className="size-3.5" />
-            </button>
-          </div>
-        </div>
       </div>
     </div>
   );

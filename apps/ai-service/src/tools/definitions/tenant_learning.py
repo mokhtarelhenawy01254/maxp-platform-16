@@ -38,11 +38,18 @@ async def record_learned_rule(input_data: RecordLearnedRuleInput) -> dict[str, A
     )
 
 
+def _format_record_learned_rule(result: dict) -> str:
+    if not result.get("success"):
+        return f"تعذر تسجيل القاعدة: {result.get('error', 'خطأ غير معروف')}"
+    return f"تم حفظ وتثبيت القاعدة '{result.get('rule_title', '')}' في كتيب استراتيجيات المتجر بنجاح."
+
+
 record_learned_rule_tool = FunctionTool(
     name="record_learned_rule",
     description="Record a newly learned operational rule or insight into the merchant's persistent playbook (Hermes self-learning for all agents: Sales, Support, Inventory, Ads, Operations).",
     func=record_learned_rule,
     input_model=RecordLearnedRuleInput,
+    format_result=_format_record_learned_rule,
 )
 
 
@@ -185,11 +192,20 @@ async def manage_agent_skill(input_data: ManageAgentSkillInput) -> dict[str, Any
         }
 
 
+def _format_manage_agent_skill(result: dict) -> str:
+    if not result.get("success"):
+        return f"تعذر حفظ المهارة: {result.get('error', 'خطأ غير معروف')}"
+    skill = result.get("skill") or {}
+    s_name = skill.get("name") or result.get("name") or "المهارة"
+    return f"تم إنشاء وتفعيل مهارة '{s_name}' بنجاح في نظام المتجر الدائم."
+
+
 manage_agent_skill_tool = FunctionTool(
     name="manage_agent_skill",
     description="Create, update, or retrieve a custom operational skill for the merchant (Hermes Dynamic Skill Creation).",
     func=manage_agent_skill,
     input_model=ManageAgentSkillInput,
+    format_result=_format_manage_agent_skill,
 )
 
 

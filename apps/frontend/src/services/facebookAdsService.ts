@@ -3825,6 +3825,7 @@ export async function getFacebookPixels(
 export async function chatWithMediaBuyer(
   message: string,
   threadId?: string,
+  activeProduct?: any,
 ): Promise<{
   success: boolean;
   reply: string;
@@ -3838,7 +3839,7 @@ export async function chatWithMediaBuyer(
     status: string;
     tool_calls?: any[];
     error?: string;
-  }>("/facebook-ads/ai/chat", { message, threadId });
+  }>("/facebook-ads/ai/chat", { message, threadId, activeProduct });
   return response.data;
 }
 

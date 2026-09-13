@@ -368,7 +368,8 @@ You are continuing an existing conversation on Facebook Messenger that was previ
                         state_lines.append(f"  Active Product Price: {ap_price}")
                     state_lines.append(
                         f"  [HERMES ENTITY RESOLUTION]: When merchant says 'المنتج ده' (this product), 'إعلانه', 'سعره', 'مخزونه', or refers to a product without repeating its name, they strictly refer to '{ap_name}'. "
-                        "Do NOT ask the merchant for the product name again! Use this product's name and details directly."
+                        "Do NOT ask the merchant for the product name again! Use this product's name and details directly. "
+                        "IMPORTANT: If the merchant asks a general, analytical, or administrative question (e.g. creating skills, recording general rules, asking about general metrics, accounts, or attribution), treat this product only as background context and do NOT forcibly restrict your answer to it."
                     )
 
             if state_lines:
