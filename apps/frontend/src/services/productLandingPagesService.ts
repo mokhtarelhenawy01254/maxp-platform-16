@@ -36,7 +36,9 @@ export type SectionType =
   | "COMPARISON"
   | "BREAKDOWN"
   | "GALLERY"
-  | "LIVE_PROOF";
+  | "LIVE_PROOF"
+  | "BEFORE_AFTER"
+  | "VIDEO_REEL";
 
 export interface LandingSection {
   id: string;
@@ -73,6 +75,16 @@ export interface LandingSection {
     galleryImages?: Array<{ url: string; caption?: string }>;
     recentOrders?: Array<{ buyer: string; city: string; timeAgo: string; item?: string }>;
     satisfactionRate?: string;
+    bundles?: Array<{ qty: number; label: string; discountPercent: number; badge?: string; freeGift?: string }>;
+    videoUrl?: string;
+    videoThumbnail?: string;
+    videoCaption?: string;
+    beforeImage?: string;
+    afterImage?: string;
+    beforeLabel?: string;
+    afterLabel?: string;
+    whatsappSupportPhone?: string;
+    whatsappSupportMessage?: string;
   };
 }
 

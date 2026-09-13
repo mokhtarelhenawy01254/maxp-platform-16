@@ -1573,4 +1573,366 @@
   border: 1px solid #fde68a;
 }
 
+/* ──────────────────────────────────────────────────────────── */
+/* 2026 High-Converting Sticky Bottom Mobile Bar */
+/* ──────────────────────────────────────────────────────────── */
+.pil-sticky-cta {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 999;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.08);
+  padding: 10px 16px;
+  transform: translateY(110%);
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  display: block;
+}
+
+.pil-sticky-cta.is-ready {
+  transform: translateY(0);
+}
+
+.pil-sticky-cta-inner {
+  max-width: 600px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.pil-sticky-price-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pil-sticky-price-label {
+  font-size: 0.72rem;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.pil-sticky-price-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.pil-sticky-shipping-badge {
+  font-size: 0.68rem;
+  color: #059669;
+  font-weight: 700;
+}
+
+.pil-sticky-btn {
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  transition: transform 0.16s ease, background-color 0.2s ease;
+}
+
+.pil-sticky-btn:active {
+  transform: scale(0.97);
+}
+
+/* ──────────────────────────────────────────────────────────── */
+/* Floating Instant WhatsApp Help Button */
+/* ──────────────────────────────────────────────────────────── */
+.pil-floating-whatsapp {
+  position: fixed;
+  bottom: 80px;
+  left: 16px;
+  z-index: 998;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #25d366;
+  color: #ffffff;
+  padding: 8px 14px 8px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  box-shadow: 0 4px 16px rgba(37, 211, 102, 0.38);
+  font-size: 0.82rem;
+  font-weight: 800;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.pil-floating-whatsapp:hover {
+  transform: scale(1.04);
+  box-shadow: 0 6px 20px rgba(37, 211, 102, 0.45);
+}
+
+.pil-floating-whatsapp:active {
+  transform: scale(0.96);
+}
+
+.pil-wa-fab-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pil-wa-fab-text {
+  letter-spacing: -0.2px;
+}
+
+/* ──────────────────────────────────────────────────────────── */
+/* Transparent Price Breakdown in Checkout Form */
+/* ──────────────────────────────────────────────────────────── */
+.pil-price-breakdown {
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin: 16px 0 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pil-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  color: #475569;
+  font-variant-numeric: tabular-nums;
+}
+
+.pil-breakdown-discount {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.pil-breakdown-free {
+  color: #059669;
+  font-weight: 700;
+}
+
+.pil-breakdown-gift {
+  color: #d97706;
+  font-weight: 700;
+}
+
+.pil-breakdown-total {
+  border-top: 1px solid #e2e8f0;
+  padding-top: 8px;
+  margin-top: 4px;
+  font-size: 1.05rem;
+  color: #0f172a;
+}
+
+.pil-breakdown-total strong {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ──────────────────────────────────────────────────────────── */
+/* Interactive Before / After Slider */
+/* ──────────────────────────────────────────────────────────── */
+.pil-before-after-section {
+  max-width: 680px;
+  margin: 36px auto;
+  padding: 0 16px;
+}
+
+.pil-before-after-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pil-ba-stage {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  aspect-ratio: 4 / 3;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.pil-ba-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+.pil-ba-clipped {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.pil-ba-badge {
+  position: absolute;
+  bottom: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  z-index: 5;
+}
+
+.pil-ba-badge-after {
+  left: 12px;
+  background: rgba(16, 185, 129, 0.9);
+  color: #ffffff;
+}
+
+.pil-ba-badge-before {
+  right: 12px;
+  background: rgba(239, 68, 68, 0.9);
+  color: #ffffff;
+}
+
+.pil-ba-divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: #ffffff;
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 10;
+}
+
+.pil-ba-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 36px;
+  height: 36px;
+  background: #ffffff;
+  color: #0f172a;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  font-weight: 900;
+  font-size: 1rem;
+}
+
+.pil-ba-range {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  margin: 0;
+  cursor: ew-resize;
+  z-index: 20;
+}
+
+.pil-ba-hint {
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-top: 10px;
+  text-align: center;
+}
+
+/* ──────────────────────────────────────────────────────────── */
+/* Vertical Video / UGC Reel Showcase */
+/* ──────────────────────────────────────────────────────────── */
+.pil-video-reel-section {
+  max-width: 600px;
+  margin: 36px auto;
+  padding: 0 16px;
+}
+
+.pil-reel-card {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  margin: 0 auto;
+  aspect-ratio: 9 / 16;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+  background: #000000;
+}
+
+.pil-reel-video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  cursor: pointer;
+}
+
+.pil-reel-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 10;
+}
+
+.pil-reel-btn {
+  background: rgba(0, 0, 0, 0.6);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+}
+
+.pil-reel-caption {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
+  color: #ffffff;
+  padding: 24px 16px 12px;
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-align: center;
+  pointer-events: none;
+}
+
+.pil-reel-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+
 

@@ -257,6 +257,147 @@ const cleanProductDescription = (value?: string | null, maxLength = 150): string
     : text;
 };
 
+const BeforeAfterSlider: React.FC<{
+  beforeImage: string;
+  afterImage: string;
+  beforeLabel?: string;
+  afterLabel?: string;
+}> = ({ beforeImage, afterImage, beforeLabel = "قبل (بدائل السوق)", afterLabel = "بعد (المنتج الأصلي)" }) => {
+  const [sliderPos, setSliderPos] = useState(50);
+
+  return (
+    <div className="pil-before-after-container">
+      <div className="pil-ba-stage">
+        {/* After / Our Product image (Base) */}
+        {afterImage && <img src={afterImage} alt={afterLabel} className="pil-ba-img pil-ba-after" />}
+        <span className="pil-ba-badge pil-ba-badge-after">{afterLabel}</span>
+
+        {/* Before / Competitor image (Clipped) */}
+        <div
+          className="pil-ba-clipped"
+          style={{ clipPath: `polygon(0 0, ${sliderPos}% 0, ${sliderPos}% 100%, 0 100%)` }}
+        >
+          {beforeImage && <img src={beforeImage} alt={beforeLabel} className="pil-ba-img pil-ba-before" />}
+          <span className="pil-ba-badge pil-ba-badge-before">{beforeLabel}</span>
+        </div>
+
+        {/* Divider Line & Handle */}
+        <div className="pil-ba-divider" style={{ left: `${sliderPos}%` }}>
+          <div className="pil-ba-handle">
+            <span>⇄</span>
+          </div>
+        </div>
+
+        {/* Interactive range input */}
+        <input
+          type="range"
+          min="0"
+          max="100"
+          value={sliderPos}
+          onChange={(e) => setSliderPos(Number(e.target.value))}
+          className="pil-ba-range"
+          aria-label="مقارنة الصورة قبل وبعد"
+        />
+      </div>
+      <p className="pil-ba-hint">مرر السلايدر يميناً ويساراً للمقارنة المباشرة باللمس</p>
+    </div>
+  );
+};
+
+const VideoReelPlayer: React.FC<{
+  videoUrl?: string;
+  thumbnail?: string;
+  caption?: string;
+}> = ({ videoUrl, thumbnail, caption }) => {
+  const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = React.useRef<HTMLVideoElement | null>(null);
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  const toggleMute = () => {
+    if (!videoRef.current) return;
+    videoRef.current.muted = !videoRef.current.muted;
+    setIsMuted(videoRef.current.muted);
+  };
+
+  if (!videoUrl) {
+    return (
+      <div className="pil-reel-card pil-reel-placeholder">
+        {thumbnail && <img src={thumbnail} alt="" className="pil-reel-thumb" />}
+        <div className="pil-reel-overlay">
+          <span className="pil-reel-play-icon">▶</span>
+          <p>{caption || "فيديو المنتج على الطبيعة"}</p>
+        </div>
+      </div>
+    );
+  }
+
+  const isEmbed =
+    videoUrl.includes("youtube.com") ||
+    videoUrl.includes("youtu.be") ||
+    videoUrl.includes("vimeo");
+
+  if (isEmbed) {
+    return (
+      <div className="pil-reel-card">
+        <iframe
+          src={videoUrl}
+          title="فيديو تجربة المنتج"
+          className="pil-reel-iframe"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+        />
+        {caption && <p className="pil-reel-caption">{caption}</p>}
+      </div>
+    );
+  }
+
+  return (
+    <div className="pil-reel-card">
+      <video
+        ref={videoRef}
+        src={videoUrl}
+        poster={thumbnail}
+        playsInline
+        muted={isMuted}
+        autoPlay
+        loop
+        className="pil-reel-video"
+        onClick={togglePlay}
+      />
+      <div className="pil-reel-controls">
+        <button
+          type="button"
+          onClick={togglePlay}
+          className="pil-reel-btn"
+          aria-label={isPlaying ? "إيقاف" : "تشغيل"}
+        >
+          {isPlaying ? "❚❚" : "▶"}
+        </button>
+        <button
+          type="button"
+          onClick={toggleMute}
+          className="pil-reel-btn"
+          aria-label={isMuted ? "تشغيل الصوت" : "كتم الصوت"}
+        >
+          {isMuted ? "🔇" : "🔊"}
+        </button>
+      </div>
+      {caption && <p className="pil-reel-caption">{caption}</p>}
+    </div>
+  );
+};
+
 const isVisuallyBlankCampaignSlice = (src: string): Promise<boolean> => {
   if (typeof window === "undefined" || !src.trim()) {
     return Promise.resolve(false);
@@ -414,6 +555,7 @@ const ProductImageLandingPage: React.FC = () => {
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isStickyReady, setIsStickyReady] = useState(false);
+  const [isFormInView, setIsFormInView] = useState(false);
   const [visibleCampaignSlices, setVisibleCampaignSlices] = useState<LandingSlice[]>([]);
 
   useEffect(() => {
@@ -592,13 +734,28 @@ const ProductImageLandingPage: React.FC = () => {
   const activePrice = Number(selectedVariant?.price ?? activeProduct?.price ?? 0);
 
   const bundleTiers = useMemo(
-    () => [
-      { qty: 1, label: "قطعة واحدة", discountPercent: 0, badge: "" },
-      { qty: 2, label: "قطعتين (وفر 15%)", discountPercent: 15, badge: "الأكثر طلباً 🔥" },
-      { qty: 3, label: "3 قطع (وفر 25% + شحن مجاني)", discountPercent: 25, badge: "أفضل قيمة 💰" },
-    ],
-    [],
+    () => {
+      const custom = formSection?.content?.bundles || (activeLanding?.formConfig as any)?.bundles;
+      if (Array.isArray(custom) && custom.length > 0) {
+        return custom;
+      }
+      return [
+        { qty: 1, label: "قطعة واحدة", discountPercent: 0, badge: "", freeGift: "" },
+        { qty: 2, label: "قطعتين (وفر 15%)", discountPercent: 15, badge: "الأكثر طلباً 🔥", freeGift: "" },
+        { qty: 3, label: "3 قطع (وفر 25% + شحن مجاني)", discountPercent: 25, badge: "أفضل قيمة 💰", freeGift: "شحن مجاني + هدية" },
+      ];
+    },
+    [formSection, activeLanding],
   );
+
+  const whatsappPhone = useMemo(() => {
+    return (
+      formSection?.content?.whatsappSupportPhone ||
+      (activeLanding?.formConfig as any)?.whatsappSupportPhone ||
+      landingData?.company?.phone ||
+      ""
+    );
+  }, [formSection, activeLanding, landingData]);
 
   const activeBundle = useMemo(
     () => bundleTiers.find((b) => b.qty === selectedBundleQty) || bundleTiers[0],
@@ -719,12 +876,28 @@ const ProductImageLandingPage: React.FC = () => {
     }
 
     const updateSticky = () => {
-      setIsStickyReady(window.scrollY > window.innerHeight * 0.65);
+      setIsStickyReady(window.scrollY > 300);
     };
 
     updateSticky();
     window.addEventListener("scroll", updateSticky, { passive: true });
-    return () => window.removeEventListener("scroll", updateSticky);
+
+    const formEl = document.getElementById("order");
+    let observer: IntersectionObserver | null = null;
+    if (formEl && typeof IntersectionObserver !== "undefined") {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          setIsFormInView(entry.isIntersecting);
+        },
+        { threshold: 0.1 },
+      );
+      observer.observe(formEl);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", updateSticky);
+      if (observer) observer.disconnect();
+    };
   }, []);
 
   const updateFormField =
@@ -1720,11 +1893,33 @@ const ProductImageLandingPage: React.FC = () => {
                 </div>
               ) : null}
 
-              {isLocalLandingTest ? (
-                <div className="pil-test-note" role="status">
-                  وضع الاختبار المحلي مفعل، لن يتم إنشاء طلب حقيقي.
+              {/* Live Price Breakdown */}
+              <div className="pil-price-breakdown" aria-label="تفاصيل الحساب النهائي">
+                <div className="pil-breakdown-row">
+                  <span>سعر المنتجات ({activeBundle.qty} {activeBundle.qty > 1 ? "قطع" : "قطعة"}):</span>
+                  <span>{formatPrice(activePrice * activeBundle.qty, currency)}</span>
                 </div>
-              ) : null}
+                {activeBundle.discountPercent > 0 && (
+                  <div className="pil-breakdown-row pil-breakdown-discount">
+                    <span>خصم الباقة التوفيرية ({activeBundle.discountPercent}%):</span>
+                    <span>- {formatPrice((activePrice * activeBundle.qty) - orderFinalTotal, currency)}</span>
+                  </div>
+                )}
+                <div className="pil-breakdown-row">
+                  <span>الشحن والتوصيل:</span>
+                  <span className="pil-breakdown-free">مجاناً اليوم (معاينة قبل الدفع)</span>
+                </div>
+                {activeBundle.freeGift && (
+                  <div className="pil-breakdown-row pil-breakdown-gift">
+                    <span>هدية العرض الخاصة:</span>
+                    <span>🎁 {activeBundle.freeGift}</span>
+                  </div>
+                )}
+                <div className="pil-breakdown-row pil-breakdown-total">
+                  <strong>الإجمالي الصافي عند الاستلام:</strong>
+                  <strong>{formatPrice(orderFinalTotal, currency)}</strong>
+                </div>
+              </div>
 
               <button className="pil-submit" type="submit" disabled={isSubmitting}>
                 {isSubmitting
@@ -1938,6 +2133,66 @@ const ProductImageLandingPage: React.FC = () => {
       );
     }
 
+    if (type === "BEFORE_AFTER") {
+      const beforeImg = content.beforeImage || activeProduct.mainImage || "";
+      const afterImg =
+        content.afterImage ||
+        (Array.isArray(activeProduct.images)
+          ? activeProduct.images[0]
+          : activeProduct.mainImage) ||
+        "";
+      const beforeLabel =
+        content.beforeLabel || "أحذية السوق العادية (إجهاد وألم)";
+      const afterLabel =
+        content.afterLabel || `${activeProduct.name} (راحة وأصالة)`;
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-before-after-section"
+          aria-label="مقارنة قبل وبعد"
+        >
+          <div className="pil-section-heading">
+            <span>فرق واضح وملموس</span>
+            <h2>{section.title || "شاهد الفرق بنفسك قبل وبعد الاستخدام"}</h2>
+          </div>
+          <BeforeAfterSlider
+            beforeImage={beforeImg}
+            afterImage={afterImg}
+            beforeLabel={beforeLabel}
+            afterLabel={afterLabel}
+          />
+        </section>
+      );
+    }
+
+    if (type === "VIDEO_REEL") {
+      const videoUrl = content.videoUrl;
+      const thumbnail =
+        content.videoThumbnail || activeProduct.mainImage || "";
+      const caption =
+        content.videoCaption ||
+        "شاهد تجربة المنتج والأنبوكسينغ على الطبيعة بدون فلاتر";
+
+      return (
+        <section
+          key={section.id || idx}
+          className="pil-video-reel-section"
+          aria-label="فيديو المنتج"
+        >
+          <div className="pil-section-heading">
+            <span>تجربة واقعية 100%</span>
+            <h2>{section.title || "المنتج على الطبيعة بحركة حقيقية"}</h2>
+          </div>
+          <VideoReelPlayer
+            videoUrl={videoUrl}
+            thumbnail={thumbnail}
+            caption={caption}
+          />
+        </section>
+      );
+    }
+
     if (type === "HTML") {
       if (!content.htmlCode) return null;
       return (
@@ -1957,19 +2212,52 @@ const ProductImageLandingPage: React.FC = () => {
     <article className="product-image-landing" dir="rtl">
       {sectionsToRender.map((section, idx) => renderDynamicSection(section, idx))}
 
-      <a
-        className={`pil-sticky-cta ${isStickyReady ? "is-ready" : ""}`}
-        href="#order"
-        aria-label="اذهب إلى نموذج الطلب"
+      {/* Sticky Bottom CTA Bar */}
+      <div
+        className={`pil-sticky-cta ${isStickyReady && !isFormInView ? "is-ready" : ""}`}
+        role="region"
+        aria-label="شريط الشراء السريع"
       >
-        <strong>
-          {activeProduct.name}
-          <span>{formatPrice(orderFinalTotal, currency)}</span>
-        </strong>
-        <span className="pil-sticky-cta-btn">
-          اطلب الآن ({activeBundle.qty} {activeBundle.qty > 1 ? "قطع" : "قطعة"})
-        </span>
-      </a>
+        <div className="pil-sticky-cta-inner">
+          <div className="pil-sticky-price-block">
+            <span className="pil-sticky-price-label">السعر:</span>
+            <strong className="pil-sticky-price-val">
+              {formatPrice(orderFinalTotal, currency)}
+            </strong>
+            <span className="pil-sticky-shipping-badge">شحن سريع · معاينة قبل الدفع</span>
+          </div>
+          <button
+            type="button"
+            className="pil-sticky-btn"
+            onClick={() => {
+              const el = document.getElementById("order");
+              if (el) el.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            اطلب الآن — دفع عند الاستلام 🚚
+          </button>
+        </div>
+      </div>
+
+      {/* Floating Instant WhatsApp Help Button */}
+      {whatsappPhone && (
+        <a
+          href={`https://wa.me/${whatsappPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
+            `السلام عليكم، بستفسر عن تفاصيل ومقاسات ${activeProduct.name} المتاح في العرض`,
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="pil-floating-whatsapp"
+          aria-label="تواصل عبر واتساب للمساعدة السريعة"
+        >
+          <span className="pil-wa-fab-icon">
+            <svg viewBox="0 0 24 24" width="28" height="28" fill="currentColor">
+              <path d="M12.031 6.172c-3.181 0-5.767 2.586-5.768 5.766-.001 1.298.38 2.27 1.019 3.287l-.582 2.128 2.182-.573c.978.58 1.911.928 3.145.929 3.178 0 5.767-2.587 5.768-5.766.001-3.187-2.575-5.77-5.764-5.771zm3.392 8.244c-.144.405-.837.774-1.17.824-.312.045-.698.074-2.029-.482-1.636-.684-2.697-2.348-2.778-2.457-.081-.109-.658-.876-.658-1.671 0-.796.417-1.189.566-1.35.149-.161.326-.201.435-.201.109 0 .217.001.312.006.101.005.236-.038.37.284.14.335.478 1.168.52 1.254.042.086.07.186.012.3-.058.114-.087.186-.174.288-.087.102-.183.228-.261.306-.089.089-.182.186-.078.365.104.179.462.763.992 1.236.683.61 1.26.799 1.44.888.179.089.284.075.39-.047.105-.122.454-.529.576-.71.121-.182.242-.152.406-.091.164.06 1.039.49 1.218.579.179.089.298.134.341.209.043.075.043.435-.101.84zM12 2C6.477 2 2 6.477 2 12c0 1.891.526 3.66 1.438 5.176L2 22l4.974-1.398A9.957 9.957 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2z"/>
+            </svg>
+          </span>
+          <span className="pil-wa-fab-text">مساعدة سريعة؟</span>
+        </a>
+      )}
     </article>
   );
 };

@@ -263,6 +263,26 @@ const ProductLandingPages: React.FC = () => {
                 },
               ]
             : undefined,
+        videoUrl:
+          type === "VIDEO_REEL"
+            ? "https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-person-unboxing-a-new-pair-of-shoes-42998-large.mp4"
+            : undefined,
+        videoThumbnail:
+          type === "VIDEO_REEL" ? selectedProduct?.mainImage || "" : undefined,
+        videoCaption:
+          type === "VIDEO_REEL"
+            ? "شاهد تجربة المنتج والأنبوكسينغ على الطبيعة بدون فلاتر"
+            : undefined,
+        beforeImage:
+          type === "BEFORE_AFTER" ? selectedProduct?.mainImage || "" : undefined,
+        afterImage:
+          type === "BEFORE_AFTER" ? selectedProduct?.mainImage || "" : undefined,
+        beforeLabel:
+          type === "BEFORE_AFTER" ? "الأحذية العادية (إجهاد وألم في الكعب)" : undefined,
+        afterLabel:
+          type === "BEFORE_AFTER"
+            ? `${selectedProduct?.name || "المنتج الأصلي"} (راحة وامتصاص صدمات)`
+            : undefined,
       },
     };
 

@@ -432,4 +432,93 @@ describe("ProductImageLandingPage", () => {
     expect(screen.getByText("الكوتشي خرافة ومريح جداً في المشي")).toBeInTheDocument();
     expect(screen.getByText("مشتري مؤكد ✓")).toBeInTheDocument();
   });
+
+  it("renders CRO upgrades: BEFORE_AFTER slider, VIDEO_REEL player, live Price Breakdown, Sticky CTA, and Floating WhatsApp", async () => {
+    storefrontApiMocks.getProductLandingPreview.mockResolvedValueOnce({
+      data: {
+        landing: {
+          id: "landing-cro-upgrade",
+          companyId: "company-1",
+          productId: "prod-1",
+          slug: "swan-cro-upgrade",
+          title: "Swan CRO Upgrade",
+          status: "DRAFT",
+          generationMode: "IMAGE_STACK",
+          generationStatus: "READY_TO_REVIEW",
+          slices: [],
+          sections: [
+            {
+              id: "sec-ba-1",
+              type: "BEFORE_AFTER",
+              title: "شاهد الفرق بالعين المجردة",
+              enabled: true,
+              content: {
+                beforeLabel: "أحذية مقلدة",
+                afterLabel: "كوتشي سوان الطبي",
+                beforeImage: "https://example.com/before.jpg",
+                afterImage: "https://example.com/after.jpg",
+              },
+            },
+            {
+              id: "sec-vr-1",
+              type: "VIDEO_REEL",
+              title: "فيديو أنبوكسينغ وتجربة حية",
+              enabled: true,
+              content: {
+                videoUrl: "https://example.com/video.mp4",
+                videoCaption: "شاهد تجربة الكوتشي على الطبيعة",
+              },
+            },
+            {
+              id: "sec-form-cro",
+              type: "FORM",
+              title: "نموذج الطلب",
+              enabled: true,
+              content: {
+                orderTitle: "اطلب الآن",
+                buttonLabel: "تأكيد الطلب",
+                whatsappSupportPhone: "01012345678",
+                bundles: [
+                  { qty: 1, label: "قطعة واحدة", discountPercent: 0, badge: "", freeGift: "" },
+                  { qty: 2, label: "قطعتين (وفر 20%)", discountPercent: 20, badge: "الأكثر مبيعاً", freeGift: "شراب قطني" },
+                ],
+              },
+            },
+          ],
+          formConfig: {
+            orderTitle: "اطلب الآن",
+            buttonLabel: "تأكيد الطلب",
+          },
+        },
+        product: baseProduct,
+        company: {
+          id: "company-1",
+          name: "Swan",
+          currency: "EGP",
+          phone: "01012345678",
+        },
+      },
+    });
+
+    renderLanding("/store/lp/swan-cro-upgrade?companyId=company-1&preview=1");
+
+    // Before/After section
+    expect((await screen.findAllByText("شاهد الفرق بالعين المجردة"))[0]).toBeInTheDocument();
+    expect(screen.getByText("أحذية مقلدة")).toBeInTheDocument();
+    expect(screen.getByText("كوتشي سوان الطبي")).toBeInTheDocument();
+
+    // Video Reel section
+    expect(screen.getByText("فيديو أنبوكسينغ وتجربة حية")).toBeInTheDocument();
+    expect(screen.getByText("شاهد تجربة الكوتشي على الطبيعة")).toBeInTheDocument();
+
+    // Price Breakdown & Custom Bundles
+    expect(screen.getByText("قطعتين (وفر 20%)")).toBeInTheDocument();
+    expect(screen.getByText("الأكثر مبيعاً")).toBeInTheDocument();
+    expect(screen.getByLabelText("تفاصيل الحساب النهائي")).toBeInTheDocument();
+    expect(screen.getByText(/الشحن والتوصيل:/i)).toBeInTheDocument();
+
+    // Sticky CTA & Floating WhatsApp
+    expect(screen.getByRole("region", { name: "شريط الشراء السريع" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "تواصل عبر واتساب للمساعدة السريعة" })).toBeInTheDocument();
+  });
 });

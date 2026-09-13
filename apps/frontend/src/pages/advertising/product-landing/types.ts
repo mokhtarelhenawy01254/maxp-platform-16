@@ -10,9 +10,11 @@ import {
   LayoutGrid,
   Megaphone,
   ShoppingBag,
+  Sliders,
   Star,
   Store,
   Type,
+  Video,
 } from "lucide-react";
 import {
   LandingSection,
@@ -85,6 +87,20 @@ export const SIDEBAR_ITEMS: SidebarElementItem[] = [
     icon: ImageIcon,
     iconBg: "#3B82F6",
     desc: "معرض صور المنتج والفيديوهات الرئيسية",
+  },
+  {
+    type: "VIDEO_REEL",
+    label: "فيديو رأسي / ريلز UGC",
+    icon: Video,
+    iconBg: "#8B5CF6",
+    desc: "فيديو عمودي 9:16 يوثق المنتج على الطبيعة بحركة حقيقية",
+  },
+  {
+    type: "BEFORE_AFTER",
+    label: "سلايدر قبل وبعد التفاعلي",
+    icon: Sliders,
+    iconBg: "#0EA5E9",
+    desc: "مقارنة بصرية حية بسلايدر سحب تفاعلي بين حالتين",
   },
   {
     type: "BREAKDOWN",
