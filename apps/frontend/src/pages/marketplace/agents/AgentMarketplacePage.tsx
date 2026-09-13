@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useMemo, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { 
   Search, 
   X, 
@@ -21,7 +22,8 @@ import {
   ShieldCheck, 
   Sparkles, 
   Users, 
-  Filter
+  Filter,
+  Palette
 } from "lucide-react";
 import { apiClient } from "../../../services/apiClient";
 import { 
@@ -36,6 +38,7 @@ import { AgentProfileDrawer } from "./AgentProfileDrawer";
 import { AgentHireModal } from "./AgentHireModal";
 
 export default function AgentMarketplacePage() {
+  const navigate = useNavigate();
   const [search, setSearch] = useState<string>("");
   const [activeCategory, setActiveCategory] = useState<AgentCategory>("all");
   const [tierFilter, setTierFilter] = useState<"all" | AgentTier>("all");
@@ -177,6 +180,16 @@ export default function AgentMarketplacePage() {
               <span>المحركات:</span>
               <span className="font-semibold text-foreground">DeepSeek-V3 / Flash 2.5</span>
             </div>
+
+            <button
+              type="button"
+              onClick={() => navigate("/marketplace")}
+              className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-muted/20 px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:bg-muted/60 hover:text-foreground active:scale-[0.97] transition-all"
+              title="تصفح قوالب وتصميمات المتاجر"
+            >
+              <Palette className="size-3.5 opacity-70 stroke-[1.5]" />
+              <span>قوالب المتاجر</span>
+            </button>
           </div>
         </div>
 

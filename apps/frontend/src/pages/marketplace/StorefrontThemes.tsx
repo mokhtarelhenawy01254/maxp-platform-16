@@ -14,6 +14,7 @@ import {
   Sparkles,
   Wallet,
   X,
+  Bot,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -1096,6 +1097,15 @@ export default function StorefrontThemes() {
                 <Wallet className="size-4" />
               </Button>
            </div>
+
+           <Button
+             variant="outline"
+             className="h-9 sm:h-10 rounded-xl px-3 sm:px-4 text-[10px] sm:text-[11px] font-bold shrink-0 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 active:scale-[0.97] transition-all"
+             onClick={() => navigate("/marketplace/agents")}
+           >
+             <Bot className="size-3.5 sm:size-4 ltr:mr-1.5 rtl:ml-1.5 text-indigo-500" />
+             <span className="whitespace-nowrap">سوق الإيجنت (Workforce)</span>
+           </Button>
 
            <Button
              className="h-9 sm:h-10 rounded-xl px-3 sm:px-6 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:opacity-90 transition-all shadow-sm shrink-0"
