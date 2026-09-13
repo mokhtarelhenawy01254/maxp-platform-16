@@ -4894,12 +4894,18 @@ class FacebookAdsService {
         url_tags: data.urlTags
       };
 
-      // ✅ v22.0: Advantage+ Creative for Reels
+      // ✅ v26.0: Advantage+ Creative for Reels
       if (advantageCreative) {
         creativeData.degrees_of_freedom_spec = {
           creative_features_spec: {
             video_highlight: {
               enroll_status: 'OPT_IN' // Auto-trim to best moments
+            },
+            visual_touchups: {
+              enroll_status: 'OPT_IN' // Adaptive brightness and HDR on viewer screens
+            },
+            music: {
+              enroll_status: 'OPT_IN' // Smart trending background music match
             }
           }
         };
