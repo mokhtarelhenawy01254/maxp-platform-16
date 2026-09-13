@@ -273,6 +273,76 @@ describe('Facebook Media Buyer Agent - Hard / Stress Testing Suite', () => {
         })
       );
     });
+
+    it('routes chat specifically to agent with MARKETING_STUDIO in allowedChannels when configured from AI Hub', async () => {
+      aiServiceAdminClient.listAgents.mockResolvedValue([
+        { id: 'agent_default_mb', role: 'MEDIA_BUYER', status: 'ACTIVE', allowed_channels: [] },
+        { id: 'agent_custom_routed', name: 'خبير التسويق المخصص', role: 'CUSTOM_MARKETER', status: 'ACTIVE', allowed_channels: ['MARKETING_STUDIO'] },
+      ]);
+      aiServiceAdminClient.chatWithAgent.mockResolvedValue({
+        status: 'ok',
+        reply: 'أهلاً بك! أنا الوكيل المخصص لاستوديو التسويق.',
+        tool_calls: [],
+        thread_id: 'thread_routed_123',
+      });
+
+      const req = {
+        user: { companyId },
+        body: { message: 'ابدأ التخطيط للحملة الجديدة' },
+      };
+
+      const jsonSpy = jest.fn();
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jsonSpy,
+      };
+
+      await facebookAdsAiController.chat(req, res);
+
+      expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          companyId,
+          agentId: 'agent_custom_routed',
+          channel: 'marketing_studio',
+        })
+      );
+      expect(jsonSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          agentId: 'agent_custom_routed',
+        })
+      );
+    });
+
+    it('getActiveAgent returns the routed agent and available active agents', async () => {
+      aiServiceAdminClient.listAgents.mockResolvedValue([
+        { id: 'agent_mb_1', name: 'Media Buyer', role: 'MEDIA_BUYER', status: 'ACTIVE', allowed_channels: [] },
+        { id: 'agent_routed_2', name: 'Specialist Agent', role: 'SPECIALIST', status: 'ACTIVE', allowed_channels: ['MARKETING_STUDIO'] },
+      ]);
+
+      const req = { user: { companyId } };
+      const jsonSpy = jest.fn();
+      const res = {
+        status: jest.fn().mockReturnThis(),
+        json: jsonSpy,
+      };
+
+      await facebookAdsAiController.getActiveAgent(req, res);
+
+      expect(jsonSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          agent: expect.objectContaining({
+            id: 'agent_routed_2',
+            isRouted: true,
+          }),
+          availableAgents: expect.arrayContaining([
+            expect.objectContaining({ id: 'agent_mb_1' }),
+            expect.objectContaining({ id: 'agent_routed_2' }),
+          ]),
+        })
+      );
+    });
   });
 
   // =========================================================================

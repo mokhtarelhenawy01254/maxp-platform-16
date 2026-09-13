@@ -3831,11 +3831,13 @@ export async function chatWithMediaBuyer(
   message: string,
   threadId?: string,
   activeProduct?: any,
+  agentId?: string,
 ): Promise<{
   success: boolean;
   reply: string;
   status: string;
   tool_calls?: any[];
+  agentId?: string;
   error?: string;
 }> {
   const response = await apiClient.post<{
@@ -3843,8 +3845,25 @@ export async function chatWithMediaBuyer(
     reply: string;
     status: string;
     tool_calls?: any[];
+    agentId?: string;
     error?: string;
-  }>("/facebook-ads/ai/chat", { message, threadId, activeProduct });
+  }>("/facebook-ads/ai/chat", { message, threadId, activeProduct, agentId });
+  return response.data;
+}
+
+/**
+ * جلب الوكيل الذكي الفعال والموجه لاستوديو التسويق
+ */
+export async function getMarketingActiveAgent(): Promise<{
+  success: boolean;
+  agent: { id: string; name: string; role: string; isRouted?: boolean } | null;
+  availableAgents?: Array<{ id: string; name: string; role: string }>;
+}> {
+  const response = await apiClient.get<{
+    success: boolean;
+    agent: { id: string; name: string; role: string; isRouted?: boolean } | null;
+    availableAgents?: Array<{ id: string; name: string; role: string }>;
+  }>("/facebook-ads/ai/active-agent");
   return response.data;
 }
 

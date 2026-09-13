@@ -535,6 +535,8 @@ router.delete('/saved-audiences/:id', facebookAdsController.deleteSavedAudience)
 // --- AI Media Buyer Copilot & Drafts ---
 // POST /api/v1/facebook-ads/ai/chat - المحادثة المباشرة مع إيجنت الميديا باير
 router.post('/ai/chat', (req, res) => facebookAdsAiController.chat(req, res));
+// GET /api/v1/facebook-ads/ai/active-agent - جلب الوكيل الموجه لاستوديو التسويق
+router.get('/ai/active-agent', (req, res) => facebookAdsAiController.getActiveAgent(req, res));
 // POST /api/v1/facebook-ads/ai/drafts - إنشاء مسودة حملة بالذكاء الاصطناعي
 router.post('/ai/drafts', (req, res) => facebookAdsAiController.createDraftRun(req, res));
 // GET /api/v1/facebook-ads/ai/drafts - استعراض مسودات الحملات

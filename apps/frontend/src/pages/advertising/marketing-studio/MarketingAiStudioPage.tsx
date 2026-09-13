@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Sparkles,
   ShoppingBag,
@@ -7,9 +8,12 @@ import {
   ChevronDown,
   FolderArchive,
   Package,
+  Bot,
+  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { useCopilotSessions } from "../../../components/advertising/copilot/useCopilotSessions";
+import { getMarketingActiveAgent } from "../../../services/facebookAdsService";
 import { ProductOpportunityRadar } from "./ProductOpportunityRadar";
 import { MarketingSquadChatFeed } from "./MarketingSquadChatFeed";
 import { MarketingControlHub } from "./MarketingControlHub";
@@ -24,6 +28,23 @@ const MarketingAiStudioPage: React.FC = () => {
 
   const [selectedProduct, setSelectedProduct] = useState<MarketingProduct | null>(null);
   const [currentDraft, setCurrentDraft] = useState<MarketingCampaignDraft | null>(null);
+  const [activeAgent, setActiveAgent] = useState<{ id: string; name: string; role: string; isRouted?: boolean } | null>(null);
+
+  // Load active routed agent for Marketing Studio
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const res = await getMarketingActiveAgent();
+        if (isMounted && res.success && res.agent) {
+          setActiveAgent(res.agent);
+        }
+      } catch (err) {
+        console.warn("[MarketingAiStudio] Could not load active agent:", err);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, [companyId]);
 
   // Modal / Drawer states
   const [isProductPickerOpen, setIsProductPickerOpen] = useState(false);
@@ -134,6 +155,20 @@ const MarketingAiStudioPage: React.FC = () => {
               </span>
             </button>
 
+            {/* Active Agent Routing Badge & Direct AI Hub Link */}
+            <Link
+              to="/admin/ai-hub?tab=routing"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-indigo-200 dark:border-indigo-800/80 bg-indigo-50/80 dark:bg-indigo-950/40 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 transition text-xs font-bold text-indigo-700 dark:text-indigo-300 shadow-xs cursor-pointer group"
+              title="تغيير أو تخصيص الوكيل المسؤول من صفحة توجيه القنوات (AI Hub)"
+            >
+              <Bot className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 shrink-0" />
+              <span className="hidden sm:inline text-[11px] text-indigo-500/90 dark:text-indigo-400/80 font-normal">الوكيل:</span>
+              <span className="truncate max-w-[100px] sm:max-w-[150px]">
+                {activeAgent?.name || "خبير الميديا باير"}
+              </span>
+              <ExternalLink className="w-3 h-3 text-indigo-400 dark:text-indigo-500 opacity-60 group-hover:opacity-100 transition shrink-0" />
+            </Link>
+
             {/* New Session Button */}
             <button
               type="button"
@@ -146,12 +181,14 @@ const MarketingAiStudioPage: React.FC = () => {
             </button>
           </div>
 
-          {/* Status badge on desktop */}
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400">
-            <Rocket className="w-3.5 h-3.5 text-blue-500" />
-            <span>مسودة Meta Ads جاهزة</span>
+          {/* Right side status */}
+          <div className="flex items-center gap-2">
+            {/* Status badge on desktop */}
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400">
+              <Rocket className="w-3.5 h-3.5 text-blue-500" />
+              <span>مسودة Meta Ads جاهزة</span>
+            </div>
           </div>
-        </div>
 
         {/* Mobile Native App Bar (Compact 2-tier layout) */}
         <div className="flex lg:hidden flex-col">
@@ -258,6 +295,7 @@ const MarketingAiStudioPage: React.FC = () => {
           <MarketingSquadChatFeed
             selectedProduct={selectedProduct}
             companyId={companyId}
+            activeAgent={activeAgent}
             onDraftGenerated={handleDraftGenerated}
             activeSession={copilotSessions.activeSession}
             addMessageToActiveSession={copilotSessions.addMessageToActiveSession}

@@ -26,6 +26,7 @@ interface AgentSummary {
 interface ChannelConfig {
   channel: string;
   label: string;
+  labelAr?: string;
   icon: string;
   agentId: string | null;
   toolName: string;
@@ -33,13 +34,20 @@ interface ChannelConfig {
   replyEnabled: boolean;
 }
 
-const CHANNELS: { key: string; label: string; icon: string; tool: string }[] = [
-  { key: "MESSENGER", label: "Messenger", icon: "💬", tool: "facebook.reply" },
-  { key: "WHATSAPP", label: "WhatsApp", icon: "💚", tool: "whatsapp.send" },
-  { key: "INSTAGRAM", label: "Instagram", icon: "📸", tool: "" },
-  { key: "TELEGRAM", label: "Telegram", icon: "✈️", tool: "" },
-  { key: "WEB_CHAT", label: "Web Chat", icon: "🌐", tool: "" },
-  { key: "DASHBOARD", label: "Dashboard", icon: "🖥️", tool: "" },
+const CHANNELS: { key: string; label: string; labelAr?: string; icon: string; tool: string }[] = [
+  { key: "MESSENGER", label: "Messenger", labelAr: "ماسنجر (Messenger)", icon: "💬", tool: "facebook.reply" },
+  { key: "WHATSAPP", label: "WhatsApp", labelAr: "واتساب (WhatsApp)", icon: "💚", tool: "whatsapp.send" },
+  { key: "INSTAGRAM", label: "Instagram", labelAr: "انستغرام (Instagram)", icon: "📸", tool: "" },
+  { key: "TELEGRAM", label: "Telegram", labelAr: "تيليجرام (Telegram)", icon: "✈️", tool: "" },
+  { key: "WEB_CHAT", label: "Web Chat", labelAr: "شات الموقع (Web Chat)", icon: "🌐", tool: "" },
+  { key: "DASHBOARD", label: "Dashboard", labelAr: "لوحة التحكم (Dashboard)", icon: "🖥️", tool: "" },
+  {
+    key: "MARKETING_STUDIO",
+    label: "Marketing Studio",
+    labelAr: "استوديو التسويق الذكي (Marketing Studio)",
+    icon: "🎯",
+    tool: "facebook_ad_create_full_draft",
+  },
 ];
 
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -86,18 +94,24 @@ export default function ChannelRoutingPage() {
       setAgentPaused(pauseResp.paused === true);
       setPauseReason(pauseResp.pauseReason || "");
       const configs: ChannelConfig[] = CHANNELS.map((ch) => {
-        const assigned = activeAgents.find((a) =>
+        let assigned = activeAgents.find((a) =>
           (a.allowedChannels || []).map((c) => c.toUpperCase()).includes(ch.key)
         );
+        // Fallback default for Marketing Studio: media buyer agent if not explicitly claimed
+        if (!assigned && ch.key === "MARKETING_STUDIO") {
+          assigned = activeAgents.find((a) => a.role === "MEDIA_BUYER");
+        }
+        const assignedAgent = assigned ? activeAgents.find((a) => a.id === assigned.id) : null;
         return {
           channel: ch.key,
           label: ch.label,
+          labelAr: ch.labelAr,
           icon: ch.icon,
           agentId: assigned?.id || null,
           toolName: ch.tool,
-          toolActive: !ch.tool || activeAgents.some((a) =>
-            (a.allowedTools || []).includes(ch.tool)
-          ),
+          toolActive: !ch.tool || (assignedAgent
+            ? (assignedAgent.allowedTools || []).includes(ch.tool)
+            : activeAgents.some((a) => (a.allowedTools || []).includes(ch.tool))),
           replyEnabled: channelFlags[ch.key] !== false,
         };
       });
@@ -115,7 +129,14 @@ export default function ChannelRoutingPage() {
 
   const handleAgentChange = (channel: string, agentId: string) => {
     setChannelConfigs((prev) =>
-      prev.map((c) => (c.channel === channel ? { ...c, agentId: agentId || null } : c))
+      prev.map((c) => {
+        if (c.channel !== channel) return c;
+        const targetAgent = agents.find((a) => a.id === agentId);
+        const toolActive = !c.toolName || (targetAgent
+          ? (targetAgent.allowedTools || []).includes(c.toolName)
+          : agents.some((a) => a.status === "ACTIVE" && (a.allowedTools || []).includes(c.toolName)));
+        return { ...c, agentId: agentId || null, toolActive };
+      })
     );
     setDirtyChannels((prev) => new Set(prev).add(channel));
     setDirty(true);
@@ -137,7 +158,14 @@ export default function ChannelRoutingPage() {
   };
 
   const handleAssignAll = (agentId: string) => {
-    setChannelConfigs((prev) => prev.map((c) => ({ ...c, agentId: agentId || null })));
+    const targetAgent = agents.find((a) => a.id === agentId);
+    setChannelConfigs((prev) => prev.map((c) => ({
+      ...c,
+      agentId: agentId || null,
+      toolActive: !c.toolName || (targetAgent
+        ? (targetAgent.allowedTools || []).includes(c.toolName)
+        : agents.some((a) => a.status === "ACTIVE" && (a.allowedTools || []).includes(c.toolName))),
+    })));
     setDirtyChannels(new Set(CHANNELS.map((c) => c.key)));
     setDirty(true);
   };
@@ -330,7 +358,7 @@ export default function ChannelRoutingPage() {
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
                       <span className="text-lg">{config.icon}</span>
-                      <span>{config.label}</span>
+                      <span>{isRtl ? (config.labelAr || config.label) : config.label}</span>
                       {dirtyChannels.has(config.channel) && (
                         <span className="size-1.5 rounded-full bg-amber-500" title={t("aiHub.channelRouting.modified")} />
                       )}

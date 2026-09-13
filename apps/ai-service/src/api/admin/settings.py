@@ -15,7 +15,7 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
-DEFAULT_CHANNELS = ["MESSENGER", "WHATSAPP", "INSTAGRAM", "TELEGRAM", "DASHBOARD", "WEB_CHAT"]
+DEFAULT_CHANNELS = ["MESSENGER", "WHATSAPP", "INSTAGRAM", "TELEGRAM", "DASHBOARD", "WEB_CHAT", "MARKETING_STUDIO"]
 
 CHANNEL_KEY_MAP = {
     "facebook": "MESSENGER",
@@ -32,6 +32,9 @@ CHANNEL_KEY_MAP = {
     "web-chat": "WEB_CHAT",
     "widget": "WEB_CHAT",
     "site": "WEB_CHAT",
+    "marketing": "MARKETING_STUDIO",
+    "marketing_studio": "MARKETING_STUDIO",
+    "marketing-studio": "MARKETING_STUDIO",
 }
 
 

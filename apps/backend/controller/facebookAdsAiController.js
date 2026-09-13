@@ -354,10 +354,19 @@ class FacebookAdsAiController {
         try {
           const agents = await aiServiceAdminClient.listAgents(companyId);
           if (Array.isArray(agents) && agents.length > 0) {
-            const mediaBuyer = agents.find(a => a.role === 'MEDIA_BUYER' && (a.status === 'ACTIVE' || !a.status))
-              || agents.find(a => a.role === 'MEDIA_BUYER');
-            if (mediaBuyer?.id) {
-              targetAgentId = mediaBuyer.id;
+            // First check for an active agent routed specifically to MARKETING_STUDIO
+            const routedAgent = agents.find(a => 
+              (a.status === 'ACTIVE' || !a.status) &&
+              (a.allowed_channels || a.allowedChannels || []).map(c => String(c).toUpperCase()).includes('MARKETING_STUDIO')
+            );
+            if (routedAgent?.id) {
+              targetAgentId = routedAgent.id;
+            } else {
+              const mediaBuyer = agents.find(a => a.role === 'MEDIA_BUYER' && (a.status === 'ACTIVE' || !a.status))
+                || agents.find(a => a.role === 'MEDIA_BUYER');
+              if (mediaBuyer?.id) {
+                targetAgentId = mediaBuyer.id;
+              }
             }
           }
         } catch (err) {
@@ -369,15 +378,27 @@ class FacebookAdsAiController {
       if (!targetAgentId) {
         const prisma = getSharedPrismaClient();
         try {
-          const rows = await prisma.$queryRaw`
+          const routedRows = await prisma.$queryRaw`
             SELECT id, name, role FROM ai.agents 
-            WHERE role = 'MEDIA_BUYER' 
-              AND (company_id = ${companyId} OR company_id IS NULL)
+            WHERE (company_id = ${companyId} OR company_id IS NULL)
+              AND (status = 'ACTIVE' OR status IS NULL)
+              AND channels::text ILIKE '%MARKETING_STUDIO%'
             ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
             LIMIT 1
           `;
-          if (rows && rows.length > 0) {
-            targetAgentId = rows[0].id;
+          if (routedRows && routedRows.length > 0) {
+            targetAgentId = routedRows[0].id;
+          } else {
+            const rows = await prisma.$queryRaw`
+              SELECT id, name, role FROM ai.agents 
+              WHERE role = 'MEDIA_BUYER' 
+                AND (company_id = ${companyId} OR company_id IS NULL)
+              ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
+              LIMIT 1
+            `;
+            if (rows && rows.length > 0) {
+              targetAgentId = rows[0].id;
+            }
           }
         } catch (err) {
           console.warn('[FacebookAdsAI] Could not query ai.agents table directly:', err.message);
@@ -492,8 +513,8 @@ class FacebookAdsAiController {
           agentId: targetAgentId,
           message,
           threadId: scopedThreadId,
-          channel: 'dashboard',
-          source_channel: 'dashboard',
+          channel: 'marketing_studio',
+          source_channel: 'marketing_studio',
           memory_context: {
             recentMessages,
             activeProduct: activeProductContext,
@@ -797,6 +818,97 @@ class FacebookAdsAiController {
       return res.status(500).json({
         success: false,
         error: error.message || 'Failed to delete copilot session',
+      });
+    }
+  }
+
+  /**
+   * GET /api/v1/facebook-ads/ai/active-agent
+   * Retrieve the active/routed agent for the Marketing Studio
+   */
+  async getActiveAgent(req, res) {
+    try {
+      const companyId = req.user?.companyId;
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const aiServiceAdminClient = require('../services/aiServiceAdminClient');
+      const { getSharedPrismaClient } = require('../services/sharedDatabase');
+
+      let activeAgent = null;
+      let availableAgents = [];
+
+      try {
+        const agents = await aiServiceAdminClient.listAgents(companyId);
+        if (Array.isArray(agents)) {
+          availableAgents = agents
+            .filter(a => a.status === 'ACTIVE' || !a.status)
+            .map(a => ({
+              id: a.id,
+              name: a.name || a.label || a.id,
+              role: a.role,
+              allowedChannels: a.allowed_channels || a.allowedChannels || [],
+            }));
+
+          // 1. Check for an agent specifically assigned to MARKETING_STUDIO
+          const routed = availableAgents.find(a =>
+            (a.allowedChannels || []).map(c => String(c).toUpperCase()).includes('MARKETING_STUDIO')
+          );
+
+          if (routed) {
+            activeAgent = { id: routed.id, name: routed.name, role: routed.role, isRouted: true };
+          } else {
+            // 2. Default fallback: MEDIA_BUYER
+            const mediaBuyer = availableAgents.find(a => a.role === 'MEDIA_BUYER');
+            activeAgent = mediaBuyer
+              ? { id: mediaBuyer.id, name: mediaBuyer.name, role: mediaBuyer.role, isRouted: false }
+              : (availableAgents[0] ? { id: availableAgents[0].id, name: availableAgents[0].name, role: availableAgents[0].role, isRouted: false } : null);
+          }
+        }
+      } catch (err) {
+        console.warn('[FacebookAdsAI] Could not list agents from aiServiceAdminClient:', err.message);
+      }
+
+      // Fallback query directly to PostgreSQL ai.agents if activeAgent not resolved
+      if (!activeAgent) {
+        const prisma = getSharedPrismaClient();
+        try {
+          const rows = await prisma.$queryRaw`
+            SELECT id, name, role, channels FROM ai.agents 
+            WHERE (company_id = ${companyId} OR company_id IS NULL)
+              AND (status = 'ACTIVE' OR status IS NULL)
+            ORDER BY (CASE WHEN company_id = ${companyId} THEN 0 ELSE 1 END), created_at DESC
+          `;
+          if (rows && rows.length > 0) {
+            const routed = rows.find(r => {
+              const ch = Array.isArray(r.channels) ? r.channels : (typeof r.channels === 'string' ? JSON.parse(r.channels || '[]') : []);
+              return ch.map(c => String(c).toUpperCase()).includes('MARKETING_STUDIO');
+            });
+            if (routed) {
+              activeAgent = { id: routed.id, name: routed.name, role: routed.role, isRouted: true };
+            } else {
+              const mediaBuyer = rows.find(r => r.role === 'MEDIA_BUYER');
+              activeAgent = mediaBuyer
+                ? { id: mediaBuyer.id, name: mediaBuyer.name, role: mediaBuyer.role, isRouted: false }
+                : { id: rows[0].id, name: rows[0].name, role: rows[0].role, isRouted: false };
+            }
+          }
+        } catch (dbErr) {
+          console.warn('[FacebookAdsAI] Could not query ai.agents table directly:', dbErr.message);
+        }
+      }
+
+      return res.json({
+        success: true,
+        agent: activeAgent,
+        availableAgents,
+      });
+    } catch (error) {
+      console.error('❌ Error getting marketing active agent:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to get marketing active agent',
       });
     }
   }

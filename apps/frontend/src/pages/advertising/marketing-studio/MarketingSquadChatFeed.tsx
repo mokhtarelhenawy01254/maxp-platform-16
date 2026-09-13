@@ -25,6 +25,7 @@ import { MarketingMarkdownMessage } from "./MarketingMarkdownMessage";
 interface MarketingSquadChatFeedProps {
   selectedProduct: MarketingProduct | null;
   companyId: string | null;
+  activeAgent?: { id: string; name: string; role: string } | null;
   onDraftGenerated?: (draftData: any) => void;
   activeSession?: CopilotSession;
   addMessageToActiveSession?: (msg: Message) => void;
@@ -34,6 +35,7 @@ interface MarketingSquadChatFeedProps {
 export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
   selectedProduct,
   companyId,
+  activeAgent,
   onDraftGenerated,
   activeSession: propActiveSession,
   addMessageToActiveSession: propAddMessage,
@@ -96,7 +98,7 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
       : undefined;
 
     try {
-      const res = await chatWithMediaBuyer(textToSend, activeSession.id, productPayload);
+      const res = await chatWithMediaBuyer(textToSend, activeSession.id, productPayload, activeAgent?.id);
       if (res.success) {
         const agentMsg: Message = {
           id: `agent-${Date.now()}`,
@@ -216,7 +218,7 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
             </div>
             <div className="p-3 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center gap-2 text-slate-600 dark:text-slate-300">
               <div className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
-              فريق التسويق يحلل بيانات المتجر واقتصاديات المنتج...
+              {activeAgent?.name ? `${activeAgent.name} يحلل بيانات المتجر واقتصاديات المنتج...` : "فريق التسويق يحلل بيانات المتجر واقتصاديات المنتج..."}
             </div>
           </div>
         )}
@@ -240,8 +242,8 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
             disabled={loading}
             placeholder={
               selectedProduct
-                ? `اطلب من فريق التسويق خطة لـ ${selectedProduct.name}...`
-                : "وجه فريق التسويق أو اسأل عن أي حملة..."
+                ? `اطلب من ${activeAgent?.name || "فريق التسويق"} خطة لـ ${selectedProduct.name}...`
+                : `وجه ${activeAgent?.name || "فريق التسويق"} أو اسأل عن أي حملة...`
             }
             className="flex-1 px-3.5 py-2.5 sm:py-2 text-sm sm:text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
