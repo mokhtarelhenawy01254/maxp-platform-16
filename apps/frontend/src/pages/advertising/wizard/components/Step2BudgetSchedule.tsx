@@ -201,7 +201,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
               {isEn ? "Loading ad accounts..." : "جاري تحميل الحسابات الإعلانية..."}
             </span>
           </div>
-        ) : adAccounts.length > 0 ? (
+        ) : safeAdAccounts.length > 0 ? (
           <div className="space-y-3">
             <select
               name="facebookAdAccountId"
@@ -235,7 +235,7 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
                 >
                   {group.accounts.map((account) => {
                     const normalizedAccountId = resolveAdAccountId(account);
-                    const isSaved = savedAdAccounts.some(
+                    const isSaved = safeSavedAccounts.some(
                       (savedAccount) =>
                         savedAccount.accountId === normalizedAccountId,
                     );
@@ -406,14 +406,14 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">{isEn ? "Loading pixels..." : "جاري تحميل البكسلات..."}</span>
             </div>
-          ) : facebookPixels.length > 0 ? (
+          ) : safePixels.length > 0 ? (
             <select
               value={formData.pixelId}
               onChange={(e) => handleChange("pixelId", e.target.value)}
               className="w-full px-4 py-3 border border-indigo-300 dark:border-indigo-800 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             >
               <option value="">{isEn ? "Select Pixel" : "اختر البكسل"}</option>
-              {facebookPixels.map((pixel) => (
+              {safePixels.map((pixel) => (
                 <option key={pixel.id} value={pixel.id}>
                   {pixel.name} (ID: {pixel.id})
                 </option>
