@@ -1,20 +1,18 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import {
-  Loader2, AlertCircle, Bot, Search, Clock, PenLine, Save, X, Plus, Trash2,
+  Loader2, AlertCircle, Bot, Search, Plus, Trash2,
   Shield, RefreshCw, Menu, MessageSquare, Archive, Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { sandboxApi, type AgentProfileResponse } from "../ai-agent-sandbox/services/sandboxApi";
+import AgentProfileHeader from "./AgentProfileHeader";
+import AgentSettingsTab from "./AgentSettingsTab";
+import CreateAgentDialog from "./CreateAgentDialog";
 import AgentGuardrailsTab from "./AgentGuardrailsTab";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from "@/components/ui/dialog";
@@ -32,8 +30,7 @@ function useIsMobile(breakpoint = 1024) {
   );
   useEffect(() => {
     const mq = window.matchMedia(`(max-width: ${breakpoint - 1}px)`);
-    const handler = (e: MediaQueryListEvent | MediaQueryList) =>
-      setIsMobile(e.matches);
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => setIsMobile(e.matches);
     handler(mq);
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
@@ -43,48 +40,23 @@ function useIsMobile(breakpoint = 1024) {
 
 type Tab = "settings" | "guardrails";
 
-const isActive = (s?: string | null) => String(s || "").toUpperCase() === "ACTIVE";
-
-const relativeTime = (dateStr: string | null | undefined, t: (key: string, opts?: Record<string, unknown>) => string, locale?: string) => {
-  if (!dateStr) return null;
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diff / 60000);
-  if (minutes < 1) return t("agentProfiles.time.now");
-  if (minutes < 60) return t("agentProfiles.time.minutesAgo", { minutes });
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return t("agentProfiles.time.hoursAgo", { hours });
-  const days = Math.floor(hours / 24);
-  if (days < 30) return t("agentProfiles.time.daysAgo", { days });
-  return new Date(dateStr).toLocaleDateString(locale || "ar-EG");
-};
-
-const getAgentChannels = (profile?: AgentProfileResponse | null): string[] => {
-  if (!profile) return [];
-  const { agent } = profile;
-  const text = [agent.role, agent.templateSlug, agent.description].filter(Boolean).join(" ").toLowerCase();
-  const channels: string[] = [];
-  if (text.includes("facebook") || text.includes("messenger") || text.includes("فيسبوك")) channels.push("facebook");
-  if (text.includes("whatsapp") || text.includes("واتساب")) channels.push("whatsapp");
-  if (agent.role === "CEO" || text.includes("dashboard")) channels.push("dashboard");
-  return channels;
-};
-
 const FILES_EQUAL = (a: Record<string, string>, b: Record<string, string>) => {
   const keys = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
-  for (const k of keys) { if ((a?.[k] || "") !== (b?.[k] || "")) return false; }
+  for (const k of keys) {
+    if ((a?.[k] || "") !== (b?.[k] || "")) return false;
+  }
   return true;
 };
-
-const collectAgentText = (agent?: { name?: string; role?: string; templateSlug?: string | null; description?: string | null; createdBy?: string | null } | null) => [
-  agent?.role, agent?.templateSlug, agent?.description, agent?.createdBy,
-].filter(Boolean).join(" ").toLowerCase();
-
 
 async function tryApiFetch<T>(path: string, init?: RequestInit): Promise<T | null> {
   try {
     const res = await fetch(buildApiUrl(path), {
       ...init,
-      headers: { ...tokenManager.createAuthHeaders(), "Content-Type": "application/json", ...(init?.headers || {}) },
+      headers: {
+        ...tokenManager.createAuthHeaders(),
+        "Content-Type": "application/json",
+        ...(init?.headers || {}),
+      },
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || data.success === false) {
@@ -99,47 +71,19 @@ async function tryApiFetch<T>(path: string, init?: RequestInit): Promise<T | nul
   }
 }
 
-
-
-
 interface AgentItem {
   id: string;
   name: string;
   role: string;
   icon?: string;
-  departmentIcon?: string | null;
-  departmentName?: string | null;
-  managerType?: string | null;
-  createdBy?: string | null;
-  parentId?: string | null;
+  status?: string;
+  allowedChannels?: string[];
+  templateSlug?: string | null;
+  description?: string | null;
 }
 
-const AGENT_ICONS = ["🤖", "💼", "🎧", "📦", "📣", "💬", "📊", "🧠", "⚡", "🎯", "🛒", "🔧"];
-
-const TEMPLATE_ICON: Record<string, string> = {
-  sales: "💼", "sales-agent": "💼",
-  support: "🎧", "support-agent": "🎧",
-  inventory: "📦", "inventory-pricing-agent": "📦",
-  marketing: "📣", "marketing-agent": "📣",
-  facebook: "💬", "facebook-sales-support-agent": "💬",
-  sas: "📊", "sas-sales-agent": "📊",
-  ceo: "🧠", "manager-ceo": "🧠",
-  competitor: "🔍", analyst: "🔍",
-  order: "🛒", "order-agent": "🛒", "order-confirmation-agent": "✅",
-  customer: "🤝",
-};
-
-const templateIcon = (slug: string) => {
-  for (const [key, icon] of Object.entries(TEMPLATE_ICON)) {
-    if (slug.includes(key)) return icon;
-  }
-  return "🤖";
-};
-
-
-
 export default function AgentProfilesPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const agentIdFromUrl = searchParams.get("agent");
@@ -158,14 +102,10 @@ export default function AgentProfilesPage() {
   const [agentsLoading, setAgentsLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(agentIdFromUrl);
   const [searchQuery, setSearchQuery] = useState("");
+  const [agentsListTab, setAgentsListTab] = useState<"active" | "archived">("active");
 
   const [tab, setTab] = useState<Tab>("settings");
   const [profile, setProfile] = useState<AgentProfileResponse | null>(null);
-  const merchantLocks = (profile?.agent as any)?.config?.merchant_locks || {};
-  const isIdentityLocked = !!merchantLocks.lockIdentity;
-  const isPersonaLocked = !!merchantLocks.lockPersona;
-  const isRulesLocked = !!merchantLocks.lockRules;
-  const isCustomPromptLocked = !!merchantLocks.lockCustomPrompt;
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
@@ -182,37 +122,27 @@ export default function AgentProfilesPage() {
   const [profileSaving, setProfileSaving] = useState(false);
 
   const [createOpen, setCreateOpen] = useState(false);
-  const [newAgentName, setNewAgentName] = useState("");
-  const [newAgentIcon, setNewAgentIcon] = useState("🤖");
-  const [newAgentDesc, setNewAgentDesc] = useState("");
-  const [newAgentTemplate, setNewAgentTemplate] = useState<string | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [createError, setCreateError] = useState<string | null>(null);
   const [templates, setTemplates] = useState<Array<{ slug: string; name: string; role: string; allowedTools: string[]; allowedSkills: string[] }>>([]);
   const [templatesLoading, setTemplatesLoading] = useState(false);
-  const [newConfig, setNewConfig] = useState<Record<string, string>>({});
 
-
+  /* ── Unsaved changes calculation (Clean & non-mutating) ── */
   const hasUnsavedChanges = useMemo(() => {
     if (!profile) return false;
     return (
-      draftName !== (profile.agent.name || "")
-      || draftIcon !== (profile.agent.icon || "🤖")
-      || draftDescription !== (profile.agent.description || "")
-      || JSON.stringify(draftConfig) !== JSON.stringify(
-          (profile.agent as { config?: Record<string, string> }).config || {}
-        )
-      || !FILES_EQUAL(draftFiles, profile.files)
+      draftName !== (profile.agent.name || "") ||
+      draftIcon !== (profile.agent.icon || "🤖") ||
+      draftDescription !== (profile.agent.description || "") ||
+      JSON.stringify(draftConfig) !== JSON.stringify((profile.agent as { config?: Record<string, string> }).config || {}) ||
+      !FILES_EQUAL(draftFiles, profile.files)
     );
   }, [profile, draftName, draftIcon, draftDescription, draftConfig, draftFiles]);
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
-    { key: "settings", label: t("agentProfiles.tabs.settings"), icon: <Shield className="size-4" aria-hidden="true" /> },
-    { key: "guardrails", label: t("agentProfiles.tabs.guardrails"), icon: <Lock className="size-4" aria-hidden="true" /> },
+    { key: "settings", label: t("agentProfiles.tabs.settings", "الإعدادات"), icon: <Shield className="size-4" /> },
+    { key: "guardrails", label: t("agentProfiles.tabs.guardrails", "القواعد والتعلم"), icon: <Lock className="size-4" /> },
   ];
 
-  const [agentsListTab, setAgentsListTab] = useState<"active" | "archived">("active");
-
+  /* ── Load agents ── */
   const loadAgents = useCallback(async () => {
     setAgentsLoading(true);
     setProfileError(null);
@@ -222,10 +152,7 @@ export default function AgentProfilesPage() {
         const list = res?.agents || [];
         setAgents(list);
         if (list.length > 0) {
-          setSelectedId((prev) => {
-            if (list.some((a) => a.id === prev)) return prev;
-            return list[0].id;
-          });
+          setSelectedId((prev) => (list.some((a) => a.id === prev) ? prev : list[0].id));
         } else {
           setSelectedId(null);
         }
@@ -233,29 +160,33 @@ export default function AgentProfilesPage() {
         const res = await sandboxApi.getAgents();
         const list = (res.agents || []) as AgentItem[];
         setAgents(list);
+
+        // Check if agent from URL is archived if not in active
+        if (agentIdFromUrl && !list.some((a) => a.id === agentIdFromUrl)) {
+          const archRes = await tryApiFetch<{ success: boolean; agents: AgentItem[] }>("/agent/agents?status=ARCHIVED");
+          const archList = archRes?.agents || [];
+          if (archList.some((a) => a.id === agentIdFromUrl)) {
+            setAgentsListTab("archived");
+            setAgents(archList);
+            setSelectedId(agentIdFromUrl);
+            return;
+          }
+        }
+
         if (list.length > 0) {
-          setSelectedId((prev) => {
-            if (list.some((a) => a.id === prev)) return prev;
-            return list[0].id;
-          });
+          setSelectedId((prev) => (list.some((a) => a.id === prev) ? prev : list[0].id));
         }
       }
     } catch {
-      setProfileError(t("agentProfiles.sidebar.loadError"));
+      setProfileError(t("agentProfiles.sidebar.loadError", "فشل تحميل الوكلاء"));
     } finally {
       setAgentsLoading(false);
     }
-  }, [agentsListTab]);
+  }, [agentsListTab, agentIdFromUrl, t]);
 
-  const autoOpenedRef = useRef(false);
-
-  /* ── Load agents ── */
-  useEffect(() => { loadAgents(); }, [loadAgents]);
-
-  /* ── Show ready cards instead of auto-opening dialog ── */
   useEffect(() => {
-    if (agents.length > 0) autoOpenedRef.current = false;
-  }, [agents.length]);
+    loadAgents();
+  }, [loadAgents]);
 
   const orderedAgents = useMemo(() => {
     const ceo = agents.find((a) => a.role === "CEO");
@@ -263,80 +194,55 @@ export default function AgentProfilesPage() {
     return [ceo, ...agents.filter((a) => a.id !== ceo.id)];
   }, [agents]);
 
-  /* ── Load templates ── */
+  /* ── Load templates for Create Agent ── */
   useEffect(() => {
     if (!createOpen) return;
     setTemplatesLoading(true);
     tryApiFetch<{ profiles: Array<{ slug: string; name: string; role: string; allowedTools: string[]; allowedSkills: string[] }> }>("/agent-manager/profiles")
       .then((data) => {
-        if (data?.profiles) setTemplates(data.profiles);
-        else setTemplates([]);
+        setTemplates(data?.profiles || []);
       })
       .catch(() => setTemplates([]))
       .finally(() => setTemplatesLoading(false));
   }, [createOpen]);
 
-  /* ── Load profile ── */
+  /* ── Load selected agent profile ── */
   useEffect(() => {
     if (!selectedId) return;
-    const params = new URLSearchParams(searchParams);
-    params.set("agent", selectedId);
-    setSearchParams(params, { replace: true });
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("agent", selectedId);
+      return next;
+    }, { replace: true });
 
     let cancelled = false;
     setProfileLoading(true);
     setProfileError(null);
     setProfile(null);
     setEditing(false);
+
     sandboxApi.getAgentProfile(selectedId)
       .then((data) => {
         if (!cancelled) {
           setProfile(data);
-          setDraftName(data.agent.name);
+          setDraftName(data.agent.name || "");
           setDraftIcon(data.agent.icon || "🤖");
           setDraftDescription(data.agent.description || "");
-          setDraftFiles({ ...data.files });
-          const loadedConfig = (data.agent as { config?: Record<string, string> }).config || {};
-          let parsedConfig = loadedConfig;
-          if (!loadedConfig.soul_persona && data.files?.["SOUL.md"]) {
-            const soul = data.files["SOUL.md"];
-            const lines = soul.split("\n");
-            const first = lines[0]?.match(/^أنت (.+?)(?:، (.+?))?\.$/);
-            if (first) {
-              parsedConfig = { soul_persona: first[1] || "", soul_goal: first[2] || "" };
-              const sectionMap: Record<string, string> = {
-                "أسلوب الرد": "soul_tone",
-                "المهام الأساسية": "soul_tasks",
-                "الحدود": "soul_boundaries",
-                "رسالة الترحيب": "soul_welcome",
-                "عندما لا تعرف الإجابة": "soul_escalation",
-                "لغة الرد": "soul_language",
-              };
-              for (const [section, key] of Object.entries(sectionMap)) {
-                const re = new RegExp(`## ${section}\\n([\\s\\S]*?)(?=\\n## |\\n?$)`);
-                const m = soul.match(re);
-                if (m) parsedConfig[key] = m[1].trim();
-              }
-              const toneRev: Record<string, string> = { "ودود ومتعاون": "friendly", "رسمي ومهني": "formal", "مختصر ومباشر": "concise", "مفصل وشامل": "detailed" };
-              if (parsedConfig.soul_tone && toneRev[parsedConfig.soul_tone]) parsedConfig.soul_tone = toneRev[parsedConfig.soul_tone];
-              const langRev: Record<string, string> = { "حسب لغة العميل (عربي أو إنجليزي)": "auto", "العربية": "ar", "English": "en" };
-              if (parsedConfig.soul_language && langRev[parsedConfig.soul_language]) parsedConfig.soul_language = langRev[parsedConfig.soul_language];
-              const escRev: Record<string, string> = {
-                "إذا كنت لا تعرف الإجابة، اسأل التاجر عبر لوحة التحكم.": "knowledge_ask",
-                "إذا كنت لا تعرف الإجابة، حول المحادثة إلى فريق الدعم البشري.": "escalate_human",
-                "إذا كنت لا تعرف الإجابة، اعتذر للعميل واطلب منه التواصل مع الدعم.": "apologize",
-              };
-              if (parsedConfig.soul_escalation && escRev[parsedConfig.soul_escalation]) parsedConfig.soul_escalation = escRev[parsedConfig.soul_escalation];
-            }
-          }
-          setDraftConfig(parsedConfig);
-          if (parsedConfig.soul_persona) generateSoulFromConfig(parsedConfig);
+          setDraftFiles({ ...(data.files || {}) });
+          setDraftConfig({ ...((data.agent as { config?: Record<string, string> }).config || {}) });
         }
       })
-      .catch((err) => { if (!cancelled) setProfileError(err?.message || "Failed to load profile"); })
-      .finally(() => { if (!cancelled) setProfileLoading(false); });
-    return () => { cancelled = true; };
-  }, [selectedId]);
+      .catch((err) => {
+        if (!cancelled) setProfileError(err?.message || "Failed to load profile");
+      })
+      .finally(() => {
+        if (!cancelled) setProfileLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedId, setSearchParams]);
 
   /* ── beforeunload warning ── */
   useEffect(() => {
@@ -349,246 +255,163 @@ export default function AgentProfilesPage() {
     return () => window.removeEventListener("beforeunload", handler);
   }, [hasUnsavedChanges]);
 
-  /* ── Ctrl+S save ── */
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "s") {
-        e.preventDefault();
-        if (hasUnsavedChanges && !profileSaving) saveProfile();
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [hasUnsavedChanges, profileSaving]);
-
-  /* ── Toggle status ── */
+  /* ── Toggle Status ── */
   const toggleStatus = async (nextActive: boolean) => {
     if (!selectedId || !profile) return;
     setStatusSaving(true);
     const data = await tryApiFetch<{ success: boolean; agent: { status: string } }>(
       `/agent/agents/${selectedId}/status`,
-      { method: "PATCH", body: JSON.stringify({ status: nextActive ? "ACTIVE" : "PAUSED" }) },
+      { method: "PATCH", body: JSON.stringify({ status: nextActive ? "ACTIVE" : "PAUSED" }) }
     );
     if (data?.agent?.status) {
-      setProfile((prev) => prev ? { ...prev, agent: { ...prev.agent, status: data.agent.status } } : prev);
+      const nextStatus = data.agent.status;
+      setProfile((prev) => (prev ? { ...prev, agent: { ...prev.agent, status: nextStatus } } : prev));
+      setAgents((prev) => prev.map((a) => (a.id === selectedId ? { ...a, status: nextStatus } : a)));
+      toast.success(nextActive ? t("agentProfiles.header.status.active_toggle", "تم تفعيل الوكيل") : t("agentProfiles.header.status.paused_toggle", "تم إيقاف الوكيل"));
     }
     setStatusSaving(false);
   };
 
-  /* ── Save profile ── */
+  /* ── Save Profile ── */
   const saveProfile = async () => {
     if (!selectedId || !profile) return;
     setProfileSaving(true);
     setProfileError(null);
+
     const body: Record<string, unknown> = {
       name: draftName || profile.agent.name,
-      description: draftDescription || profile.agent.description,
+      description: draftDescription,
       role: profile.agent.role,
       icon: draftIcon,
       config: draftConfig,
       files: draftFiles,
     };
+
     const data = await tryApiFetch<{ success: boolean } & Record<string, unknown>>(
       `/agent/agents/${selectedId}/files`,
-      { method: "PUT", body: JSON.stringify(body) },
+      { method: "PUT", body: JSON.stringify(body) }
     );
+
     if (data) {
-      setProfile((prev) => prev ? {
-        ...prev,
-        agent: { ...prev.agent, name: draftName || prev.agent.name, description: draftDescription || prev.agent.description, icon: draftIcon, config: draftConfig } as typeof prev.agent,
-        files: { ...draftFiles },
-      } : prev);
-      setAgents((prev) => prev.map((a) => a.id === selectedId ? { ...a, name: draftName || a.name, icon: draftIcon } : a));
+      setProfile((prev) =>
+        prev
+          ? ({
+              ...prev,
+              agent: {
+                ...prev.agent,
+                name: draftName || prev.agent.name,
+                description: draftDescription,
+                icon: draftIcon,
+                config: draftConfig,
+              },
+              files: { ...draftFiles },
+            } as typeof prev)
+          : prev
+      );
+      setAgents((prev) =>
+        prev.map((a) =>
+          a.id === selectedId
+            ? { ...a, name: draftName || a.name, icon: draftIcon, description: draftDescription }
+            : a
+        )
+      );
       setEditing(false);
-      toast.success(t("agentProfiles.toast.saveSuccess"));
+      toast.success(t("agentProfiles.toast.saveSuccess", "تم حفظ التغييرات بنجاح"));
     } else {
-      setProfileError(t("agentProfiles.toast.saveFailed"));
+      setProfileError(t("agentProfiles.toast.saveFailed", "فشل حفظ التغييرات"));
     }
     setProfileSaving(false);
   };
 
-  const selectedTemplate = templates.find((t) => t.slug === newAgentTemplate);
-
-  /* ── Create agent ── */
-  const handleCreateAgent = async () => {
-    if (!newAgentName.trim()) return;
-    setCreating(true);
-    setCreateError(null);
-    const hasConfig = Object.keys(newConfig).length > 0;
-    const soulContent = hasConfig ? buildSoulContent(newConfig) : "";
-    const data = await tryApiFetch<Record<string, unknown>>(
-      "/agent/agents",
-      { method: "POST", body: JSON.stringify({
-        name: newAgentName.trim(),
-        role: selectedTemplate?.role || "CUSTOM",
-        templateSlug: newAgentTemplate || null,
-        icon: newAgentIcon,
-        description: newAgentDesc || null,
-      })},
-    );
-    if (data?.id) {
-      if (hasConfig) {
-        await tryApiFetch(`/agent/agents/${data.id}/files`, {
-          method: "PUT", body: JSON.stringify({
-            config: newConfig,
-            files: soulContent ? { "SOUL.md": soulContent } : {},
-          }),
-        });
-      }
-      setCreateOpen(false);
-      setNewAgentName("");
-      setNewAgentIcon("🤖");
-      setNewAgentDesc("");
-      setNewAgentTemplate(null);
-      setNewConfig({});
-      toast.success(t("agentProfiles.toast.createSuccess", { name: data.name as string }));
-      sandboxApi.getAgents().then((res) => {
-        setAgents(res.agents as AgentItem[]);
-        setSelectedId(data.id as string);
-        const params = new URLSearchParams(searchParams);
-        params.set("agent", data.id as string);
-        setSearchParams(params, { replace: true });
-      }).catch(() => {});
-    } else {
-      setCreateError(t("agentProfiles.toast.createFailed"));
-    }
-    setCreating(false);
+  /* ── Discard Changes ── */
+  const discardChanges = () => {
+    if (!profile) return;
+    setEditing(false);
+    setDraftName(profile.agent.name || "");
+    setDraftIcon(profile.agent.icon || "🤖");
+    setDraftDescription(profile.agent.description || "");
+    setDraftFiles({ ...(profile.files || {}) });
+    setDraftConfig({ ...((profile.agent as { config?: Record<string, string> }).config || {}) });
   };
 
-
-  /* ── Delete agent ── */
+  /* ── Delete / Archive Agent ── */
   const handleDeleteAgent = async () => {
     if (!deleteConfirm || !selectedId) return;
     setDeleting(true);
-    setCreateError(null);
     const data = await tryApiFetch<{ success: boolean }>(`/agent/agents/${selectedId}`, { method: "DELETE" });
     if (data) {
       setDeleteConfirm(null);
       const remaining = agents.filter((a) => a.id !== selectedId);
       setAgents(remaining);
       if (remaining.length > 0) setSelectedId(remaining[0].id);
-      else { setSelectedId(null); setProfile(null); setProfileError(null); }
-      toast.success(t("agentProfiles.toast.deleteSuccess"));
+      else {
+        setSelectedId(null);
+        setProfile(null);
+      }
+      toast.success(t("agentProfiles.toast.deleteSuccess", "تمت أرشفة الوكيل"));
     } else {
-      setCreateError(t("agentProfiles.toast.deleteFailed"));
+      toast.error(t("agentProfiles.toast.deleteFailed", "فشل حذف الوكيل"));
     }
     setDeleting(false);
   };
 
   const selectedAgent = agents.find((a) => a.id === selectedId);
 
-  /* ── Update page title ── */
+  /* ── Dynamic Page Title ── */
   useEffect(() => {
     if (selectedAgent?.name) {
-      document.title = selectedAgent.name + " — " + t("agentProfiles.sidebar.title");
+      document.title = `${selectedAgent.name} — ${t("agentProfiles.sidebar.title", "فريق الايجنت")}`;
     }
   }, [selectedAgent?.name, t]);
 
-  const channels = useMemo(() => getAgentChannels(profile), [profile]);
-  const active = isActive(profile?.agent?.status);
-  const createdStr = relativeTime((profile?.agent as { createdAt?: string })?.createdAt, t, i18n.language);
-
-  const agentNameMap = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const a of agents) map.set(a.id, a.name);
-    return map;
-  }, [agents]);
-
-  const resolvedParentName = selectedAgent?.parentId
-    ? (agentNameMap.get(selectedAgent.parentId) || selectedAgent.parentId)
-    : null;
+  /* ── Channels computation ── */
+  const channels = useMemo(() => {
+    if (selectedAgent?.allowedChannels && selectedAgent.allowedChannels.length > 0) {
+      return selectedAgent.allowedChannels;
+    }
+    const text = [profile?.agent.role, profile?.agent.templateSlug, profile?.agent.description].filter(Boolean).join(" ").toLowerCase();
+    const chs: string[] = [];
+    if (text.includes("facebook") || text.includes("messenger")) chs.push("facebook");
+    if (text.includes("whatsapp")) chs.push("whatsapp");
+    return chs.length > 0 ? chs : ["whatsapp"];
+  }, [selectedAgent, profile]);
 
   const filteredAgents = orderedAgents.filter((a) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.toLowerCase();
-    return collectAgentText(a).includes(q) || a.name.toLowerCase().includes(q);
+    return a.name.toLowerCase().includes(q) || (a.role && a.role.toLowerCase().includes(q));
   });
 
-  const buildSoulContent = (config: Record<string, string>): string => {
-    const persona = config.soul_persona || "";
-    const goal = config.soul_goal || "";
-    const toneMap: Record<string, string> = { friendly: "ودود ومتعاون", formal: "رسمي ومهني", concise: "مختصر ومباشر", detailed: "مفصل وشامل" };
-    const tone = toneMap[config.soul_tone || ""] || "";
-    const tasks = config.soul_tasks || "";
-    const boundaries = config.soul_boundaries || "";
-    const langMap: Record<string, string> = { auto: "حسب لغة العميل (عربي أو إنجليزي)", ar: "العربية", en: "English" };
-    const language = langMap[config.soul_language || ""] || "";
-    const welcome = config.soul_welcome || "";
-    const escalationMap: Record<string, string> = { knowledge_ask: "إذا كنت لا تعرف الإجابة، اسأل التاجر عبر لوحة التحكم.", escalate_human: "إذا كنت لا تعرف الإجابة، حول المحادثة إلى فريق الدعم البشري.", apologize: "إذا كنت لا تعرف الإجابة، اعتذر للعميل واطلب منه التواصل مع الدعم." };
-    const escalation = escalationMap[config.soul_escalation || ""] || escalationMap.knowledge_ask;
-    const parts: string[] = [];
-    if (persona || goal) parts.push(goal ? `أنت ${persona}، ${goal}.` : `أنت ${persona}.`);
-    if (tone) parts.push(`\n## أسلوب الرد\n${tone}`);
-    if (tasks) parts.push(`\n## المهام الأساسية\n${tasks}`);
-    if (boundaries) parts.push(`\n## الحدود\n${boundaries}`);
-    if (welcome) parts.push(`\n## رسالة الترحيب\n${welcome}`);
-    if (escalation) parts.push(`\n## عندما لا تعرف الإجابة\n${escalation}`);
-    if (language) parts.push(`\n## لغة الرد\n${language}`);
-    return parts.join("\n\n");
-  };
-
-  const generateSoulFromConfig = (config: Record<string, string>) => {
-    setDraftFiles((prev) => ({ ...prev, "SOUL.md": buildSoulContent(config) }));
-  };
-
-  const soulTimer = useRef<ReturnType<typeof setTimeout>>();
-  const handleSoulFieldChange = (key: string, value: string) => {
-    const newConfig = { ...draftConfig, [key]: value };
-    setDraftConfig(newConfig);
-    if (soulTimer.current) clearTimeout(soulTimer.current);
-    soulTimer.current = setTimeout(() => generateSoulFromConfig(newConfig), 300);
-  };
-
-  const discardChanges = () => {
-    if (!profile) return;
-    setEditing(false);
-    setDraftName(profile.agent.name);
-    setDraftIcon(profile.agent.icon || "🤖");
-    setDraftDescription(profile.agent.description || "");
-    setDraftFiles({ ...profile.files });
-    const discardedConfig = (profile.agent as { config?: Record<string, string> }).config || {};
-    let parsedDiscard = discardedConfig;
-    if (!discardedConfig.soul_persona && profile.files?.["SOUL.md"]) {
-      const soul = profile.files["SOUL.md"];
-      const first = soul.split("\n")[0]?.match(/^أنت (.+?)(?:، (.+?))?\.$/);
-      if (first) {
-        parsedDiscard = { soul_persona: first[1] || "", soul_goal: first[2] || "" };
-        const secMap: Record<string, string> = { "أسلوب الرد": "soul_tone", "المهام الأساسية": "soul_tasks", "الحدود": "soul_boundaries", "رسالة الترحيب": "soul_welcome", "عندما لا تعرف الإجابة": "soul_escalation", "لغة الرد": "soul_language" };
-        for (const [sec, key] of Object.entries(secMap)) {
-          const m = soul.match(new RegExp(`## ${sec}\\n([\\s\\S]*?)(?=\\n## |\\n?$)`));
-          if (m) parsedDiscard[key] = m[1].trim();
-        }
-        const tR: Record<string, string> = { "ودود ومتعاون": "friendly", "رسمي ومهني": "formal", "مختصر ومباشر": "concise", "مفصل وشامل": "detailed" };
-        if (parsedDiscard.soul_tone && tR[parsedDiscard.soul_tone]) parsedDiscard.soul_tone = tR[parsedDiscard.soul_tone];
-        const lR: Record<string, string> = { "حسب لغة العميل (عربي أو إنجليزي)": "auto", "العربية": "ar", "English": "en" };
-        if (parsedDiscard.soul_language && lR[parsedDiscard.soul_language]) parsedDiscard.soul_language = lR[parsedDiscard.soul_language];
-        const eR: Record<string, string> = { "إذا كنت لا تعرف الإجابة، اسأل التاجر عبر لوحة التحكم.": "knowledge_ask", "إذا كنت لا تعرف الإجابة، حول المحادثة إلى فريق الدعم البشري.": "escalate_human", "إذا كنت لا تعرف الإجابة، اعتذر للعميل واطلب منه التواصل مع الدعم.": "apologize" };
-        if (parsedDiscard.soul_escalation && eR[parsedDiscard.soul_escalation]) parsedDiscard.soul_escalation = eR[parsedDiscard.soul_escalation];
-      }
-    }
-    setDraftConfig(parsedDiscard);
-    if (parsedDiscard.soul_persona) generateSoulFromConfig(parsedDiscard);
-  };
-
+  /* ── Sidebar Component ── */
   const sidebarContent = (
-    <aside className="w-64 flex-shrink-0 border-r border-border/50 flex flex-col overflow-hidden">
-      <div className="px-4 py-3 border-b border-border/50 flex items-center gap-2">
-        <Bot className="size-4 text-primary" aria-hidden="true" />
-        <h2 className="text-sm font-bold text-foreground/90">{t("agentProfiles.sidebar.title")}</h2>
-        {!agentsLoading && <Badge variant="secondary" className="text-xs mr-auto">{agents.length}</Badge>}
-        <button onClick={() => setCreateOpen(true)}
-          className="flex items-center justify-center size-6 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-primary"
-          title={t("agentProfiles.sidebar.addTitle")}
+    <aside className="w-64 shrink-0 border-r border-border/50 flex flex-col overflow-hidden bg-card/40">
+      <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Bot className="size-4 text-primary" />
+          <h2 className="text-sm font-bold text-foreground/90">{t("agentProfiles.sidebar.title", "فريق الايجنت")}</h2>
+          {!agentsLoading && <Badge variant="secondary" className="text-xs">{agents.length}</Badge>}
+        </div>
+        <button
+          onClick={() => setCreateOpen(true)}
+          className="flex items-center justify-center size-7 rounded-md hover:bg-muted transition-colors text-muted-foreground hover:text-primary"
+          title={t("agentProfiles.sidebar.addTitle", "إضافة وكيل ذكي")}
         >
           <Plus className="size-4" />
         </button>
       </div>
+
       <div className="px-3 py-2">
         <div className="relative">
           <Search className="absolute right-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground/50 pointer-events-none" />
-          <Input placeholder={t("agentProfiles.sidebar.search")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="h-8 pr-8 text-xs" />
+          <Input
+            placeholder={t("agentProfiles.sidebar.search", "بحث...")}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="h-8 pr-8 text-xs"
+          />
         </div>
       </div>
+
       <div className="px-3 pb-2 flex gap-1 border-b border-border/20">
         <button
           onClick={() => {
@@ -619,51 +442,61 @@ export default function AgentProfilesPage() {
           {t("agentProfiles.sidebar.archivedTab", "المؤرشفين")}
         </button>
       </div>
+
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {agentsLoading ? (
           <div className="space-y-2 p-2">
-            {[1,2,3,4].map((i) => (
-              <div key={i} className="flex items-center gap-2.5 px-3 py-2.5">
-                <div className="size-8 rounded-lg bg-muted animate-pulse" />
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-2.5 px-3 py-2.5 animate-pulse">
+                <div className="size-8 rounded-lg bg-muted" />
                 <div className="space-y-1.5 flex-1">
-                  <div className="h-3 w-3/4 rounded bg-muted animate-pulse" />
-                  <div className="h-2 w-1/2 rounded bg-muted animate-pulse" />
+                  <div className="h-3 w-3/4 rounded bg-muted" />
+                  <div className="h-2 w-1/2 rounded bg-muted" />
                 </div>
               </div>
             ))}
           </div>
-        ) : filteredAgents.length === 0 && searchQuery ? (
+        ) : filteredAgents.length === 0 ? (
           <div className="flex flex-col items-center gap-2 px-4 py-10 text-center text-xs text-muted-foreground/60">
             <Search className="size-6 text-muted-foreground/30" />
-            <span>{t("agentProfiles.sidebar.noResults", { query: searchQuery })}</span>
+            <span>{t("agentProfiles.sidebar.noResults", "لا توجد نتائج")}</span>
           </div>
         ) : (
-          filteredAgents.map((agent) => (
-            <button key={agent.id} onClick={() => {
-              if (hasUnsavedChanges && selectedId !== agent.id && !window.confirm(t("agentProfiles.sidebar.unsavedConfirm"))) return;
-              setSelectedId(agent.id);
-              setTab("settings");
-              setMobileDrawerOpen(false);
-            }}
-              className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                selectedId === agent.id
-                  ? "bg-primary/5 border border-primary/20"
-                  : "hover:bg-muted/50 border border-transparent"
-              }`}
-            >
-              <span className="text-xl flex-shrink-0">{agent.icon || "🤖"}</span>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5">
-                  <p className={`text-xs font-semibold truncate ${
-                    selectedId === agent.id ? "text-primary" : "text-foreground/80"
-                  }`}>{agent.name}</p>
-                  <span className={`inline-block size-2.5 rounded-full flex-shrink-0 ${
-                    profile && selectedId === agent.id && active ? "bg-emerald-500" : "bg-muted-foreground/30"
-                  }`} />
+          filteredAgents.map((agent) => {
+            const isAgentActive = agent.status?.toUpperCase() === "ACTIVE";
+            const isCurrentSelected = selectedId === agent.id;
+            return (
+              <button
+                key={agent.id}
+                onClick={() => {
+                  setSelectedId(agent.id);
+                  setTab("settings");
+                  setMobileDrawerOpen(false);
+                }}
+                className={cn(
+                  "w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-right transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isCurrentSelected
+                    ? "bg-primary/10 border border-primary/20 text-primary font-semibold"
+                    : "hover:bg-muted/50 border border-transparent text-foreground/80"
+                )}
+              >
+                <span className="text-xl shrink-0">{agent.icon || "🤖"}</span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-1">
+                    <p className="text-xs truncate font-medium">{agent.name}</p>
+                    <span
+                      className={cn(
+                        "inline-block size-2 rounded-full shrink-0",
+                        isAgentActive ? "bg-emerald-500" : "bg-muted-foreground/30"
+                      )}
+                      title={isAgentActive ? "نشط" : "متوقف"}
+                    />
+                  </div>
+                  <p className="text-[10px] text-muted-foreground truncate">{agent.role}</p>
                 </div>
-              </div>
-            </button>
-          ))
+              </button>
+            );
+          })
         )}
       </div>
     </aside>
@@ -671,7 +504,7 @@ export default function AgentProfilesPage() {
 
   return (
     <div className="flex h-[calc(100dvh-140px)] lg:h-[calc(100dvh-90px)] bg-slate-50 dark:bg-slate-950 overflow-hidden">
-      {/* ── Mobile: Sheet Drawer + Full Main ── */}
+      {/* ── Mobile Drawer ── */}
       {isMobile && (
         <Sheet open={mobileDrawerOpen} onOpenChange={setMobileDrawerOpen}>
           <SheetContent side="right" className="w-[300px] p-0">
@@ -680,210 +513,115 @@ export default function AgentProfilesPage() {
         </Sheet>
       )}
 
-      {/* ── Desktop: Static Sidebar ── */}
+      {/* ── Desktop Static Sidebar ── */}
       {!isMobile && sidebarContent}
 
       {/* ── Main Panel ── */}
-      <main className="flex-1 flex flex-col overflow-y-auto min-h-0">
-        {/* Header */}
-        <div className="px-4 lg:px-6 py-4 border-b border-border/50">
-          {/* Mobile header row */}
-          <div className="flex items-center gap-2 mb-3 lg:hidden">
-            <button onClick={() => setMobileDrawerOpen(true)}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t("agentProfiles.sidebar.title")}
+      <main className="flex-1 flex flex-col overflow-y-auto min-h-0 min-w-0">
+        {/* Mobile Header Row */}
+        <div className="flex items-center justify-between gap-2 p-3 border-b border-border/50 lg:hidden bg-card/60">
+          <button
+            onClick={() => setMobileDrawerOpen(true)}
+            className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
+            aria-label="القائمة"
+          >
+            <Menu className="size-5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => navigate(`/admin/ai-hub?tab=sandbox&agent=${selectedId || ""}`)}
+              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
+              title="تجربة في الساندبوكس"
             >
-              <Menu className="size-5" aria-hidden="true" />
+              <MessageSquare className="size-4" />
             </button>
-            <Badge variant="secondary" className="text-xs mr-auto">{agents.length}</Badge>
-            <button onClick={() => navigate("/admin/ai-chat")}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t("agentProfiles.header.chatWithManager")}
-              title={t("agentProfiles.header.chatWithManager")}
-            >
-              <MessageSquare className="size-4" aria-hidden="true" />
-            </button>
-            <button onClick={() => loadAgents()}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t("agentProfiles.header.refresh")}
-              title={t("agentProfiles.header.refresh")}
+            <button
+              onClick={loadAgents}
+              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
               disabled={agentsLoading}
             >
-              <RefreshCw className={cn("size-4", agentsLoading && "animate-spin")} aria-hidden="true" />
+              <RefreshCw className={cn("size-4", agentsLoading && "animate-spin")} />
             </button>
-            <button onClick={() => setCreateOpen(true)}
-              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-              aria-label={t("agentProfiles.sidebar.addTitle")}
-              title={t("agentProfiles.sidebar.addTitle")}
+            <button
+              onClick={() => setCreateOpen(true)}
+              className="flex items-center justify-center size-8 rounded-lg hover:bg-muted text-muted-foreground"
             >
-              <Plus className="size-5" aria-hidden="true" />
+              <Plus className="size-5" />
             </button>
           </div>
+        </div>
 
-          {selectedAgent ? (
-            <div className="space-y-3">
-              {/* Identity row */}
-              <div className="flex items-start gap-3">
-                {editing ? (
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="grid grid-cols-4 gap-0.5">
-                      {AGENT_ICONS.map((icon) => (
-                        <button key={icon} type="button" onClick={() => { if (isIdentityLocked) return; setDraftIcon(icon); if (!editing) setEditing(true); }}
-                          disabled={isIdentityLocked}
-                          className={`size-7 flex items-center justify-center rounded-md text-sm border transition-colors ${
-                            draftIcon === icon
-                              ? "border-primary bg-primary/10"
-                              : "border hover:border-foreground/30"
-                          } ${isIdentityLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-                        >{icon}</button>
-                      ))}
-                    </div>
-                    <span className="text-[10px] text-muted-foreground/60">{t("agentProfiles.icon.label")} {isIdentityLocked && "(🔒 مغلق)"}</span>
-                  </div>
-                ) : (
-                  <span className="text-2xl flex-shrink-0">{selectedAgent.icon || "🤖"}</span>
-                )}
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {editing ? (
-                      <div className="flex items-center gap-1.5">
-                        <Input value={draftName} onChange={(e) => { setDraftName(e.target.value); if (!editing) setEditing(true); }} disabled={isIdentityLocked} className="h-8 text-base font-bold lg:w-64" />
-                        {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">🔒 مغلق</span>}
-                      </div>
-                    ) : (
-                      <h1 className="text-base font-bold text-foreground/90">{selectedAgent.name}</h1>
-                    )}
-                    {profile && (
-                      <>
-                        <span className={`inline-block size-3 rounded-full ${active ? "bg-emerald-500" : "bg-muted-foreground/30"}`} aria-hidden="true" />
-                        <span className="text-xs text-muted-foreground">{active ? t("agentProfiles.header.status.active") : t("agentProfiles.header.status.paused")}</span>
-                        {channels.map((ch) => (
-                          <span key={ch} className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded font-medium">{t(`agentProfiles.channel.${ch}`)}</span>
-                        ))}
-                        {createdStr && <span className="text-xs text-muted-foreground/70"><Clock className="inline-block size-3 ml-1" aria-hidden="true" />{createdStr}</span>}
-                      </>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">{selectedAgent.role}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {profile && (
-                    <div className="flex items-center gap-1.5 rounded-lg border bg-muted/50 px-3 py-1.5">
-                      <Switch checked={active} onCheckedChange={toggleStatus} disabled={statusSaving} />
-                      <span className="text-xs font-medium text-muted-foreground">{statusSaving ? "..." : active ? t("agentProfiles.header.status.active_toggle") : t("agentProfiles.header.status.paused_toggle")}</span>
-                    </div>
-                  )}
-                  {profile?.agent.templateSlug && (
-                    <span className="text-xs font-mono text-muted-foreground/70 bg-muted px-2 py-1.5 rounded">{profile.agent.templateSlug}</span>
-                  )}
-                  {profile && selectedAgent?.role !== "CEO" && (
-                    <button onClick={() => setDeleteConfirm(selectedId)}
-                      className="flex items-center justify-center size-8 rounded-lg border border-transparent hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-950/20 text-muted-foreground/70 hover:text-red-600 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                      aria-label={t("agentProfiles.header.deleteTitle")}
-                      title={t("agentProfiles.header.deleteTitle")}
-                    >
-                      <Trash2 className="size-3.5" aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              </div>
+        {selectedAgent && profile ? (
+          <>
+            {/* Header */}
+            <AgentProfileHeader
+              agentId={selectedAgent.id}
+              agentRole={selectedAgent.role}
+              agentStatus={profile.agent.status}
+              templateSlug={profile.agent.templateSlug}
+              channels={channels}
+              editing={editing}
+              setEditing={setEditing}
+              draftName={draftName}
+              setDraftName={setDraftName}
+              draftIcon={draftIcon}
+              setDraftIcon={setDraftIcon}
+              hasUnsavedChanges={hasUnsavedChanges}
+              statusSaving={statusSaving}
+              profileSaving={profileSaving}
+              onToggleStatus={toggleStatus}
+              onSave={saveProfile}
+              onDiscard={discardChanges}
+              onDelete={() => setDeleteConfirm(selectedId)}
+              onRefresh={loadAgents}
+              refreshLoading={agentsLoading}
+            />
 
-              {/* Toolbar row */}
-              {profile && (
-                <div className="flex items-center gap-2 pt-3 border-t border-border/50">
-                  {!editing && (
-                    <Button size="sm" variant="outline" className="h-8 text-xs px-3" onClick={() => { setEditing(true); }}>
-                      <PenLine className="size-3.5 ml-1" aria-hidden="true" />{t("agentProfiles.settings.edit")}
-                    </Button>
+            {/* Tabs Bar */}
+            <div className="border-b border-border/50 px-4 lg:px-6 flex gap-2 bg-card/40">
+              {tabs.map(({ key, label, icon }) => (
+                <button
+                  key={key}
+                  onClick={() => setTab(key)}
+                  className={cn(
+                    "flex items-center gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap",
+                    tab === key
+                      ? "border-primary text-primary"
+                      : "border-transparent text-muted-foreground hover:text-foreground"
                   )}
-                  <div className="mr-auto" />
-                  <Button variant="ghost" size="icon" className="size-8" onClick={loadAgents} disabled={agentsLoading} aria-label={t("agentProfiles.header.refresh")} title={t("agentProfiles.header.refresh")}>
-                    <RefreshCw className={cn("size-3.5", agentsLoading && "animate-spin")} aria-hidden="true" />
-                  </Button>
-                  {editing && hasUnsavedChanges && (
-                    <Button size="sm" variant="outline" className="h-8 text-xs px-2.5" onClick={discardChanges}>
-                      <X className="size-3.5 ml-1" aria-hidden="true" />{t("agentProfiles.header.discard")}
-                    </Button>
-                  )}
-                  <Button size="sm" className="h-8 text-xs px-3" onClick={saveProfile} disabled={profileSaving || !editing || !hasUnsavedChanges}>
-                    {profileSaving ? <Loader2 className="size-3.5 animate-spin ml-1" aria-hidden="true" /> : <Save className="size-3.5 ml-1" aria-hidden="true" />}
-                    {profileSaving ? t("agentProfiles.header.saving") : editing && hasUnsavedChanges ? t("agentProfiles.header.save") : t("agentProfiles.header.saved")}
-                  </Button>
+                >
+                  {icon}
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            <div className="flex-1 overflow-y-auto p-4 lg:p-6">
+              {profileError && (
+                <div role="alert" className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl max-w-2xl mb-5 text-destructive text-xs">
+                  <AlertCircle className="size-4 shrink-0 mt-0.5" />
+                  <span className="flex-1">{profileError}</span>
+                  <button onClick={() => setProfileError(null)} className="font-bold">&times;</button>
                 </div>
               )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-            <p className="text-sm text-muted-foreground/70">{t("agentProfiles.header.noSelectionHint")}</p>
-            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
-              <Plus className="size-3.5 ml-1" />{t("agentProfiles.sidebar.addTitle")}
-            </Button>
-          </div>
-          )}
-        </div>
-        {/* Tabs */}
-        {tabs.length > 1 && (
-          <div className="border-b border-border/50 px-4 lg:px-6 flex gap-1 overflow-x-auto scrollbar-thin">
-            {tabs.map(({ key, label, icon }) => (
-              <button key={key} onClick={() => setTab(key)}
-                className={`flex items-center gap-1.5 lg:gap-2 px-3 lg:px-4 py-3 text-xs lg:text-sm font-medium border-b-2 transition-colors whitespace-nowrap rounded-t-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                  tab === key ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground/80"
-                }`}
-              >
-                {icon}{label}
-              </button>
-            ))}
-          </div>
-        )}
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-y-auto p-4 lg:p-6">
-          {profileLoading && (
-            <div className="animate-pulse space-y-4 max-w-3xl">
-              <div className="flex items-center gap-3">
-                <div className="size-12 rounded-xl bg-muted" />
-                <div className="space-y-2 flex-1">
-                  <div className="h-5 w-2/3 rounded bg-muted" />
-                  <div className="h-3 w-1/3 rounded bg-muted" />
-                </div>
-              </div>
-              <div className="flex gap-2">
-                <div className="h-6 w-16 rounded-full bg-muted" />
-                <div className="h-6 w-24 rounded-full bg-muted" />
-              </div>
-              <div className="h-11 w-full rounded-lg bg-muted" />
-              <div className="grid grid-cols-2 gap-2">
-                {[1,2,3,4].map((i) => <div key={i} className="h-14 rounded-lg bg-muted" />)}
-              </div>
-            </div>
-          )}
-
-          {profileError && !profileLoading && (
-            <div role="alert" aria-live="polite" className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl max-w-lg mb-4">
-              <AlertCircle className="size-5 text-red-500 flex-shrink-0 mt-0.5" />
-              <span className="flex-1 text-sm text-red-600 dark:text-red-400">{profileError}</span>
-              <button onClick={() => setProfileError(null)} className="text-red-500 hover:text-red-700 font-bold" aria-label={t("agentProfiles.header.discard")}>&times;</button>
-            </div>
-          )}
-
-          {!profileLoading && !profileError && profile && (
-            <>
               {profile.agent.status?.toUpperCase() === "ARCHIVED" ? (
-                <div className="max-w-xl mx-auto my-12 p-8 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-center space-y-6 shadow-sm">
-                  <div className="size-16 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto text-2xl">
+                <div className="max-w-md mx-auto my-12 p-6 bg-card border border-border rounded-2xl text-center space-y-5 shadow-sm">
+                  <div className="size-14 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center mx-auto text-2xl">
                     {draftIcon || "🤖"}
                   </div>
-                  <div className="space-y-2">
-                    <h3 className="text-lg font-bold text-foreground">{draftName}</h3>
+                  <div className="space-y-1">
+                    <h3 className="text-base font-bold text-foreground">{draftName}</h3>
                     <p className="text-xs text-muted-foreground">{profile.agent.role}</p>
-                    <p className="text-sm text-foreground/80 max-w-md mx-auto leading-relaxed">
-                      {t("agentProfiles.archived.desc", "هذا الوكيل مؤرشف حالياً. يمكنك استعادته للعمل وتعديل إعداداته، أو حذفه بشكل نهائي من قاعدة البيانات.")}
+                    <p className="text-xs text-muted-foreground pt-2 leading-relaxed">
+                      {t("agentProfiles.archived.desc", "هذا الوكيل مؤرشف حالياً. يمكنك استعادته للعمل، أو حذفه بشكل نهائي.")}
                     </p>
                   </div>
-                  <div className="flex items-center justify-center gap-4 pt-4">
+                  <div className="flex items-center justify-center gap-3 pt-2">
                     <Button
                       onClick={async () => {
-                        const data = await tryApiFetch<{ success: boolean; agent: { status: string } }>(
+                        const data = await tryApiFetch<{ success: boolean }>(
                           `/agent/agents/${selectedId}/status`,
                           { method: "PATCH", body: JSON.stringify({ status: "ACTIVE" }) }
                         );
@@ -891,21 +629,19 @@ export default function AgentProfilesPage() {
                           toast.success(t("agentProfiles.archived.restoreSuccess", "تمت استعادة الوكيل بنجاح."));
                           setAgentsListTab("active");
                           loadAgents();
-                        } else {
-                          toast.error(t("agentProfiles.archived.restoreFailed", "فشل استعادة الوكيل."));
                         }
                       }}
-                      className="gap-2 h-9 text-xs"
+                      className="gap-1.5 h-8 text-xs"
                     >
-                      <RefreshCw className="size-3.5" />
+                      <RefreshCw className="size-3" />
                       {t("agentProfiles.archived.restoreBtn", "استعادة الوكيل")}
                     </Button>
                     <Button
                       variant="destructive"
                       onClick={() => setDeleteConfirm("permanent")}
-                      className="gap-2 h-9 text-xs"
+                      className="gap-1.5 h-8 text-xs"
                     >
-                      <Trash2 className="size-3.5" />
+                      <Trash2 className="size-3" />
                       {t("agentProfiles.archived.deleteBtn", "حذف نهائي")}
                     </Button>
                   </div>
@@ -913,291 +649,122 @@ export default function AgentProfilesPage() {
               ) : (
                 <>
                   {tab === "settings" && (
-                    <div className="max-w-3xl space-y-6">
-                      {!editing ? (
-                        <div className="space-y-5">
-                          {/* اسم الوكيل */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.agentName")}</label>
-                            <p className={`text-sm ${draftName ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                              {draftName || "—"}
-                            </p>
-                          </div>
-
-                          <hr className="border-t border-border/50" />
-
-                          {/* طريقة الرد */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.tone")}</label>
-                            <p className="text-sm text-foreground/90">
-                              {[
-                                { k: "friendly", l: t("agentProfiles.settings.toneFriendly") },
-                                { k: "formal", l: t("agentProfiles.settings.toneFormal") },
-                                { k: "concise", l: t("agentProfiles.settings.toneConcise") },
-                                { k: "detailed", l: t("agentProfiles.settings.toneDetailed") },
-                              ].find(o => o.k === (draftConfig.soul_tone || "friendly"))?.l}
-                            </p>
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
-                          </div>
-
-                          {/* PERSONA.md - شخصية الوكيل */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground/70 mb-1">{t("agentProfiles.settings.personaLabel")}</label>
-                            <p className={`text-sm whitespace-pre-wrap font-mono ${draftFiles["PERSONA.md"] ? "text-foreground/90" : "text-muted-foreground/40 italic"}`}>
-                              {draftFiles["PERSONA.md"] || "—"}
-                            </p>
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.personaHint")}</p>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="space-y-6">
-                          {/* اسم الوكيل */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                              {t("agentProfiles.settings.agentName")}
-                              {isIdentityLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">{t("agentProfiles.settings.lockedByAdmin")}</span>}
-                            </label>
-                            <Input value={draftName} onChange={(e) => { setDraftName(e.target.value) }}
-                              disabled={isIdentityLocked}
-                              placeholder={t("agentProfiles.settings.agentNamePlaceholder")} className="h-8 text-sm" />
-                          </div>
-
-                          <hr className="border-t border-border/50" />
-
-                          {/* طريقة الرد */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                              {t("agentProfiles.settings.tone")}
-                              {isRulesLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">{t("agentProfiles.settings.lockedByAdmin")}</span>}
-                            </label>
-                            <div className="flex gap-1 bg-muted/50 p-0.5 rounded-lg w-fit">
-                              {[
-                                { key: "friendly", label: t("agentProfiles.settings.toneFriendly") },
-                                { key: "formal", label: t("agentProfiles.settings.toneFormal") },
-                                { key: "concise", label: t("agentProfiles.settings.toneConcise") },
-                                { key: "detailed", label: t("agentProfiles.settings.toneDetailed") },
-                              ].map((opt) => (
-                                <button key={opt.key} type="button"
-                                  disabled={isRulesLocked}
-                                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                                    (draftConfig.soul_tone || "friendly") === opt.key
-                                      ? "bg-background text-foreground shadow-sm animate-none"
-                                      : "text-muted-foreground hover:text-foreground"
-                                  } ${isRulesLocked ? "opacity-50 cursor-not-allowed" : ""}`}
-                                  onClick={() => handleSoulFieldChange("soul_tone", opt.key)}
-                                >{opt.label}</button>
-                              ))}
-                            </div>
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.toneHint")}</p>
-                          </div>
-
-                          {/* PERSONA.md */}
-                          <div>
-                            <label className="block text-sm font-medium text-foreground/70 mb-1 flex items-center gap-1.5">
-                              {t("agentProfiles.settings.personaLabel")}
-                              {isPersonaLocked && <span className="text-xs text-muted-foreground/60 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded flex items-center gap-0.5">{t("agentProfiles.settings.lockedByAdmin")}</span>}
-                            </label>
-                            <Textarea value={draftFiles["PERSONA.md"] || ""} onChange={(e) => setDraftFiles(prev => ({...prev, "PERSONA.md": e.target.value}))}
-                              disabled={isPersonaLocked}
-                              placeholder={t("agentProfiles.settings.personaPlaceholder")} className="text-sm min-h-[120px] resize-y font-mono text-xs" />
-                            <p className="text-xs text-muted-foreground/70 mt-0.5">{t("agentProfiles.settings.personaOverrideHint")}</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    <AgentSettingsTab
+                      editing={editing}
+                      draftName={draftName}
+                      setDraftName={setDraftName}
+                      draftDescription={draftDescription}
+                      setDraftDescription={setDraftDescription}
+                      draftConfig={draftConfig}
+                      setDraftConfig={setDraftConfig}
+                      draftFiles={draftFiles}
+                      setDraftFiles={setDraftFiles}
+                      agentId={selectedAgent.id}
+                      agentIcon={draftIcon}
+                    />
                   )}
 
-                  {(tab as string) === "guardrails" && selectedId && (
+                  {tab === "guardrails" && (
                     <AgentGuardrailsTab
-                      agentId={selectedId}
+                      agentId={selectedAgent.id}
                       companyId={companyId}
-                      agentModel={profile?.agent?.model || "gemini-2.5-flash"}
+                      agentModel={profile.agent.model || "gemini-2.5-flash"}
                       agentProvider="GOOGLE"
                     />
                   )}
                 </>
               )}
-            </>
-          )}
-
-          {!profileLoading && !profileError && !profile && selectedId && (
-            <div className="flex items-center justify-center py-16"><Loader2 className="size-5 text-primary animate-spin" /></div>
-          )}
-
-          {agents.length === 0 && !agentsLoading ? (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <div className="size-16 rounded-2xl bg-indigo-50 dark:bg-indigo-950/30 flex items-center justify-center mb-6">
-                <Bot className="size-8 text-indigo-600 dark:text-indigo-400" />
-              </div>
-              <h2 className="text-lg font-bold text-foreground mb-2">{t("agentProfiles.empty.title")}</h2>
-              <p className="text-sm text-muted-foreground/60 max-w-sm mb-6">
-                {t("agentProfiles.empty.desc")}
-              </p>
-              <Button size="lg" className="h-10 text-sm px-6" onClick={() => setCreateOpen(true)}>
-                <Plus className="size-4 ml-1.5" />{t("agentProfiles.empty.cta")}
-              </Button>
             </div>
-          ) : !selectedId && (
-            <div className="flex flex-col items-center justify-center py-24 text-center">
-              <Bot className="size-12 text-muted-foreground/15 mb-4" />
-              <p className="text-sm text-muted-foreground/60 mb-4">{t("agentProfiles.header.noSelectionHint")}</p>
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
-                <Plus className="size-3.5 ml-1" />{t("agentProfiles.sidebar.addTitle")}
-              </Button>
-            </div>
-          )}
-        </div>
+          </>
+        ) : profileLoading ? (
+          <div className="flex items-center justify-center flex-1 py-20">
+            <Loader2 className="size-6 text-primary animate-spin" />
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center flex-1 py-20 text-center">
+            <Bot className="size-12 text-muted-foreground/30 mb-3" />
+            <p className="text-xs text-muted-foreground mb-4">{t("agentProfiles.header.noSelectionHint", "اختر وكيلاً لعرض التفاصيل")}</p>
+            <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setCreateOpen(true)}>
+              <Plus className="size-3.5 ml-1" />
+              {t("agentProfiles.sidebar.addTitle", "إضافة وكيل ذكي")}
+            </Button>
+          </div>
+        )}
       </main>
 
-      {/* ── Create Agent Dialog (Single-Step) ── */}
-      <Dialog open={createOpen} onOpenChange={(o) => { if (!o && !creating) { setCreateOpen(false); } }}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-base flex items-center gap-2">
-              <span className="size-6 rounded-lg bg-indigo-100 dark:bg-indigo-900/40 flex items-center justify-center text-sm">✨</span>
-              {t("agentProfiles.create.title")}
-            </DialogTitle>
-          </DialogHeader>
+      {/* ── Create Agent Dialog ── */}
+      <CreateAgentDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        templates={templates}
+        templatesLoading={templatesLoading}
+        onCreated={(newId) => {
+          toast.success(t("agentProfiles.toast.createSuccess", "تم إنشاء الوكيل بنجاح"));
+          loadAgents().then(() => {
+            setSelectedId(newId);
+          });
+        }}
+      />
 
-          <div className="py-3 space-y-4">
-            {/* اختيار القالب */}
-            <div>
-              <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.create.template")}</label>
-              <Select value={newAgentTemplate || "custom"} onValueChange={(v) => { setNewAgentTemplate(v === "custom" ? null : v); if (v !== "custom") { const tpl = templates.find((t) => t.slug === v); if (tpl && !newAgentName) setNewAgentName(tpl.name); } }}>
-                <SelectTrigger className="h-9 text-sm">
-                  <SelectValue>{newAgentTemplate ? `${templateIcon(newAgentTemplate)} ${templates.find((t) => t.slug === newAgentTemplate)?.name || ""}` : `⚙️ ${t("agentProfiles.create.custom")}`}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="custom">⚙️ {t("agentProfiles.create.custom")}</SelectItem>
-                  {templates.map((tpl) => (
-                    <SelectItem key={tpl.slug} value={tpl.slug}>{templateIcon(tpl.slug)} {tpl.name}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* اسم الوكيل + أيقونة */}
-            <div className="flex gap-3">
-              <div className="flex-1">
-                <label htmlFor="new-agent-name" className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.create.name")}</label>
-                <Input id="new-agent-name" placeholder={t("agentProfiles.create.namePlaceholder")} value={newAgentName} onChange={(e) => setNewAgentName(e.target.value)} disabled={creating} className="h-9 text-sm" />
-              </div>
-              <div className="flex-shrink-0">
-                <label className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-1">{t("agentProfiles.icon.label")}</label>
-                <div className="grid grid-cols-4 gap-0.5">
-                  {AGENT_ICONS.slice(0, 8).map((icon) => (
-                    <button key={icon} type="button" onClick={() => setNewAgentIcon(icon)} title={icon}
-                      className={`size-8 flex items-center justify-center rounded-md text-sm border transition-colors ${
-                        newAgentIcon === icon
-                          ? "border-indigo-400 bg-indigo-50 dark:bg-indigo-950/30"
-                          : "border-slate-200 dark:border-slate-700 hover:border-slate-300"
-                      }`}
-                    >{icon}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Preview */}
-            {newAgentName && (
-              <div className="flex items-center gap-2.5 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                <span className="text-xl flex-shrink-0">{newAgentIcon}</span>
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-bold text-foreground truncate">{newAgentName}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    {selectedTemplate ? (
-                      <span className="text-[10px] bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-1.5 py-0.5 rounded font-medium">{selectedTemplate.name}</span>
-                    ) : (
-                      <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-500 px-1.5 py-0.5 rounded">{t("agentProfiles.create.custom")}</span>
-                    )}
-                  </div>
-                </div>
-                <span className="size-2 rounded-full bg-emerald-500 flex-shrink-0" />
-              </div>
-            )}
-          </div>
-
-          {createError && (
-            <div className="flex items-start gap-2 p-2 mb-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800 rounded-xl">
-              <AlertCircle className="size-3.5 text-red-500 flex-shrink-0 mt-0.5" />
-              <p className="text-xs text-red-600 dark:text-red-400">{createError}</p>
-            </div>
-          )}
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} disabled={creating} className="h-9 text-xs px-4">{t("agentProfiles.create.cancel")}</Button>
-            <Button onClick={handleCreateAgent} disabled={creating || !newAgentName.trim()} className="h-9 text-xs px-5">
-              {creating ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : <Plus className="ml-1.5 size-3.5" />}
-              {creating ? t("agentProfiles.create.creating") : t("agentProfiles.create.submit")}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-
-      {/* ── Archive Confirmation Dialog ── */}
+      {/* ── Archive Dialog ── */}
       <Dialog open={!!deleteConfirm && deleteConfirm !== "permanent"} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm text-right" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-600">
+            <DialogTitle className="flex items-center gap-2 text-amber-600 text-base">
               <Archive className="size-4" />
-              {t("agentProfiles.archive.title")}
+              {t("agentProfiles.archive.title", "أرشفة الوكيل")}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-3">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              <span dangerouslySetInnerHTML={{ __html: t("agentProfiles.archive.confirm", { name: selectedAgent?.name }) }} />
-            </p>
-            <p className="text-xs text-slate-400 mt-2">{t("agentProfiles.archive.note")}</p>
+          <div className="py-2 text-xs text-muted-foreground">
+            <p>{t("agentProfiles.archive.confirm", `هل أنت متأكد من أرشفة الوكيل ${selectedAgent?.name}؟`)}</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-1">{t("agentProfiles.archive.note", "يمكنك استعادته في أي وقت من قائمة المؤرشفين.")}</p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={deleting}>{t("agentProfiles.archive.cancel")}</Button>
-            <Button variant="destructive" onClick={handleDeleteAgent} disabled={deleting}>
-              {deleting ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-              {deleting ? t("agentProfiles.archive.archiving") : t("agentProfiles.archive.confirmButton")}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirm(null)} disabled={deleting}>
+              {t("common.cancel", "إلغاء")}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleDeleteAgent} disabled={deleting}>
+              {deleting ? <Loader2 className="ml-1 size-3 animate-spin" /> : null}
+              {deleting ? t("agentProfiles.archive.archiving", "جارٍ الأرشفة...") : t("agentProfiles.archive.confirmButton", "أرشفة")}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* ── Permanent Delete Confirmation Dialog ── */}
+      {/* ── Permanent Delete Dialog ── */}
       <Dialog open={deleteConfirm === "permanent"} onOpenChange={(o) => { if (!o && !deleting) setDeleteConfirm(null); }}>
-        <DialogContent className="sm:max-w-sm">
+        <DialogContent className="sm:max-w-sm text-right" dir="rtl">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-destructive text-base">
               <Trash2 className="size-4" />
               {t("agentProfiles.permanentDelete.title", "حذف الوكيل نهائياً")}
             </DialogTitle>
           </DialogHeader>
-          <div className="py-3">
-            <p className="text-sm text-slate-600 dark:text-slate-400">
-              {t("agentProfiles.permanentDelete.confirm", "هل أنت متأكد من رغبتك في حذف هذا الوكيل نهائياً؟ لا يمكن التراجع عن هذا الإجراء وسيتم مسح كافة البيانات بشكل كامل.")}
-            </p>
+          <div className="py-2 text-xs text-muted-foreground">
+            <p>{t("agentProfiles.permanentDelete.confirm", "هل أنت متأكد من رغبتك في حذف هذا الوكيل نهائياً؟ لا يمكن التراجع عن هذا الإجراء.")}</p>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteConfirm(null)} disabled={deleting}>{t("agentProfiles.archive.cancel", "إلغاء")}</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setDeleteConfirm(null)} disabled={deleting}>
+              {t("common.cancel", "إلغاء")}
+            </Button>
             <Button
               variant="destructive"
+              size="sm"
               onClick={async () => {
                 setDeleting(true);
-                const data = await tryApiFetch<{ success: boolean }>(
-                  `/agent/agents/${selectedId}?permanent=true`,
-                  { method: "DELETE" }
-                );
+                const data = await tryApiFetch<{ success: boolean }>(`/agent/agents/${selectedId}?permanent=true`, { method: "DELETE" });
                 if (data) {
                   setDeleteConfirm(null);
                   toast.success(t("agentProfiles.toast.deleteSuccess", "تم حذف الوكيل نهائياً."));
                   setAgentsListTab("archived");
                   loadAgents();
-                } else {
-                  toast.error(t("agentProfiles.toast.deleteFailed", "فشل الحذف النهائي."));
                 }
                 setDeleting(false);
               }}
               disabled={deleting}
             >
-              {deleting ? <Loader2 className="ml-1.5 size-3.5 animate-spin" /> : null}
-              {deleting ? t("agentProfiles.permanentDelete.deleting", "جارٍ الحذف...") : t("agentProfiles.permanentDelete.confirmButton", "حذف نهائي")}
+              {deleting ? <Loader2 className="ml-1 size-3 animate-spin" /> : null}
+              {t("agentProfiles.permanentDelete.confirmButton", "حذف نهائي")}
             </Button>
           </DialogFooter>
         </DialogContent>

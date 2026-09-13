@@ -80,13 +80,14 @@ export default function AgentGuardrailsTab({
       if (!res.ok) throw new Error(`HTTP error ${res.status}`);
       const data = await res.json();
       setRules(data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch guardrail rules", err);
-      setError(err.message || t("agentProfiles.guardrails.loadFailed"));
+      const msg = err instanceof Error ? err.message : t("agentProfiles.guardrails.loadFailed");
+      setError(msg);
     } finally {
       setLoading(false);
     }
-  }, [agentId]);
+  }, [agentId, t]);
 
   useEffect(() => {
     fetchRules();
@@ -139,8 +140,9 @@ export default function AgentGuardrailsTab({
       setFeedbackText("");
       setConflictWarning(null);
       fetchRules();
-    } catch (err: any) {
-      toast.error(err.message || t("agentProfiles.guardrails.saveFailed"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("agentProfiles.guardrails.saveFailed");
+      toast.error(msg);
     } finally {
       setSavingRule(false);
     }
@@ -171,8 +173,9 @@ export default function AgentGuardrailsTab({
       toast.success(t("agentProfiles.guardrails.updateSuccess"));
       setEditingRule(null);
       fetchRules();
-    } catch (err: any) {
-      toast.error(err.message || t("agentProfiles.guardrails.updateFailed"));
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : t("agentProfiles.guardrails.updateFailed");
+      toast.error(msg);
     } finally {
       setSavingRule(false);
     }
@@ -203,11 +206,16 @@ export default function AgentGuardrailsTab({
     }
   };
 
+  // Delete confirmation state
+  const [ruleToDelete, setRuleToDelete] = useState<string | null>(null);
+  const [deletingRule, setDeletingRule] = useState(false);
+
   // 5. Delete rule
-  const handleDeleteRule = async (ruleId: string) => {
-    if (!confirm(t("agentProfiles.guardrails.deleteConfirm"))) return;
+  const handleDeleteRule = async () => {
+    if (!ruleToDelete) return;
+    setDeletingRule(true);
     try {
-      const res = await fetch(buildApiUrl(`ai-admin/agents/${agentId}/guardrails/${ruleId}`), {
+      const res = await fetch(buildApiUrl(`ai-admin/agents/${agentId}/guardrails/${ruleToDelete}`), {
         method: "DELETE",
         headers: {
           ...tokenManager.createAuthHeaders(),
@@ -216,19 +224,20 @@ export default function AgentGuardrailsTab({
       });
       if (!res.ok) throw new Error();
       toast.success(t("agentProfiles.guardrails.deleteSuccess"));
+      setRuleToDelete(null);
       fetchRules();
     } catch {
       toast.error(t("agentProfiles.guardrails.deleteFailed"));
+    } finally {
+      setDeletingRule(false);
     }
   };
 
-
-
   return (
-    <div className="w-full flex flex-col gap-6 lg:h-[calc(100dvh-280px)] lg:overflow-hidden text-right" dir="rtl">
+    <div className="w-full flex flex-col gap-5 text-right" dir="rtl">
       
       {/* Rules Management */}
-      <div className="w-full flex-1 flex flex-col gap-4 lg:overflow-y-auto pr-1 min-h-0 min-w-0">
+      <div className="w-full flex flex-col gap-4 min-w-0">
         
         {/* Sub-header card */}
         <div className="bg-card p-4 rounded-xl border border-border flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -347,7 +356,8 @@ export default function AgentGuardrailsTab({
                             variant="ghost"
                             size="icon"
                             className="size-7 hover:bg-red-500/10"
-                            onClick={() => handleDeleteRule(rule.id)}
+                            onClick={() => setRuleToDelete(rule.id)}
+                            aria-label={t("common.delete", "حذف")}
                           >
                             <Trash2 className="size-3.5 text-red-500" />
                           </Button>
@@ -444,7 +454,7 @@ export default function AgentGuardrailsTab({
 
               <div className="bg-muted p-3 rounded-lg flex flex-col gap-1">
                 <span className="font-semibold">{t("agentProfiles.guardrails.conflictNew")}</span>
-                <span className="text-foreground whitespace-pre-wrap">"{conflictWarning.newExcuse}"</span>
+                <span className="text-foreground whitespace-pre-wrap">&ldquo;{conflictWarning.newExcuse}&rdquo;</span>
               </div>
             </div>
           )}
@@ -462,6 +472,30 @@ export default function AgentGuardrailsTab({
             >
               {savingRule && <Loader2 className="size-3 animate-spin mr-1.5" />}
               {t("agentProfiles.guardrails.conflictForceBtn")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Delete Rule Confirmation */}
+      <Dialog open={ruleToDelete !== null} onOpenChange={(open) => !open && !deletingRule && setRuleToDelete(null)}>
+        <DialogContent className="max-w-sm text-right" dir="rtl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-bold text-destructive flex items-center gap-2">
+              <Trash2 className="size-4" />
+              {t("agentProfiles.guardrails.deleteTitle", "حذف قاعدة السلوك")}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-2 text-xs text-muted-foreground">
+            <p>{t("agentProfiles.guardrails.deleteConfirm", "هل أنت متأكد من رغبتك في حذف قاعدة العمل هذه نهائياً؟")}</p>
+          </div>
+          <DialogFooter className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => setRuleToDelete(null)} disabled={deletingRule}>
+              {t("common.cancel", "إلغاء")}
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleDeleteRule} disabled={deletingRule}>
+              {deletingRule && <Loader2 className="size-3 animate-spin mr-1.5" />}
+              {t("common.delete", "حذف")}
             </Button>
           </DialogFooter>
         </DialogContent>

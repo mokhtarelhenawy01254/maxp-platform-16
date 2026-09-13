@@ -6127,6 +6127,9 @@ declare module 'react-i18next' {
           save: string;
           refresh: string;
           noSelectionHint: string;
+          sandbox: string;
+          training: string;
+          routing: string;
         };
         channel: {
           facebook: string;
@@ -6234,6 +6237,15 @@ declare module 'react-i18next' {
           personaLabel: string;
           personaOverrideHint: string;
           lockedByAdmin: string;
+        };
+        quickTest: {
+          title: string;
+          subtitle: string;
+          placeholder: string;
+          send: string;
+          sending: string;
+          clear: string;
+          error: string;
         };
         autonomy: {
           auto: string;

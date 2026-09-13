@@ -6133,7 +6133,10 @@
       "saving": "Saving...",
       "save": "Save",
       "refresh": "Refresh agent list",
-      "noSelectionHint": "Select an agent to view details"
+      "noSelectionHint": "Select an agent to view details",
+      "sandbox": "Sandbox",
+      "training": "Training",
+      "routing": "Channels"
     },
     "channel": {
       "facebook": "Facebook",
@@ -6238,9 +6241,18 @@
       "customPromptPlaceholder": "e.g. Avoid English terms, address the customer by first name...",
       "customPromptHint": "Free-form field for any additions beyond the templates",
       "edit": "Edit",
-      "personaLabel": "Agent Persona (PERSONA.md)",
-      "personaOverrideHint": "This content is added as PERSONA.md above the base template and does not affect SOUL.md",
+      "personaLabel": "Store Custom Instructions",
+      "personaOverrideHint": "Additional guidelines the agent adheres to in its replies to reflect your store policies",
       "lockedByAdmin": "🔒 Locked by admin"
+    },
+    "quickTest": {
+      "title": "Quick Agent Test",
+      "subtitle": "Send a test message to preview how this agent replies to your customers.",
+      "placeholder": "Type a test message (e.g., Hi, what are the product prices and delivery options?)",
+      "send": "Send",
+      "sending": "Replying...",
+      "clear": "Clear",
+      "error": "Failed to connect to agent at this moment"
     },
     "autonomy": {
       "auto": "Auto",
