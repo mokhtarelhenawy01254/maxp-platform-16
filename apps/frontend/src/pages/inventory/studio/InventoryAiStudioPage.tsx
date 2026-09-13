@@ -24,12 +24,16 @@ import {
 } from "../../../services/inventoryAiService";
 
 const INVENTORY_WELCOME_TEXT =
-  "أهلاً بك! أنا وكيل إدارة المنتجات والمخزون والتسعير 📦.\n\n" +
-  "أستطيع مساعدتك في فحص دقة المخزون، مراقبة هوامش الربح الصافية، واقتراح تسعير تنافسي " +
-  "يحافظ على ربحية المتجر ويحمي من نفاد البضائع أو تراكم المخزون الراكد.\n\n" +
-  "هل ترغب في فحص منتج معين أو مراجعة الأصناف منخفضة الرصيد؟";
+  "أهلاً بك. أنا وكيل إدارة المنتجات والمخزون والتسعير.\n\n" +
+  "أساعدك في فحص دقة المخزون، مراقبة هوامش الربح الصافية، إنشاء وإضافة المنتجات الجديدة من الصور والمواصفات، واقتراح تسعير تنافسي يحافظ على ربحية المتجر.\n\n" +
+  "يمكنك رفع صورة منتج جديد لإنشائه مباشرة أو فحص الأصناف الحالية.";
 
 const INVENTORY_QUICK_PROMPTS: StudioQuickPrompt[] = [
+  {
+    label: "إضافة منتج جديد بالذكاء الاصطناعي من صورة",
+    generatePrompt: () =>
+      "أريد إضافة منتج جديد إلى المتجر والمخزن. سأرفع صورة المنتج لتحديد الاسم والمواصفات والتسعير والكمية المناسبة وإنشائه.",
+  },
   {
     label: "إدراج منتج جديد متعدد المتغيرات",
     generatePrompt: () =>
@@ -107,13 +111,15 @@ const InventoryAiStudioPage: React.FC = () => {
   }, [companyId]);
 
   // Handle User Message Sending
-  const handleSendMessage = async (textToSend: string) => {
-    if (!textToSend.trim() || loading) return;
+  const handleSendMessage = async (textToSend: string, images?: string[]) => {
+    if (!textToSend.trim() && (!images || images.length === 0)) return;
+    if (loading) return;
 
     const userMsg = {
       id: `user-${Date.now()}`,
       sender: "user" as const,
       text: textToSend,
+      images: images && images.length > 0 ? images : undefined,
       timestamp: new Date().toISOString(),
     };
 
@@ -135,7 +141,8 @@ const InventoryAiStudioPage: React.FC = () => {
         textToSend,
         sessions.activeSession.id,
         productPayload,
-        activeAgent?.id
+        activeAgent?.id,
+        images
       );
 
       if (res.success) {

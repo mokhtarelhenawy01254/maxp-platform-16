@@ -1,0 +1,34 @@
+{
+  "id": "product-catalog-creator",
+  "displayName": "Product & Catalog Creator",
+  "version": "1.0.0",
+  "description": "Create, enrich, and onboard products into the store and inventory catalog from photos, visual inspection, supplier specs, or merchant prompts. Extracts titles, categories, pricing, costs, profit margins, SKUs, and variants (sizes/colors) and saves them directly via product_create.",
+  "triggerPhrases": [
+    "أنشئ منتج جديد",
+    "أضف هذا المنتج",
+    "عايز أضيف بضاعة",
+    "نزل المنتج ده على المتجر",
+    "تسجيل منتج",
+    "إضافة منتج من صورة",
+    "اعمل منتج جديد",
+    "أدخل هذا الصنف",
+    "create product",
+    "add new product",
+    "product from image",
+    "new item",
+    "onboard product"
+  ],
+  "allowedTools": [
+    "product_create",
+    "category_list",
+    "product_search",
+    "inventory_check",
+    "product_update_price"
+  ],
+  "requiresHumanApproval": false,
+  "maxToolCount": 6,
+  "successCriteria": {
+    "primary": "product_created_successfully",
+    "secondary": "catalog_enriched_with_variants_and_pricing"
+  }
+}

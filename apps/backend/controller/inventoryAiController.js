@@ -26,6 +26,7 @@ class InventoryAiController {
         threadId = 'inventory_studio_thread',
         agentId: requestedAgentId,
         activeProduct: incomingActiveProduct,
+        images = [],
       } = req.body || {};
 
       if (!message || typeof message !== 'string') {
@@ -34,14 +35,23 @@ class InventoryAiController {
 
       // Resolve the real agent for this company (supports PRODUCT_CREATOR and INVENTORY)
       const resolvedAgent = await this._resolveStudioAgent(companyId, requestedAgentId);
-      if (!resolvedAgent || !resolvedAgent.id) {
-        return res.status(503).json({
-          success: false,
-          error: 'لا يوجد وكيل ذكاء اصطناعي مفعل للمتجر حالياً. يرجى توظيف وكيل المنتجات أو المخزون.',
-        });
-      }
+      const targetAgentId = resolvedAgent?.id || requestedAgentId || 'inventory-pricing-agent';
 
-      const targetAgentId = resolvedAgent.id;
+      // Format image attachments
+      const rawImages = Array.isArray(images)
+        ? images.filter(Boolean)
+        : (typeof images === 'string' && images ? [images] : []);
+      const attachments = rawImages.map(imgUrl => ({
+        type: 'image',
+        url: imgUrl,
+      }));
+
+      // If images exist, augment user message with references
+      let augmentedMessage = message;
+      if (rawImages.length > 0) {
+        const imageListText = rawImages.map((u, idx) => `![صورة المنتج ${idx + 1}](${u})`).join('\n');
+        augmentedMessage = `${message}\n\n${imageListText}`.trim();
+      }
       const scopedThreadId = threadId.endsWith(`_${companyId}`) ? threadId : `${threadId}_${companyId}`;
 
       // Automatically persist incoming user message in Cloud DB
@@ -49,6 +59,7 @@ class InventoryAiController {
         await agentStudioSessionService.appendMessage(companyId, threadId, {
           sender: 'user',
           text: message,
+          images: rawImages.length > 0 ? rawImages : undefined,
         }, 'inventory');
       } catch (dbErr) {
         console.warn('[InventoryAI] Failed to persist user message in DB:', dbErr.message);
@@ -72,20 +83,22 @@ class InventoryAiController {
         console.warn('[InventoryAI] Could not load prior messages:', memErr.message);
       }
 
-      // Send to AI Service with resilient error capture
+      // Send to AI Service with resilient error capture and multimodal attachments
       let result;
       try {
         result = await aiServiceAdminClient.chatWithAgent({
           companyId,
           agentId: targetAgentId,
-          message,
+          message: augmentedMessage,
           threadId: scopedThreadId,
           channel: 'inventory_studio',
           source_channel: 'inventory_studio',
+          attachments: attachments.length > 0 ? attachments : undefined,
           memory_context: {
             recentMessages,
             activeProduct: activeProductContext,
             active_product_context: activeProductContext,
+            images: rawImages,
           },
         });
       } catch (chatErr) {
@@ -207,7 +220,11 @@ class InventoryAiController {
           (a.status === 'ACTIVE' || !a.status)
         );
         if (match?.id) {
-          return { id: match.id, name: match.name, role: match.role, isRouted: true };
+          const ch = Array.isArray(match.allowed_channels || match.allowedChannels || match.channels)
+            ? (match.allowed_channels || match.allowedChannels || match.channels)
+            : [];
+          const isRouted = ch.map(c => String(c).toUpperCase()).includes('INVENTORY_STUDIO');
+          return { id: match.id, name: match.name, role: match.role, isRouted };
         }
       }
     } catch (clientErr) {
@@ -307,7 +324,15 @@ class InventoryAiController {
         console.warn('[InventoryAI] Could not query availableAgents:', err.message);
       }
 
-      const activeAgent = await this._resolveStudioAgent(companyId);
+      let activeAgent = await this._resolveStudioAgent(companyId);
+      if (!activeAgent) {
+        activeAgent = {
+          id: 'inventory-pricing-agent',
+          name: 'وكيل إدارة المنتجات والمخزون والتسعير',
+          role: 'INVENTORY',
+          isRouted: false,
+        };
+      }
 
       return res.json({
         success: true,

@@ -1,18 +1,41 @@
 # Inventory & Pricing Agent Tools
 
-## Allowed
+## Allowed Tools & Parameters
 
-- `product.search`
-- `product.create`
-- `inventory.check`
-- `inventory.adjust`
-- `product.updatePrice`
-- `discount.create_draft`
-- `audit.read`
+### 1. `product.create`
+- **الغرض:** إضافة وإنشاء منتج جديد في المتجر والمخزون مباشرة من الصور أو المواصفات.
+- **المعاملات الصريحة (Structured Parameters):**
+  - `name: string` (مطلوب): اسم المنتج التجاري الواضح (مثال: "قميص كتان بيج").
+  - `price: float` (مطلوب): سعر البيع بالعملة المحلية (مثال: 420.0).
+  - `compare_price: float` (اختياري): سعر الشطب قبل الخصم (مثال: 520.0).
+  - `cost: float` (اختياري): سعر التكلفة لضبط هوامش الأرباح (مثال: 210.0).
+  - `stock: integer` (مطلوب): رصيد المخزون الافتتاحي (مثال: 30).
+  - `sku: string` (اختياري): رمز الصنف الفريد.
+  - `category_name: string` (اختياري): اسم القسم أو التصنيف التجاري (مثال: "أزياء رجالية").
+  - `images: string[]` (اختياري): مصفوفة روابط الصور المرفوعة (تأكد من تمرير صور المنتج المرفقة).
+  - `description: string` (اختياري): وصف تسويقي موجز للخامة والمواصفات.
+  - `variants: object[]` (اختياري): المتغيرات (المقاسات والألوان إن وُجدت).
 
-## Rules
+### 2. `product.search`
+- **الغرض:** استعراض الكتالوج والتحقق من توافر المنتج أو السعر أو عدم تكرار كود SKU.
+- **المعاملات:** `query: string`، `limit: integer`، `list_all: boolean`.
 
-- Any write action requires approval.
-- New products are created as unpublished drafts for merchant review.
-- Price changes must include original price, new price, and reason.
-- Inventory changes must include a reason and source evidence.
+### 3. `category.list`
+- **الغرض:** استعراض أقسام وتصنيفات المتجر لمطابقة المنتج مع القسم الأنسب.
+
+### 4. `inventory.check`
+- **الغرض:** فحص رصيد المخزون الفعلي للصنف.
+- **المعاملات:** `product_id: string` أو `sku: string`.
+
+### 5. `inventory.adjust`
+- **الغرض:** تعديل أو تسوية رصيد المخزون بعد جرد أو حركة توريد.
+- **المعاملات:** `product_id: string`، `new_quantity: integer`، `reason: string`.
+
+### 6. `product.update.price`
+- **الغرض:** تعديل سعر بيع الصنف بعد موافقة التاجر.
+- **المعاملات:** `product_id: string`، `new_price: float`، `reason: string`.
+
+## Rules & Standards
+- المعاملات الصريحة إلزامية؛ يمنع تمرير بيانات غير مهيكلة داخل نصوص عشوائية.
+- عند استلام صورة منتج، استخرج كافة التفاصيل الممكنة ومرر رابط الصورة في `images`.
+- اعرض ملخص الإنشاء في جدول ماركداون واضح وموجز.

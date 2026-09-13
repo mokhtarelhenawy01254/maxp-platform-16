@@ -33,6 +33,7 @@ export interface StudioMessage {
   id: string;
   sender: "user" | "agent";
   text: string;
+  images?: string[];
   toolCalls?: any[];
   timestamp?: string;
 }

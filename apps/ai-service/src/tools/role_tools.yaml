@@ -62,6 +62,7 @@ roles:
     - product_search
     - product_low_stock
     - product_create
+    - category_list
     - inventory_check
     - inventory_adjust
     - product_update_price

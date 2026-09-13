@@ -17,13 +17,15 @@ export async function chatWithInventoryAgent(
   message: string,
   threadId?: string,
   activeProduct?: any,
-  agentId?: string
+  agentId?: string,
+  images?: string[]
 ): Promise<InventoryAgentResponse> {
   const response = await apiClient.post<InventoryAgentResponse>("/inventory/ai/chat", {
     message,
     threadId,
     activeProduct,
     agentId,
+    images: Array.isArray(images) && images.length > 0 ? images : undefined,
   });
   return response.data;
 }

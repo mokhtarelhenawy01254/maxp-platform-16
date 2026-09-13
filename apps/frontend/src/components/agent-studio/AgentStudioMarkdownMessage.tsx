@@ -41,6 +41,12 @@ interface DividerBlock {
   type: "divider";
 }
 
+interface ImageBlock {
+  type: "image";
+  alt: string;
+  url: string;
+}
+
 interface ParagraphBlock {
   type: "paragraph";
   text: string;
@@ -53,6 +59,7 @@ type MarkdownBlock =
   | ListBlock
   | QuoteBlock
   | DividerBlock
+  | ImageBlock
   | ParagraphBlock;
 
 // Decision / Status Badge Configurations (Marketing & Inventory)
@@ -97,7 +104,7 @@ function isTableSeparator(line: string): boolean {
 function renderInline(text: string, isUser?: boolean): React.ReactNode {
   if (!text) return null;
   const parts: React.ReactNode[] = [];
-  const regex = /(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
+  const regex = /(!\[[^\]]*\]\([^)]+\)|\[[^\]]+\]\([^)]+\)|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g;
   let lastIndex = 0;
   let match: RegExpExecArray | null;
 
@@ -106,7 +113,42 @@ function renderInline(text: string, isUser?: boolean): React.ReactNode {
       parts.push(text.substring(lastIndex, match.index));
     }
     const token = match[0];
-    if (token.startsWith("`") && token.endsWith("`")) {
+    if (token.startsWith("![") && token.endsWith(")")) {
+      const imgMatch = token.match(/^!\[(.*?)\]\((.*?)\)$/);
+      if (imgMatch) {
+        parts.push(
+          <a
+            key={match.index}
+            href={imgMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block rounded-lg overflow-hidden border border-slate-200 dark:border-slate-800 my-1 max-w-[200px]"
+          >
+            <img
+              src={imgMatch[2]}
+              alt={imgMatch[1] || "صورة"}
+              className="max-h-36 max-w-full rounded-lg object-contain bg-slate-900/5 dark:bg-slate-900"
+              loading="lazy"
+            />
+          </a>
+        );
+      }
+    } else if (token.startsWith("[") && token.endsWith(")")) {
+      const linkMatch = token.match(/^\[(.*?)\]\((.*?)\)$/);
+      if (linkMatch) {
+        parts.push(
+          <a
+            key={match.index}
+            href={linkMatch[2]}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 font-medium"
+          >
+            {linkMatch[1]}
+          </a>
+        );
+      }
+    } else if (token.startsWith("`") && token.endsWith("`")) {
       const codeText = token.slice(1, -1);
       // Check if code token is a known decision chip
       if (CHIP_MAP[codeText]) {
@@ -240,7 +282,19 @@ export const AgentStudioMarkdownMessage: React.FC<AgentStudioMarkdownMessageProp
         continue;
       }
 
-      // 6. Lists (- , * , 1. )
+      // 6. Standalone Image (![alt](url))
+      const imageMatch = trimmed.match(/^!\[(.*?)\]\((.*?)\)$/);
+      if (imageMatch) {
+        result.push({
+          type: "image",
+          alt: imageMatch[1] || "صورة",
+          url: imageMatch[2],
+        });
+        i++;
+        continue;
+      }
+
+      // 7. Lists (- , * , 1. )
       const isBullet = /^[-*•]\s+(.*)$/.test(trimmed);
       const isNumbered = /^\d+\.\s+(.*)$/.test(trimmed);
       if (isBullet || isNumbered) {
@@ -324,6 +378,25 @@ export const AgentStudioMarkdownMessage: React.FC<AgentStudioMarkdownMessageProp
               <p key={idx} className="whitespace-pre-line text-pretty">
                 {renderInline(block.text, isUser)}
               </p>
+            );
+
+          case "image":
+            return (
+              <div key={idx} className="my-2">
+                <a
+                  href={block.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-xs hover:opacity-95 transition"
+                >
+                  <img
+                    src={block.url}
+                    alt={block.alt}
+                    className="max-h-60 max-w-full rounded-xl object-contain bg-slate-900/5 dark:bg-slate-900"
+                    loading="lazy"
+                  />
+                </a>
+              </div>
             );
 
           case "quote":

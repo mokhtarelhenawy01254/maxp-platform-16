@@ -63,6 +63,10 @@ class AgentStudioSessionService {
             ON public.agent_studio_messages ("sessionId", "createdAt" ASC);
       `);
 
+      await this.prisma.$executeRawUnsafe(`
+        ALTER TABLE public.agent_studio_messages ADD COLUMN IF NOT EXISTS images JSONB;
+      `);
+
       _tablesEnsured = true;
     } catch (err) {
       console.warn('⚠️ [AgentStudioSessionService] ensureTables warning:', err.message);
@@ -91,7 +95,7 @@ class AgentStudioSessionService {
 
       const sessionIds = sessions.map(s => s.id);
       const messages = await this.prisma.$queryRawUnsafe(`
-        SELECT id, "sessionId", role, content, "toolCalls", "toolResults", "createdAt"
+        SELECT id, "sessionId", role, content, images, "toolCalls", "toolResults", "createdAt"
         FROM public.agent_studio_messages
         WHERE "sessionId" = ANY($1::text[])
         ORDER BY "createdAt" ASC
@@ -104,6 +108,7 @@ class AgentStudioSessionService {
           id: m.id,
           sender: m.role === 'assistant' || m.role === 'agent' ? 'agent' : 'user',
           text: m.content || '',
+          images: Array.isArray(m.images) ? m.images : undefined,
           toolCalls: m.toolCalls || undefined,
           timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
         });
@@ -143,7 +148,7 @@ class AgentStudioSessionService {
       const s = rows[0];
 
       const messages = await this.prisma.$queryRawUnsafe(`
-        SELECT id, role, content, "toolCalls", "toolResults", "createdAt"
+        SELECT id, role, content, images, "toolCalls", "toolResults", "createdAt"
         FROM public.agent_studio_messages
         WHERE "sessionId" = $1
         ORDER BY "createdAt" ASC
@@ -160,6 +165,7 @@ class AgentStudioSessionService {
           id: m.id,
           sender: m.role === 'assistant' || m.role === 'agent' ? 'agent' : 'user',
           text: m.content || '',
+          images: Array.isArray(m.images) ? m.images : undefined,
           toolCalls: m.toolCalls || undefined,
           timestamp: m.createdAt ? new Date(m.createdAt).toISOString() : new Date().toISOString(),
         })),
@@ -197,15 +203,17 @@ class AgentStudioSessionService {
           const role = msg.sender === 'user' ? 'user' : 'assistant';
           const content = msg.text || '';
           const toolCallsJson = msg.toolCalls ? JSON.stringify(msg.toolCalls) : null;
+          const imagesJson = msg.images && Array.isArray(msg.images) && msg.images.length > 0 ? JSON.stringify(msg.images) : null;
           const msgCreated = msg.timestamp ? new Date(msg.timestamp) : now;
 
           await this.prisma.$executeRawUnsafe(`
-            INSERT INTO public.agent_studio_messages (id, "sessionId", role, content, "toolCalls", "createdAt")
-            VALUES ($1, $2, $3, $4, $5::jsonb, $6)
+            INSERT INTO public.agent_studio_messages (id, "sessionId", role, content, "toolCalls", images, "createdAt")
+            VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)
             ON CONFLICT (id) DO UPDATE SET
                 content = EXCLUDED.content,
-                "toolCalls" = EXCLUDED."toolCalls"
-          `, msgId, id, role, content, toolCallsJson, msgCreated);
+                "toolCalls" = EXCLUDED."toolCalls",
+                images = COALESCE(EXCLUDED.images, agent_studio_messages.images)
+          `, msgId, id, role, content, toolCallsJson, imagesJson, msgCreated);
         }
       }
 
@@ -228,6 +236,8 @@ class AgentStudioSessionService {
     const role = messageData.sender === 'user' || messageData.role === 'user' ? 'user' : 'assistant';
     const content = messageData.text || messageData.content || '';
     const toolCallsJson = messageData.toolCalls ? JSON.stringify(messageData.toolCalls) : null;
+    const rawImages = messageData.images || messageData.attachments;
+    const imagesJson = rawImages && Array.isArray(rawImages) && rawImages.length > 0 ? JSON.stringify(rawImages) : null;
 
     try {
       // Ensure parent session exists
@@ -238,10 +248,12 @@ class AgentStudioSessionService {
       `, sessionId, companyId, domain, now);
 
       await this.prisma.$executeRawUnsafe(`
-        INSERT INTO public.agent_studio_messages (id, "sessionId", role, content, "toolCalls", "createdAt")
-        VALUES ($1, $2, $3, $4, $5::jsonb, $6)
-        ON CONFLICT (id) DO UPDATE SET content = EXCLUDED.content
-      `, msgId, sessionId, role, content, toolCallsJson, now);
+        INSERT INTO public.agent_studio_messages (id, "sessionId", role, content, "toolCalls", images, "createdAt")
+        VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7)
+        ON CONFLICT (id) DO UPDATE SET
+            content = EXCLUDED.content,
+            images = COALESCE(EXCLUDED.images, agent_studio_messages.images)
+      `, msgId, sessionId, role, content, toolCallsJson, imagesJson, now);
 
       return true;
     } catch (err) {

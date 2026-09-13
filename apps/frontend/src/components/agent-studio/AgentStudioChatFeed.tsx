@@ -10,22 +10,37 @@ import {
   Copy,
   Check,
   Plus,
+  ImageIcon,
+  X,
+  Maximize2,
+  AlertCircle,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { StudioEntity, StudioMessage, StudioSession, StudioQuickPrompt } from "./types";
 import { AgentStudioMarkdownMessage } from "./AgentStudioMarkdownMessage";
+import uploadService from "../../services/uploadService";
 
 export interface AgentStudioChatFeedProps {
   selectedEntity?: StudioEntity | null;
   activeSession: StudioSession;
   loading: boolean;
-  onSendMessage: (text: string) => void;
+  onSendMessage: (text: string, images?: string[]) => void;
   quickPrompts?: StudioQuickPrompt[];
   emptyStateTitle?: string;
   emptyStateSubtitle?: string;
   emptyStateIcon?: LucideIcon;
   inputPlaceholder?: string;
   onNewSession?: () => void;
+  allowImageUpload?: boolean;
+}
+
+interface PendingImage {
+  id: string;
+  file: File;
+  previewUrl: string;
+  serverUrl?: string;
+  uploading: boolean;
+  error?: string;
 }
 
 export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
@@ -39,11 +54,15 @@ export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
   emptyStateIcon: EmptyIcon = Sparkles,
   inputPlaceholder = "اكتب سؤالك أو اطلب تحليلاً أو تعديلاً...",
   onNewSession,
+  allowImageUpload = true,
 }) => {
   const [inputMessage, setInputMessage] = useState("");
   const [copiedSessionId, setCopiedSessionId] = useState(false);
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleCopySessionId = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -63,12 +82,72 @@ export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
     scrollToBottom();
   }, [activeSession?.messages, loading]);
 
+  const handleUploadFiles = async (files: FileList | File[]) => {
+    const fileList = Array.from(files).filter((f) => f.type.startsWith("image/"));
+    if (fileList.length === 0) return;
+
+    const newItems: PendingImage[] = fileList.map((f) => ({
+      id: `img_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      file: f,
+      previewUrl: URL.createObjectURL(f),
+      uploading: true,
+    }));
+
+    setPendingImages((prev) => [...prev, ...newItems]);
+
+    for (const item of newItems) {
+      try {
+        const res = await uploadService.uploadProductImage(item.file);
+        if (res.success && res.data?.url) {
+          setPendingImages((prev) =>
+            prev.map((p) => (p.id === item.id ? { ...p, serverUrl: res.data!.url, uploading: false } : p))
+          );
+        } else {
+          setPendingImages((prev) =>
+            prev.map((p) => (p.id === item.id ? { ...p, uploading: false, error: res.error || "فشل الرفع" } : p))
+          );
+        }
+      } catch (err: any) {
+        setPendingImages((prev) =>
+          prev.map((p) => (p.id === item.id ? { ...p, uploading: false, error: err.message || "فشل الرفع" } : p))
+        );
+      }
+    }
+  };
+
+  const handleRemoveImage = (id: string) => {
+    setPendingImages((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (!allowImageUpload) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    const files: File[] = [];
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith("image/")) {
+        const f = items[i].getAsFile();
+        if (f) files.push(f);
+      }
+    }
+    if (files.length > 0) {
+      e.preventDefault();
+      handleUploadFiles(files);
+    }
+  };
+
   const handleSend = (customText?: string) => {
     const textToSend = (customText || inputMessage).trim();
-    if (!textToSend || loading) return;
+    const readyImages = pendingImages.filter((p) => p.serverUrl && !p.uploading).map((p) => p.serverUrl!);
+    const hasUploading = pendingImages.some((p) => p.uploading);
 
-    onSendMessage(textToSend);
+    if (hasUploading) return;
+    if ((!textToSend && readyImages.length === 0) || loading) return;
+
+    const finalText = textToSend || "يرجى فحص صورة المنتج المرفقة وتحليل مواصفاته وإنشائه في المتجر والمخزن.";
+    onSendMessage(finalText, readyImages.length > 0 ? readyImages : undefined);
     setInputMessage("");
+    setPendingImages([]);
     setTimeout(() => inputRef.current?.focus(), 100);
   };
 
@@ -82,7 +161,34 @@ export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
   const messages = Array.isArray(activeSession?.messages) ? activeSession.messages : [];
 
   return (
-    <div className="flex flex-col h-full bg-white dark:bg-slate-950 min-h-0 overflow-hidden">
+    <div
+      onDragOver={(e) => {
+        if (!allowImageUpload) return;
+        e.preventDefault();
+        setIsDragging(true);
+      }}
+      onDragLeave={() => setIsDragging(false)}
+      onDrop={(e) => {
+        if (!allowImageUpload) return;
+        e.preventDefault();
+        setIsDragging(false);
+        if (e.dataTransfer.files?.length) {
+          handleUploadFiles(e.dataTransfer.files);
+        }
+      }}
+      className={`relative flex flex-col h-full bg-white dark:bg-slate-950 min-h-0 overflow-hidden ${
+        isDragging ? "ring-2 ring-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20" : ""
+      }`}
+    >
+      {/* Drag & Drop Visual Indicator */}
+      {isDragging && (
+        <div className="absolute inset-0 z-30 bg-slate-900/80 backdrop-blur-xs flex flex-col items-center justify-center text-white pointer-events-none p-6 text-center">
+          <div className="p-4 rounded-2xl bg-indigo-600 mb-3 shadow-lg">
+            <ImageIcon className="w-8 h-8 animate-bounce" />
+          </div>
+          <p className="text-sm font-bold">أفلت صورة المنتج هنا لرفعها للوكيل الذكي</p>
+        </div>
+      )}
       {/* Messages List Area */}
       <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
         {messages.length === 0 ? (
@@ -156,6 +262,32 @@ export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
                     </div>
                   )}
 
+                  {/* Attached images in message */}
+                  {msg.images && msg.images.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mb-2.5">
+                      {msg.images.map((imgUrl, imgIdx) => (
+                        <a
+                          key={imgIdx}
+                          href={imgUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="relative block rounded-xl overflow-hidden border border-white/20 dark:border-slate-700 max-w-[220px] max-h-48 group shadow-xs cursor-pointer"
+                          title="عرض الصورة بحجمها الكامل"
+                        >
+                          <img
+                            src={imgUrl}
+                            alt={`صورة مرفقة ${imgIdx + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/25 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                            <Maximize2 className="w-4 h-4 text-white drop-shadow-md" />
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  )}
+
                   {/* Markdown Content */}
                   <AgentStudioMarkdownMessage content={msg.text} isUser={isUser} />
 
@@ -211,13 +343,75 @@ export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
 
       {/* Input & Footer Controls */}
       <footer className="p-3 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/90">
+        {/* Pending Images Preview Bar */}
+        {pendingImages.length > 0 && (
+          <div className="flex items-center gap-2 mb-2.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 overflow-x-auto">
+            {pendingImages.map((img) => (
+              <div
+                key={img.id}
+                className="relative group flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-900 shadow-2xs"
+              >
+                <img src={img.previewUrl} alt="معاينة" className="w-full h-full object-cover" />
+                {img.uploading && (
+                  <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-2xs flex flex-col items-center justify-center text-white">
+                    <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
+                    <span className="text-[9px] mt-0.5 font-bold">رفع...</span>
+                  </div>
+                )}
+                {img.error && (
+                  <div className="absolute inset-0 bg-rose-950/70 flex flex-col items-center justify-center text-white p-1 text-center">
+                    <AlertCircle className="w-3.5 h-3.5 text-rose-400" />
+                    <span className="text-[8px] leading-tight text-rose-200">{img.error}</span>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleRemoveImage(img.id)}
+                  className="absolute top-1 right-1 p-0.5 rounded-full bg-slate-900/80 hover:bg-rose-600 text-white transition cursor-pointer shadow-xs"
+                  title="حذف الصورة"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
+          {allowImageUpload && (
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.length) {
+                    handleUploadFiles(e.target.files);
+                    e.target.value = "";
+                  }
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/80 text-slate-600 dark:text-slate-300 transition cursor-pointer disabled:opacity-40 shadow-2xs"
+                title="إرفاق صورة منتج للوكيل الذكي"
+              >
+                <ImageIcon className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+              </button>
+            </>
+          )}
+
           <input
             ref={inputRef}
             type="text"
             value={inputMessage}
             onChange={(e) => setInputMessage(e.target.value)}
             onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
             placeholder={inputPlaceholder}
             disabled={loading}
             className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
@@ -226,7 +420,11 @@ export const AgentStudioChatFeed: React.FC<AgentStudioChatFeedProps> = ({
           <button
             type="button"
             onClick={() => handleSend()}
-            disabled={!inputMessage.trim() || loading}
+            disabled={
+              (!inputMessage.trim() && pendingImages.length === 0) ||
+              loading ||
+              pendingImages.some((p) => p.uploading)
+            }
             className="p-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white disabled:opacity-40 disabled:cursor-not-allowed transition cursor-pointer shadow-xs"
             title="إرسال"
           >

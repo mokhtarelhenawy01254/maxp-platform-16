@@ -26,6 +26,7 @@
   "allowedTools": [
     "product.search",
     "product.create",
+    "category.list",
     "inventory.check",
     "inventory.adjust",
     "product.update.price",
@@ -33,6 +34,7 @@
     "audit.read"
   ],
   "allowedSkills": [
+    "product-catalog-creator",
     "catalog-search",
     "low-stock-watch",
     "pricing-review",

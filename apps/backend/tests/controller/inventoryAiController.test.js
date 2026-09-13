@@ -121,6 +121,50 @@ describe('Inventory AI Studio Controller', () => {
         })
       );
     });
+
+    it('successfully processes uploaded product images and passes attachments to AI service', async () => {
+      const req = {
+        user: { companyId: 'comp_test' },
+        body: {
+          message: 'أنشئ منتج جديد بهذه الصورة',
+          threadId: 'sess_img_123',
+          images: ['https://cdn.maxp.online/uploads/products/sample.jpg'],
+        },
+      };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn() };
+
+      aiServiceAdminClient.listAgents.mockResolvedValue([
+        { id: 'agent_inv_01', name: 'وكيل المخزون', role: 'INVENTORY', status: 'ACTIVE' },
+      ]);
+
+      aiServiceAdminClient.chatWithAgent.mockResolvedValue({
+        status: 'completed',
+        reply: 'تم فحص صورة المنتج وإنشاء صنف "قميص كاجوال" برصيد 50 قطعة بسعر 450 ج.م.',
+        tool_calls: [
+          {
+            name: 'product_create',
+            args: { name: 'قميص كاجوال', price: 450, stock: 50 },
+          },
+        ],
+      });
+
+      await inventoryAiController.chat(req, res);
+
+      expect(aiServiceAdminClient.chatWithAgent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          companyId: 'comp_test',
+          attachments: [
+            { type: 'image', url: 'https://cdn.maxp.online/uploads/products/sample.jpg' },
+          ],
+        })
+      );
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: true,
+          reply: expect.stringContaining('تم فحص صورة المنتج'),
+        })
+      );
+    });
   });
 
   describe('getActiveAgent', () => {

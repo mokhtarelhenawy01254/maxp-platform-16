@@ -363,6 +363,32 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         db_agent = result.scalars().first()
     request_config = dict(body.agent_config or {})
     raw_config = _agent_config_from_record(db_agent) if db_agent else {}
+
+    # Fallback 2: if still not found, check if template exists by slug or role
+    if not raw_config:
+        template = await get_template(body.agent_id, session)
+        if not template:
+            templates = await list_templates(session)
+            template = next((t for t in templates if (t.role or "").upper() == body.agent_id.upper()), None)
+        if template:
+            raw_config = {
+                "id": f"runtime-{template.slug}-{secrets.token_hex(4)}",
+                "name": template.name,
+                "role": template.role,
+                "model": template.model_policy.get("default", "deepseek-v4-flash") if template.model_policy else "deepseek-v4-flash",
+                "persona": {
+                    "agentsInstructions": template.instructions_agents or "",
+                    "soulInstructions": template.instructions_soul or "",
+                    "personaInstructions": template.instructions_persona or "",
+                    "toolsInstructions": template.instructions_tools or "",
+                },
+                "allowed_tools": list(template.allowed_tools or []),
+                "allowed_skills": list(template.allowed_skills or []),
+                "channels": list(template.channels or []),
+                "guardrails": dict(template.guardrails or {}),
+                "budget": dict(template.budget or {}),
+                "config": dict(template.config or {}),
+            }
     # Inject company display name + business specialty into persona
     if raw_config:
         raw_config.setdefault("persona", {})["company_name"] = _company_display_name
@@ -457,7 +483,6 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     # Ensure template instructions override stale persona instructions if template has updated soul
     if template_slug and template_slug != "default":
         try:
-            from src.agents.loader import get_template
             tpl = await get_template(str(template_slug), session)
             if tpl and tpl.instructions_soul:
                 if "instructions" not in overrides:
