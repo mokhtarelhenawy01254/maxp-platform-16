@@ -739,8 +739,10 @@ class AnalyticsService {
         signal,
       });
       return response.data;
-    } catch (error) {
-      console.error("Error fetching campaign attribution analytics:", error);
+    } catch (error: any) {
+      if (error?.response?.status !== 403) {
+        console.error("Error fetching campaign attribution analytics:", error);
+      }
       throw error;
     }
   }

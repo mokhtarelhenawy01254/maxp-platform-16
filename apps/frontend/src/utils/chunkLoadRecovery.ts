@@ -255,6 +255,15 @@ export const installChunkLoadRecovery = (): (() => void) => {
       return;
     }
 
+    // 🛡️ Benign View Transition abort errors (e.g. rapid navigation / cancelled transitions)
+    if (
+      (event.reason as any)?.name === "AbortError" ||
+      normalized.includes("transition was skipped")
+    ) {
+      event.preventDefault();
+      return;
+    }
+
     if (recoverFromChunkLoadError(event.reason, "unhandled-rejection")) {
       event.preventDefault();
     }

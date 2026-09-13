@@ -49,13 +49,22 @@ export function getStorageUsage(): {
   };
 }
 
+let lastStorageWarningTimestamp = 0;
+const STORAGE_WARNING_COOLDOWN_MS = 60 * 1000;
+
 /**
- * Warn if storage is getting full
+ * Warn if storage is getting full (throttled to at most once per 60s)
  */
 export function checkStorageQuota(): void {
+  const now = Date.now();
+  if (now - lastStorageWarningTimestamp < STORAGE_WARNING_COOLDOWN_MS) {
+    return;
+  }
+
   const usage = getStorageUsage();
 
   if (usage.percentage > 80) {
+    lastStorageWarningTimestamp = now;
     console.warn(
       `⚠️ LocalStorage usage is at ${usage.percentage}%. Consider clearing unused data.`,
     );

@@ -92,11 +92,7 @@ html *::after {
   transition-timing-function: ease-out;
 }
 
-/* ── View Transitions API ── */
-@view-transition {
-  navigation: auto;
-}
-
+/* ── View Transitions API (configured for SPA via document.startViewTransition) ── */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation-duration: 300ms;

@@ -185,6 +185,12 @@
   }, true);
 
   window.addEventListener("unhandledrejection", function (event) {
+    var reason = event.reason;
+    var reasonStr = String(reason && (reason.message || reason) || "").toLowerCase();
+    if ((reason && reason.name === "AbortError") || reasonStr.indexOf("transition was skipped") !== -1) {
+      event.preventDefault();
+      return;
+    }
     if (recoverFromChunkLoadError("unhandled-rejection", event.reason, event)) {
       event.preventDefault();
     }

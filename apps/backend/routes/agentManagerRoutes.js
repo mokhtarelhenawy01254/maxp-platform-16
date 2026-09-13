@@ -232,7 +232,7 @@ async function loadAgentOrgMetadata(companyId) {
   }
 }
 
-router.get('/me', async (req, res) => {
+const handleManagerContext = async (req, res) => {
   try {
     const companyId = getCompanyId(req);
     if (!companyId) return res.status(400).json({ success: false, error: 'companyId is required' });
@@ -241,7 +241,10 @@ router.get('/me', async (req, res) => {
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
-});
+};
+
+router.get('/me', handleManagerContext);
+router.get('/context', handleManagerContext);
 
 router.post('/chat', async (req, res) => {
   try {

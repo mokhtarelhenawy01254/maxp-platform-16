@@ -52,6 +52,17 @@ const LEGACY_APP_SLUG_ALIASES = {
   'orders-analytics': ['analytics-basic', 'analytics-advanced', 'analytics'],
   'analytics-basic': ['orders-analytics', 'analytics-advanced', 'analytics'],
   'analytics-advanced': ['orders-analytics', 'analytics-basic', 'analytics'],
+  // Campaign & source attribution aliases:
+  'campaign-attribution': [
+    'facebook-ads-pro',
+    'order-source-tracking',
+    'conversion-suite',
+    'marketing-agency-pro',
+    'analytics-advanced',
+    'analytics-basic',
+    'orders-analytics',
+    'store-pro',
+  ],
   // Booking / Services aliases:
   'booking-app': ['service-request-app', 'service-requests'],
   'service-request-app': ['booking-app', 'service-requests'],

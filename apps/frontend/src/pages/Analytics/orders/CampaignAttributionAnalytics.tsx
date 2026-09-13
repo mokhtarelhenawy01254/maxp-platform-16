@@ -1,4 +1,5 @@
 import React, { useDeferredValue, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Area,
   AreaChart,
@@ -10,7 +11,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import { ChevronDownIcon, XCircleIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, LockClosedIcon, XCircleIcon } from "@heroicons/react/24/outline";
 import ResponsiveContainer from "../../../components/ui/DeferredResponsiveContainer";
 import analyticsService from "../../../services/analyticsService";
 import { useCurrency } from "../../../hooks/useCurrency";
@@ -310,6 +311,12 @@ const CampaignAttributionAnalytics: React.FC = () => {
   const { formatPrice } = useCurrency();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [appAccessState, setAppAccessState] = useState<{
+    needsActivation: boolean;
+    message?: string;
+    appSlug?: string;
+    appName?: string;
+  } | null>(null);
   const [range, setRange] = useState<PeriodRange | null>(null);
   const [channel, setChannel] = useState("all");
   const [source, setSource] = useState("all");
@@ -334,6 +341,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
       try {
         setLoading(true);
         setError(null);
+        setAppAccessState(null);
 
         const response = await analyticsService.getCampaignAttributionAnalytics({
           period: range?.period,
@@ -366,7 +374,23 @@ const CampaignAttributionAnalytics: React.FC = () => {
           return;
         }
 
-        setError(err?.message || "حدث خطأ أثناء تحميل تحليل الحملات");
+        if (err?.response?.status === 403 || err?.response?.data?.needsActivation) {
+          setAppAccessState({
+            needsActivation: true,
+            message:
+              err?.response?.data?.message ||
+              "هذه الميزة تتطلب تفعيل تطبيق: Campaign Attribution",
+            appSlug: err?.response?.data?.app?.slug || "campaign-attribution",
+            appName: err?.response?.data?.app?.name || "Campaign Attribution",
+          });
+          return;
+        }
+
+        setError(
+          err?.response?.data?.message ||
+            err?.message ||
+            "حدث خطأ أثناء تحميل تحليل الحملات",
+        );
       } finally {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -407,7 +431,7 @@ const CampaignAttributionAnalytics: React.FC = () => {
     </div>
   );
 
-  if (loading && !data) {
+  if (loading && !data && !appAccessState?.needsActivation) {
     return (
       <div className="space-y-4" dir="rtl">
         {header}
@@ -417,6 +441,45 @@ const CampaignAttributionAnalytics: React.FC = () => {
             <p className="text-sm text-gray-400 dark:text-gray-500">
               جارٍ تحليل الحملات ومصادر الطلبات…
             </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (appAccessState?.needsActivation && !data) {
+    return (
+      <div className="space-y-4" dir="rtl">
+        {header}
+        <div className="flex min-h-[50vh] items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-2xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-4">
+              <LockClosedIcon className="h-7 w-7" />
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 mb-3">
+              تطبيق إضافي مطلوب
+            </div>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+              {appAccessState.appName || "Campaign Attribution"}
+            </h2>
+            <p className="mt-2 text-sm text-gray-500 dark:text-gray-400 leading-relaxed">
+              {appAccessState.message ||
+                "هذه الميزة تتطلب تفعيل تطبيق Campaign Attribution لربط وتحليل نتائج الحملات ومصادر الطلبات."}
+            </p>
+            <div className="mt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link
+                to={`/marketplace/apps/${appAccessState.appSlug || "campaign-attribution"}`}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
+              >
+                تفعيل التطبيق من المتجر
+              </Link>
+              <Link
+                to="/company-dashboard"
+                className="w-full sm:w-auto inline-flex items-center justify-center rounded-xl border border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-5 py-2.5 text-sm font-semibold text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              >
+                العودة للوحة التحكم
+              </Link>
+            </div>
           </div>
         </div>
       </div>
