@@ -56,6 +56,7 @@ interface CreateRuleForm {
   name: string;
   entityType: "CAMPAIGN" | "ADSET" | "AD";
   actionType: string;
+  actionValue?: number;
   conditions: RuleCondition[];
   schedule: string;
 }
@@ -140,6 +141,7 @@ const AutomationRules: React.FC = () => {
     name: "",
     entityType: "CAMPAIGN",
     actionType: "PAUSE",
+    actionValue: 10,
     conditions: [
       { field: "cost_per_result", operator: "GREATER_THAN", value: 0 },
     ],
@@ -154,9 +156,34 @@ const AutomationRules: React.FC = () => {
   const loadRules = async () => {
     try {
       setLoading(true);
-      const data = await facebookAdsService.getAutomatedRules();
-      setRules(data);
-    } catch (error: any) {
+      const data = (await facebookAdsService.getAutomatedRules()) as Array<Record<string, unknown>>;
+      const normalizedList: AutomationRule[] = Array.isArray(data)
+        ? data.map((r) => {
+            const evalSpec = r.evaluation_spec as { filters?: Array<{ field?: string; operator?: string; value?: unknown }> } | undefined;
+            const filters = Array.isArray(evalSpec?.filters) ? evalSpec.filters : [];
+            const entityFilter = filters.find((f) => f.field === "entity_type");
+            const conditionFilters = filters.filter((f) => f.field !== "entity_type" && f.field !== "time_preset");
+            const execSpec = r.execution_spec as { execution_type?: string } | undefined;
+            const schedSpec = r.schedule_spec as { schedule_type?: string } | undefined;
+
+            return {
+              id: String(r.id || ""),
+              name: String(r.name || ""),
+              status: r.status === "ENABLED" || r.status === "ACTIVE" ? "ACTIVE" : "PAUSED",
+              entityType: (r.entityType || entityFilter?.value || "CAMPAIGN") as AutomationRule["entityType"],
+              actionType: String(r.actionType || execSpec?.execution_type || "PAUSE"),
+              conditions: (r.conditions as RuleCondition[] | undefined) || conditionFilters.map((c) => ({
+                field: String(c.field || ""),
+                operator: String(c.operator || ""),
+                value: typeof c.value === "number" ? c.value : Number(c.value) || 0,
+              })),
+              schedule: String(r.schedule || schedSpec?.schedule_type || "DAILY"),
+              createdAt: String(r.createdAt || r.created_time || new Date().toISOString()),
+            };
+          })
+        : [];
+      setRules(normalizedList);
+    } catch (error: unknown) {
       console.error("Error loading rules:", error);
       tToast.error("AutomationRules.failed_load_3df3");
     } finally {
@@ -172,20 +199,51 @@ const AutomationRules: React.FC = () => {
 
     try {
       setCreating(true);
+      const targetExecutionType =
+        formData.actionType === "SEND_NOTIFICATION"
+          ? "NOTIFICATION"
+          : formData.actionType;
+
       await facebookAdsService.createAutomatedRule({
         name: formData.name,
         entityType: formData.entityType,
-        actionType: formData.actionType,
+        actionType: targetExecutionType,
+        actionValue: formData.actionValue,
+        schedule: formData.schedule,
+        conditions: formData.conditions,
         evaluationSpec: {
-          evaluationType: formData.schedule,
-          filters: formData.conditions.map((c) => ({
-            field: c.field,
-            operator: c.operator,
-            value: c.value,
-          })),
+          evaluation_type: "SCHEDULE",
+          filters: [
+            {
+              field: "entity_type",
+              operator: "EQUAL",
+              value: formData.entityType,
+            },
+            {
+              field: "time_preset",
+              operator: "EQUAL",
+              value: "LAST_7D",
+            },
+            ...formData.conditions.map((c) => ({
+              field:
+                c.field === "cost_per_result"
+                  ? "cost_per"
+                  : c.field === "roas"
+                  ? "website_purchase_roas"
+                  : c.field === "spend"
+                  ? "spent"
+                  : c.field,
+              operator: c.operator,
+              value: Number(c.value),
+            })),
+          ],
         },
         executionSpec: {
-          executionType: formData.actionType,
+          execution_type: targetExecutionType,
+        },
+        scheduleSpec: {
+          schedule_type:
+            formData.schedule === "WEEKLY" ? "DAILY" : formData.schedule,
         },
       });
 
@@ -193,9 +251,10 @@ const AutomationRules: React.FC = () => {
       setShowCreateModal(false);
       resetForm();
       await loadRules();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error creating rule:", error);
-      toast.error(error?.response?.data?.error || (isEn ? "Failed to create rule" : "فشل في إنشاء القاعدة"));
+      const err = error as { response?: { data?: { error?: string } }; message?: string };
+      toast.error(err?.response?.data?.error || err?.message || (isEn ? "Failed to create rule" : "فشل في إنشاء القاعدة"));
     } finally {
       setCreating(false);
     }
@@ -208,7 +267,7 @@ const AutomationRules: React.FC = () => {
       await facebookAdsService.deleteAutomatedRule(ruleId);
       tToast.success("AutomationRules.success_delete_5fdc");
       await loadRules();
-    } catch (error: any) {
+    } catch {
       tToast.error("AutomationRules.failed_delete_4c17");
     }
   };
@@ -218,6 +277,7 @@ const AutomationRules: React.FC = () => {
       name: "",
       entityType: "CAMPAIGN",
       actionType: "PAUSE",
+      actionValue: 10,
       conditions: [
         { field: "cost_per_result", operator: "GREATER_THAN", value: 0 },
       ],
@@ -245,7 +305,7 @@ const AutomationRules: React.FC = () => {
   const updateCondition = (
     index: number,
     field: keyof RuleCondition,
-    value: any,
+    value: string | number,
   ) => {
     setFormData((prev) => ({
       ...prev,
@@ -410,7 +470,7 @@ const AutomationRules: React.FC = () => {
                 </label>
                 <select
                   value={formData.entityType}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, entityType: e.target.value as any }))}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, entityType: e.target.value as CreateRuleForm["entityType"] }))}
                   className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none dark:border-slate-700 dark:bg-slate-950 dark:text-white"
                 >
                   {ENTITY_TYPES.map((type) => (
@@ -437,6 +497,23 @@ const AutomationRules: React.FC = () => {
                   ))}
                 </div>
               </div>
+
+              {(formData.actionType === "INCREASE_BUDGET" || formData.actionType === "DECREASE_BUDGET") && (
+                <div>
+                  <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-300">
+                    {isEn ? "Budget Change Percentage (%)" : "نسبة تغيير الميزانية (%)"}
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={formData.actionValue ?? 10}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, actionValue: Math.max(1, Number(e.target.value)) }))}
+                    placeholder="10"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="mb-2 block text-sm font-bold text-slate-700 dark:text-slate-300">

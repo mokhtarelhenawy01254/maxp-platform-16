@@ -4156,7 +4156,7 @@ class FacebookAdsService {
         filterField,
         filterOperator,
         filterValue,
-        actionType, // PAUSE, UNPAUSE, CHANGE_BUDGET, CHANGE_BID, SEND_NOTIFICATION
+        actionType, // PAUSE, UNPAUSE, CHANGE_BUDGET, CHANGE_BID, NOTIFICATION
         actionValue,
         evaluationSpec = {},
         scheduleSpec = {}
@@ -4164,30 +4164,152 @@ class FacebookAdsService {
 
       const accountId = this.getAccountId();
 
-      const ruleData = {
-        name,
-        evaluation_spec: {
-          evaluation_type: evaluationSpec.type || 'SCHEDULE',
-          filters: [
-            {
-              field: filterField,
-              operator: filterOperator,
-              value: filterValue
-            }
-          ],
-          ...evaluationSpec
-        },
-        execution_spec: {
-          execution_type: actionType,
-          execution_options: actionValue ? [{ value: actionValue }] : undefined
-        },
-        schedule_spec: {
-          schedule_type: scheduleSpec.type || 'DAILY',
-          ...scheduleSpec
-        }
+      // 1. Target entity
+      const targetEntity = (data.entityType || entityType || 'AD').toUpperCase();
+
+      // 2. Filters resolution
+      let rawFilters = [];
+      if (Array.isArray(evaluationSpec.filters) && evaluationSpec.filters.length > 0) {
+        rawFilters = evaluationSpec.filters;
+      } else if (Array.isArray(data.conditions) && data.conditions.length > 0) {
+        rawFilters = data.conditions;
+      } else if (filterField && filterOperator) {
+        rawFilters = [{ field: filterField, operator: filterOperator, value: filterValue }];
+      }
+
+      // Format and normalize filter fields
+      const formattedFilters = rawFilters
+        .filter(f => f && f.field && f.operator)
+        .map(f => {
+          let field = f.field;
+          if (field === 'cost_per_result') field = 'cost_per';
+          if (field === 'spend') field = 'spent';
+          if (field === 'roas') field = 'website_purchase_roas';
+          if (field === 'conversions') field = 'results';
+
+          let value = f.value;
+          if (typeof value === 'string' && !isNaN(Number(value)) && value.trim() !== '') {
+            value = Number(value);
+          }
+
+          return {
+            field,
+            operator: f.operator,
+            value
+          };
+        });
+
+      // Ensure entity_type filter exists (Required by Meta Ad Rules)
+      if (!formattedFilters.some(f => f.field === 'entity_type')) {
+        formattedFilters.unshift({
+          field: 'entity_type',
+          operator: 'EQUAL',
+          value: targetEntity
+        });
+      }
+
+      // Ensure time_preset filter exists for metric evaluations
+      if (!formattedFilters.some(f => f.field === 'time_preset')) {
+        const timePreset = data.timePreset || evaluationSpec.time_preset || 'LAST_7D';
+        formattedFilters.push({
+          field: 'time_preset',
+          operator: 'EQUAL',
+          value: timePreset
+        });
+      }
+
+      // 3. Evaluation spec (Strictly only valid Meta keys: evaluation_type, filters, trigger)
+      const evalType = (
+        evaluationSpec.evaluation_type ||
+        evaluationSpec.type ||
+        'SCHEDULE'
+      ).toUpperCase();
+
+      const evaluation_spec = {
+        evaluation_type: evalType === 'TRIGGER' ? 'TRIGGER' : 'SCHEDULE',
+        filters: formattedFilters
       };
 
-      console.log('📤 Creating Automated Rule:', JSON.stringify(ruleData, null, 2));
+      if (evaluationSpec.trigger) {
+        evaluation_spec.trigger = evaluationSpec.trigger;
+      }
+
+      // 4. Execution spec
+      let execType = (
+        data.executionSpec?.execution_type ||
+        data.executionSpec?.executionType ||
+        actionType ||
+        'PAUSE'
+      ).toUpperCase();
+
+      let execOptions = data.executionSpec?.execution_options || undefined;
+
+      if (execType === 'SEND_NOTIFICATION') {
+        execType = 'NOTIFICATION';
+      } else if (execType === 'INCREASE_BUDGET') {
+        execType = 'CHANGE_BUDGET';
+        if (!execOptions) {
+          execOptions = [{
+            field: 'change_spec',
+            value: {
+              amount: Math.abs(Number(actionValue || data.actionValue) || 10),
+              unit: 'PERCENT'
+            }
+          }];
+        }
+      } else if (execType === 'DECREASE_BUDGET') {
+        execType = 'CHANGE_BUDGET';
+        if (!execOptions) {
+          execOptions = [{
+            field: 'change_spec',
+            value: {
+              amount: -Math.abs(Number(actionValue || data.actionValue) || 10),
+              unit: 'PERCENT'
+            }
+          }];
+        }
+      }
+
+      const execution_spec = {
+        execution_type: execType
+      };
+      if (execOptions && Array.isArray(execOptions) && execOptions.length > 0) {
+        execution_spec.execution_options = execOptions;
+      }
+
+      // 5. Schedule spec
+      let schedType = (
+        scheduleSpec.schedule_type ||
+        scheduleSpec.scheduleType ||
+        scheduleSpec.type ||
+        data.schedule ||
+        evaluationSpec.evaluationType || // Handle legacy frontend key gracefully
+        'DAILY'
+      ).toUpperCase();
+
+      if (schedType === 'WEEKLY') {
+        schedType = 'DAILY';
+      }
+      if (!['DAILY', 'HOURLY', 'SEMI_HOURLY', 'CUSTOM'].includes(schedType)) {
+        schedType = 'DAILY';
+      }
+
+      const schedule_spec = {
+        schedule_type: schedType
+      };
+      if (Array.isArray(scheduleSpec.schedule) && scheduleSpec.schedule.length > 0) {
+        schedule_spec.schedule = scheduleSpec.schedule;
+      }
+
+      const ruleData = {
+        name,
+        status: data.status || 'ENABLED',
+        evaluation_spec,
+        execution_spec,
+        schedule_spec
+      };
+
+      console.log('📤 Creating Automated Rule on Meta:', JSON.stringify(ruleData, null, 2));
 
       const response = await axios.post(
         `${this.baseUrl}/${accountId}/adrules_library`,
@@ -4228,9 +4350,32 @@ class FacebookAdsService {
         }
       );
 
+      const rawRules = response.data.data || [];
+      const normalized = rawRules.map((rule) => {
+        const filters = rule.evaluation_spec?.filters || [];
+        const entityFilter = filters.find((f) => f.field === 'entity_type');
+        const conditionFilters = filters.filter((f) => f.field !== 'entity_type' && f.field !== 'time_preset');
+
+        return {
+          id: rule.id,
+          name: rule.name,
+          status: rule.status === 'ENABLED' || rule.status === 'ACTIVE' ? 'ACTIVE' : 'PAUSED',
+          entityType: entityFilter?.value || 'CAMPAIGN',
+          actionType: rule.execution_spec?.execution_type || 'PAUSE',
+          conditions: conditionFilters.map((c) => ({
+            field: c.field,
+            operator: c.operator,
+            value: typeof c.value === 'number' ? c.value : Number(c.value) || 0
+          })),
+          schedule: rule.schedule_spec?.schedule_type || 'DAILY',
+          createdAt: rule.created_time,
+          raw: rule
+        };
+      });
+
       return {
         success: true,
-        data: response.data.data || []
+        data: normalized
       };
     } catch (error) {
       console.error('❌ Error getting Automated Rules:', error.response?.data || error.message);

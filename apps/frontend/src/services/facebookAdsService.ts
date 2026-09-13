@@ -3170,18 +3170,24 @@ export const createInstantExperience = async (data: {
 export interface AutomatedRuleData {
   name: string;
   entityType?: "CAMPAIGN" | "ADSET" | "AD";
-  filterField: string;
-  filterOperator: string;
-  filterValue: unknown;
+  filterField?: string;
+  filterOperator?: string;
+  filterValue?: unknown;
   actionType:
     | "PAUSE"
     | "UNPAUSE"
     | "CHANGE_BUDGET"
     | "CHANGE_BID"
-    | "SEND_NOTIFICATION";
+    | "NOTIFICATION"
+    | "SEND_NOTIFICATION"
+    | string;
   actionValue?: unknown;
   evaluationSpec?: unknown;
+  executionSpec?: unknown;
   scheduleSpec?: unknown;
+  conditions?: unknown[];
+  schedule?: string;
+  timePreset?: string;
 }
 
 export const getAutomatedRules = async (): Promise<unknown[]> => {
