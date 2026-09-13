@@ -13,7 +13,7 @@ import httpx
 from agent_framework import FunctionTool
 from pydantic import BaseModel, Field
 from src.tools import product_tools
-from src.tools.definitions._helpers import _write_result, period_start_date as _period_start_date
+from src.tools.definitions._helpers import _executed_result, _write_result, period_start_date as _period_start_date
 from src.tools.vector_product_search import vector_product_search
 
 
@@ -119,13 +119,33 @@ class ProductSearchInput(BaseModel):
     references_previous_product: bool | None = Field(default=None, description="True only when the model-classified turn refers to the previous shown product.")
 
 
+class ProductVariantInput(BaseModel):
+    name: str = Field(description="Variant name e.g. 'أبيض / 38' or 'Black / XL'")
+    type: str = Field(default="combined", description="Variant dimension type (color, size, combined)")
+    sku: str | None = Field(default=None, description="Optional unique SKU for this specific variant")
+    price: float | None = Field(default=None, description="Variant price if different from base product price")
+    compare_price: float | None = Field(default=None, description="Variant compare-at price")
+    cost: float | None = Field(default=None, description="Cost price")
+    stock: int = Field(default=0, description="Stock for this specific variant")
+    images: list[str] | None = Field(default=None, description="Image URLs for this variant")
+
+
 class ProductCreateInput(BaseModel):
     name: str = Field(description="Product name")
     price: float = Field(description="Product price")
+    compare_price: float | None = Field(default=None, description="Compare at price before discount")
+    cost: float | None = Field(default=None, description="Cost price")
     sku: str | None = Field(default=None, description="Optional SKU")
-    stock: int = Field(default=0, description="Initial stock quantity")
+    stock: int = Field(default=0, description="Initial stock quantity (or 0 if variants specify individual stocks)")
     description: str | None = Field(default=None, description="Product description")
+    category_id: str | None = Field(default=None, description="Optional category ID")
+    category_name: str | None = Field(default=None, description="Optional category name to match")
+    images: list[str] | None = Field(default=None, description="List of product image URLs")
+    tags: list[str] | None = Field(default=None, description="List of search/filter tags")
+    variants: list[ProductVariantInput] | None = Field(default=None, description="Optional list of variants (sizes, colors, stocks)")
+    is_active: bool = Field(default=True, description="Whether the product is active/published in store")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
+
 
 
 class ProductLowStockInput(BaseModel):
@@ -211,13 +231,40 @@ async def product_search(input_data: ProductSearchInput) -> dict[str, Any]:
 
 
 async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:
-    return _write_result("product.create", {
+    company_id = input_data.company_id or ""
+    if not company_id:
+        return {"success": False, "error": "Missing company_id"}
+
+    payload = {
         "name": input_data.name,
         "price": input_data.price,
+        "compare_price": input_data.compare_price,
+        "cost": input_data.cost,
         "sku": input_data.sku,
         "stock": input_data.stock,
         "description": input_data.description,
-    }, input_data.company_id or "")
+        "category_id": input_data.category_id,
+        "category_name": input_data.category_name,
+        "images": input_data.images,
+        "tags": input_data.tags,
+        "variants": [v.model_dump() for v in input_data.variants] if input_data.variants else [],
+        "is_active": input_data.is_active,
+    }
+
+    from src.tools.repositories.product_repository import ProductRepository
+    import src.db.session as _db_mod
+
+    if _db_mod.async_session is None:
+        await _db_mod.init_db()
+
+    sf = _db_mod.async_session
+    async with sf() as sess:
+        repo = ProductRepository(sess)
+        result = await repo.create_product_with_variants(company_id, payload)
+
+    return _executed_result("PRODUCT_CREATED", result)
+
+
 
 
 async def product_low_stock(input_data: ProductLowStockInput) -> dict[str, Any]:
@@ -327,11 +374,23 @@ product_search_tool = FunctionTool(
     format_result=_format_product_search,
 )
 
+def _format_product_create(result: dict[str, Any]) -> str:
+    res = result.get("result", result)
+    if not res.get("success"):
+        return f"تعذر إنشاء المنتج: {res.get('error', 'خطأ غير معروف')}"
+    var_count = res.get("variantsCount", 0)
+    msg = f"تم إنشاء المنتج '{res.get('name')}' بنجاح (السعر: {res.get('price')} ج.م، كود الصنف: {res.get('sku')}، إجمالي المخزون: {res.get('stock')})."
+    if var_count > 0:
+        msg += f" تم إضافة {var_count} متغير (مقاسات/ألوان) للمنتج."
+    return msg
+
+
 product_create_tool = FunctionTool(
     name="product_create",
-    description="Create a new product in the catalog. REQUIRES MERCHANT APPROVAL.",
+    description="Create a new product in the catalog with optional variants (colors, sizes, stocks).",
     func=product_create,
     input_model=ProductCreateInput,
+    format_result=_format_product_create,
 )
 
 product_low_stock_tool = FunctionTool(

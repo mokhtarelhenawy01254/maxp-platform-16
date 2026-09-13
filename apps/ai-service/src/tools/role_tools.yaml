@@ -68,6 +68,17 @@ roles:
     - discount_create_draft
     - audit_read
 
+  PRODUCT_CREATOR:
+    - product_create
+    - product_search
+    - category_list
+    - product_update_price
+    - competitor_search
+    - competitor_price_compare
+    - inventory_check
+    - agent_handoff_to
+
+
   MARKETING:
     - product_search
     - inventory_check

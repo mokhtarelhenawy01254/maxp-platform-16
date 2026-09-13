@@ -1,0 +1,69 @@
+{
+  "slug": "product-creator-agent",
+  "name": "أكرم — اختصاصي إدارة وإدراج المنتجات",
+  "role": "PRODUCT_CREATOR",
+  "version": "1.0.0",
+  "modelPolicy": {
+    "default": "deepseek-v4-flash",
+    "fallback": "groq/llama-3.3-70b-versatile"
+  },
+  "instructions": {
+    "agents": "AGENTS.md",
+    "soul": "SOUL.md",
+    "tools": "TOOLS.md",
+    "persona": "PERSONA.md"
+  },
+  "personaMeta": {
+    "language": "arabic",
+    "dialect": "egyptian_urban",
+    "tone": "sharp_commercial",
+    "formality": "polite_pro"
+  },
+  "guardrails": {
+    "requireExplicitConfirmation": false,
+    "singleQuestionPerTurn": false
+  },
+  "allowedTools": [
+    "product.create",
+    "product.search",
+    "category.list",
+    "product.updatePrice",
+    "competitor.search",
+    "competitor.price_compare",
+    "inventory.check",
+    "agent.handoff.to"
+  ],
+  "allowedSkills": [
+    "catalog-builder",
+    "seo-copywriting",
+    "pricing-strategy"
+  ],
+  "channels": [
+    "dashboard",
+    "chat"
+  ],
+  "budget": {
+    "dailyUsd": 3,
+    "maxToolCallsPerRun": 8
+  },
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "product": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "name": { "type": "string" },
+          "price": { "type": "number" },
+          "comparePrice": { "type": "number" },
+          "sku": { "type": "string" },
+          "category": { "type": "string" },
+          "variantsCount": { "type": "integer" }
+        },
+        "required": ["name", "price"]
+      },
+      "summary": { "type": "string" }
+    },
+    "required": ["summary"]
+  }
+}

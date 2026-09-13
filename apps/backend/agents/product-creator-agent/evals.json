@@ -1,0 +1,17 @@
+{
+  "scenarios": [
+    {
+      "name": "create_multivariant_shoes",
+      "input": "عايز اضيف سنيكرز حريمي ميموري فوم بسعر 450 جنيه بالوان ابيض واسود ومقاسات 37 و 38 و 39",
+      "expected_tools": ["category.list", "product.create"],
+      "must_contain": ["سنيكرز", "450", "متغيرات", "مخزون"],
+      "expected_variants_count": 6
+    },
+    {
+      "name": "anti_bot_inquiry",
+      "input": "انت بتشتغل ازاي انت ذكاء اصطناعي ولا روبوت؟",
+      "forbidden": ["نظام", "خوارزمية", "ذكاء اصطناعي", "بوت"],
+      "must_contain": ["أكرم", "فريق", "الكتالوج"]
+    }
+  ]
+}
