@@ -29,6 +29,7 @@ const CreativeAiStudioPage: React.FC = () => {
 
   // Creative Presets & Settings
   const [selectedPreset, setSelectedPreset] = useState<CreativePreset>(CREATIVE_STUDIO_PRESETS[0]);
+  const [selectedModel, setSelectedModel] = useState<string>("openai/gpt-image-2");
   const [aspectRatio, setAspectRatio] = useState<AspectRatioType>("1:1");
   const [customPrompt, setCustomPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -63,9 +64,18 @@ const CreativeAiStudioPage: React.FC = () => {
     };
   });
 
-  // Load Tier and Daily Usage
+  // Load Model Config, Tier and Daily Usage
   useEffect(() => {
     let isMounted = true;
+    apiClient
+      .get<{ success: boolean; data: { model?: string } }>("/ai-image/model-config")
+      .then((res) => {
+        if (isMounted && res.data?.success && res.data.data?.model) {
+          setSelectedModel(res.data.data.model);
+        }
+      })
+      .catch(() => {});
+
     apiClient
       .get<{ success: boolean; data: { dailyUsage: number; dailyLimit: number } }>(
         "/ai-image/tier-config"
@@ -130,6 +140,7 @@ const CreativeAiStudioPage: React.FC = () => {
         "/ai-image/generate",
         {
           prompt: basePrompt,
+          model: selectedModel,
           aspectRatio,
           style: selectedPreset.category,
           quality: 90,
@@ -176,7 +187,7 @@ const CreativeAiStudioPage: React.FC = () => {
       statusBadge={
         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-600 dark:text-slate-400">
           <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>توليد متعدد الأبعاد 2026</span>
+          <span className="font-mono text-[11px] text-indigo-600 dark:text-indigo-400">{selectedModel.split("/").pop()}</span>
         </div>
       }
       chatTabLabel="بيئات الاستوديو والنصوص"
@@ -190,6 +201,8 @@ const CreativeAiStudioPage: React.FC = () => {
           selectedProduct={selectedProduct}
           selectedPresetId={selectedPreset.id}
           onSelectPreset={(preset) => setSelectedPreset(preset)}
+          selectedModel={selectedModel}
+          onSelectModel={(m) => setSelectedModel(m)}
           aspectRatio={aspectRatio}
           onChangeAspectRatio={setAspectRatio}
           overlay={overlay}

@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CREATIVE_STUDIO_PRESETS } from "./CreativeStudioPresets";
+import { ALLOWED_IMAGE_MODELS } from "./types";
 import type {
   AspectRatioType,
   CreativePreset,
@@ -29,6 +30,8 @@ interface CreativeStudioControlPanelProps {
   selectedProduct: MarketingProduct | null;
   selectedPresetId: string;
   onSelectPreset: (preset: CreativePreset) => void;
+  selectedModel: string;
+  onSelectModel: (model: string) => void;
   aspectRatio: AspectRatioType;
   onChangeAspectRatio: (ratio: AspectRatioType) => void;
   overlay: CanvasOverlaySettings;
@@ -45,6 +48,8 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
   selectedProduct,
   selectedPresetId,
   onSelectPreset,
+  selectedModel,
+  onSelectModel,
   aspectRatio,
   onChangeAspectRatio,
   overlay,
@@ -301,6 +306,45 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
         {/* Tab 3: Aspect Ratio & Advanced Prompt */}
         {activeTab === "ADVANCED" && (
           <div className="space-y-4">
+            {/* AI Image Generation Model Selector */}
+            <div className="space-y-2 bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  نموذج الذكاء الاصطناعي المعتمد
+                </Label>
+                <span className="text-[10px] text-indigo-600 dark:text-indigo-400 font-mono">
+                  OpenRouter Engine
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                {ALLOWED_IMAGE_MODELS.map((m) => {
+                  const isCurrent = selectedModel === m.id;
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => onSelectModel(m.id)}
+                      className={`p-2 rounded-lg border text-right transition cursor-pointer flex items-center justify-between gap-1.5 ${
+                        isCurrent
+                          ? "border-indigo-600 bg-indigo-50/70 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold ring-1 ring-indigo-500"
+                          : "border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40"
+                      }`}
+                    >
+                      <div className="truncate">
+                        <div className="text-xs leading-tight">{m.nameAr}</div>
+                        <div className="text-[9px] text-slate-400 font-mono">{m.nameEn}</div>
+                      </div>
+                      {m.badge && (
+                        <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 flex-shrink-0">
+                          {m.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div className="space-y-2 bg-white dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200/80 dark:border-slate-800">
               <Label className="text-xs font-bold text-slate-700 dark:text-slate-300">
                 مقاس الصورة الإعلانية المستهدفة
