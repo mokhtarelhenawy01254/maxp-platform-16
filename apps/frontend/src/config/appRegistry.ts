@@ -322,6 +322,7 @@ export const APP_REGISTRY: AppDefinition[] = [
     bgGradient: 'from-fuchsia-500 to-fuchsia-600',
     sectionIds: ['marketplace'],
     category: 'system',
+    route: '/marketplace',
   },
   {
     id: 'billing',

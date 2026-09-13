@@ -463,8 +463,8 @@ export const getSidebarConfig = (
                 title: t('sidebar.marketplace'),
                 icon: Box,
                 items: [
+                    { to: '/marketplace', icon: Box, label: isEn ? 'App Marketplace' : 'متجر التطبيقات' },
                     { to: '/my-apps', icon: Grid3x3, label: t('sidebar.myApps') },
-                    { to: '/marketplace', icon: Box, label: t('sidebar.browseApps') },
                     { to: '/marketplace/bundles', icon: Gift, label: t('sidebar.browseBundles') },
                     { to: '/payments', icon: Wallet, label: t('sidebar.myPayments') },
 
@@ -1536,9 +1536,9 @@ export const getSidebarConfig = (
             title: t('sidebar.marketplace'),
             icon: Box,
             items: [
-                { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت (Workforce)' },
+                { to: '/marketplace', icon: Box, label: isEn ? 'App Marketplace' : 'متجر التطبيقات' },
                 { to: '/my-apps', icon: Grid3x3, label: t('sidebar.myApps') },
-                { to: '/marketplace', icon: Box, label: t('sidebar.browseApps') },
+                { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت (Workforce)' },
                 { to: '/marketplace/themes', icon: Palette, label: t('sidebar.storeThemes') },
                 { to: '/marketplace/bundles', icon: Gift, label: t('sidebar.browseBundles') },
                 { to: '/payments', icon: Wallet, label: t('sidebar.myPayments') },

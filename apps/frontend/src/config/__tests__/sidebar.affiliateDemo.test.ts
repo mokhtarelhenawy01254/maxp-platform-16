@@ -47,7 +47,8 @@ describe("affiliate demo sidebar preset", () => {
       "/shop",
       "/settings/store-pages",
       "/settings/store?tab=branches",
-      "/settings/store/product-conversion",
+      "/settings/store/tools",
+      "/settings/store-payment-offers",
     ]);
 
     const appLinks = config
@@ -56,6 +57,7 @@ describe("affiliate demo sidebar preset", () => {
 
     expect(appLinks).toEqual([
       "/marketplace",
+      "/my-apps",
       "/marketplace/bundles",
       "/payments",
       "/subscription/pricing",
