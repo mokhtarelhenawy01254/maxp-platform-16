@@ -16,7 +16,19 @@ import type {
   FacebookPage,
   FacebookPixel,
 } from "../../../../services/facebookAdsService";
-import { OBJECTIVES, PLACEMENTS } from "../constants";
+import {
+  OBJECTIVES,
+  PLACEMENTS,
+  PERFORMANCE_GOALS,
+  CONVERSION_EVENTS,
+  BID_STRATEGIES,
+  ATTRIBUTION_WINDOWS,
+  COUNTRIES,
+} from "../constants";
+import {
+  getCompatibleAttributionWindows,
+  normalizeAttributionWindowForObjective,
+} from "../../CreateAdWizard.helpers";
 
 interface Step6ReviewProps {
   createdFullAd: CreatedFullAdSummary | null;
@@ -52,6 +64,45 @@ export const Step6Review: React.FC<Step6ReviewProps> = ({
   lookalikeAudiences,
 }) => {
   const navigate = useNavigate();
+
+  const compatibleAttributionWindows = getCompatibleAttributionWindows(
+    formData.objective,
+    ATTRIBUTION_WINDOWS,
+  );
+  const selectedAttributionWindowLabel =
+    compatibleAttributionWindows.find(
+      (window) => window.value === formData.attributionWindow,
+    )?.label ||
+    ATTRIBUTION_WINDOWS.find((window) => window.value === formData.attributionWindow)
+      ?.label ||
+    normalizeAttributionWindowForObjective(
+      formData.objective,
+      formData.attributionWindow,
+    );
+  const formatSelectedAdAccountCurrency = (value?: number) =>
+    new Intl.NumberFormat("ar-EG", {
+      style: "currency",
+      currency: selectedAdAccountCurrency || "EGP",
+      maximumFractionDigits: 2,
+    }).format(value || 0);
+  const selectedGeoSummary =
+    (formData.regions && formData.regions.length > 0) ||
+    (formData.cities && formData.cities.length > 0)
+      ? [
+          ...(formData.regions || []).map((region) => `محافظة ${region.name}`),
+          ...(formData.cities || []).map((city) => `مدينة ${city.name}`),
+        ].join(", ")
+      : (formData.locations || [])
+          .map((location) => COUNTRIES.find((country) => country.code === location)?.name)
+          .filter(Boolean)
+          .join(", ");
+  const selectedTargetingSignalCount =
+    selectedInterests.length +
+    selectedCustomAudiences.length +
+    selectedLookalikeAudiences.length +
+    (formData.excludedCustomAudiences?.length || 0) +
+    (formData.languages?.length || 0) +
+    (formData.devicePlatforms?.length || 0);
   return (
     <div className="space-y-6">
       {createdFullAd && (
@@ -260,7 +311,7 @@ export const Step6Review: React.FC<Step6ReviewProps> = ({
             <span className="font-medium text-gray-900 dark:text-white">
               {formData.placementType === "AUTOMATIC"
                 ? "تلقائي"
-                : `${formData.placements.length} مواضع`}
+                : `${formData.publisherPlatforms?.length || 0} مواضع`}
             </span>
           </div>
           <div className="flex justify-between py-2 border-b border-gray-200 dark:border-gray-700">

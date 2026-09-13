@@ -61,15 +61,24 @@ export interface FormData {
   spendLimit?: number;
 
   // Step 2: Ad Set Level
+  performanceGoal?: string;
+  conversionEvent?: string;
+  conversionLocation?: string;
+  dynamicCreative?: boolean;
+  pixelId?: string;
+  budgetOptimization?: boolean;
   budgetType: "DAILY" | "LIFETIME";
   budgetAmount: number;
   bidStrategy: string;
   bidAmount?: number;
+  bidValue?: number;
   billingEvent: string;
   optimizationGoal: string;
   startTime: string;
   endTime: string;
   attributionWindow: string;
+  frequencyCap?: number;
+  frequencyCapInterval?: "DAY" | "WEEK" | "MONTH";
   existingCustomerBudgetPercentage?: number;
   adSchedulingEnabled?: boolean;
   adScheduleStartHour?: number;
@@ -81,6 +90,9 @@ export interface FormData {
 
   // Step 3: Audience & Placements
   locations: string[];
+  regions?: { key?: string; name: string }[];
+  cities?: { key?: string; name: string }[];
+  locationTypes?: string[];
   geoLocations?: MetaGeoLocation[];
   excludedGeoLocations?: MetaGeoLocation[];
   locationSearchQuery?: string;
@@ -97,6 +109,7 @@ export interface FormData {
   excludedInterests?: TargetingOption[];
   advantageAudience: boolean;
   placementType: "AUTOMATIC" | "MANUAL";
+  placements?: string[];
   publisherPlatforms: string[];
   facebookPositions: string[];
   instagramPositions: string[];

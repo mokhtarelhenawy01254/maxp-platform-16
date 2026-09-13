@@ -8,7 +8,6 @@ import {
   CheckCircle,
   Eye,
   Globe,
-  Sparkles,
   Zap,
   Facebook,
   Instagram,

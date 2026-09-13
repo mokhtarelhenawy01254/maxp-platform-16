@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link2, Sparkles, Check, Copy, HelpCircle, X } from "lucide-react";
+import { Link2, Sparkles, Check, X } from "lucide-react";
 
 interface UtmBuilderModalProps {
   isOpen: boolean;

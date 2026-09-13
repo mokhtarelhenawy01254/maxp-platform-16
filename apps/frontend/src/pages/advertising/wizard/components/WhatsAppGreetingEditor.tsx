@@ -1,5 +1,5 @@
 import React from "react";
-import { MessageCircle, Plus, Trash2, HelpCircle, CheckCircle2 } from "lucide-react";
+import { MessageCircle, Plus, Trash2 } from "lucide-react";
 
 interface WhatsAppGreetingEditorProps {
   greeting: string;
