@@ -295,9 +295,11 @@
   body:has(.business-inbox-shell--conversation-active) .app-shell-content,
   body:has(.whatsapp-workspace--chat-active) .app-shell-content,
   body:has([data-chat-active="true"]) .app-shell-content,
+  body:has(.marketing-studio-root) .app-shell-content,
   .app-shell-root:has(.business-inbox-shell--conversation-active) .app-shell-content,
   .app-shell-root:has(.whatsapp-workspace--chat-active) .app-shell-content,
-  .app-shell-root:has([data-chat-active="true"]) .app-shell-content {
+  .app-shell-root:has([data-chat-active="true"]) .app-shell-content,
+  .app-shell-root:has(.marketing-studio-root) .app-shell-content {
     padding-bottom: env(safe-area-inset-bottom, 0px) !important;
   }
 }
@@ -473,10 +475,12 @@ body.app-shell-mobile-open {
   body:has(.business-inbox-shell--conversation-active) .admin-bottom-nav,
   body:has(.whatsapp-workspace--chat-active) .admin-bottom-nav,
   body:has([data-chat-active="true"]) .admin-bottom-nav,
+  body:has(.marketing-studio-root) .admin-bottom-nav,
   .app-shell-root--no-bottom-nav .admin-bottom-nav,
   .app-shell-root:has(.business-inbox-shell--conversation-active) .admin-bottom-nav,
   .app-shell-root:has(.whatsapp-workspace--chat-active) .admin-bottom-nav,
-  .app-shell-root:has([data-chat-active="true"]) .admin-bottom-nav {
+  .app-shell-root:has([data-chat-active="true"]) .admin-bottom-nav,
+  .app-shell-root:has(.marketing-studio-root) .admin-bottom-nav {
     display: none !important;
   }
 }

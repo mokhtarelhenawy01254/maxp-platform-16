@@ -223,14 +223,14 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
       </div>
 
 
-      {/* Input Bar */}
-      <div className="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900">
+      {/* Input Bar (Sticky Mobile Composer) */}
+      <div className="p-2 sm:p-3 pb-[calc(0.6rem+env(safe-area-inset-bottom,0px))] border-t border-slate-200 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md flex-shrink-0 z-10">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2"
+          className="flex items-center gap-1.5 sm:gap-2"
         >
           <input
             ref={inputRef}
@@ -243,12 +243,12 @@ export const MarketingSquadChatFeed: React.FC<MarketingSquadChatFeedProps> = ({
                 ? `اطلب من فريق التسويق خطة لـ ${selectedProduct.name}...`
                 : "وجه فريق التسويق أو اسأل عن أي حملة..."
             }
-            className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 px-3.5 py-2.5 sm:py-2 text-sm sm:text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
           <button
             type="submit"
             disabled={!inputMessage.trim() || loading}
-            className="p-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition disabled:opacity-40 flex items-center justify-center"
+            className="w-10 h-10 sm:w-8 sm:h-8 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold transition disabled:opacity-40 flex items-center justify-center flex-shrink-0 cursor-pointer active:scale-95 shadow-xs"
             title="إرسال"
           >
             <Send className="w-4 h-4" />
