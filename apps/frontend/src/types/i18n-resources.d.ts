@@ -13587,6 +13587,25 @@ declare module 'react-i18next' {
         k_137: string;
         k_138: string;
         k_139: string;
+        title: string;
+        adminSubtitle: string;
+        affiliateTitle: string;
+        affiliateSubtitle: string;
+        productsStep: string;
+        cartStep: string;
+        checkoutStep: string;
+        cartCleared: string;
+        quantityIncreased: string;
+        addedToCart: string;
+        productRemoved: string;
+        keyboardShortcuts: string;
+        showShortcuts: string;
+        searchProduct: string;
+        clearCart: string;
+        closeCancel: string;
+        ok: string;
+        coupon_applied: string;
+        available_count: string;
       };
       orderDetails: {
         orderNotFound: string;

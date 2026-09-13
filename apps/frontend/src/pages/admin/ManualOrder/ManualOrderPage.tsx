@@ -224,27 +224,27 @@ const ManualOrderPage = () => {
   };
 
   const pageTitle = isAffiliate
-    ? t("manualOrder.affiliateTitle")
-    : t("manualOrder.title");
+    ? t("manualOrder.affiliateTitle", "إنشاء طلب يدوي كمسوّق")
+    : t("manualOrder.title", "الطلبات اليدوية");
   const pageSubtitle = isAffiliate
-    ? t("manualOrder.affiliateSubtitle")
-    : t("manualOrder.adminSubtitle");
+    ? t("manualOrder.affiliateSubtitle", "إنشاء طلبات مباشرة لعملائك ومتابعة عمولاتك الخاصة بكل طلب")
+    : t("manualOrder.adminSubtitle", "إنشاء وتأكيد طلبات العملاء المباشرة وإسنادها بسرعة للمخزون والشحن");
 
   const mobilePanels = [
     {
       id: "products" as const,
-      label: t("manualOrder.productsStep"),
+      label: t("manualOrder.productsStep", "المنتجات"),
       icon: ShoppingBagIcon,
     },
     {
       id: "cart" as const,
-      label: t("manualOrder.cartStep"),
+      label: t("manualOrder.cartStep", "السلة"),
       icon: ShoppingCartIcon,
       count: cartItems.length,
     },
     {
       id: "checkout" as const,
-      label: t("manualOrder.checkoutStep"),
+      label: t("manualOrder.checkoutStep", "بيانات الطلب"),
       icon: UserCircleIcon,
     },
   ];
@@ -297,7 +297,7 @@ const ManualOrderPage = () => {
         <button
           onClick={() => setShowShortcuts((prev) => !prev)}
           className="shrink-0 rounded-lg p-2 text-slate-400 transition-colors hover:bg-white hover:text-slate-700 dark:text-slate-500 dark:hover:bg-gray-800 dark:hover:text-slate-200"
-          title={`${t("manualOrder.keyboardShortcuts")} (F1)`}
+          title={`${t("manualOrder.keyboardShortcuts", "اختصارات لوحة المفاتيح")} (F1)`}
         >
           <InformationCircleIcon className="h-5 w-5" />
         </button>
@@ -349,25 +349,25 @@ const ManualOrderPage = () => {
           >
             <div className="p-4 border-b bg-gray-50 dark:bg-gray-900">
               <h3 className="font-bold">
-                {t("manualOrder.keyboardShortcuts")}
+                {t("manualOrder.keyboardShortcuts", "اختصارات لوحة المفاتيح")}
               </h3>
             </div>
 
             <div className="p-4 space-y-3 text-sm">
               <div className="flex justify-between">
-                <span>{t("manualOrder.showShortcuts")}</span>
+                <span>{t("manualOrder.showShortcuts", "عرض الاختصارات")}</span>
                 <kbd>F1</kbd>
               </div>
               <div className="flex justify-between">
-                <span>{t("manualOrder.searchProduct")}</span>
+                <span>{t("manualOrder.searchProduct", "البحث عن منتج")}</span>
                 <kbd>F2</kbd>
               </div>
               <div className="flex justify-between">
-                <span>{t("manualOrder.clearCart")}</span>
+                <span>{t("manualOrder.clearCart", "إفراغ السلة")}</span>
                 <span>Ctrl + Delete</span>
               </div>
               <div className="flex justify-between">
-                <span>{t("manualOrder.closeCancel")}</span>
+                <span>{t("manualOrder.closeCancel", "إغلاق / إلغاء")}</span>
                 <kbd>Esc</kbd>
               </div>
             </div>
@@ -377,7 +377,7 @@ const ManualOrderPage = () => {
                 onClick={() => setShowShortcuts(false)}
                 className="w-full py-2 bg-blue-600 text-white rounded-lg"
               >
-                {t("manualOrder.ok")}
+                {t("manualOrder.ok", "حسناً")}
               </button>
             </div>
           </div>
