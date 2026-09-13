@@ -840,7 +840,8 @@ const sendUnifiedMessage = async (req, res) => {
                 });
                 if (igPage?.pageAccessToken && igPage?.instagramAccountId && conversation.customer?.instagramId) {
                     const axios = require('axios');
-                    const IG_GRAPH_API = `https://graph.facebook.com/v22.0/${igPage.instagramAccountId}/messages`;
+                    const { getMetaGraphApiBaseUrl } = require('../config/metaApi');
+                    const IG_GRAPH_API = `${getMetaGraphApiBaseUrl()}/${igPage.instagramAccountId}/messages`;
                     
                     const messagePayload = !isMedia
                         ? { text: content }
