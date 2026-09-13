@@ -15,6 +15,8 @@ import type {
   CanvasOverlaySettings,
   CreativePreset,
   MarketingProduct,
+  ProductTransformSettings,
+  CreativeAngleSuggestion,
 } from "./types";
 
 const CreativeAiStudioPage: React.FC = () => {
@@ -47,7 +49,7 @@ const CreativeAiStudioPage: React.FC = () => {
   // Mobile view toggle (CONTROLS vs CANVAS)
   const [mobileView, setMobileView] = useState<"CHAT" | "CANVAS">("CANVAS");
 
-  // Editable Typography Overlay
+  // Editable Typography & Visual Overlay
   const [overlay, setOverlay] = useState<CanvasOverlaySettings>(() => {
     const prefill = (location.state as any)?.prefillDraft;
     return {
@@ -66,6 +68,13 @@ const CreativeAiStudioPage: React.FC = () => {
       showBadge: true,
       showPrice: true,
       showCta: true,
+      productTransform: {
+        x: 0,
+        y: 0,
+        scale: 1,
+        rotation: 0,
+        shadowType: "contact",
+      },
     };
   });
 
@@ -131,6 +140,13 @@ const CreativeAiStudioPage: React.FC = () => {
         price,
         originalPrice,
         discountBadge: discountPercent ? `خصم ${discountPercent}%` : "عرض حصري",
+        productTransform: {
+          x: 0,
+          y: 0,
+          scale: 1,
+          rotation: 0,
+          shadowType: "contact",
+        },
       };
     });
   }, []);
@@ -138,6 +154,24 @@ const CreativeAiStudioPage: React.FC = () => {
   const handleUpdateOverlay = (updates: Partial<CanvasOverlaySettings>) => {
     setOverlay((prev) => ({ ...prev, ...updates }));
   };
+
+  const handleUpdateProductTransform = useCallback(
+    (updates: Partial<ProductTransformSettings>) => {
+      setOverlay((prev) => ({
+        ...prev,
+        productTransform: {
+          ...prev.productTransform,
+          ...updates,
+        },
+      }));
+    },
+    []
+  );
+
+  const handleSelectAngle = useCallback((angle: CreativeAngleSuggestion) => {
+    setCustomPrompt(angle.prompt);
+    toast.info(`تم تطبيق زاوية: ${angle.titleAr}`);
+  }, []);
 
   // Generate Studio Scene with OpenRouter backend
   const handleGenerate = async () => {
@@ -243,6 +277,7 @@ const CreativeAiStudioPage: React.FC = () => {
           onUpdateOverlay={handleUpdateOverlay}
           customPrompt={customPrompt}
           onChangeCustomPrompt={setCustomPrompt}
+          onSelectAngle={handleSelectAngle}
           isGenerating={isGenerating}
           onGenerate={handleGenerate}
           dailyUsage={dailyUsage}
@@ -256,6 +291,7 @@ const CreativeAiStudioPage: React.FC = () => {
           aspectRatio={aspectRatio}
           onChangeAspectRatio={setAspectRatio}
           overlay={overlay}
+          onUpdateProductTransform={handleUpdateProductTransform}
           backgroundUrl={backgroundUrl}
           isGenerating={isGenerating}
         />

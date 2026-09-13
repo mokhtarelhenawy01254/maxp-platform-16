@@ -1,6 +1,27 @@
 import type { MarketingProduct } from "../marketing-studio/types";
 
-export type AspectRatioType = "1:1" | "9:16" | "16:9";
+export type AspectRatioType = "1:1" | "9:16" | "4:5" | "16:9";
+
+export type CreativeModality = "lifestyle" | "on_model" | "direct_response" | "packshot";
+
+export type ShadowType = "contact" | "directional" | "subtle" | "none";
+
+export interface ProductTransformSettings {
+  x: number; // percentage offset (-50 to 50)
+  y: number; // percentage offset (-50 to 50)
+  scale: number; // 0.5 to 1.5
+  rotation: number; // -45 to 45 degrees
+  shadowType: ShadowType;
+}
+
+export interface CreativeAngleSuggestion {
+  id: string;
+  titleAr: string;
+  badge: string;
+  rationale: string;
+  prompt: string;
+  modality: CreativeModality;
+}
 
 export interface ImageModelOption {
   id: string;
@@ -23,7 +44,7 @@ export interface CreativePreset {
   labelAr: string;
   labelEn: string;
   descriptionAr: string;
-  category: "podium" | "luxury" | "lifestyle" | "cyber" | "seasonal" | "studio";
+  category: CreativeModality;
   promptModifier: string;
   lightingStyle: string;
   previewGradient: string;
@@ -46,6 +67,7 @@ export interface CanvasOverlaySettings {
   showBadge: boolean;
   showPrice: boolean;
   showCta: boolean;
+  productTransform: ProductTransformSettings;
 }
 
 export interface CreativeGenerationState {
