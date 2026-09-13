@@ -291,6 +291,7 @@ class FacebookAdsAiDraftService {
       conversionLocation: overrides.conversionLocation || rawData.conversionLocation || 'WEBSITE',
       performanceGoal: overrides.performanceGoal || rawData.performanceGoal || 'MAXIMIZE_CONVERSIONS',
       optimizationGoal: overrides.optimizationGoal || rawData.optimizationGoal || 'OFFSITE_CONVERSIONS',
+      bidStrategy: overrides.bidStrategy || rawData.bidStrategy || 'LOWEST_COST_WITHOUT_CAP',
     };
 
     return payload;

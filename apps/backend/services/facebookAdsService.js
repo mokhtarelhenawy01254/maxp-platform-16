@@ -931,7 +931,10 @@ class FacebookAdsService {
       const attributionSpec = this.buildAttributionSpec(resolvedAttributionWindow);
 
       // بناء Bid Strategy
-      const bidData = this.buildBidStrategy(bidStrategy, bidValue);
+      const bidData = this.buildBidStrategy(bidStrategy || 'LOWEST_COST', bidValue);
+      if (!bidData.bid_strategy && (budgetData.daily_budget || budgetData.lifetime_budget)) {
+        bidData.bid_strategy = 'LOWEST_COST_WITHOUT_CAP';
+      }
 
       const adSetData = {
         name,
@@ -5560,6 +5563,7 @@ class FacebookAdsService {
     }
 
     switch (normalizedBidStrategy) {
+
       case 'COST_CAP':
         if (bidValue) {
           bidData.bid_strategy = 'COST_CAP';
