@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useLocation } from "react-router-dom";
-import { Palette, Sparkles, Wand2 } from "lucide-react";
+import { Palette, Sparkles, Wand2, Images } from "lucide-react";
 import { useAuth } from "../../../hooks/useAuthSimple";
 import { AgentStudioLayout } from "../../../components/agent-studio";
 import { ProductOpportunityRadar } from "../marketing-studio/ProductOpportunityRadar";
 import { CreativeStudioControlPanel } from "./CreativeStudioControlPanel";
 import { CreativeStudioInteractiveCanvas } from "./CreativeStudioInteractiveCanvas";
+import { CreativeStudioHistoryDrawer } from "./CreativeStudioHistoryDrawer";
 import { CREATIVE_STUDIO_PRESETS } from "./CreativeStudioPresets";
 import { apiClient } from "../../../services/apiClient";
 import { toast } from "sonner";
@@ -34,6 +35,10 @@ const CreativeAiStudioPage: React.FC = () => {
   const [customPrompt, setCustomPrompt] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [backgroundUrl, setBackgroundUrl] = useState<string | null>(null);
+
+  // Gallery History state
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [historyCount, setHistoryCount] = useState(0);
 
   // Quota Telemetry
   const [dailyUsage, setDailyUsage] = useState(0);
@@ -92,6 +97,21 @@ const CreativeAiStudioPage: React.FC = () => {
       isMounted = false;
     };
   }, [companyId]);
+
+  const loadHistoryCount = useCallback(() => {
+    apiClient
+      .get<{ success?: boolean; data?: any[] }>("/ai-image/history")
+      .then((res) => {
+        if (res.data?.success && Array.isArray(res.data.data)) {
+          setHistoryCount(res.data.data.length);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    loadHistoryCount();
+  }, [loadHistoryCount, companyId]);
 
   // When a product is selected, intelligently auto-populate the ad overlay
   const handleProductSelect = useCallback((product: MarketingProduct) => {
@@ -163,6 +183,7 @@ const CreativeAiStudioPage: React.FC = () => {
       if (res.data?.data?.imageUrl) {
         setBackgroundUrl(res.data.data.imageUrl);
         setDailyUsage((prev) => prev + 1);
+        loadHistoryCount();
         toast.success("تم توليد المشهد الإعلاني بنجاح");
         // On mobile, switch view to canvas to see result immediately
         if (window.innerWidth < 1024) {
@@ -188,8 +209,10 @@ const CreativeAiStudioPage: React.FC = () => {
       selectedEntity={selectedProduct}
       entitySelectorPlaceholder="اختر منتج التصميم"
       onOpenEntityPicker={() => setIsProductPickerOpen(true)}
-      sessionsCount={0}
-      onOpenSessions={() => setIsProductPickerOpen(true)}
+      sessionsCount={historyCount}
+      sessionsButtonLabel="سجل الصور"
+      sessionsIcon={Images}
+      onOpenSessions={() => setIsHistoryOpen(true)}
       onNewSession={() => {
         setBackgroundUrl(null);
         setSelectedPreset(CREATIVE_STUDIO_PRESETS[0]);
@@ -238,12 +261,25 @@ const CreativeAiStudioPage: React.FC = () => {
         />
       }
       extraDrawers={
-        <ProductOpportunityRadar
-          isOpen={isProductPickerOpen}
-          onClose={() => setIsProductPickerOpen(false)}
-          selectedProduct={selectedProduct}
-          onSelectProduct={handleProductSelect}
-        />
+        <>
+          <ProductOpportunityRadar
+            isOpen={isProductPickerOpen}
+            onClose={() => setIsProductPickerOpen(false)}
+            selectedProduct={selectedProduct}
+            onSelectProduct={handleProductSelect}
+          />
+          <CreativeStudioHistoryDrawer
+            isOpen={isHistoryOpen}
+            onClose={() => setIsHistoryOpen(false)}
+            onSelectImage={(url) => {
+              setBackgroundUrl(url);
+              if (window.innerWidth < 1024) {
+                setMobileView("CANVAS");
+              }
+            }}
+            onHistoryChange={(cnt) => setHistoryCount(cnt)}
+          />
+        </>
       }
     />
   );

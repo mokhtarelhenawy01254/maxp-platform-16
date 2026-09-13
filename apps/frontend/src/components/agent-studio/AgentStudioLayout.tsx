@@ -24,6 +24,8 @@ export interface AgentStudioLayoutProps {
   sessionsCount: number;
   onOpenSessions: () => void;
   onNewSession: () => void;
+  sessionsButtonLabel?: string;
+  sessionsIcon?: LucideIcon;
   activeAgent?: StudioAgentInfo | null;
   agentRoutingHref?: string;
   statusBadge?: React.ReactNode;
@@ -49,6 +51,8 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
   sessionsCount,
   onOpenSessions,
   onNewSession,
+  sessionsButtonLabel = "الجلسات",
+  sessionsIcon: SessionsIcon = FolderArchive,
   activeAgent,
   agentRoutingHref = "/admin/ai-hub?tab=routing",
   statusBadge,
@@ -146,10 +150,10 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
               type="button"
               onClick={onOpenSessions}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-[0.98] transition text-xs font-bold text-slate-700 dark:text-slate-300 shadow-xs cursor-pointer"
-              title="استعراض الجلسات السابقة"
+              title={sessionsButtonLabel}
             >
-              <FolderArchive className="w-3.5 h-3.5 text-indigo-500" />
-              <span>الجلسات</span>
+              <SessionsIcon className="w-3.5 h-3.5 text-indigo-500" />
+              <span>{sessionsButtonLabel}</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-bold tabular-nums">
                 {sessionsCount}
               </span>
@@ -230,9 +234,9 @@ export const AgentStudioLayout: React.FC<AgentStudioLayoutProps> = ({
                 type="button"
                 onClick={onOpenSessions}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-xs font-bold text-slate-700 dark:text-slate-300 active:scale-[0.98]"
-                title="الجلسات السابقة"
+                title={sessionsButtonLabel}
               >
-                <FolderArchive className="w-3.5 h-3.5 text-indigo-500" />
+                <SessionsIcon className="w-3.5 h-3.5 text-indigo-500" />
                 <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-200 dark:bg-slate-700 font-bold tabular-nums">
                   {sessionsCount}
                 </span>
