@@ -1165,6 +1165,17 @@ try {
   console.error("❌ [RAG-EVAL] Failed to start Knowledge Evaluation Scheduler:", error.message);
 }
 
+// Start AI Cron Scheduler (Hermes Natural Language Cron Jobs)
+(async () => {
+  try {
+    const aiCronSchedulerService = require("./services/aiCronSchedulerService");
+    await aiCronSchedulerService.initialize();
+    console.log("✅ [AI-CRON] Hermes Natural Language Cron Scheduler initialized");
+  } catch (error) {
+    console.error("❌ [AI-CRON] Failed to initialize AI Cron Scheduler:", error.message);
+  }
+})();
+
 // Start Billing Notification Service (trial reminders, expiry checks)
 try {
   const billingNotificationService = require("./services/billingNotificationService");

@@ -103,6 +103,7 @@ READ_TOOL_NAMES: set[str] = CORE_TOOL_NAMES | ADVANCED_TOOL_NAMES | {
     "shipping_company_areas",
     "search_area_by_text",
     "order_lookup_by_phone",
+    "session_search",
 }
 
 WRITE_TOOL_NAMES: set[str] = {

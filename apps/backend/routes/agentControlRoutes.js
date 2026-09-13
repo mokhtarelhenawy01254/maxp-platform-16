@@ -356,77 +356,54 @@ router.post('/agents/orchestrate', async (req, res) => {
 
 // ── Scheduler (in-memory) ──────────────────────────────────────────────
 
-const cronParser = require('node-cron');
-const jobStore = new Map();
+const aiCronSchedulerService = require('../services/aiCronSchedulerService');
 
-const guessCron = (text) => {
-  const lower = (text || '').toLowerCase();
-  if (lower.includes('كل') && (lower.includes('ساعة') || lower.includes('ساعه'))) return '0 * * * *';
-  if (lower.includes('كل') && (lower.includes('يوم') || lower.includes('يوماً'))) return '0 0 * * *';
-  if (lower.includes('صباح') || lower.includes('كل يوم')) return '0 8 * * *';
-  if (lower.includes('مساء')) return '0 20 * * *';
-  if (lower.includes('اثنين') || lower.includes('الاثنين')) return '0 9 * * 1';
-  if (lower.includes('ثلاثاء') || lower.includes('الثلاثاء')) return '0 9 * * 2';
-  if (lower.includes('اربعاء') || lower.includes('الأربعاء')) return '0 9 * * 3';
-  if (lower.includes('خميس') || lower.includes('الخميس')) return '0 9 * * 4';
-  if (lower.includes('جمعة') || lower.includes('الجمعة')) return '0 9 * * 5';
-  if (lower.includes('سبت') || lower.includes('السبت')) return '0 9 * * 6';
-  if (lower.includes('شهر') || lower.includes('شهرياً') || lower.includes('شهري')) return '0 0 1 * *';
-  if (cronParser.validate(text.trim())) return text.trim();
-  return '0 8 * * *';
-};
-
-router.get('/scheduler/jobs', (req, res) => {
-  const companyId = getCompanyId(req);
-  if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-  return res.json({ success: true, jobs: jobStore.get(companyId) || [] });
+router.get('/scheduler/jobs', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const jobs = await aiCronSchedulerService.listJobs(companyId);
+    return res.json({ success: true, jobs });
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
+  }
 });
 
-router.post('/scheduler/jobs', (req, res) => {
-  const companyId = getCompanyId(req);
-  if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-  const jobs = jobStore.get(companyId) || [];
-  const id = `job_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const desc = req.body?.description || req.body?.naturalInput || '';
-  const job = { id, description: desc, cronExpression: guessCron(desc),
-    taskType: req.body?.taskType || 'GENERAL', status: 'ACTIVE',
-    lastRun: null, lastStatus: null, nextRun: '—', runCount: 0,
-    payload: req.body?.payload || {}, createdAt: new Date().toISOString() };
-  jobs.unshift(job);
-  jobStore.set(companyId, jobs);
-  return res.status(201).json({ success: true, job });
+router.post('/scheduler/jobs', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const job = await aiCronSchedulerService.createJob(companyId, {
+      description: req.body?.description,
+      naturalInput: req.body?.naturalInput,
+      taskType: req.body?.taskType,
+      payload: req.body?.payload || {},
+    });
+    return res.status(201).json({ success: true, job });
+  } catch (error) {
+    return res.status(400).json({ success: false, error: error.message });
+  }
 });
 
-router.delete('/scheduler/jobs/:id', (req, res) => {
-  const companyId = getCompanyId(req);
-  if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-  const jobs = jobStore.get(companyId);
-  if (!jobs) return res.status(404).json({ success: false, error: 'JOB_NOT_FOUND' });
-  const idx = jobs.findIndex(j => j.id === req.params.id);
-  if (idx === -1) return res.status(404).json({ success: false, error: 'JOB_NOT_FOUND' });
-  jobs.splice(idx, 1);
-  if (jobs.length === 0) jobStore.delete(companyId);
-  return res.json({ success: true });
+router.delete('/scheduler/jobs/:id', async (req, res) => {
+  try {
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const result = await aiCronSchedulerService.deleteJob(companyId, req.params.id);
+    return res.json(result);
+  } catch (error) {
+    return res.status(404).json({ success: false, error: error.message });
+  }
 });
 
 router.post('/scheduler/jobs/:id/run', async (req, res) => {
-  const companyId = getCompanyId(req);
-  if (!companyId) return res.status(400).json({ error: 'companyId is required' });
-  const jobs = jobStore.get(companyId);
-  const job = jobs?.find(j => j.id === req.params.id);
-  if (!job) return res.status(404).json({ success: false, error: 'JOB_NOT_FOUND' });
   try {
-    const result = await aiServiceAdminClient.chatWithAgent({
-      companyId, agentId: '',
-      message: job.description || 'نفذ المهمة المجدولة',
-      threadId: `scheduler_${companyId}_${job.id}`,
-    });
-    const status = result && result.success !== false ? 'SUCCESS' : 'FAILED';
-    const j = jobs.find(j => j.id === job.id);
-    if (j) { j.lastRun = new Date().toISOString(); j.lastStatus = status; j.runCount = (j.runCount || 0) + 1; }
-    return res.json({ success: true, execution: { status, reply: result?.reply || '' } });
-  } catch (_) {
-    return res.json({ success: true, execution: { status: 'FAILED', reply: '' } });
+    const companyId = getCompanyId(req);
+    if (!companyId) return res.status(400).json({ error: 'companyId is required' });
+    const result = await aiCronSchedulerService.executeJob(companyId, req.params.id);
+    return res.json(result);
+  } catch (error) {
+    return res.status(500).json({ success: false, error: error.message });
   }
 });
 

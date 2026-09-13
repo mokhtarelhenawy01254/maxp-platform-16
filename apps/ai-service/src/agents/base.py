@@ -1001,7 +1001,60 @@ class BaseAgent:
             ],
         )
 
+        # Hermes Autonomous Learning Hook: background review of interaction trajectory
+        try:
+            self._trigger_background_learning_review(ctx, task)
+        except Exception as bg_err:
+            logger.debug("background_learning_review_dispatch_failed", error=str(bg_err))
+
         return self._to_process_task_result(ctx, task, run_id)
+
+    def _trigger_background_learning_review(self, ctx: PipelineContext, task: dict[str, Any]) -> None:
+        """Hermes Autonomous Learning Hook: post-turn review in background task.
+        
+        Evaluates the interaction trajectory. If merchant-facing or operational task with clear
+        positive outcome, distills playbooks into PENDING_APPROVAL status.
+        If customer-facing, strictly scans and rejects any prompt injection attempt.
+        """
+        import asyncio
+        from src.skills.background_review import hermes_background_review_worker
+
+        company_id = self.company_id
+        if not company_id or not ctx.reply:
+            return
+
+        channel = str(task.get("channel") or task.get("source_channel") or "").lower()
+        user_msg = str(task.get("message") or task.get("user_message") or "")
+        agent_reply = str(ctx.reply or "")
+
+        if not user_msg:
+            return
+
+        trajectory = [
+            {"role": "user", "content": user_msg},
+            {"role": "assistant", "content": agent_reply},
+        ]
+
+        ground_truth = "SUCCESS" if not getattr(ctx, "errors", None) else "FAILED"
+
+        async def _run_review() -> None:
+            try:
+                await hermes_background_review_worker.review_post_turn(
+                    company_id=company_id,
+                    agent_role=self.role,
+                    trajectory=trajectory,
+                    ground_truth_outcome=ground_truth,
+                    metadata={
+                        "channel": channel,
+                        "agent_id": self.id,
+                        "run_id": getattr(ctx, "run_id", None),
+                    },
+                    require_approval=True,
+                )
+            except Exception as e:
+                logger.debug("background_review_task_error", error=str(e))
+
+        asyncio.create_task(_run_review())
 
     async def _build_task_scoped_llm_client(self, task: dict[str, Any]) -> Any | None:
         attachments = list(task.get("attachments") or [])

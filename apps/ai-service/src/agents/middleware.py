@@ -120,6 +120,13 @@ class MaxPFunctionAuditMiddleware(FunctionMiddleware):
         except Exception as exc:
             sentry_sdk.capture_exception(exc)
             raise
+        if context.result is not None:
+            try:
+                from src.agents.compactor import ToolResultCompactor
+                context.result = ToolResultCompactor.compact(context.result, tool_name=tool_name)
+            except Exception as comp_err:
+                logger.debug("micro_compaction_skipped", tool=tool_name, error=str(comp_err))
+
         logger.debug(
             "sdk function middleware after tool",
             company_id=self.company_id,
