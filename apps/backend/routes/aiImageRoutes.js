@@ -12,5 +12,6 @@ router.get("/models", authenticateToken, aiImageController.getModels);
 router.get("/model-config", authenticateToken, aiImageController.getModelConfig);
 router.put("/model-config", authenticateToken, aiImageController.saveModelConfig);
 router.get("/tier-config", authenticateToken, aiImageController.getTierConfig);
+router.get("/quota", authenticateToken, aiImageController.getQuota);
 
 module.exports = router;

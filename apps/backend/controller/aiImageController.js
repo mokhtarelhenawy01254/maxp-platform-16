@@ -384,6 +384,36 @@ exports.getTierConfig = async (req, res) => {
   }
 };
 
+exports.getQuota = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    const prisma = getPrisma();
+    const config = await getImageGeneratorConfig(prisma);
+    const tierCfg = config ? resolveTierConfig(config, companyId) : { maxDaily: 50 };
+    const usage = companyId ? await getDailyUsage(prisma, companyId) : 0;
+    const dailyLimit = tierCfg?.maxDaily || 50;
+    const remainingQuota = Math.max(0, dailyLimit - usage);
+
+    return res.json({
+      success: true,
+      data: {
+        dailyUsage: usage,
+        dailyLimit,
+        remainingQuota,
+      },
+    });
+  } catch (error) {
+    return res.json({
+      success: true,
+      data: {
+        dailyUsage: 0,
+        dailyLimit: 50,
+        remainingQuota: 50,
+      },
+    });
+  }
+};
+
 exports.saveModelConfig = async (req, res) => {
   try {
     const companyId = req.user?.companyId;

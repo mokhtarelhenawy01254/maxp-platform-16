@@ -34,6 +34,7 @@ import { CREATIVE_STUDIO_PRESETS } from "./CreativeStudioPresets";
 import { ALLOWED_IMAGE_MODELS } from "./types";
 import { CreativeDirectorSuggestions } from "./CreativeDirectorSuggestions";
 import { CreativeAiChatCoPilot } from "./CreativeAiChatCoPilot";
+import { CreativeSceneLibraryTab } from "./CreativeSceneLibraryTab";
 import type {
   AspectRatioType,
   CreativePreset,
@@ -44,6 +45,7 @@ import type {
   ShadowType,
   BrandKitSettings,
   BatchCountType,
+  SceneLibraryItem,
 } from "./types";
 
 interface CreativeStudioControlPanelProps {
@@ -71,6 +73,7 @@ interface CreativeStudioControlPanelProps {
   onChangeBatchCount: (count: BatchCountType) => void;
   onOpenModelModal: () => void;
   onTriggerGenerateWithPrompt: (prompt: string) => void;
+  onSelectScenePreset?: (scene: SceneLibraryItem, autoSwapPrompt: string) => void;
 }
 
 export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProps> = ({
@@ -98,10 +101,11 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
   onChangeBatchCount,
   onOpenModelModal,
   onTriggerGenerateWithPrompt,
+  onSelectScenePreset,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    "DIRECTOR" | "COPILOT" | "PRESETS" | "PHYSICS" | "TYPOGRAPHY" | "ADVANCED"
-  >("DIRECTOR");
+    "COPILOT" | "DIRECTOR" | "LIBRARY" | "PRESETS" | "PHYSICS" | "TYPOGRAPHY" | "ADVANCED"
+  >("COPILOT");
   const [selectedModality, setSelectedModality] = useState<"ALL" | CreativeModality>("ALL");
   const [showPromptInput, setShowPromptInput] = useState(false);
   const refFileInputRef = useRef<HTMLInputElement>(null);
@@ -212,10 +216,10 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
             <span className="font-mono">{selectedModel.split("/").pop()}</span>
           </button>
 
-          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg">
-            <span>الرصيد:</span>
-            <span className="font-bold text-slate-800 dark:text-slate-200 tabular-nums">
-              {dailyUsage}/{dailyLimit}
+          <div className="flex items-center gap-1.5 text-[11px] font-mono text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-lg" title="الرصيد المتبقي لتوليد المشاهد اليوم">
+            <span>الرصيد المتبقي:</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+              {Math.max(0, dailyLimit - dailyUsage)}/{dailyLimit}
             </span>
           </div>
         </div>
@@ -223,6 +227,19 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
 
       {/* Modern 2026 Navigation Sub-Tabs */}
       <div className="flex border-b border-slate-200/80 dark:border-slate-800 bg-slate-100/60 dark:bg-slate-900/40 px-2 pt-1.5 gap-0.5 overflow-x-auto flex-shrink-0 no-scrollbar">
+        <button
+          type="button"
+          onClick={() => setActiveTab("COPILOT")}
+          className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-t-lg transition cursor-pointer border-b-2 whitespace-nowrap ${
+            activeTab === "COPILOT"
+              ? "bg-white dark:bg-slate-950 text-indigo-600 dark:text-indigo-400 border-indigo-600 dark:border-indigo-400 shadow-2xs"
+              : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 border-transparent"
+          }`}
+        >
+          <Bot className="w-3.5 h-3.5 text-indigo-500" />
+          <span>محادثة الإيجنت</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveTab("DIRECTOR")}
@@ -238,15 +255,15 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
 
         <button
           type="button"
-          onClick={() => setActiveTab("COPILOT")}
+          onClick={() => setActiveTab("LIBRARY")}
           className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-t-lg transition cursor-pointer border-b-2 whitespace-nowrap ${
-            activeTab === "COPILOT"
+            activeTab === "LIBRARY"
               ? "bg-white dark:bg-slate-950 text-indigo-600 dark:text-indigo-400 border-indigo-600 dark:border-indigo-400 shadow-2xs"
               : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 border-transparent"
           }`}
         >
-          <Bot className="w-3.5 h-3.5 text-indigo-500" />
-          <span>محادثة الإيجنت</span>
+          <Layers className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+          <span>مكتبة المشاهد والتبديل</span>
         </button>
 
         <button
@@ -303,7 +320,21 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
       </div>
 
       {/* Tab Contents */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className={`flex-1 min-h-0 ${activeTab === "COPILOT" || activeTab === "LIBRARY" ? "overflow-hidden p-0 flex flex-col" : "overflow-y-auto p-4 space-y-4"}`}>
+        {/* TAB: CREATIVE COPILOT CHAT */}
+        {activeTab === "COPILOT" && (
+          <CreativeAiChatCoPilot
+            product={selectedProduct}
+            onApplyPrompt={(prompt) => {
+              onChangeCustomPrompt(prompt);
+            }}
+            onTriggerGenerate={(prompt) => {
+              onTriggerGenerateWithPrompt(prompt);
+            }}
+            isGenerating={isGenerating}
+          />
+        )}
+
         {/* TAB 1: CREATIVE DIRECTOR */}
         {activeTab === "DIRECTOR" && (
           <div className="space-y-4">
@@ -322,23 +353,27 @@ export const CreativeStudioControlPanel: React.FC<CreativeStudioControlPanelProp
             ) : (
               <div className="p-8 text-center text-xs text-slate-400">
                 <Sparkles className="w-6 h-6 mx-auto mb-2 text-indigo-400" />
-                اختر منتجاً من الشريط العلوي ليقوم المخرج الإبداعي باقتراح 3 زوايا تسويقية مخصصة له.
+                اختر منتجاً من الشريط العلوي ليقوم المخرج الإبداعي باقتراح زوايا تسويقية مخصصة له.
               </div>
             )}
           </div>
         )}
 
-        {/* TAB: CREATIVE COPILOT CHAT */}
-        {activeTab === "COPILOT" && (
-          <CreativeAiChatCoPilot
-            product={selectedProduct}
-            onApplyPrompt={(prompt) => {
-              onChangeCustomPrompt(prompt);
+        {/* TAB: PRESET SCENE & ON-MODEL SWAP LIBRARY */}
+        {activeTab === "LIBRARY" && (
+          <CreativeSceneLibraryTab
+            productName={selectedProduct?.name || "المنتج التجاري"}
+            selectedCategory="shoes"
+            onSelectScenePreset={(scene, autoSwapPrompt) => {
+              onChangeCustomPrompt(autoSwapPrompt);
+              if (onSelectScenePreset) {
+                onSelectScenePreset(scene, autoSwapPrompt);
+              }
             }}
-            onTriggerGenerate={(prompt) => {
+            onTriggerGenerateWithPrompt={(prompt) => {
+              onChangeCustomPrompt(prompt);
               onTriggerGenerateWithPrompt(prompt);
             }}
-            isGenerating={isGenerating}
           />
         )}
 

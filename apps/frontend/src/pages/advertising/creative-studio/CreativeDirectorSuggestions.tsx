@@ -1,5 +1,5 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Sparkles, ArrowUpRight, Tag, Layers } from "lucide-react";
+﻿import React, { useState, useMemo, useEffect } from "react";
+import { Sparkles, ArrowUpRight, Plus, Trash2, RotateCcw, Check, X } from "lucide-react";
 import type { MarketingProduct, CreativeAngleSuggestion, ProductCategory } from "./types";
 
 interface CreativeDirectorSuggestionsProps {
@@ -11,7 +11,6 @@ interface CreativeDirectorSuggestionsProps {
 interface CategoryOption {
   id: ProductCategory;
   label: string;
-  icon?: string;
 }
 
 const CATEGORIES: CategoryOption[] = [
@@ -26,6 +25,9 @@ const CATEGORIES: CategoryOption[] = [
   { id: "custom", label: "فئة مخصصة" },
 ];
 
+const CUSTOM_ANGLES_STORAGE_KEY = "maxp_creative_custom_angles_v2";
+const DELETED_ANGLES_STORAGE_KEY = "maxp_creative_deleted_angles_v2";
+
 export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsProps> = ({
   product,
   onSelectAngle,
@@ -33,6 +35,25 @@ export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsPr
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory>("shoes");
   const [customCategoryText, setCustomCategoryText] = useState("");
+  const [customAngles, setCustomAngles] = useState<CreativeAngleSuggestion[]>([]);
+  const [deletedAngleIds, setDeletedAngleIds] = useState<string[]>([]);
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  // New Angle Form State
+  const [newTitle, setNewTitle] = useState("");
+  const [newBadge, setNewBadge] = useState("زاوية مبتكرة");
+  const [newRationale, setNewRationale] = useState("");
+  const [newPrompt, setNewPrompt] = useState("");
+
+  // Load custom and deleted angles from localStorage
+  useEffect(() => {
+    try {
+      const savedCustom = localStorage.getItem(CUSTOM_ANGLES_STORAGE_KEY);
+      if (savedCustom) setCustomAngles(JSON.parse(savedCustom));
+      const savedDeleted = localStorage.getItem(DELETED_ANGLES_STORAGE_KEY);
+      if (savedDeleted) setDeletedAngleIds(JSON.parse(savedDeleted));
+    } catch {}
+  }, []);
 
   // Intelligent auto-detection of category from product name
   useEffect(() => {
@@ -57,174 +78,113 @@ export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsPr
     }
   }, [product?.name]);
 
-  const suggestions = useMemo<CreativeAngleSuggestion[]>(() => {
-    const name = product?.name || "المنتج التجاري";
-
+  const defaultSuggestions = useMemo<CreativeAngleSuggestion[]>(() => {
+    const pName = product?.name || "المنتج التجاري";
     switch (selectedCategory) {
-      case "shoes":
+      case "perfume":
         return [
           {
-            id: "shoes-street",
-            titleAr: "سياق الشارع العصري (Urban Streetwear)",
-            badge: "الأعلى تحويلاً 4.2x ROAS",
-            rationale: "يضع الحذاء في سياق مشي واقعي على رصيف أسفلتي نظيف بإضاءة شمس الصباح، مبرزاً أناقة التصميم وراحة الاستخدام اليومي.",
-            prompt: `commercial lifestyle street photography for ${name}, resting naturally on a clean modern urban asphalt sidewalk, soft morning natural sunlight, subtle pavement texture, shallow depth of field, blurred warm city background, hyper-realistic, 8k commercial quality`,
+            id: "perfume-luxury-marble",
+            titleAr: "غموض العود ورخام أسود ليلي",
+            badge: "الأعلى فخامة 4.5x ROAS",
+            rationale: "يبرز نقاء زجاجة العطر على سطح رخامي مصقول مع انعكاسات مائية دافئة وإضاءة ذهبية خافتة تثير رغبة الاقتناء الراقي.",
+            prompt: `Commercial luxury product photography of perfume bottle ${pName} on sleek polished black marble surrounded by gentle water ripples and golden rim lighting, dark moody aesthetic, shallow depth of field, 8k resolution, shot on Hasselblad.`,
+            modality: "packshot",
+          },
+          {
+            id: "perfume-nature-ingredients",
+            titleAr: "المكونات الطبيعية المتطايرة (Ingredients Explosion)",
+            badge: "معدل نقر عالي Hook",
+            rationale: "إظهار المكونات العطرية الحقيقية (خشب صندل، زهور بيضاء، فانيليا، عنبر) محيطة بالقارورة بأسلوب سينمائي يوضح فخامة التركيبة.",
+            prompt: `High-end advertising shoot for perfume bottle ${pName} hovering amidst floating natural ingredients, sandalwood shavings, white jasmine petals, warm amber drops, soft studio light, ultra sharp focus, 8k.`,
             modality: "lifestyle",
           },
           {
-            id: "shoes-motion",
-            titleAr: "العارض البشري الرياضي (On-Model Motion)",
-            badge: "معدل تفاعل عالي UGC",
-            rationale: "محاكاة شخص يرتدي الحذاء أثناء خطوة واثقة للأمام على أرضية صالة جيم خشبية راقية، لتأكيد خفة الوزن ومرونة النعل للعميل.",
-            prompt: `close-up low-angle action shot of human feet wearing ${name} taking a confident dynamic step on a premium polished gym wooden floor, crisp natural lighting, athletic motion feel, photorealistic details, commercial sports footwear advertisement`,
+            id: "perfume-on-model-spray",
+            titleAr: "العارض الأنيق والرش الأيقوني (On-Model Elegance)",
+            badge: "تفاعل عالي UGC",
+            rationale: "محاكاة شخصية ترتدي بدلة مسائية فاخرة ترش العطر في الهواء مع رذاذ دقيق مضاء برقة لخلق رابط نفسي فوري.",
+            prompt: `Commercial perfume campaign featuring an elegant model in luxury evening attire delicately holding ${pName}, fine scented mist suspended in air, back-lit with golden hour bokeh, editorial vogue style.`,
             modality: "on_model",
-          },
-          {
-            id: "shoes-durability",
-            titleAr: "اختبار التحمل والمقاومة (Durability & Rain)",
-            badge: "زاوية إقناع فوري Hook",
-            rationale: "إظهار المنتج على أرضية مبللة بقطرات ماء متناثرة بإضاءة سينمائية جانبية تثبت جودة الخامات ومقاومة السوائل.",
-            prompt: `dramatic cinematic commercial shot of ${name} on a dark wet stone surface with crisp water splashes and micro droplets frozen in air, dramatic warm side rim lighting, pristine product details, ultra-high resolution advertisement`,
-            modality: "direct_response",
           },
         ];
 
       case "skincare":
         return [
           {
-            id: "skincare-dewy-splash",
-            titleAr: "رذاذ وانتعاش المكونات (Pure Botanical Dew)",
-            badge: "إحساس النقاء والترطيب",
-            rationale: "عبوة السيروم/الكريم محاطة بقطرات ماء متلألئة وبتلات زهور طبيعية ناعمة تعكس فاعلية التركيبة والترطيب الفوري.",
-            prompt: `commercial cosmetic photography of ${name}, elegant bottle standing on a wet frosted glass surface with delicate crystal water droplets and soft white orchid petals around it, soft high-key daylight lighting, clean pastel background, 8k editorial skincare campaign`,
+            id: "skincare-dewy-spa",
+            titleAr: "واحة السبا والنقاء المائي (Dewy Purity)",
+            badge: "الأعلى تحويلاً للبشرة",
+            rationale: "إبراز المنتج بين قطرات ندى ناصعة وأوراق صبار خضراء منعشة على خلفية حجرية بيضاء لتعزيز رسالة الترطيب والصفاء.",
+            prompt: `Pristine beauty commercial of skincare product ${pName} on smooth beige travertine stone, crystal clear morning water droplets, soft morning sunbeams, fresh green botanical leaf, minimalist aesthetic, 8k.`,
             modality: "lifestyle",
           },
           {
-            id: "skincare-on-model",
-            titleAr: "العارضة والروتين اليومي (Chic Vanity Routine)",
-            badge: "الأكثر ثقة لدى السيدات",
-            rationale: "عارضة ذات بشرة متألقة تضع لمسة من المنتج أمام مرآة مضيئة في حمام رخامي دافئ يعكس فخامة العناية الشخصية.",
-            prompt: `lifestyle beauty commercial photo showing a radiant model gently applying ${name} in front of a warm glowing luxury modern marble vanity mirror, natural clean glow, elegant aesthetic, high-end beauty magazine advertisement`,
-            modality: "on_model",
-          },
-          {
-            id: "skincare-marble-pedestal",
-            titleAr: "منصة الرخام والذهب (Luxury Marble Stand)",
-            badge: "فخامة استوديو 5 نجوم",
-            rationale: "منصة رخامية بيضاء ناصعة مع عروق رمادية ولمسات إضاءة ذهبية جانبية تبرز العبوة كمنتج طبي فاخر.",
-            prompt: `clean commercial packshot of ${name} on a pristine white Carrara marble pedestal, crisp softbox lighting with subtle golden hour accent, minimal botanical leaf shadow on background, flawless luxury cosmetic product shot`,
+            id: "skincare-clinical-lab",
+            titleAr: "الدقة المعملية والمكونات الفعالة (Clinical Trust)",
+            badge: "بناء ثقة فوري",
+            rationale: "بيئة استوديو علمية مينيمال بلون أزرق وأبيض ناصع توحي بالاعتماد الطبي ومصداقية النتائج السريعة.",
+            prompt: `Clean laboratory medical aesthetic: Skincare bottle ${pName} on pristine frosted glass podium, laboratory glass pipettes with amber fluid, soft shadow diffusion, scientific and luxurious packaging shoot.`,
             modality: "packshot",
-          },
-        ];
-
-      case "perfume":
-        return [
-          {
-            id: "perfume-dark-marble",
-            titleAr: "الرخام الملكي الداكن (Nero Marquina Luxury)",
-            badge: "الأعلى فخامة وجاذبية",
-            rationale: "انعكاسات زجاج العبوة الذهبي على قاعدة رخام أسود مصقول مع إضاءة حواف سينمائية تبرز الهيبة والرقي.",
-            prompt: `ultra-luxury perfume advertisement of ${name}, positioned on a polished dark black Nero Marquina marble slab with glossy mirror reflections, warm golden rim lighting highlighting the glass facets and amber liquid, dark moody cinematic background, 8k commercial shoot`,
-            modality: "packshot",
-          },
-          {
-            id: "perfume-silk-smoke",
-            titleAr: "الحرير والدخان السينمائي (Silk & Royal Mist)",
-            badge: "سحر الغموض والأصالة",
-            rationale: "خلفية من قماش الحرير الملكي المتموج مع رذاذ عطري خفيف وإضاءة دافئة توحي بثبات الرائحة وفخامتها.",
-            prompt: `cinematic fragrance photography of ${name} surrounded by fluid flowing midnight-blue silk fabric and subtle micro mist particles in the air, warm dramatic backlighting, evocative and mysterious atmosphere, high-end editorial perfume campaign`,
-            modality: "lifestyle",
-          },
-          {
-            id: "perfume-evening-gala",
-            titleAr: "سهرة النخبة والموديل (VIP Gala Lifestyle)",
-            badge: "مناسبات خاصة VIP",
-            rationale: "سياق عارض أنيق ببدلة توكسيدو يستعد لمناسبة كبرى واضعاً العطر على طاولة خشبية راقية.",
-            prompt: `lifestyle commercial photo of ${name} on a dark walnut executive dresser next to luxury cufflinks, a stylish blurred model in an evening tuxedo adjusting his collar in the warm background, warm ambient tungsten lighting, prestigious lifestyle`,
-            modality: "on_model",
           },
         ];
 
       case "watches":
         return [
           {
-            id: "watch-executive-desk",
-            titleAr: "المكتب التنفيذي الفاخر (Executive Suite)",
-            badge: "رمز النجاح والجاه",
-            rationale: "الساعة موضوعة على مكتب خشبي مصقول بجانب حاسوب محمول فائق النحافة ومفكرة جلدية وإضاءة مكتبية دافئة.",
-            prompt: `commercial product shot of ${name} resting on a premium dark leather desk pad next to a sleek laptop and fountain pen, warm directional architect lamp light, shallow depth of field, executive wealth atmosphere, razor sharp metal and sapphire glass details`,
-            modality: "lifestyle",
-          },
-          {
-            id: "watch-wrist-model",
-            titleAr: "معصم العارض الأنيق (On-Wrist Elegance)",
-            badge: "المعايشة الواقعية",
-            rationale: "لقطة مقربة لمعصم يد رجل أعمال أنيق يرتدي قميصاً كلاسيكياً أزرق وساعة اليد تبرز هيبة المظهر.",
-            prompt: `macro commercial photograph of a sophisticated human wrist wearing ${name}, dressed in a crisp bespoke navy suit cuff, natural window lighting illuminating the dial and brushed steel bracelet, high-end Swiss watch advertisement style`,
-            modality: "on_model",
-          },
-          {
-            id: "watch-velvet-macro",
-            titleAr: "ماكرو المخمل والمينا (Macro Sapphire & Steel)",
-            badge: "إبراز دقة التصنيع",
-            rationale: "تصوير ماكرو يبرز لمعان العقارب، بريق المعدن، وتفاصيل الإطار على وسادة مخملية داكنة.",
-            prompt: `extreme macro packshot of ${name} on a deep charcoal velvet display cushion, dramatic studio rim light catching the beveled edges of the bezel and metallic dial, crisp reflections, immaculate commercial precision`,
+            id: "watch-macro-gears",
+            titleAr: "دقة الماكرو السويسرية (Precision Macro)",
+            badge: "فخامة كلاسيكية",
+            rationale: "تركيز فائق القرب على ميناء الساعة وعقاربها مع انعكاسات معدنية مصقولة وزجاج كريستال ياباني خالي من الخدوش.",
+            prompt: `High-end macro commercial photography of luxury watch ${pName}, showing intricate watch face details and polished metallic bezel, soft directional spotlight, dark brushed titanium surface, 8k.`,
             modality: "packshot",
+          },
+          {
+            id: "watch-wrist-suit",
+            titleAr: "معصم رجال الأعمال الأنيق (Executive Wristshot)",
+            badge: "4.8x تحويل للرجال",
+            rationale: "رجل أعمال يرتدي بدلة إيطالية فاخرة يقود سيارة فارهة أو يعدل معصمه مبرزاً الساعة كرمز للمكانة الاجتماعية.",
+            prompt: `Lifestyle executive wristshot of tailored businessman wearing luxury timepiece ${pName}, cashmere suit cuff, steering wheel of luxury sportscar blurred in background, moody warm lighting, 8k.`,
+            modality: "on_model",
           },
         ];
 
       case "electronics":
         return [
           {
-            id: "tech-minimalist-desk",
-            titleAr: "مساحة العمل التقنية النظيفة (Minimalist Tech Setup)",
-            badge: "الأكثر مبيعاً للتقنيين",
-            rationale: "جهازك وسط مساحة مكتبية مينيماليست حديثة مع شاشة نحيفة وإضاءة ليد غير مباشرة تعكس روح الابتكار.",
-            prompt: `minimalist modern tech workspace commercial photograph featuring ${name} placed prominently on a clean birchwood desk, subtle soft ambient LED strip glow, matte aluminum textures, aesthetic Apple-style studio setup, crisp modern lighting`,
-            modality: "lifestyle",
-          },
-          {
             id: "tech-cyber-neon",
-            titleAr: "أجواء السايبر والجيمنج (Cyber Neon Pulse)",
-            badge: "طاقة واهتمام شبابي",
-            rationale: "إضاءة نيون زرقاء وبنفسجية خافتة مع خلفية تكنولوجية داكنة تبرز قوة الأداء والسرعة.",
-            prompt: `high-octane futuristic commercial shot of ${name}, dark titanium podium with subtle electric cyan and violet edge reflections, volumetric haze, sleek aerodynamic angles, gaming and high-performance technology advertisement`,
+            titleAr: "المستقبل والسايبربانك (Cyber Energy)",
+            badge: "أعلى تفاعل للشباب",
+            rationale: "إضاءة نيون زرقاء وقرمزية ناعمة مع أسطح داكنة تبرز التصميم العصري للمنتج التقني وكفاءته العالية.",
+            prompt: `Futuristic tech commercial for ${pName} hovering above dark carbon fiber surface, subtle blue and magenta rim neon lights, circuit board bokeh, high-tech engineering aesthetic, 8k.`,
             modality: "direct_response",
           },
           {
-            id: "tech-in-hand",
-            titleAr: "الاستخدام الميداني باليد (Hands-On Ergonomics)",
-            badge: "سهولة الحمل والاستخدام",
-            rationale: "يد شخص تستخدم الجهاز بانسيابية في مقهى عصري مشمس لتأكيد سهولة التنقل والحجم المريح.",
-            prompt: `first-person perspective shot of a hand holding ${name} naturally in a sunlit modern urban cafe, blurred warm coffee mug in background, sharp focus on ergonomic design and screen/chassis texture, lifestyle consumer tech ad`,
-            modality: "on_model",
+            id: "tech-minimal-desk",
+            titleAr: "مكتب العمل الإنتاجي العصري (Productivity Desk)",
+            badge: "معدل ثقة عالي",
+            rationale: "المنتج موضوع بانسيابية على مكتب خشب جوز فاخر بجانب قهوة الصباح ولابتوب لإبراز الاستخدام اليومي الممتع.",
+            prompt: `Minimalist workspace product photography: ${pName} resting on a premium walnut desk beside an espresso cup and notebook, warm natural window light, modern Scandinavian aesthetic, 8k.`,
+            modality: "lifestyle",
           },
         ];
 
       case "apparel":
         return [
           {
-            id: "apparel-street-fashion",
-            titleAr: "جلسة تصوير الشارع (Urban Streetwear Fit)",
-            badge: "الأكثر رواجاً في الموضة",
-            rationale: "عارض شاب في شارع عصري بمدينة مشمسة يرتدي الملابس بإطلالة كاجوال تبرز انسيابية القماش وأناقة القَصّة.",
-            prompt: `fashion editorial street-style photograph of a trendy model wearing ${name}, walking confidently through a vibrant sunlit urban street, warm daylight, natural fabric drape and folds, realistic high-end fashion catalog look`,
+            id: "apparel-street-motion",
+            titleAr: "حركة الشارع العصرية (Streetwear Motion)",
+            badge: "تريند إعلاني TikTok",
+            rationale: "عارض شاب يتحرك في شارع حضري بإضاءة شمس مائلة تبرز خامة القماش والتطريز بدقة فائقة.",
+            prompt: `Editorial fashion streetwear photography: Model moving dynamically in urban city street wearing ${pName}, high-definition fabric texture, golden hour daylight, crisp motion capture, magazine lookbook style.`,
             modality: "on_model",
           },
           {
-            id: "apparel-flat-lay",
-            titleAr: "التنسيق المسطح الراقي (Curated Flat-Lay)",
-            badge: "تنسيق متكامل كامل الطقم",
-            rationale: "فرد القطعة على خلفية خشبية رمادية مع حذاء أنيق ونظارة شمسية لإلهام العميل بتنسيق المظهر الكامل.",
-            prompt: `overhead flat-lay commercial photograph of ${name} artfully folded on a neutral textured linen surface, styled with matching designer sunglasses and minimalist accessories, soft balanced overhead softbox light, aesthetic Pinterest fashion grid`,
-            modality: "lifestyle",
-          },
-          {
-            id: "apparel-fabric-texture",
-            titleAr: "خامة النسيج والحياكة (Macro Fabric & Stitching)",
-            badge: "إثبات أصالة الخامة",
-            rationale: "لقطة جانبية مقربة تكشف جودة الغرز، نعومة القطن أو الكتان، ومتانة الحياكة تحت إضاءة جانبية.",
-            prompt: `close-up detailed commercial macro shot of ${name} draped naturally on a tailor mannequin, sharp focus on fabric texture, stitching precision, natural soft gradient studio lighting, luxury apparel campaign`,
+            id: "apparel-studio-cyclorama",
+            titleAr: "استوديو الموضة العالمي (Vogue Studio)",
+            badge: "كتالوج ناصع",
+            rationale: "خلفية رمادية محايدة ناصعة مع إضاءة استوديو متوازنة لتأكيد أصالة الألوان وجودة الخياطة.",
+            prompt: `Clean minimalist fashion lookbook shoot of ${pName} on studio cyclorama background, softbox lighting, perfect color accuracy, editorial high-fashion aesthetic, 8k.`,
             modality: "packshot",
           },
         ];
@@ -232,90 +192,93 @@ export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsPr
       case "food":
         return [
           {
-            id: "food-fresh-burst",
-            titleAr: "الانتعاش والمكونات الطازجة (Fresh Ingredients Burst)",
-            badge: "شهية وإقناع حسي",
-            rationale: "المنتج محاط بالمكونات الطبيعية الطازجة المتطايرة بخفة مع قطرات ماء تعكس الجودة والنقاء.",
-            prompt: `mouth-watering dynamic commercial food photography of ${name}, fresh organic ingredients flying gently around in mid-air with crisp water splashes, vibrant warm appetite-inducing lighting, high-speed camera freeze, ultra-crisp appetizing details`,
-            modality: "direct_response",
-          },
-          {
-            id: "food-rustic-table",
-            titleAr: "مائدة المطبخ الريفي الدافئ (Warm Rustic Table)",
-            badge: "طبيعي ومحبوب عائلياً",
-            rationale: "طاولة خشبية دافئة مع إضاءة صباحية شمسية توحي بالدفء والنكهة الأصيلة المصنوعة بحب.",
-            prompt: `cozy commercial lifestyle shot of ${name} served on a rustic oak dining table, soft morning window sun rays creating warm gentle shadows, natural organic ambiance, appetizing and authentic culinary presentation`,
+            id: "food-gourmet-table",
+            titleAr: "المذاق الفاخر والطبيعي (Gourmet Sizzle)",
+            badge: "إثارة شهية فورية",
+            rationale: "طاولة خشبية ريفية دافئة مع رشة بهارات أو قطرات طازجة تبرز الطزاجة والجودة الفندقية.",
+            prompt: `Appetizing commercial food photography of ${pName} on rustic dark wood table, warm natural steam, fresh herbs, warm candlelight bokeh, mouth-watering editorial shoot, 8k.`,
             modality: "lifestyle",
-          },
-          {
-            id: "food-clean-packaging",
-            titleAr: "استوديو العبوة الغذائية (Clean Packaging Packshot)",
-            badge: "معايير السوبرماركت والتطبيقات",
-            rationale: "صورة ناصعة للعبوة تبرز الوزن والمحتوى والشعار بوضوح تام مع ظل تماس خفيف.",
-            prompt: `clean studio commercial packshot of ${name}, standing on a neutral pastel surface, balanced wrap-around softbox lighting, zero harsh glare, crisp food packaging clarity, commercial retail catalog standard`,
-            modality: "packshot",
           },
         ];
 
-      case "home":
-        return [
-          {
-            id: "home-scandi-living",
-            titleAr: "غرفة المعيشة الاسكندنافية (Scandi Modern Living)",
-            badge: "الدفء والأناقة المنزلية",
-            rationale: "وضع المنتج في صالة معيشة مشمسة بجدران دافئة ونباتات داخلية خضراء تبرز التناسق الديكوري.",
-            prompt: `interior design architectural photography featuring ${name} placed naturally in a sun-drenched Scandinavian living room, warm neutral tones, light oak wooden floor, leafy indoor monstera plant, peaceful cozy home aesthetic`,
-            modality: "lifestyle",
-          },
-          {
-            id: "home-golden-sunset",
-            titleAr: "سحر شمس الغروب (Golden Hour Glow)",
-            badge: "عاطفة وسكينة",
-            rationale: "إضاءة شمس الغروب الذهبية تتدفق عبر نافذة كبيرة وتلقي بظلال هندسية ناعمة على المنتج.",
-            prompt: `atmospheric commercial product shot of ${name} illuminated by low golden-hour sunset light streaming through a modern large window, artistic geometric shadow patterns, tranquil warm home atmosphere`,
-            modality: "lifestyle",
-          },
-          {
-            id: "home-clean-gallery",
-            titleAr: "معرض الديكور المعاصر (Design Gallery Exhibit)",
-            badge: "قيمة فنية استثنائية",
-            rationale: "منصة عرض بيضاء مع جدار خرساني مصقول تحاكي أرقى معارض الأثاث والديكور في ميلانو.",
-            prompt: `minimalist gallery showroom shot of ${name} resting on a clean concrete plinth, architectural soft directional spotlight, neutral museum gray background, high-end designer furniture look`,
-            modality: "packshot",
-          },
-        ];
-
-      case "custom":
+      case "shoes":
       default:
-        const topic = customCategoryText.trim() || name;
         return [
           {
-            id: "custom-lifestyle",
-            titleAr: "بيئة الاستخدام الفعلي (In-Situ Lifestyle Context)",
-            badge: "الأعلى إقناعاً للعميل",
-            rationale: `وضع ${topic} في سياق بيئته الطبيعية الأكثر استخداماً مع إضاءة دافئة تجعل العميل يتخيله في متناول يده.`,
-            prompt: `commercial lifestyle photography of ${topic} placed naturally in its ideal real-world environment, soft natural daylight, cozy authentic atmosphere, clean composition, 8k product shoot`,
+            id: "shoes-urban-streetwear",
+            titleAr: "سياق الشارع العصري (Urban Streetwear)",
+            badge: "الأعلى تحويلاً 4.2x ROAS",
+            rationale: "يضع الحذاء في سياق مشي واقعي على رصيف أسفلتي نظيف بإضاءة شمس الصباح، مبرزاً أناقة التصميم وراحة الاستخدام اليومي.",
+            prompt: `Commercial sneaker advertisement of ${pName} placed on a clean urban asphalt sidewalk with crisp morning sunlight, contact shadow, shallow depth of field, 8k resolution, cinematic lighting.`,
             modality: "lifestyle",
           },
           {
-            id: "custom-direct-ad",
-            titleAr: "إعلان التحويل المباشر (High-Impact Direct Response)",
-            badge: "أعلى نسبة نقرات CTR",
-            rationale: `خلفية ذات تباين لوني عصري جريء تسلط كل الانتباه على ${topic} وتبرز تفاصيله بدقة فائقة.`,
-            prompt: `high-impact commercial product advertisement for ${topic}, modern architectural surface and vibrant warm studio gradient, clean directional lighting, crisp shadows, sharp product focus, 8k commercial quality`,
-            modality: "direct_response",
+            id: "shoes-on-model-motion",
+            titleAr: "العارض البشري الرياضي (On-Model Motion)",
+            badge: "معدل تفاعل عالي UGC",
+            rationale: "محاكاة شخص يرتدي الحذاء أثناء خطوة واثقة للأمام على أرضية صالة جيم خشبية راقية، لتأكيد خفة الوزن ومرونة النعل للعميل.",
+            prompt: `Dynamic sports footwear shoot of athlete's foot stepping forward in ${pName} on polished hardwood gym floor, motion blur in background, directional studio light, realistic foot perspective, 8k.`,
+            modality: "on_model",
           },
           {
-            id: "custom-studio-packshot",
-            titleAr: "استوديو المنصات الرسمي (Clean Catalog Standard)",
-            badge: "معايير المنصات العالمية",
-            rationale: `خلفية ناصعة مع ظل تماس أرضي ناعم يبرز كافة تفاصيل ${topic} دون أي تشتيت بصري.`,
-            prompt: `clean commercial packshot of ${topic} on an immaculate studio pedestal, soft dual-source softbox lighting, pristine clean background with natural soft contact shadow, 8k crisp details`,
-            modality: "packshot",
+            id: "shoes-durability-rain",
+            titleAr: "اختبار التحمل والمقاومة (Durability & Rain)",
+            badge: "زاوية إقناع فوري Hook",
+            rationale: "إظهار المنتج على أرضية مبللة بقطرات ماء متناثرة بإضاءة سينمائية جانبية تثبت جودة الخامات ومقاومة السوائل.",
+            prompt: `Dramatic hook product shoot of ${pName} resting on wet asphalt with splashing water droplets, dark atmospheric lighting, reflection in shallow puddle, high speed photography, 8k.`,
+            modality: "direct_response",
           },
         ];
     }
-  }, [product, selectedCategory, customCategoryText]);
+  }, [product?.name, selectedCategory]);
+
+  // Combine default suggestions with custom angles, excluding deleted
+  const allSuggestions = useMemo(() => {
+    const combined = [...customAngles, ...defaultSuggestions];
+    return combined.filter((a) => !deletedAngleIds.includes(a.id));
+  }, [customAngles, defaultSuggestions, deletedAngleIds]);
+
+  const handleAddAngle = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newPrompt.trim()) return;
+
+    const newAngle: CreativeAngleSuggestion = {
+      id: `custom-angle-${Date.now()}`,
+      titleAr: newTitle.trim(),
+      badge: newBadge.trim() || "زاوية مخصصة",
+      rationale: newRationale.trim() || "زاوية إعلانية مخصصة تم إنشاؤها يدويًا للمتجر.",
+      prompt: newPrompt.trim(),
+      modality: "lifestyle",
+      isCustom: true,
+    };
+
+    const updated = [newAngle, ...customAngles];
+    setCustomAngles(updated);
+    try {
+      localStorage.setItem(CUSTOM_ANGLES_STORAGE_KEY, JSON.stringify(updated));
+    } catch {}
+
+    setNewTitle("");
+    setNewRationale("");
+    setNewPrompt("");
+    setShowAddModal(false);
+  };
+
+  const handleDeleteAngle = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updatedDeleted = [...deletedAngleIds, id];
+    setDeletedAngleIds(updatedDeleted);
+    try {
+      localStorage.setItem(DELETED_ANGLES_STORAGE_KEY, JSON.stringify(updatedDeleted));
+    } catch {}
+  };
+
+  const handleResetDefaults = () => {
+    setDeletedAngleIds([]);
+    try {
+      localStorage.removeItem(DELETED_ANGLES_STORAGE_KEY);
+    } catch {}
+  };
 
   return (
     <div className="space-y-3">
@@ -330,9 +293,29 @@ export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsPr
               المخرج الإبداعي (Creative Director 2026)
             </h3>
           </div>
-          <span className="text-[10px] text-slate-500 font-mono">
-            {product?.name ? `المنتج: ${product.name}` : "تحديد الزاوية التسويقية"}
-          </span>
+
+          <div className="flex items-center gap-1.5">
+            {deletedAngleIds.length > 0 && (
+              <button
+                type="button"
+                onClick={handleResetDefaults}
+                className="px-2 py-1 text-[10px] font-bold text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 rounded flex items-center gap-1 transition cursor-pointer"
+                title="استعادة الزوايا المحذوفة"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>استعادة</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowAddModal(true)}
+              className="px-2 py-1 text-[11px] font-bold rounded-lg border border-indigo-200 dark:border-indigo-800 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 transition flex items-center gap-1 cursor-pointer"
+            >
+              <Plus className="w-3 h-3" />
+              <span>إضافة برومبت</span>
+            </button>
+          </div>
         </div>
 
         {/* Horizontal Category Chips */}
@@ -369,7 +352,7 @@ export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsPr
 
       {/* Suggested Angle Cards */}
       <div className="grid grid-cols-1 gap-2">
-        {suggestions.map((angle) => (
+        {allSuggestions.map((angle) => (
           <div
             key={angle.id}
             role="button"
@@ -384,12 +367,30 @@ export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsPr
             className="group relative text-right p-3 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/60 hover:border-indigo-400/80 dark:hover:border-indigo-600 active:scale-[0.99] transition cursor-pointer shadow-2xs"
           >
             <div className="flex items-start justify-between gap-2 mb-1.5">
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50 flex-shrink-0">
-                {angle.badge}
-              </span>
-              <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate">
-                {angle.titleAr}
-              </h4>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200/50 dark:border-indigo-800/50 flex-shrink-0">
+                  {angle.badge}
+                </span>
+                {angle.isCustom && (
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                    مخصص
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition truncate">
+                  {angle.titleAr}
+                </h4>
+                <button
+                  type="button"
+                  onClick={(e) => handleDeleteAngle(angle.id, e)}
+                  className="opacity-0 group-hover:opacity-100 p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 rounded transition cursor-pointer"
+                  title="حذف هذه الزاوية"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
 
             <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed line-clamp-2">
@@ -408,7 +409,100 @@ export const CreativeDirectorSuggestions: React.FC<CreativeDirectorSuggestionsPr
           </div>
         ))}
       </div>
+
+      {/* Add Custom Angle Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 max-w-md w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>إضافة زاوية / برومبت مخصص للمخرج الإبداعي</span>
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg leading-none cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddAngle} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  عنوان الزاوية (بالعربية)
+                </label>
+                <input
+                  type="text"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  placeholder="مثال: تصوير درامي مع إضاءة غروب شمسية"
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  شارة التحويل / الهدف
+                </label>
+                <input
+                  type="text"
+                  value={newBadge}
+                  onChange={(e) => setNewBadge(e.target.value)}
+                  placeholder="مثال: أعلى تحويل 4.2x ROAS أو زاوية مبتكرة"
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  الشرح التسويقي للزاوية
+                </label>
+                <input
+                  type="text"
+                  value={newRationale}
+                  onChange={(e) => setNewRationale(e.target.value)}
+                  placeholder="مثال: يبرز جودة المنتج في بيئة طبيعية راقية لزيادة ثقة العميل."
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  البرومبت التجاري (باللغة الإنجليزية)
+                </label>
+                <textarea
+                  value={newPrompt}
+                  onChange={(e) => setNewPrompt(e.target.value)}
+                  rows={3}
+                  placeholder="Commercial product photography of {productName} in cinematic lighting, 8k resolution..."
+                  required
+                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-3 py-1.5 text-xs font-bold text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newTitle.trim() || !newPrompt.trim()}
+                  className="px-4 py-1.5 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg transition disabled:opacity-50 cursor-pointer"
+                >
+                  حفظ الزاوية
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
-

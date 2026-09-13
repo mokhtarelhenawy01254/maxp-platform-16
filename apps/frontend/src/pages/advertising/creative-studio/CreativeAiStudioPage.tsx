@@ -116,13 +116,13 @@ const CreativeAiStudioPage: React.FC = () => {
       .catch(() => {});
 
     apiClient
-      .get<{ success: boolean; data: { dailyUsage: number; dailyLimit: number } }>(
-        "/ai-image/tier-config"
+      .get<{ success: boolean; data: { dailyUsage: number; dailyLimit: number; remainingQuota: number } }>(
+        "/ai-image/quota"
       )
       .then((res) => {
         if (isMounted && res.data?.success && res.data.data) {
-          setDailyUsage(res.data.data.dailyUsage || 0);
-          setDailyLimit(res.data.data.dailyLimit || 50);
+          setDailyUsage(res.data.data.dailyUsage ?? 0);
+          setDailyLimit(res.data.data.dailyLimit ?? 50);
         }
       })
       .catch(() => {});
@@ -377,6 +377,12 @@ const CreativeAiStudioPage: React.FC = () => {
           onChangeBatchCount={setBatchCount}
           onOpenModelModal={() => setIsModelModalOpen(true)}
           onTriggerGenerateWithPrompt={(prompt) => handleGenerate(prompt)}
+          onSelectScenePreset={(scene, autoSwapPrompt) => {
+            setCustomPrompt(autoSwapPrompt);
+            setBackgroundUrl(scene.previewUrl);
+            setVariantUrls([scene.previewUrl]);
+            toast.success(`تم اختيار مشهد: ${scene.titleAr}`);
+          }}
         />
       }
       canvasPanel={

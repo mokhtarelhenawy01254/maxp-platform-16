@@ -49,6 +49,28 @@ export interface CreativeAngleSuggestion {
   rationale: string;
   prompt: string;
   modality: CreativeModality;
+  isCustom?: boolean;
+}
+
+export interface SceneLibraryItem {
+  id: string;
+  titleAr: string;
+  titleEn: string;
+  category: ProductCategory;
+  previewUrl: string;
+  modelPoseDescription: string;
+  promptTemplate: string;
+  tags: string[];
+  isCustom?: boolean;
+}
+
+export interface SlashCommandItem {
+  command: string; // e.g. "/luxury"
+  labelAr: string;
+  labelEn: string;
+  promptSnippet: string;
+  iconName: string;
+  category: string;
 }
 
 export interface ImageModelOption {
