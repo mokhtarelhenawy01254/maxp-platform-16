@@ -17,25 +17,28 @@ export const ElementsSidebarDrawer: React.FC<ElementsSidebarDrawerProps> = ({
       </div>
 
       <div className="eo-sidebar-items">
-        {SIDEBAR_ITEMS.map((item) => (
-          <button
-            key={item.type}
-            className="eo-sidebar-item-card"
-            type="button"
-            onClick={() => onAddSection(item.type)}
-          >
-            <div className="eo-item-icon" style={{ backgroundColor: item.iconBg }}>
-              {item.icon}
-            </div>
-            <div className="eo-item-text">
-              <strong>{item.label}</strong>
-              <span>{item.desc}</span>
-            </div>
-            <div className="eo-item-add-badge">
-              <Plus size={16} />
-            </div>
-          </button>
-        ))}
+        {SIDEBAR_ITEMS.map((item) => {
+          const Icon = item.icon;
+          return (
+            <button
+              key={item.type}
+              className="eo-sidebar-item-card"
+              type="button"
+              onClick={() => onAddSection(item.type)}
+            >
+              <div className="eo-item-icon" style={{ backgroundColor: item.iconBg }}>
+                <Icon size={20} />
+              </div>
+              <div className="eo-item-text">
+                <strong>{item.label}</strong>
+                <span>{item.desc}</span>
+              </div>
+              <div className="eo-item-add-badge">
+                <Plus size={16} />
+              </div>
+            </button>
+          );
+        })}
       </div>
     </aside>
   );

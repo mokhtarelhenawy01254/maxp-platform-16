@@ -1,3 +1,4 @@
+import type { LucideIcon } from "lucide-react";
 import {
   CheckCircle,
   Clock,
@@ -47,7 +48,7 @@ export interface EditorState {
 export interface SidebarElementItem {
   type: SectionType;
   label: string;
-  icon: React.ReactNode;
+  icon: LucideIcon;
   iconBg: string;
   desc: string;
 }
@@ -56,91 +57,91 @@ export const SIDEBAR_ITEMS: SidebarElementItem[] = [
   {
     type: "MEDIA",
     label: "الصور والميديا",
-    icon: React.createElement(ImageIcon, { size: 20 }),
+    icon: ImageIcon,
     iconBg: "#3B82F6",
     desc: "معرض صور المنتج والفيديوهات الرئيسية",
   },
   {
     type: "BREAKDOWN",
     label: "تشريح ومواصفات دقيقة",
-    icon: React.createElement(Layers, { size: 20 }),
+    icon: Layers,
     iconBg: "#2563EB",
     desc: "كروت بصرية لمواصفات النعل والخامات والراحة",
   },
   {
     type: "COMPARISON",
     label: "جدول المقارنة الذكي",
-    icon: React.createElement(CheckCircle, { size: 20 }),
+    icon: CheckCircle,
     iconBg: "#059669",
     desc: "مقارنة مقنعة: منتجنا الأصلي vs المنتجات المقلدة",
   },
   {
     type: "TEXT",
     label: "نص ووصف",
-    icon: React.createElement(Type, { size: 20 }),
+    icon: Type,
     iconBg: "#4B5563",
     desc: "عناوين، وصف تسويقي، وتفاصيل المنتج",
   },
   {
     type: "GALLERY",
     label: "معرض صور على الطبيعة",
-    icon: React.createElement(LayoutGrid, { size: 20 }),
+    icon: LayoutGrid,
     iconBg: "#7C3AED",
     desc: "لقطات للمنتج في الشارع ومن زوايا متعددة",
   },
   {
     type: "LIVE_PROOF",
     label: "إثبات اجتماعي وطلبات حية",
-    icon: React.createElement(Flame, { size: 20 }),
+    icon: Flame,
     iconBg: "#EA580C",
     desc: "إشعارات الشراء الحديثة وشارات الأمان",
   },
   {
     type: "COUNTDOWN",
     label: "عداد تنازلي",
-    icon: React.createElement(Clock, { size: 20 }),
+    icon: Clock,
     iconBg: "#22C55E",
     desc: "عداد التخفيضات وشريط نفاد المخزون",
   },
   {
     type: "FEATURES",
     label: "مميزات المتجر",
-    icon: React.createElement(Store, { size: 20 }),
+    icon: Store,
     iconBg: "#14B8A6",
     desc: "شارات الثقة: الشحن، المعاينة، والضمان",
   },
   {
     type: "FORM",
     label: "نموذج الشراء",
-    icon: React.createElement(ShoppingBag, { size: 20 }),
+    icon: ShoppingBag,
     iconBg: "#10B981",
     desc: "فورم الدفع عند الاستلام COD السريع",
   },
   {
     type: "REVIEWS",
     label: "تقييمات مخصصة",
-    icon: React.createElement(Star, { size: 20 }),
+    icon: Star,
     iconBg: "#F59E0B",
     desc: "آراء وتقييمات العملاء بالنجوم والصور",
   },
   {
     type: "FAQ",
     label: "الأسئلة الشائعة",
-    icon: React.createElement(HelpCircle, { size: 20 }),
+    icon: HelpCircle,
     iconBg: "#8B5CF6",
     desc: "قائمة الأسئلة والإجابات الشائعة للعملاء",
   },
   {
     type: "BANNERS",
     label: "لافتات ترويجية",
-    icon: React.createElement(Megaphone, { size: 20 }),
+    icon: Megaphone,
     iconBg: "#EC4899",
     desc: "بنرات الخصومات والتنبيهات الملونة",
   },
   {
     type: "HTML",
     label: "كود HTML مخصص",
-    icon: React.createElement(Code, { size: 20 }),
+    icon: Code,
     iconBg: "#EF4444",
     desc: "تضمين أكواد تتبع أو عناصر مخصصة",
   },
