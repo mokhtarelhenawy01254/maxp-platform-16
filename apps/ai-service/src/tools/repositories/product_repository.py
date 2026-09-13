@@ -61,12 +61,18 @@ class ProductRepository(BaseRepository):
         compare_price = float(product_data["compare_price"]) if product_data.get("compare_price") is not None else None
         cost = float(product_data["cost"]) if product_data.get("cost") is not None else None
         
-        # Determine SKU
-        sku = product_data.get("sku")
+        # 1. Determine and Auto-Resolve Base SKU Conflicts
+        sku = (product_data.get("sku") or "").strip()
         if not sku:
             sku = f"PRD-{int(datetime.utcnow().timestamp())}"
+        
+        existing_sku = await self._session.execute(text("""
+            SELECT id FROM products WHERE "companyId" = :cid AND sku = :sku LIMIT 1
+        """), {"cid": company_id, "sku": sku})
+        if existing_sku.first():
+            sku = f"{sku}-{int(datetime.utcnow().timestamp()) % 10000}"
 
-        # Resolve category if category_name given
+        # 2. Resolve Category (by ID or exact/partial Name)
         category_id = product_data.get("category_id")
         category_name = product_data.get("category_name")
         resolved_category_name = None
@@ -88,13 +94,13 @@ class ProductRepository(BaseRepository):
                 category_id = c_first.id
                 resolved_category_name = c_first.name
 
-        # Calculate stock and prepare variants
+        # 3. Calculate Stock & Prepare Variants
         raw_variants = product_data.get("variants") or []
         variants_total_stock = sum(int(v.get("stock", 0) or 0) for v in raw_variants)
         base_stock = int(product_data.get("stock") or 0)
         final_stock = variants_total_stock if (variants_total_stock > 0 and base_stock == 0) else (base_stock or variants_total_stock)
 
-        # Generate unique slug
+        # 4. Generate and Auto-Resolve Slug Conflicts
         clean_slug = re.sub(r"[^\w\s-]", "", name, flags=re.UNICODE).strip()
         clean_slug = re.sub(r"[\s_]+", "-", clean_slug).strip("-")
         if not clean_slug:
@@ -102,7 +108,13 @@ class ProductRepository(BaseRepository):
         ts = int(datetime.utcnow().timestamp())
         slug = f"{clean_slug}-{ts}"
 
-        # Prepare images & tags
+        existing_slug = await self._session.execute(text("""
+            SELECT id FROM products WHERE "companyId" = :cid AND slug = :slug LIMIT 1
+        """), {"cid": company_id, "slug": slug})
+        if existing_slug.first():
+            slug = f"{slug}-{uuid.uuid4().hex[:4]}"
+
+        # 5. Media, Tags, and Workflow Status
         images_list = product_data.get("images") or []
         main_image = images_list[0] if images_list else None
         images_json = json.dumps(images_list, ensure_ascii=False) if images_list else None
@@ -110,18 +122,34 @@ class ProductRepository(BaseRepository):
         tags_list = product_data.get("tags") or []
         tags_json = json.dumps(tags_list, ensure_ascii=False) if tags_list else None
 
-        is_active = bool(product_data.get("is_active", True))
+        # Support DRAFT vs PUBLISHED workflow
+        status_req = (product_data.get("status") or "PUBLISHED").upper()
+        if status_req == "DRAFT":
+            is_active = False
+            wf_status = "DRAFT"
+        else:
+            is_active = bool(product_data.get("is_active", True))
+            wf_status = "PUBLISHED" if is_active else "DRAFT"
 
-        # Insert Product
+        metadata_dict = {
+            "workflow": {
+                "status": wf_status,
+                "publishedAt": datetime.utcnow().isoformat() if is_active else None,
+                "createdBy": "product-creator-agent"
+            }
+        }
+        metadata_json = json.dumps(metadata_dict, ensure_ascii=False)
+
+        # 6. Insert Product
         await self._session.execute(text("""
             INSERT INTO products (
                 id, name, description, sku, price, "comparePrice", cost,
                 stock, "trackInventory", "categoryId", slug, "companyId",
-                images, "mainImage", tags, "isActive", "createdAt", "updatedAt"
+                images, "mainImage", tags, metadata, "isActive", "createdAt", "updatedAt"
             ) VALUES (
                 :id, :name, :description, :sku, :price, :compare_price, :cost,
                 :stock, true, :category_id, :slug, :company_id,
-                :images, :main_image, :tags, :is_active, NOW(), NOW()
+                :images, :main_image, :tags, :metadata, :is_active, NOW(), NOW()
             )
         """), {
             "id": product_id,
@@ -138,16 +166,23 @@ class ProductRepository(BaseRepository):
             "images": images_json,
             "main_image": main_image,
             "tags": tags_json,
+            "metadata": metadata_json,
             "is_active": is_active,
         })
 
-        # Insert Variants
+        # 7. Insert Variants with Guaranteed Unique SKUs
         created_variants = []
+        seen_variant_skus = set()
         for idx, var in enumerate(raw_variants):
             var_id = str(uuid.uuid4())
             var_name = (var.get("name") or f"Variant {idx+1}").strip()
             var_type = var.get("type") or "combined"
-            var_sku = var.get("sku") or f"{sku}-{idx+1}"
+            raw_var_sku = (var.get("sku") or f"{sku}-{idx+1}").strip()
+            var_sku = raw_var_sku
+            if var_sku in seen_variant_skus:
+                var_sku = f"{var_sku}-{idx+1}"
+            seen_variant_skus.add(var_sku)
+
             var_price = float(var["price"]) if var.get("price") is not None else price
             var_compare = float(var["compare_price"]) if var.get("compare_price") is not None else compare_price
             var_cost = float(var["cost"]) if var.get("cost") is not None else cost
@@ -188,6 +223,53 @@ class ProductRepository(BaseRepository):
 
         await self._session.commit()
 
+        # 8. Instant Vector Embedding Sync (Non-blocking for RAG / Semantic Search)
+        try:
+            from src.memory.episodic_memory import EpisodicMemoryService
+            svc = EpisodicMemoryService()
+            embed_text = f"{name}. {description or ''}. {' '.join(tags_list)}".strip(". ")
+            if resolved_category_name:
+                embed_text += f" Category: {resolved_category_name}."
+
+            res = await svc.generate_embedding_with_provider(text=embed_text, task_type="RETRIEVAL_DOCUMENT")
+            vec = res.get("vector")
+            if vec and len(vec) == 768:
+                vec_str = "[" + ",".join(str(x) for x in vec) + "]"
+                emb_status = "IN_STOCK" if final_stock > 0 else "OUT_OF_STOCK"
+                await self._session.execute(text("""
+                    INSERT INTO ai.product_embeddings
+                        (id, company_id, product_id, product_name, sku, price, status,
+                         text_embedding, embed_text, image_url, description, tags, category, workflow_status)
+                    VALUES (gen_random_uuid()::text, :cid, :pid, :name, :sku,
+                            :price, :status, :vec, :embed_text, :image_url,
+                            :desc, :tags, :cat, :wf)
+                    ON CONFLICT (company_id, product_id) DO UPDATE SET
+                        product_name = EXCLUDED.product_name,
+                        text_embedding = EXCLUDED.text_embedding,
+                        embed_text = EXCLUDED.embed_text,
+                        price = EXCLUDED.price,
+                        status = EXCLUDED.status,
+                        workflow_status = EXCLUDED.workflow_status,
+                        updated_at = NOW()
+                """), {
+                    "cid": company_id,
+                    "pid": product_id,
+                    "name": name,
+                    "sku": sku,
+                    "price": price,
+                    "status": emb_status,
+                    "vec": vec_str,
+                    "embed_text": embed_text,
+                    "image_url": main_image,
+                    "desc": description,
+                    "tags": tags_json or "[]",
+                    "cat": resolved_category_name,
+                    "wf": wf_status,
+                })
+                await self._session.commit()
+        except Exception:
+            pass  # Non-blocking
+
         return {
             "success": True,
             "productId": product_id,
@@ -202,5 +284,7 @@ class ProductRepository(BaseRepository):
             "variantsCount": len(created_variants),
             "variants": created_variants,
             "isActive": is_active,
+            "workflowStatus": wf_status,
         }
+
 

@@ -144,6 +144,7 @@ class ProductCreateInput(BaseModel):
     tags: list[str] | None = Field(default=None, description="List of search/filter tags")
     variants: list[ProductVariantInput] | None = Field(default=None, description="Optional list of variants (sizes, colors, stocks)")
     is_active: bool = Field(default=True, description="Whether the product is active/published in store")
+    status: str = Field(default="PUBLISHED", description="Workflow status: 'PUBLISHED' or 'DRAFT'")
     company_id: str | None = Field(default=None, description="Tenant ID (auto-injected)")
 
 
@@ -248,7 +249,8 @@ async def product_create(input_data: ProductCreateInput) -> dict[str, Any]:
         "images": input_data.images,
         "tags": input_data.tags,
         "variants": [v.model_dump() for v in input_data.variants] if input_data.variants else [],
-        "is_active": input_data.is_active,
+        "is_active": False if (input_data.status or "").upper() == "DRAFT" else input_data.is_active,
+        "status": (input_data.status or "PUBLISHED").upper(),
     }
 
     from src.tools.repositories.product_repository import ProductRepository

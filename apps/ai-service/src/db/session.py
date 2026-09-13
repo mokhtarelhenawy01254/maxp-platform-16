@@ -34,9 +34,9 @@ async def close_db() -> None:
 
 async def get_session() -> AsyncSession:
     """Dependency: yield async session."""
+    global async_session
     if async_session is None:
-        msg = "Database not initialized"
-        raise RuntimeError(msg)
+        await init_db()
     async with async_session() as session:
         try:
             yield session
