@@ -36,11 +36,37 @@
    - **Ban Nested Border Nesting (Borders inside Borders)**: Do not wrap small stats and sub-sections with thick full-border boxes inside already bordered panels. Use subtle dividers, typography hierarchy, or single-surface groupings to keep the screen breathing and uncluttered.
 
 ## Rule: Anti-AI-Slop & Design Authenticity (Permanent Ban on AI Clichés)
-1. **Zero Emoji Littering**: Never decorate headers, cards, buttons, or badges with generic emojis (`🤖`, `🚀`, `⚡`, `✨`, `🔥`, `💡`, `🎯`, `🛒`, `🧠`). Use only ultra-light vector icons (stroke 1.25px) or pure typographic hierarchy.
-2. **Ban Purple/Cyan Dark Mesh Cliché**: Never slap a centered fuzzy purple/indigo/cyan neon blur behind generic dark cards. Use true architectural palettes: deepest OLED blacks (`#050505` / `#09090b`), titanium, matte graphite, or warm creams (`#FDFBF7`), illuminated by tactile hairline borders (`border-white/10` or `ring-1 ring-border/40`) and inset specular highlights (`shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]`).
-3. **Ban Cookie-Cutter Symmetrical Card Clones**: Never generate 3 identical cards in a row with an icon on top, a 2-line title, a generic 3-line paragraph, and a bottom button. Break symmetry with asymmetrical visual weight, dense telemetry chips, real specs, Bento Grid proportions, and contextual actions.
-4. **Ban Marketing Buzzword Fluff**: Never generate text like "الذكاء الاصطناعي الخارق"، "أحدث ثورة في عملك"، "قوة لا نهائية". Replace buzzwords with hard telemetry: latency benchmarks (`P95 < 0.8s`), exact model names (`DeepSeek-V3`, `Llama 3.3 70B`), real API integration signatures (`Meta Graph API v21`, `PostgreSQL Attribution`), and verifiable unit economics.
-5. **Ban Everything-Is-Glassmorphism**: Never make every card, container, and row `backdrop-blur bg-white/5`. Reserve blur strictly for sticky floating headers or modal scrims. Main surfaces must have solid, tactile, machined opacity with crisp contrast and legible typography.
-6. **Ban Fake Glowing Rainbow Borders & Shimmer Spam**: Never add infinite rotating rainbow borders, pulsing gradient outlines around random cards, or looping particle effects. Motion must be purposeful, spring-based, reacting only to user interaction or entry transition.
-7. **Ban Stock 3D Cartoon Avatars**: Never use floating 3D Memoji heads with big headphones or generic smiling corporate stock photos. Use editorial studio-lit architectural portraits with realistic chiaroscuro lighting, or geometric monogram emblems.
-8. **Ban Dead Unclickable UI Badges**: Never add colorful pill badges that convey no real data and cannot be clicked. Badges must strictly represent functional system state, live telemetry, or verifiable filters with semantic status colors.
+Any design resembling typical LLM-generated output is strictly rejected. Audit all code against these 6 core detection pillars & 10 slop flags:
+
+### The 6 AI-Detection Pillars (2026 Engineering Standard):
+1. **Aesthetic & Palette**: Ban purple/cyan fuzzy neon mesh and excessive glassmorphism. Use architectural OLED blacks (`#050505` / `#09090b`), titanium, matte graphite (`#121214`), or warm creams (`#FDFBF7`) with machined hairline borders (`border-white/10` or `ring-1 ring-border/40`) and inset specular highlights (`shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]`).
+2. **Typography & Micro-Typography**:
+   - Mandatory `text-wrap: balance` on headings and `text-pretty` on body copy (ban orphan words).
+   - Mandatory `font-variant-numeric: tabular-nums` (or `tabular-nums`) for all numbers, pricing, and telemetry.
+   - Use true typographical glyphs: `…` (never `...`), curly quotes `“ ”` (never `"`), non-breaking spaces before units (`10&nbsp;MB`, `0.8&nbsp;s`, `⌘&nbsp;K`).
+3. **Interaction Physics & Micro-Haptics**:
+   - Buttons MUST feel physically responsive: `:active` state requires `transform: scale(0.97)` with `transition: transform 160ms ease-out`.
+   - Popovers MUST be origin-aware: `transform-origin: var(--transform-origin)` (scale in from trigger, not center).
+   - Tooltips MUST skip delay after first hover (`instant hover mode`). Strict `prefers-reduced-motion` compliance.
+4. **Layout Architecture (Anti-Symmetry & Unified Chassis)**:
+   - Ban cookie-cutter 3-column equal cards. Use asymmetrical Bento Grids (8:4 ratio) with varied visual weight.
+   - Mandate Unified Single-Surface Chassis (Linear/Cursor style) with hairline dividers (`border-r`, `border-l`), banning floating card islands separated by wide grey gaps (`bg-slate-100 gap-6`).
+5. **Telemetry over Buzzwords (Show, Don't Tell)**:
+   - Zero marketing buzzword fluff ("الذكاء الاصطناعي الخارق"). Replace with hard telemetry: latency (`P95 < 0.8s`), exact model names (`DeepSeek-V3`, `Llama 3.3 70B`), API signatures (`Meta Graph API v21`, `PostgreSQL Attribution`), and verifiable unit economics.
+6. **Accessibility & Edge-Case Resilience**:
+   - Always use semantic HTML (`<button>`, `<a>`, `<label>`) with `aria-label` on icon-only buttons.
+   - Replace `outline-none` with `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1`.
+   - Defensive layout: `min-w-0` on flex children with `truncate` or `line-clamp-*` to prevent overflow crashes.
+
+### The 10 Banned Slop Flags:
+1. Zero Emoji Littering (`🤖`, `🚀`, `⚡`, `✨`, `🔥`, `💡`, `🎯`, `🛒`, `🧠`).
+2. Ban Purple/Cyan Dark Mesh Cliché.
+3. Ban Cookie-Cutter Symmetrical Card Clones.
+4. Ban Marketing Buzzword Fluff.
+5. Ban Everything-Is-Glassmorphism.
+6. Ban Fake Glowing Rainbow Borders & Shimmer Spam.
+7. Ban Floating Island Fragmentation.
+8. Ban Stock 3D Cartoon Avatars.
+9. Ban The Centered Hero Trap.
+10. Ban Dead Unclickable UI Badges.
+

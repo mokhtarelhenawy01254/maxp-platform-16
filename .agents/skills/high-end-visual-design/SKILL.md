@@ -10,7 +10,7 @@ description: Teaches the AI to design like a high-end agency. Defines the exact 
 - **Objective:** You engineer $150k+ agency-level digital experiences, not just websites. Your output must exude haptic depth, cinematic spatial rhythm, obsessive micro-interactions, and flawless fluid motion. 
 - **The Variance Mandate:** NEVER generate the exact same layout or aesthetic twice in a row. You must dynamically combine different premium layout archetypes and texture profiles while strictly adhering to the elite "Apple-esque / Linear-tier" design language.
 
-## 2. THE "ABSOLUTE ZERO" DIRECTIVE (STRICT ANTI-PATTERNS)
+## 2. THE "ABSOLUTE ZERO" DIRECTIVE (STRICT ANTI-PATTERNS & ANTI-AI-SLOP)
 If your generated code includes ANY of the following, the design instantly fails:
 - **Banned Fonts:** Inter, Roboto, Arial, Open Sans, Helvetica. (Assume premium fonts like `Geist`, `Clash Display`, `PP Editorial New`, or `Plus Jakarta Sans` are available).
 - **Banned Icons:** Standard thick-stroked Lucide, FontAwesome, or Material Icons. Use only ultra-light, precise lines (e.g., Phosphor Light, Remix Line).
@@ -23,6 +23,47 @@ If your generated code includes ANY of the following, the design instantly fails
 - **Banned Laptop Viewport Bloat (<= 768px Viewports):** On laptops (1366x768 or scaled 1080p), vertical space below chrome is only 550-650px. Never make media/mockup canvases tall fixed aspect ratios like `aspect-[4/3]` (taking 300px+). Cap media heights at `h-36 sm:h-44 object-cover`. Never stack single inputs on their own vertical line above an action button; merge them horizontally into a single compact action footer (`[ Input ] + [ Primary CTA ]`). Keep secondary controls and safety rules in collapsible drawers defaulting to collapsed.
 - **Banned Context Duplication:** Never repeat page-level context (e.g. selected product, active session title) inside child panel headers if already displayed in the top bar.
 - **Banned Motion:** Standard `linear` or `ease-in-out` transitions. Instant state changes without interpolation.
+
+### 🚫 THE 2026 AI DESIGN DETECTION & ELIMINATION GUIDE (TELLTALE SIGNS OF AI DESIGN)
+Any design resembling typical LLM-generated output is strictly rejected. Audit all code against these 6 detection pillars:
+
+1. **Aesthetic & Visual Tells (الخلل اللوني والبصري):**
+   - *AI Tell:* Generic centered fuzzy purple/indigo/cyan neon blur or glowing orb behind dark cards; neon glowing box-shadows (`shadow-purple-500/50`); generic glassmorphism on every card, table, and row until it looks like a blurry shower door.
+   - *2026 Countermeasure:* Authentic architectural palettes: deepest OLED black (`#050505` / `#09090b`), titanium, matte graphite (`#121214`), or warm creams (`#FDFBF7`). Tactile machined hairline borders (`border-white/10` or `ring-1 ring-border/40`) with inset specular highlights (`shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]`). Blur is reserved strictly for floating sticky headers and modal scrims.
+
+2. **Typography & Micro-Typography Precision (الدقة التيبوغرافية الصارمة):**
+   - *AI Tell:* Generic font stacks without optical tuning; widows and orphans at line ends; straight quotes `"` instead of curly `“ ”`; standard dots `...` instead of true ellipsis `…`; lack of non-breaking spaces before units (`10 MB` breaking across lines).
+   - *2026 Countermeasure:*
+     - Mandatory `text-wrap: balance` on headings and `text-pretty` on body copy to eliminate orphan words.
+     - Mandatory `font-variant-numeric: tabular-nums` (or `tabular-nums`) for all comparison numbers, financial metrics, and telemetry data.
+     - True typographic glyphs: `…` not `...`, `“` `”` not `"`, non-breaking spaces: `10&nbsp;MB`, `0.8&nbsp;s`, `⌘&nbsp;K`.
+
+3. **Interaction Physics & Micro-Haptics (فيزياء التفاعل والاستجابة الحية):**
+   - *AI Tell:* Either lifeless static buttons with no press state, or gratuitous constant animation (spinning rainbow borders, infinite shimmers, looping marquees).
+   - *2026 Countermeasure:*
+     - Haptic press physics: `:active` state MUST have `transform: scale(0.97)` with `transition: transform 160ms ease-out`.
+     - Origin-aware popovers: Popovers scale in from their trigger (`transform-origin: var(--transform-origin)`), not from center.
+     - Instant hover chaining: Tooltips after the first one is open skip delay and animation (`data-instant`) to keep toolbars feeling fast.
+     - Strict `prefers-reduced-motion` compliance.
+
+4. **Structural Layout & Anti-Symmetry (كسر التماثل الميكانيكي):**
+   - *AI Tell:* 3 identical cards in a row with equal widths, an icon in a circle on top, 2 lines of heading, 3 lines of filler paragraph, and a button at bottom; floating card islands separated by wide grey gaps (`bg-slate-100 gap-6 p-6`).
+   - *2026 Countermeasure:*
+     - Unified Single-Surface Chassis (Linear/Cursor style) with panels sharing a continuous surface separated by subtle hairline dividers (`border-r`, `border-l`).
+     - Asymmetrical visual hierarchy (Bento Grid 8:4 ratio, varied card scales, telemetry chips, contextual actions).
+     - 85%+ viewport utilization for operational tools.
+
+5. **Telemetry vs Marketing Buzzwords (الأرقام والبيانات بدلاً من الهلوسة التسويقية):**
+   - *AI Tell:* Filler copy ("الذكاء الاصطناعي الخارق"، "أحدث ثورة في عملك"، "حلول سحرية لا نهائية").
+   - *2026 Countermeasure:* Hard telemetry and concrete specs: verified latency benchmarks (`P95 < 0.8s`), exact engine/model names (`DeepSeek-V3`, `Llama 3.3 70B`), authentic API signatures (`Meta Graph API v21`, `PostgreSQL Attribution`), and verifiable unit economics.
+
+6. **Accessibility & Edge-Case Hardening (السلامة البرمجية والحالات الحدية):**
+   - *AI Tell:* `<div onClick>` without keyboard handlers; `outline-none` without replacement; broken flex layouts when text is long; missing empty states.
+   - *2026 Countermeasure:*
+     - Semantic HTML (`<button>`, `<a>`, `<label>`) with `aria-label` on every icon-only button.
+     - Visible focus states: Replace `outline-none` with `focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-1`.
+     - Text overflow resilience: `min-w-0` on flex children with `truncate` or `line-clamp-*`.
+     - Defensive empty and loading states.
 
 ## 3. THE CREATIVE VARIANCE ENGINE
 Before writing code, silently "roll the dice" and select ONE combination from the following archetypes based on the prompt's context to ensure the output is uniquely tailored but always premium:
