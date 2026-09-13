@@ -3789,4 +3789,65 @@ export async function publishAiDraft(
   return response.data;
 }
 
+/**
+ * جلب كافة جلسات محادثة الوكيل الذكي المتزامنة سحابياً عبر قاعدة البيانات
+ */
+export async function getMarketingCopilotSessions(limit = 50): Promise<{
+  success: boolean;
+  data: any[];
+  error?: string;
+}> {
+  try {
+    const response = await apiClient.get<{ success: boolean; data: any[] }>(
+      "/facebook-ads/ai/sessions",
+      { params: { limit } }
+    );
+    return response.data;
+  } catch (err: any) {
+    return { success: false, data: [], error: err?.message || "Failed to load sessions" };
+  }
+}
+
+/**
+ * حفظ أو مزامنة جلسة محادثة مع رسائلها سحابياً في قاعدة البيانات
+ */
+export async function saveMarketingCopilotSession(sessionData: {
+  id: string;
+  title?: string;
+  messages?: any[];
+  context?: any;
+}): Promise<{
+  success: boolean;
+  data?: any;
+  error?: string;
+}> {
+  try {
+    const response = await apiClient.post<{ success: boolean; data: any }>(
+      "/facebook-ads/ai/sessions",
+      sessionData
+    );
+    return response.data;
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Failed to save session" };
+  }
+}
+
+/**
+ * حذف جلسة محادثة سحابياً من قاعدة البيانات
+ */
+export async function deleteMarketingCopilotSession(sessionId: string): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    const response = await apiClient.delete<{ success: boolean }>(
+      `/facebook-ads/ai/sessions/${sessionId}`
+    );
+    return response.data;
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Failed to delete session" };
+  }
+}
+
 export default facebookAdsService;
+

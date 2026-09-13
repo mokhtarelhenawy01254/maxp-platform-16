@@ -7,6 +7,7 @@
 
 const facebookAdsAiDraftService = require('../services/facebookAdsAiDraftService');
 const facebookAdsController = require('./facebookAdsController');
+const marketingCopilotSessionService = require('../services/marketingCopilotSessionService');
 
 class FacebookAdsAiController {
   /**
@@ -354,6 +355,16 @@ class FacebookAdsAiController {
 
       const scopedThreadId = threadId.endsWith(`_${companyId}`) ? threadId : `${threadId}_${companyId}`;
 
+      // Automatically persist incoming user message in Cloud DB
+      try {
+        await marketingCopilotSessionService.appendMessage(companyId, threadId, {
+          sender: 'user',
+          text: message,
+        });
+      } catch (dbErr) {
+        console.warn('[FacebookAdsAI] Failed to persist user message in DB:', dbErr.message);
+      }
+
       try {
         const result = await aiServiceAdminClient.chatWithAgent({
           companyId,
@@ -377,10 +388,20 @@ class FacebookAdsAiController {
         );
 
         if (isQuotaState) {
+          const quotaReply = 'رصيد استهلاك باقة الذكاء الاصطناعي لحسابك بحاجة إلى تجديد لمواصلة إطلاق وتطوير الحملات الإعلانية. تم حفظ جميع المسودات والبيانات السابقة بأمان تام.';
+          try {
+            await marketingCopilotSessionService.appendMessage(companyId, threadId, {
+              sender: 'agent',
+              text: quotaReply,
+            });
+          } catch (dbErr) {
+            console.warn('[FacebookAdsAI] Failed to persist quota reply in DB:', dbErr.message);
+          }
+
           return res.status(200).json({
             success: true,
             status: 'NEEDS_RECHARGE',
-            reply: 'رصيد استهلاك باقة الذكاء الاصطناعي لحسابك بحاجة إلى تجديد لمواصلة إطلاق وتطوير الحملات الإعلانية. تم حفظ جميع المسودات والبيانات السابقة بأمان تام.',
+            reply: quotaReply,
             recharge_action: {
               url: '/settings/billing',
               type: 'WALLET_RECHARGE',
@@ -391,6 +412,17 @@ class FacebookAdsAiController {
             draft_id: null,
             agentId: targetAgentId,
           });
+        }
+
+        // Automatically persist agent reply in Cloud DB
+        try {
+          await marketingCopilotSessionService.appendMessage(companyId, threadId, {
+            sender: 'agent',
+            text: result?.reply || '',
+            toolCalls: result?.tool_calls || [],
+          });
+        } catch (dbErr) {
+          console.warn('[FacebookAdsAI] Failed to persist agent reply in DB:', dbErr.message);
         }
 
         return res.json({
@@ -444,6 +476,117 @@ class FacebookAdsAiController {
       return res.status(500).json({
         success: false,
         error: outerError.message || 'Unexpected server error',
+      });
+    }
+  }
+
+  /**
+   * GET /api/v1/facebook-ads/ai/sessions
+   * List all cloud-synced copilot sessions for the company
+   */
+  async listSessions(req, res) {
+    try {
+      const companyId = req.user?.companyId;
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const limit = parseInt(req.query?.limit || '50', 10);
+      const sessions = await marketingCopilotSessionService.listSessions(companyId, limit);
+
+      return res.json({
+        success: true,
+        data: sessions,
+      });
+    } catch (error) {
+      console.error('❌ Error listing marketing copilot sessions:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to list copilot sessions',
+      });
+    }
+  }
+
+  /**
+   * GET /api/v1/facebook-ads/ai/sessions/:id
+   * Get single session with its messages
+   */
+  async getSession(req, res) {
+    try {
+      const companyId = req.user?.companyId;
+      const { id } = req.params;
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const session = await marketingCopilotSessionService.getSession(companyId, id);
+      if (!session) {
+        return res.status(404).json({ success: false, error: 'Session not found' });
+      }
+
+      return res.json({
+        success: true,
+        data: session,
+      });
+    } catch (error) {
+      console.error('❌ Error getting marketing copilot session:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to get copilot session',
+      });
+    }
+  }
+
+  /**
+   * POST /api/v1/facebook-ads/ai/sessions
+   * Create or update a session with messages (for real-time sync or localStorage migration)
+   */
+  async saveSession(req, res) {
+    try {
+      const companyId = req.user?.companyId;
+      const userId = req.user?.id || req.user?.userId || null;
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const sessionData = req.body || {};
+      const saved = await marketingCopilotSessionService.saveSession(companyId, userId, sessionData);
+
+      return res.json({
+        success: true,
+        data: saved,
+      });
+    } catch (error) {
+      console.error('❌ Error saving marketing copilot session:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to save copilot session',
+      });
+    }
+  }
+
+  /**
+   * DELETE /api/v1/facebook-ads/ai/sessions/:id
+   * Delete a session and its message history
+   */
+  async deleteSession(req, res) {
+    try {
+      const companyId = req.user?.companyId;
+      const { id } = req.params;
+      if (!companyId) {
+        return res.status(401).json({ success: false, error: 'Company ID is required' });
+      }
+
+      const deleted = await marketingCopilotSessionService.deleteSession(companyId, id);
+      return res.json({
+        success: true,
+        deleted,
+      });
+    } catch (error) {
+      console.error('❌ Error deleting marketing copilot session:', error);
+      return res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to delete copilot session',
       });
     }
   }

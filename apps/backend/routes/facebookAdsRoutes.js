@@ -536,5 +536,16 @@ router.get('/ai/drafts/:runId', (req, res) => facebookAdsAiController.getDraftRu
 // POST /api/v1/facebook-ads/ai/drafts/:draftId/publish - نشر المسودة المعتمدة إلى فيسبوك
 router.post('/ai/drafts/:draftId/publish', (req, res) => facebookAdsAiController.publishDraft(req, res));
 
+// --- AI Copilot Sessions Management (Cloud DB Synced) ---
+// GET /api/v1/facebook-ads/ai/sessions - جلب كافة الجلسات السحابية
+router.get('/ai/sessions', (req, res) => facebookAdsAiController.listSessions(req, res));
+// GET /api/v1/facebook-ads/ai/sessions/:id - جلب تفاصيل جلسة محددة ورسائلها
+router.get('/ai/sessions/:id', (req, res) => facebookAdsAiController.getSession(req, res));
+// POST /api/v1/facebook-ads/ai/sessions - حفظ أو مزامنة جلسة ورسائلها سحابياً
+router.post('/ai/sessions', (req, res) => facebookAdsAiController.saveSession(req, res));
+// DELETE /api/v1/facebook-ads/ai/sessions/:id - حذف جلسة من السحابة
+router.delete('/ai/sessions/:id', (req, res) => facebookAdsAiController.deleteSession(req, res));
+
 module.exports = router;
+
 

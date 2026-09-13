@@ -119,4 +119,27 @@ describe("Marketing AI Studio - Data & Strategy Engine", () => {
     expect(typeof sanitized[0].title).toBe("string");
     expect(sanitized[1].title).toBe("حملة سوان");
   });
+
+  it("identifies unmigrated local sessions for background cloud sync", () => {
+    const cloudSessions = [
+      { id: "mb_sess_cloud_1", title: "جلسة من المكتب", messages: [{ id: "m1", sender: "user", text: "تحليل" }] },
+    ];
+    const localSessions = [
+      { id: "mb_sess_cloud_1", title: "جلسة من المكتب", messages: [{ id: "m1", sender: "user", text: "تحليل" }] },
+      { id: "mb_sess_local_old", title: "جلسة قديمة من البيت", messages: [{ id: "m2", sender: "user", text: "استراتيجية" }] },
+      { id: "mb_sess_empty", title: "جلسة فارغة", messages: [] },
+    ];
+
+    const cloudIds = new Set(cloudSessions.map((s) => s.id));
+    const toMigrate = localSessions.filter(
+      (localS) =>
+        !cloudIds.has(localS.id) &&
+        localS.messages.some((m) => m.sender === "user")
+    );
+
+    expect(toMigrate).toHaveLength(1);
+    expect(toMigrate[0].id).toBe("mb_sess_local_old");
+    expect(toMigrate[0].title).toBe("جلسة قديمة من البيت");
+  });
 });
+
