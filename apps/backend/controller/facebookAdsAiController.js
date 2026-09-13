@@ -402,6 +402,7 @@ class FacebookAdsAiController {
               'manage_agent_skill',
               'orders_campaign_attribution_report',
               'competitor_get_ads',
+              'competitor_search',
               'sales_revenue',
               'company_snapshot',
               'audit_read',
@@ -558,11 +559,16 @@ class FacebookAdsAiController {
           console.warn('[FacebookAdsAI] Failed to persist agent reply in DB:', dbErr.message);
         }
 
+        const toolCallsList = result?.tool_calls || [];
+        const toolNames = toolCallsList.map(tc => tc.name || tc.function?.name || tc).filter(Boolean);
+
         return res.json({
           success: true,
           reply: result?.reply || '',
           status: result?.status || 'ok',
-          tool_calls: result?.tool_calls || [],
+          tool_calls: toolCallsList,
+          tools_called: toolNames,
+          toolsCalled: toolNames,
           threadId,
           scopedThreadId: result?.thread_id || scopedThreadId,
           draft_id: result?.draft_id || null,

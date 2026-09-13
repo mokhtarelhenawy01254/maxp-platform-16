@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import uuid
+import urllib.parse
 from typing import Any, Literal
 from datetime import datetime, timezone
 
@@ -342,9 +343,16 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
         for index, angle in enumerate(input_data.angles, start=1):
             draft_id = f"draft_{uuid.uuid4().hex[:16]}"
 
+            # Automatically inject standard Meta Ads UTM tracking parameters for 100% order attribution
+            base_url = (resolved_product_url or "https://store.maxp.online").split("?")[0]
+            camp_param = urllib.parse.quote(str(angle.campaign_name or "facebook_campaign"))
+            content_param = urllib.parse.quote(str(angle.ad_name or angle.angle or f"angle_{index}"))
+            attributed_product_url = f"{base_url}?utm_source=facebook&utm_medium=paid_social&utm_campaign={camp_param}&utm_content={content_param}"
+
             full_ad_data = {
                 "productId": resolved_product_id,
-                "productUrl": resolved_product_url,
+                "productUrl": attributed_product_url,
+                "websiteUrl": attributed_product_url,
                 "productName": json.loads(resolved_product_snapshot_str).get("name") if resolved_product_snapshot_str else None,
                 "campaignName": angle.campaign_name,
                 "objective": "OUTCOME_SALES",
@@ -391,7 +399,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "id": draft_id,
                 "runId": run_id,
                 "companyId": company_id,
-                "productUrl": resolved_product_url,
+                "productUrl": attributed_product_url,
                 "productSnapshot": resolved_product_snapshot_str,
                 "index": index,
                 "angle": angle.angle,

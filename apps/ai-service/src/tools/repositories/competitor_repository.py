@@ -89,14 +89,66 @@ class CompetitorRepository(BaseRepository):
         self, competitor_id: str, limit: int = 10
     ) -> list[dict[str, Any]]:
         sql = text("""
-            SELECT id, "adContent", platform, url, "estimatedSpend", "startDate", "endDate"
+            SELECT id, platform, "adId", "creativeUrl", copy, headline, cta, 
+                   "destinationUrl", status, "firstSeen", "lastSeen", metadata
             FROM competitor_ads
             WHERE "competitorId" = :cid
-            ORDER BY "startDate" DESC
+            ORDER BY "createdAt" DESC
             LIMIT :lim
         """)
         rows = await self._session.execute(sql, {"cid": competitor_id, "lim": limit})
-        return [dict(r._mapping) for r in rows]
+        res = []
+        for r in rows:
+            m = dict(r._mapping)
+            res.append({
+                "id": m.get("id"),
+                "adId": m.get("adId"),
+                "platform": m.get("platform") or "facebook",
+                "headline": m.get("headline") or "",
+                "copy": m.get("copy") or "",
+                "cta": m.get("cta") or "SHOP_NOW",
+                "creativeUrl": m.get("creativeUrl") or "",
+                "destinationUrl": m.get("destinationUrl") or "",
+                "status": m.get("status") or "ACTIVE",
+                "firstSeen": str(m.get("firstSeen")) if m.get("firstSeen") else None,
+                "lastSeen": str(m.get("lastSeen")) if m.get("lastSeen") else None,
+            })
+        return res
+
+    async def search_competitor_ads(
+        self, company_id: str, query: str = "", limit: int = 10
+    ) -> list[dict[str, Any]]:
+        if not company_id:
+            return []
+        pattern = f"%{query}%" if query else "%"
+        sql = text("""
+            SELECT a.id, a.platform, a."adId", a."creativeUrl", a.copy, a.headline, a.cta, 
+                   a."destinationUrl", a.status, a."firstSeen", a."lastSeen", c.name as "competitorName"
+            FROM competitor_ads a
+            JOIN competitors c ON c.id = a."competitorId"
+            WHERE c."companyId" = :cid
+              AND (a.copy ILIKE :pattern OR a.headline ILIKE :pattern OR c.name ILIKE :pattern)
+            ORDER BY a."createdAt" DESC
+            LIMIT :lim
+        """)
+        rows = await self._session.execute(sql, {"cid": company_id, "pattern": pattern, "lim": limit})
+        res = []
+        for r in rows:
+            m = dict(r._mapping)
+            res.append({
+                "id": m.get("id"),
+                "competitorName": m.get("competitorName") or "منافس",
+                "platform": m.get("platform") or "facebook",
+                "headline": m.get("headline") or "",
+                "copy": m.get("copy") or "",
+                "cta": m.get("cta") or "SHOP_NOW",
+                "creativeUrl": m.get("creativeUrl") or "",
+                "destinationUrl": m.get("destinationUrl") or "",
+                "status": m.get("status") or "ACTIVE",
+                "firstSeen": str(m.get("firstSeen")) if m.get("firstSeen") else None,
+                "lastSeen": str(m.get("lastSeen")) if m.get("lastSeen") else None,
+            })
+        return res
 
     async def generate_report(
         self, competitor_id: str, report_type: str = "weekly"

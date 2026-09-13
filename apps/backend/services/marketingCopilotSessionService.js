@@ -39,13 +39,19 @@ class MarketingCopilotSessionService {
             "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
             "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+      `);
 
+      await this.prisma.$executeRawUnsafe(`
         CREATE INDEX IF NOT EXISTS facebook_ads_ai_chat_sessions_companyId_updatedAt_idx
             ON public.facebook_ads_ai_chat_sessions ("companyId", "updatedAt" DESC);
+      `);
 
+      await this.prisma.$executeRawUnsafe(`
         CREATE INDEX IF NOT EXISTS facebook_ads_ai_chat_sessions_companyId_status_updatedAt_idx
             ON public.facebook_ads_ai_chat_sessions ("companyId", status, "updatedAt" DESC);
+      `);
 
+      await this.prisma.$executeRawUnsafe(`
         CREATE TABLE IF NOT EXISTS public.facebook_ads_ai_chat_messages (
             id TEXT NOT NULL PRIMARY KEY,
             "sessionId" TEXT NOT NULL,
@@ -55,10 +61,13 @@ class MarketingCopilotSessionService {
             "toolResults" JSONB,
             "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
+      `);
 
+      await this.prisma.$executeRawUnsafe(`
         CREATE INDEX IF NOT EXISTS facebook_ads_ai_chat_messages_sessionId_createdAt_idx
             ON public.facebook_ads_ai_chat_messages ("sessionId", "createdAt" ASC);
       `);
+
       _tablesEnsured = true;
     } catch (err) {
       console.warn('⚠️ [MarketingCopilotSessionService] ensureTables warning:', err.message);
