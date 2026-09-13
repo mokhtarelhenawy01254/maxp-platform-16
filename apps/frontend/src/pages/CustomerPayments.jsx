@@ -18,7 +18,18 @@ const CustomerPayments = () => {
   const [recharging, setRecharging] = useState(false);
   const [error, setError] = useState("");
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get("paymentStatus");
+    if (paymentStatus === "SUCCESS") {
+      toast.success(t("billing.payments.paymentSuccess") || "تم تأكيد عملية الدفع بنجاح وإيداع الرصيد في محفظتك");
+      window.history.replaceState({}, "", window.location.pathname);
+    } else if (paymentStatus === "FAILED") {
+      toast.error(t("billing.payments.paymentFailed") || "فشلت عملية الدفع، يرجى المحاولة مرة أخرى");
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+    fetchData();
+  }, []);
 
   const fetchData = async () => {
     try {

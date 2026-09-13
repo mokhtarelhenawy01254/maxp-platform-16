@@ -19,6 +19,9 @@ const mockPrisma = {
   },
   transaction: {
     create: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
+    updateMany: jest.fn(),
   },
 };
 
@@ -196,5 +199,128 @@ describe('Kashier Webhook Route', () => {
     expect(res.status).toBe(400);
     expect(res.body.success).toBe(false);
     expect(res.body.error).toBe('Invalid webhook payload');
+  });
+
+  test('successfully processes wallet recharge when companyId is in metaData', async () => {
+    mockPrisma.transaction.findFirst.mockResolvedValue(null);
+    mockPrisma.companyWallet.upsert.mockResolvedValue({
+      id: 'wallet-1',
+      companyId: 'comp-1234567890',
+      balance: 1000,
+      currency: 'EGP',
+    });
+    mockPrisma.transaction.create.mockResolvedValue({
+      id: 'tx-1',
+      walletId: 'wallet-1',
+      amount: 1000,
+      type: 'DEPOSIT',
+      status: 'COMPLETED',
+    });
+
+    const walletPayload = {
+      platform: 'kashier',
+      event: 'pay',
+      data: {
+        merchantOrderId: 'WLT-1789328383409',
+        kashierOrderId: 'sess-uuid-1',
+        transactionId: 'TX-4643658423',
+        status: 'SUCCESS',
+        method: 'card',
+        amount: 1000,
+        metaData: {
+          orderId: 'WLT-1789328383409',
+          companyId: 'comp-1234567890',
+          type: 'WALLET_RECHARGE',
+        },
+      },
+    };
+
+    const res = await request(app)
+      .post('/api/v1/payment/kashier/webhook')
+      .send(walletPayload);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockPrisma.companyWallet.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { companyId: 'comp-1234567890' },
+        update: expect.objectContaining({
+          balance: { increment: 1000 },
+        }),
+      })
+    );
+  });
+
+  test('successfully processes wallet recharge with WLT-<companyId>-<timestamp> format', async () => {
+    mockPrisma.transaction.findFirst.mockResolvedValue(null);
+    mockPrisma.companyWallet.upsert.mockResolvedValue({
+      id: 'wallet-2',
+      companyId: 'cmrdj4prh01ftjutbgffhu4dr',
+      balance: 500,
+      currency: 'EGP',
+    });
+    mockPrisma.transaction.create.mockResolvedValue({
+      id: 'tx-2',
+      walletId: 'wallet-2',
+      amount: 500,
+      type: 'DEPOSIT',
+      status: 'COMPLETED',
+    });
+
+    const walletPayload = {
+      platform: 'kashier',
+      event: 'pay',
+      data: {
+        merchantOrderId: 'WLT-cmrdj4prh01ftjutbgffhu4dr-1789328383409',
+        transactionId: 'TX-998877',
+        status: 'SUCCESS',
+        method: 'card',
+        amount: 500,
+      },
+    };
+
+    const res = await request(app)
+      .post('/api/v1/payment/kashier/webhook')
+      .send(walletPayload);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(mockPrisma.companyWallet.upsert).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { companyId: 'cmrdj4prh01ftjutbgffhu4dr' },
+        update: expect.objectContaining({
+          balance: { increment: 500 },
+        }),
+      })
+    );
+  });
+
+  test('skips duplicate wallet recharge when already completed', async () => {
+    mockPrisma.transaction.findFirst.mockResolvedValue({
+      id: 'tx-existing',
+      status: 'COMPLETED',
+      referenceId: 'TX-DUP-123',
+    });
+
+    const walletPayload = {
+      platform: 'kashier',
+      event: 'pay',
+      data: {
+        merchantOrderId: 'WLT-cmrdj4prh01ftjutbgffhu4dr-1789328383409',
+        transactionId: 'TX-DUP-123',
+        status: 'SUCCESS',
+        method: 'card',
+        amount: 500,
+      },
+    };
+
+    const res = await request(app)
+      .post('/api/v1/payment/kashier/webhook')
+      .send(walletPayload);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('Deposit already processed');
+    expect(mockPrisma.companyWallet.upsert).not.toHaveBeenCalled();
   });
 });

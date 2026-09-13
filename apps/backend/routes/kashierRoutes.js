@@ -235,7 +235,7 @@ router.post('/kashier/webhook', async (req, res) => {
 
     const prisma = getPrisma();
 
-    // 1. Check if this is a wallet recharge via customer reference or orderNumber
+    // 1. Check if this is a wallet recharge via customer reference, orderNumber, or metaData
     const customerRef = (
       eventData.customer?.reference ||
       rawBody.customer?.reference ||
@@ -244,35 +244,114 @@ router.post('/kashier/webhook', async (req, res) => {
       ''
     );
 
-    if (customerRef.startsWith('wallet:') || (orderNumber && orderNumber.startsWith('WLT-'))) {
-      let walletCompanyId = null;
-      let rechargeAmount = 0;
+    const isWalletRecharge = (
+      customerRef.startsWith('wallet:') ||
+      (orderNumber && orderNumber.startsWith('WLT-')) ||
+      metaData.type === 'WALLET_RECHARGE'
+    );
 
+    if (isWalletRecharge) {
+      let walletCompanyId = null;
+      let rechargeAmount = parseFloat(eventData.amount || rawBody.amount || metaData.rechargeAmount || 0);
+
+      // Strategy A: From customer.reference "wallet:<companyId>:<amount>"
       if (customerRef.startsWith('wallet:')) {
         const parts = customerRef.split(':');
         walletCompanyId = parts[1];
-        rechargeAmount = parseFloat(parts[2]);
-      } else {
-        rechargeAmount = parseFloat(eventData.amount || rawBody.amount || 0);
+        if (!rechargeAmount && parts[2]) rechargeAmount = parseFloat(parts[2]);
       }
 
-      if (paymentStatus === 'COMPLETED' && walletCompanyId && rechargeAmount > 0) {
+      // Strategy B: From metaData.companyId
+      if (!walletCompanyId && metaData.companyId) {
+        walletCompanyId = metaData.companyId;
+      }
+
+      // Strategy C: From orderNumber format "WLT-<companyId>-<timestamp>"
+      if (!walletCompanyId && orderNumber && orderNumber.startsWith('WLT-')) {
+        const orderParts = orderNumber.split('-');
+        if (orderParts.length >= 3 && orderParts[1].length >= 10) {
+          walletCompanyId = orderParts[1];
+        }
+      }
+
+      // Strategy D: Lookup pre-recorded transaction in DB by referenceId = orderNumber
+      if (!walletCompanyId && orderNumber) {
+        const pendingTx = await prisma.transaction.findFirst({
+          where: { referenceId: orderNumber, type: 'DEPOSIT' },
+          include: { wallet: true },
+        }).catch(() => null);
+
+        if (pendingTx && pendingTx.wallet?.companyId) {
+          walletCompanyId = pendingTx.wallet.companyId;
+          if (!rechargeAmount) rechargeAmount = Number(pendingTx.amount);
+        }
+      }
+
+      if (!walletCompanyId) {
+        console.error(`[KASHIER-WEBHOOK] CRITICAL: Wallet recharge received for order ${orderNumber} but companyId could not be identified. Raw payload:`, JSON.stringify(rawBody));
+        return res.status(400).json({ success: false, error: 'Cannot identify company for wallet recharge' });
+      }
+
+      if (paymentStatus === 'COMPLETED' && rechargeAmount > 0) {
+        // Idempotency check: prevent duplicate credits
+        const existingCompleted = await prisma.transaction.findFirst({
+          where: {
+            wallet: { companyId: walletCompanyId },
+            type: 'DEPOSIT',
+            status: 'COMPLETED',
+            OR: [
+              ...(transactionId ? [{ referenceId: transactionId }] : []),
+              ...(orderNumber ? [{ referenceId: orderNumber }] : []),
+            ],
+          },
+        }).catch(() => null);
+
+        if (existingCompleted) {
+          console.log(`[KASHIER-WEBHOOK] Deposit already credited for reference ${transactionId || orderNumber}, skipping duplicate.`);
+          return res.json({ success: true, message: 'Deposit already processed' });
+        }
+
         const companyWallet = await prisma.companyWallet.upsert({
           where: { companyId: walletCompanyId },
-          update: { balance: { increment: rechargeAmount } },
-          create: { companyId: walletCompanyId, balance: rechargeAmount, currency: 'EGP' },
-        });
-
-        await prisma.transaction.create({
-          data: {
-            walletId: companyWallet.id,
-            type: 'DEPOSIT',
-            amount: rechargeAmount,
-            status: 'COMPLETED',
-            description: `شحن المحفظة عبر كاشير: ${rechargeAmount} جنيه`,
-            referenceId: transactionId || sessionId || orderNumber,
+          update: {
+            balance: { increment: rechargeAmount },
+            totalDeposited: { increment: rechargeAmount },
+          },
+          create: {
+            companyId: walletCompanyId,
+            balance: rechargeAmount,
+            currency: 'EGP',
+            totalDeposited: rechargeAmount,
           },
         });
+
+        // Update pre-existing pending transaction if one exists, otherwise create new
+        const pendingTx = orderNumber ? await prisma.transaction.findFirst({
+          where: { walletId: companyWallet.id, referenceId: orderNumber, status: 'PENDING' },
+        }).catch(() => null) : null;
+
+        if (pendingTx) {
+          await prisma.transaction.update({
+            where: { id: pendingTx.id },
+            data: {
+              status: 'COMPLETED',
+              amount: rechargeAmount,
+              description: `شحن المحفظة عبر كاشير: ${rechargeAmount} جنيه`,
+              referenceId: transactionId || orderNumber,
+            },
+          });
+        } else {
+          await prisma.transaction.create({
+            data: {
+              walletId: companyWallet.id,
+              type: 'DEPOSIT',
+              amount: rechargeAmount,
+              status: 'COMPLETED',
+              description: `شحن المحفظة عبر كاشير: ${rechargeAmount} جنيه`,
+              referenceId: transactionId || sessionId || orderNumber,
+            },
+          });
+        }
 
         // 🚀 تحصيل رسوم الاستخدام المؤجلة تلقائياً بعد شحن الرصيد
         try {
@@ -285,7 +364,12 @@ router.post('/kashier/webhook', async (req, res) => {
           console.error('⚠️ [KASHIER-WEBHOOK] Error processing pending charges:', pendingError.message);
         }
 
-        console.log(`[KASHIER-WEBHOOK] Wallet recharge completed for company ${walletCompanyId}: ${rechargeAmount} EGP`);
+        console.log(`[KASHIER-WEBHOOK] Wallet recharge completed for company ${walletCompanyId}: ${rechargeAmount} EGP (Ref: ${transactionId || orderNumber})`);
+      } else if (paymentStatus === 'FAILED' && orderNumber) {
+        await prisma.transaction.updateMany({
+          where: { referenceId: orderNumber, status: 'PENDING' },
+          data: { status: 'FAILED' },
+        }).catch(() => {});
       }
 
       return res.json({ success: true, message: 'Wallet recharge processed' });

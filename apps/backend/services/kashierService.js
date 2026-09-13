@@ -195,7 +195,15 @@ class KashierService {
         reference: customer?.reference || orderId,
       },
       description: description || `Payment for order ${orderId}`,
-      metaData: { orderId },
+      metaData: {
+        orderId,
+        ...(customer?.reference?.startsWith('wallet:') ? {
+          type: 'WALLET_RECHARGE',
+          companyId: customer.reference.split(':')[1],
+          rechargeAmount: customer.reference.split(':')[2],
+        } : {}),
+        ...(overrideConfig?.metaData || {}),
+      },
       interactionSource: 'ECOMMERCE',
     };
 

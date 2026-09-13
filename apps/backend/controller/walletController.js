@@ -854,9 +854,30 @@ class WalletController {
       }
 
       const baseDomain = process.env.MAIN_DOMAIN || 'maxp.online';
-      const orderNumber = `WLT-${Date.now()}`;
+      const orderNumber = `WLT-${companyId}-${Date.now()}`;
       const redirectUrl = `https://${baseDomain}/payments`;
       const webhookUrl = `https://${baseDomain}/api/v1/payment/kashier/webhook`;
+
+      const prisma = require('../services/sharedDatabase').getSharedPrismaClient();
+
+      // Ensure company wallet exists
+      const companyWallet = await prisma.companyWallet.upsert({
+        where: { companyId },
+        update: {},
+        create: { companyId, balance: 0, currency: 'EGP' },
+      });
+
+      // Pre-create PENDING transaction for immediate tracking and audit
+      await prisma.transaction.create({
+        data: {
+          walletId: companyWallet.id,
+          type: 'DEPOSIT',
+          amount: parseFloat(amount),
+          status: 'PENDING',
+          description: `شحن المحفظة عبر كاشير (قيد المعالجة): ${amount} جنيه`,
+          referenceId: orderNumber,
+        },
+      });
 
       const KashierService = require('../services/kashierService');
       const session = await KashierService.createPaymentSession(
@@ -870,9 +891,20 @@ class WalletController {
           description: `شحن المحفظة: ${amount} جنيه`,
         },
         null,
+        {
+          metaData: {
+            orderId: orderNumber,
+            type: 'WALLET_RECHARGE',
+            companyId,
+            rechargeAmount: String(amount),
+          },
+        }
       );
 
       if (!session.success) {
+        await prisma.transaction.deleteMany({
+          where: { referenceId: orderNumber, status: 'PENDING' },
+        }).catch(() => {});
         return res.status(502).json({ success: false, message: 'فشل إنشاء جلسة الدفع' });
       }
 
