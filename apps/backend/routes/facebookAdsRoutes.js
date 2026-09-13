@@ -227,12 +227,17 @@ router.post('/ads/:adId/sync-insights', facebookAdsController.syncAdInsights);
 
 // GET /api/v1/facebook-ads/ad-accounts - جلب Ad Accounts من Facebook
 router.get('/ad-accounts', facebookAdsController.getAdAccounts);
+router.get('/accounts', facebookAdsController.getAdAccounts); // Convenient alias
+
+// GET /api/v1/facebook-ads/instagram-accounts - جلب حسابات Instagram
+router.get('/instagram-accounts', facebookAdsController.getInstagramAccounts);
 
 // GET /api/v1/facebook-ads/saved-ad-accounts - جلب Ad Accounts المحفوظة
 router.get('/saved-ad-accounts', facebookAdsController.getSavedAdAccounts);
 
 // POST /api/v1/facebook-ads/ad-accounts/save - حفظ Ad Account
 router.post('/ad-accounts/save', facebookAdsController.saveAdAccount);
+router.post('/accounts/save', facebookAdsController.saveAdAccount); // Convenient alias
 
 /**
  * ============================================

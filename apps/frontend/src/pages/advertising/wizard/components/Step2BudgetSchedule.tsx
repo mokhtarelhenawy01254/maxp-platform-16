@@ -599,11 +599,14 @@ export const Step2BudgetSchedule: React.FC<Step2BudgetScheduleProps> = ({
           {getError("budgetAmount") && (
             <p className="mt-1 text-sm text-red-500">{getError("budgetAmount")}</p>
           )}
-          <p className="mt-1 text-xs text-gray-500">
-            سيتم إرسال الميزانية بعملة الحساب الإعلاني المختار:{" "}
-            {selectedAdAccountCurrency}. الحد الأدنى الحالي{" "}
-            {formatSelectedAdAccountCurrency(minimumWizardBudget)}.
-          </p>
+          <div className="mt-1.5 flex items-center gap-1.5 text-xs text-slate-500">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-medium bg-blue-50 text-blue-700 border border-blue-200">
+              الحد الأدنى لميتا: {formatSelectedAdAccountCurrency(minimumWizardBudget)}
+            </span>
+            <span>
+              (عملة الحساب الإعلاني: {selectedAdAccountCurrency} - يجب ألا تقل الميزانية اليومية عن هذا الحد لضمان قبول الحملة على فيسبوك)
+            </span>
+          </div>
         </div>
       </div>
 

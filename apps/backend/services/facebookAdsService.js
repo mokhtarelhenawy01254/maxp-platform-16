@@ -2849,6 +2849,48 @@ class FacebookAdsService {
   }
 
   /**
+   * جلب حسابات إنستغرام المرتبطة بـ Ad Account
+   */
+  async getInstagramAccounts(adAccountId = null) {
+    try {
+      const accountId = adAccountId || this.adAccountId;
+      if (!accountId) {
+        throw new Error("Ad Account ID is required");
+      }
+      const normalizedAccountId = accountId.startsWith("act_")
+        ? accountId
+        : `act_${accountId}`;
+
+      const response = await axios.get(
+        `${this.baseUrl}/${normalizedAccountId}/instagram_accounts`,
+        {
+          params: {
+            access_token: this.accessToken,
+            fields: "id,username,profile_pic,name",
+            limit: 50,
+          },
+          timeout: 15000,
+        },
+      );
+
+      return {
+        success: true,
+        data: response.data?.data || [],
+      };
+    } catch (error) {
+      console.error(
+        "❌ Error getting Instagram accounts:",
+        error.response?.data || error.message,
+      );
+      return {
+        success: false,
+        error: error.response?.data?.error?.message || error.message,
+        data: [],
+      };
+    }
+  }
+
+  /**
    * جلب Ad Accounts المتاحة
    */
   async getAdAccounts() {
@@ -2925,6 +2967,54 @@ class FacebookAdsService {
       return {
         success: false,
         error: error.response?.data || error.message
+      };
+    }
+  }
+
+  /**
+   * جلب بيانات حساب إعلاني محدد مباشرة من Meta
+   */
+  async getAdAccount(adAccountId) {
+    try {
+      if (!adAccountId) {
+        throw new Error('Ad Account ID is required');
+      }
+      const normalizedAccountId = adAccountId.startsWith('act_')
+        ? adAccountId
+        : `act_${adAccountId}`;
+
+      const fields = [
+        'id',
+        'name',
+        'account_id',
+        'account_status',
+        'currency',
+        'timezone_name',
+        'amount_spent',
+        'balance',
+        'spend_cap'
+      ].join(',');
+
+      const response = await axios.get(
+        `${this.baseUrl}/${normalizedAccountId}`,
+        {
+          params: {
+            access_token: this.accessToken,
+            fields
+          },
+          timeout: 15000
+        }
+      );
+
+      return {
+        success: true,
+        data: response.data
+      };
+    } catch (error) {
+      console.error('❌ Error getting single Ad Account from Meta:', error.response?.data || error.message);
+      return {
+        success: false,
+        error: error.response?.data?.error?.message || error.message
       };
     }
   }

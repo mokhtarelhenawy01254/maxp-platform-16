@@ -816,10 +816,10 @@ app.use("/api/v1/platform-partners", platformPartnerRoutes);
 // Admin / Dashboard Features
 app.use("/api/v1/dashboard", dashboardRoutes);
 app.use("/api/v1/company-dashboard", companyDashboardRoutes);
-app.use("/api/v1/company", companyDashboardRoutes);
 app.use("/api/v1/analytics", analyticsRoutes);
 app.use("/api/v1/analytics/order-movement", require("./routes/orderMovementRoutes"));
 app.use("/api/v1/storefront-settings", storefrontSettingsRoutes);
+app.use("/api/v1/storefront/settings", storefrontSettingsRoutes); // Convenient alias
 app.use("/api/v1/checkout-form-settings", checkoutFormSettingsRoutes);
 app.use("/api/v1/footer-settings", footerSettingsRoutes);
 

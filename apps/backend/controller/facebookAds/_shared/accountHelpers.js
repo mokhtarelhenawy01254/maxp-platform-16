@@ -311,13 +311,22 @@ async function hydrateRemoteAdAccount(companyId, accessToken, adAccountId = null
       return null;
     }
 
-    const remoteAccount = adAccountId
+    let remoteAccount = adAccountId
       ? remoteAccountsResult.data.find((account) =>
           doesAdAccountMatch(account, adAccountId),
         )
       : remoteAccountsResult.data.length === 1
         ? remoteAccountsResult.data[0]
         : null;
+
+    // Fallback: If adAccountId is specified but not returned in /me/adaccounts list
+    // (e.g. pagination or permissions restriction), query Meta directly for this specific ad account
+    if (!remoteAccount && adAccountId) {
+      const singleAccountResult = await adsService.getAdAccount(adAccountId);
+      if (singleAccountResult.success && singleAccountResult.data) {
+        remoteAccount = singleAccountResult.data;
+      }
+    }
 
     if (!remoteAccount) {
       return null;

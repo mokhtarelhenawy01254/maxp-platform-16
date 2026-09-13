@@ -469,6 +469,20 @@ async function validateFullAdStorefrontPixelReadiness({ companyId, pixelId, data
     return null;
   }
 
+  // If the destination URL is an external website/landing page (not hosted on MaxP storefront domain),
+  // we do not block publishing on storefrontSettings coupling as long as pixel exists in ad account.
+  if (data?.linkUrl) {
+    try {
+      const parsedUrl = new URL(String(data.linkUrl).trim());
+      const isStorefrontHost = isAllowedProductLaunchHost(parsedUrl.hostname);
+      if (!isStorefrontHost) {
+        return null;
+      }
+    } catch {
+      // Ignore URL parse errors here; linkUrl format is validated elsewhere
+    }
+  }
+
   const storefrontSettings = await getSharedPrismaClient().storefrontSettings.findUnique({
     where: { companyId },
     select: {

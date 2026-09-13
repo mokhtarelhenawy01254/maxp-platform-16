@@ -580,9 +580,43 @@ const disconnectAdsConnectionSource = async (req, res) => {
 };
 
 /**
- * POST /api/v1/facebook-ads/upload-image
- * رفع صورة إلى Facebook
+ * GET /api/v1/facebook-ads/instagram-accounts
+ * جلب حسابات Instagram المرتبطة بالحساب الإعلاني
  */
+const getInstagramAccounts = async (req, res) => {
+  try {
+    const companyId = req.user?.companyId;
+    if (!companyId) {
+      return res.status(400).json({ success: false, error: "Company ID is required" });
+    }
+
+    const accessToken = await getCompanyAdsAccessToken(companyId);
+    if (!accessToken) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const requestedAdAccountId = req.query?.adAccountId;
+    const adAccount = await getOrCreateAdAccount(companyId, accessToken, requestedAdAccountId);
+    if (!adAccount) {
+      return res.json({ success: true, data: [] });
+    }
+
+    const adsService = new FacebookAdsService(accessToken, adAccount.accountId);
+    const result = await adsService.getInstagramAccounts();
+
+    res.json({
+      success: true,
+      data: result.data || [],
+    });
+  } catch (error) {
+    console.error("❌ Error in getInstagramAccounts controller:", error);
+    res.json({
+      success: true,
+      data: [],
+      error: error.message,
+    });
+  }
+};
 
 module.exports = {
   getAdAccounts,
@@ -590,4 +624,5 @@ module.exports = {
   getSavedAdAccounts,
   getAdsConnectionStatus,
   disconnectAdsConnectionSource,
+  getInstagramAccounts,
 };
