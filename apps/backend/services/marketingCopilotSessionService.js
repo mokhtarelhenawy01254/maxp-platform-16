@@ -348,6 +348,52 @@ class MarketingCopilotSessionService {
       console.warn('⚠️ [MarketingCopilotSessionService] updateContext error:', err.message);
     }
   }
+
+  /**
+   * Hermes-Grade Session Rewind: Rolls back the last turn (user + assistant) from database.
+   */
+  async rewindSession(companyId, sessionId) {
+    if (!companyId || !sessionId) throw new Error('companyId and sessionId are required');
+    await this.ensureTables();
+
+    try {
+      const lastMessages = await this.prisma.$queryRawUnsafe(`
+        SELECT id, role, content FROM public.facebook_ads_ai_chat_messages
+        WHERE "sessionId" = $1
+        ORDER BY "createdAt" DESC
+        LIMIT 2
+      `, sessionId);
+
+      if (!lastMessages || lastMessages.length === 0) {
+        return { success: false, message: 'لا توجد رسائل سابقة للتراجع عنها في هذه الجلسة' };
+      }
+
+      for (const m of lastMessages) {
+        await this.prisma.$executeRawUnsafe(`
+          DELETE FROM public.facebook_ads_ai_chat_messages
+          WHERE id = $1
+        `, m.id);
+      }
+
+      await this.prisma.$executeRawUnsafe(`
+        UPDATE public.facebook_ads_ai_chat_sessions
+        SET "updatedAt" = CURRENT_TIMESTAMP
+        WHERE id = $1 AND "companyId" = $2
+      `, sessionId, companyId);
+
+      const updated = await this.getSession(companyId, sessionId);
+      return {
+        success: true,
+        undoneCount: lastMessages.length,
+        undoneMessages: lastMessages,
+        session: updated,
+        message: 'تم التراجع عن آخر خطوة بنجاح واستعادة حالة المحادثة السابقة ↩️',
+      };
+    } catch (err) {
+      console.error('❌ [MarketingCopilotSessionService] rewindSession error:', err);
+      throw err;
+    }
+  }
 }
 
 module.exports = new MarketingCopilotSessionService();

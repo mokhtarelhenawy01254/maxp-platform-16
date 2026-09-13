@@ -100,6 +100,8 @@ roles:
     - audit_read
     - generate_social_image
     - session_search
+    - delegate_task
+    - manage_todo
 
   MEDIA_BUYER:
     - product_search
@@ -116,6 +118,9 @@ roles:
     - company_snapshot
     - audit_read
     - generate_social_image
+    - session_search
+    - delegate_task
+    - manage_todo
 
   FACEBOOK_SALES_SUPPORT:
     - product_search

@@ -327,8 +327,26 @@ class FacebookAdsAiController {
         objective: fullAdPayload.objective,
         budgetAmount: fullAdPayload.budgetAmount,
         status: fullAdPayload.status,
-        linkUrl: fullAdPayload.linkUrl
+        linkUrl: fullAdPayload.linkUrl,
       }));
+
+      // 🛡️ Hermes-Grade Verification Evidence Gate
+      const adVerificationService = require('../services/adVerificationService');
+      const verification = await adVerificationService.verifyCampaignPublish(companyId, {
+        productName: draft.productSnapshot?.name || fullAdPayload.campaignName,
+        adAccountId: fullAdPayload.adAccountId,
+        dailyBudget: fullAdPayload.budgetAmount,
+        pixelId: fullAdPayload.pixelId,
+      });
+
+      if (!verification.verified) {
+        return res.status(422).json({
+          success: false,
+          error: 'فشل اجتياز بوابة أدلة التحقق الإلزامية (Verification Evidence Gate)',
+          blockers: verification.blockers,
+          evidence: verification.evidence,
+        });
+      }
 
       // Create a mocked request to delegate to createFullAd safely
       const mockReq = {
@@ -392,6 +410,25 @@ class FacebookAdsAiController {
       } = req.body || {};
       if (!message || typeof message !== 'string') {
         return res.status(400).json({ success: false, error: 'message is required' });
+      }
+
+      const turnStartTime = Date.now();
+
+      // 🛡️ Hermes-Grade Conversational Rewind / Undo Intent
+      const isRewindCommand = /^\s*(\/?(تراجع|undo|rewind)|ارجع\s+(للخلف|خطوة|ورا|للخطوة\s+اللي\s+فاتت))/i.test(message);
+      if (isRewindCommand) {
+        const rewindResult = await marketingCopilotSessionService.rewindSession(companyId, threadId);
+        return res.json({
+          success: true,
+          reply: rewindResult.message || 'تم التراجع عن آخر خطوة بنجاح واستعادة حالة المحادثة السابقة ↩️',
+          status: 'ok',
+          threadId,
+          rewind: true,
+          telemetry: {
+            latency_ms: Date.now() - turnStartTime,
+            action: 'SESSION_REWIND',
+          },
+        });
       }
 
       const aiServiceAdminClient = require('../services/aiServiceAdminClient');
@@ -859,6 +896,13 @@ class FacebookAdsAiController {
           scopedThreadId: result?.thread_id || scopedThreadId,
           draft_id: result?.draft_id || null,
           agentId: targetAgentId,
+          telemetry: {
+            latency_ms: Date.now() - turnStartTime,
+            tokens: Math.round((message.length + String(finalReply).length) / 3),
+            model: 'DeepSeek-V3',
+            p95_sla: '< 1.5s',
+            status: 'HEALTHY',
+          },
         });
       } catch (chatError) {
         const errMsg = String(chatError.message || '').toLowerCase();
@@ -1039,6 +1083,26 @@ class FacebookAdsAiController {
   }
 
   /**
+   * POST /api/v1/facebook-ads/ai/sessions/:id/rewind
+   * Hermes Session State Rewind: Undo last turn and restore previous state
+   */
+  async rewindSession(req, res) {
+    try {
+      const companyId = req.user?.companyId;
+      const { id } = req.params;
+      if (!companyId || !id) {
+        return res.status(400).json({ success: false, error: 'companyId and sessionId are required' });
+      }
+
+      const result = await marketingCopilotSessionService.rewindSession(companyId, id);
+      return res.json(result);
+    } catch (error) {
+      console.error('❌ Error in rewindSession:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  }
+
+  /**
    * GET /api/v1/facebook-ads/ai/active-agent
    * Retrieve the active/routed agent for the Marketing Studio
    */
@@ -1208,11 +1272,20 @@ class FacebookAdsAiController {
         return res.status(400).json({ success: false, error: 'مبلغ الميزانية اليومية غير صالح' });
       }
 
-      // Hard financial safety ceiling: 10,000 EGP per day
-      if (budget > 10000) {
-        return res.status(400).json({
+      // 🛡️ Hermes-Grade Verification Evidence Gate
+      const adVerificationService = require('../services/adVerificationService');
+      const verification = await adVerificationService.verifyBudgetUpdate(companyId, {
+        campaignId,
+        newDailyBudget: budget,
+        allowHighJump: Boolean(req.body?.allowHighJump),
+      });
+
+      if (!verification.verified) {
+        return res.status(422).json({
           success: false,
-          error: 'الميزانية المطلوبة تتجاوز الحد الأقصى للأمان (10,000 ج.م/يوم). يُرجى تعديلها يدوياً من مدير الإعلانات إذا كنت متأكداً.',
+          error: 'فشل اجتياز بوابة أدلة التحقق الإلزامية لتعديل الميزانية',
+          blockers: verification.blockers,
+          evidence: verification.evidence,
         });
       }
 

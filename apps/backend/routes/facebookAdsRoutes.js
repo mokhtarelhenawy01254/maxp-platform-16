@@ -565,6 +565,8 @@ router.get('/ai/sessions/:id', (req, res) => facebookAdsAiController.getSession(
 router.post('/ai/sessions', (req, res) => facebookAdsAiController.saveSession(req, res));
 // DELETE /api/v1/facebook-ads/ai/sessions/:id - حذف جلسة من السحابة
 router.delete('/ai/sessions/:id', (req, res) => facebookAdsAiController.deleteSession(req, res));
+// POST /api/v1/facebook-ads/ai/sessions/:id/rewind - التراجع الحواري خطوة للخلف
+router.post('/ai/sessions/:id/rewind', (req, res) => facebookAdsAiController.rewindSession(req, res));
 
 module.exports = router;
 
