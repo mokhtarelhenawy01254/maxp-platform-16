@@ -9,7 +9,7 @@ from typing import Annotated, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import case, func, select, text
+from sqlalchemy import case, func, or_, select, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -338,7 +338,7 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
     _company_display_name: str = (_company_name_rec["name"] if _company_name_rec else None) or body.company_id
     _business_specialty: str = (_company_name_rec["specialty_en"] if _company_name_rec else None) or ""
 
-    # Try Python-managed agents table first
+    # Try Python-managed agents table first (by exact ID)
     result = await session.execute(
         select(AgentModel).where(
             AgentModel.id == body.agent_id,
@@ -347,6 +347,20 @@ async def _load_chat_agent(body: AgentChatRequest, session: AsyncSession) -> Bas
         )
     )
     db_agent = result.scalar_one_or_none()
+
+    # 2026 Resilient Fallback: If agent_id was passed as a template_slug or role name
+    if not db_agent and body.agent_id:
+        result = await session.execute(
+            select(AgentModel).where(
+                or_(
+                    AgentModel.template_slug == body.agent_id,
+                    AgentModel.role == body.agent_id.upper(),
+                ),
+                AgentModel.company_id == body.company_id,
+                AgentModel.status != "ARCHIVED",
+            ).order_by(AgentModel.created_at.desc())
+        )
+        db_agent = result.scalars().first()
     request_config = dict(body.agent_config or {})
     raw_config = _agent_config_from_record(db_agent) if db_agent else {}
     # Inject company display name + business specialty into persona
