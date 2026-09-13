@@ -80,6 +80,59 @@ const META_WRITE_UNCERTAIN_ERROR_CODES = new Set([
   'UND_ERR_BODY_TIMEOUT'
 ]);
 
+const EGYPT_GOVERNORATE_KEYS = {
+  // Cairo (القاهرة)
+  'cairo': '1173', 'القاهرة': '1173', 'قاهرة': '1173', '1173': '1173',
+  // Giza (الجيزة)
+  'giza': '1174', 'الجيزة': '1174', 'جيزة': '1174', '1174': '1174',
+  // Alexandria (الإسكندرية)
+  'alexandria': '1170', 'الإسكندرية': '1170', 'الاسكندرية': '1170', 'اسكندرية': '1170', 'إسكندرية': '1170', '1170': '1170',
+  // Dakahlia (الدقهلية / المنصورة)
+  'dakahlia': '1172', 'الدقهلية': '1172', 'دقهلية': '1172', 'المنصورة': '1172', '1172': '1172',
+  // Sharqia (الشرقية / الزقازيق)
+  'sharqia': '1185', 'الشرقية': '1185', 'شرقية': '1185', 'الزقازيق': '1185', '1185': '1185',
+  // Gharbia (الغربية / طنطا / المحلة)
+  'gharbia': '1175', 'الغربية': '1175', 'غربية': '1175', 'طنطا': '1175', 'المحلة': '1175', '1175': '1175',
+  // Monufia (المنوفية / شبين الكوم)
+  'monufia': '1182', 'menofia': '1182', 'المنوفية': '1182', 'منوفية': '1182', '1182': '1182',
+  // Kafr El Sheikh (كفر الشيخ)
+  'kafr el sheikh': '1180', 'kafr el-sheikh': '1180', 'كفر الشيخ': '1180', 'كفرالشيخ': '1180', '1180': '1180',
+  // Beheira (البحيرة / دمنهور)
+  'beheira': '1171', 'البحيرة': '1171', 'بحيرة': '1171', 'دمنهور': '1171', '1171': '1171',
+  // Damietta (دمياط)
+  'damietta': '1176', 'دمياط': '1176', '1176': '1176',
+  // Port Said (بورسعيد)
+  'port said': '1184', 'بورسعيد': '1184', 'بور سعيد': '1184', '1184': '1184',
+  // Ismailia (الإسماعيلية)
+  'ismailia': '1177', 'الإسماعيلية': '1177', 'الاسماعيلية': '1177', 'اسماعيلية': '1177', '1177': '1177',
+  // Qalyubia (القليوبية / بنها)
+  'qalyubia': '1183', 'القليوبية': '1183', 'قليوبية': '1183', 'بنها': '1183', 'شبرا الخيمة': '1183', '1183': '1183',
+  // Suez (السويس)
+  'suez': '1188', 'السويس': '1188', 'سويس': '1188', '1188': '1188',
+  // Asyut (أسيوط)
+  'asyut': '1169', 'أسيوط': '1169', 'اسيوط': '1169', '1169': '1169',
+  // Sohag (سوهاج)
+  'sohag': '1186', 'سوهاج': '1186', '1186': '1186',
+  // Qena (قنا)
+  'qena': '1187', 'قنا': '1187', '1187': '1187',
+  // Aswan (أسوان)
+  'aswan': '1168', 'أسوان': '1168', 'اسوان': '1168', '1168': '1168',
+  // Luxor (الأقصر)
+  'luxor': '1181', 'الأقصر': '1181', 'الاقصر': '1181', 'اقصر': '1181', '1181': '1181',
+  // Red Sea (البحر الأحمر)
+  'red sea': '1178', 'البحر الأحمر': '1178', 'البحر الاحمر': '1178', 'الغردقة': '1178', '1178': '1178',
+  // Matrouh (مطروح)
+  'matrouh': '1179', 'مطروح': '1179', 'مرسى مطروح': '1179', '1179': '1179',
+  // Beni Suef (بني سويف)
+  'beni suef': '1167', 'بني سويف': '1167', '1167': '1167',
+  // Minya (المنيا)
+  'minya': '1189', 'المنيا': '1189', 'منيا': '1189', '1189': '1189',
+  // Faiyum (الفيوم)
+  'faiyum': '1174', 'fayoum': '1174', 'الفيوم': '1174', 'فيوم': '1174',
+};
+
+const DELTA_GOVERNORATE_KEYS = ['1172', '1185', '1175', '1182', '1180', '1171', '1176', '1184', '1177', '1183'];
+
 function extractMetaErrorMessage(error) {
   const errObj = error?.response?.data?.error || error?.response?.data;
   if (!errObj) return error?.message || 'Unknown Meta API error';
@@ -1046,8 +1099,26 @@ class FacebookAdsService {
   }
 
   normalizeGeoRegion(region) {
-    const key = typeof region === 'object' ? region?.key : region;
-    return key ? { key: String(key) } : null;
+    if (!region) return null;
+    const rawVal = typeof region === 'object' ? (region.key || region.name || '') : String(region);
+    const clean = String(rawVal).trim().toLowerCase();
+
+    // Expand Delta governorates bundle
+    if (clean === 'الدلتا' || clean === 'محافظات الدلتا' || clean === 'delta' || clean.includes('دلتا')) {
+      return DELTA_GOVERNORATE_KEYS.map((k) => ({ key: k }));
+    }
+
+    const mappedKey = EGYPT_GOVERNORATE_KEYS[clean] || EGYPT_GOVERNORATE_KEYS[String(rawVal).trim()];
+    if (mappedKey) {
+      return { key: mappedKey };
+    }
+
+    // If it's already numeric (official Meta region key)
+    if (/^\d+$/.test(clean)) {
+      return { key: clean };
+    }
+
+    return { key: String(rawVal) };
   }
 
   normalizeGeoCity(city) {
@@ -1095,9 +1166,17 @@ class FacebookAdsService {
     const cities = Array.isArray(targeting.cities)
       ? targeting.cities.map((city) => this.normalizeGeoCity(city)).filter(Boolean)
       : [];
-    const regions = Array.isArray(targeting.regions)
-      ? targeting.regions.map((region) => this.normalizeGeoRegion(region)).filter(Boolean)
+    const rawRegions = Array.isArray(targeting.regions)
+      ? targeting.regions.flatMap((region) => this.normalizeGeoRegion(region)).filter(Boolean)
       : [];
+    const seenRegionKeys = new Set();
+    const regions = [];
+    for (const r of rawRegions) {
+      if (r && r.key && !seenRegionKeys.has(r.key)) {
+        seenRegionKeys.add(r.key);
+        regions.push(r);
+      }
+    }
     const hasLocalGeoTargets = cities.length > 0 || regions.length > 0;
 
     // Meta rejects overlapping geo targets, so countries are only sent when
@@ -1773,6 +1852,22 @@ class FacebookAdsService {
         status = 'PAUSED'
       } = data;
 
+      // 🛡️ Hermes-Grade Defensive Auto-Hydration: Prevent Blank Targeting ({})
+      const effectiveTargeting = {
+        ...(targeting || {}),
+        ageMin: (targeting && (targeting.ageMin || targeting.age_min)) || data.ageMin || data.age_min,
+        ageMax: (targeting && (targeting.ageMax || targeting.age_max)) || data.ageMax || data.age_max,
+        genders: (targeting && targeting.genders) || (
+          data.genders === 'WOMEN' ? ['female'] :
+          data.genders === 'MEN' ? ['male'] :
+          Array.isArray(data.genders) ? data.genders : undefined
+        ),
+        cities: (targeting && targeting.cities && targeting.cities.length > 0) ? targeting.cities : (data.cities || data.targetCities || []),
+        regions: (targeting && targeting.regions && targeting.regions.length > 0) ? targeting.regions : (data.regions || data.targetRegions || []),
+        interests: (targeting && targeting.interests && targeting.interests.length > 0) ? targeting.interests : (data.interests || data.targetInterests || []),
+        countries: (targeting && (targeting.countries || targeting.locations)) || (data.country ? [data.country] : (data.targetCountry ? [data.targetCountry] : ['EG'])),
+      };
+
       const results = {
         campaign: null,
         adSet: null,
@@ -2021,7 +2116,7 @@ class FacebookAdsService {
       const adSetData = {
         name: adSetName || `${campaignName} - AdSet`,
         status,
-        targeting,
+        targeting: effectiveTargeting,
         optimizationGoal,
         billingEvent,
         placementType,

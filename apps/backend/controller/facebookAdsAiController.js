@@ -1305,9 +1305,34 @@ class FacebookAdsAiController {
         });
       }
 
+      // Cascade status to child adsets and ads on Meta when activating
+      if (targetStatus === 'ACTIVE') {
+        const axios = require('axios');
+        try {
+          const adsetsRes = await axios.get(`${adsService.baseUrl}/${targetCampaignId}/adsets`, {
+            params: { access_token: accessToken, fields: 'id,status', limit: 25 }
+          });
+          for (const as of (adsetsRes.data?.data || [])) {
+            if (as.status === 'PAUSED') {
+              await axios.post(`${adsService.baseUrl}/${as.id}`, { status: 'ACTIVE' }, { params: { access_token: accessToken } });
+            }
+          }
+          const adsRes = await axios.get(`${adsService.baseUrl}/${targetCampaignId}/ads`, {
+            params: { access_token: accessToken, fields: 'id,status', limit: 50 }
+          });
+          for (const a of (adsRes.data?.data || [])) {
+            if (a.status === 'PAUSED') {
+              await axios.post(`${adsService.baseUrl}/${a.id}`, { status: 'ACTIVE' }, { params: { access_token: accessToken } });
+            }
+          }
+        } catch (cascadeErr) {
+          console.warn('⚠️ Could not cascade ACTIVE status to child adsets/ads:', cascadeErr.message);
+        }
+      }
+
       // Sync status back to local DB if found
       try {
-        await prisma.facebookCampaign.updateMany({
+        const matchingCamps = await prisma.facebookCampaign.findMany({
           where: {
             OR: [
               { id: campaignId },
@@ -1315,8 +1340,21 @@ class FacebookAdsAiController {
             ],
             companyId
           },
-          data: { status: targetStatus }
+          select: { id: true }
         });
+        const campIds = matchingCamps.map(c => c.id);
+        if (campIds.length > 0) {
+          await prisma.facebookCampaign.updateMany({
+            where: { id: { in: campIds } },
+            data: { status: targetStatus }
+          });
+          if (prisma.facebookAdset) {
+            await prisma.facebookAdset.updateMany({
+              where: { campaignId: { in: campIds } },
+              data: { status: targetStatus }
+            });
+          }
+        }
       } catch (_) {}
 
       return res.json({

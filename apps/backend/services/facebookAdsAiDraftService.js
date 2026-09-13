@@ -90,6 +90,18 @@ class FacebookAdsAiDraftService {
               ageMin: Number(angle.ageMin || angle.age_min || ageMin) || 18,
               ageMax: Number(angle.ageMax || angle.age_max || ageMax) || 45,
               genders: angle.targetGenders || angle.target_genders || targetGenders || 'ALL',
+              targetCities: angle.targetCities || angle.target_cities || [],
+              targetRegions: angle.targetRegions || angle.target_regions || [],
+              targetInterests: angle.targetInterests || angle.target_interests || [],
+              targeting: {
+                ageMin: Number(angle.ageMin || angle.age_min || ageMin) || 18,
+                ageMax: Number(angle.ageMax || angle.age_max || ageMax) || 45,
+                genders: (angle.targetGenders || angle.target_genders || targetGenders) === 'WOMEN' ? ['female'] : ((angle.targetGenders || angle.target_genders || targetGenders) === 'MEN' ? ['male'] : []),
+                cities: angle.targetCities || angle.target_cities || [],
+                regions: angle.targetRegions || angle.target_regions || [],
+                interests: angle.targetInterests || angle.target_interests || [],
+                countries: [angle.targetCountry || angle.target_country || targetCountry || 'EG'],
+              },
               adName: angle.adName || angle.ad_name || `AI Ad - ${angle.headline || 'Creative'}`,
               primaryText: angle.primaryText || angle.primary_text || '',
               headline: angle.headline || '',
@@ -212,6 +224,29 @@ class FacebookAdsAiDraftService {
       } catch (_) {}
     }
 
+    const resolvedCountry = overrides.country || draft.targetCountry || rawData.country || 'EG';
+    const resolvedAgeMin = Number(overrides.ageMin || draft.ageMin || rawData.ageMin || rawData.targeting?.ageMin) || 18;
+    const resolvedAgeMax = Number(overrides.ageMax || draft.ageMax || rawData.ageMax || rawData.targeting?.ageMax) || 45;
+    const resolvedGenders = overrides.genders || rawData.targeting?.genders || (
+      (overrides.targetGenders || draft.targetGenders || rawData.genders || rawData.targetGenders) === 'WOMEN' ? ['female'] :
+      (overrides.targetGenders || draft.targetGenders || rawData.genders || rawData.targetGenders) === 'MEN' ? ['male'] : []
+    );
+    const resolvedCities = overrides.cities || rawData.targetCities || rawData.targeting?.cities || [];
+    const resolvedRegions = overrides.regions || rawData.targetRegions || rawData.targeting?.regions || [];
+    const resolvedInterests = overrides.interests || rawData.targetInterests || rawData.targeting?.interests || [];
+
+    const targeting = {
+      ...(rawData.targeting || {}),
+      ...(overrides.targeting || {}),
+      ageMin: resolvedAgeMin,
+      ageMax: resolvedAgeMax,
+      genders: resolvedGenders,
+      cities: resolvedCities,
+      regions: resolvedRegions,
+      interests: resolvedInterests,
+      countries: [resolvedCountry],
+    };
+
     const payload = {
       ...rawData,
       ...overrides,
@@ -225,7 +260,14 @@ class FacebookAdsAiDraftService {
       budget: budgetVal,
       budgetAmount: budgetVal,
       budgetType: overrides.budgetType || rawData.budgetType || 'DAILY',
-      country: overrides.country || draft.targetCountry || rawData.country || 'EG',
+      country: resolvedCountry,
+      ageMin: resolvedAgeMin,
+      ageMax: resolvedAgeMax,
+      genders: resolvedGenders,
+      cities: resolvedCities,
+      regions: resolvedRegions,
+      interests: resolvedInterests,
+      targeting,
       callToAction: overrides.callToAction || draft.callToAction || rawData.callToAction || 'SHOP_NOW',
       status: overrides.status || 'PAUSED', // default PAUSED for safety
       linkUrl: destUrl,

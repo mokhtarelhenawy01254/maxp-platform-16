@@ -81,6 +81,9 @@ class AdAngleDraft(BaseModel):
     notes: str | None = Field(default=None, description="Strategy rationale or key selling points")
     placement_type: str | None = Field(default="AUTOMATIC", description="AUTOMATIC or MANUAL placements")
     placements: list[str] | None = Field(default=None, description="List of placements if MANUAL (e.g. ['FACEBOOK_FEED', 'INSTAGRAM_FEED', 'FACEBOOK_REELS', 'INSTAGRAM_REELS'])")
+    target_cities: list[str] | None = Field(default=None, description="List of target city names (e.g. ['Cairo', 'Alexandria', 'Giza'])")
+    target_regions: list[str] | None = Field(default=None, description="List of target governorates / regions in Egypt or country (e.g. ['القاهرة', 'الجيزة', 'الإسكندرية', 'الدلتا'])")
+    target_interests: list[str] | None = Field(default=None, description="List of detailed targeting interests if specified")
 
 
 class FacebookAdCreateFullDraftInput(BaseModel):
@@ -492,6 +495,18 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "ageMin": angle.age_min,
                 "ageMax": angle.age_max,
                 "genders": angle.target_genders or "ALL",
+                "targetCities": getattr(angle, "target_cities", None) or [],
+                "targetRegions": getattr(angle, "target_regions", None) or [],
+                "targetInterests": getattr(angle, "target_interests", None) or [],
+                "targeting": {
+                    "ageMin": angle.age_min,
+                    "ageMax": angle.age_max,
+                    "genders": ["female"] if (angle.target_genders or "").upper() == "WOMEN" else (["male"] if (angle.target_genders or "").upper() == "MEN" else []),
+                    "cities": getattr(angle, "target_cities", None) or [],
+                    "regions": getattr(angle, "target_regions", None) or [],
+                    "interests": getattr(angle, "target_interests", None) or [],
+                    "countries": [angle.target_country] if angle.target_country else ["EG"],
+                },
                 "adName": angle.ad_name,
                 "primaryText": angle.primary_text,
                 "headline": angle.headline,
