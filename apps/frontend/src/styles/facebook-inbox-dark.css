@@ -319,24 +319,91 @@
 
 /* ── Message Bubbles in Dark Mode ── */
 /* Customer Incoming Message */
-.dark .business-chat-stage div[style*="var(--business-message-incoming-bg)"] {
+.dark .business-message-bubble--incoming,
+.dark .business-chat-stage div[style*="var(--business-message-incoming-bg)"],
+.dark [data-theme="business-os-enterprise"] .business-message-bubble--incoming {
   background: rgba(255, 255, 255, 0.08) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  color: #f1f5f9 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+}
+
+.dark .business-message-bubble--incoming p,
+.dark .business-chat-stage div[style*="var(--business-message-incoming-bg)"] p,
+.dark [data-theme="business-os-enterprise"] .business-message-bubble--incoming p {
   color: #f1f5f9 !important;
 }
 
+.dark .business-message-bubble--incoming span,
+.dark .business-message-bubble--incoming .text-\[10px\],
+.dark .business-chat-stage div[style*="var(--business-message-incoming-bg)"] span {
+  color: rgba(255, 255, 255, 0.65) !important;
+}
+
 /* Agent Outgoing Message */
+.dark .business-message-bubble--outgoing,
+.dark .business-chat-stage div[style*="var(--color-primary)"],
 .dark .business-chat-stage div[style*="linear-gradient(135deg, var(--color-primary)"] {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 4px 16px rgba(37, 99, 235, 0.3) !important;
+}
+
+.dark .business-message-bubble--outgoing p,
+.dark .business-message-bubble--outgoing span {
+  color: #ffffff !important;
 }
 
 /* Message Bubble Action Buttons */
 .dark .business-bubble-action-btn,
+.dark .business-msg-actions,
 .dark .business-chat-stage button[style*="color-mix(in srgb, var(--color-primary) 6%, white)"] {
-  background: rgba(15, 23, 42, 0.9) !important;
+  background: rgba(15, 23, 42, 0.92) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+}
+
+/* Profile cards (Orders & Conversation History in Customer Profile) */
+.dark .business-profile-item-card {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.dark .business-profile-item-card:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.dark .business-profile-item-card p,
+.dark .business-profile-item-card span {
+  color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.dark .business-profile-item-card .text-xs.font-medium,
+.dark .business-profile-item-card .text-xs.font-semibold {
+  color: #ffffff !important;
+}
+
+/* Date/Time Separator Pill */
+.dark .business-time-separator {
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+}
+
+/* Platforms & Quick Actions Dropdowns in Dark Mode */
+.dark .inbox-platform-dropdown {
+  background: rgba(15, 23, 42, 0.97) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.55) !important;
+  backdrop-filter: blur(24px) !important;
+}
+
+.dark .inbox-dropdown-item {
+  color: #e2e8f0 !important;
+}
+
+.dark .inbox-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
   color: #ffffff !important;
 }
 

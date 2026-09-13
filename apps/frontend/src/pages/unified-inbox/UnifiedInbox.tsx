@@ -30,7 +30,8 @@ import { Activity, ShoppingBag as ShoppingBagLucide, User as UserLucide } from "
 import { apiClient } from "../../services/apiClient";
 import { socketService } from "../../services/socketService";
 import { useTranslation } from "react-i18next";
-import EmojiPicker from "emoji-picker-react";
+import EmojiPicker, { Theme as EmojiTheme } from "emoji-picker-react";
+import { useTheme } from "../../hooks/useTheme";
 
 import QuickOrderModal from "../../components/facebook-inbox/Modals/QuickOrderModal";
 import TextGalleryModal from "../../components/facebook-inbox/TextGallery/TextGalleryModal";
@@ -167,6 +168,8 @@ const UnifiedInbox: React.FC = () => {
   // ponytail: react-i18next v12 returns DefaultTFuncReturn, cast to string for aria-label/props
   const t = rawT as ((key: string, opts?: any) => string);
   const isRtl = i18n.dir() === "rtl";
+  const { actualTheme, derivedTheme } = useTheme();
+  const isDarkMode = derivedTheme === "dark" || actualTheme === "dark";
 
   // State
   const [conversations, setConversations] = useState<UnifiedConversation[]>([]);
@@ -1149,7 +1152,7 @@ const UnifiedInbox: React.FC = () => {
 
   return (
     <>
-      <div className="flex flex-col h-full w-full bg-white" dir={isRtl ? "rtl" : "ltr"}>
+      <div className="flex flex-col h-full w-full bg-background" dir={isRtl ? "rtl" : "ltr"} style={{ background: "var(--color-background)" }}>
         {/* 1. Global Header */}
       <div className="unified-inbox-header px-5 pt-4 pb-3 border-b shrink-0" style={{ borderColor: 'var(--business-muted-line)', background: 'var(--business-surface-panel)' }}>
         <h1 className="text-[22px] font-bold mb-1" style={{ color: 'var(--color-foreground)' }}>{t("unifiedInbox.pageTitle", "البريد الوارد")}</h1>
@@ -1237,7 +1240,7 @@ const UnifiedInbox: React.FC = () => {
       {/* 3. Content Area */}
       <div className="flex-1 overflow-hidden relative flex flex-col">
         {isCommentsActive ? (
-          <div className="absolute inset-0 overflow-hidden bg-slate-50 p-2">
+          <div className="absolute inset-0 overflow-hidden bg-slate-50 dark:bg-slate-900 p-2">
             {/* ponytail: PostsManagement.jsx infers defaultPlatform as null from its default value */}
             <PostsManagement embedded defaultPlatform={(activeTab === 'fb-comments' ? 'facebook' : 'instagram') as any} />
           </div>
@@ -1801,10 +1804,11 @@ const UnifiedInbox: React.FC = () => {
                           {showTimeSeparator && (
                             <div className="flex items-center justify-center my-4">
                               <div
-                                className="text-[11px] px-3 py-1 rounded-full"
+                                className="business-time-separator text-[11px] px-3 py-1 rounded-full"
                                 style={{
                                   background:
-                                    "color-mix(in srgb, var(--color-border) 40%, white)",
+                                    "color-mix(in srgb, var(--color-foreground) 6%, var(--color-background))",
+                                  border: "1px solid var(--business-card-border)",
                                   color: "var(--color-muted-foreground)",
                                 }}
                               >
@@ -1879,14 +1883,18 @@ const UnifiedInbox: React.FC = () => {
                             )}
 
                             <div
-                              className="max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm"
+                              className={`max-w-[75%] rounded-2xl px-4 py-2.5 shadow-sm business-message-bubble ${
+                                msg.isFromCustomer
+                                  ? "business-message-bubble--incoming"
+                                  : "business-message-bubble--outgoing"
+                              }`}
                               style={
                                 msg.isFromCustomer
                                   ? {
                                       background:
-                                        "linear-gradient(180deg, color-mix(in srgb, white 90%, var(--color-background) 10%) 0%, color-mix(in srgb, white 78%, var(--color-background) 22%) 100%)",
+                                        "var(--business-message-incoming-bg)",
                                       border:
-                                        "1px solid var(--business-card-border)",
+                                        "1px solid var(--business-message-incoming-border)",
                                       borderTopRightRadius: "0.5rem",
                                     }
                                   : {
@@ -2265,6 +2273,7 @@ const UnifiedInbox: React.FC = () => {
                     }}
                   >
                     <EmojiPicker
+                      theme={isDarkMode ? EmojiTheme.DARK : EmojiTheme.LIGHT}
                       onEmojiClick={(emojiData: any) => {
                         setNewMessage((prev: string) => prev + emojiData.emoji);
                         setShowEmojiPicker(false);
@@ -2437,7 +2446,7 @@ const UnifiedInbox: React.FC = () => {
                   className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-3xl"
                   style={{
                     background:
-                      "color-mix(in srgb, var(--color-primary) 10%, white)",
+                      "color-mix(in srgb, var(--color-primary) 14%, var(--color-background))",
                   }}
                 >
                   <ChatBubbleLeftRightIcon
@@ -2504,10 +2513,10 @@ const UnifiedInbox: React.FC = () => {
                 {selectedConversation.contactAvatar ? (
                   <img
                     src={selectedConversation.contactAvatar}
-                    className="w-20 h-20 rounded-full object-cover border-4"
+                    className="w-20 h-20 rounded-full object-cover border-2"
                     style={{
                       borderColor:
-                        "color-mix(in srgb, white 76%, var(--color-background) 24%)",
+                        "color-mix(in srgb, var(--color-primary) 30%, var(--color-background))",
                     }}
                     alt=""
                     width={80}
@@ -2515,10 +2524,10 @@ const UnifiedInbox: React.FC = () => {
                   />
                 ) : (
                   <div
-                    className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold border-4"
+                    className="w-20 h-20 rounded-full flex items-center justify-center text-white text-2xl font-bold border-2"
                     style={{
                       borderColor:
-                        "color-mix(in srgb, white 76%, var(--color-background) 24%)",
+                        "color-mix(in srgb, var(--color-primary) 30%, var(--color-background))",
                       background: "var(--color-primary)",
                     }}
                   >
@@ -2630,7 +2639,7 @@ const UnifiedInbox: React.FC = () => {
                   <div
                     className="grid grid-cols-2 overflow-hidden rounded-[20px] border bg-transparent text-center w-full"
                     style={{
-                      borderColor: "var(--business-muted-line, #b6c6e3)",
+                      borderColor: "var(--business-muted-line, var(--business-card-border))",
                     }}
                   >
                     <div className="flex-1 py-3 text-center">
@@ -2646,7 +2655,7 @@ const UnifiedInbox: React.FC = () => {
                     </div>
                     <div
                       className="flex-1 py-3 text-center"
-                      style={{ borderInlineStart: "1px solid var(--business-muted-line, #b6c6e3)" }}
+                      style={{ borderInlineStart: "1px solid var(--business-muted-line, var(--business-card-border))" }}
                     >
                       <p className="mb-1 text-xs font-bold" style={{ color: "var(--color-muted-foreground)" }}>
                         {t("unifiedInbox.customer.ltv", { defaultValue: "القيمة" })}
@@ -2700,7 +2709,7 @@ const UnifiedInbox: React.FC = () => {
                       {/* Contact Info */}
                       <div
                         className="p-4 border rounded-[20px] bg-transparent"
-                        style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                        style={{ borderColor: "var(--business-muted-line, var(--business-card-border))" }}
                       >
                         <h4
                           className="mb-3 text-sm font-bold text-end"
@@ -2760,7 +2769,7 @@ const UnifiedInbox: React.FC = () => {
                       {customerProfile.tags?.length > 0 && (
                         <div
                           className="p-4 border rounded-[20px] bg-transparent"
-                          style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                          style={{ borderColor: "var(--business-muted-line, var(--business-card-border))" }}
                         >
                           <h4
                             className="mb-3 text-sm font-bold text-end"
@@ -2775,8 +2784,9 @@ const UnifiedInbox: React.FC = () => {
                                 className="text-xs px-2 py-0.5 rounded-full"
                                 style={{
                                   background:
-                                    "color-mix(in srgb, var(--color-primary) 10%, white)",
+                                    "color-mix(in srgb, var(--color-primary) 14%, var(--color-background))",
                                   color: "var(--color-primary)",
+                                  border: "1px solid color-mix(in srgb, var(--color-primary) 24%, transparent)",
                                 }}
                               >
                                 {tag}
@@ -2789,7 +2799,7 @@ const UnifiedInbox: React.FC = () => {
                       {/* Notes */}
                       <div 
                         className="p-4 border rounded-[20px] bg-transparent"
-                        style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                        style={{ borderColor: "var(--business-muted-line, var(--business-card-border))" }}
                       >
                         <div className="flex items-center justify-between mb-3">
                           <button
@@ -2845,7 +2855,7 @@ const UnifiedInbox: React.FC = () => {
                       {customerProfile?.recentOrders?.length > 0 && (
                         <div
                           className="p-4 border rounded-[20px] bg-transparent"
-                          style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                          style={{ borderColor: "var(--business-muted-line, var(--business-card-border))" }}
                         >
                           <h4
                             className={`text-xs font-semibold uppercase tracking-wider mb-3 ${isRtl ? "text-right" : "text-left"}`}
@@ -2866,10 +2876,11 @@ const UnifiedInbox: React.FC = () => {
                                     "_blank",
                                   )
                                 }
-                                className="w-full flex items-center justify-between rounded-lg p-2.5 hover:opacity-80 transition-opacity cursor-pointer text-left"
+                                className="business-profile-item-card w-full flex items-center justify-between rounded-lg p-2.5 hover:opacity-80 transition-opacity cursor-pointer text-left"
                                 style={{
                                   background:
-                                    "color-mix(in srgb, white 72%, var(--color-background) 28%)",
+                                    "color-mix(in srgb, var(--color-foreground) 5%, var(--color-background))",
+                                  border: "1px solid var(--business-card-border)",
                                 }}
                                 title={t("unifiedInbox.viewOrder")}
                               >
@@ -2963,7 +2974,7 @@ const UnifiedInbox: React.FC = () => {
                       {customerProfile.recentConversations?.length > 0 && (
                         <div 
                           className="p-4 border rounded-[20px] bg-transparent"
-                          style={{ borderColor: "var(--business-muted-line, #b6c6e3)" }}
+                          style={{ borderColor: "var(--business-muted-line, var(--business-card-border))" }}
                         >
                           <h4
                             className="mb-3 text-sm font-bold text-end"
@@ -2975,10 +2986,11 @@ const UnifiedInbox: React.FC = () => {
                             {customerProfile.recentConversations.map((c) => (
                               <div
                                 key={c.id}
-                                className="rounded-lg p-2.5"
+                                className="business-profile-item-card rounded-lg p-2.5"
                                 style={{
                                   background:
-                                    "color-mix(in srgb, white 72%, var(--color-background) 28%)",
+                                    "color-mix(in srgb, var(--color-foreground) 5%, var(--color-background))",
+                                  border: "1px solid var(--business-card-border)",
                                 }}
                               >
                                 <div className="flex items-center justify-between mb-1">
