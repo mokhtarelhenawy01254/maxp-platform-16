@@ -333,4 +333,103 @@ describe("ProductImageLandingPage", () => {
     expect(screen.getByRole("heading", { name: "اطلب Swan Sneaker الآن" })).toBeInTheDocument();
     expect(screen.getByText("جلد صناعي نخب أول")).toBeInTheDocument();
   });
+
+  it("renders alternative section variants (WHATSAPP, DUAL_CARDS, CHECKLIST, OFFICIAL_SEAL)", async () => {
+    storefrontApiMocks.getProductLandingPreview.mockResolvedValueOnce({
+      data: {
+        landing: {
+          id: "landing-variants",
+          companyId: "company-1",
+          productId: "prod-1",
+          slug: "swan-variants",
+          title: "Swan Variants",
+          status: "DRAFT",
+          generationMode: "IMAGE_STACK",
+          generationStatus: "READY_TO_REVIEW",
+          slices: [],
+          sections: [
+            {
+              id: "sec-breakdown-chk",
+              type: "BREAKDOWN",
+              variant: "CHECKLIST",
+              title: "فحص الجودة والمواصفات",
+              enabled: true,
+              content: {
+                breakdownTitle: "معايير الجودة والمطابقة",
+                breakdownItems: [
+                  { title: "نعل طبي ماص للصدمات", desc: "مرونة كاملة لراحة القدم", tag: "طبي" },
+                ],
+              },
+            },
+            {
+              id: "sec-comp-dual",
+              type: "COMPARISON",
+              variant: "DUAL_CARDS",
+              title: "المقارنة الثنائية",
+              enabled: true,
+              content: {
+                comparisonTitle: "مقارنة ثنائية واضحة",
+                comparisonUsLabel: "منتجنا الأصلي",
+                comparisonThemLabel: "المنتج المقلد",
+                comparisonItems: [
+                  { feature: "الخامة", us: "جلد نخب أول", them: "بلاستيك رديء" },
+                ],
+              },
+            },
+            {
+              id: "sec-feat-seal",
+              type: "FEATURES",
+              variant: "OFFICIAL_SEAL",
+              title: "الضمان المعتمد",
+              enabled: true,
+              content: {},
+            },
+            {
+              id: "sec-rev-wa",
+              type: "REVIEWS",
+              variant: "WHATSAPP",
+              title: "آراء واتساب",
+              enabled: true,
+              content: {
+                reviews: [
+                  { name: "أميرة من القاهرة", text: "الكوتشي خرافة ومريح جداً في المشي", rating: 5 },
+                ],
+              },
+            },
+            {
+              id: "sec-form",
+              type: "FORM",
+              title: "طلب سريع",
+              enabled: true,
+              content: {
+                orderTitle: "اطلب الآن",
+                buttonLabel: "تأكيد الطلب",
+              },
+            },
+          ],
+          formConfig: {
+            orderTitle: "اطلب الآن",
+            buttonLabel: "تأكيد الطلب",
+          },
+        },
+        product: baseProduct,
+        company: {
+          id: "company-1",
+          name: "Swan",
+          currency: "EGP",
+        },
+      },
+    });
+
+    renderLanding("/store/lp/swan-variants?companyId=company-1&preview=1");
+
+    expect((await screen.findAllByText("معايير الجودة والمطابقة"))[0]).toBeInTheDocument();
+    expect(screen.getByText("مقارنة ثنائية واضحة")).toBeInTheDocument();
+    expect(screen.getByText("منتجنا الأصلي ✓")).toBeInTheDocument();
+    expect(screen.getByText("احذر من التقليد ✕")).toBeInTheDocument();
+    expect(screen.getByText("وثيقة الضمان الذهبية المعتمدة")).toBeInTheDocument();
+    expect(screen.getByText("محادثات ورسائل العملاء على واتساب")).toBeInTheDocument();
+    expect(screen.getByText("الكوتشي خرافة ومريح جداً في المشي")).toBeInTheDocument();
+    expect(screen.getByText("مشتري مؤكد ✓")).toBeInTheDocument();
+  });
 });

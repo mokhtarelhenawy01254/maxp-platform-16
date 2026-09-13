@@ -1117,33 +1117,51 @@ const ProductImageLandingPage: React.FC = () => {
       ];
       const title =
         content.breakdownTitle || `تشريح ومواصفات تصنيع ${activeProduct.name}`;
+      const isChecklist = section.variant === "CHECKLIST";
 
       return (
         <section
           key={section.id || idx}
-          className="pil-breakdown-section"
+          className={`pil-breakdown-section ${isChecklist ? "is-checklist-mode" : ""}`}
           aria-label="مواصفات التصنيع"
         >
           <div className="pil-section-heading">
-            <span>الهندسة وجودة التصنيع</span>
+            <span>{isChecklist ? "معايير الجودة والمطابقة" : "الهندسة وجودة التصنيع"}</span>
             <h2>{title}</h2>
           </div>
-          <div className="pil-breakdown-grid">
-            {items.map((item: any, bIdx: number) => (
-              <div key={bIdx} className="pil-breakdown-card">
-                <div className="pil-breakdown-top">
-                  <span className="pil-breakdown-icon">
-                    {item.icon || "✨"}
-                  </span>
-                  {item.tag && (
-                    <span className="pil-breakdown-tag">{item.tag}</span>
-                  )}
+          {isChecklist ? (
+            <div className="pil-checklist-container">
+              {items.map((item: any, bIdx: number) => (
+                <div key={bIdx} className="pil-checklist-item">
+                  <div className="pil-checklist-check">✓</div>
+                  <div className="pil-checklist-content">
+                    <div className="pil-checklist-top">
+                      <strong>{item.title}</strong>
+                      {item.tag && <span className="pil-checklist-tag">{item.tag}</span>}
+                    </div>
+                    <p>{item.desc}</p>
+                  </div>
                 </div>
-                <h3 className="pil-breakdown-card-title">{item.title}</h3>
-                <p className="pil-breakdown-card-desc">{item.desc}</p>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="pil-breakdown-grid">
+              {items.map((item: any, bIdx: number) => (
+                <div key={bIdx} className="pil-breakdown-card">
+                  <div className="pil-breakdown-top">
+                    <span className="pil-breakdown-icon">
+                      {item.icon || "✨"}
+                    </span>
+                    {item.tag && (
+                      <span className="pil-breakdown-tag">{item.tag}</span>
+                    )}
+                  </div>
+                  <h3 className="pil-breakdown-card-title">{item.title}</h3>
+                  <p className="pil-breakdown-card-desc">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       );
     }
@@ -1178,46 +1196,83 @@ const ProductImageLandingPage: React.FC = () => {
           them: "لا يوجد أي ضمان أو استرجاع بعد البيع",
         },
       ];
+      const isDualCards = section.variant === "DUAL_CARDS";
 
       return (
         <section
           key={section.id || idx}
-          className="pil-comparison-section"
-          aria-label="جدول المقارنة"
+          className={`pil-comparison-section ${isDualCards ? "is-dual-cards-mode" : ""}`}
+          aria-label="مقارنة التميز"
         >
           <div className="pil-section-heading">
-            <span>مقارنة التميز</span>
+            <span>{isDualCards ? "المقارنة الثنائية المباشرة" : "مقارنة التميز"}</span>
             <h2>{title}</h2>
           </div>
-          <div className="pil-comparison-card">
-            <div className="pil-comparison-header">
-              <div className="pil-comp-col pil-comp-feat">وجه المقارنة</div>
-              <div className="pil-comp-col pil-comp-us">
-                <span className="pil-comp-badge">الأصلي</span>
-                <strong>{usLabel}</strong>
+
+          {isDualCards ? (
+            <div className="pil-dual-cards-grid">
+              <div className="pil-dual-card pil-dual-us">
+                <div className="pil-dual-badge">منتجنا الأصلي ✓</div>
+                <h3>{usLabel}</h3>
+                <ul className="pil-dual-list">
+                  {items.map((row: any, rIdx: number) => (
+                    <li key={rIdx}>
+                      <span className="pil-dual-icon pil-icon-check">✓</span>
+                      <div>
+                        <strong>{row.feature}:</strong>
+                        <span>{row.us}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
-              <div className="pil-comp-col pil-comp-them">
-                <strong>{themLabel}</strong>
+              <div className="pil-dual-card pil-dual-them">
+                <div className="pil-dual-badge pil-dual-warning">احذر من التقليد ✕</div>
+                <h3>{themLabel}</h3>
+                <ul className="pil-dual-list">
+                  {items.map((row: any, rIdx: number) => (
+                    <li key={rIdx}>
+                      <span className="pil-dual-icon pil-icon-cross">✕</span>
+                      <div>
+                        <strong>{row.feature}:</strong>
+                        <span>{row.them}</span>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
-            <div className="pil-comparison-body">
-              {items.map((row: any, rIdx: number) => (
-                <div key={rIdx} className="pil-comparison-row">
-                  <div className="pil-comp-col pil-comp-feat">
-                    <strong>{row.feature}</strong>
-                  </div>
-                  <div className="pil-comp-col pil-comp-us">
-                    <span className="pil-comp-check">✓</span>
-                    <span>{row.us}</span>
-                  </div>
-                  <div className="pil-comp-col pil-comp-them">
-                    <span className="pil-comp-cross">✕</span>
-                    <span>{row.them}</span>
-                  </div>
+          ) : (
+            <div className="pil-comparison-card">
+              <div className="pil-comparison-header">
+                <div className="pil-comp-col pil-comp-feat">وجه المقارنة</div>
+                <div className="pil-comp-col pil-comp-us">
+                  <span className="pil-comp-badge">الأصلي</span>
+                  <strong>{usLabel}</strong>
                 </div>
-              ))}
+                <div className="pil-comp-col pil-comp-them">
+                  <strong>{themLabel}</strong>
+                </div>
+              </div>
+              <div className="pil-comparison-body">
+                {items.map((row: any, rIdx: number) => (
+                  <div key={rIdx} className="pil-comparison-row">
+                    <div className="pil-comp-col pil-comp-feat">
+                      <strong>{row.feature}</strong>
+                    </div>
+                    <div className="pil-comp-col pil-comp-us">
+                      <span className="pil-comp-check">✓</span>
+                      <span>{row.us}</span>
+                    </div>
+                    <div className="pil-comp-col pil-comp-them">
+                      <span className="pil-comp-cross">✕</span>
+                      <span>{row.them}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
         </section>
       );
     }
@@ -1317,6 +1372,40 @@ const ProductImageLandingPage: React.FC = () => {
     }
 
     if (type === "FEATURES") {
+      const isOfficialSeal = section.variant === "OFFICIAL_SEAL";
+
+      if (isOfficialSeal) {
+        return (
+          <section
+            key={section.id || idx}
+            className="pil-official-seal-section"
+            aria-label="وثيقة الضمان والمعاينة"
+          >
+            <div className="pil-seal-card">
+              <div className="pil-seal-stamp">
+                <div className="pil-seal-stamp-inner">
+                  <span>ضمان</span>
+                  <strong>100%</strong>
+                  <span>معتمد</span>
+                </div>
+              </div>
+              <div className="pil-seal-details">
+                <span className="pil-seal-kicker">وثيقة الضمان الذهبية المعتمدة</span>
+                <h3>حق الفحص الكامل واسترجاع الأموال</h3>
+                <p>
+                  نلتزم بمنحك حق فتح الشحنة ومعاينة المنتج وتجربته قبل سداد أي مبلغ للمندوب، مع ضمان استبدال فوري أو استرجاع كامل خلال 14 يوماً من الاستلام.
+                </p>
+                <div className="pil-seal-pills">
+                  <span>✓ شحن مؤمّن وسريع</span>
+                  <span>✓ فحص ومعاينة قبل الدفع</span>
+                  <span>✓ استبدال فوري بدون مصاريف</span>
+                </div>
+              </div>
+            </div>
+          </section>
+        );
+      }
+
       return (
         <section
           key={section.id || idx}
@@ -1677,6 +1766,49 @@ const ProductImageLandingPage: React.FC = () => {
       const reviews =
         content.reviews || reviewsSection?.content?.reviews || [];
       if (!reviews.length) return null;
+
+      const isWhatsApp = section.variant === "WHATSAPP";
+
+      if (isWhatsApp) {
+        return (
+          <section
+            key={section.id || idx}
+            className="pil-whatsapp-section"
+            aria-label="آراء وتجارب العملاء على واتساب"
+          >
+            <div className="pil-section-heading">
+              <span>تجارب حقيقية موثقة</span>
+              <h2>محادثات ورسائل العملاء على واتساب</h2>
+            </div>
+            <div className="pil-wa-container">
+              <div className="pil-wa-header">
+                <div className="pil-wa-avatar">💬</div>
+                <div className="pil-wa-info">
+                  <strong>فريق خدمة عملاء المتجر</strong>
+                  <span>متصل الآن (محادثات استلام حقيقية)</span>
+                </div>
+              </div>
+              <div className="pil-wa-chat">
+                {reviews.map((rev: any, rIdx: number) => (
+                  <div key={rIdx} className="pil-wa-bubble">
+                    <div className="pil-wa-bubble-head">
+                      <strong>{rev.name}</strong>
+                      <span className="pil-wa-buyer-tag">مشتري مؤكد ✓</span>
+                    </div>
+                    <p className="pil-wa-text">{rev.comment || rev.text}</p>
+                    <div className="pil-wa-meta">
+                      <span className="pil-wa-time">
+                        {10 + (rIdx % 12)}:{15 + ((rIdx * 7) % 45)} م
+                      </span>
+                      <span className="pil-wa-checks">✓✓</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      }
 
       return (
         <section

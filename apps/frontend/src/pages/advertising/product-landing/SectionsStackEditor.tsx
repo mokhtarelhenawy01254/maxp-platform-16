@@ -1,6 +1,6 @@
 import React from "react";
 import { ArrowDown, ArrowUp, ChevronDown, Trash2 } from "lucide-react";
-import { LandingSection, ProductLandingProduct } from "./types";
+import { LandingSection, ProductLandingProduct, SECTION_VARIANTS_MAP } from "./types";
 import { SectionItemEditor } from "./SectionItemEditor";
 
 interface SectionsStackEditorProps {
@@ -13,6 +13,7 @@ interface SectionsStackEditorProps {
     id: string,
     updatedContent: LandingSection["content"],
   ) => void;
+  onUpdateSectionVariant?: (id: string, variant: string) => void;
   product?: ProductLandingProduct | null;
 }
 
@@ -23,6 +24,7 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
   onMoveSection,
   onRemoveSection,
   onUpdateSectionContent,
+  onUpdateSectionVariant,
   product,
 }) => {
   return (
@@ -34,6 +36,7 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
       ) : (
         sections.map((section, idx) => {
           const isActive = activeSectionId === section.id;
+          const variants = SECTION_VARIANTS_MAP[section.type];
 
           return (
             <div
@@ -49,6 +52,31 @@ export const SectionsStackEditor: React.FC<SectionsStackEditorProps> = ({
                   <strong>{section.title}</strong>
                   <span className="eo-sec-type">{section.type}</span>
                 </div>
+
+                {variants && variants.length > 1 && onUpdateSectionVariant && (
+                  <div
+                    className="eo-variant-switcher-bar"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="eo-variant-label">النمط:</span>
+                    <div className="eo-variant-pills">
+                      {variants.map((v) => {
+                        const isSelected = (section.variant || variants[0].id) === v.id;
+                        return (
+                          <button
+                            key={v.id}
+                            type="button"
+                            className={`eo-variant-pill ${isSelected ? "is-selected" : ""}`}
+                            onClick={() => onUpdateSectionVariant(section.id, v.id)}
+                            title={v.desc}
+                          >
+                            {v.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div
                   className="eo-sec-controls"

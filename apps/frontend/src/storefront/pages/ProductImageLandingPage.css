@@ -1191,3 +1191,386 @@
   letter-spacing: 1px;
 }
 
+/* ==========================================================================
+   2026 Section Variants: WHATSAPP, DUAL_CARDS, CHECKLIST, OFFICIAL_SEAL
+   ========================================================================== */
+
+/* 1. WHATSAPP REVIEWS VARIANT */
+.pil-whatsapp-section {
+  max-width: 760px;
+  margin: 36px auto;
+  padding: 0 16px;
+}
+
+.pil-wa-container {
+  background: #efeae2;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  border: 1px solid #d1d7db;
+}
+
+.pil-wa-header {
+  background: #075e54;
+  color: #ffffff;
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pil-wa-avatar {
+  font-size: 1.4rem;
+  width: 38px;
+  height: 38px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pil-wa-info strong {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+}
+
+.pil-wa-info span {
+  font-size: 0.75rem;
+  opacity: 0.85;
+}
+
+.pil-wa-chat {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pil-wa-bubble {
+  background: #ffffff;
+  border-radius: 10px 10px 0 10px;
+  padding: 10px 14px;
+  max-width: 88%;
+  align-self: flex-start;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+  position: relative;
+}
+
+.pil-wa-bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pil-wa-bubble-head strong {
+  font-size: 0.88rem;
+  color: #128c7e;
+  font-weight: 800;
+}
+
+.pil-wa-buyer-tag {
+  font-size: 0.7rem;
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-weight: 700;
+}
+
+.pil-wa-text {
+  font-size: 0.9rem;
+  color: #111b21;
+  line-height: 1.5;
+  margin: 0 0 6px;
+}
+
+.pil-wa-meta {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: #667781;
+}
+
+.pil-wa-checks {
+  color: #53bdeb;
+  font-weight: 900;
+}
+
+/* 2. DUAL COMPARISON CARDS VARIANT */
+.pil-dual-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+@media (min-width: 640px) {
+  .pil-dual-cards-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.pil-dual-card {
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.pil-dual-us {
+  background: #f0fdf4;
+  border: 2px solid #10b981;
+  box-shadow: 0 4px 16px rgba(16, 185, 129, 0.1);
+}
+
+.pil-dual-them {
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  opacity: 0.9;
+}
+
+.pil-dual-badge {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 0.75rem;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #059669;
+  color: #ffffff;
+  margin-bottom: 12px;
+}
+
+.pil-dual-warning {
+  background: #64748b;
+  color: #ffffff;
+}
+
+.pil-dual-card h3 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0 0 16px;
+  color: #0f172a;
+}
+
+.pil-dual-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pil-dual-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.pil-dual-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.pil-icon-check {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.pil-icon-cross {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* 3. CHECKLIST BREAKDOWN VARIANT */
+.pil-checklist-container {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pil-checklist-item {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.pil-checklist-check {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #2563eb;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.pil-checklist-content {
+  flex: 1;
+}
+
+.pil-checklist-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.pil-checklist-top strong {
+  font-size: 0.95rem;
+  color: #0f172a;
+}
+
+.pil-checklist-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: #eff6ff;
+  color: #2563eb;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.pil-checklist-content p {
+  font-size: 0.84rem;
+  color: #64748b;
+  margin: 0;
+  line-height: 1.45;
+}
+
+/* 4. OFFICIAL SEAL GUARANTEE VARIANT */
+.pil-official-seal-section {
+  max-width: 760px;
+  margin: 32px auto;
+  padding: 0 16px;
+}
+
+.pil-seal-card {
+  background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);
+  border: 2px solid #fde68a;
+  border-radius: 18px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.08);
+}
+
+@media (min-width: 640px) {
+  .pil-seal-card {
+    flex-direction: row;
+    text-align: right;
+  }
+}
+
+.pil-seal-stamp {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 3px dashed #d97706;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.pil-seal-stamp-inner {
+  width: 100%;
+  height: 100%;
+  background: #f59e0b;
+  color: #ffffff;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.pil-seal-stamp-inner strong {
+  font-size: 1.1rem;
+}
+
+.pil-seal-details {
+  flex: 1;
+}
+
+.pil-seal-kicker {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #b45309;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pil-seal-details h3 {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #78350f;
+  margin: 4px 0 8px;
+}
+
+.pil-seal-details p {
+  font-size: 0.86rem;
+  color: #92400e;
+  line-height: 1.55;
+  margin: 0 0 12px;
+}
+
+.pil-seal-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+@media (min-width: 640px) {
+  .pil-seal-pills {
+    justify-content: flex-start;
+  }
+}
+
+.pil-seal-pills span {
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: #fef3c7;
+  color: #92400e;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #fde68a;
+}
+
+

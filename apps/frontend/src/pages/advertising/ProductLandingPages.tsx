@@ -312,6 +312,16 @@ const ProductLandingPages: React.FC = () => {
     setIsDirty(true);
   };
 
+  const handleUpdateSectionVariant = (id: string, variant: string) => {
+    setEditor((current) => ({
+      ...current,
+      sections: current.sections.map((sec) =>
+        sec.id === id ? { ...sec, variant } : sec,
+      ),
+    }));
+    setIsDirty(true);
+  };
+
   // Actions
   const handleSave = async () => {
     if (!selectedPage) return;
@@ -542,6 +552,7 @@ const ProductLandingPages: React.FC = () => {
               onMoveSection={handleMoveSection}
               onRemoveSection={handleRemoveSection}
               onUpdateSectionContent={handleUpdateSectionContent}
+              onUpdateSectionVariant={handleUpdateSectionVariant}
               product={selectedProduct}
             />
           </section>

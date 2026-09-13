@@ -53,6 +53,31 @@ export interface SidebarElementItem {
   desc: string;
 }
 
+export interface SectionVariantOption {
+  id: string;
+  label: string;
+  desc?: string;
+}
+
+export const SECTION_VARIANTS_MAP: Partial<Record<SectionType, SectionVariantOption[]>> = {
+  REVIEWS: [
+    { id: "CARDS", label: "كروت النجوم", desc: "تقييمات كلاسيكية فاخرة" },
+    { id: "WHATSAPP", label: "محادثات واتساب", desc: "محادثات واقعية لرفع الثقة" },
+  ],
+  COMPARISON: [
+    { id: "TABLE", label: "جدول مصفوفة", desc: "مقارنة كاملة الأصلي vs المقلد" },
+    { id: "DUAL_CARDS", label: "كارتين متجاورين", desc: "منتجنا vs بدائل السوق جنب إلى جنب" },
+  ],
+  BREAKDOWN: [
+    { id: "BENTO", label: "شبكة بينتو", desc: "4 كروت متناسقة لتشريح المنتج" },
+    { id: "CHECKLIST", label: "قائمة فحص الجودة", desc: "مؤشرات فنية دقيقة بنقاط التحقق" },
+  ],
+  FEATURES: [
+    { id: "BENTO", label: "شبكة الثقة 2x2", desc: "معاينة، شحن، COD، استبدال" },
+    { id: "OFFICIAL_SEAL", label: "شهادة الضمان والختم", desc: "وثيقة ضمان ذهبية رسمية" },
+  ],
+};
+
 export const SIDEBAR_ITEMS: SidebarElementItem[] = [
   {
     type: "MEDIA",
@@ -179,6 +204,7 @@ export const buildDefaultSectionsForProduct = (
     {
       id: "sec-breakdown-1",
       type: "BREAKDOWN",
+      variant: "BENTO",
       title: "تشريح ومواصفات المنتج الفاخرة",
       enabled: true,
       content: {
@@ -194,6 +220,7 @@ export const buildDefaultSectionsForProduct = (
     {
       id: "sec-comparison-1",
       type: "COMPARISON",
+      variant: "TABLE",
       title: "جدول المقارنة الذكي",
       enabled: true,
       content: {
@@ -235,6 +262,7 @@ export const buildDefaultSectionsForProduct = (
     {
       id: "sec-features-1",
       type: "FEATURES",
+      variant: "BENTO",
       title: "مميزات المتجر",
       enabled: true,
       content: {
@@ -261,6 +289,7 @@ export const buildDefaultSectionsForProduct = (
     {
       id: "sec-reviews-1",
       type: "REVIEWS",
+      variant: "WHATSAPP",
       title: "تقييمات مخصصة",
       enabled: true,
       content: {

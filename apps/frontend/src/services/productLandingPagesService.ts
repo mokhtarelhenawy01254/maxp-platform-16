@@ -41,6 +41,7 @@ export type SectionType =
 export interface LandingSection {
   id: string;
   type: SectionType;
+  variant?: string;
   title: string;
   enabled: boolean;
   content: {

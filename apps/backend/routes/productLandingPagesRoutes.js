@@ -1185,18 +1185,65 @@ router.post('/:id/ai-content', async (req, res) => {
         },
       },
       {
-        id: `sec-countdown-${Date.now() + 2}`,
+        id: `sec-breakdown-${Date.now() + 2}`,
+        type: 'BREAKDOWN',
+        variant: 'BENTO',
+        title: 'تشريح ومواصفات المنتج الفاخرة',
+        enabled: true,
+        content: {
+          breakdownTitle: `تشريح ومميزات تصنيع ${prodName}`,
+          breakdownItems: [
+            { title: 'نعل طبي ماص للصدمات', desc: 'مرونة كاملة لراحة الكعب والركبة طوال اليوم', icon: '👟', tag: 'طبي 100%' },
+            { title: 'فرش هوائي مانع للتعرق', desc: 'مسامات تهوية نشطة لمنع الروائح والحفاظ على انتعاش القدمين', icon: '💨', tag: 'انتعاش دائم' },
+            { title: 'خياطة يدوية مدعمة', desc: 'غرز متينة ومقاومة للتمزق والفك حتى مع المشاوير الشاقة', icon: '🧵', tag: 'متانة فائقة' },
+            { title: 'خفة وزن استثنائية', desc: 'وزن خفيف جداً يجعلك تشعر وكأنك تمشي بخفة بدون إجهاد', icon: '🪶', tag: 'خفيف جداً' },
+          ],
+        },
+      },
+      {
+        id: `sec-comparison-${Date.now() + 3}`,
+        type: 'COMPARISON',
+        variant: 'TABLE',
+        title: 'جدول المقارنة الذكي',
+        enabled: true,
+        content: {
+          comparisonTitle: `لماذا تختار ${prodName} بدلاً من البدائل العادية في السوق؟`,
+          comparisonUsLabel: `${prodName} الأصلي`,
+          comparisonThemLabel: 'المنتجات المقلدة في السوق',
+          comparisonItems: [
+            { feature: 'جودة الخامات', us: 'خامات أصلية متينة ومقاومة للاهتراء', them: 'خامات بلاستيكية رديئة تتشقق سريعاً' },
+            { feature: 'راحة المشي والاستخدام', us: 'تصميم مريح يوزع ثقل الجسم بدون إجهاد', them: 'نعل ناشف يسبب آلام القدم والظهر' },
+            { feature: 'حق الفحص والمعاينة', us: 'افتح الشحنة وافحص براحتك قبل دفع قرش', them: 'ممنوع فتح الشحنة إلا بعد الدفع' },
+            { feature: 'الضمان والاسترجاع', us: 'ضمان 14 يوم استبدال واسترجاع سهل', them: 'لا يوجد أي ضمان بعد البيع' },
+          ],
+        },
+      },
+      {
+        id: `sec-gallery-${Date.now() + 4}`,
+        type: 'GALLERY',
+        title: 'معرض صور على الطبيعة',
+        enabled: true,
+        content: {
+          galleryTitle: 'لقطات حية للمنتج على الطبيعة',
+          galleryImages: prod.images && prod.images.length > 0
+            ? prod.images.map(img => ({ url: img, caption: prodName }))
+            : (prod.mainImage ? [{ url: prod.mainImage, caption: prodName }] : []),
+        },
+      },
+      {
+        id: `sec-countdown-${Date.now() + 5}`,
         type: 'COUNTDOWN',
         title: 'عرض محدود ونفاد الكمية',
         enabled: true,
         content: {
           timerEndsMinutes: 45,
-          lowStockCount: Math.max(3, Math.min(prod.stock || 15, 19)),
+          lowStockCount: Math.max(3, Math.min(prod.stock || 14, 19)),
         },
       },
       {
-        id: `sec-features-${Date.now() + 3}`,
+        id: `sec-features-${Date.now() + 6}`,
         type: 'FEATURES',
+        variant: 'BENTO',
         title: 'مميزات الشراء والضمان',
         enabled: true,
         content: {
@@ -1209,7 +1256,7 @@ router.post('/:id/ai-content', async (req, res) => {
         },
       },
       {
-        id: `sec-form-${Date.now() + 4}`,
+        id: `sec-form-${Date.now() + 7}`,
         type: 'FORM',
         title: 'نموذج الشراء السريع',
         enabled: true,
@@ -1221,8 +1268,23 @@ router.post('/:id/ai-content', async (req, res) => {
         },
       },
       {
-        id: `sec-reviews-${Date.now() + 5}`,
+        id: `sec-liveproof-${Date.now() + 8}`,
+        type: 'LIVE_PROOF',
+        title: 'إثبات اجتماعي وطلبات حية',
+        enabled: true,
+        content: {
+          satisfactionRate: '4.9 / 5 (أكثر من 1,420 تقييم)',
+          recentOrders: [
+            { buyer: 'أميرة م.', city: 'مدينة نصر، القاهرة', timeAgo: 'منذ 4 دقائق', item: prodName },
+            { buyer: 'محمود ع.', city: 'سموحة، الإسكندرية', timeAgo: 'منذ 11 دقيقة', item: `${prodName} (باقة قطعتين)` },
+            { buyer: 'نورهان س.', city: 'المنصورة، الدقهلية', timeAgo: 'منذ 19 دقيقة', item: prodName },
+          ],
+        },
+      },
+      {
+        id: `sec-reviews-${Date.now() + 9}`,
         type: 'REVIEWS',
+        variant: 'WHATSAPP',
         title: 'آراء وتقييمات العملاء',
         enabled: true,
         content: {
@@ -1234,7 +1296,7 @@ router.post('/:id/ai-content', async (req, res) => {
         },
       },
       {
-        id: `sec-faq-${Date.now() + 6}`,
+        id: `sec-faq-${Date.now() + 10}`,
         type: 'FAQ',
         title: 'الأسئلة الشائعة',
         enabled: true,
