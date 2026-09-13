@@ -107,6 +107,7 @@ sync_frontend_dist() {
     "$source_dir/" /var/www/frontend2/dist/
   sudo rm -rf /var/www/frontend2/dist/products
   sudo chown -R $USER:$USER /var/www/frontend2/dist
+  sudo chmod -R a+rX /var/www/frontend2/dist
 
   # ── INTEGRITY GATE (BEFORE publishing index.html) ──────────────────────
   # Verify every hashed asset referenced by index.html actually arrived on
@@ -162,6 +163,7 @@ sync_frontend_dist() {
   sudo rsync -a --exclude 'index.html' \
     "$source_dir/" /var/www/frontend2/dist/
   sudo chown -R $USER:$USER /var/www/frontend2/dist
+  sudo chmod -R a+rX /var/www/frontend2/dist
   echo "✅ Frontend dist synced — index.html mtime: $(stat -c %y /var/www/frontend2/dist/index.html 2>/dev/null || stat -f %Sm /var/www/frontend2/dist/index.html 2>/dev/null || echo unknown)"
   # Purge storefront Settings Redis cache so new theme/designTokens appear immediately
   # (publicStorefrontController caches 60s, frontend Infinity)
