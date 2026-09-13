@@ -378,6 +378,7 @@ async def facebook_ad_create_full_draft(input_data: FacebookAdCreateFullDraftInp
                 "optimizationGoal": "OFFSITE_CONVERSIONS",
                 "advantagePlusPlacements": True,
                 "advantagePlusAudience": True,
+                "urlTags": "utm_source=facebook&utm_medium=paid_social&utm_campaign={{campaign.name}}&utm_content={{ad.name}}",
             }
 
             draft_insert_sql = text("""
@@ -559,12 +560,20 @@ def _evaluate_performance_item(
     campaign_name: str | None = None,
     product_name: str | None = None,
     ads_count: int | None = None,
+    delivery_rate: float = 1.0,
+    cancellation_rate: float = 0.0,
+    store_orders_count: int = 0,
 ) -> dict[str, Any]:
     margin = price - cost if price > 0 else 0
     cpa = round(spend / purchases, 2) if purchases > 0 else 0.0
     roas = round(revenue / spend, 2) if spend > 0 else 0.0
     breakeven_roas = round(price / margin, 2) if margin > 0 else 2.0
     target_cpa = round(margin * 0.45, 2) if margin > 0 else round(price * 0.25, 2)
+
+    # 2026 Delivery-Adjusted Net CPA (COD Reality)
+    effective_delivery = max(delivery_rate, 0.05)
+    net_cpa = round(spend / (purchases * effective_delivery), 2) if purchases > 0 else 0.0
+    est_delivered_purchases = round(purchases * effective_delivery, 1) if purchases > 0 else 0
 
     decision = "WATCH"
     rationale = ""
@@ -577,9 +586,19 @@ def _evaluate_performance_item(
         action_plan = "ترك الحملة/الإعلان يعمل لمدة 24-48 ساعة بدون تعديل لإعطاء خوارزمية ميتا فرصة تثبيت مرحلة التعلم."
     elif purchases > 0:
         if roas >= breakeven_roas and (target_cpa == 0 or cpa <= target_cpa):
-            decision = "SCALE"
-            rationale = f"أداء رابح وممتاز: العائد ROAS ({roas}x) يتفوق على نقطة التعادل ({breakeven_roas}x)، وتكلفة الشراء CPA ({cpa} {currency}) ممتازة وضمن المستهدف ({target_cpa} {currency})."
-            action_plan = "زيادة الميزانية اليومية بنسبة 20% تدريجياً وتجهيز كرييتف بديل لتفادي تشبع الجمهور."
+            # 2026 COD Gating Guard: Check real store delivery and cancellation rate
+            if store_orders_count >= 10 and (delivery_rate < 0.50 or cancellation_rate > 0.35):
+                decision = "RISKY_SCALE"
+                rationale = (
+                    f"تحذير أمان كاش (2026 COD Gating): الأداء الاسمي على ميتا يبدو رابحاً (ROAS: {roas}x, CPA: {cpa} {currency})، "
+                    f"ولكن نسبة تسليم المتجر الفعلية ضعيفة ({round(delivery_rate * 100, 1)}%) ونسبة الإلغاء مرتفعة ({round(cancellation_rate * 100, 1)}%). "
+                    f"هذا يرفع التكلفة الحقيقية للطلب المُسلّم Net CPA إلى {net_cpa} {currency}. التوسع بالميزانية الآن سيحرق كاش في شحنات مرتجعة."
+                )
+                action_plan = "تجميد الميزانية حالياً وتفعيل التأكيد الهاتفي الفوري للطلبات لرفع معدل التسليم فوق 60% قبل تنفيذ أي Scale."
+            else:
+                decision = "SCALE"
+                rationale = f"أداء رابح وممتاز: العائد ROAS ({roas}x) يتفوق على نقطة التعادل ({breakeven_roas}x)، وتكلفة الشراء CPA ({cpa} {currency}) ممتازة وضمن المستهدف ({target_cpa} {currency})."
+                action_plan = "زيادة الميزانية اليومية بنسبة 20% تدريجياً وتجهيز كرييتف بديل لتفادي تشبع الجمهور."
         elif roas >= 1.0:
             decision = "WATCH"
             rationale = f"تحقق مبيعات بعائد ROAS ({roas}x) يقترب من التعادل ({breakeven_roas}x)، لكن الهامش ضيق."
@@ -620,6 +639,8 @@ def _evaluate_performance_item(
         "revenue": revenue,
         "ctr": f"{round(ctr * 100, 2)}%",
         "cpa": cpa,
+        "net_cpa": net_cpa,
+        "est_delivered_purchases": est_delivered_purchases,
         "roas": f"{roas}x",
         "breakeven_roas": f"{breakeven_roas}x",
         "target_cpa": target_cpa,
@@ -627,6 +648,7 @@ def _evaluate_performance_item(
         "decision": decision,
         "analysis": rationale,
         "recommendation": action_plan,
+        "store_delivery_rate": f"{round(delivery_rate * 100, 1)}%" if store_orders_count > 0 else "غير محدد",
     }
     if item_type == "CAMPAIGN":
         item_dict["budget_amount"] = budget_amount
@@ -660,6 +682,46 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
         default_price = float(base_match.price) if base_match and base_match.price else 500.0
         default_cost = float(base_match.cost) if base_match and base_match.cost else (default_price * 0.5)
         default_prod_name = base_match.name if base_match and base_match.name else None
+
+        # 1.1 Fetch 30-day store COD health (Delivery rate & Cancellation rate)
+        cod_stats_row = await session.execute(
+            text("""
+                SELECT 
+                    COUNT(id) AS total_orders,
+                    COUNT(id) FILTER (WHERE status::text IN ('DELIVERED', 'COMPLETED')) AS delivered_orders,
+                    COUNT(id) FILTER (WHERE status::text IN ('CANCELLED', 'CANCELED', 'RETURNED', 'REJECTED', 'REFUNDED', 'LOST')) AS cancelled_orders
+                FROM public.orders
+                WHERE "companyId" = :cid
+                  AND "createdAt" >= NOW() - INTERVAL '30 days'
+            """),
+            {"cid": company_id}
+        )
+        cod_match = cod_stats_row.first()
+        store_orders_count = int(cod_match.total_orders or 0) if cod_match else 0
+        store_delivered_count = int(cod_match.delivered_orders or 0) if cod_match else 0
+        store_cancelled_count = int(cod_match.cancelled_orders or 0) if cod_match else 0
+
+        # Fallback to all-time orders if 30-day window has fewer than 10 orders
+        if store_orders_count < 10:
+            cod_all_row = await session.execute(
+                text("""
+                    SELECT 
+                        COUNT(id) AS total_orders,
+                        COUNT(id) FILTER (WHERE status::text IN ('DELIVERED', 'COMPLETED')) AS delivered_orders,
+                        COUNT(id) FILTER (WHERE status::text IN ('CANCELLED', 'CANCELED', 'RETURNED', 'REJECTED', 'REFUNDED', 'LOST')) AS cancelled_orders
+                    FROM public.orders
+                    WHERE "companyId" = :cid
+                """),
+                {"cid": company_id}
+            )
+            cod_all = cod_all_row.first()
+            if cod_all and int(cod_all.total_orders or 0) >= 10:
+                store_orders_count = int(cod_all.total_orders or 0)
+                store_delivered_count = int(cod_all.delivered_orders or 0)
+                store_cancelled_count = int(cod_all.cancelled_orders or 0)
+
+        store_delivery_rate = (store_delivered_count / store_orders_count) if store_orders_count > 0 else 1.0
+        store_cancellation_rate = (store_cancelled_count / store_orders_count) if store_orders_count > 0 else 0.0
 
         limit = min(max(input_data.limit or 10, 1), 50)
         status_filter = input_data.status if input_data.status and input_data.status != "ALL" else None
@@ -809,7 +871,8 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
                 "ad_count": 0,
                 "message": rec_text,
                 "rules": [
-                    "SCALE: تكلفة الاقتناء أقل من الهدف والـ ROAS أعلى من نقطة التعادل بمقدار 20%+.",
+                    "SCALE: تكلفة الاقتناء أقل من الهدف والـ ROAS أعلى من نقطة التعادل بمقدار 20%+ مع ضمان معدل تسليم COD فوق 50%.",
+                    "RISKY_SCALE: مؤشرات ميتا رابحة لكن نسبة تسليم المتجر ضعيفة (<50%) أو نسبة الإلغاء مرتفعة (>35%)، مما يهدد بحرق كاش في المرتجعات.",
                     "KILL: تجاوز الإنفاق ضعف سعر المنتج دون تحقيق مبيعات.",
                     "FIX_CREATIVE: تجاوز 2000 ظهور بنسبة نقر (CTR) أقل من 1%.",
                     "FIX_LANDING: نقرات مرتفعة وزيارات للموقع دون إتمام الطلب."
@@ -845,6 +908,9 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
                 budget_amount=c_budget,
                 budget_type=row.get("budgetType"),
                 ads_count=int(row.get("ads_count") or 0),
+                delivery_rate=store_delivery_rate,
+                cancellation_rate=store_cancellation_rate,
+                store_orders_count=store_orders_count,
             )
             campaign_evaluations.append(c_eval)
 
@@ -877,6 +943,9 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
                 currency=default_currency,
                 campaign_name=row.get("campaign_name"),
                 product_name=row.get("product_name"),
+                delivery_rate=store_delivery_rate,
+                cancellation_rate=store_cancellation_rate,
+                store_orders_count=store_orders_count,
             )
             ad_evaluations.append(a_eval)
 
@@ -897,10 +966,21 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
                 "revenue": primary_item.get("revenue"),
                 "ctr": primary_item.get("ctr"),
                 "cpa": primary_item.get("cpa"),
+                "net_cpa": primary_item.get("net_cpa"),
+                "est_delivered_purchases": primary_item.get("est_delivered_purchases"),
+                "store_delivery_rate": primary_item.get("store_delivery_rate"),
                 "roas": primary_item.get("roas"),
                 "breakeven_roas": primary_item.get("breakeven_roas"),
                 "target_cpa": primary_item.get("target_cpa"),
                 "currency": primary_item.get("currency"),
+            },
+            "store_cod_health": {
+                "total_orders_sample": store_orders_count,
+                "delivered_orders": store_delivered_count,
+                "cancelled_orders": store_cancelled_count,
+                "delivery_rate": f"{round(store_delivery_rate * 100, 1)}%",
+                "cancellation_rate": f"{round(store_cancellation_rate * 100, 1)}%",
+                "status": "HEALTHY" if store_delivery_rate >= 0.60 and store_cancellation_rate <= 0.25 else ("CRITICAL" if store_delivery_rate < 0.40 else "WARNING"),
             },
             "analysis": primary_item.get("analysis"),
             "recommendation": primary_item.get("recommendation"),
@@ -914,6 +994,7 @@ async def facebook_ad_get_decision(input_data: FacebookAdGetDecisionInput) -> di
                 "total_active_ads": len([a for a in ad_evaluations if a.get("status") == "ACTIVE"]),
                 "total_spend": round(sum(c.get("spend", 0.0) for c in campaign_evaluations) or sum(a.get("spend", 0.0) for a in ad_evaluations), 2),
                 "total_revenue": round(sum(c.get("revenue", 0.0) for c in campaign_evaluations) or sum(a.get("revenue", 0.0) for a in ad_evaluations), 2),
+                "store_delivery_rate": f"{round(store_delivery_rate * 100, 1)}%",
             },
         }
 

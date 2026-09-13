@@ -98,8 +98,29 @@ class CompetitorRepository(BaseRepository):
         """)
         rows = await self._session.execute(sql, {"cid": competitor_id, "lim": limit})
         res = []
+        now = datetime.utcnow()
         for r in rows:
             m = dict(r._mapping)
+            first_seen = m.get("firstSeen")
+            days_active = 1
+            if first_seen and hasattr(first_seen, "replace"):
+                try:
+                    delta = now - first_seen.replace(tzinfo=None)
+                    days_active = max(1, delta.days)
+                except Exception:
+                    days_active = 1
+
+            longevity_tier = "TESTING_NEW"
+            is_winner = False
+            badge = "إعلان تجريبي حديث (< 10 أيام)"
+            if days_active >= 25:
+                longevity_tier = "PROVEN_WINNER"
+                is_winner = True
+                badge = f"🔥 إعلان رابح ومثبت ({days_active} يوماً تشغيل متواصل)"
+            elif days_active >= 10:
+                longevity_tier = "PROMISING_SCALE"
+                badge = f"⚡ إعلان واعد قيد التوسيع ({days_active} يوماً)"
+
             res.append({
                 "id": m.get("id"),
                 "adId": m.get("adId"),
@@ -110,9 +131,14 @@ class CompetitorRepository(BaseRepository):
                 "creativeUrl": m.get("creativeUrl") or "",
                 "destinationUrl": m.get("destinationUrl") or "",
                 "status": m.get("status") or "ACTIVE",
+                "daysActive": days_active,
+                "longevityTier": longevity_tier,
+                "isWinner": is_winner,
+                "badge": badge,
                 "firstSeen": str(m.get("firstSeen")) if m.get("firstSeen") else None,
                 "lastSeen": str(m.get("lastSeen")) if m.get("lastSeen") else None,
             })
+        res.sort(key=lambda x: x["daysActive"], reverse=True)
         return res
 
     async def search_competitor_ads(
@@ -133,8 +159,29 @@ class CompetitorRepository(BaseRepository):
         """)
         rows = await self._session.execute(sql, {"cid": company_id, "pattern": pattern, "lim": limit})
         res = []
+        now = datetime.utcnow()
         for r in rows:
             m = dict(r._mapping)
+            first_seen = m.get("firstSeen")
+            days_active = 1
+            if first_seen and hasattr(first_seen, "replace"):
+                try:
+                    delta = now - first_seen.replace(tzinfo=None)
+                    days_active = max(1, delta.days)
+                except Exception:
+                    days_active = 1
+
+            longevity_tier = "TESTING_NEW"
+            is_winner = False
+            badge = "إعلان تجريبي حديث (< 10 أيام)"
+            if days_active >= 25:
+                longevity_tier = "PROVEN_WINNER"
+                is_winner = True
+                badge = f"🔥 إعلان رابح ومثبت ({days_active} يوماً تشغيل متواصل)"
+            elif days_active >= 10:
+                longevity_tier = "PROMISING_SCALE"
+                badge = f"⚡ إعلان واعد قيد التوسيع ({days_active} يوماً)"
+
             res.append({
                 "id": m.get("id"),
                 "competitorName": m.get("competitorName") or "منافس",
@@ -145,9 +192,14 @@ class CompetitorRepository(BaseRepository):
                 "creativeUrl": m.get("creativeUrl") or "",
                 "destinationUrl": m.get("destinationUrl") or "",
                 "status": m.get("status") or "ACTIVE",
+                "daysActive": days_active,
+                "longevityTier": longevity_tier,
+                "isWinner": is_winner,
+                "badge": badge,
                 "firstSeen": str(m.get("firstSeen")) if m.get("firstSeen") else None,
                 "lastSeen": str(m.get("lastSeen")) if m.get("lastSeen") else None,
             })
+        res.sort(key=lambda x: x["daysActive"], reverse=True)
         return res
 
     async def generate_report(

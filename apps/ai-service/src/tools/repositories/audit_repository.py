@@ -10,8 +10,8 @@ from src.tools.repositories.base import BaseRepository
 class AuditRepository(BaseRepository):
     async def get_recent_activities(self, company_id: str, limit: int) -> list[dict[str, Any]]:
         rows = await self._session.execute(text("""
-            SELECT type, description, "createdAt", "userId"
-            FROM activities
+            SELECT action AS type, description, "createdAt", "userId"
+            FROM activity_logs
             WHERE "companyId" = :cid
             ORDER BY "createdAt" DESC
             LIMIT :lim
