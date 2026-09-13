@@ -352,6 +352,14 @@ def get_skills_block(
             if not desc_60.endswith("."):
                 desc_60 = f"{desc_60}."
 
+            raw_trig = meta.get("trigger_phrases") or t_skill.get("trigger_phrases") or []
+            if isinstance(raw_trig, str):
+                triggers = [t.strip() for t in raw_trig.split(",") if t.strip()]
+            elif isinstance(raw_trig, list):
+                triggers = [str(t).strip() for t in raw_trig if str(t).strip()]
+            else:
+                triggers = []
+
             # Check for JIT L1 match against incoming message or active domain playbook
             is_playbook = (
                 "playbook" in skill_id.lower()

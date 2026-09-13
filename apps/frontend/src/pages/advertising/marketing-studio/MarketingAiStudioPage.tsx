@@ -189,6 +189,7 @@ const MarketingAiStudioPage: React.FC = () => {
               <span>مسودة Meta Ads جاهزة</span>
             </div>
           </div>
+        </div>
 
         {/* Mobile Native App Bar (Compact 2-tier layout) */}
         <div className="flex lg:hidden flex-col">

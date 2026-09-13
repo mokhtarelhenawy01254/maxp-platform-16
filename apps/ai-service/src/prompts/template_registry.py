@@ -170,6 +170,9 @@ class PromptTemplateRegistry:
         # Try relative paths from this file
         candidates = [
             Path(__file__).resolve().parent.parent.parent.parent / "backend" / "agents",
+            Path(__file__).resolve().parent.parent.parent.parent / "backend2" / "agents",
+            Path("/var/www/backend2/agents"),
+            Path("/var/www/backend/agents"),
             Path(__file__).resolve().parent.parent.parent / "agents",
         ]
         for c in candidates:
