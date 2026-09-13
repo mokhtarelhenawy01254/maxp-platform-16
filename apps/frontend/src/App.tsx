@@ -1358,6 +1358,9 @@ const BulkSearchPage = React.lazy(
 
 // Marketplace System
 const MarketplaceV2 = React.lazy(() => import("./pages/marketplace/MarketplaceV2"));
+const AgentMarketplacePage = React.lazy(
+  () => import("./pages/marketplace/agents/AgentMarketplacePage"),
+);
 const StorefrontThemesMarketplace = React.lazy(
   () => import("./pages/marketplace/StorefrontThemes"),
 );
@@ -1698,6 +1701,7 @@ if (typeof window !== "undefined") {
   p["/support"] = () => import("./pages/support/SupportCenter");
   p["/profile"] = () => import("./pages/profile/Profile");
   p["/marketplace"] = () => import("./pages/marketplace/MarketplaceV2");
+  p["/marketplace/agents"] = () => import("./pages/marketplace/agents/AgentMarketplacePage");
   p["/my-apps"] = () => import("./pages/marketplace/MyApps");
   p["/mindmap"] = () => import("./pages/mindmap/MindMapPage");
   p["/broadcast"] = () => import("./pages/broadcast/BroadcastDashboard");
@@ -3043,6 +3047,18 @@ const AppContent = () => {
                       <MarketplaceV2 />
                     </Layout>
                   }
+                />
+                <Route
+                  path="/marketplace/agents"
+                  element={
+                    <Layout fullWidth>
+                      <AgentMarketplacePage />
+                    </Layout>
+                  }
+                />
+                <Route
+                  path="/agents/market"
+                  element={<Navigate to="/marketplace/agents" replace />}
                 />
                 <Route
                   path="/mindmap"

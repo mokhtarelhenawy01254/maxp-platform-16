@@ -105,21 +105,48 @@ class FacebookAudiencesService {
       }
 
       const accountId = adAccountId.startsWith('act_') ? adAccountId : `act_${adAccountId}`;
+      const retentionSeconds = Math.max(1, Math.min(180, Number(retentionDays) || 30)) * 86400;
+
+      let filter;
+      if (!eventType || eventType === 'ALL_VISITORS' || eventType === 'PageView') {
+        filter = {
+          operator: 'and',
+          filters: [
+            { field: 'url', operator: 'i_contains', value: '' }
+          ]
+        };
+      } else {
+        filter = {
+          operator: 'and',
+          filters: [
+            { field: 'event', operator: 'eq', value: eventType }
+          ]
+        };
+      }
+
+      const rule = {
+        inclusions: {
+          operator: 'or',
+          rules: [
+            {
+              event_sources: [{ type: 'pixel', id: String(pixelId) }],
+              retention_seconds: retentionSeconds,
+              filter
+            }
+          ]
+        }
+      };
+
+      const payload = {
+        name,
+        rule: JSON.stringify(rule),
+        prefill: true,
+        ...(description && { description })
+      };
 
       const response = await axios.post(
         `${this.baseUrl}/${accountId}/customaudiences`,
-        {
-          name,
-          description,
-          subtype: 'WEBSITE',
-          pixel_id: pixelId,
-          retention_days: retentionDays,
-          rule: {
-            event: {
-              i_contains: eventType // ALL_VISITORS, PURCHASE, ADD_TO_CART, etc.
-            }
-          }
-        },
+        payload,
         {
           params: {
             access_token: this.accessToken

@@ -219,6 +219,8 @@ const Layout: React.FC<LayoutProps> = ({ children, fullWidth = false }) => {
     location.pathname.startsWith("/tiktok-inbox") ||
     location.pathname.startsWith("/unified-inbox") ||
     location.pathname.startsWith("/conversations") ||
+    location.pathname.startsWith("/marketplace/agents") ||
+    location.pathname.startsWith("/agents/market") ||
     location.pathname.startsWith("/advertising/marketing-studio");
   const resolvedUserLayout = userLayout || (user?.company?.sidebarLayout as SidebarLayoutType);
   const currentLayout = resolvedUserLayout || "three-tier";

@@ -1,5 +1,5 @@
 import { WhatsAppIcon, TelegramIcon, FacebookIcon, InstagramIcon } from '../components/icons/brands';
-import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
+import { AlertTriangle, Archive, ArrowLeftRight, BadgePercent, Ban, Banknote, BarChart3, Bell, BellPlus, BellRing, BookOpen, Bot, Box, Briefcase, Building, Building2, Calculator, Calendar, CalendarDays, CheckCircle2, HelpCircle, CircleUser, ClipboardCheck, ClipboardList, Clock, Cog, CreditCard, DollarSign, DoorOpen, Download, Eye, FileBarChart, FileText, Filter, FlaskConical, FolderOpen, FolderTree, Gift, GitBranch, Globe, GraduationCap, Grid3x3, HardDrive, Heart, Home, Dna, Image, Inbox, Key, LayoutDashboard, Lightbulb, LineChart, Link, ListChecks, ListOrdered, MapPin, Megaphone, MessageSquare, Monitor, Network, Paintbrush, Palette, Package, PackageCheck, Percent, Plus, PlugZap, Printer, Radio, Receipt, RefreshCcw, Rocket, ScanLine, Search, Send, Settings, Settings2, ShieldAlert, ShieldCheck, ShoppingBag, ShoppingCart, Sparkles, Volume2, SquarePen, Star, Store, Table2, Tag, Target, Ticket, TrendingUp, Trophy, Truck, Undo2, UserPlus, Users, Wallet, Wrench, XCircle, Zap, Radiation, Landmark, Stethoscope } from 'lucide-react'
 import { SidebarManagementData, SidebarSection, SidebarSectionSettings } from '../types/layout';
 import { APP_REGISTRY } from './appRegistry';
 import { STORE_APP_SLUGS } from '../utils/storeShortcut';
@@ -515,6 +515,7 @@ export const getSidebarConfig = (
             title: t('sidebar.aiOperatorSection'),
             icon: Sparkles,
             items: [
+                { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت' },
                 { to: '/admin/agent-profiles', icon: Users, label: t('sidebar.agentProfiles') },
                 { to: '/admin/ai-image-generator', icon: Image, label: t('sidebar.aiImageGenerator') },
                 { to: '/admin/ai-catalog', icon: ShoppingBag, label: t('sidebar.aiCatalog') },
@@ -1520,6 +1521,7 @@ export const getSidebarConfig = (
             title: t('sidebar.marketplace'),
             icon: Box,
             items: [
+                { to: '/marketplace/agents', icon: Bot, label: isEn ? 'Agents Marketplace' : 'سوق الإيجنت (Workforce)' },
                 { to: '/my-apps', icon: Grid3x3, label: t('sidebar.myApps') },
                 { to: '/marketplace', icon: Box, label: t('sidebar.browseApps') },
                 { to: '/marketplace/themes', icon: Palette, label: t('sidebar.storeThemes') },

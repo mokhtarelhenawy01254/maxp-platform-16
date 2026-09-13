@@ -5024,7 +5024,7 @@ class FacebookAdsService {
 
     switch (normalizedBidStrategy) {
       case 'LOWEST_COST':
-        bidData.bid_strategy = 'LOWEST_COST_WITHOUT_CAP';
+        // Meta v20+: Lowest cost is default; sending LOWEST_COST_WITHOUT_CAP causes Meta to reject with "Invalid parameter"
         break;
 
       case 'COST_CAP':
