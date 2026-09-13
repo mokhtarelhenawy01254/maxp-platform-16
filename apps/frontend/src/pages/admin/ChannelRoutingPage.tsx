@@ -48,6 +48,13 @@ const CHANNELS: { key: string; label: string; labelAr?: string; icon: string; to
     icon: "🎯",
     tool: "facebook_ad_create_full_draft",
   },
+  {
+    key: "INVENTORY_STUDIO",
+    label: "Inventory & Products Studio",
+    labelAr: "استوديو المنتجات والمخزون الذكي (Inventory Studio)",
+    icon: "📦",
+    tool: "inventory_check",
+  },
 ];
 
 async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -100,6 +107,10 @@ export default function ChannelRoutingPage() {
         // Fallback default for Marketing Studio: media buyer agent if not explicitly claimed
         if (!assigned && ch.key === "MARKETING_STUDIO") {
           assigned = activeAgents.find((a) => a.role === "MEDIA_BUYER");
+        }
+        // Fallback default for Inventory Studio: inventory agent if not explicitly claimed
+        if (!assigned && ch.key === "INVENTORY_STUDIO") {
+          assigned = activeAgents.find((a) => a.role === "INVENTORY" || a.role === "INVENTORY_PRICING");
         }
         const assignedAgent = assigned ? activeAgents.find((a) => a.id === assigned.id) : null;
         return {
