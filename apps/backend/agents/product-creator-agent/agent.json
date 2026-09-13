@@ -27,16 +27,15 @@
     "product.create",
     "product.search",
     "category.list",
-    "product.updatePrice",
+    "product.update_price",
     "competitor.search",
     "competitor.price_compare",
     "inventory.check",
     "agent.handoff.to"
   ],
   "allowedSkills": [
-    "catalog-builder",
-    "seo-copywriting",
-    "pricing-strategy"
+    "product-catalog-creator",
+    "pricing-review"
   ],
   "channels": [
     "dashboard",
