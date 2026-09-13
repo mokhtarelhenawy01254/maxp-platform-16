@@ -127,7 +127,7 @@ const PIE_COLORS = [
 ];
 
 const STATUS_LABELS: Record<string, string> = {
-  SHORTAGE_FAILED: "فشل العجز",
+  SHORTAGE_FAILED: "عجز نهائي",
   CANCELLED: "ملغي",
   DELIVERED: "تم التسليم",
   SHIPPED: "تم الشحن",

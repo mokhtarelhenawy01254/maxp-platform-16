@@ -486,6 +486,7 @@ const BULK_UPDATABLE_STATUS_CODES = [
   "PARTIALLY_RETURNED",
   "REFUNDED",
   "PARTIALLY_REFUNDED",
+  "SHORTAGE_FAILED",
 ] as const;
 
 const transformOrder = (order: RawOrder): Order => {

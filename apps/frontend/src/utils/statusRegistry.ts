@@ -48,7 +48,7 @@ const SYSTEM_STATUS_DEFS: Record<string, { label: string; labelKey: string; colo
   COMPLETED:            { label: 'مدفوع',                labelKey: 'orders.completed',         colorClass: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400' },
   FAILED:               { label: 'فشل الدفع',             labelKey: 'orders.failed',            colorClass: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' },
   STOCK_SHORTAGE:       { label: 'عجز مخزون',            labelKey: 'orders.stockShortage',     colorClass: 'bg-rose-100 text-rose-800 dark:bg-rose-900/20 dark:text-rose-400' },
-  SHORTAGE_FAILED:      { label: 'فشل بسبب العجز',       labelKey: 'orders.shortageFailed',    colorClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' },
+  SHORTAGE_FAILED:      { label: 'عجز نهائي',            labelKey: 'orders.shortageFailed',    colorClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400' },
   WOO_TAGHEZ:           { label: 'Woo Taghez',           labelKey: 'orders.wooTaghez',         colorClass: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' },
   PENDING_CANCELLATION: { label: 'بانتظار الإلغاء',      labelKey: 'orders.pendingCancellation',colorClass: 'bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400' },
 };

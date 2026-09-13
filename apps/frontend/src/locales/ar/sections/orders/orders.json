@@ -551,7 +551,7 @@
   "onHoldPrep": "تجهيز معلق",
   "notShipped": "لم يتم الشحن",
   "stockShortage": "عجز مخزون",
-  "shortageFailed": "فشل بسبب العجز",
+  "shortageFailed": "عجز نهائي",
   "wooTaghez": "Woo Taghez",
   "pendingCancellation": "بانتظار الإلغاء",
   "turboSaved": "محفوظة قبل الشحن",

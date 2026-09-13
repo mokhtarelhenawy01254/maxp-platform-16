@@ -54,7 +54,8 @@ const DEFAULT_ORDER_STATUSES = [
   { code: 'PARTIALLY_DELIVERED', name: 'تسليم جزئي', nameEn: 'Partially Delivered', color: '#FBBF24', icon: 'Package', sortOrder: 15, wooCommerceStatus: null },
   { code: 'EXCHANGED', name: 'استبدال', nameEn: 'Exchanged', color: '#7C3AED', icon: 'ArrowLeftRight', sortOrder: 16, wooCommerceStatus: null },
   { code: 'TRASH', name: 'سلة المحذوفات', nameEn: 'Trash', color: '#6B7280', icon: 'Trash2', sortOrder: 17, wooCommerceStatus: 'trash' },
-  { code: 'PENDING_CANCELLATION', name: 'إلغاء قيد التنفيذ', nameEn: 'Pending Cancellation', color: '#F43F5E', icon: 'AlertOctagon', sortOrder: 18, wooCommerceStatus: null }
+  { code: 'PENDING_CANCELLATION', name: 'إلغاء قيد التنفيذ', nameEn: 'Pending Cancellation', color: '#F43F5E', icon: 'AlertOctagon', sortOrder: 18, wooCommerceStatus: null },
+  { code: 'SHORTAGE_FAILED', name: 'عجز نهائي', nameEn: 'Final Shortage', color: '#7C3AED', icon: 'XCircle', sortOrder: 19, wooCommerceStatus: null }
 ];
 
 const DEFAULT_PAYMENT_STATUSES = [
@@ -98,8 +99,7 @@ const DEFAULT_PREPARATION_STATUSES = [
   { code: 'QUALITY_CHECK', name: 'فحص الجودة', nameEn: 'Quality Check', color: '#06B6D4', icon: 'CheckCircle', sortOrder: 4 },
   { code: 'PACKAGED', name: 'تم التغليف', nameEn: 'Packaged', color: '#3B82F6', icon: 'Package', sortOrder: 5 },
   { code: 'ON_HOLD_PREP', name: 'معلق', nameEn: 'On Hold', color: '#F97316', icon: 'AlertCircle', sortOrder: 6 },
-  { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', nameEn: 'Stock Shortage', color: '#E11D48', icon: 'AlertTriangle', sortOrder: 7 },
-  { code: 'SHORTAGE_FAILED', name: 'فشل بسبب العجز', nameEn: 'Shortage Failed', color: '#7C3AED', icon: 'XCircle', sortOrder: 8 }
+  { code: 'STOCK_SHORTAGE', name: 'عجز مخزون', nameEn: 'Stock Shortage', color: '#E11D48', icon: 'AlertTriangle', sortOrder: 7 }
 ];
 
 // WooCommerce default statuses mapping
@@ -136,14 +136,15 @@ const getAllStatuses = async (req, res) => {
 
     const { statusType } = req.query;
 
-    // التحقق أولاً من وجود حالات لكل نوع (بدون فلتر statusType)
+    // التحقق أولاً من وجود حالات لكل نوع وفحص الحالات الأساسية الإلزامية
     const allStatuses = await getSharedPrismaClient().orderStatusConfig.findMany({
       where: { companyId, isActive: true },
-      select: { statusType: true }
+      select: { statusType: true, code: true }
     });
 
     const statusTypes = ['order', 'payment', 'shipping', 'preparation'];
     const existingTypes = new Set(allStatuses.map(s => s.statusType));
+    const existingCodes = new Set(allStatuses.map(s => s.code));
     let needsInitialization = false;
 
     for (const type of statusTypes) {
@@ -153,7 +154,13 @@ const getAllStatuses = async (req, res) => {
       }
     }
 
-    // إذا كانت هناك أنواع ناقصة، أنشئ الحالات الافتراضية
+    // التأكد من توفر حالة العجز النهائي الأساسية
+    if (!existingCodes.has('SHORTAGE_FAILED')) {
+      console.log('🏷️ [ORDER-STATUS] Missing SHORTAGE_FAILED status, will initialize...');
+      needsInitialization = true;
+    }
+
+    // إذا كانت هناك أنواع ناقصة أو حالات أساسية مفقودة، أنشئ الحالات الافتراضية
     if (needsInitialization || allStatuses.length === 0) {
       try {
         console.log('🏷️ [ORDER-STATUS] Initializing default statuses...');
@@ -781,7 +788,7 @@ const initializeDefaultStatuses = async (companyId) => {
   // Single read: get all existing statuses for this company
   const existingStatuses = await prisma.orderStatusConfig.findMany({
     where: { companyId },
-    select: { code: true, statusType: true, isSystemStatus: true }
+    select: { code: true, statusType: true, isSystemStatus: true, name: true }
   });
   const existingMap = new Map(existingStatuses.map(s => [s.code, s]));
 
@@ -821,28 +828,36 @@ const initializeDefaultStatuses = async (companyId) => {
     }))
   ];
 
-  // Upsert only if missing or stale (not system / wrong type)
+  // Upsert only if missing or stale (not system / wrong type / outdated name for shortage_failed)
   const needsUpdate = upsertOps.filter(op => {
     const existing = existingMap.get(op.code);
-    return !existing || existing.statusType !== op.statusType || !existing.isSystemStatus;
+    if (!existing) return true;
+    if (existing.statusType !== op.statusType || !existing.isSystemStatus) return true;
+    if (op.code === 'SHORTAGE_FAILED' && existing.name !== 'عجز نهائي') return true;
+    return false;
   });
 
-  if (needsUpdate.length === 0) {
-    return;
+  if (needsUpdate.length > 0) {
+    // Single transaction for all writes — parallel via Promise.all
+    await prisma.$transaction(async (tx) => {
+      await Promise.all(needsUpdate.map(op =>
+        tx.orderStatusConfig.upsert({
+          where: { companyId_code: { companyId, code: op.code } },
+          update: op.data,
+          create: op.data
+        })
+      ));
+    });
+    console.log(`🏷️ [ORDER-STATUS] Initialized ${needsUpdate.length} default status(s) for company ${companyId}`);
   }
 
-  // Single transaction for all writes — parallel via Promise.all
-  await prisma.$transaction(async (tx) => {
-    await Promise.all(needsUpdate.map(op =>
-      tx.orderStatusConfig.upsert({
-        where: { companyId_code: { companyId, code: op.code } },
-        update: op.data,
-        create: op.data
-      })
-    ));
+  // مزامنة حالة العجز النهائي مع جدول تعريفات سير العمل (orderStatusDefinition)
+  await syncStatusToWorkflow(prisma, companyId, {
+    code: 'SHORTAGE_FAILED',
+    name: 'عجز نهائي',
+    color: '#7C3AED',
+    sortOrder: 19
   });
-
-  console.log(`🏷️ [ORDER-STATUS] Initialized ${needsUpdate.length} default status(s) for company ${companyId}`);
 };
 
 // ═══════════════════════════════════════════════════════════════

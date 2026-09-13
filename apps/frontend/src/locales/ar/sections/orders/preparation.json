@@ -182,7 +182,7 @@
     "PACKAGED": "تم التغليف",
     "READY_TO_SHIP": "جاهز للشحن",
     "STOCK_SHORTAGE": "عجز مخزون",
-    "SHORTAGE_FAILED": "فشل بسبب العجز",
+    "SHORTAGE_FAILED": "عجز نهائي",
     "PENDING_CANCELLATION": "بانتظار الإلغاء"
   },
   "stageDescriptions": {

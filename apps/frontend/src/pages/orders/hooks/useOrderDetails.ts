@@ -155,6 +155,8 @@ export const useOrderDetails = (orderNumber: string | undefined) => {
       { code: "PARTIALLY_RETURNED", name: "مرتجع جزئي", color: "#F87171" },
       { code: "PARTIALLY_DELIVERED", name: "تسليم جزئي", color: "#FBBF24" },
       { code: "EXCHANGED", name: "استبدال", color: "#7C3AED" },
+      { code: "STOCK_SHORTAGE", name: "عجز مخزون", color: "#E11D48" },
+      { code: "SHORTAGE_FAILED", name: "عجز نهائي", color: "#7C3AED" },
       // 🚀 حالات شحن تربو (Turbo Shipping Statuses 1..13)
       { code: "turbo_saved", name: "تربو: محفوظة قبل الشحن (كود 1)", color: "#6366F1" },
       { code: "turbo_sent", name: "تربو: مرسلة لشركة تربو (كود 2)", color: "#3B82F6" },
