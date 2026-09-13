@@ -72,6 +72,12 @@ Capture what matters. Decisions, context, things to remember. Skip the secrets u
 - **Asset Visibility Tools:** Agents must never be launched blind without account introspection (`_account_info`) and real order attribution (`_attribution_report`) tools.
 - **Continuous Evolutionary Updates:** Whenever any error, edge case, or enhancement is discovered regarding agents, update `.agents/skills/maxp-agent-builder/SKILL.md` immediately with the resolution and checklist item.
 
+## 📐 Rule: Ergonomic Workspace Design (Ban Wasted Space, Explanatory Clutter, and Single-Use Permanent Columns)
+- **Ban Permanent Columns for Single-Use Tools**: Never allocate a permanent screen column/panel (eating 20-30%+ of screen width) to an action that the user performs only once per session (e.g. selecting a product, browsing historical chat sessions, or picking initial filters). Such tools MUST be placed inside top-bar comboboxes, dropdowns, or collapsible slide-over sheets/modals that disappear immediately after selection, reserving 75-85%+ of the screen for the active workspace and live canvas.
+- **Ban Explanatory Copy & Subtitle Clutter (Show, Don't Tell)**: Pro SaaS and dashboard tools must NEVER be bloated with instructional paragraphs, tutorial subtitles, or marketing copy under every button and title (e.g., "تخطيط الحملات وصياغة الزوايا بناءً على...", "خبير الميديا باير..."). Replace wordy text with crisp, compact action labels, tooltips on hover, and self-evident interactive controls.
+- **Ban Wasted Space & Nested Padding Bloat**: Operational tools and cockpits are productivity workspaces, not marketing landing pages. Eliminate excessive paddings (`p-6`+ on nested cards), outer container margins, and static multi-level border wrapping. Utilize 85%+ of screen space for core production actions.
+- **Action Cards over Walls of Text in AI Outputs**: Long streaming text answers from AI agents that recommend strategies, angles, or parameters must NOT remain dead text. They MUST be formatted as compact, interactive Generative UI cards (e.g., selectable angle card, copyable hook button, budget slider, one-click "Apply to Draft" trigger).
+
 ## 🚀 Post-Task Automatic Git Push Rule
 
 - **Mandatory Action:** After completing **ANY** task (feature, bug fix, configuration update, refactoring, or document edit), automatically commit all relevant changes and push directly to `https://github.com/mokhtar267/maxp-platform-6` (`mokhtar267` remote).

@@ -1,0 +1,31 @@
+# MaxP Platform — Project Agent Rules
+
+## Rule: Structured Parameters for Tools (No Brittle Text Extraction)
+1. **Always Use Explicit Parameters**: All agent tools designed for modifying, creating, or updating data (such as bookings, orders, customer records, inventory adjustments) MUST use explicit, structured parameters with appropriate types (e.g., `patient_name: str`, `appointment_date: str`, etc.).
+2. **Ban Generic Text Request Params**: Never use a single generic text parameter (like `request`, `prompt`, or `message`) to pass unstructured strings containing mixed fields that are parsed using custom regex or NLP backend logic. This is brittle and causes parameter extraction failures.
+3. **Structured Outputs & Function Calling**: Leverage Pydantic schemas to validate and constrain tool inputs directly.
+4. **Conversational Slot-Filling**: Agent instruction sets (such as `AGENTS.md` and `SOUL.md` files) MUST instruct agents to collect missing parameters step-by-step through interactive dialogue (slot-filling) rather than expecting the user to provide all information at once or attempting to guess.
+
+## Rule: Mobile-First Single-Depth Surfaces (Ban Cramped "Box-in-Box" UI)
+1. **Ban Nested Cards/Boxes on Mobile (MOB-015)**: Never nest full-border cards inside other cards or containers with heavy padding (`p-6`). On mobile (`< 640px`), sub-sections MUST blend into the parent surface using subtle dividers (`border-t border-border`) or vertical rhythm (`space-y-4`), not an extra layer of `border rounded-xl bg-gray-50 p-4`.
+2. **Responsive Padding Defaults**: Always use responsive padding for page wrappers and cards: `p-3 sm:p-6` or `px-2.5 sm:px-6`. Never hardcode static desktop padding like `p-6` or `p-8` without an `sm:` prefix.
+3. **85%+ Viewport Utilization**: On a 390px viewport (iPhone 14), the actual content width (inputs, tables, texts) MUST occupy >= 85% of the screen width. Padding cascade from outer containers must never starve content width.
+4. **Horizontal Scroll for Dense Navigations**: Never stack 5+ action buttons or 10+ tabs vertically on mobile; convert them to compact horizontal scrollbars (`overflow-x-auto`) with touch-friendly heights (>= 44px).
+
+## Rule: Modular Independent Screens (Ban Monolithic "All-in-One-Page" Aggregation)
+1. **Ban Monolithic God-Components**: NEVER combine multiple distinct screens/tabs/domains (such as production bench, barcode kiosk, earnings ledger, alerts, and reports) into a single giant monolithic file. Each functional screen MUST be an independent, modular component in its own file (under 300-400 lines max).
+2. **Clarification on Single-Depth**: "Single-Depth" is strictly a CSS visual rule for container borders and nested box padding (preventing card-in-card cramping on mobile). It DOES NOT mean cramming every feature onto one page or avoiding dedicated sub-pages.
+3. **Dedicated Route & State Isolation**: Each screen MUST maintain its own localized state, data fetching, and Error Boundary. A crash or edge-case error in one screen (e.g. reports or vouchers) must NEVER take down or degrade other independent screens (such as the technician's active case bench).
+4. **Clean File Structure**: Group related domain screens under a dedicated feature folder (e.g. `pages/dental-lab/technician/` containing `DentalTechBenchPage.tsx`, `DentalTechKioskPage.tsx`, `DentalTechWagePage.tsx`, `DentalTechNotificationsPage.tsx`, `DentalTechReportsPage.tsx`).
+
+## Rule: Deployment Strategy (Frontend via GitHub CI/CD, Backend Fast Hot-Patch with Git Sync)
+1. **Frontend Releases**: Always deploy frontend changes through Git (`git commit & push` to `main`). GitHub Actions builds the production `dist` bundle, runs full syntax/size guards, and deploys cleanly to Nginx. Never upload ad-hoc raw bundles manually unless specifically directed during emergency offline recovery.
+2. **Backend Fast Verification & Sync**: Backend JS files may be hot-tested on the server directly for rapid verification (`ssh` file update + `pm2 reload maxp-backend`). Once verified on production, ALWAYS commit and push the changes to GitHub immediately to ensure zero drift between the repository and the live environment.
+
+## Rule: Ergonomic Workspace Design (Ban Wasted Space, Explanatory Clutter, and Single-Use Permanent Columns)
+1. **Ban Permanent Columns for Single-Use Tools**: Never allocate a permanent screen column/panel (eating 20-30%+ of the screen width) to an action that the user performs only once per session (e.g. selecting a product, browsing historical chat sessions, or picking initial filters). Such tools MUST be placed inside top-bar comboboxes, dropdowns, or collapsible slide-over sheets/modals that disappear immediately after selection, reserving 75-85%+ of the screen for the active workspace and live canvas.
+2. **Ban Explanatory Copy & Subtitle Clutter (Show, Don't Tell)**: Pro SaaS and dashboard tools must NEVER be bloated with instructional paragraphs, tutorial subtitles, or marketing copy under every button and title (e.g., "تخطيط الحملات وصياغة الزوايا بناءً على...", "خبير الميديا باير..."). Replace wordy text with crisp, compact action labels, tooltips on hover, and self-evident interactive controls.
+3. **Ban Wasted Space & Nested Padding Bloat**: Operational tools and cockpits are productivity workspaces, not marketing landing pages. Eliminate excessive paddings (`p-6`+ on nested cards), outer container margins, and static multi-level border wrapping. Utilize 85%+ of screen space for core production actions.
+4. **Action Cards over Walls of Text in AI Outputs**: Long streaming text answers from AI agents that recommend strategies, angles, or parameters must NOT remain dead text. They MUST be formatted as compact, interactive Generative UI cards (e.g., selectable angle card, copyable hook button, budget slider, one-click "Apply to Draft" trigger).
+
+
